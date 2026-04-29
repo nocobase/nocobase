@@ -56,6 +56,27 @@
   },
   {
     "type": "custom-link",
+    "label": "Aperçu de fichiers",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Aperçu",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aperçu des fichiers Office",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "Développement d'extensions",
     "link": "/file-manager/development/index"
   }

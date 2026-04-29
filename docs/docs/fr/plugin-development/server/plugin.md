@@ -1,10 +1,12 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
+---
+title: "Server Plugin Plugin serveur"
+description: "Plugin serveur NocoBase : hériter de la classe Plugin, cycles de vie afterAdd, beforeLoad, load, install, enregistrer des ressources et événements."
+keywords: "Server Plugin, classe Plugin, afterAdd, beforeLoad, load, install, plugin serveur, NocoBase"
+---
 
 # Plugin
 
-Dans NocoBase, un plugin offre une approche modulaire pour étendre et personnaliser les fonctionnalités côté serveur. Les développeurs peuvent étendre la classe `Plugin` de `@nocobase/server` pour enregistrer des événements, des interfaces, des configurations de permissions et d'autres logiques personnalisées à différentes étapes de leur cycle de vie.
+Dans NocoBase, le **plugin serveur (Server Plugin)** est le principal moyen d'étendre les fonctionnalités côté serveur. Vous pouvez hériter de la classe de base `Plugin` fournie par `@nocobase/server` dans `src/server/plugin.ts` du répertoire du plugin, puis enregistrer à différentes étapes du cycle de vie des événements, des interfaces, des autorisations et d'autres logiques personnalisées.
 
 ## Classe de plugin
 
@@ -38,48 +40,69 @@ export default PluginHelloServer;
 
 ## Cycle de vie
 
-Les méthodes du cycle de vie d'un plugin s'exécutent dans l'ordre suivant. Chaque méthode a un moment d'exécution et un objectif spécifiques :
+Les méthodes du cycle de vie du plugin s'exécutent dans l'ordre suivant ; chaque méthode a un moment d'exécution et un objectif spécifiques :
 
-| Méthode de cycle de vie | Moment d'exécution | Description |
-|-------------------------|--------------------|-------------|
-| **staticImport()**        | Avant le chargement du plugin | Méthode de classe statique, exécutée pendant la phase d'initialisation indépendante de l'état de l'application ou du plugin. Elle est utilisée pour les tâches d'initialisation qui ne dépendent pas d'une instance de plugin. |
-| **afterAdd()**            | Immédiatement après l'ajout du plugin au gestionnaire de plugins | L'instance du plugin est créée, mais tous les plugins ne sont pas encore initialisés. Permet d'effectuer des initialisations de base. |
-| **beforeLoad()**          | Avant la méthode `load()` de tous les plugins | À ce stade, vous pouvez accéder à toutes les **instances de plugins activés**. Idéal pour enregistrer des modèles de base de données, écouter des événements de base de données, enregistrer des middlewares et d'autres travaux de préparation. |
-| **load()**                | Lors du chargement du plugin | La méthode `load()` ne commence qu'après l'exécution de `beforeLoad()` de tous les plugins. Convient pour enregistrer des ressources, des interfaces API, des services et d'autres logiques métier essentielles. |
-| **install()**             | Lors de la première activation du plugin | Cette méthode n'est exécutée qu'une seule fois, lors de la première activation du plugin. Elle est généralement utilisée pour initialiser les structures de tables de base de données, insérer des données initiales et d'autres logiques d'installation. |
-| **afterEnable()**         | Après l'activation du plugin | Cette méthode est exécutée chaque fois qu'un plugin est activé. Elle peut être utilisée pour démarrer des tâches planifiées, enregistrer des tâches récurrentes, établir des connexions et d'autres actions post-activation. |
-| **afterDisable()**        | Après la désactivation du plugin | Cette méthode est exécutée lorsqu'un plugin est désactivé. Elle peut être utilisée pour nettoyer les ressources, arrêter les tâches, fermer les connexions et d'autres travaux de nettoyage. |
-| **remove()**              | Lors de la suppression du plugin | Cette méthode est exécutée lorsque le plugin est complètement supprimé. Elle est utilisée pour la logique de désinstallation, comme la suppression de tables de base de données, le nettoyage de fichiers, etc. |
-| **handleSyncMessage(message)** | Synchronisation des messages en déploiement multi-nœuds | Lorsque l'application fonctionne en mode multi-nœuds, cette méthode est utilisée pour traiter les messages synchronisés depuis d'autres nœuds. |
+| Méthode du cycle de vie | Moment d'exécution | Description |
+|--------------|----------|------|
+| **staticImport()** | Avant le chargement du plugin | Méthode statique de la classe, exécutée lors de la phase d'initialisation indépendante de l'état de l'application ou du plugin ; sert aux travaux d'initialisation qui ne dépendent pas de l'instance du plugin. |
+| **afterAdd()** | Immédiatement après l'ajout du plugin au PluginManager | À ce stade, l'instance du plugin est créée, mais tous les plugins ne sont pas encore complètement initialisés ; vous pouvez effectuer quelques initialisations de base. |
+| **beforeLoad()** | Avant le `load()` de tous les plugins | À ce stade, vous pouvez accéder à toutes les **instances de plugins activés**. Idéal pour enregistrer des modèles de base de données, écouter des événements de base de données, enregistrer des middlewares et autres travaux de préparation. |
+| **load()** | Lors du chargement du plugin | `load()` ne commence à s'exécuter qu'une fois que tous les `beforeLoad()` des plugins ont fini de s'exécuter. Idéal pour enregistrer la logique métier centrale comme les ressources, les interfaces API, etc. — par exemple en enregistrant une [API REST personnalisée](./resource-manager.md) via `resourceManager`. **Attention :** durant la phase `load()`, la base de données n'a pas encore terminé sa synchronisation et ne permet pas d'effectuer des requêtes ou des écritures — les opérations de base de données doivent être placées dans `install()` ou dans les fonctions de traitement des requêtes. |
+| **install()** | Lors de la première activation du plugin | S'exécute une seule fois, lors de la première activation du plugin ; généralement utilisé pour la logique d'installation comme l'initialisation des structures de tables de la base de données, l'insertion des données initiales, etc. `install()` ne s'exécute qu'à la première activation — si une version ultérieure doit modifier la structure des tables ou migrer les données, utilisez les [Migrations de mise à niveau](./migration.md). |
+| **afterEnable()** | Après l'activation du plugin | S'exécute chaque fois que le plugin est activé ; permet de démarrer des tâches planifiées, d'établir des connexions, etc. |
+| **afterDisable()** | Après la désactivation du plugin | Permet de nettoyer les ressources, d'arrêter les tâches, de fermer les connexions, etc. |
+| **remove()** | Lors de la suppression du plugin | Sert à écrire la logique de désinstallation, par exemple supprimer les tables de la base de données, nettoyer les fichiers, etc. |
+| **handleSyncMessage(message)** | Synchronisation des messages en déploiement multi-nœuds | Lorsque l'application fonctionne en mode multi-nœuds, traite les messages synchronisés depuis d'autres nœuds. |
 
-### Ordre d'exécution
+### Description de l'ordre d'exécution
 
-Voici le déroulement typique de l'exécution des méthodes de cycle de vie :
+Flux d'exécution typique des méthodes du cycle de vie :
 
-1.  **Phase d'initialisation statique** : `staticImport()`
-2.  **Phase de démarrage de l'application** : `afterAdd()` → `beforeLoad()` → `load()`
-3.  **Phase de première activation du plugin** : `afterAdd()` → `beforeLoad()` → `load()` → `install()`
-4.  **Phase de réactivation du plugin** : `afterAdd()` → `beforeLoad()` → `load()`
-5.  **Phase de désactivation du plugin** : `afterDisable()` est exécuté lorsqu'un plugin est désactivé.
-6.  **Phase de suppression du plugin** : `remove()` est exécuté lorsqu'un plugin est supprimé.
+1. **Phase d'initialisation statique** : `staticImport()`
+2. **Phase de démarrage de l'application** : `afterAdd()` → `beforeLoad()` → `load()`
+3. **Phase de première activation du plugin** : `afterAdd()` → `beforeLoad()` → `load()` → `install()`
+4. **Phase de réactivation du plugin** : `afterAdd()` → `beforeLoad()` → `load()`
+5. **Phase de désactivation du plugin** : `afterDisable()` est exécuté lors de la désactivation du plugin
+6. **Phase de suppression du plugin** : `remove()` est exécuté lors de la suppression du plugin
 
-## L'objet `app` et ses membres
+## app et ses membres associés
 
-Lors du développement de plugins, vous pouvez accéder à diverses API fournies par l'instance de l'application via `this.app`. C'est l'interface principale pour étendre les fonctionnalités des plugins. L'objet `app` contient les différents modules fonctionnels du système. Les développeurs peuvent utiliser ces modules dans les méthodes de cycle de vie des plugins pour implémenter leurs besoins métier.
+Lors du développement de plugins, `this.app` permet d'accéder aux différentes API fournies par l'instance de l'application — c'est le point d'entrée central pour étendre les fonctionnalités via les plugins. L'objet `app` contient les différents modules fonctionnels du système, et vous pouvez les utiliser dans les méthodes du cycle de vie du plugin.
 
-### Liste des membres de l'objet `app`
+### Liste des membres de app
 
-| Nom du membre | Type/Module | Objectif principal |
-|---------------|-------------|--------------------|
-| **logger** | `Logger` | Enregistre les logs système, prend en charge différents niveaux (info, warn, error, debug) de sortie de log, facilitant le débogage et la surveillance. Voir [Logs](./logger.md) |
-| **db** | `Database` | Fournit des opérations de couche ORM, l'enregistrement de modèles, l'écoute d'événements, le contrôle des transactions et d'autres fonctions liées à la base de données. Voir [Base de données](./database.md). |
-| **resourceManager** | `ResourceManager` | Utilisé pour enregistrer et gérer les ressources d'API REST et les gestionnaires d'opérations. Voir [Gestionnaire de ressources](./resource-manager.md). |
-| **acl** | `ACL` | Couche de contrôle d'accès, utilisée pour définir les permissions, les rôles et les politiques d'accès aux ressources, implémentant un contrôle d'accès granulaire. Voir [Contrôle d'accès (ACL)](./acl.md). |
-| **cacheManager** | `CacheManager` | Gère le cache au niveau du système, prend en charge Redis, le cache en mémoire et d'autres backends de cache pour améliorer les performances de l'application. Voir [Cache](./cache.md) |
-| **cronJobManager** | `CronJobManager` | Utilisé pour enregistrer, démarrer et gérer les tâches planifiées, prend en charge la configuration d'expressions Cron. Voir [Tâches planifiées](./cron-job-manager.md) |
-| **i18n** | `I18n` | Support de l'internationalisation, fournit des fonctionnalités de traduction multilingue et de localisation, facilitant le support multilingue pour les plugins. Voir [Internationalisation](./i18n.md) |
-| **cli** | `CLI` | Gère l'interface de ligne de commande, enregistre et exécute des commandes personnalisées, étend les fonctionnalités de la CLI de NocoBase. Voir [Ligne de commande](./command.md) |
-| **dataSourceManager** | `DataSourceManager` | Gère plusieurs instances de **source de données** et leurs connexions, prend en charge les scénarios multi-sources de données. Voir [Gestion des sources de données](./collections.md) |
-| **pm** | `PluginManager` | **Gestionnaire de plugins**, utilisé pour charger, activer, désactiver et supprimer dynamiquement les plugins, gérer les dépendances entre plugins. |
+| Nom du membre | Type / Module | Usage principal |
+|-----------|------------|-----------|
+| **logger** | `Logger` | Enregistre les journaux système ; prend en charge les niveaux info, warn, error, debug, etc. Voir [Logger](./logger.md). |
+| **db** | `Database` | Opérations de la couche ORM, enregistrement de modèles, écoute d'événements, contrôle des transactions, etc. Voir [Database](./database.md). |
+| **resourceManager** | `ResourceManager` | Enregistre et gère les ressources d'API REST et leurs handlers d'opérations. Voir [ResourceManager](./resource-manager.md). |
+| **acl** | `ACL` | Définit les autorisations, les rôles et les politiques d'accès aux ressources. Voir [ACL](./acl.md). |
+| **cacheManager** | `CacheManager` | Gère le cache au niveau du système, prend en charge plusieurs backends comme Redis, le cache en mémoire, etc. Voir [Cache](./cache.md). |
+| **cronJobManager** | `CronJobManager` | Enregistre et gère les tâches planifiées, prend en charge les expressions Cron. Voir [CronJobManager](./cron-job-manager.md). |
+| **i18n** | `I18n` | Traduction multilingue et localisation. Voir [I18n](./i18n.md). |
+| **cli** | `CLI` | Enregistre des commandes personnalisées, étend la CLI NocoBase. Voir [Command](./command.md). |
+| **dataSourceManager** | `DataSourceManager` | Gère plusieurs instances de sources de données et leurs connexions. Voir [DataSourceManager](./data-source-manager.md). |
+| **pm** | `PluginManager` | Charge dynamiquement, active, désactive, supprime des plugins ; gère les dépendances inter-plugins. |
 
-> Astuce : Pour une utilisation détaillée de chaque module, veuillez vous référer aux chapitres de documentation correspondants.
+:::tip Astuce
+
+Pour l'utilisation détaillée de chaque module, veuillez vous référer aux chapitres de documentation correspondants.
+
+:::
+
+## Liens connexes
+
+- [Aperçu du développement serveur](./index.md) — vue d'ensemble et navigation des modules serveur
+- [Collections](./collections.md) — définir ou étendre la structure des collections via du code
+- [Database](./database.md) — CRUD, Repository, transactions et événements de base de données
+- [Migration](./migration.md) — scripts de migration de données lors des mises à niveau de plugin
+- [Event](./event.md) — écoute et traitement des événements au niveau de l'application et de la base de données
+- [ResourceManager](./resource-manager.md) — enregistrer des API REST et opérations personnalisées
+- [Écrire votre premier plugin](../write-your-first-plugin.md) — créer un plugin complet de zéro
+- [Logger](./logger.md) — enregistrer des journaux système
+- [ACL](./acl.md) — définir des autorisations et politiques d'accès
+- [Cache](./cache.md) — gérer le cache au niveau du système
+- [CronJobManager](./cron-job-manager.md) — enregistrer et gérer des tâches planifiées
+- [I18n](./i18n.md) — traduction multilingue
+- [Command](./command.md) — enregistrer des commandes CLI personnalisées
+- [DataSourceManager](./data-source-manager.md) — gérer plusieurs sources de données

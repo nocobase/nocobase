@@ -1,0 +1,21 @@
+{
+  "headline": "Tutoriel de prise en main de NocoBase 2.0 : construire un système de tickets IT à partir de zéro",
+  "description": "Construisez un système de tickets IT à partir de zéro avec NocoBase 2.0, en couvrant la modélisation des données, la conception des pages, le contrôle des permissions, les workflows et le tableau de bord, le tout sans écrire de code.",
+  "keywords": "NocoBase, no-code, low-code, système de tickets IT, HelpDesk, open source, déploiement on-premise",
+  "datePublished": "2026-03-11",
+  "dateModified": "2026-03-16",
+  "faq": [
+    {
+      "q": "Pour quels scénarios NocoBase est-il adapté ?",
+      "a": "NocoBase convient aux outils internes d'entreprise, aux systèmes de gestion de données, aux processus d'approbation, au CRM, à l'ERP et à tout scénario nécessitant une personnalisation flexible, avec prise en charge du déploiement on-premise."
+    },
+    {
+      "q": "Quelles sont les bases requises pour suivre ce tutoriel ?",
+      "a": "Aucune compétence en programmation n'est nécessaire, mais des connaissances informatiques de base sont recommandées. Le tutoriel introduit progressivement les concepts de tables de données, champs et relations."
+    },
+    {
+      "q": "Quelles sont les limites de la version gratuite ?",
+      "a": "Les fonctionnalités essentielles sont entièrement gratuites et open source. La version commerciale propose des plugins avancés supplémentaires et un support technique."
+    }
+  ]
+}

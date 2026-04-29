@@ -47,6 +47,16 @@
             "type": "custom-link",
             "label": "Graphique",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Calendar",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kanban",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },
@@ -59,6 +69,11 @@
             "type": "custom-link",
             "label": "Formulaire",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Arbre",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -483,8 +498,18 @@
           },
           {
             "type": "custom-link",
+            "label": "Requête personnalisée",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },
