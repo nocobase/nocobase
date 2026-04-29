@@ -32,28 +32,6 @@ const cardCss = css`
   word-break: break-all;
   word-wrap: break-word;
 
-  .ant-card-body {
-    padding: 16px;
-  }
-  .nb-row-divider {
-    height: 16px;
-    margin-top: -16px;
-    &:last-child {
-      margin-top: 0;
-    }
-  }
-  .ant-formily-item {
-    margin-bottom: 12px;
-  }
-  .nb-grid-row:last-of-type {
-    .nb-grid-col {
-      .nb-form-item:last-of-type {
-        .ant-formily-item {
-          margin-bottom: 0;
-        }
-      }
-    }
-  }
   .ant-formily-item-control .ant-space-item: {
     whitespace: normal;
     wordbreak: break-all;
