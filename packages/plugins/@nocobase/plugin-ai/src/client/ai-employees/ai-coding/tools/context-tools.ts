@@ -295,14 +295,19 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         const editorState = typeof args?.code === 'string' ? null : getEditorState();
         const code = args?.code ?? editorState.code;
         const content = await ctx.previewRunJS(code);
+        let ranCurrentEditor = false;
         if (editorState && isPreviewSuccess(content) && typeof editorState.editorRef.run === 'function') {
           await editorState.editorRef.run();
+          ranCurrentEditor = true;
         }
         return {
           status: 'success',
           content: {
             ...content,
             version: editorState?.version,
+            userReminder: ranCurrentEditor
+              ? 'The current editor code has been validated and run, but it has not been saved permanently. Remind the user to click the save button manually.'
+              : undefined,
           },
         };
       } catch (error: any) {

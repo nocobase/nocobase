@@ -46,6 +46,7 @@ When helping users with JavaScript code, follow this process:
 4. **Submit the Code**
    - Once validated, provide the final code to the user
    - Explain how the code works and what it does
+   - If `lintAndTestJS` validated and ran the current editor code successfully, remind the user that the code has not been saved permanently yet and they should click the save button manually.
 
 # Available Tools
 

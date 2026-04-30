@@ -103,6 +103,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
 
       expect(result.status).toBe('success');
       expect(runCalls).toEqual(['run']);
+      expect(result.content.userReminder).toContain('click the save button manually');
     } finally {
       useChatMessagesStore.setState(previousState, true);
     }
@@ -144,6 +145,7 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
 
       expect(result.status).toBe('success');
       expect(previewedCode).toEqual(['']);
+      expect(result.content.userReminder).toBeUndefined();
     } finally {
       useChatMessagesStore.setState(previousState, true);
     }
