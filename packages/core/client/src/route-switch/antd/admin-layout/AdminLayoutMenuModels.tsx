@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { ADMIN_LAYOUT_MODEL_UID } from '@nocobase/client-v2';
 import { FlowModel } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
@@ -138,6 +139,15 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return this.flowRegistry.getFlows().size;
   }
 
+  hasPersistableMenuLinkageRules() {
+    const params = this.getStepParams('menuSettings', 'linkageRules') as { value?: any[] } | undefined;
+    return Array.isArray(params?.value) && params.value.length > 0;
+  }
+
+  hasCurrentPersistedMenuState() {
+    return this.getCurrentPersistedInstanceFlowCount() > 0 || this.hasPersistableMenuLinkageRules();
+  }
+
   buildRouteOptionsWithPersistedFlowFlag(hasPersistedMenuInstanceFlow: boolean) {
     const route = this.getRoute();
     const nextOptions = {
@@ -163,7 +173,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return;
     }
 
-    const hasPersistedMenuInstanceFlow = this.getCurrentPersistedInstanceFlowCount() > 0;
+    const hasPersistedMenuInstanceFlow = this.hasCurrentPersistedMenuState();
     if (this.hasPersistedMenuInstanceFlowFlag(route) === hasPersistedMenuInstanceFlow) {
       return;
     }
@@ -204,6 +214,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       if (this.isCreationSession()) {
         return;
       }
+      let shouldRerenderAfterHydrate = false;
 
       const repository = this.flowEngine.modelRepository;
       if (!repository?.findOne) {
@@ -217,6 +228,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
       if (data.stepParams && typeof data.stepParams === 'object') {
         this.setStepParams(data.stepParams);
+        shouldRerenderAfterHydrate = this.hasPersistableMenuLinkageRules();
       }
 
       if (data.flowRegistry && typeof data.flowRegistry === 'object') {
@@ -235,13 +247,15 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           return typeof flow.on === 'string' ? flow.on === 'beforeRender' : flow.on?.eventName === 'beforeRender';
         });
 
-        if (hasBeforeRenderFlow) {
-          void this.rerender();
-        }
+        shouldRerenderAfterHydrate = shouldRerenderAfterHydrate || hasBeforeRenderFlow;
+      }
 
-        if (!this.hasPersistedMenuInstanceFlowFlag() && this.getCurrentPersistedInstanceFlowCount() > 0) {
-          await this.syncPersistedFlowRouteFlag();
-        }
+      if (shouldRerenderAfterHydrate) {
+        void this.rerender();
+      }
+
+      if (!this.hasPersistedMenuInstanceFlowFlag() && this.hasCurrentPersistedMenuState()) {
+        await this.syncPersistedFlowRouteFlag();
       }
     })().finally(() => {
       this.persistedStateHydrated = true;
@@ -260,6 +274,14 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const currentFlowCount = this.flowRegistry.getFlows().size;
     const initialFlowCount = Object.keys((this as any)._options?.flowRegistry || {}).length;
     return currentFlowCount > 0 || initialFlowCount > 0;
+  }
+
+  setHidden(value: boolean) {
+    const previous = this.hidden;
+    super.setHidden(value);
+    if (previous !== this.hidden) {
+      (this.flowEngine.getModel?.(ADMIN_LAYOUT_MODEL_UID) as any)?.refreshMenuRouteTree?.();
+    }
   }
 
   async insertRouteSchema(schema: Record<string, any>) {
@@ -463,9 +485,9 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
     // 菜单基础设置继续直接保存到 route repository；
     // 只有实例事件流需要回退到 FlowModel 默认持久化链路。
-    const currentPersistedInstanceFlowCount = this.getCurrentPersistedInstanceFlowCount();
+    const hasCurrentPersistedMenuState = this.hasCurrentPersistedMenuState();
 
-    if (currentPersistedInstanceFlowCount > 0) {
+    if (hasCurrentPersistedMenuState) {
       await super.saveStepParams();
     } else if (this.hasPersistedMenuInstanceFlowFlag()) {
       await this.destroyPersistedState();
@@ -547,7 +569,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         name,
         icon,
         path: getAdminLayoutMenuVirtualPath('link', identity),
-        hideInMenu: route.hideInMenu,
+        hideInMenu: route.hideInMenu || (!options.designable && this.hidden),
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,
@@ -561,7 +583,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         icon,
         path: `/admin/${route.schemaUid}`,
         redirect: `/admin/${route.schemaUid}`,
-        hideInMenu: route.hideInMenu,
+        hideInMenu: route.hideInMenu || (!options.designable && this.hidden),
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,
@@ -593,7 +615,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           children[0]?.key === 'x-designer-button'
             ? undefined
             : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || route.id}`,
-        hideInMenu: route.hideInMenu,
+        hideInMenu: route.hideInMenu || (!options.designable && this.hidden),
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,
@@ -700,6 +722,10 @@ AdminLayoutMenuItemModel.registerFlow({
           hideInMenu: !!params.hideInMenu,
         });
       },
+    },
+    linkageRules: {
+      use: 'menuLinkageRules',
+      hideInSettings: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ctx.model.isCreationSession(),
     },
     moveTo: {
       title: 'Move to',

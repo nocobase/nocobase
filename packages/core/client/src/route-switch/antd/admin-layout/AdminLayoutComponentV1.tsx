@@ -395,6 +395,7 @@ export const AdminLayoutComponent = observer((props: any) => {
   const customToken = token as CustomToken;
   const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
   const isMobileSider = isMobileLayout || isMobileViewport;
+  const menuRouteRefreshVersion = adminLayoutModel?.menuRouteRefreshVersion || 0;
   const [collapsed, setCollapsed] = useState(isMobileSider);
   const [route, setRoute] = useState<{ path: string; children: AdminLayoutMenuNode[] }>({
     path: '/',
@@ -499,7 +500,7 @@ export const AdminLayoutComponent = observer((props: any) => {
       children: [],
     };
     setRoute(nextRoute);
-  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
+  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, menuRouteRefreshVersion, t]);
 
   useEffect(() => {
     const syncId = ++flowSettingsSyncRef.current;

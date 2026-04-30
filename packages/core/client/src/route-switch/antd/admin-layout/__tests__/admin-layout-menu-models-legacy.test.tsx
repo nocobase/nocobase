@@ -8,6 +8,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ADMIN_LAYOUT_MODEL_UID } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { waitFor } from '@testing-library/react';
 import { AdminLayoutMenuItemModel } from '../AdminLayoutMenuModels';
@@ -414,6 +415,172 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
         hasPersistedMenuInstanceFlow: true,
       },
     });
+  });
+
+  it('should expose menu linkage rules only for existing menu items in client v1', async () => {
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    expect(menuSettingsFlow?.steps?.linkageRules?.use).toBe('menuLinkageRules');
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-linkage-settings',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+    const creationModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-linkage-creation-settings',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'link',
+          source: 'header',
+        },
+      },
+    });
+    const hideInSettings = menuSettingsFlow?.steps?.linkageRules?.hideInSettings as
+      | ((ctx: any) => Promise<boolean>)
+      | undefined;
+
+    await expect(hideInSettings?.({ model })).resolves.toBe(false);
+    await expect(hideInSettings?.({ model: creationModel })).resolves.toBe(true);
+  });
+
+  it('should persist menu linkage rules through flowModels and route flag in client v1', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-linkage-persist',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    model.setStepParams('menuSettings', 'linkageRules', {
+      value: [
+        { key: 'r1', title: 'Hide menu item', enable: true, condition: { logic: '$and', items: [] }, actions: [] },
+      ],
+    });
+
+    await model.saveStepParams();
+
+    expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+  });
+
+  it('should clear persisted menu linkage rules when no persisted state remains in client v1', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const destroy = vi.fn().mockResolvedValue(true);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.setModelRepository({ destroy } as any);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-linkage-clear',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        }),
+      },
+    });
+
+    model.setStepParams('menuSettings', 'linkageRules', { value: [] });
+    await model.saveStepParams();
+
+    expect(saveModel).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledWith('legacy-menu-item-linkage-clear');
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: undefined,
+    });
+  });
+
+  it('should restore menu linkage rules, rerender, and backfill route flag in client v1', async () => {
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'legacy-menu-item-linkage-hydrate',
+      use: 'AdminLayoutMenuItemModel',
+      stepParams: {
+        menuSettings: {
+          linkageRules: {
+            value: [
+              {
+                key: 'r1',
+                title: 'Persisted linkage',
+                enable: true,
+                condition: { logic: '$and', items: [] },
+                actions: [],
+              },
+            ],
+          },
+        },
+      },
+    });
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    const rerenderSpy = vi.spyOn(AdminLayoutMenuItemModel.prototype, 'rerender').mockResolvedValue(undefined as any);
+
+    engine.context.routeRepository.updateRoute = updateRoute;
+    engine.setModelRepository({ findOne } as any);
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-linkage-hydrate',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    await model.hydrateLegacyPersistedStateIfCurrentPath('/admin/page-1');
+
+    expect(model.getStepParams('menuSettings', 'linkageRules')).toMatchObject({
+      value: [{ key: 'r1' }],
+    });
+    expect(rerenderSpy).toHaveBeenCalledTimes(1);
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+  });
+
+  it('should hide menu route dynamically in runtime mode and refresh layout route tree in client v1', () => {
+    const adminLayoutModel = engine.createModel<AdminLayoutModelV1>({
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      use: AdminLayoutModelV1,
+    });
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-menu-item-dynamic-hidden',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    const refreshBefore = adminLayoutModel.menuRouteRefreshVersion;
+
+    model.setHidden(true);
+    const runtimeRoute = model.toProLayoutRoute({
+      designable: false,
+      isMobile: false,
+      t: (title) => title,
+    });
+    const designableRoute = model.toProLayoutRoute({
+      designable: true,
+      isMobile: false,
+      t: (title) => title,
+    });
+
+    expect(runtimeRoute?.hideInMenu).toBe(true);
+    expect(designableRoute?.hideInMenu).toBe(false);
+    expect(adminLayoutModel.menuRouteRefreshVersion).toBe(refreshBefore + 1);
   });
 
   it('should preserve persisted flow flag when updating menu options in client v1', async () => {
