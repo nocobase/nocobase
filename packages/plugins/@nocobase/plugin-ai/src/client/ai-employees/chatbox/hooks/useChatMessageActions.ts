@@ -179,7 +179,7 @@ export const useChatMessageActions = () => {
       content: string;
       reasoningContent: string;
       reasoningStatus?: string;
-      from?: string;
+      from?: Message['content']['from'];
       timer?: ReturnType<typeof setTimeout>;
     };
 
@@ -244,7 +244,9 @@ export const useChatMessageActions = () => {
         reasoningContent: '',
       };
       pending.updateLast = store.updateLast;
-      pending.from = update.from ?? pending.from;
+      if (update.from === 'main-agent' || update.from === 'sub-agent') {
+        pending.from = update.from;
+      }
       pending.content += update.content ?? '';
       pending.reasoningContent += update.reasoningContent ?? '';
       pending.reasoningStatus = update.reasoningStatus ?? pending.reasoningStatus;
