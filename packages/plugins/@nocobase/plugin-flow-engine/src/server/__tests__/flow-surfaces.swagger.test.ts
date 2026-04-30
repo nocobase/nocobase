@@ -573,10 +573,13 @@ describe('flowSurfaces swagger', () => {
       'reuses a same-title group if the match is unique',
     );
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
-      'Same-title reuse is title-only',
+      'group metadata is ignored',
     );
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.icon.description).toContain(
       'actually creates a new menu group',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.icon.description).toContain(
+      'Ignored when routeId is present',
     );
     expect(schemas.FlowSurfaceApplyBlueprintResponse.properties.surface.$ref).toBe(
       '#/components/schemas/FlowSurfaceGetResponse',
@@ -652,9 +655,10 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintPath.description).toContain('removes trailing old tabs');
     expect(applyBlueprintPath.description).toContain('appends extra new tabs');
     expect(applyBlueprintPath.description).toContain('navigation.group.routeId');
+    expect(applyBlueprintPath.description).toContain('routeId` has the highest priority');
     expect(applyBlueprintPath.description).toContain('same-title group');
     expect(applyBlueprintPath.description).toContain('does not mutate existing group metadata');
-    expect(applyBlueprintPath.description).toContain('Same-title reuse is title-only');
+    expect(applyBlueprintPath.description).toContain('ignored when an existing group is reused');
     expect(applyBlueprintPath.description).toContain('updateMenu');
     expect(applyBlueprintPath.description).toContain('top-level `reaction.items[]`');
     expect(applyBlueprintPath.description).toContain('whole-page interaction authoring');
