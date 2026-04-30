@@ -1,5 +1,6 @@
 FROM node:22-bookworm as app-builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
+ARG NB_CLI_VERSION=2.1.0-beta.24
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
@@ -19,6 +20,9 @@ expect {
 }
 EOD
 
+RUN npm install -g @nocobase/cli@${NB_CLI_VERSION} --registry $VERDACCIO_URL --prefix /opt/nb && \
+  npm cache clean --force
+
 RUN yarn config set registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
@@ -37,6 +41,8 @@ COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
 
 FROM node:22-bookworm-slim as runtime
 ARG COMMIT_HASH
+
+ENV PATH="/opt/nb/bin:${PATH}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -60,10 +66,10 @@ RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY nocobase.tar.gz /app/nocobase.tar.gz
 COPY dist.tar.gz /app/nocobase-docs.tar.gz
+COPY --from=app-builder /opt/nb /opt/nb
 
 WORKDIR /app/nocobase
 
-RUN npm install -g @nocobase/cli
 RUN mkdir -p /app/nocobase/storage/uploads/ && \
   echo "$COMMIT_HASH" > /app/nocobase/storage/uploads/COMMIT_HASH && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt

@@ -905,7 +905,7 @@ test('license plugins sync supports dry-run previews', async () => {
 
     expect(log.mock.calls[0]?.[0]).toContain('Commercial plugin sync preview');
     expect(log.mock.calls[1]?.[0]).toContain('Version: 2.1.0-beta.24');
-    expect(log.mock.calls[2]?.[0]).toContain('/plugins');
+    expect(log.mock.calls[2]?.[0]).toContain(path.join(storagePath, 'plugins'));
     expect(log.mock.calls[3]?.[0]).toContain('Result:');
     expect(log.mock.calls[3]?.[0]).toContain('1 installed');
     expect(log.mock.calls[3]?.[0]).toContain('1 removed');
@@ -972,7 +972,7 @@ test('license plugins sync outputs per-plugin details in verbose mode', async ()
 
     expect(log.mock.calls[0]?.[0]).toContain('Commercial plugin sync preview');
     expect(log.mock.calls[1]?.[0]).toContain('Version: 2.1.0-beta.24');
-    expect(log.mock.calls[2]?.[0]).toContain('/plugins');
+    expect(log.mock.calls[2]?.[0]).toContain(path.join(storagePath, 'plugins'));
     expect(log.mock.calls[3]?.[0]).toContain('@nocobase/plugin-b');
     expect(log.mock.calls[4]?.[0]).toContain(path.join(storagePath, 'plugins', '@nocobase/plugin-b'));
     expect(log.mock.calls[5]?.[0]).toContain('@nocobase/plugin-a');
@@ -1214,7 +1214,7 @@ test('license plugins clean previews downloaded commercial plugins', async () =>
     await LicensePluginsClean.prototype.run.call(command);
 
     expect(log.mock.calls[0]?.[0]).toContain('Commercial plugin clean preview');
-    expect(log.mock.calls[1]?.[0]).toContain('/plugins');
+    expect(log.mock.calls[1]?.[0]).toContain(path.join(storagePath, 'plugins'));
     expect(log.mock.calls[2]?.[0]).toContain('Result:');
     expect(log.mock.calls[2]?.[0]).toContain('1 removed');
     expect(log.mock.calls[2]?.[0]).toContain('1 skipped');
@@ -1283,7 +1283,7 @@ test('license plugins clean removes downloaded commercial plugins', async () => 
     await LicensePluginsClean.prototype.run.call(command);
 
     await expect(readFile(path.join(downloadedPluginDir, 'package.json'), 'utf8')).rejects.toThrow();
-    expect(log.mock.calls[1]?.[0]).toContain('/plugins');
+    expect(log.mock.calls[1]?.[0]).toContain(path.join(storagePath, 'plugins'));
     expect(log.mock.calls[2]?.[0]).toContain('@nocobase/plugin-a');
     expect(log.mock.calls[3]?.[0]).toContain(path.join(storagePath, 'plugins', '@nocobase/plugin-a'));
     expect(log.mock.calls[4]?.[0]).toContain('symlink: not found');
