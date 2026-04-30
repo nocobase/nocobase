@@ -6,11 +6,11 @@
       {
         "type": "custom-link",
         "label": "Серверные логи",
-        "link": "/log-and-monitor/logger"
+        "link": "/log-and-monitor/logger/"
       },
       {
         "type": "custom-link",
-        "label": "Серверные логи, логи аудита, история записей",
+        "label": "Серверные логи, журнал аудита, история записей",
         "link": "/log-and-monitor/logger/overview"
       }
     ]
@@ -22,7 +22,7 @@
       {
         "type": "custom-link",
         "label": "Инструкция по использованию",
-        "link": "/log-and-monitor/telemetry"
+        "link": "/log-and-monitor/telemetry/"
       },
       {
         "type": "custom-link",

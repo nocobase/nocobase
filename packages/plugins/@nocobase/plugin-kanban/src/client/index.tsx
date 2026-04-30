@@ -30,6 +30,7 @@ import {
   KanbanCardViewActionModel,
   KanbanGroupOptionsTable,
   KanbanGroupingSelector,
+  KanbanCreateSortFieldSelect,
 } from './models';
 
 Kanban.Card = KanbanCard;
@@ -93,8 +94,12 @@ class PluginKanbanClient extends Plugin {
 
   async load() {
     this.app.use(KanbanPluginProvider);
-    this.app.addComponents({ KanbanGroupingSelector, KanbanGroupOptionsTable });
-    this.flowEngine.flowSettings.registerComponents({ KanbanGroupingSelector, KanbanGroupOptionsTable });
+    this.app.addComponents({ KanbanGroupingSelector, KanbanGroupOptionsTable, KanbanCreateSortFieldSelect });
+    this.flowEngine.flowSettings.registerComponents({
+      KanbanGroupingSelector,
+      KanbanGroupOptionsTable,
+      KanbanCreateSortFieldSelect,
+    });
     this.app.schemaInitializerManager.add(kanbanCardInitializers_deprecated);
     this.app.schemaInitializerManager.add(kanbanCardInitializers);
     this.app.schemaInitializerManager.add(kanbanActionInitializers_deprecated);

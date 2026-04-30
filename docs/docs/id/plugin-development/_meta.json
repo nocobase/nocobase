@@ -1,0 +1,286 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Memulai Cepat",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar Plugin Development",
+        "link": "/plugin-development/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Menulis Plugin Pertama",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Pengembangan Plugin dengan AI",
+        "link": "/plugin-development/ai-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "Struktur Direktori Proyek",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pengembangan Server",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/plugin-development/server/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections Tabel Data",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database Operasi Database",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager Manajemen Sumber Data",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager Manajemen Resource",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL Kontrol Hak Akses",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middleware",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cache",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context Konteks Request",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration Skrip Upgrade",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger Log",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Telemetry Telemetri",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "i18n Internasionalisasi",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command Command Line",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "CronJobManager Manajemen Tugas Terjadwal",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test Pengujian",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pengembangan Client",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/plugin-development/client/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "Pengembangan Component",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ikhtisar",
+            "link": "/plugin-development/client/component/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes Gaya dan Tema",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n Internasionalisasi",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Context",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ikhtisar",
+            "link": "/plugin-development/client/ctx/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kapabilitas Umum",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ikhtisar",
+            "link": "/plugin-development/client/flow-engine/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ekstensi Block",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ekstensi Field",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ekstensi Action",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Contoh Praktis Plugin",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ikhtisar",
+            "link": "/plugin-development/client/examples/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Membuat Halaman Pengaturan Plugin",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "Membuat Block Tampilan Kustom",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Membuat Component Field Kustom",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Membuat Tombol Action Kustom",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "Membuat Plugin Manajemen Data Front-Back End",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Lampiran",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "FAQ & Panduan Troubleshooting",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cheatsheet Plugin Development",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Lainnya",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Daftar Bahasa",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "Manajemen Dependensi",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Build & Packaging",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

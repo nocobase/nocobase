@@ -26,6 +26,7 @@ export {
   ActionGroupModel,
   ActionModel,
   ActionSceneEnum,
+  AddChildActionModel,
   AddNewActionModel,
   AssignFormModel,
   BlockGridModel,

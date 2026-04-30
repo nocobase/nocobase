@@ -15,6 +15,16 @@
     "label": "Установка"
   },
   {
+    "type": "dir",
+    "name": "guide",
+    "label": "Руководство пользователя"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "История изменений"
+  },
+  {
     "type": "file",
     "name": "v1",
     "label": "Старая версия CRM (v1)"

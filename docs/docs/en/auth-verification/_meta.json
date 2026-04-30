@@ -90,6 +90,16 @@
           },
           {
             "type": "custom-link",
+            "label": "WeCom",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
             "label": "API keys",
             "link": "/auth-verification/api-keys/"
           }

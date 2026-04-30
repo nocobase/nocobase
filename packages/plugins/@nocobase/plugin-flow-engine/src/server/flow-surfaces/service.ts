@@ -63,7 +63,6 @@ import {
   type FlowSurfaceApplyBlueprintReplaceTargetInfo,
 } from './blueprint';
 import { compileTabComposeValues } from './blueprint/compile-blocks';
-import { APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS } from './blueprint/private-utils';
 import {
   FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY,
   getFlowSurfaceDefaultBlockActions,
@@ -3503,19 +3502,6 @@ export class FlowSurfacesService {
     if (matchedRoutes.length > 1) {
       throwBadRequest(
         `flowSurfaces applyBlueprint navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing menu groups; pass navigation.group.routeId explicitly`,
-      );
-    }
-
-    const reusedMetadataFields = APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS.filter(
-      (key) => !_.isUndefined(document.navigation?.group?.[key]),
-    );
-    if (reusedMetadataFields.length) {
-      throwBadRequest(
-        `flowSurfaces applyBlueprint navigation.group.title '${groupTitle}' matched an existing menu group; do not also pass ${reusedMetadataFields
-          .map((key) => `navigation.group.${key}`)
-          .join(
-            ', ',
-          )} when reusing by title. Same-title reuse is title-only. Keep only navigation.group.title or use navigation.group.routeId for exact targeting, and call flowSurfaces:updateMenu separately if existing group metadata must change`,
       );
     }
 

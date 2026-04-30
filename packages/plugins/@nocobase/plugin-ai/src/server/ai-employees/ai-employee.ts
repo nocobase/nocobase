@@ -1469,9 +1469,14 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getAvailableAIEmployees() {
-    const availableAIEmployees = (await listAccessibleAIEmployees(this.ctx)).map((employee) =>
-      serializeEmployeeSummary(this.ctx, employee),
-    );
+    const specifiedToolNames: string[] =
+      this.employee.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
+    if (!specifiedToolNames.includes('dispatch-sub-agent-task')) {
+      return [];
+    }
+    const availableAIEmployees = (await listAccessibleAIEmployees(this.ctx))
+      .map((employee) => serializeEmployeeSummary(this.ctx, employee))
+      .filter((it) => it.username !== this.employee.username);
     return availableAIEmployees;
   }
 

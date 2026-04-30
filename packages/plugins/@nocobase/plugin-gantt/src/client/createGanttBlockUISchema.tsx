@@ -27,6 +27,7 @@ export const createGanttBlockUISchema = (options: {
       dataSource,
       action: 'list',
       fieldNames,
+      enableDragToReschedule: true,
       params: {
         paginate: false,
       },

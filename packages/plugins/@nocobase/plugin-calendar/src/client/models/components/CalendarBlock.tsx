@@ -49,7 +49,25 @@ interface Event {
   rawTitle?: string;
   start: Date;
   end: Date;
+  allDay?: boolean;
 }
+
+export const getCalendarEventDisplayRange = (eventStart: Dayjs, intervalTime: number, hasEndField: boolean) => {
+  if (hasEndField) {
+    return {
+      start: eventStart,
+      end: eventStart.add(intervalTime, 'millisecond'),
+      allDay: false,
+    };
+  }
+
+  const start = eventStart.clone().startOf('day');
+  return {
+    start,
+    end: eventStart.clone().endOf('day'),
+    allDay: true,
+  };
+};
 
 const WEEKS = ['month', 'week', 'day'] as View[];
 const LOCALES = {
@@ -93,6 +111,7 @@ const useCalendarEvents = (
   );
   const titleCollectionField = getCollectionField(fieldNames?.title);
   const labelUiSchema = titleCollectionField?.uiSchema;
+  const hasEndField = !!normalizeCalendarFieldPath(fieldNames?.end);
   const visibleRange = useMemo(() => getCalendarVisibleRange(date, view, weekStart), [date, view, weekStart]);
   const rangeStart = visibleRange.start;
   const rangeEnd = visibleRange.end;
@@ -109,7 +128,7 @@ const useCalendarEvents = (
     dataSource.forEach((item) => {
       const { cron, exclude = [] } = item;
       const start = dayjs(get(item, fieldNames.start) || dayjs());
-      const end = dayjs(get(item, fieldNames.end) || start);
+      const end = hasEndField ? dayjs(get(item, fieldNames.end) || start) : start;
       const intervalTime = end.diff(start, 'millisecond', true);
 
       const push = (eventStart: Dayjs = start.clone()) => {
@@ -147,12 +166,15 @@ const useCalendarEvents = (
           targetTitle?.TitleRenderer,
         );
 
+        const displayRange = getCalendarEventDisplayRange(eventStart, intervalTime, hasEndField);
+
         events.push({
           id: get(item, fieldNames.id || 'id'),
           colorFieldValue: get(item, fieldNames.colorFieldName),
           title: title || t('Untitle'),
-          start: eventStart.toDate(),
-          end: eventStart.add(intervalTime, 'millisecond').toDate(),
+          start: displayRange.start.toDate(),
+          end: displayRange.end.toDate(),
+          allDay: displayRange.allDay,
           rawTitle: get(item, fieldNames.title),
         });
       };
@@ -208,6 +230,7 @@ const useCalendarEvents = (
     fieldNames.start,
     fieldNames.title,
     getCollectionField,
+    hasEndField,
     labelUiSchema,
     parseExpression,
     plugin,

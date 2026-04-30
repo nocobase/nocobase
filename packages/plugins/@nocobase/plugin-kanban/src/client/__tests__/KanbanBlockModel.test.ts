@@ -83,6 +83,8 @@ describe('KanbanBlockModel.filterCollection', () => {
         groupTitleField: undefined,
         groupColorField: undefined,
         groupOptions: undefined,
+        dragEnabled: false,
+        dragSortBy: null,
       },
     });
   });
@@ -129,6 +131,8 @@ describe('KanbanBlockModel.filterCollection', () => {
           { value: 'done', label: 'Done' },
           { value: 'todo', label: 'Todo' },
         ],
+        dragEnabled: false,
+        dragSortBy: null,
       },
     });
   });
@@ -160,6 +164,20 @@ describe('KanbanBlockModel.filterCollection', () => {
         groupOptions: {
           required: true,
           'x-component': 'KanbanGroupingSelector',
+        },
+        dragEnabled: {
+          title: '{{t("Enable drag and drop sorting", {"ns":"kanban"})}}',
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+        dragSortBy: {
+          title: '{{t("Drag and drop sorting field", {"ns":"kanban"})}}',
+          'x-component': 'KanbanCreateSortFieldSelect',
+          'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            tooltip:
+              '{{t("Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.", {"ns":"kanban"})}}',
+          },
         },
       },
     });
@@ -533,12 +551,14 @@ describe('KanbanBlockModel.filterCollection', () => {
           groupField: {
             type: 'string',
             title: '{{t("Grouping field", {"ns":"kanban"})}}',
-            description:
-              '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
             required: true,
             enum: [],
             'x-component': 'Select',
             'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip:
+                '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
+            },
             'x-component-props': {
               options: [],
             },
@@ -565,17 +585,122 @@ describe('KanbanBlockModel.filterCollection', () => {
           groupOptions: {
             type: 'array',
             title: '{{t("Select group values", {"ns":"kanban"})}}',
-            description:
-              '{{t("The order of the selected values determines the kanban column order", {"ns":"kanban"})}}',
             required: true,
             'x-component': 'KanbanGroupingSelector',
             'x-decorator': 'FormItem',
             'x-validator': expect.any(Function),
             'x-reactions': expect.any(Array),
           },
+          dragEnabled: {
+            type: 'boolean',
+            title: '{{t("Enable drag and drop sorting", {"ns":"kanban"})}}',
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-reactions': expect.any(Array),
+          },
+          dragSortBy: {
+            type: 'string',
+            title: '{{t("Drag and drop sorting field", {"ns":"kanban"})}}',
+            'x-component': 'KanbanCreateSortFieldSelect',
+            'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip:
+                '{{t("Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.", {"ns":"kanban"})}}',
+            },
+            'x-component-props': {
+              allowClear: true,
+              useGroupingFormValues: true,
+            },
+            'x-reactions': expect.any(Array),
+          },
         },
       },
     });
+  });
+
+  test('grouping options stay visible but disabled until grouping field is selected', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+    const schema = step.uiSchema({
+      model: {
+        getGroupFieldCandidates: () => [{ label: 'Status', value: 'status' }],
+      },
+      collection: {
+        name: 'tasks',
+        getField: () => undefined,
+        getFields: () => [],
+      },
+    } as any);
+
+    expect(schema.grouping.properties.groupOptions['x-reactions']).toEqual([
+      {
+        dependencies: ['.groupField'],
+        fulfill: {
+          state: {
+            disabled: '{{!$deps[0]}}',
+          },
+        },
+      },
+    ]);
+  });
+
+  test('grouping settings helper text uses tooltip consistently', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+    const schema = step.uiSchema({
+      model: {
+        getGroupFieldCandidates: () => [{ label: 'Status', value: 'status' }],
+        translate: (key: string, options?: any) => (options?.ns === 'kanban' ? `中文:${key}` : key),
+      },
+      collection: {
+        name: 'tasks',
+        getField: () => undefined,
+        getFields: () => [],
+      },
+    } as any);
+
+    expect(schema.grouping.properties.groupField.description).toBeUndefined();
+    expect(schema.grouping.properties.groupField['x-decorator-props']).toMatchObject({
+      tooltip: '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
+    });
+    expect(schema.grouping.properties.groupOptions.description).toBeUndefined();
+    expect(schema.grouping.properties.groupOptions['x-decorator-props']).toBeUndefined();
+    expect(schema.grouping.properties.dragSortBy['x-decorator-props']).toMatchObject({
+      tooltip:
+        '{{t("Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.", {"ns":"kanban"})}}',
+    });
+  });
+
+  test('grouping drag sort field keeps quick-create context out of formily reactions', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+    const schema = step.uiSchema({
+      model: {
+        getGroupFieldCandidates: () => [{ label: 'Status', value: 'status' }],
+      },
+      collection: {
+        name: 'tasks',
+        dataSourceKey: 'main',
+        getField: () => undefined,
+        getFields: () => [],
+      },
+    } as any);
+
+    expect(schema.grouping.properties.dragSortBy['x-component-props']).toEqual({
+      allowClear: true,
+      useGroupingFormValues: true,
+    });
+    expect(schema.grouping.properties.dragSortBy['x-reactions']).toEqual([
+      {
+        dependencies: ['.dragEnabled'],
+        fulfill: {
+          state: {
+            hidden: '{{!$deps[0]}}',
+            required: '{{$deps[0]}}',
+          },
+        },
+      },
+    ]);
   });
 
   test('style and sorting settings expose inline menu controls while using the common default sorting modal', async () => {
@@ -613,6 +738,35 @@ describe('KanbanBlockModel.filterCollection', () => {
       } as any),
     ).toBe(true);
     expect(flow.steps.sorting).toBeUndefined();
+  });
+
+  test('drag sort field settings include saved field before collection field cache refreshes', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.dragSortBy;
+    const model: any = {
+      props: {
+        dragEnabled: true,
+        dragSortBy: 'status_sort',
+      },
+      getDragEnabled: () => true,
+      getDragSortFieldName: () => 'status_sort',
+      getSortFieldCandidates: () => [],
+      getGroupField: () => ({ name: 'status' }),
+      translate: (key: string) => key,
+    };
+
+    expect(step.uiSchema({ model }).dragSortBy.enum).toEqual([
+      {
+        label: 'status_sort',
+        value: 'status_sort',
+      },
+    ]);
+    expect((await step.uiMode({ model })).props.options).toEqual([
+      {
+        label: 'status_sort',
+        value: 'status_sort',
+      },
+    ]);
   });
 
   test('kanban block settings no longer expose card open mode', () => {
@@ -883,6 +1037,141 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
+  test('drag switch updates grouping settings params when disabled from block settings', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.dragEnabled;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const emitter = {
+      emit: vi.fn(),
+    };
+    const model: any = {
+      props: {
+        dragEnabled: true,
+        dragSortBy: 'status_sort',
+      },
+      stepParams: {
+        kanbanSettings: {
+          grouping: {
+            grouping: {
+              groupField: 'status',
+              groupOptions: [],
+              dragEnabled: true,
+              dragSortBy: 'status_sort',
+            },
+          },
+        },
+      },
+      emitter,
+      setProps,
+      getDragEnabled: () => true,
+      getDragSortFieldName: () => 'status_sort',
+      getGroupField: () => ({ name: 'status' }),
+      getCompatibleSortFieldName: () => 'status_sort',
+      getConfiguredGlobalSort: () => [],
+      resource: {
+        setSort,
+        refresh: vi.fn(),
+      },
+    };
+
+    step.handler(
+      {
+        model,
+      } as any,
+      {
+        dragEnabled: false,
+      },
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      dragEnabled: false,
+      dragSortBy: 'status_sort',
+    });
+    expect(setSort).toHaveBeenCalledWith([]);
+    expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: false });
+    expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
+    expect(model.stepParams.kanbanSettings.grouping.grouping).toMatchObject({
+      dragEnabled: false,
+      dragSortBy: 'status_sort',
+    });
+    expect(emitter.emit).toHaveBeenCalledWith('onStepParamsChanged');
+  });
+
+  test('create preset drag switch keeps grouping drag sorting values when syncing block settings', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.dragEnabled;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const model: any = {
+      props: {
+        dragEnabled: false,
+      },
+      _options: {
+        props: {
+          dragEnabled: false,
+        },
+      },
+      stepParams: {
+        kanbanSettings: {
+          grouping: {
+            grouping: {
+              groupField: 'status',
+              groupOptions: [],
+              dragEnabled: true,
+              dragSortBy: 'status_sort',
+            },
+          },
+        },
+      },
+      emitter: {
+        emit: vi.fn(),
+      },
+      setProps,
+      getDragEnabled: () => false,
+      getDragSortFieldName: () => undefined,
+      getGroupField: () => ({ name: 'status' }),
+      getCompatibleSortFieldName: () => 'status_sort',
+      getConfiguredGlobalSort: () => [],
+      resource: {
+        setSort,
+      },
+    };
+
+    step.beforeParamsSave(
+      {
+        model,
+        getStepFormValues: () => ({
+          grouping: {
+            groupField: 'status',
+            groupOptions: [],
+            dragEnabled: true,
+            dragSortBy: 'status_sort',
+          },
+        }),
+      } as any,
+      {
+        dragEnabled: false,
+      },
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      dragEnabled: true,
+      dragSortBy: 'status_sort',
+    });
+    expect(model._options.props).toMatchObject({
+      dragEnabled: true,
+      dragSortBy: 'status_sort',
+    });
+    expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: true });
+    expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
+    expect(model.stepParams.kanbanSettings.grouping.grouping).toMatchObject({
+      dragEnabled: true,
+      dragSortBy: 'status_sort',
+    });
+    expect(setSort).toHaveBeenCalledWith(['status_sort']);
+  });
+
   test('grouping changes keep the drag switch enabled even when the grouping sort field is missing', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.grouping;
@@ -920,6 +1209,182 @@ describe('KanbanBlockModel.filterCollection', () => {
       dragEnabled: true,
     });
     expect(setSort).toHaveBeenCalledWith([]);
+  });
+
+  test('grouping settings sync drag sorting options with block settings', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const emitter = {
+      emit: vi.fn(),
+    };
+    const model: any = {
+      collection: {
+        getField: (name: string) => (name === 'status' ? { name: 'status', interface: 'select' } : undefined),
+      },
+      resource: {
+        setSort,
+      },
+      setProps,
+      emitter,
+      getDragEnabled: () => false,
+      getConfiguredDragSortFieldName: () => undefined,
+      getConfiguredGlobalSort: () => [],
+      getCompatibleSortFieldName: (sortFieldName: string, groupFieldName: string) =>
+        groupFieldName === 'status' && sortFieldName === 'status_sort' ? 'status_sort' : undefined,
+    };
+
+    step.handler(
+      {
+        model,
+      } as any,
+      {
+        grouping: {
+          groupField: 'status',
+          groupOptions: [],
+          dragEnabled: true,
+          dragSortBy: 'status_sort',
+        },
+      },
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      groupField: 'status',
+      groupTitleField: undefined,
+      groupColorField: undefined,
+      groupOptions: [],
+      dragSortBy: 'status_sort',
+      dragEnabled: true,
+    });
+    expect(setSort).toHaveBeenCalledWith(['status_sort']);
+    expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: true });
+    expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
+    expect(emitter.emit).toHaveBeenCalledWith('onStepParamsChanged');
+  });
+
+  test('create preset keeps quick-created drag sort field before collection field cache refreshes', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const model: any = {
+      isNew: true,
+      collection: {
+        getField: (name: string) => (name === 'status' ? { name: 'status', interface: 'select' } : undefined),
+      },
+      stepParams: {
+        kanbanSettings: {
+          grouping: {
+            grouping: {
+              groupField: 'status',
+              groupOptions: [],
+              dragEnabled: true,
+              dragSortBy: 'status_sort',
+            },
+          },
+        },
+      },
+      resource: {
+        setSort,
+      },
+      setProps,
+      emitter: {
+        emit: vi.fn(),
+      },
+      getDragEnabled: () => false,
+      getConfiguredDragSortFieldName: () => undefined,
+      getConfiguredGlobalSort: () => [],
+      getCompatibleSortFieldName: () => undefined,
+    };
+
+    step.beforeParamsSave(
+      {
+        model,
+      } as any,
+      {
+        grouping: {
+          groupField: 'status',
+          groupOptions: [],
+          dragEnabled: true,
+          dragSortBy: 'status_sort',
+        },
+      },
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      groupField: 'status',
+      groupTitleField: undefined,
+      groupColorField: undefined,
+      groupOptions: [],
+      dragSortBy: 'status_sort',
+      dragEnabled: true,
+    });
+    expect(setSort).toHaveBeenCalledWith(['status_sort']);
+    expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: true });
+    expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
+    expect(model.stepParams.kanbanSettings.grouping.grouping).toMatchObject({
+      dragEnabled: true,
+      dragSortBy: 'status_sort',
+    });
+  });
+
+  test('create preset drag sort step does not override quick-created grouping sort field with empty params', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const groupingStep: any = flow?.steps?.grouping;
+    const dragSortByStep: any = flow?.steps?.dragSortBy;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const model: any = {
+      isNew: true,
+      collection: {
+        getField: (name: string) => (name === 'status' ? { name: 'status', interface: 'select' } : undefined),
+      },
+      stepParams: {},
+      resource: {
+        setSort,
+      },
+      setProps,
+      emitter: {
+        emit: vi.fn(),
+      },
+      getDragEnabled: () => false,
+      getDragSortFieldName: () => undefined,
+      getGroupField: () => ({ name: 'status' }),
+      getConfiguredDragSortFieldName: () => undefined,
+      getConfiguredGlobalSort: () => [],
+      getCompatibleSortFieldName: () => undefined,
+    };
+    const groupingFormValues = {
+      grouping: {
+        groupField: 'status',
+        groupOptions: [],
+        dragEnabled: true,
+        dragSortBy: 'status_sort',
+      },
+    };
+
+    model.stepParams.kanbanSettings = {
+      grouping: groupingFormValues,
+    };
+    groupingStep.beforeParamsSave({ model } as any, groupingFormValues);
+    dragSortByStep.beforeParamsSave(
+      {
+        model,
+        getStepFormValues: () => groupingFormValues,
+      } as any,
+      {
+        dragSortBy: null,
+      },
+    );
+
+    expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: true });
+    expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
+    expect(model.stepParams.kanbanSettings.grouping.grouping).toMatchObject({
+      dragEnabled: true,
+      dragSortBy: 'status_sort',
+    });
+    expect(setSort).toHaveBeenLastCalledWith(['status_sort']);
   });
 
   test('cross-column dragging still works when dragging is enabled from legacy props', () => {

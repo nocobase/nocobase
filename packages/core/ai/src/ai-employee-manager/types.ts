@@ -29,6 +29,7 @@ export type AIEmployeeToolSetting = {
 
 export type AIEmployeeOptions = {
   username: string;
+  category?: string;
   description?: string;
   skills?: string[];
   tools?: AIEmployeeToolSetting[];

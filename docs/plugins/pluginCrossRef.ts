@@ -239,7 +239,11 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       // 1. 扫描所有 _meta.json 检测跨模块引用（以顶层目录为单位判断）
       for (const metaFile of findAllMetaJson(root)) {
         const dir = path.dirname(metaFile);
-        const relDir = '/' + path.relative(root, dir);
+        // path.relative 在 Windows 上返回反斜杠分隔的路径，必须规范化成 POSIX
+        // 风格的 URL 路径，否则下游 getTopLevelDir 按 '/' split 拿到的 topDir
+        // 会被污染（如 '/api\cli'），最终生成 '/api\cli/start' 这种带反斜杠
+        // 的虚拟路由跟正常路由冲突，rspress 报 routePath ... has already been added。
+        const relDir = '/' + path.relative(root, dir).split(path.sep).join('/');
         const topDir = getTopLevelDir(relDir);
 
         const meta: unknown = JSON.parse(fs.readFileSync(metaFile, 'utf-8'));
@@ -315,7 +319,10 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       if (crossRefs.length === 0) return [];
 
       const root = config.root || path.join(process.cwd(), 'docs');
-      const tempDir = path.join(process.cwd(), 'node_modules', '.rspress', 'cross-ref');
+      // 按语言隔离临时目录，避免并行构建（CI 中多语言同时跑）共用同名文件 cross-ref-N.md
+      // 导致后写覆盖先写，使虚拟路由的源内容串到错误的语言。
+      const lang = process.env.DOCS_LANG || 'en';
+      const tempDir = path.join(process.cwd(), 'node_modules', '.rspress', 'cross-ref', lang);
       fs.mkdirSync(tempDir, { recursive: true });
 
       return crossRefs

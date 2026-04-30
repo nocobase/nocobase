@@ -73,6 +73,11 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "WeCom",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
             "label": "HTTP API",
             "link": "/users-permissions/sync/sources/api"
           }

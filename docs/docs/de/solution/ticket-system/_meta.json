@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "changelog",
+    "label": "Änderungsprotokoll"
+  },
+  {
+    "type": "file",
     "name": "more",
     "label": "Weitere Inhalte"
   }

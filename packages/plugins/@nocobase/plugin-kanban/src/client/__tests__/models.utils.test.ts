@@ -130,6 +130,7 @@ describe('kanban model utils', () => {
       }),
     ).toEqual([
       { label: 'Status', value: 'status' },
+      { label: 'Priority', value: 'priority' },
       { label: 'Owner', value: 'owner' },
     ]);
   });

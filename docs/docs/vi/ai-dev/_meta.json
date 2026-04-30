@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/ai-dev/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Thực hành: Phát triển plugin watermark",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "Các khả năng được hỗ trợ",
+    "link": "/ai-dev/capabilities"
+  }
+]

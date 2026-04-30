@@ -23,17 +23,12 @@ vi.mock('@formily/react', async (importOriginal) => {
   };
 });
 
-vi.mock('@nocobase/client', () => ({
-  useCollectionManager_deprecated: () => ({
-    getCollection: vi.fn(),
-  }),
-}));
-
 describe('KanbanGroupingSelector', () => {
-  it('renders an empty state before a grouping field is selected', () => {
+  it('renders a disabled selector before a grouping field is selected', () => {
     render(<KanbanGroupingSelector value={[]} collection={{ getField: () => undefined }} />);
 
     expect(screen.getByText('Select a grouping field first')).toBeInTheDocument();
+    expect(document.querySelector('.ant-select-disabled')).toBeInTheDocument();
   });
 
   it('does not emit an initial grouping field when nothing is selected yet', async () => {

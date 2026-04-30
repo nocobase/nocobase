@@ -1,8 +1,8 @@
 [
   {
     "type": "custom-link",
-    "label": "Descripción general",
-    "link": "/interface-builder"
+    "label": "Visión general",
+    "link": "/interface-builder/"
   },
   {
     "type": "custom-link",
@@ -10,8 +10,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Descripción general",
-        "link": "/interface-builder/blocks"
+        "label": "Visión general",
+        "link": "/interface-builder/blocks/"
       },
       {
         "type": "custom-link",
@@ -47,6 +47,16 @@
             "type": "custom-link",
             "label": "Gráfico",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Calendario",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kanban",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },
@@ -59,6 +69,11 @@
             "type": "custom-link",
             "label": "Formulario",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Árbol",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -84,7 +99,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Bloque JS",
+            "label": "JS Block",
             "link": "/interface-builder/blocks/other-blocks/js-block"
           }
         ]
@@ -159,8 +174,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Descripción general",
-        "link": "/interface-builder/fields"
+        "label": "Visión general",
+        "link": "/interface-builder/fields/"
       },
       {
         "type": "custom-link",
@@ -246,17 +261,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Campo JS",
+            "label": "JS Field",
             "link": "/interface-builder/fields/specific/js-field"
           },
           {
             "type": "custom-link",
-            "label": "Ítem JS",
+            "label": "JS Item",
             "link": "/interface-builder/fields/specific/js-item"
           },
           {
             "type": "custom-link",
-            "label": "Columna JS",
+            "label": "JS Column",
             "link": "/interface-builder/fields/specific/js-column"
           }
         ]
@@ -336,8 +351,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Descripción general",
-        "link": "/interface-builder/actions"
+        "label": "Visión general",
+        "link": "/interface-builder/actions/"
       },
       {
         "type": "custom-link",
@@ -483,8 +498,18 @@
           },
           {
             "type": "custom-link",
-            "label": "Acción JS",
+            "label": "Solicitud personalizada",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },

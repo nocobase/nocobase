@@ -13,6 +13,20 @@ The Kanban block displays records in grouped columns. It is suitable for scenari
 
 ![](https://static-docs.nocobase.com/Kanban-04-17-2026_01_51_PM.png)
 
+## Add block
+
+![](https://static-docs.nocobase.com/Kanban-04-29-2026_09_54_PM.png)
+
+![](https://static-docs.nocobase.com/Kanban-04-29-2026_09_54_PM%20(1).png)
+
+After selecting the "Kanban" block and choosing a data table, complete the grouping configuration in the popup:
+
+1. Select the "Grouping field". The Kanban block creates columns based on the values of this field.
+2. Select the "Grouping values" to control which columns are displayed and their order.
+3. To use drag-and-drop sorting, enable "Enable drag and drop sorting" and select a "Drag and drop sorting field" that matches the current grouping field.
+
+After completing the configuration, you can create the Kanban block.
+
 ## Block Settings
 
 ![](https://static-docs.nocobase.com/Kanban-04-22-2026_09_53_PM.png)
