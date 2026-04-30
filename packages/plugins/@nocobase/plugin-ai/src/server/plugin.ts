@@ -52,12 +52,14 @@ import {
   getWorkflowTasks,
 } from './workflow/nodes/employee';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
+import { LLMStreamCachedManager } from './manager/llm-stream-manager';
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
   aiConversationsManager = new AIConversationsManager(this);
+  llmStreamCachedManager = new LLMStreamCachedManager(this);
   builtInManager = new BuiltInManager(this);
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
   aiCodingManager = new AICodingManager(this);

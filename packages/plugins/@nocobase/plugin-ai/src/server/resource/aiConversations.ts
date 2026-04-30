@@ -389,6 +389,48 @@ export default {
       await next();
     },
 
+    async resumeStream(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      setupSSEHeaders(ctx);
+
+      const sessionId =
+        ctx.action.params?.sessionId || ctx.action.params?.values?.sessionId || ctx.action.params?.filterByTk;
+      if (!sessionId) {
+        sendErrorResponse(ctx, 'sessionId is required');
+        return;
+      }
+
+      try {
+        const conversation = await plugin.aiConversationsManager.getConversation({
+          sessionId,
+          userId,
+        });
+
+        if (!conversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return;
+        }
+
+        for await (const chunk of plugin.llmStreamCachedManager.getCached(sessionId).stream()) {
+          ctx.res.write(chunk);
+        }
+      } catch (err) {
+        ctx.log.error(err);
+        sendErrorResponse(ctx, err.message || 'Resume stream error');
+        return;
+      } finally {
+        if (!ctx.res.writableEnded) {
+          ctx.res.end();
+        }
+        await next();
+      }
+    },
+
     async resendMessages(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;

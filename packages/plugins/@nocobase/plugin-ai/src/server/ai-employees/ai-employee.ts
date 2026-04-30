@@ -121,7 +121,13 @@ export class AIEmployee {
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
-    this.protocol = ChatStreamProtocol.fromContext(ctx);
+    this.protocol = ChatStreamProtocol.fromContext(ctx, async (chunk) => {
+      try {
+        await this.plugin.llmStreamCachedManager.getCached(this.sessionId).append(chunk);
+      } catch (error) {
+        this.logger.warn('Failed to append LLM stream cache', { sessionId: this.sessionId, error });
+      }
+    });
   }
 
   async getFormatMessages(userMessages: AIMessageInput[]) {
@@ -276,6 +282,7 @@ export class AIEmployee {
       return true;
     } catch (err) {
       this.ctx.log.error(err);
+      await this.plugin.llmStreamCachedManager.getCached(this.sessionId).clear();
       this.sendErrorResponse(err.message || 'Chat error warning');
       return false;
     } finally {
@@ -463,6 +470,7 @@ export class AIEmployee {
     let gathered: any;
     signal.addEventListener('abort', async () => {
       try {
+        await this.plugin.llmStreamCachedManager.getCached(this.sessionId).clear();
         if (gathered?.type === 'ai') {
           const values = convertAIMessage({
             aiEmployee: this,
@@ -489,6 +497,8 @@ export class AIEmployee {
         from: this.from,
         username: this.employee.username,
       };
+      const llmStreamCache = this.plugin.llmStreamCachedManager.getCached(this.sessionId);
+      await llmStreamCache.clear();
       this.protocol.with(aiEmployeeConversation).startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
@@ -646,6 +656,7 @@ export class AIEmployee {
       this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       this.ctx.log.error(err);
+      await this.plugin.llmStreamCachedManager.getCached(this.sessionId).clear();
       if (err.name === 'GraphRecursionError') {
         this.sendSpecificError({ name: err.name, message: err.message });
       } else {
@@ -1655,16 +1666,20 @@ export class ChatStreamProtocol {
     },
   };
 
-  constructor(private readonly streamConsumer: StreamConsumer) {}
+  constructor(
+    private readonly streamConsumer: StreamConsumer,
+    private readonly onWrite?: (chunk: string) => Promise<void>,
+  ) {}
 
-  static fromContext(ctx: Context) {
-    return new ChatStreamProtocol(ctx.res);
+  static fromContext(ctx: Context, onWrite?: (chunk: string) => Promise<void>) {
+    return new ChatStreamProtocol(ctx.res, onWrite);
   }
 
   with(conversation: { sessionId: string; from: string; username: string }) {
     const write = ({ type, body }: { type: string; body?: any }) => {
       const { sessionId, from, username } = conversation;
       const data = `data: ${JSON.stringify({ sessionId, from, username, type, body })}\n\n`;
+      void this.onWrite?.(data);
       this.streamConsumer.write(data);
       this._statistics.addSent(data.length);
     };
