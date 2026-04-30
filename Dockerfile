@@ -32,7 +32,7 @@ RUN yarn config set registry $VERDACCIO_URL && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
 
-RUN yarn global add @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb
+# RUN yarn global add @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb
 
 FROM scratch as app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
@@ -40,7 +40,7 @@ COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
 FROM node:22-bookworm-slim as runtime
 ARG COMMIT_HASH
 
-ENV PATH="/opt/nb/bin:${PATH}"
+# ENV PATH="/opt/nb/bin:${PATH}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -64,7 +64,7 @@ RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY nocobase.tar.gz /app/nocobase.tar.gz
 COPY dist.tar.gz /app/nocobase-docs.tar.gz
-COPY --from=app-builder /opt/nb /opt/nb
+# COPY --from=app-builder /opt/nb /opt/nb
 
 WORKDIR /app/nocobase
 
