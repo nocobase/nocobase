@@ -8,7 +8,7 @@
  */
 
 import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
@@ -17,6 +17,35 @@ import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
+
+const builtinAuthRoutes = new Set(['/signin', '/signup', '/forgot-password', '/reset-password']);
+
+const normalizePathname = (pathname: string) => pathname.replace(/\/+$/, '') || '/';
+
+const removeBasename = (pathname: string, basename?: string) => {
+  if (!basename || basename === '/') {
+    return normalizePathname(pathname);
+  }
+
+  const normalizedBasename = normalizePathname(basename);
+  const escapedBasename = normalizedBasename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const basenamePattern = new RegExp(`^${escapedBasename}(?=/|$)`);
+  return normalizePathname(pathname.replace(basenamePattern, '') || '/');
+};
+
+const isBuiltinAuthRoute = (pathname: string) => {
+  return builtinAuthRoutes.has(normalizePathname(pathname));
+};
+
+const getCurrentRedirectPath = (pathname: string, search: string, basename?: string) => {
+  return `${removeBasename(pathname, basename)}${search}`;
+};
+
+const getSigninPath = (pathname: string, search: string, basename?: string) => {
+  const params = new URLSearchParams();
+  params.set('redirect', getCurrentRedirectPath(pathname, search, basename));
+  return `/signin?${params.toString()}`;
+};
 
 export const useCurrentUserContext = () => {
   const flowEngine = useFlowEngine();
@@ -62,16 +91,29 @@ export const CurrentUserProvider = (props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const runtimeFlowEngine = app?.flowEngine || flowEngine;
-  const result = useRequest<any>(() =>
-    api
-      .request({
-        url: '/auth:check',
-        skipNotify: true,
-        skipAuth: true,
-      })
-      .then((res) => {
+  const [redirectingToSignin, setRedirectingToSignin] = useState(false);
+  const basename = app.router.getBasename?.() || app.router.basename;
+  const currentPathname = removeBasename(location.pathname, basename);
+  const shouldCheckCurrentUser =
+    !isBuiltinAuthRoute(currentPathname) && !app.router.isSkippedAuthCheckRoute(location.pathname);
+  const result = useRequest<any>(
+    async () => {
+      if (!shouldCheckCurrentUser) {
+        setRedirectingToSignin(false);
+        return { data: null };
+      }
+
+      try {
+        const res = await api.request({
+          url: '/auth:check',
+          skipNotify: true,
+          skipAuth: true,
+        });
+
         if (res?.data?.data?.id == null) {
-          navigate('/signin?redirect=' + location.pathname + location.search);
+          setRedirectingToSignin(true);
+          navigate(getSigninPath(location.pathname, location.search, basename), { replace: true });
+          return { data: null };
         }
         const userMeta = createCollectionContextMeta(
           () => runtimeFlowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
@@ -84,13 +126,27 @@ export const CurrentUserProvider = (props) => {
           resolveOnServer: true,
           meta: userMeta,
         });
+        setRedirectingToSignin(false);
         return res?.data;
-      }),
+      } catch (error: any) {
+        const isAuthError = error?.response?.status === 401 || error?.status === 401;
+        if (isAuthError) {
+          setRedirectingToSignin(true);
+          navigate(getSigninPath(location.pathname, location.search, basename), { replace: true });
+          return { data: null };
+        }
+        setRedirectingToSignin(false);
+        throw error;
+      }
+    },
+    {
+      refreshDeps: [shouldCheckCurrentUser],
+    },
   );
 
   const { render } = useAppSpin();
 
-  if (result.loading) {
+  if (result.loading || redirectingToSignin) {
     return render();
   }
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
