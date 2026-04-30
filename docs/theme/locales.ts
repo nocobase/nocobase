@@ -45,4 +45,9 @@ export const locales = [
     label: 'Bahasa Indonesia',
     href: '/id/',
   },
+  {
+    code: 'vi',
+    label: 'Tiếng Việt',
+    href: '/vi/',
+  },
 ];
