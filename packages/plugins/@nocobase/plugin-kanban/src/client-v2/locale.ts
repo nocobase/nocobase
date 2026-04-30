@@ -12,16 +12,16 @@ import { useTranslation } from 'react-i18next';
 
 export const NAMESPACE = 'kanban';
 
-export function tExpr(key: string) {
-  return _tExpr(key, { ns: [NAMESPACE, 'client'] });
+export function tExpr(key: string, options?: Parameters<typeof _tExpr>[1]) {
+  return _tExpr(key, { ...options, ns: options?.ns || [NAMESPACE, 'client'] });
 }
 
 export function lang(key: string) {
-  return key;
+  return generateNTemplate(key);
 }
 
 export function generateNTemplate(key: string) {
-  return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
+  return `{{t(${JSON.stringify(key)}, { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
 }
 
 export function useKanbanTranslation() {

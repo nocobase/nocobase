@@ -33,6 +33,7 @@ import {
   DEFAULT_KANBAN_COLUMN_WIDTH,
   DEFAULT_KANBAN_PAGE_SIZE,
   getKanbanCollectionField,
+  getKanbanCollectionFieldMetadata,
   getKanbanCollectionFieldOptions,
   getKanbanCollectionFields,
   getKanbanCollectionFilterTargetKey,
@@ -78,6 +79,10 @@ const KANBAN_POPUP_WIDTH_MAP: Record<'drawer' | 'dialog', Record<string, string>
     large: '80%',
   },
 };
+
+const DRAG_SORT_FIELD_TIP =
+  'Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.';
+const DRAG_SORT_FIELD_TIP_EXPR = tExpr(DRAG_SORT_FIELD_TIP, { ns: 'kanban' });
 
 const getKanbanSortingSettings = (model: KanbanBlockModel) => {
   return {
@@ -215,7 +220,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
 
   defaultProps = {
     dragEnabled: false,
-    quickCreateEnabled: false,
+    quickCreateEnabled: true,
     styleVariant: 'color',
   };
 
@@ -227,13 +232,13 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     TableCustomColumnModel: 'TableCustomColumnModel',
   };
 
-  static filterCollection(collection: any) {
-    if (!super.filterCollection(collection)) {
-      return false;
-    }
+  // static filterCollection(collection: any) {
+  //   if (!super.filterCollection(collection)) {
+  //     return false;
+  //   }
 
-    return !!collection?.getFields?.()?.some?.((field: any) => isKanbanGroupField(field));
-  }
+  //   return !!collection?.getFields?.()?.some?.((field: any) => isKanbanGroupField(field));
+  // }
 
   get resource() {
     return super.resource as MultiRecordResource;
@@ -474,7 +479,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
   }
 
   getQuickCreateEnabled() {
-    return this.props.quickCreateEnabled === true;
+    return this.props.quickCreateEnabled !== false;
   }
 
   getPopupMode() {
@@ -1120,23 +1125,43 @@ KanbanBlockModel.registerFlow({
     },
     dragSortBy: {
       title: tExpr('Drag and drop sorting field'),
+      uiSchema: (ctx) => {
+        const model = ctx.model as KanbanBlockModel;
+        const groupField = model.getGroupField();
+        const sortFields = model.getSortFieldCandidates(groupField?.name);
+        const resourceParams = model.getResourceSettingsInitParams?.() || {};
+        return {
+          dragSortBy: {
+            type: 'string',
+            title: tExpr('Drag and drop sorting field', { ns: 'kanban' }),
+            enum: sortFields,
+            'x-component': 'KanbanCreateSortFieldSelect',
+            'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip: DRAG_SORT_FIELD_TIP_EXPR,
+            },
+            'x-component-props': {
+              allowClear: true,
+              sortFields,
+              collectionFields: getKanbanCollectionFieldMetadata(model.collection),
+              groupField: groupField
+                ? {
+                    label: groupField.title || groupField.uiSchema?.title || groupField.name,
+                    value: groupField.name,
+                  }
+                : undefined,
+              collectionName: model.collection?.name || resourceParams.collectionName,
+              dataSource: model.collection?.dataSourceKey || resourceParams.dataSourceKey,
+            },
+          },
+        };
+      },
       preset: true,
       hideInSettings(ctx) {
         const dragEnabledStepParams = ctx.model.getStepParams?.('kanbanSettings', 'dragEnabled');
         const dragEnabled = dragEnabledStepParams?.dragEnabled;
 
         return !(dragEnabled ?? getKanbanSortingSettings(ctx.model as KanbanBlockModel).dragEnabled);
-      },
-      uiMode: (ctx) => {
-        const model = ctx.model as KanbanBlockModel;
-        return {
-          type: 'select',
-          key: 'dragSortBy',
-          props: {
-            options: model.getSortFieldCandidates(model.getGroupField()?.name),
-            allowClear: true,
-          },
-        };
       },
       defaultParams: (ctx) => ({
         dragSortBy: getKanbanSortingSettings(ctx.model as KanbanBlockModel).dragSortBy,
@@ -1185,8 +1210,15 @@ KanbanBlockModel.registerFlow({
       },
     },
     popup: {
-      title: tExpr('Popup settings'),
+      title: tExpr('Quick create popup settings', { ns: 'kanban' }),
       use: 'openView',
+      hideInSettings(ctx) {
+        const stepParams = ctx.model.getStepParams?.('kanbanSettings', 'quickCreate');
+        const enabled = stepParams?.quickCreateEnabled;
+        const defaultEnabled = (ctx.model as KanbanBlockModel).getQuickCreateEnabled();
+
+        return !(enabled ?? defaultEnabled);
+      },
       async defaultParams(ctx) {
         const commonParams = await resolveKanbanOpenViewDefaultParams(ctx as any);
         const popupPageModelClass =
