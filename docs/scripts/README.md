@@ -11,8 +11,9 @@ NocoBase 文档站维护 `cn / en / ja / es / pt / de / fr / ru / id / vi` 共 1
 | `check-nav-alignment.mjs` | 各语言 `_nav.json` 顶部导航条目数和 link 是否对齐 cn | 不齐 = 1 |
 | `check-home-alignment.mjs` | 各语言首页 `index.md` frontmatter 的 hero.actions / features / items 结构和 link 是否对齐 cn | 不齐 = 1 |
 | `check-bloated-files.mjs` | 翻译膨胀（巨型单行 / 超大文件，会让 rspress 编译卡死） | 有膨胀 = 1 |
+| `check-i18n-coverage.mjs` | **本 PR 内** cn `.md`/`.mdx` 改动是否同步到了其他 9 个语言（单向检查） | 有未同步 = 1 |
 
-五个脚本都用 cn 作基准，只读不写，不会改任何文件。
+六个脚本都用 cn 作基准，只读不写，不会改任何文件。前五个看「结构对不对齐」，最后一个看「内容修改有没有跟」。
 
 ## 用法
 
@@ -31,6 +32,10 @@ node docs/scripts/check-bloated-files.mjs --lang=es
 
 # 指定不同的 docs 根目录
 node docs/scripts/check-tree-alignment.mjs path/to/docs/docs
+
+# i18n coverage：跟前五个不一样，输入是 PR 改动的文件列表（不扫文件树）
+gh pr view <pr-number> --json files --jq '.files[].path' | node docs/scripts/check-i18n-coverage.mjs
+node docs/scripts/check-i18n-coverage.mjs --files=changed-files.txt
 ```
 
 ## 典型输出
@@ -51,6 +56,28 @@ node docs/scripts/check-tree-alignment.mjs path/to/docs/docs
 
 ```
 [BLOATED+OVERSIZED] es/plugin-development/client/index.md (size 1292019 vs cn 4322, max line 1220031 vs cn 345)
+```
+
+```
+cn changes: 2 file(s)
+[en] OK
+[ja] STALE: 2 cn change(s) without ja sync
+  - workflow/index.md
+  - workflow/nodes/manual.md
+[es] OK
+...
+```
+
+## i18n coverage 与 `skip-i18n-check` label
+
+`check-i18n-coverage.mjs` 只在 PR 维度有意义——它要的是「这个 PR 相对 base 改了哪些文件」。CI 里推荐用 `gh pr view <pr> --json files` 拿改动列表，不要用 `git diff origin/<base>...HEAD`，原因是 `actions/checkout` 默认 shallow clone 拿不到 base。
+
+某些 cn 改动确实不需要其他语言跟（比如 typo 修复、纯排版调整、中国独有的注释或链接）。这种情况下，PR 上打 `skip-i18n-check` label，CI 的 i18n-coverage step 会读到 label 后整体跳过。打 label 需要仓库写权限，避免被随手滥用——用法和理由建议在 PR 描述里说明。
+
+打 label：
+
+```bash
+gh pr edit <pr-number> --add-label skip-i18n-check
 ```
 
 ## 依赖
