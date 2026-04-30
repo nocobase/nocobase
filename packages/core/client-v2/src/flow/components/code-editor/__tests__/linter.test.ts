@@ -39,6 +39,24 @@ describe('code-editor linter', () => {
     );
   });
 
+  it('does not warn for callback parameters used inside JSX', () => {
+    const code = `
+const columns = [
+  {
+    render: (roles, record) => (
+      <div>
+        {roles.map((role) => <Tag key={role.name}>{record.nickname || role.title}</Tag>)}
+      </div>
+    ),
+  },
+];
+`;
+    const diags = computeDiagnosticsFromText(code);
+    expect(diags.some((d) => d.message.includes('Possible undefined variable: roles'))).toBe(false);
+    expect(diags.some((d) => d.message.includes('Possible undefined variable: record'))).toBe(false);
+    expect(diags.some((d) => d.message.includes('Possible undefined variable: role'))).toBe(false);
+  });
+
   it('reports non-callable expression warning', () => {
     const code = `(1+2)()`;
     const diags = computeDiagnosticsFromText(code);

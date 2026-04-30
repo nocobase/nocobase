@@ -39,7 +39,6 @@ export const ToolCard: React.FC<{
           toolCall.args = JSON.parse(repaired);
         } catch (err) {
           console.error(err, toolCall.args);
-          toolCall.args = {};
         }
       } else {
         toolCall.args = {};

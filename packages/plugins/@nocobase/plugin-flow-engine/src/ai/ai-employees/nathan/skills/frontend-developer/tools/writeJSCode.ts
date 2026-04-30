@@ -15,23 +15,21 @@ export default defineTools({
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: `{{t("ai.tools.lintAndTestJS.title")}}`,
-    about: `{{t("ai.tools.lintAndTestJS.about")}}`,
+    title: `{{t("ai.tools.writeJSCode.title")}}`,
+    about: `{{t("ai.tools.writeJSCode.about")}}`,
   },
   definition: {
-    name: 'lintAndTestJS',
+    name: 'writeJSCode',
     description:
-      'Lint, sandbox-check and trial-run the current editor JavaScript/JSX code. Returns success/failure with diagnostics. Call this tool after writeJSCode or patchJSCode before final response.',
+      'Write complete JavaScript/JSX code into the current code editor. Use only when the editor is empty, the user asks for a complete replacement, or the change is a deliberate broad rewrite. For adding, modifying, fixing, or extending existing code, use patchJSCode instead.',
     schema: z.object({
       code: z
         .string()
-        .optional()
         .describe(
-          'Optional JavaScript/JSX code to preview and validate. Omit this to validate the current editor code.',
+          'The complete JavaScript/JSX code to write into the current editor. Do not use for small incremental changes to existing code.',
         ),
     }),
   },
-
   invoke: async (ctx, _args, runtime) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item: { id: string }) => item.id === runtime.toolCallId) ?? {};
@@ -40,11 +38,10 @@ export default defineTools({
         status: result.status ?? 'error',
         content: JSON.stringify(result.content ?? {}),
       };
-    } else {
-      return {
-        status: 'error',
-        content: JSON.stringify({ success: false, message: 'Preview execution failed: no result returned' }),
-      };
     }
+    return {
+      status: 'error',
+      content: JSON.stringify({ success: false, message: 'Write code failed: no result returned' }),
+    };
   },
 });

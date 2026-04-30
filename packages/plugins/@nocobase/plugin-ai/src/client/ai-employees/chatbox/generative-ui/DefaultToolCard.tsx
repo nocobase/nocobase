@@ -127,11 +127,12 @@ const ToolCallRow: React.FC<{
     }
   }, [defaultExpanded]);
 
-  let args = toolCall.args;
+  let args: string;
   try {
-    args = JSON.stringify(args, null, 2);
+    const stringifiedArgs = JSON.stringify(toolCall.args, null, 2);
+    args = stringifiedArgs ?? '{}';
   } catch (err) {
-    // ignore
+    args = typeof toolCall.args === 'string' ? toolCall.args : '{}';
   }
   const toolsEntry = toolsMap.get(toolCall.name);
   const title = toolsEntry?.introduction?.title
@@ -152,6 +153,7 @@ const ToolCallRow: React.FC<{
   });
 
   const showLoadingTitle = generating && toolCall.invokeStatus !== 'done' && toolCall.invokeStatus !== 'confirmed';
+  const showArgs = args !== '{}';
 
   return (
     <div>
@@ -165,7 +167,7 @@ const ToolCallRow: React.FC<{
           userSelect: 'none',
         }}
         onClick={() => {
-          if (args === '{}') {
+          if (!showArgs) {
             return;
           }
           setExpanded(!expanded);
@@ -186,7 +188,7 @@ const ToolCallRow: React.FC<{
           </span>
         </Flex>
         <Flex align="center" gap={8}>
-          {args !== '{}' ? (
+          {showArgs ? (
             expanded ? (
               <UpOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
             ) : (

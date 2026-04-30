@@ -15,23 +15,15 @@ export default defineTools({
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: `{{t("ai.tools.lintAndTestJS.title")}}`,
-    about: `{{t("ai.tools.lintAndTestJS.about")}}`,
+    title: `{{t("ai.tools.readJSCode.title")}}`,
+    about: `{{t("ai.tools.readJSCode.about")}}`,
   },
   definition: {
-    name: 'lintAndTestJS',
+    name: 'readJSCode',
     description:
-      'Lint, sandbox-check and trial-run the current editor JavaScript/JSX code. Returns success/failure with diagnostics. Call this tool after writeJSCode or patchJSCode before final response.',
-    schema: z.object({
-      code: z
-        .string()
-        .optional()
-        .describe(
-          'Optional JavaScript/JSX code to preview and validate. Omit this to validate the current editor code.',
-        ),
-    }),
+      'Read the complete JavaScript/JSX code currently in the active editor. Use before complex patches, after patchJSCode fails, or whenever the current editor structure is uncertain. Do not use searchDocs to read editor code.',
+    schema: z.object({}),
   },
-
   invoke: async (ctx, _args, runtime) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item: { id: string }) => item.id === runtime.toolCallId) ?? {};
@@ -40,11 +32,10 @@ export default defineTools({
         status: result.status ?? 'error',
         content: JSON.stringify(result.content ?? {}),
       };
-    } else {
-      return {
-        status: 'error',
-        content: JSON.stringify({ success: false, message: 'Preview execution failed: no result returned' }),
-      };
     }
+    return {
+      status: 'error',
+      content: JSON.stringify({ success: false, message: 'Read code failed: no result returned' }),
+    };
   },
 });

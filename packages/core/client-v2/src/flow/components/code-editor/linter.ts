@@ -16,6 +16,50 @@ import jsx from 'acorn-jsx';
 // @ts-ignore
 import * as acornWalk from 'acorn-walk';
 
+const acornWalkBase = {
+  ...(acornWalk as any).base,
+  JSXElement(node: any, state: any, callback: any) {
+    callback(node.openingElement, state);
+    for (const child of node.children || []) callback(child, state);
+    if (node.closingElement) callback(node.closingElement, state);
+  },
+  JSXFragment(node: any, state: any, callback: any) {
+    callback(node.openingFragment, state);
+    for (const child of node.children || []) callback(child, state);
+    callback(node.closingFragment, state);
+  },
+  JSXOpeningElement(node: any, state: any, callback: any) {
+    callback(node.name, state);
+    for (const attribute of node.attributes || []) callback(attribute, state);
+  },
+  JSXClosingElement(node: any, state: any, callback: any) {
+    callback(node.name, state);
+  },
+  JSXAttribute(node: any, state: any, callback: any) {
+    callback(node.name, state);
+    if (node.value) callback(node.value, state);
+  },
+  JSXExpressionContainer(node: any, state: any, callback: any) {
+    callback(node.expression, state);
+  },
+  JSXSpreadAttribute(node: any, state: any, callback: any) {
+    callback(node.argument, state);
+  },
+  JSXMemberExpression(node: any, state: any, callback: any) {
+    callback(node.object, state);
+    callback(node.property, state);
+  },
+  JSXNamespacedName(node: any, state: any, callback: any) {
+    callback(node.namespace, state);
+    callback(node.name, state);
+  },
+  JSXIdentifier() {},
+  JSXText() {},
+  JSXEmptyExpression() {},
+  JSXOpeningFragment() {},
+  JSXClosingFragment() {},
+};
+
 /**
  * 创建 JavaScript 语法检查器 - 只检查语法错误
  */
@@ -673,72 +717,80 @@ export const computeDiagnosticsFromText = (
 
     // 收集顶层声明（以及函数/参数名，粗粒度，尽量避免误报）
     // 使用 full 方式更兼容，避免对特定 walker 键的依赖（如 VariableDeclarator 在某些打包环境下不可用）
-    acornWalk.full(ast, (node: any) => {
-      switch (node?.type) {
-        case 'VariableDeclarator':
-          addPatternIds(node.id);
-          break;
-        case 'FunctionDeclaration':
-          addId(node.id);
-          (node.params || []).forEach(addPatternIds);
-          break;
-        case 'FunctionExpression':
-          // 具名函数表达式也记录 id
-          addId(node.id);
-          (node.params || []).forEach(addPatternIds);
-          break;
-        case 'ArrowFunctionExpression':
-          (node.params || []).forEach(addPatternIds);
-          break;
-        case 'CatchClause':
-          addPatternIds((node as any).param);
-          break;
-        case 'ClassDeclaration':
-          addId(node.id);
-          break;
-        default:
-          break;
-      }
-    });
+    acornWalk.full(
+      ast,
+      (node: any) => {
+        switch (node?.type) {
+          case 'VariableDeclarator':
+            addPatternIds(node.id);
+            break;
+          case 'FunctionDeclaration':
+            addId(node.id);
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'FunctionExpression':
+            // 具名函数表达式也记录 id
+            addId(node.id);
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'ArrowFunctionExpression':
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'CatchClause':
+            addPatternIds((node as any).param);
+            break;
+          case 'ClassDeclaration':
+            addId(node.id);
+            break;
+          default:
+            break;
+        }
+      },
+      acornWalkBase,
+    );
 
     // 1) 明显不可调用的调用表达式：如 123()、'x'()、(1+2)()
-    acornWalk.full(ast, (node: any) => {
-      if (!node || typeof node.type !== 'string') return;
-      if (node.type === 'CallExpression') {
-        const callee = node.callee;
-        const isCallableLike =
-          callee &&
-          (callee.type === 'Identifier' ||
-            callee.type === 'MemberExpression' ||
-            callee.type === 'FunctionExpression' ||
-            callee.type === 'ArrowFunctionExpression' ||
-            callee.type === 'CallExpression' ||
-            callee.type === 'ChainExpression');
-        if (!isCallableLike) {
-          const from = (callee?.loc && (callee as any).start) ?? node.start;
-          const to = (callee?.loc && (callee as any).end) ?? node.end;
-          if (isIgnoredPos(from)) return;
-          diagnostics.push({
-            from,
-            to,
-            severity: 'warning',
-            source: 'no-noncallable-call',
-            message: 'This expression is not callable.',
-            actions: [],
-          });
+    acornWalk.full(
+      ast,
+      (node: any) => {
+        if (!node || typeof node.type !== 'string') return;
+        if (node.type === 'CallExpression') {
+          const callee = node.callee;
+          const isCallableLike =
+            callee &&
+            (callee.type === 'Identifier' ||
+              callee.type === 'MemberExpression' ||
+              callee.type === 'FunctionExpression' ||
+              callee.type === 'ArrowFunctionExpression' ||
+              callee.type === 'CallExpression' ||
+              callee.type === 'ChainExpression');
+          if (!isCallableLike) {
+            const from = (callee?.loc && (callee as any).start) ?? node.start;
+            const to = (callee?.loc && (callee as any).end) ?? node.end;
+            if (isIgnoredPos(from)) return;
+            diagnostics.push({
+              from,
+              to,
+              severity: 'warning',
+              source: 'no-noncallable-call',
+              message: 'This expression is not callable.',
+              actions: [],
+            });
+          }
+        } else if (node.type === 'NewExpression') {
+          const callee = node.callee;
+          const isConstructorLike =
+            callee &&
+            (callee.type === 'Identifier' || callee.type === 'MemberExpression' || callee.type === 'CallExpression');
+          if (!isConstructorLike) {
+            const from = (callee?.loc && (callee as any).start) ?? node.start;
+            const to = (callee?.loc && (callee as any).end) ?? node.end;
+            push(from, to, 'This constructor is not a function.');
+          }
         }
-      } else if (node.type === 'NewExpression') {
-        const callee = node.callee;
-        const isConstructorLike =
-          callee &&
-          (callee.type === 'Identifier' || callee.type === 'MemberExpression' || callee.type === 'CallExpression');
-        if (!isConstructorLike) {
-          const from = (callee?.loc && (callee as any).start) ?? node.start;
-          const to = (callee?.loc && (callee as any).end) ?? node.end;
-          push(from, to, 'This constructor is not a function.');
-        }
-      }
-    });
+      },
+      acornWalkBase,
+    );
 
     // 1.1) 可疑的 ctx 方法调用：ctx.xxx()
     // - 当传入 knownCtxMemberRoots 时：对所有“不在已知 ctx API 列表中”的调用给出提示
@@ -751,124 +803,136 @@ export const computeDiagnosticsFromText = (
       // Always allow some well-known ctx roots to avoid noisy false positives when doc is incomplete.
       for (const k of ['t', 'logger', 'libs']) knownCtxRoots?.add(k);
       const allowedShort = new Set<string>(['t']);
-      acornWalk.full(ast, (node: any) => {
-        if (!node || typeof node.type !== 'string') return;
-        if (node.type !== 'CallExpression') return;
-        let callee = node.callee;
-        if (callee?.type === 'ChainExpression') callee = callee.expression;
-        if (!callee || callee.type !== 'MemberExpression') return;
-        const obj = callee.object;
-        if (!obj || obj.type !== 'Identifier' || obj.name !== 'ctx') return;
-
-        let name: string | null = null;
-        if (!callee.computed && callee.property?.type === 'Identifier') name = callee.property.name;
-        else if (callee.computed && callee.property?.type === 'Literal' && typeof callee.property.value === 'string')
-          name = callee.property.value;
-        if (!name) return;
-        const normalized = String(name).trim();
-        if (!normalized || normalized.startsWith('_')) return;
-        if (knownCtxRoots) {
-          if (knownCtxRoots.has(normalized)) return;
-        } else {
-          if (normalized.length > 2) return;
-          if (allowedShort.has(normalized)) return;
-        }
-
-        const from = (callee.property as any)?.start ?? callee.start ?? node.start;
-        const to = (callee.property as any)?.end ?? from + 1;
-        const key = `${normalized}@${from}`;
-        if (reportedCtxCalls.has(key)) return;
-        if (isIgnoredPos(from)) return;
-        diagnostics.push({
-          from,
-          to,
-          severity: 'warning',
-          source: RULE_CTX_CALL,
-          message: `Possible undefined ctx method call: ctx.${normalized}(). 可能是拼写错误或未在当前 ctx API 中定义。`,
-          actions: [],
-        });
-        reportedCtxCalls.add(key);
-      });
-
-      // 1.2) 可疑的 ctx 成员访问：ctx.xxx（包含 ctx.xxx.yyy 的 root 访问）
-      // 规则与方法调用保持一致，但会跳过 CallExpression.callee 的 member（避免与 1.1 重复）。
-      const reportedCtxMembers = new Set<string>();
-      acornWalk.ancestor(ast, {
-        MemberExpression(node: any, ancestors: any[]) {
-          // Only enable unknown-member detection when we have an explicit ctx API list;
-          // otherwise the false-positive rate is too high for plain member access.
-          if (!knownCtxRoots) return;
-
-          const parent = ancestors[ancestors.length - 2];
-          if (parent?.type === 'CallExpression') {
-            let callee = parent.callee;
-            if (callee?.type === 'ChainExpression') callee = callee.expression;
-            if (callee === node) return; // handled by call rule above
-          }
-
-          const obj = node?.object;
+      acornWalk.full(
+        ast,
+        (node: any) => {
+          if (!node || typeof node.type !== 'string') return;
+          if (node.type !== 'CallExpression') return;
+          let callee = node.callee;
+          if (callee?.type === 'ChainExpression') callee = callee.expression;
+          if (!callee || callee.type !== 'MemberExpression') return;
+          const obj = callee.object;
           if (!obj || obj.type !== 'Identifier' || obj.name !== 'ctx') return;
 
           let name: string | null = null;
-          if (!node.computed && node.property?.type === 'Identifier') name = node.property.name;
-          else if (node.computed && node.property?.type === 'Literal' && typeof node.property.value === 'string')
-            name = node.property.value;
+          if (!callee.computed && callee.property?.type === 'Identifier') name = callee.property.name;
+          else if (callee.computed && callee.property?.type === 'Literal' && typeof callee.property.value === 'string')
+            name = callee.property.value;
           if (!name) return;
           const normalized = String(name).trim();
           if (!normalized || normalized.startsWith('_')) return;
-          if (knownCtxRoots.has(normalized)) return;
+          if (knownCtxRoots) {
+            if (knownCtxRoots.has(normalized)) return;
+          } else {
+            if (normalized.length > 2) return;
+            if (allowedShort.has(normalized)) return;
+          }
 
-          const from = (node.property as any)?.start ?? node.start ?? 0;
-          const to = (node.property as any)?.end ?? from + 1;
+          const from = (callee.property as any)?.start ?? callee.start ?? node.start;
+          const to = (callee.property as any)?.end ?? from + 1;
           const key = `${normalized}@${from}`;
-          if (reportedCtxMembers.has(key)) return;
+          if (reportedCtxCalls.has(key)) return;
           if (isIgnoredPos(from)) return;
-
           diagnostics.push({
             from,
             to,
             severity: 'warning',
-            source: RULE_CTX_MEMBER,
-            message: `Possible unknown ctx member access: ctx.${normalized}. 可能是拼写错误或未在当前 ctx API 中定义。`,
+            source: RULE_CTX_CALL,
+            message: `Possible undefined ctx method call: ctx.${normalized}(). 可能是拼写错误或未在当前 ctx API 中定义。`,
             actions: [],
           });
-          reportedCtxMembers.add(key);
+          reportedCtxCalls.add(key);
         },
-      });
+        acornWalkBase,
+      );
+
+      // 1.2) 可疑的 ctx 成员访问：ctx.xxx（包含 ctx.xxx.yyy 的 root 访问）
+      // 规则与方法调用保持一致，但会跳过 CallExpression.callee 的 member（避免与 1.1 重复）。
+      const reportedCtxMembers = new Set<string>();
+      acornWalk.ancestor(
+        ast,
+        {
+          MemberExpression(node: any, ancestors: any[]) {
+            // Only enable unknown-member detection when we have an explicit ctx API list;
+            // otherwise the false-positive rate is too high for plain member access.
+            if (!knownCtxRoots) return;
+
+            const parent = ancestors[ancestors.length - 2];
+            if (parent?.type === 'CallExpression') {
+              let callee = parent.callee;
+              if (callee?.type === 'ChainExpression') callee = callee.expression;
+              if (callee === node) return; // handled by call rule above
+            }
+
+            const obj = node?.object;
+            if (!obj || obj.type !== 'Identifier' || obj.name !== 'ctx') return;
+
+            let name: string | null = null;
+            if (!node.computed && node.property?.type === 'Identifier') name = node.property.name;
+            else if (node.computed && node.property?.type === 'Literal' && typeof node.property.value === 'string')
+              name = node.property.value;
+            if (!name) return;
+            const normalized = String(name).trim();
+            if (!normalized || normalized.startsWith('_')) return;
+            if (knownCtxRoots.has(normalized)) return;
+
+            const from = (node.property as any)?.start ?? node.start ?? 0;
+            const to = (node.property as any)?.end ?? from + 1;
+            const key = `${normalized}@${from}`;
+            if (reportedCtxMembers.has(key)) return;
+            if (isIgnoredPos(from)) return;
+
+            diagnostics.push({
+              from,
+              to,
+              severity: 'warning',
+              source: RULE_CTX_MEMBER,
+              message: `Possible unknown ctx member access: ctx.${normalized}. 可能是拼写错误或未在当前 ctx API 中定义。`,
+              actions: [],
+            });
+            reportedCtxMembers.add(key);
+          },
+        },
+        acornWalkBase,
+      );
     } catch (_) {
       // ignore
     }
 
     // 2) 疑似未定义变量（尽量减少误报：排除属性名与解构/声明）
     const reported = new Set<string>();
-    acornWalk.ancestor(ast, {
-      Identifier(node: any, ancestors: any[]) {
-        const name = node.name;
-        if (!name || declared.has(name) || reported.has(name)) return;
-        const parent = ancestors[ancestors.length - 2];
-        if (!parent) return;
-        // 跳过声明位置 / 属性键 / 非计算属性
-        if (
-          (parent.type === 'VariableDeclarator' && parent.id === node) ||
-          (parent.type === 'FunctionDeclaration' && parent.id === node) ||
-          (parent.type === 'FunctionExpression' && parent.id === node) ||
-          (parent.type === 'ClassDeclaration' && parent.id === node) ||
-          (parent.type === 'ClassExpression' && parent.id === node) ||
-          (parent.type === 'Property' && parent.key === node && parent.computed !== true) ||
-          (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
-          (parent.type === 'LabeledStatement' && parent.label === node) ||
-          (parent.type === 'BreakStatement' && parent.label === node) ||
-          (parent.type === 'ContinueStatement' && parent.label === node)
-        ) {
-          return;
-        }
-        // 可能未定义的自由变量
-        const from = (node as any).start ?? 0;
-        const to = (node as any).end ?? from + 1;
-        push(from, to, `Possible undefined variable: ${name}`, 'warning');
-        reported.add(name);
+    acornWalk.ancestor(
+      ast,
+      {
+        Identifier(node: any, ancestors: any[]) {
+          const name = node.name;
+          if (!name || declared.has(name) || reported.has(name)) return;
+          const parent = ancestors[ancestors.length - 2];
+          if (!parent) return;
+          // 跳过声明位置 / 属性键 / 非计算属性
+          if (
+            (parent.type === 'VariableDeclarator' && parent.id === node) ||
+            (parent.type === 'FunctionDeclaration' && parent.id === node) ||
+            (parent.type === 'FunctionExpression' && parent.id === node) ||
+            (parent.type === 'ClassDeclaration' && parent.id === node) ||
+            (parent.type === 'ClassExpression' && parent.id === node) ||
+            (parent.type === 'Property' && parent.key === node && parent.computed !== true) ||
+            (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
+            (parent.type === 'LabeledStatement' && parent.label === node) ||
+            (parent.type === 'BreakStatement' && parent.label === node) ||
+            (parent.type === 'ContinueStatement' && parent.label === node)
+          ) {
+            return;
+          }
+          // 可能未定义的自由变量
+          const from = (node as any).start ?? 0;
+          const to = (node as any).end ?? from + 1;
+          push(from, to, `Possible undefined variable: ${name}`, 'warning');
+          reported.add(name);
+        },
       },
-    });
+      acornWalkBase,
+    );
   } catch (e) {
     // 静态检查失败不影响编辑体验
     // console.debug('[linter] static checks failed', e);

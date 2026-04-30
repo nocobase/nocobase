@@ -46,6 +46,9 @@ import {
   getContextEnvsTool,
   getContextVarsTool,
   lintAndTestJSTool,
+  patchJSCodeTool,
+  readJSCodeTool,
+  writeJSCodeTool,
 } from './ai-employees/ai-coding/tools/context-tools';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
@@ -191,6 +194,9 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);
+    this.ai.toolsManager.registerTools(...readJSCodeTool);
+    this.ai.toolsManager.registerTools(...writeJSCodeTool);
+    this.ai.toolsManager.registerTools(...patchJSCodeTool);
     this.ai.toolsManager.registerTools(...lintAndTestJSTool);
   }
 
