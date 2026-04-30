@@ -11,7 +11,6 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { PassThrough } from 'node:stream';
 
 function serviceUrl() {
   return 'https://pkg.nocobase.com';
@@ -33,9 +32,7 @@ const mocks = vi.hoisted(() => ({
   promptConfirm: vi.fn(),
   promptCancel: vi.fn(),
   promptIsCancel: vi.fn(),
-  axiosGet: vi.fn(),
-  axiosPost: vi.fn(),
-  axiosDefault: vi.fn(),
+  fetch: vi.fn(),
   createStoragePluginsSymlink: vi.fn(),
   renderTable: vi.fn(() => 'TABLE'),
 }));
@@ -72,22 +69,6 @@ vi.mock('@clack/prompts', () => ({
   isCancel: mocks.promptIsCancel,
 }));
 
-vi.mock('axios', () => {
-  const callable = Object.assign(
-    (...args: unknown[]) => mocks.axiosDefault(...args),
-    {
-      get: (...args: unknown[]) => mocks.axiosGet(...args),
-      post: (...args: unknown[]) => mocks.axiosPost(...args),
-      default: (...args: unknown[]) => mocks.axiosDefault(...args),
-    },
-  );
-  return {
-    default: callable,
-    get: (...args: unknown[]) => mocks.axiosGet(...args),
-    post: (...args: unknown[]) => mocks.axiosPost(...args),
-  };
-});
-
 vi.mock('../lib/plugin-storage.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/plugin-storage.js')>();
   return {
@@ -103,59 +84,76 @@ beforeEach(() => {
   mocks.promptPassword.mockResolvedValue('bb');
   mocks.promptConfirm.mockResolvedValue(true);
   mocks.createStoragePluginsSymlink.mockResolvedValue(undefined);
-  mocks.axiosPost.mockImplementation(async (url: string) => {
+  mocks.fetch.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (String(url).includes('/license-key')) {
-      return {
+      return new Response(JSON.stringify({
         data: {
-          data: {
-            key: 'license-key-raw',
-          },
+          key: 'license-key-raw',
         },
-      };
+      }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
     }
-    return {
-      data: {
+    if (String(url).includes('/-/verdaccio/sec/login')) {
+      return new Response(JSON.stringify({
         token: 'pkg-token',
-      },
-    };
-  });
-  mocks.axiosGet.mockImplementation(async (url: string) => {
-    if (String(url).includes('pro-packages')) {
-      return {
-        data: {
-          data: ['@nocobase/plugin-a'],
-          meta: {
-            commercial_plugins: ['@nocobase/plugin-a', '@nocobase/plugin-b'],
-          },
+      }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
         },
-      };
+      });
+    }
+    if (String(url).includes('pro-packages')) {
+      return new Response(JSON.stringify({
+        data: ['@nocobase/plugin-a'],
+        meta: {
+          commercial_plugins: ['@nocobase/plugin-a', '@nocobase/plugin-b'],
+        },
+      }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
     }
     if (String(url).includes('@nocobase/plugin-a')) {
-      return {
-        data: {
-          name: '@nocobase/plugin-a',
-          'dist-tags': {
-            latest: '2.1.0-beta.24',
-          },
-          versions: {
-            '2.1.0-beta.24': {
-              dist: {
-                tarball: 'https://pkg.example.com/plugin-a.tgz',
-              },
+      return new Response(JSON.stringify({
+        name: '@nocobase/plugin-a',
+        'dist-tags': {
+          latest: '2.1.0-beta.24',
+        },
+        versions: {
+          '2.1.0-beta.24': {
+            dist: {
+              tarball: 'https://pkg.example.com/plugin-a.tgz',
             },
           },
         },
-      };
+      }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
     }
-    throw new Error(`Unexpected axios.get url: ${url}`);
+    if (String(url).includes('plugin-a.tgz')) {
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.close();
+        },
+      });
+      return new Response(stream, {
+        status: 200,
+      });
+    }
+    throw new Error(`Unexpected fetch url: ${url}, method: ${init?.method ?? 'GET'}`);
   });
-  mocks.axiosDefault.mockImplementation(async () => {
-    const stream = new PassThrough();
-    stream.end(Buffer.from(''));
-    return {
-      data: stream,
-    };
-  });
+  vi.stubGlobal('fetch', mocks.fetch);
   mocks.getEnvAsync.mockResolvedValue({
     sys: 'darwin',
     osVer: '24',
@@ -538,18 +536,21 @@ test('license activate supports online activation with explicit flags', async ()
 
     const saved = await readFile(path.join(storagePath, '.license', 'license-key'), 'utf8');
     expect(saved).toBe('license-key-raw');
-    expect(mocks.axiosPost).toHaveBeenCalledWith(
+    expect(mocks.fetch).toHaveBeenCalledWith(
       `${serviceUrl()}/license-key`,
-      {
-        account: 'aa',
-        password: 'bb',
-        appUrl: 'http://127.0.0.1:13000/',
-        appName: 'test app',
-        instanceId: 'ins_12345',
-        type: 'internal',
-      },
-      { responseType: 'json' },
+      expect.objectContaining({
+        method: 'POST',
+      }),
     );
+    const body = JSON.parse(String(mocks.fetch.mock.calls.find((call) => String(call[0]).includes('/license-key'))?.[1]?.body ?? '{}'));
+    expect(body).toEqual({
+      account: 'aa',
+      password: 'bb',
+      appUrl: 'http://127.0.0.1:13000/',
+      appName: 'test app',
+      instanceId: 'ins_12345',
+      type: 'internal',
+    });
     expect(log.mock.calls[0]?.[0]).toContain('Activated the online license');
   } finally {
     await rm(storagePath, { recursive: true, force: true });
@@ -559,11 +560,7 @@ test('license activate supports online activation with explicit flags', async ()
 test('license activate supports online activation json output and redacts validation details', async () => {
   const { default: LicenseActivate } = await import('../commands/license/activate.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
-  let fetchSpy: ReturnType<typeof vi.spyOn> | undefined;
-
   try {
-    fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
-
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
       envName: 'app1',
@@ -636,18 +633,21 @@ test('license activate supports online activation json output and redacts valida
 
     await LicenseActivate.prototype.run.call(command);
 
-    expect(mocks.axiosPost).toHaveBeenCalledWith(
+    expect(mocks.fetch).toHaveBeenCalledWith(
       `${serviceUrl()}/license-key`,
-      {
-        account: 'env-account',
-        password: 'env-password',
-        appUrl: 'http://127.0.0.1:13000/',
-        appName: 'env-desc',
-        instanceId: 'ins_12345',
-        type: 'internal',
-      },
-      { responseType: 'json' },
+      expect.objectContaining({
+        method: 'POST',
+      }),
     );
+    const body = JSON.parse(String(mocks.fetch.mock.calls.find((call) => String(call[0]).includes('/license-key'))?.[1]?.body ?? '{}'));
+    expect(body).toEqual({
+      account: 'env-account',
+      password: 'env-password',
+      appUrl: 'http://127.0.0.1:13000/',
+      appName: 'env-desc',
+      instanceId: 'ins_12345',
+      type: 'internal',
+    });
 
     const payload = JSON.parse(String(log.mock.calls[0]?.[0] ?? '{}'));
     expect(payload.ok).toBe(true);
@@ -657,7 +657,6 @@ test('license activate supports online activation json output and redacts valida
     expect(payload.validation.keyData.accessKeySecret).toBe('SK***90');
     expect(payload.validation.keyData.service.headers.Authorization).toBe('Be***op');
   } finally {
-    fetchSpy?.mockRestore();
     await rm(storagePath, { recursive: true, force: true });
   }
 });
@@ -1081,35 +1080,52 @@ test('license plugins sync skips packages without a matching downloadable versio
         domain: 'https://service.example.com/',
       },
     }));
-    mocks.axiosGet.mockImplementation(async (url: string) => {
-      if (String(url).includes('pro-packages')) {
-        return {
-          data: {
-            data: ['@nocobase/plugin-a'],
-            meta: {
-              commercial_plugins: ['@nocobase/plugin-a'],
-            },
+    mocks.fetch.mockImplementation(async (input: string | URL | Request) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (String(url).includes('/-/verdaccio/sec/login')) {
+        return new Response(JSON.stringify({
+          token: 'pkg-token',
+        }), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
           },
-        };
+        });
+      }
+      if (String(url).includes('pro-packages')) {
+        return new Response(JSON.stringify({
+          data: ['@nocobase/plugin-a'],
+          meta: {
+            commercial_plugins: ['@nocobase/plugin-a'],
+          },
+        }), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
       }
       if (String(url).includes('@nocobase/plugin-a')) {
-        return {
-          data: {
-            name: '@nocobase/plugin-a',
-            'dist-tags': {
-              latest: '2.0.0',
-            },
-            versions: {
-              '2.0.0': {
-                dist: {
-                  tarball: 'https://pkg.example.com/plugin-a.tgz',
-                },
+        return new Response(JSON.stringify({
+          name: '@nocobase/plugin-a',
+          'dist-tags': {
+            latest: '2.0.0',
+          },
+          versions: {
+            '2.0.0': {
+              dist: {
+                tarball: 'https://pkg.example.com/plugin-a.tgz',
               },
             },
           },
-        };
+        }), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
       }
-      throw new Error(`Unexpected axios.get url: ${url}`);
+      throw new Error(`Unexpected fetch url: ${url}`);
     });
 
     const log = vi.fn();

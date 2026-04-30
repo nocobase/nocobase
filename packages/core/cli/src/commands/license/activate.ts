@@ -10,7 +10,6 @@
 import * as p from '@clack/prompts';
 import { Command, Flags } from '@oclif/core';
 import { readFile } from 'node:fs/promises';
-import axios from 'axios';
 import {
   ensureInstanceId,
   licenseEnvFlag,
@@ -192,18 +191,26 @@ async function requestOnlineLicenseKey(
     type: 'internal';
   },
 ): Promise<string> {
-  const response = await axios.post(`${serviceUrl}/license-key`, {
-    account,
-    password,
-    appUrl: payload.appUrl,
-    appName: payload.appName,
-    instanceId: payload.instanceId,
-    type: payload.type,
-  }, {
-    responseType: 'json',
+  const response = await fetch(`${serviceUrl}/license-key`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      account,
+      password,
+      appUrl: payload.appUrl,
+      appName: payload.appName,
+      instanceId: payload.instanceId,
+      type: payload.type,
+    }),
   });
+  if (!response.ok) {
+    throw new Error(`License service request failed with status ${response.status}.`);
+  }
+  const data = await response.json();
 
-  const key = String(response.data?.data?.key ?? '').trim();
+  const key = String(data?.data?.key ?? '').trim();
   if (!key) {
     throw new Error('License service did not return a license key.');
   }

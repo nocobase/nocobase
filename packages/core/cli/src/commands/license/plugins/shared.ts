@@ -8,8 +8,9 @@
  */
 
 import path from 'node:path';
+import { Readable } from 'node:stream';
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createGunzip } from 'node:zlib';
-import axios from 'axios';
 import fs from 'fs-extra';
 import tar from 'tar';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
@@ -68,6 +69,10 @@ function resolvePkgBaseUrl(pkgUrl?: string): string {
   return resolveLicensePkgUrl(pkgUrl);
 }
 
+function responseBodyToNodeReadable(body: ReadableStream<Uint8Array>): Readable {
+  return Readable.fromWeb(body as unknown as NodeReadableStream);
+}
+
 async function loginPkg(baseURL: string, keyData: LicenseKeyData): Promise<string> {
   const username = String(keyData.accessKeyId ?? '').trim();
   const password = String(keyData.accessKeySecret ?? '').trim();
@@ -75,10 +80,18 @@ async function loginPkg(baseURL: string, keyData: LicenseKeyData): Promise<strin
     throw new Error('The saved license key does not include package registry credentials.');
   }
 
-  const response = await axios.post(`${baseURL}-/verdaccio/sec/login`, { username, password }, {
-    responseType: 'json',
+  const response = await fetch(`${baseURL}-/verdaccio/sec/login`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
   });
-  const token = String(response.data?.token ?? '').trim();
+  if (!response.ok) {
+    throw new Error(`Package registry login failed with status ${response.status}.`);
+  }
+  const data = await response.json();
+  const token = String(data?.token ?? '').trim();
   if (!token) {
     throw new Error('Package registry login did not return a token.');
   }
@@ -102,14 +115,16 @@ export async function fetchLicensedPluginPackages(
   const keyData = await loadSavedLicenseKeyData(runtime);
   const baseURL = resolvePkgBaseUrl(options.pkgUrl);
   const token = await loginPkg(baseURL, keyData);
-  const response = await axios.get(`${baseURL}pro-packages`, {
+  const response = await fetch(`${baseURL}pro-packages`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-    responseType: 'json',
   });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch commercial plugins with status ${response.status}.`);
+  }
+  const rawData = await response.json();
 
-  const rawData = response.data;
   if (Array.isArray(rawData)) {
     return {
       commercialPlugins: rawData,
@@ -169,13 +184,15 @@ async function isDependencyPackage(
 
 async function packageMetadata(baseURL: string, token: string, pluginName: string): Promise<any | undefined> {
   try {
-    const response = await axios.get(`${baseURL}${pluginName}`, {
+    const response = await fetch(`${baseURL}${pluginName}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      responseType: 'json',
     });
-    return response.data;
+    if (!response.ok) {
+      return undefined;
+    }
+    return await response.json();
   } catch {
     return undefined;
   }
@@ -256,17 +273,20 @@ async function downloadPlugin(
     await fs.remove(outputDir);
     await fs.mkdirp(outputDir);
 
-    const response = await axios({
-      url: tarballUrl,
-      method: 'GET',
-      responseType: 'stream',
+    const response = await fetch(tarballUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+    if (!response.ok) {
+      throw new Error(`download failed with status ${response.status}`);
+    }
+    if (!response.body) {
+      throw new Error('download response body is empty');
+    }
 
     await new Promise<void>((resolve, reject) => {
-      response.data
+      responseBodyToNodeReadable(response.body)
         .pipe(createGunzip())
         .pipe(tar.extract({ cwd: outputDir, strip: 1 }))
         .on('finish', () => resolve())
