@@ -15,10 +15,7 @@ const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany',
 const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
 
 function shouldShowFieldInMeta(field: CollectionField, includeNonFilterable?: boolean) {
-  if (!field.interface) {
-    return false;
-  }
-  return !!includeNonFilterable || !!field.filterable;
+  return Boolean(field.interface && (includeNonFilterable || field.filterable));
 }
 
 /**

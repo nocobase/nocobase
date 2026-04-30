@@ -105,6 +105,7 @@ async function setupFormModel() {
       { name: 'assignees', type: 'belongsToMany', target: 'users', interface: 'm2m' },
       { name: 'note', type: 'string', interface: 'text' },
       { name: 'status', type: 'string', interface: 'text' },
+      { name: 'rawPayload', type: 'json', filterable: true },
     ],
   });
 
@@ -303,7 +304,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(params.note).toBeUndefined();
   });
 
-  it('limits formValues meta to fields configured in the form grid', async () => {
+  it('keeps interfaced fields in formValues meta even when they are not configured in the form grid', async () => {
     const model = await setupFormModel();
 
     function HookCaller() {
@@ -316,14 +317,12 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const opt = (model.context as any).getPropertyOptions('formValues');
     const meta = await opt.meta();
     const props = await meta.properties();
-    const customerFields = await props.customer.properties();
 
     expect(props).toHaveProperty('customer');
     expect(props).toHaveProperty('note');
-    expect(props).not.toHaveProperty('status');
-    expect(props).not.toHaveProperty('assignees');
-    expect(customerFields).toHaveProperty('name');
-    expect(customerFields).toHaveProperty('level');
+    expect(props).toHaveProperty('status');
+    expect(props).toHaveProperty('assignees');
+    expect(props).not.toHaveProperty('rawPayload');
   });
 
   it('registers formValuesChange event and eventSettings flow', async () => {
