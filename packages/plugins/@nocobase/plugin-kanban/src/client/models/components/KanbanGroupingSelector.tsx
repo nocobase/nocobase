@@ -8,7 +8,6 @@
  */
 
 import { observer, useForm } from '@formily/react';
-import { useCollectionManager_deprecated } from '@nocobase/client';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Alert, Select, Space, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -46,7 +45,6 @@ export const KanbanGroupingSelector = observer(
     onChange,
     model,
     collection,
-    dataSourceKey,
     disabled,
   }: {
     value?: KanbanGroupOption[] | KanbanGroupingValue;
@@ -66,9 +64,6 @@ export const KanbanGroupingSelector = observer(
 
     const resolvedModel = model || settingsContext?.model;
     const resolvedCollection = resolvedModel?.collection || collection || settingsContext?.collection;
-    const resolvedDataSourceKey =
-      resolvedCollection?.dataSourceKey || dataSourceKey || settingsContext?.dataSource?.key;
-    useCollectionManager_deprecated(resolvedDataSourceKey);
 
     const translate = useCallback(
       (key: string) => resolvedModel?.translate?.(key, { ns: 'kanban' }) || key,

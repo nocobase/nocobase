@@ -23,12 +23,6 @@ vi.mock('@formily/react', async (importOriginal) => {
   };
 });
 
-vi.mock('@nocobase/client', () => ({
-  useCollectionManager_deprecated: () => ({
-    getCollection: vi.fn(),
-  }),
-}));
-
 describe('KanbanGroupingSelector', () => {
   it('renders a disabled selector before a grouping field is selected', () => {
     render(<KanbanGroupingSelector value={[]} collection={{ getField: () => undefined }} />);

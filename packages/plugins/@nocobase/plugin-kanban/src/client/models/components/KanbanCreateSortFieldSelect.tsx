@@ -18,6 +18,7 @@ import {
   useAPIClient,
   useCompile,
   useGlobalTheme,
+  useSchemaComponentContext,
 } from '@nocobase/client';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, Space } from 'antd';
@@ -72,6 +73,24 @@ export const upsertKanbanCollectionFieldOptions = (
   return nextFields;
 };
 
+export const upsertKanbanFlowCollectionField = (collection: any, fieldData?: Record<string, any>) => {
+  if (!collection || !fieldData?.name) {
+    return;
+  }
+
+  const currentFields =
+    typeof collection.getFields === 'function' ? collection.getFields() : collection.options?.fields;
+  const nextFields = upsertKanbanCollectionFieldOptions(currentFields || [], fieldData);
+
+  collection.setOption?.('fields', nextFields);
+
+  if (typeof collection.upsertFields === 'function') {
+    collection.upsertFields([fieldData]);
+  } else if (typeof collection.addField === 'function' && !collection.getField?.(fieldData.name)) {
+    collection.addField(fieldData);
+  }
+};
+
 export const KanbanCreateSortFieldSelect = observer(
   (props: {
     sortFields?: SortFieldOption[];
@@ -97,6 +116,7 @@ export const KanbanCreateSortFieldSelect = observer(
     const api = useAPIClient();
     const { t } = useTranslation();
     const { theme } = useGlobalTheme();
+    const schemaComponentContext = useSchemaComponentContext();
     const schemaOptions = useContext(SchemaOptionsContext);
     const flowSettingsContext = useFlowSettingsContext<any>();
     const model = flowSettingsContext?.model;
@@ -145,6 +165,12 @@ export const KanbanCreateSortFieldSelect = observer(
     const collectionName = useGroupingFormValues ? collection?.name : collectionNameProp;
     const dataSource = useGroupingFormValues ? collection?.dataSourceKey : dataSourceProp;
     const [createdSortFields, setCreatedSortFields] = useState<SortFieldOption[]>([]);
+    const handleSortFieldChange = (value: string | null) => {
+      formField.onInput?.(value);
+      if (useGroupingFormValues) {
+        form?.setValuesIn?.('grouping.dragSortBy', value);
+      }
+    };
     const sortFieldOptions = useMemo(() => {
       return createdSortFields.reduce(
         (options, field) =>
@@ -290,6 +316,12 @@ export const KanbanCreateSortFieldSelect = observer(
       ).open({ initialValues });
     };
 
+    const reloadCollectionMetadata = async () => {
+      const resolvedDataSource = dataSource || 'main';
+      await flowSettingsContext?.model?.context?.dataSourceManager?.reloadDataSource?.(resolvedDataSource);
+      schemaComponentContext?.refresh?.();
+    };
+
     const appendSortField = (fieldData: any) => {
       const nextOption = {
         ...fieldData,
@@ -304,15 +336,9 @@ export const KanbanCreateSortFieldSelect = observer(
         (formField.dataSource || sortFields) as Record<string, any>[],
         nextOption,
       );
-      formField.value = fieldData.name;
+      handleSortFieldChange(fieldData.name);
 
-      const collection = flowSettingsContext?.model?.collection as
-        | { getFields?: () => Record<string, any>[]; setOption?: (key: string, value: any) => void }
-        | undefined;
-      if (collection?.setOption && collection?.getFields) {
-        collection.setOption('fields', upsertKanbanCollectionFieldOptions(collection.getFields(), fieldData));
-        (collection as any).fieldsMap = undefined;
-      }
+      upsertKanbanFlowCollectionField(flowSettingsContext?.model?.collection, fieldData);
     };
 
     const handleCreateSortField = async () => {
@@ -329,6 +355,7 @@ export const KanbanCreateSortFieldSelect = observer(
       });
 
       appendSortField(data.data);
+      await reloadCollectionMetadata();
     };
 
     const handleUpdateSortField = async () => {
@@ -341,6 +368,7 @@ export const KanbanCreateSortFieldSelect = observer(
       });
 
       appendSortField(data.data);
+      await reloadCollectionMetadata();
     };
 
     return (
@@ -348,6 +376,8 @@ export const KanbanCreateSortFieldSelect = observer(
         <Select
           options={sortFieldOptions}
           {...others}
+          value={formField.value}
+          onChange={handleSortFieldChange}
           disabled={!groupField}
           optionRender={({ label, data }) => {
             return (

@@ -740,6 +740,35 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(flow.steps.sorting).toBeUndefined();
   });
 
+  test('drag sort field settings include saved field before collection field cache refreshes', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.dragSortBy;
+    const model: any = {
+      props: {
+        dragEnabled: true,
+        dragSortBy: 'status_sort',
+      },
+      getDragEnabled: () => true,
+      getDragSortFieldName: () => 'status_sort',
+      getSortFieldCandidates: () => [],
+      getGroupField: () => ({ name: 'status' }),
+      translate: (key: string) => key,
+    };
+
+    expect(step.uiSchema({ model }).dragSortBy.enum).toEqual([
+      {
+        label: 'status_sort',
+        value: 'status_sort',
+      },
+    ]);
+    expect((await step.uiMode({ model })).props.options).toEqual([
+      {
+        label: 'status_sort',
+        value: 'status_sort',
+      },
+    ]);
+  });
+
   test('kanban block settings no longer expose card open mode', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
 
@@ -1232,6 +1261,130 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: true });
     expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
     expect(emitter.emit).toHaveBeenCalledWith('onStepParamsChanged');
+  });
+
+  test('create preset keeps quick-created drag sort field before collection field cache refreshes', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.grouping;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const model: any = {
+      isNew: true,
+      collection: {
+        getField: (name: string) => (name === 'status' ? { name: 'status', interface: 'select' } : undefined),
+      },
+      stepParams: {
+        kanbanSettings: {
+          grouping: {
+            grouping: {
+              groupField: 'status',
+              groupOptions: [],
+              dragEnabled: true,
+              dragSortBy: 'status_sort',
+            },
+          },
+        },
+      },
+      resource: {
+        setSort,
+      },
+      setProps,
+      emitter: {
+        emit: vi.fn(),
+      },
+      getDragEnabled: () => false,
+      getConfiguredDragSortFieldName: () => undefined,
+      getConfiguredGlobalSort: () => [],
+      getCompatibleSortFieldName: () => undefined,
+    };
+
+    step.beforeParamsSave(
+      {
+        model,
+      } as any,
+      {
+        grouping: {
+          groupField: 'status',
+          groupOptions: [],
+          dragEnabled: true,
+          dragSortBy: 'status_sort',
+        },
+      },
+    );
+
+    expect(setProps).toHaveBeenCalledWith({
+      groupField: 'status',
+      groupTitleField: undefined,
+      groupColorField: undefined,
+      groupOptions: [],
+      dragSortBy: 'status_sort',
+      dragEnabled: true,
+    });
+    expect(setSort).toHaveBeenCalledWith(['status_sort']);
+    expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: true });
+    expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
+    expect(model.stepParams.kanbanSettings.grouping.grouping).toMatchObject({
+      dragEnabled: true,
+      dragSortBy: 'status_sort',
+    });
+  });
+
+  test('create preset drag sort step does not override quick-created grouping sort field with empty params', () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const groupingStep: any = flow?.steps?.grouping;
+    const dragSortByStep: any = flow?.steps?.dragSortBy;
+    const setProps = vi.fn();
+    const setSort = vi.fn();
+    const model: any = {
+      isNew: true,
+      collection: {
+        getField: (name: string) => (name === 'status' ? { name: 'status', interface: 'select' } : undefined),
+      },
+      stepParams: {},
+      resource: {
+        setSort,
+      },
+      setProps,
+      emitter: {
+        emit: vi.fn(),
+      },
+      getDragEnabled: () => false,
+      getDragSortFieldName: () => undefined,
+      getGroupField: () => ({ name: 'status' }),
+      getConfiguredDragSortFieldName: () => undefined,
+      getConfiguredGlobalSort: () => [],
+      getCompatibleSortFieldName: () => undefined,
+    };
+    const groupingFormValues = {
+      grouping: {
+        groupField: 'status',
+        groupOptions: [],
+        dragEnabled: true,
+        dragSortBy: 'status_sort',
+      },
+    };
+
+    model.stepParams.kanbanSettings = {
+      grouping: groupingFormValues,
+    };
+    groupingStep.beforeParamsSave({ model } as any, groupingFormValues);
+    dragSortByStep.beforeParamsSave(
+      {
+        model,
+        getStepFormValues: () => groupingFormValues,
+      } as any,
+      {
+        dragSortBy: null,
+      },
+    );
+
+    expect(model.stepParams.kanbanSettings.dragEnabled).toEqual({ dragEnabled: true });
+    expect(model.stepParams.kanbanSettings.dragSortBy).toEqual({ dragSortBy: 'status_sort' });
+    expect(model.stepParams.kanbanSettings.grouping.grouping).toMatchObject({
+      dragEnabled: true,
+      dragSortBy: 'status_sort',
+    });
+    expect(setSort).toHaveBeenLastCalledWith(['status_sort']);
   });
 
   test('cross-column dragging still works when dragging is enabled from legacy props', () => {

@@ -135,6 +135,38 @@ const setKanbanModelProps = (model: any, props: Record<string, any>) => {
   };
 };
 
+const getCompatibleKanbanSortFieldName = (
+  model: KanbanBlockModel,
+  sortFieldName: string | undefined,
+  groupFieldOrName?: any,
+  options: { allowPendingCreatedField?: boolean } = {},
+) => {
+  const compatibleSortFieldName = model.getCompatibleSortFieldName(sortFieldName, groupFieldOrName);
+
+  if (compatibleSortFieldName || !options.allowPendingCreatedField) {
+    return compatibleSortFieldName;
+  }
+
+  return sortFieldName;
+};
+
+const getKanbanSortFieldCandidatesWithCurrent = (model: KanbanBlockModel, groupFieldOrName?: any) => {
+  const candidates = model.getSortFieldCandidates(groupFieldOrName);
+  const currentDragSortBy = getKanbanSortingSettings(model).dragSortBy;
+
+  if (!currentDragSortBy || candidates.some((field: any) => field.value === currentDragSortBy)) {
+    return candidates;
+  }
+
+  return [
+    ...candidates,
+    {
+      label: currentDragSortBy,
+      value: currentDragSortBy,
+    },
+  ];
+};
+
 const syncKanbanDragSortingStepParams = (
   model: KanbanBlockModel,
   settings: { dragEnabled: boolean; dragSortBy?: string | null },
@@ -222,7 +254,11 @@ const applyKanbanBlockPopupSettings = async (model: KanbanBlockModel, params: Re
 
 const applyKanbanDragSortingSettings = (model: KanbanBlockModel, params: Record<string, any>) => {
   const currentSettings = getKanbanSortingSettings(model);
-  const dragSortBy = model.getCompatibleSortFieldName(params.dragSortBy ?? currentSettings.dragSortBy ?? undefined);
+  const nextDragSortBy = params.dragSortBy ?? currentSettings.dragSortBy ?? undefined;
+  const dragSortBy = getCompatibleKanbanSortFieldName(model, nextDragSortBy, undefined, {
+    allowPendingCreatedField:
+      model.isNew === true && typeof params.dragSortBy === 'string' && Boolean(params.dragSortBy),
+  });
   const groupField = typeof model.getGroupField === 'function' ? model.getGroupField() : undefined;
   const dragEnabled = params.dragEnabled === true && !isMultipleGroupField(groupField);
 
@@ -262,13 +298,15 @@ const applyKanbanGroupingSettings = (model: KanbanBlockModel, params: Record<str
   const nextGroupFieldInstance = getKanbanCollectionField(model.collection, nextGroupField);
   const hasDragEnabledValue = Object.prototype.hasOwnProperty.call(grouping, 'dragEnabled');
   const hasDragSortValue = Object.prototype.hasOwnProperty.call(grouping, 'dragSortBy');
+  const requestedDragSortField = hasDragSortValue
+    ? grouping.dragSortBy || undefined
+    : model.getConfiguredDragSortFieldName();
   const dragEnabled =
     (hasDragEnabledValue ? grouping.dragEnabled === true : model.getDragEnabled()) &&
     !isMultipleGroupField(nextGroupFieldInstance);
-  const nextDragSortField = model.getCompatibleSortFieldName(
-    hasDragSortValue ? grouping.dragSortBy || undefined : model.getConfiguredDragSortFieldName(),
-    nextGroupField,
-  );
+  const nextDragSortField = getCompatibleKanbanSortFieldName(model, requestedDragSortField, nextGroupField, {
+    allowPendingCreatedField: model.isNew === true && hasDragSortValue && Boolean(requestedDragSortField),
+  });
 
   setKanbanModelProps(model, {
     groupField: nextGroupField,
@@ -1267,7 +1305,7 @@ KanbanBlockModel.registerFlow({
           dragSortBy: {
             type: 'string',
             title: tExpr('Drag and drop sorting field', { ns: 'kanban' }),
-            enum: model.getSortFieldCandidates(model.getGroupField()?.name),
+            enum: getKanbanSortFieldCandidatesWithCurrent(model, model.getGroupField()?.name),
             'x-component': 'Select',
             'x-decorator': 'FormItem',
             'x-decorator-props': {
@@ -1292,7 +1330,7 @@ KanbanBlockModel.registerFlow({
           type: 'select',
           key: 'dragSortBy',
           props: {
-            options: model.getSortFieldCandidates(model.getGroupField()?.name),
+            options: getKanbanSortFieldCandidatesWithCurrent(model, model.getGroupField()?.name),
             allowClear: true,
             tooltip: model.translate(DRAG_SORT_FIELD_TIP, { ns: 'kanban' }),
           },
