@@ -23,13 +23,7 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import {
-  getWorkflowCallers,
-  createDocsSearchTool,
-  createReadDocEntryTool,
-  loadDocsIndexes,
-  describeDocModules,
-} from './tools';
+import { getWorkflowCallers, createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -44,8 +38,7 @@ import { kimiProviderOptions } from './llm-providers/kimi';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
-import { miMoProviderOptions as mimoProviderOptions } from './llm-providers/mimo';
-// import { tongyiProviderOptions } from './llm-providers/tongyi';
+import { mimoProviderOptions } from './llm-providers/mimo';
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();

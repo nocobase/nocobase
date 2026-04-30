@@ -106,7 +106,7 @@ class ChatMiMoCompletions extends ReasoningChatOpenAI {
   }
 }
 
-export const miMoProviderOptions: LLMProviderMeta = {
+export const mimoProviderOptions: LLMProviderMeta = {
   title: 'MiMo',
   supportWebSearch: true,
   supportedModel: [SupportedModel.LLM],
