@@ -1,0 +1,175 @@
+---
+title: "Panduan Integrasi AI Agent"
+description: "Pasang NocoBase CLI, hubungkan atau pasang aplikasi NocoBase, biarkan AI Agent mulai mengoperasikan sistem bisnis Anda."
+keywords: "NocoBase CLI,AI Agent,Integrasi,Koneksi,Instalasi,Skills,Mulai Cepat"
+sidebar: false
+---
+
+# Panduan Integrasi AI Agent
+
+NocoBase mendukung penuh kolaborasi AI Agent — Anda dapat menyelesaikan pemodelan data, pembangunan halaman, orkestrasi Workflow, konfigurasi Permission, bahkan mengembangkan Plugin kustom dengan bahasa natural. Apa pun AI tool yang Anda gunakan, baik Claude Code, Codex, Cursor, atau lainnya, Anda dapat berkolaborasi dengan NocoBase melalui dua komponen dasar berikut:
+
+1. **[NocoBase CLI](../api/cli/index.md)** — adalah tool baris perintah yang digunakan untuk menginisialisasi, menghubungkan, dan mengelola aplikasi NocoBase di workspace lokal. Tool ini membantu Anda menyiapkan aplikasi NocoBase, menyimpan konfigurasi env CLI, dan menyediakan perintah pengelolaan harian seperti memulai, menghentikan, melihat log, mengupgrade, dan membersihkan, sehingga AI Agent dapat terhubung dan menggunakan NocoBase.
+
+CLI mendukung dua metode inisialisasi yang umum:
+
+- Menghubungkan aplikasi NocoBase yang sudah ada, agar AI Agent dapat langsung menggunakannya.
+- Memasang aplikasi NocoBase baru melalui Docker, npm, atau Git, dan menyimpannya sebagai env CLI.
+
+2. **[NocoBase Skills](https://github.com/nocobase/skills)** — paket pengetahuan domain, yang memungkinkan AI Agent memahami sistem konfigurasi dan standar pengembangan NocoBase. Mencakup area kemampuan seperti pemodelan data, konfigurasi UI, manajemen Workflow, konfigurasi Permission, pengembangan Plugin, dan lainnya. NocoBase CLI akan secara otomatis menginstal Skills selama proses inisialisasi (`nb init`), tanpa perlu instalasi manual.
+
+Setelah memasang CLI dan menyelesaikan inisialisasi, AI Agent dapat langsung mengoperasikan aplikasi NocoBase Anda.
+
+## Prasyarat
+
+Sebelum memulai, pastikan Anda telah memenuhi persyaratan lingkungan berikut:
+
+- Node.js >= 22
+- Yarn 1.x
+- Disarankan menggunakan AI Agent yang digerakkan oleh model besar arus utama seperti Claude, GPT. Hasil aktual sangat terkait dengan model yang digunakan, disarankan memilih model flagship terbaru terlebih dahulu untuk mendapatkan pengalaman terbaik.
+
+import { Tab, Tabs } from '@rspress/core/theme';
+
+## Memasang NocoBase Baru dan Menghubungkan AI Agent
+
+> Jika Anda sudah memiliki instance NocoBase yang berjalan, Anda dapat langsung merujuk ke bagian berikutnya [AI Agent Menghubungkan NocoBase yang Sudah Ada](#ai-agent-menghubungkan-nocobase-yang-sudah-ada).
+
+Jika Anda belum memiliki aplikasi NocoBase, Anda dapat memasang dan menginisialisasi aplikasi NocoBase baru melalui CLI, kemudian membiarkan AI Agent terhubung dengannya.
+
+<Tabs>
+<Tab label="Pasang & Hubungkan secara Manual" value="manual-install">
+
+#### Langkah 1: Pasang CLI
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version // Konfirmasi instalasi berhasil
+```
+
+#### Langkah 2: Inisialisasi
+
+```bash
+nb init --ui
+```
+
+:::tip Lokasi Penyimpanan File Konfigurasi
+
+File konfigurasi dan data aplikasi yang dihasilkan oleh inisialisasi disimpan secara default di direktori home pengguna, lihat [variabel lingkungan NB_CLI_ROOT](../api/cli/index.md#variabel-lingkungan).
+
+:::
+
+Browser akan secara otomatis membuka halaman konfigurasi visual, yang memandu Anda menyelesaikan konfigurasi dalam 5 langkah:
+
+1. **Mulai Konfigurasi** — Atur nama aplikasi (sekaligus menjadi nama lingkungan CLI), pilih "Instalasi Baru"
+2. **Buat Aplikasi** — Pilih metode instalasi (Docker / npm / Git), atur port, dan konfigurasi dasar lainnya
+3. **Unduh File Aplikasi** — Pilih sumber dan versi, unduh kode sumber atau image NocoBase
+4. **Konfigurasi Database** — Gunakan database bawaan atau konfigurasikan database eksternal (PostgreSQL, MySQL, MariaDB)
+5. **Buat Akun Administrator** — Atur email dan password administrator
+
+![panduan visual nocobase cli](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+
+Setelah instalasi selesai, buka browser dan akses `http://localhost:13000` (port default), gunakan akun administrator yang baru Anda atur untuk login.
+
+(Jika Anda lebih terbiasa dengan operasi baris perintah, Anda juga dapat langsung menjalankan `nb init` untuk masuk ke wizard interaktif, atau `nb init --env=app -y` untuk menggunakan konfigurasi default dengan satu perintah.)
+
+#### Langkah 3: Biarkan AI Agent Mulai Bekerja
+
+Buka sesi baru atau restart sesi AI Agent, dan AI Agent dapat mulai mengoperasikan NocoBase. Konfigurasi CLI disimpan di direktori global (default `~/.nocobase/`), AI Agent dapat mengaksesnya dari direktori mana pun.
+
+</Tab>
+<Tab label="Pasang & Hubungkan dengan AI Agent" value="ai-install">
+
+Salin prompt di bawah ini ke asisten AI Anda (Claude Code, Codex, Cursor, Trae, dll), ia akan menyelesaikan instalasi CLI dan memandu Anda menyelesaikan inisialisasi NocoBase baru:
+
+```
+Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.nocobase.com/cn/ai/ai-quick-start.md (silakan akses langsung konten link)
+```
+
+Setelah konfigurasi selesai, restart sesi AI Agent Anda, dan Anda dapat mulai mengoperasikan NocoBase.
+
+</Tab>
+</Tabs>
+
+## AI Agent Menghubungkan NocoBase yang Sudah Ada
+
+Jika Anda sudah memiliki instance NocoBase yang berjalan, Anda dapat langsung membiarkan AI Agent terhubung dengannya. **Karena kemampuan AI berkembang dengan cepat, saat ini hanya versi beta terbaru yang mendukung pengalaman lengkap, dengan persyaratan versi minimum >= 2.1.0-beta.20, sangat disarankan untuk memperbarui ke versi terbaru.**
+
+<Tabs>
+<Tab label="Hubungkan secara Manual" value="manual-connect">
+
+#### Langkah 1: Pasang CLI
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version // Konfirmasi instalasi berhasil
+```
+
+#### Langkah 2: Inisialisasi dan Hubungkan
+
+```bash
+nb init --ui
+```
+
+:::tip Lokasi Penyimpanan File Konfigurasi
+
+File konfigurasi yang dihasilkan oleh inisialisasi disimpan secara default di direktori home pengguna, lihat [variabel lingkungan NB_CLI_ROOT](../api/cli/index.md#variabel-lingkungan).
+
+:::
+
+Browser akan secara otomatis membuka halaman konfigurasi visual. Pada langkah pertama "Mulai Konfigurasi", pilih "Hubungkan Aplikasi yang Sudah Ada", kemudian:
+
+1. **Isi Alamat API** — Masukkan alamat API instance NocoBase yang sudah ada (misalnya: `http://localhost:13000/api`)
+2. **Pilih Metode Autentikasi** — Pilih [metode autentikasi](../ai-builder/security) (untuk mulai cepat disarankan OAuth)
+
+![panduan visual nocobase cli](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+
+Tidak perlu mengonfigurasi metode instalasi, database, dan akun administrator, wizard akan melewati langkah-langkah ini.
+
+#### Langkah 3: Biarkan AI Agent Mulai Bekerja
+
+Buka sesi baru atau restart sesi AI Agent, dan AI Agent dapat mulai mengoperasikan NocoBase. Konfigurasi CLI disimpan di direktori global (default `~/.nocobase/`), AI Agent dapat mengaksesnya dari direktori mana pun.
+
+</Tab>
+<Tab label="Hubungkan dengan AI Agent" value="ai-connect">
+
+Salin prompt di bawah ini ke asisten AI Anda, ia akan menyelesaikan instalasi CLI dan memandu Anda menyelesaikan konfigurasi koneksi ke instance NocoBase yang sudah ada, pada langkah pertama wizard visual pilih "Hubungkan Aplikasi yang Sudah Ada":
+
+```
+Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.nocobase.com/cn/ai/ai-quick-start.md (silakan akses langsung konten link)
+```
+
+Setelah konfigurasi selesai, restart sesi AI Agent Anda, dan Anda dapat mulai mengoperasikan NocoBase.
+
+</Tab>
+</Tabs>
+
+## Selanjutnya
+
+### Mengelola Lingkungan Aplikasi
+
+Jika Anda perlu mengelola instance NocoBase yang sudah ada (misalnya lingkungan testing, lingkungan production), atau mengelola peralihan antara beberapa lingkungan, silakan lihat [Manajemen Lingkungan](../ai-builder/env-bootstrap) — mencakup pemeriksaan lingkungan, penambahan lingkungan, upgrade, dan diagnostik masalah.
+
+### Mulai Pembangunan AI
+
+Jelaskan kebutuhan dengan bahasa natural, AI akan membantu Anda menyelesaikan pemodelan data, pembangunan halaman, orkestrasi Workflow — gunakan percakapan sebagai pengganti konfigurasi manual. Silakan lihat [Mulai Cepat Pembangunan AI](../ai-builder/index.md#gunakan-percakapan-sebagai-pengganti-konfigurasi-manual).
+
+### Lanjutkan Pengembangan Plugin AI
+
+Jika Anda perlu mengembangkan Plugin kustom, AI juga dapat membantu — mulai dari pembuatan scaffold hingga kode komponen, logika bisnis, mencakup seluruh proses pengembangan Plugin. Silakan lihat [Pengembangan Plugin AI](../ai-dev/index.md#dari-satu-kalimat-ke-plugin-lengkap).
+
+### Menggunakan Karyawan AI
+
+Berkolaborasi langsung dengan Karyawan AI di antarmuka NocoBase — analisis data, pembuatan laporan, terjemahan, bantuan pengambilan keputusan, tanpa perlu meninggalkan sistem bisnis. Silakan lihat [Karyawan AI](../ai-employees/index.md).
+
+### Referensi Perintah NocoBase CLI
+
+Jika Anda sudah memiliki aplikasi NocoBase yang berjalan, atau telah berhasil menginisialisasi sebelumnya, dan ingin melanjutkan pengembangan, debugging, atau pengelolaan aplikasi, penjelasan parameter lengkap untuk semua perintah `nb` silakan lihat [Referensi Perintah NocoBase CLI](../api/cli/index.md).
+
+## Tautan Terkait
+
+- [Pembangunan AI](../ai-builder/index.md) — Bangun aplikasi NocoBase dari nol dengan AI
+- [Pengembangan Plugin AI](../ai-dev/index.md) — Gunakan AI untuk membantu mengembangkan Plugin NocoBase
+- [Karyawan AI](../ai-employees/index.md) — Berkolaborasi dengan AI di antarmuka bisnis
+- [Manajemen Lingkungan](../ai-builder/env-bootstrap) — Pemeriksaan lingkungan, penambahan lingkungan, upgrade, dan diagnostik masalah
+- [Referensi Perintah NocoBase CLI](../api/cli/index.md) — Penjelasan parameter lengkap untuk semua perintah
+- [Perbandingan Metode Instalasi dan Versi](../get-started/quickstart) — Berbagai metode instalasi dan saluran versi NocoBase

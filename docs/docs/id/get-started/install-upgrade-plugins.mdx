@@ -1,0 +1,95 @@
+---
+title: "Instalasi dan Upgrade Plugin"
+description: "Mulai cepat NocoBase: Instalasi dan upgrade Plugin"
+keywords: "install,upgrade,plugins,NocoBase"
+---
+
+# Instalasi dan Upgrade Plugin
+
+## Plugin Bawaan
+
+Plugin bawaan NocoBase akan diperbarui secara otomatis bersama dengan versi kernel, tidak perlu operasi manual.
+
+## Plugin Komersial
+
+Untuk metode instalasi dan upgrade detail, silakan lihat: [Panduan Aktivasi Plugin Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
+
+## Plugin Pihak Ketiga
+
+### Instalasi Plugin Melalui Command Line
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Jika aplikasi sudah menginstal Plugin tersebut dan perlu di-upgrade, jalankan:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Upload dan Ekstrak Manual
+
+Pertama-tama download paket Plugin ke lokal, kemudian upload dan ekstrak secara manual ke direktori `./storage/plugins`. Jika Plugin tersebut sudah aktif, setelah upload dan ekstraksi selesai, jalankan perintah berikut untuk menyelesaikan upgrade Plugin.
+
+> ⚠️ **Perhatian**: Untuk menghindari masalah cache, pastikan aplikasi NocoBase sudah berhenti berjalan sebelum menjalankan perintah.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Cara Ekstraksi Plugin yang Benar
+
+Contoh berikut menunjukkan cara mengekstrak paket Plugin dengan benar ke direktori yang ditentukan:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Perintah ini akan mengekstrak Plugin ke direktori yang ditentukan tanpa menghasilkan level direktori `package` yang berlebihan.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Contoh Struktur Direktori yang Benar
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

@@ -40,4 +40,9 @@ export const locales = [
     label: 'Русский',
     href: '/ru/',
   },
+  {
+    code: 'id',
+    label: 'Bahasa Indonesia',
+    href: '/id/',
+  },
 ];
