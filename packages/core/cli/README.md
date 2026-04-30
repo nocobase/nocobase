@@ -138,6 +138,7 @@ In non-interactive resume mode, `nb init --resume --yes` uses default initializa
 | `nb db` | Inspect or manage built-in database runtime status for local envs. |
 | `nb env` | Manage saved CLI env connections. |
 | `nb api` | Call NocoBase API resources from the CLI. |
+| `nb publish` | Generate, copy, and execute local publish files through CLI command APIs. |
 | `nb plugin` | Manage plugins for the selected NocoBase env. |
 | `nb self` | Check or update the installed NocoBase CLI. |
 | `nb skills` | Check, install, or update global NocoBase AI coding skills. |
@@ -250,6 +251,27 @@ image without downloading updates first:
 ```bash
 nb app upgrade --env app1 -s
 ```
+
+## Publish Files
+
+Use `nb publish` when moving backup or migration packages between saved envs.
+The CLI always downloads generated files to the local workspace first so they
+can be inspected and reused:
+
+```bash
+nb publish migration-rule list --env dev
+nb publish migration-rule create --env dev --name dev-to-test --user-rule schema-only --system-rule overwrite-first
+nb publish generate --type migration --env dev --migration-rule <ruleId> --wait
+nb publish file list --scope local --type migration --env dev
+nb publish file pull --type backup --env dev --file <backupFileName>
+nb publish copy --type migration --from dev --to test --file <fileName>
+nb publish execute --type migration --env test --file <fileName> --wait
+```
+
+Generated and pulled files are stored under the global CLI home
+`.nocobase/publish/<type>/<env>/`. The copy
+step uploads a local file to the target env staging area and records the target
+artifact in `.nocobase/publish/manifest.json`.
 
 ## Database Commands
 
