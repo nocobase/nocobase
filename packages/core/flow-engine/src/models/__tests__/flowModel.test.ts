@@ -1855,7 +1855,7 @@ describe('FlowModel', () => {
     });
 
     describe('serialization', () => {
-      test('should serialize basic model data, excluding props and flowEngine', () => {
+      test('should serialize basic model data with the latest props, excluding flowEngine', () => {
         model.sortIndex = 5;
         model.setProps({ name: 'Test Model', value: 42 });
         model.setStepParams({
@@ -1867,13 +1867,12 @@ describe('FlowModel', () => {
         expect(serialized).toEqual(
           expect.objectContaining({
             uid: model.uid,
+            props: expect.objectContaining({ name: 'Test Model', value: 42 }),
             stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
             sortIndex: 5,
             subModels: expect.any(Object),
           }),
         );
-        // props should be excluded from serialization
-        expect(serialized.props).toBeUndefined();
         expect(serialized.flowEngine).toBeUndefined();
       });
 
@@ -1892,12 +1891,29 @@ describe('FlowModel', () => {
         expect(serialized).toEqual(
           expect.objectContaining({
             uid: 'empty-model',
+            props: expect.objectContaining({ foo: 'bar' }),
             stepParams: expect.any(Object),
             sortIndex: expect.any(Number),
             subModels: expect.any(Object),
           }),
         );
         expect(serialized.flowEngine).toBeUndefined();
+      });
+
+      test('should serialize the latest props after multiple updates', () => {
+        model.setProps({ fieldNames: { title: 'name' }, searchable: true });
+        model.setProps({ fieldNames: { title: 'age' } });
+        model.setProps('defaultExpandAll', false);
+
+        const serialized = model.serialize();
+
+        expect(serialized.props).toEqual(
+          expect.objectContaining({
+            fieldNames: { title: 'age' },
+            searchable: true,
+            defaultExpandAll: false,
+          }),
+        );
       });
     });
   });

@@ -11,6 +11,151 @@ import { buildCalendarSlotFormData } from '../actions/CalendarPopupModels';
 import { CalendarBlockModel } from '../CalendarBlockModel';
 
 describe('calendarPopupModels', () => {
+  it('should expose preset field settings before creating a calendar block', () => {
+    const flow: any = (CalendarBlockModel as any).globalFlowRegistry.getFlow('calendarSettings');
+    const step = flow?.steps?.fields;
+    const model = Object.create(CalendarBlockModel.prototype) as CalendarBlockModel;
+
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        filterTargetKey: 'id',
+        getFields: () => [
+          { name: 'name', interface: 'input', uiSchema: { title: 'Name' } },
+          { name: 'startsAt', interface: 'datetime', uiSchema: { title: 'Starts at' } },
+          { name: 'endsAt', type: 'datetime', uiSchema: { title: 'Ends at' } },
+        ],
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'calendarPlugin', {
+      value: {
+        titleFieldInterfaces: {},
+        colorFieldInterfaces: {},
+        dateTimeFieldInterfaces: [],
+      },
+      configurable: true,
+    });
+    (model as any).setProps = function setProps(next: Record<string, any>) {
+      this.props = {
+        ...(this.props || {}),
+        ...next,
+      };
+    };
+
+    expect(step).toMatchObject({
+      preset: true,
+      hideInSettings: true,
+      title: '{{t("Calendar fields", {"ns":"calendar"})}}',
+    });
+    expect(step.defaultParams({ model } as any)).toEqual({});
+    expect(step.uiSchema({ model } as any)).toMatchObject({
+      titleField: {
+        title: '{{t("Title field", {"ns":"calendar"})}}',
+        required: true,
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        'x-component-props': {
+          options: [{ label: 'Name', value: 'name' }],
+        },
+      },
+      start: {
+        title: '{{t("Start date field", {"ns":"calendar"})}}',
+        required: true,
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        'x-component-props': {
+          options: [
+            { label: 'Starts at', value: 'startsAt' },
+            { label: 'Ends at', value: 'endsAt' },
+          ],
+        },
+      },
+      end: {
+        title: '{{t("End date field", {"ns":"calendar"})}}',
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        'x-component-props': {
+          allowClear: true,
+          options: [
+            { label: 'Starts at', value: 'startsAt' },
+            { label: 'Ends at', value: 'endsAt' },
+          ],
+        },
+      },
+    });
+
+    step.beforeParamsSave({ model } as any, {
+      titleField: 'name',
+      start: 'startsAt',
+      end: 'endsAt',
+    });
+
+    expect(model.props.fieldNames).toEqual({
+      title: 'name',
+      start: 'startsAt',
+      end: 'endsAt',
+    });
+  });
+
+  it('should preserve an empty end date field selection without falling back to defaults', () => {
+    const model = Object.create(CalendarBlockModel.prototype) as CalendarBlockModel;
+
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        filterTargetKey: 'id',
+        getFields: () => [
+          { name: 'name', interface: 'input', uiSchema: { title: 'Name' } },
+          { name: 'startsAt', interface: 'datetime', uiSchema: { title: 'Starts at' } },
+          { name: 'endsAt', type: 'datetime', uiSchema: { title: 'Ends at' } },
+        ],
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'calendarPlugin', {
+      value: {
+        titleFieldInterfaces: {},
+        colorFieldInterfaces: {},
+        dateTimeFieldInterfaces: [],
+      },
+      configurable: true,
+    });
+    (model as any).setProps = function setProps(next: Record<string, any>) {
+      this.props = {
+        ...(this.props || {}),
+        ...next,
+      };
+    };
+
+    const flow: any = (CalendarBlockModel as any).globalFlowRegistry.getFlow('calendarSettings');
+    flow.steps.fields.beforeParamsSave({ model } as any, {
+      titleField: 'name',
+      start: 'startsAt',
+    });
+
+    expect(model.props.fieldNames).toEqual({
+      title: 'name',
+      start: 'startsAt',
+      end: null,
+    });
+    expect(model.getFieldNames()).toEqual({
+      id: 'id',
+      title: 'name',
+      start: 'startsAt',
+      end: undefined,
+      colorFieldName: undefined,
+    });
+  });
+
   it('should hide quick create popup settings when quick create is disabled', () => {
     const flow: any = (CalendarBlockModel as any).globalFlowRegistry.getFlow('calendarSettings');
     const step = flow?.steps?.quickCreatePopupSettings;

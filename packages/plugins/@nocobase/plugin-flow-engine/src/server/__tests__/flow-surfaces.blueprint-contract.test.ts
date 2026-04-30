@@ -2575,11 +2575,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(matchedGroups).toHaveLength(1);
   });
 
-  it('should reject same-title navigation group reuse when group metadata is also provided', async () => {
+  it('should ignore group metadata when reusing a unique same-title navigation group', async () => {
     const groupTitle = `Same-title metadata group ${Date.now()}`;
-    await createMenu(rootAgent, {
+    const existingGroup = await createMenu(rootAgent, {
       title: groupTitle,
       type: 'group',
+      icon: 'AppstoreOutlined',
+      tooltip: 'Existing group tooltip',
     });
 
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
@@ -2590,7 +2592,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
           group: {
             title: groupTitle,
             icon: 'UserOutlined',
-            tooltip: 'Should fail for reused group',
+            tooltip: 'Should be ignored for reused group',
+            hideInMenu: true,
           },
           item: {
             title: 'Employees with reused group metadata',
@@ -2611,20 +2614,81 @@ describe('flowSurfaces applyBlueprint contract', () => {
       },
     });
 
-    expect(executeRes.status).toBe(400);
-    expect(readErrorMessage(executeRes)).toContain(
-      `navigation.group.title '${groupTitle}' matched an existing menu group`,
-    );
-    expect(readErrorMessage(executeRes)).toContain('navigation.group.icon');
-    expect(readErrorMessage(executeRes)).toContain('navigation.group.tooltip');
-    expect(readErrorMessage(executeRes)).toContain('Same-title reuse is title-only');
-    expect(readErrorMessage(executeRes)).toContain('flowSurfaces:updateMenu');
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(String(data.surface.pageRoute.parentId)).toBe(String(existingGroup.routeId));
+
+    const reusedGroup = await routesRepo.findOne({
+      filterByTk: existingGroup.routeId,
+    });
+    expect(reusedGroup.get('icon')).toBe('AppstoreOutlined');
+    expect(reusedGroup.get('tooltip')).toBe('Existing group tooltip');
+    expect(reusedGroup.get('hideInMenu')).toBe(false);
   });
 
-  it('should reject navigation.group.routeId when existing-group metadata is also provided', async () => {
+  it('should let navigation.group.routeId take priority over title and ignore group metadata', async () => {
+    const targetGroup = await createMenu(rootAgent, {
+      title: `Explicit target group ${Date.now()}`,
+      type: 'group',
+      icon: 'AppstoreOutlined',
+      tooltip: 'Target group tooltip',
+    });
+    const otherGroupTitle = `Ignored title group ${Date.now()}`;
+    const otherGroup = await createMenu(rootAgent, {
+      title: otherGroupTitle,
+      type: 'group',
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          group: {
+            routeId: targetGroup.routeId,
+            title: otherGroupTitle,
+            icon: 'UserOutlined',
+            tooltip: 'Should be ignored for explicit group',
+            hideInMenu: true,
+          },
+          item: {
+            title: 'Employees under explicit group',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(String(data.surface.pageRoute.parentId)).toBe(String(targetGroup.routeId));
+    expect(String(data.surface.pageRoute.parentId)).not.toBe(String(otherGroup.routeId));
+
+    const reusedGroup = await routesRepo.findOne({
+      filterByTk: targetGroup.routeId,
+    });
+    expect(reusedGroup.get('icon')).toBe('AppstoreOutlined');
+    expect(reusedGroup.get('tooltip')).toBe('Target group tooltip');
+    expect(reusedGroup.get('hideInMenu')).toBe(false);
+  });
+
+  it('should ignore navigation.group.routeId metadata without mutating the existing group', async () => {
     const existingGroup = await createMenu(rootAgent, {
       title: `Explicit group ${Date.now()}`,
       type: 'group',
+      icon: 'AppstoreOutlined',
+      tooltip: 'Existing explicit group tooltip',
     });
 
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
@@ -2656,12 +2720,16 @@ describe('flowSurfaces applyBlueprint contract', () => {
       },
     });
 
-    expect(executeRes.status).toBe(400);
-    expect(readErrorMessage(executeRes)).toContain('navigation.group.routeId');
-    expect(readErrorMessage(executeRes)).toContain('navigation.group.icon');
-    expect(readErrorMessage(executeRes)).toContain('navigation.group.hideInMenu');
-    expect(readErrorMessage(executeRes)).toContain('does not update existing menu-group metadata');
-    expect(readErrorMessage(executeRes)).toContain('flowSurfaces:updateMenu');
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(String(data.surface.pageRoute.parentId)).toBe(String(existingGroup.routeId));
+
+    const reusedGroup = await routesRepo.findOne({
+      filterByTk: existingGroup.routeId,
+    });
+    expect(reusedGroup.get('icon')).toBe('AppstoreOutlined');
+    expect(reusedGroup.get('tooltip')).toBe('Existing explicit group tooltip');
+    expect(reusedGroup.get('hideInMenu')).toBe(false);
   });
 
   it('should reject ambiguous navigation group title reuse and ask for routeId explicitly', async () => {

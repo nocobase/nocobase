@@ -8,7 +8,10 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { upsertKanbanCollectionFieldOptions } from '../models/components/KanbanCreateSortFieldSelect';
+import {
+  upsertKanbanCollectionFieldOptions,
+  upsertKanbanFlowCollectionField,
+} from '../models/components/KanbanCreateSortFieldSelect';
 
 describe('KanbanCreateSortFieldSelect', () => {
   test('upserts newly created sort fields into collection metadata', () => {
@@ -40,5 +43,38 @@ describe('KanbanCreateSortFieldSelect', () => {
       { name: 'priority', interface: 'sort', type: 'sort', scopeKey: 'status' },
       { name: 'status', interface: 'select' },
     ]);
+  });
+
+  test('upserts newly created sort fields into flow collection field map', () => {
+    const fields = new Map<string, any>([
+      ['status', { name: 'status', interface: 'select' }],
+      ['title', { name: 'title', interface: 'input' }],
+    ]);
+    const collection = {
+      options: {
+        fields: Array.from(fields.values()),
+      },
+      getFields: () => Array.from(fields.values()),
+      getField: (name: string) => fields.get(name),
+      setOption: (key: string, value: any) => {
+        collection.options[key] = value;
+      },
+      upsertFields: (nextFields: any[]) => {
+        nextFields.forEach((field) => fields.set(field.name, field));
+      },
+    };
+
+    upsertKanbanFlowCollectionField(collection, { name: 'status_sort', interface: 'sort', scopeKey: 'status' });
+
+    expect(collection.getField('status_sort')).toEqual({
+      name: 'status_sort',
+      interface: 'sort',
+      scopeKey: 'status',
+    });
+    expect(collection.options.fields).toContainEqual({
+      name: 'status_sort',
+      interface: 'sort',
+      scopeKey: 'status',
+    });
   });
 });

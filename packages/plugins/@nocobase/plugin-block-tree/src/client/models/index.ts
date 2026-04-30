@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { TreeBlockModel } from './TreeBlockModel';
+export { TreeActionGroupModel, TreeBlockModel, TreeTitleFieldSettingsModel } from './TreeBlockModel';
 export { TreeFilterBlockMenuModel } from './TreeFilterBlockMenuModel';
 export { treeConnectDataBlocks } from './treeConnectDataBlocks';

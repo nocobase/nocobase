@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Multi-app",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/multi-app/multi-app/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mode Shared Memory",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mode Multi-Environment",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Multi-Space",
+    "link": "/multi-app/multi-space/"
+  }
+]

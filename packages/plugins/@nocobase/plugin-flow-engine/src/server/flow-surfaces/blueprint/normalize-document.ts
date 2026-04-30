@@ -23,7 +23,6 @@ import type {
   FlowSurfaceApplyBlueprintReaction,
 } from './public-types';
 import {
-  APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS,
   assertNonEmptyString,
   assertOnlyAllowedKeys,
   assertPlainObject,
@@ -120,29 +119,18 @@ function normalizeNavigation(input: any) {
           if (!_.isUndefined(routeId) && !_.isString(routeId) && !_.isNumber(routeId)) {
             throwBadRequest(`flowSurfaces applyBlueprint navigation.group.routeId must be a string or integer`);
           }
-          if (!_.isUndefined(routeId) && readString(input.group.title)) {
-            throwBadRequest(`flowSurfaces applyBlueprint navigation.group cannot mix routeId with title`);
-          }
-          const routeMetadataKeys = APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS.filter(
-            (key) => !_.isUndefined(input.group[key]),
-          );
-          if (!_.isUndefined(routeId) && routeMetadataKeys.length) {
-            throwBadRequest(
-              `flowSurfaces applyBlueprint navigation.group.routeId cannot mix with ${routeMetadataKeys
-                .map((key) => `navigation.group.${key}`)
-                .join(
-                  ', ',
-                )}; applyBlueprint create mode does not update existing menu-group metadata. Use flowSurfaces:updateMenu separately if needed`,
-            );
+          if (!_.isUndefined(routeId)) {
+            return {
+              routeId,
+            };
           }
           const normalized = buildDefinedPayload({
-            routeId: _.isUndefined(routeId) ? undefined : routeId,
             title: readOptionalString(input.group.title),
             icon: readOptionalString(input.group.icon),
             tooltip: readOptionalString(input.group.tooltip),
             hideInMenu: readBoolean(input.group.hideInMenu, 'flowSurfaces applyBlueprint navigation.group.hideInMenu'),
           });
-          if (_.isUndefined(normalized.routeId) && !normalized.title) {
+          if (!normalized.title) {
             throwBadRequest(`flowSurfaces applyBlueprint navigation.group requires routeId or title`);
           }
           return normalized;

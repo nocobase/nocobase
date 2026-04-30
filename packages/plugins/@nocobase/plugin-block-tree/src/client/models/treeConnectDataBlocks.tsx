@@ -28,6 +28,10 @@ type SupportedTarget = {
   options: Array<{ label: string; value: string }>;
 };
 
+const CONNECT_FIELDS_FLOW_KEY = 'treeSettings';
+const CONNECT_FIELDS_STEP_KEY = 'connectFields';
+const CONNECT_FIELDS_SUMMARY_KEY = '_summary';
+
 const getCollection = (model: CollectionBlockModel | TreeBlockModel | any) => {
   return model?.collection || model?.context?.collection;
 };
@@ -116,7 +120,7 @@ const getRelatedFieldOptions = (
   );
 };
 
-const normalizeConfig = (config?: ConnectFieldsConfig): ConnectFieldsConfig => {
+export const normalizeTreeConnectConfig = (config?: ConnectFieldsConfig): ConnectFieldsConfig => {
   return {
     targets: Array.isArray(config?.targets)
       ? config.targets
@@ -129,6 +133,49 @@ const normalizeConfig = (config?: ConnectFieldsConfig): ConnectFieldsConfig => {
   };
 };
 
+const getExistingTargetIds = (model: TreeBlockModel) => {
+  const gridModel = model.context.blockGridModel;
+  const dataModels =
+    gridModel?.filterSubModels?.('items', (item: CollectionBlockModel) => !!item?.resource?.supportsFilter) || [];
+
+  return new Set(
+    dataModels
+      .map((targetModel: CollectionBlockModel) => targetModel?.uid)
+      .filter((uid): uid is string => !!uid && uid !== model.uid),
+  );
+};
+
+export const pruneDisconnectedTreeTargets = (model: TreeBlockModel, config?: ConnectFieldsConfig) => {
+  const normalized = normalizeTreeConnectConfig(config);
+  const existingTargetIds = getExistingTargetIds(model);
+  const nextTargets = normalized.targets.filter((target) => existingTargetIds.has(target.targetId));
+
+  return {
+    config: {
+      targets: nextTargets,
+    },
+    changed: nextTargets.length !== normalized.targets.length,
+  };
+};
+
+const isSameConnectConfig = (left?: ConnectFieldsConfig, right?: ConnectFieldsConfig) => {
+  const normalizedLeft = normalizeTreeConnectConfig(left);
+  const normalizedRight = normalizeTreeConnectConfig(right);
+
+  if (normalizedLeft.targets.length !== normalizedRight.targets.length) {
+    return false;
+  }
+
+  return normalizedLeft.targets.every((target, index) => {
+    const other = normalizedRight.targets[index];
+    return (
+      target.targetId === other?.targetId &&
+      target.filterPaths.length === other?.filterPaths?.length &&
+      target.filterPaths.every((path, pathIndex) => path === other.filterPaths[pathIndex])
+    );
+  });
+};
+
 const getTargetShortTitle = (model: any) => {
   if (!model) {
     return '';
@@ -138,7 +185,7 @@ const getTargetShortTitle = (model: any) => {
 };
 
 const getSummary = (model: TreeBlockModel, config?: ConnectFieldsConfig) => {
-  const normalized = normalizeConfig(config);
+  const normalized = pruneDisconnectedTreeTargets(model, config).config;
 
   if (!normalized.targets.length) {
     return model.context.t('Unconnected');
@@ -152,6 +199,16 @@ const getSummary = (model: TreeBlockModel, config?: ConnectFieldsConfig) => {
   }
 
   return `${firstTitle} +${normalized.targets.length - 1}`;
+};
+
+const clearPersistedSummary = (model: TreeBlockModel) => {
+  const stepParams = model.stepParams?.[CONNECT_FIELDS_FLOW_KEY]?.[CONNECT_FIELDS_STEP_KEY];
+  if (!stepParams || typeof stepParams !== 'object') {
+    return;
+  }
+
+  delete stepParams.summary;
+  delete stepParams[CONNECT_FIELDS_SUMMARY_KEY];
 };
 
 const refreshTargetModel = async (targetModel: CollectionBlockModel | any) => {
@@ -184,8 +241,8 @@ const persistConnectConfig = async (model: TreeBlockModel, nextConfig: ConnectFi
     return;
   }
 
-  const previousConfig = normalizeConfig(filterManager.getConnectFieldsConfig(model.uid));
-  const nextNormalizedConfig = normalizeConfig(nextConfig);
+  const previousConfig = normalizeTreeConnectConfig(filterManager.getConnectFieldsConfig(model.uid));
+  const nextNormalizedConfig = normalizeTreeConnectConfig(nextConfig);
   const previousTargetIds = new Set(previousConfig.targets.map((target) => target.targetId));
   const nextTargetIds = new Set(nextNormalizedConfig.targets.map((target) => target.targetId));
 
@@ -197,6 +254,23 @@ const persistConnectConfig = async (model: TreeBlockModel, nextConfig: ConnectFi
 
   await filterManager.saveConnectFieldsConfig(model.uid, nextNormalizedConfig);
   await filterManager.refreshTargetsByFilter(model.uid);
+};
+
+export const syncTreeConnectConfig = async (model: TreeBlockModel) => {
+  const filterManager = model.context.filterManager;
+
+  if (!filterManager) {
+    return normalizeTreeConnectConfig();
+  }
+
+  const currentConfig = filterManager.getConnectFieldsConfig(model.uid);
+  const { config, changed } = pruneDisconnectedTreeTargets(model, currentConfig);
+
+  if (changed) {
+    await filterManager.saveConnectFieldsConfig(model.uid, config);
+  }
+
+  return config;
 };
 
 const getSupportedTargets = (model: TreeBlockModel, t: (key: string) => string) => {
@@ -232,9 +306,6 @@ const highlightTargetBlock = (model: CollectionBlockModel | undefined) => {
     return;
   }
 
-  if (element.dataset.treeHighlightBoxShadow === undefined) {
-    element.dataset.treeHighlightBoxShadow = element.style.boxShadow || '';
-  }
   if (element.dataset.treeHighlightOutline === undefined) {
     element.dataset.treeHighlightOutline = element.style.outline || '';
   }
@@ -242,9 +313,8 @@ const highlightTargetBlock = (model: CollectionBlockModel | undefined) => {
     element.dataset.treeHighlightTransition = element.style.transition || '';
   }
 
-  element.style.boxShadow = '0 0 10px 0 #ccc';
-  element.style.outline = '1px solid var(--colorSettings)';
-  element.style.transition = 'box-shadow 0.2s ease, outline 0.2s ease';
+  element.style.outline = '2px solid var(--colorBorderSettingsHover)';
+  element.style.transition = element.dataset.treeHighlightTransition || '';
 };
 
 const unhighlightTargetBlock = (model: CollectionBlockModel | undefined) => {
@@ -254,10 +324,8 @@ const unhighlightTargetBlock = (model: CollectionBlockModel | undefined) => {
     return;
   }
 
-  element.style.boxShadow = element.dataset.treeHighlightBoxShadow || '';
   element.style.outline = element.dataset.treeHighlightOutline || '';
   element.style.transition = element.dataset.treeHighlightTransition || '';
-  delete element.dataset.treeHighlightBoxShadow;
   delete element.dataset.treeHighlightOutline;
   delete element.dataset.treeHighlightTransition;
 };
@@ -270,21 +338,93 @@ function TreeConnectDataBlocksPanel(props: {
 }) {
   const { model, t, onSummaryChange, setDropdownOpen } = props;
   const [config, setConfig] = React.useState<ConnectFieldsConfig>(() =>
-    normalizeConfig(model.context.filterManager?.getConnectFieldsConfig(model.uid)),
+    normalizeTreeConnectConfig(model.context.filterManager?.getConnectFieldsConfig(model.uid)),
   );
+  const [blockGridVersion, setBlockGridVersion] = React.useState(0);
   const [saving, setSaving] = React.useState(false);
   const [hoveredRowId, setHoveredRowId] = React.useState<string>();
   const hoveredTargetIdRef = React.useRef<string>();
+  const onSummaryChangeRef = React.useRef(onSummaryChange);
+  const lastSummaryRef = React.useRef(getSummary(model, config));
   const panelRef = React.useRef<HTMLDivElement>(null);
   const { token } = theme.useToken();
 
+  onSummaryChangeRef.current = onSummaryChange;
+
+  const notifySummaryChange = React.useCallback(
+    (nextConfig: ConnectFieldsConfig) => {
+      const nextSummary = getSummary(model, nextConfig);
+      if (lastSummaryRef.current === nextSummary) {
+        return;
+      }
+
+      lastSummaryRef.current = nextSummary;
+      onSummaryChangeRef.current(nextSummary);
+    },
+    [model],
+  );
+
   const supportedTargets = React.useMemo(() => {
     return getSupportedTargets(model, t);
-  }, [model, t]);
+  }, [blockGridVersion, model, t]);
 
   React.useEffect(() => {
-    setConfig(normalizeConfig(model.context.filterManager?.getConnectFieldsConfig(model.uid)));
-  }, [model]);
+    let cancelled = false;
+
+    const loadConfig = async () => {
+      const nextConfig = await syncTreeConnectConfig(model);
+      if (cancelled) {
+        return;
+      }
+
+      setConfig((previousConfig) => (isSameConnectConfig(previousConfig, nextConfig) ? previousConfig : nextConfig));
+      notifySummaryChange(nextConfig);
+    };
+
+    void loadConfig();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [model, notifySummaryChange]);
+
+  React.useEffect(() => {
+    const blockGridModel = model.context.blockGridModel;
+    if (!blockGridModel?.emitter) {
+      return;
+    }
+
+    let cancelled = false;
+    const syncAfterChange = async () => {
+      const nextConfig = await syncTreeConnectConfig(model);
+      if (cancelled) {
+        return;
+      }
+
+      setConfig((previousConfig) => (isSameConnectConfig(previousConfig, nextConfig) ? previousConfig : nextConfig));
+      notifySummaryChange(nextConfig);
+    };
+    const handleSubModelChanged = () => {
+      setBlockGridVersion((version) => version + 1);
+    };
+    const handleSubModelRemoved = () => {
+      handleSubModelChanged();
+      void syncAfterChange();
+    };
+
+    blockGridModel.emitter.on('onSubModelAdded', handleSubModelChanged);
+    blockGridModel.emitter.on('onSubModelRemoved', handleSubModelRemoved);
+    blockGridModel.emitter.on('onSubModelReplaced', handleSubModelRemoved);
+    blockGridModel.emitter.on('onSubModelDestroyed', handleSubModelRemoved);
+
+    return () => {
+      cancelled = true;
+      blockGridModel.emitter.off('onSubModelAdded', handleSubModelChanged);
+      blockGridModel.emitter.off('onSubModelRemoved', handleSubModelRemoved);
+      blockGridModel.emitter.off('onSubModelReplaced', handleSubModelRemoved);
+      blockGridModel.emitter.off('onSubModelDestroyed', handleSubModelRemoved);
+    };
+  }, [model, notifySummaryChange]);
 
   React.useEffect(() => {
     return () => {
@@ -299,18 +439,20 @@ function TreeConnectDataBlocksPanel(props: {
 
   const saveConfig = React.useCallback(
     async (nextConfig: ConnectFieldsConfig) => {
-      const normalizedNextConfig = normalizeConfig(nextConfig);
+      const normalizedNextConfig = normalizeTreeConnectConfig(nextConfig);
 
       setSaving(true);
       try {
         await persistConnectConfig(model, normalizedNextConfig);
-        setConfig(normalizedNextConfig);
-        onSummaryChange(getSummary(model, normalizedNextConfig));
+        setConfig((previousConfig) =>
+          isSameConnectConfig(previousConfig, normalizedNextConfig) ? previousConfig : normalizedNextConfig,
+        );
+        notifySummaryChange(normalizedNextConfig);
       } finally {
         setSaving(false);
       }
     },
-    [model, onSummaryChange],
+    [model, notifySummaryChange],
   );
 
   const upsertTarget = React.useCallback(
@@ -486,7 +628,7 @@ export const treeConnectDataBlocks = defineAction({
 
     return {
       type: 'select',
-      key: 'summary',
+      key: CONNECT_FIELDS_SUMMARY_KEY,
       props: {
         options: [
           {
@@ -511,14 +653,16 @@ export const treeConnectDataBlocks = defineAction({
   },
   defaultParams(ctx) {
     return {
-      summary: getSummary(
+      [CONNECT_FIELDS_SUMMARY_KEY]: getSummary(
         ctx.model as TreeBlockModel,
         ctx.model.context.filterManager?.getConnectFieldsConfig?.(ctx.model.uid),
       ),
     };
   },
-  beforeParamsSave(_ctx, params) {
-    params.summary = params.summary || '';
+  beforeParamsSave(ctx, params) {
+    delete params.summary;
+    delete params[CONNECT_FIELDS_SUMMARY_KEY];
+    clearPersistedSummary(ctx.model as TreeBlockModel);
   },
   handler() {},
 });

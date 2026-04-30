@@ -22,7 +22,15 @@ This block is a built-in plugin and does not require additional installation.
 
 ![](https://static-docs.nocobase.com/Calendar-04-13-2026_03_39_PM.png)
 
-Select the "Calendar" block and choose the corresponding data table to create the block.
+![](https://static-docs.nocobase.com/Calendar-04-29-2026_09_47_PM.png)
+
+After selecting the "Calendar" block and choosing a data table, configure the fields used by calendar events in the popup:
+
+1. Select the "Title field", which is used as the event title.
+2. Select the "Start date field", which determines the event start date.
+3. Optionally select the "End date field". If it is not selected, events are displayed as all-day events based on the start date.
+
+After completing the configuration, you can create the Calendar block.
 
 ## Block settings
 
@@ -40,7 +48,7 @@ Specifies the start time of an event.
 
 ### End date field
 
-Specifies the end time of an event.
+Specifies the end time of an event. This field is optional. If it is not configured, events are displayed as all-day events based on the start date.
 
 ### Quick create event
 

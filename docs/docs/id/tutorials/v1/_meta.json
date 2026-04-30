@@ -1,0 +1,127 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Ikhtisar Sistem Manajemen Tugas"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Bab 1: Mengenal NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "Bab 2: Mendesain Sistem Manajemen Tugas"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "Bab 3: Manajemen Data Tugas"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "Bab 4: Plugin Tugas dan Komentar"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "Bab 5: Tab dan Block Dinamis"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "Bab 6: Pengguna dan Izin"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "Bab 7: Workflow"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "Ikhtisar Platform Manajemen Proyek"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "Bab 8: Knowledge Base - Tabel Pohon"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "Bab 9: Dashboard Tugas dan Chart"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "Bab 10: Filter dan Kondisi Dashboard"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "Bab 11: Sub-tugas dan Kalkulasi Jam Kerja"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "Bab 12: Pemesanan Ruang Rapat dan Workflow"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "Mengimplementasikan Review Pendaftaran Pengguna"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "Mengimplementasikan Konversi Lead CRM"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Tips Block Markdown"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "Ikhtisar Fitur CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "Follow-up Lead dan Manajemen Status"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "Sistem CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "Menggunakan API Keys untuk Mendapatkan Data"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Penggunaan Variabel Template Markdown"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "Cara Deployment NocoBase Lebih Cepat"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "Visualisasi Sales Pipeline CRM"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "Panduan Deployment Demo CRM"
+  }
+]
