@@ -58,6 +58,9 @@
       "env": {
         "description": "Manage NocoBase project environments, status, details, and command runtimes."
       },
+      "license": {
+        "description": "Manage NocoBase commercial licensing and licensed plugins."
+      },
       "self": {
         "description": "Inspect or update the NocoBase CLI itself."
       },
