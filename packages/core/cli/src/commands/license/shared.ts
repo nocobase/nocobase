@@ -27,6 +27,14 @@ export const licenseJsonFlag = Flags.boolean({
   default: false,
 });
 
+const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
+
+export const licensePkgUrlFlag = Flags.string({
+  description: 'Commercial package service base URL',
+  default: DEFAULT_LICENSE_PKG_URL,
+  hidden: true,
+});
+
 export type LicenseStatus = 'active' | 'invalid';
 
 export type LicenseKeyData = {
@@ -315,4 +323,47 @@ export function redactLicenseKey(value: string): string {
     return '*'.repeat(text.length);
   }
   return `${text.slice(0, 4)}...${text.slice(-4)}`;
+}
+
+export function resolveLicenseServiceUrl(value?: string): string {
+  return resolveLicensePkgUrl(value).replace(/\/+$/, '');
+}
+
+export function resolveLicensePkgUrl(value?: string): string {
+  const normalized = String(value ?? '').trim() || DEFAULT_LICENSE_PKG_URL;
+  return normalized.replace(/\/+$/, '') + '/';
+}
+
+function shouldRedactOutputKey(key: string): boolean {
+  return /accesskeyid|accesskeysecret|secret|token|password|authorization/i.test(key);
+}
+
+function redactOutputValue(value: string): string {
+  const text = String(value ?? '').trim();
+  if (!text) {
+    return '';
+  }
+  if (text.length <= 8) {
+    return '*'.repeat(text.length);
+  }
+  return `${text.slice(0, 2)}***${text.slice(-2)}`;
+}
+
+export function sanitizeLicenseOutput<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeLicenseOutput(item)) as T;
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, nestedValue]) => [
+        key,
+        shouldRedactOutputKey(key)
+          ? redactOutputValue(String(nestedValue ?? ''))
+          : sanitizeLicenseOutput(nestedValue),
+      ]),
+    ) as T;
+  }
+
+  return value;
 }

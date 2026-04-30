@@ -8,7 +8,7 @@
  */
 
 import { Command } from '@oclif/core';
-import { licenseEnvFlag, licenseJsonFlag, requireLicenseRuntime } from '../shared.js';
+import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { fetchLicensedPluginPackages } from './shared.js';
 import { renderTable } from '../../../lib/ui.js';
 
@@ -24,12 +24,15 @@ export default class LicensePluginsList extends Command {
   static override flags = {
     env: licenseEnvFlag,
     json: licenseJsonFlag,
+    'pkg-url': licensePkgUrlFlag,
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsList);
     const runtime = await requireLicenseRuntime(flags.env);
-    const { commercialPlugins, licensedPlugins } = await fetchLicensedPluginPackages(runtime);
+    const { commercialPlugins, licensedPlugins } = await fetchLicensedPluginPackages(runtime, {
+      pkgUrl: flags['pkg-url'],
+    });
     const payload = {
       ok: true,
       env: runtime.envName,

@@ -9,7 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
-import { licenseEnvFlag, licenseJsonFlag, requireLicenseRuntime } from '../shared.js';
+import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
 import { startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
@@ -43,6 +43,7 @@ export default class LicensePluginsSync extends Command {
   static override flags = {
     env: licenseEnvFlag,
     json: licenseJsonFlag,
+    'pkg-url': licensePkgUrlFlag,
     'dry-run': Flags.boolean({
       description: 'Preview plugin changes without installing, upgrading, or removing anything',
       default: false,
@@ -105,6 +106,7 @@ export default class LicensePluginsSync extends Command {
     let result;
     try {
       result = await syncLicensedPlugins(runtime, {
+        pkgUrl: flags['pkg-url'],
         version,
         dryRun: Boolean(flags['dry-run']),
         onProgress: shouldStreamLogs

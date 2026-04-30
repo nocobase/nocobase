@@ -9,7 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
-import { licenseEnvFlag, licenseJsonFlag, requireLicenseRuntime } from '../shared.js';
+import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { cleanLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
 
@@ -36,6 +36,7 @@ export default class LicensePluginsClean extends Command {
   static override flags = {
     env: licenseEnvFlag,
     json: licenseJsonFlag,
+    'pkg-url': licensePkgUrlFlag,
     'dry-run': Flags.boolean({
       description: 'Preview which commercial plugins would be removed without deleting anything',
       default: false,
@@ -65,6 +66,7 @@ export default class LicensePluginsClean extends Command {
     }
 
     const result = await cleanLicensedPlugins(runtime, {
+      pkgUrl: flags['pkg-url'],
       dryRun: Boolean(flags['dry-run']),
       onProgress: shouldStreamLogs
         ? async (detail) => {

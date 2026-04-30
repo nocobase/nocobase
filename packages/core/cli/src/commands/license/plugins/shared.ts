@@ -21,6 +21,7 @@ import {
 import {
   parseLicenseKey,
   readSavedLicenseKey,
+  resolveLicensePkgUrl,
   type LicenseKeyData,
 } from '../shared.js';
 
@@ -63,8 +64,8 @@ export type LicensePluginCleanResult = {
 
 export type LicensePluginCleanDetail = LicensePluginCleanResult['details'][number];
 
-function resolvePkgBaseUrl(): string {
-  return String(process.env.NOCOBASE_PKG_URL ?? '').trim() || 'https://pkg.nocobase.com/';
+function resolvePkgBaseUrl(pkgUrl?: string): string {
+  return resolveLicensePkgUrl(pkgUrl);
 }
 
 async function loginPkg(baseURL: string, keyData: LicenseKeyData): Promise<string> {
@@ -92,9 +93,14 @@ export async function loadSavedLicenseKeyData(runtime: ManagedAppRuntime): Promi
   return parseLicenseKey(licenseKey);
 }
 
-export async function fetchLicensedPluginPackages(runtime: ManagedAppRuntime): Promise<LicensedPluginPackages> {
+export async function fetchLicensedPluginPackages(
+  runtime: ManagedAppRuntime,
+  options: {
+    pkgUrl?: string;
+  } = {},
+): Promise<LicensedPluginPackages> {
   const keyData = await loadSavedLicenseKeyData(runtime);
-  const baseURL = resolvePkgBaseUrl();
+  const baseURL = resolvePkgBaseUrl(options.pkgUrl);
   const token = await loginPkg(baseURL, keyData);
   const response = await axios.get(`${baseURL}pro-packages`, {
     headers: {
@@ -300,15 +306,16 @@ async function removeDownloadedPlugin(pluginName: string, storagePath: string): 
 export async function syncLicensedPlugins(
   runtime: ManagedAppRuntime,
   options: {
+    pkgUrl?: string;
     version: string;
     dryRun?: boolean;
     onProgress?: (detail: LicensePluginSyncDetail) => void | Promise<void>;
   },
 ): Promise<LicensePluginSyncResult> {
   const keyData = await loadSavedLicenseKeyData(runtime);
-  const baseURL = resolvePkgBaseUrl();
+  const baseURL = resolvePkgBaseUrl(options.pkgUrl);
   const token = await loginPkg(baseURL, keyData);
-  const { commercialPlugins, licensedPlugins } = await fetchLicensedPluginPackages(runtime);
+  const { commercialPlugins, licensedPlugins } = await fetchLicensedPluginPackages(runtime, { pkgUrl: options.pkgUrl });
 
   const storagePath = resolvePluginStoragePath(runtime.env.storagePath);
   const nodeModulesPath = String(runtime.env.envVars.NODE_MODULES_PATH ?? '').trim();
@@ -407,11 +414,12 @@ export async function syncLicensedPlugins(
 export async function cleanLicensedPlugins(
   runtime: ManagedAppRuntime,
   options: {
+    pkgUrl?: string;
     dryRun?: boolean;
     onProgress?: (detail: LicensePluginCleanDetail) => void | Promise<void>;
   } = {},
 ): Promise<LicensePluginCleanResult> {
-  const { commercialPlugins } = await fetchLicensedPluginPackages(runtime);
+  const { commercialPlugins } = await fetchLicensedPluginPackages(runtime, { pkgUrl: options.pkgUrl });
   const storagePath = resolvePluginStoragePath(runtime.env.storagePath);
   const nodeModulesPath = String(runtime.env.envVars.NODE_MODULES_PATH ?? '').trim();
   const result: LicensePluginCleanResult = {
