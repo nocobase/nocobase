@@ -2,17 +2,17 @@
 
 In the last chapter, we used workflows to make the system send notifications and record timestamps automatically. The system is getting smarter, but we're still missing one thing — **a bird's-eye view**.
 
-How many tickets are there? How many have been resolved? Which category has the most issues? How many new tickets come in each day? You can't answer these questions by scrolling through a list. In this chapter, we'll use [chart blocks](/data-visualization) (pie, line, bar charts) and [Markdown blocks](/interface-builder/blocks/other/markdown) to build a **data dashboard** that turns raw data into something you can understand at a glance.
+How many tickets are there? How many have been resolved? Which category has the most issues? How many new tickets come in each day? You can't answer these questions by scrolling through a list. In this chapter, we'll use [chart blocks](/data-visualization) (pie, line, bar charts) and [Markdown blocks](/interface-builder/blocks/other-blocks/markdown) to build a **data dashboard** that turns raw data into something you can understand at a glance.
 
 ## 7.1 Adding a Dashboard Page
 
-First, let's add a new [menu](/interface-builder/menus) item to the top navigation bar.
+First, let's add a new menu item to the top navigation bar.
 
 Enter [configuration mode](/get-started/how-nocobase-works), click **"Add menu item"** (`+` icon) on the top menu bar, select **"Modern page (v2)"**, and name it "Dashboard."
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 
-This [page](/interface-builder/pages) is dedicated to charts — it's our dashboard home base.
+This page is dedicated to charts — it's our dashboard home base.
 
 ## 7.2 Pie Chart: Ticket Status Distribution
 
@@ -24,8 +24,8 @@ After adding it, click the **Configure** button in the top-right corner of the [
 
 ### Configuring the Data Query
 
-- **[Collection](/data-sources/main/collection)**: Select "Tickets"
-- **Measures**: Select any unique [field](/data-sources/field) (e.g., ID), set the aggregation to **Count**
+- **[Collection](/data-sources/data-modeling/collection)**: Select "Tickets"
+- **Measures**: Select any unique [field](/data-sources/data-modeling/collection-fields) (e.g., ID), set the aggregation to **Count**
 - **Dimensions**: Select the "Status" field
 
 ![07-dashboard-2026-03-15-21-44-32](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-44-32.png)
@@ -114,7 +114,7 @@ Select the columns to display: Title, Status, Priority, Assignee, Created at.
 
 Beyond charts, we can also put some text information on the dashboard.
 
-Add a **[Markdown block](/interface-builder/blocks/other/markdown)** and write a system announcement or usage instructions:
+Add a **[Markdown block](/interface-builder/blocks/other-blocks/markdown)** and write a system announcement or usage instructions:
 
 ```markdown
 ## IT HelpDesk System
@@ -266,5 +266,5 @@ At this point, our ticket system is quite feature-complete: data modeling, page 
 ## Related Resources
 
 - [Data Visualization](/data-visualization) — Chart configuration guide
-- [Markdown Block](/interface-builder/blocks/other/markdown) — Markdown block usage
+- [Markdown Block](/interface-builder/blocks/other-blocks/markdown) — Markdown block usage
 - [Block Layout](/interface-builder/blocks) — Page layout and block configuration

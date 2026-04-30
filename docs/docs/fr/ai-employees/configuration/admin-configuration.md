@@ -105,7 +105,7 @@ La phase de création de l'employé complète principalement la configuration du
 
 Les compétences déterminent ce que l'employé "peut faire".
 
-> 💡 Pour des instructions détaillées, veuillez consulter : [Compétences](/ai-employees/features/tool)
+> 💡 Pour des instructions détaillées, veuillez consulter : [Compétences](/ai-employees/features/tools)
 
 | Type | Portée des capacités | Exemple | Niveau de risque |
 | ---- | ------- | --------- | ------ |
@@ -309,7 +309,7 @@ Pour rendre vos employés IA plus puissants, vous pouvez continuer la lecture de
 
 **Fonctionnalités avancées :**
 
-* [Compétences](/ai-employees/features/tool) - Comprendre en profondeur la configuration et l'usage des compétences
+* [Compétences](/ai-employees/features/tools) - Comprendre en profondeur la configuration et l'usage des compétences
 * [Tâches](/ai-employees/features/task) - Techniques avancées de configuration des tâches
 * [Sélectionner un bloc](/ai-employees/features/pick-block) - Comment spécifier des blocs de données pour l'employé IA
 * Source de données - Veuillez vous référer à la documentation du plugin de source de données correspondant

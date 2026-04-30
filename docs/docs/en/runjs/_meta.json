@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "RunJS Overview",
-    "link": "/runjs"
+    "link": "/runjs/"
   },
   {
     "type": "custom-link",
@@ -27,11 +27,6 @@
         "type": "custom-link",
         "label": "document",
         "link": "/runjs/document"
-      },
-      {
-        "type": "custom-link",
-        "label": "navigator",
-        "link": "/runjs/navigator"
       },
       {
         "type": "custom-link",

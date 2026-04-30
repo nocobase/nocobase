@@ -57,13 +57,13 @@ function createCdnClient() {
  * @param {string} timestampDir
  */
 const REWRITE_RULES = [
-  // /en/ 下无后缀的页面路由，去掉 /en/ 前缀并补 .html（如 /en/vector-store → /{ts}/vector-store.html）
-  { sourceUrl: '^/en/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1.html`, flag: 'break' },
-  // 其他语言（如 /cn/）无后缀的页面路由，补 .html（如 /cn/vector-store → /{ts}/cn/vector-store.html）
-  { sourceUrl: '^/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1.html`, flag: 'break' },
-  // /en/ 下的静态资源和目录，去掉 /en/ 前缀（如 /en/style.css → /{ts}/style.css，/en/ → /{ts}/）
+  // /en/ 下无后缀的页面路由，去掉 /en/ 前缀并改写到目录式 index.html
+  { sourceUrl: '^/en/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
+  // 其他语言和默认语言的无后缀页面路由，统一改写到目录式 index.html
+  { sourceUrl: '^/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
+  // /en/ 下的静态资源和目录，继续去掉 /en/ 前缀
   { sourceUrl: '^/en/(.*)', targetTemplate: (ts) => `/${ts}/$1`, flag: 'break' },
-  // 兜底：所有其他请求加时间戳前缀（如 /cn/style.css → /{ts}/cn/style.css，/ → /{ts}/）
+  // 兜底：所有其他请求继续只补时间戳前缀
   { sourceUrl: '^/(.*)', targetTemplate: (ts) => `/${ts}/$1`, flag: 'break' },
 ];
 

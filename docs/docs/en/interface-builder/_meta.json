@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Overview",
-    "link": "/interface-builder"
+    "link": "/interface-builder/"
   },
   {
     "type": "custom-link",
@@ -11,7 +11,7 @@
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/interface-builder/blocks"
+        "link": "/interface-builder/blocks/"
       },
       {
         "type": "custom-link",
@@ -175,7 +175,7 @@
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/interface-builder/fields"
+        "link": "/interface-builder/fields/"
       },
       {
         "type": "custom-link",
@@ -352,7 +352,7 @@
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/interface-builder/actions"
+        "link": "/interface-builder/actions/"
       },
       {
         "type": "custom-link",

@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Aperçu",
-    "link": "/notification-manager"
+    "link": "/notification-manager/"
   },
   {
     "type": "custom-link",
@@ -11,17 +11,17 @@
       {
         "type": "custom-link",
         "label": "Messagerie interne",
-        "link": "/notification-manager/notification-in-app-message"
+        "link": "/notification-manager/notification-in-app-message/"
       },
       {
         "type": "custom-link",
         "label": "E-mail",
-        "link": "/notification-manager/notification-email"
+        "link": "/notification-manager/notification-email/"
       },
       {
         "type": "custom-link",
         "label": "WeChat Work",
-        "link": "/notification-manager/wecom"
+        "link": "/notification-manager/wecom/"
       }
     ]
   },

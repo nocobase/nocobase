@@ -34,7 +34,7 @@ AI 従業員（`AI Employees`）は、NocoBase の業務システムに深く統
 - [LLM サービスの設定](/ai-employees/features/llm-service)：プロバイダー（Provider）に接続し、利用可能なモデルを設定・管理します。
 - [AI 従業員の有効化](/ai-employees/features/enable-ai-employee)：内蔵従業員の有効化/無効化、および利用範囲を制御します。
 - [AI 従業員の新規作成](/ai-employees/features/new-ai-employees)：ロール、キャラクター設定、ウェルカムメッセージ、能力の境界を定義します。
-- [スキルの使用](/ai-employees/features/tool)：スキルの権限（`Ask` / `Allow`）を設定し、実行リスクを制御します。
+- [スキルの使用](/ai-employees/features/tools)：スキルの権限（`Ask` / `Allow`）を設定し、実行リスクを制御します。
 
 ### B. 日常のコラボレーション（業務ユーザー）
 

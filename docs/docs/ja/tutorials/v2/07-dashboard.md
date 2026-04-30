@@ -2,17 +2,17 @@
 
 前の章ではワークフローを使ってシステムに自動通知と自動時刻記録をさせました。システムはどんどんスマートになりましたが、まだ 1 つ足りないものがあります——**全体を俯瞰する視点**です。
 
-チケットは何件？対応済みは何件？どの種類の問題が多い？毎日何件追加されている？これらの質問に一覧をスクロールしても答えられません。この章では、[チャートブロック](/data-visualization)（円グラフ、折れ線グラフ、棒グラフ）と [Markdown ブロック](/interface-builder/blocks/other/markdown)で**データダッシュボード**を構築し、データを一目で理解できる画面に変えます。
+チケットは何件？対応済みは何件？どの種類の問題が多い？毎日何件追加されている？これらの質問に一覧をスクロールしても答えられません。この章では、[チャートブロック](/data-visualization)（円グラフ、折れ線グラフ、棒グラフ）と [Markdown ブロック](/interface-builder/blocks/other-blocks/markdown)で**データダッシュボード**を構築し、データを一目で理解できる画面に変えます。
 
 ## 7.1 ダッシュボードページの追加
 
-まず、トップナビゲーションバーに新しい[メニュー](/interface-builder/menus)項目を追加します。
+まず、トップナビゲーションバーに新しいメニュー項目を追加します。
 
 [設定モード](/get-started/how-nocobase-works)に入り、トップメニューバーの **「メニュー項目を追加」**（`+` アイコン）をクリックし、**「新版ページ（v2）」** を選択して「データダッシュボード」と名付けます。
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 
-この[ページ](/interface-builder/pages)はチャート専用で、ダッシュボードのメイン画面になります。
+このページはチャート専用で、ダッシュボードのメイン画面になります。
 
 ## 7.2 円グラフ：チケットステータスの分布
 
@@ -24,8 +24,8 @@
 
 ### データクエリの設定
 
-- **[データテーブル](/data-sources/main/collection)**：「チケット」を選択
-- **メジャー（Measures）**：重複しない任意の[フィールド](/data-sources/field)（例：ID）を選択し、集計方法は **カウント（Count）** を選択
+- **[データテーブル](/data-sources/data-modeling/collection)**：「チケット」を選択
+- **メジャー（Measures）**：重複しない任意の[フィールド](/data-sources/data-modeling/collection-fields)（例：ID）を選択し、集計方法は **カウント（Count）** を選択
 - **ディメンション（Dimensions）**：「ステータス」フィールドを選択
 
 ![07-dashboard-2026-03-15-21-44-32](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-44-32.png)
@@ -114,7 +114,7 @@
 
 チャートの他にも、ダッシュボードにテキスト情報を配置できます。
 
-**[Markdown ブロック](/interface-builder/blocks/other/markdown)** を追加し、システムのお知らせや使い方を記入します。
+**[Markdown ブロック](/interface-builder/blocks/other-blocks/markdown)** を追加し、システムのお知らせや使い方を記入します。
 
 ```markdown
 ## IT チケットシステム
@@ -270,5 +270,5 @@ ctx.render(`
 ## 関連リソース
 
 - [データビジュアライゼーション](/data-visualization) — チャート設定の詳細
-- [Markdown ブロック](/interface-builder/blocks/other/markdown) — Markdown ブロックの使い方
+- [Markdown ブロック](/interface-builder/blocks/other-blocks/markdown) — Markdown ブロックの使い方
 - [ブロックレイアウト](/interface-builder/blocks) — ページレイアウトとブロック設定

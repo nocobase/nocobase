@@ -7,7 +7,7 @@ import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
 import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
-import {pluginCrossRefSidebar, crossRefCanonicalMap} from './plugins/pluginCrossRef';
+import { pluginCrossRefSidebar, crossRefCanonicalMap } from './plugins/pluginCrossRef';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -28,13 +28,12 @@ const locales = {
 
 const currentLocale = locales[lang as keyof typeof locales] || locales.en;
 
-const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr', 'ru'];
+const indexLanguages = ['en', 'cn', 'ja', 'es', 'pt', 'de', 'fr', 'ru'];
 
 const langMap = {
   en: 'en-US',
   cn: 'zh-CN',
   ja: 'ja-JP',
-  ko: 'ko-KR',
   es: 'es-ES',
   pt: 'pt-PT',
   de: 'de-DE',
@@ -71,7 +70,7 @@ function sitemap(): RspressPlugin {
         return;
       }
 
-      const baseDomain = 'https://v2.docs.nocobase.com';
+      const baseDomain = 'https://docs.nocobase.com';
 
       const urlEntries = Array.from(routes)
         .sort()
@@ -133,20 +132,20 @@ export default defineConfig({
       // 跨模块虚拟路由通过 frontmatter canonicalPath 指向原始页面
       const canonicalRoute = crossRefCanonicalMap?.[route.routePath] || route.routePath;
       if (lang !== 'en') {
-        return `<link rel="canonical" href="https://v2.docs.nocobase.com/${lang}${canonicalRoute}" />`
+        return `<link rel="canonical" href="https://docs.nocobase.com/${lang}${canonicalRoute}" />`
       }
-      return `<link rel="canonical" href="https://v2.docs.nocobase.com${canonicalRoute}" />`
+      return `<link rel="canonical" href="https://docs.nocobase.com${canonicalRoute}" />`
     },
     (route) => {
       const links = [];
       links.push(...indexLanguages.map(language => {
         if (language === 'en') {
-          return `<link rel="alternate" hreflang="en-US" href="https://v2.docs.nocobase.com${route.routePath}" />`;
+          return `<link rel="alternate" hreflang="en-US" href="https://docs.nocobase.com${route.routePath}" />`;
         }
         const hreflang = langMap[language as keyof typeof langMap];
-        return `<link rel="alternate" hreflang="${hreflang}" href="https://v2.docs.nocobase.com/${language}${route.routePath}" />`
+        return `<link rel="alternate" hreflang="${hreflang}" href="https://docs.nocobase.com/${language}${route.routePath}" />`
       }));
-      links.push(`<link rel="alternate" hreflang="x-default" href="https://v2.docs.nocobase.com${route.routePath}" />`);
+      links.push(`<link rel="alternate" hreflang="x-default" href="https://docs.nocobase.com${route.routePath}" />`);
       return links.join('\n');
     },
   ],

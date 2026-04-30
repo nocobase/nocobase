@@ -1,5 +1,5 @@
 export const locales = [
-  // Preferred languages first: en, zh(cn), ja, ko, es, pt, de, fr
+  // Preferred languages first: en, zh(cn), ja, es, pt, de, fr
   {
     code: 'en',
     label: 'English',
@@ -14,11 +14,6 @@ export const locales = [
     code: 'ja',
     label: '日本語',
     href: '/ja/',
-  },
-  {
-    code: 'ko',
-    label: '한국어',
-    href: '/ko/',
   },
   {
     code: 'es',

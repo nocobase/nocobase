@@ -125,8 +125,6 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
     // resolve against only this card after refreshes.
     const fieldIndex = [`${cardScopeKey}:0`];
     const grid = this.subModels.grid.createFork({}, `grid-${cardScopeKey}`) as any;
-    const themeToken = this.context?.themeToken;
-
     grid.gridContainerRef = React.createRef<HTMLDivElement>();
 
     const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
@@ -165,6 +163,10 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
       get: () => cardScopeKey,
       cache: false,
     });
+    grid.context.defineProperty('flowSettingsEnabled', {
+      get: () => !!this.context.flowSettingsEnabled,
+      cache: false,
+    });
 
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const clickEnabled = this.props.enableCardClick !== false;
@@ -200,14 +202,6 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding-left: ${themeToken ? `${themeToken.marginMD}px` : '14px'};
-            padding-right: ${themeToken ? `${themeToken.marginMD}px` : '14px'};
-            padding-top: ${themeToken ? `${themeToken.marginSM}px` : '14px'};
-            padding-bottom: ${themeToken ? `${themeToken.marginSM}px` : '14px'};
-          }
-
-          .ant-form-item {
-            margin-bottom: 4px;
           }
         `}
       >

@@ -23,10 +23,10 @@
 
 1. 点击「添加」按钮，打开弹窗。
 2. 在弹窗中点击 **「创建[区块](/interface-builder/blocks)（Add block）」→ 数据区块 → 表单（添加）**。
-3. 选择 **「当前[数据表](/data-sources/main/collection)（Current collection）」**。弹窗已经关联了对应的数据表上下文，无需手动指定。
+3. 选择 **「当前[数据表](/data-sources/data-modeling/collection)（Current collection）」**。弹窗已经关联了对应的数据表上下文，无需手动指定。
 
    ![04-forms-and-details-2026-03-13-09-44-50](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-44-50.png)
-4. 在表单中点击 **「[字段](/data-sources/field)（Fields）」**，勾选以下字段：
+4. 在表单中点击 **「[字段](/data-sources/data-modeling/collection-fields)（Fields）」**，勾选以下字段：
 
 | 字段 | 配置要点 |
 |------|---------|

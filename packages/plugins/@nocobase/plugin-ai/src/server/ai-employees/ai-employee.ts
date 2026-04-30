@@ -403,6 +403,9 @@ export class AIEmployee {
     const { systemPrompt, tools, middleware } = context;
     const agent = await this.createAgent({ provider, systemPrompt, tools, middleware });
     const input = this.getAgentInput(context, state);
+    if (this.from === 'sub-agent') {
+      delete config.configurable;
+    }
     return agent.invoke(input, this.withRunMetadata(config));
   }
 

@@ -34,7 +34,7 @@ Consultez d'abord le [Démarrage rapide](/ai-employees/quick-start) et suivez l'
 - [Configurer le service LLM](/ai-employees/features/llm-service) : connectez les fournisseurs (Provider), configurez et gérez les modèles disponibles.
 - [Activer les employés IA](/ai-employees/features/enable-ai-employee) : activez ou désactivez les employés intégrés, contrôlez la portée de disponibilité.
 - [Créer un nouvel employé IA](/ai-employees/features/new-ai-employees) : définissez le rôle, la personnalité, le message d'accueil et les limites de capacités.
-- [Utiliser des compétences](/ai-employees/features/tool) : configurez les permissions des compétences (`Ask` / `Allow`) pour contrôler les risques d'exécution.
+- [Utiliser des compétences](/ai-employees/features/tools) : configurez les permissions des compétences (`Ask` / `Allow`) pour contrôler les risques d'exécution.
 
 ### B. Collaboration quotidienne (Utilisateurs métier)
 
