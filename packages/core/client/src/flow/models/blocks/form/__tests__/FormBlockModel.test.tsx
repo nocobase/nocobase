@@ -303,6 +303,29 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(params.note).toBeUndefined();
   });
 
+  it('limits formValues meta to fields configured in the form grid', async () => {
+    const model = await setupFormModel();
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+    mockFormGridEnabledFields(model, ['customer', 'note']);
+
+    const opt = (model.context as any).getPropertyOptions('formValues');
+    const meta = await opt.meta();
+    const props = await meta.properties();
+    const customerFields = await props.customer.properties();
+
+    expect(props).toHaveProperty('customer');
+    expect(props).toHaveProperty('note');
+    expect(props).not.toHaveProperty('status');
+    expect(props).not.toHaveProperty('assignees');
+    expect(customerFields).toHaveProperty('name');
+    expect(customerFields).toHaveProperty('level');
+  });
+
   it('registers formValuesChange event and eventSettings flow', async () => {
     const engine = new FlowEngine();
     const TestFormModel = await createTestFormModelSubclass();

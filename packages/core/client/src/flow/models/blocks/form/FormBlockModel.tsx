@@ -277,9 +277,31 @@ export class FormBlockModel<
   }
 
   protected createFormValuesMetaFactory(): PropertyMetaFactory {
+    const getActiveCollection = () => {
+      const collection = this.collection;
+      if (!collection) return null;
+
+      const items = this.subModels.grid?.subModels?.items ?? [];
+      const fieldMap = new Map<string, any>();
+      for (const it of items) {
+        const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+        const name = fp?.toString().split('.')[0];
+        const field = name ? collection.getField?.(name) : null;
+        if (field) {
+          fieldMap.set(name, field);
+        }
+      }
+
+      const activeCollection = Object.create(collection);
+      activeCollection.fields = Array.from(fieldMap.values());
+      activeCollection.getField = (name: string) => fieldMap.get(name);
+      activeCollection.getFields = () => Array.from(fieldMap.values());
+      return activeCollection;
+    };
+
     // 基于通用函数创建 MetaFactory（含 buildVariablesParams）
     return createAssociationAwareObjectMetaFactory(
-      () => this.collection,
+      getActiveCollection,
       this.translate('Current form'),
       () => this.form?.getFieldsValue?.() || {},
     );
