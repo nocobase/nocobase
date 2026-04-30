@@ -63,6 +63,7 @@ COPY dist.tar.gz /app/nocobase-docs.tar.gz
 
 WORKDIR /app/nocobase
 
+RUN npm install -g @nocobase/cli
 RUN mkdir -p /app/nocobase/storage/uploads/ && \
   echo "$COMMIT_HASH" > /app/nocobase/storage/uploads/COMMIT_HASH && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
