@@ -75,7 +75,7 @@ type KanbanCollectionIdentity = {
   getFilterByTK?: (record: any) => any;
 };
 
-export const KANBAN_GROUP_FIELD_INTERFACES = ['select', 'm2o'] as const;
+export const KANBAN_GROUP_FIELD_INTERFACES = ['select', 'radioGroup', 'm2o'] as const;
 
 const MULTIPLE_GROUP_FIELD_INTERFACES = new Set(['m2m', 'o2m']);
 const ASSOCIATION_GROUP_FIELD_INTERFACES = new Set(['m2o', 'm2m', 'o2m', 'obo', 'oho']);

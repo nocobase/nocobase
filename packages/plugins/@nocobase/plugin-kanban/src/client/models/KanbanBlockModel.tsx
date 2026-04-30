@@ -1033,13 +1033,15 @@ KanbanBlockModel.registerFlow({
               groupField: {
                 type: 'string',
                 title: tExpr('Grouping field', { ns: 'kanban' }),
-                description: tExpr('Single select and many-to-one fields can be used as the grouping field', {
-                  ns: 'kanban',
-                }),
                 required: true,
                 enum: groupFieldOptions,
                 'x-component': 'Select',
                 'x-decorator': 'FormItem',
+                'x-decorator-props': {
+                  tooltip: tExpr('Single select and many-to-one fields can be used as the grouping field', {
+                    ns: 'kanban',
+                  }),
+                },
                 'x-component-props': {
                   options: groupFieldOptions,
                 },

@@ -551,12 +551,14 @@ describe('KanbanBlockModel.filterCollection', () => {
           groupField: {
             type: 'string',
             title: '{{t("Grouping field", {"ns":"kanban"})}}',
-            description:
-              '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
             required: true,
             enum: [],
             'x-component': 'Select',
             'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip:
+                '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
+            },
             'x-component-props': {
               options: [],
             },
@@ -642,7 +644,7 @@ describe('KanbanBlockModel.filterCollection', () => {
     ]);
   });
 
-  test('grouping option helper text is disabled while drag sorting field keeps tooltip', () => {
+  test('grouping settings helper text uses tooltip consistently', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.grouping;
     const schema = step.uiSchema({
@@ -657,6 +659,10 @@ describe('KanbanBlockModel.filterCollection', () => {
       },
     } as any);
 
+    expect(schema.grouping.properties.groupField.description).toBeUndefined();
+    expect(schema.grouping.properties.groupField['x-decorator-props']).toMatchObject({
+      tooltip: '{{t("Single select and many-to-one fields can be used as the grouping field", {"ns":"kanban"})}}',
+    });
     expect(schema.grouping.properties.groupOptions.description).toBeUndefined();
     expect(schema.grouping.properties.groupOptions['x-decorator-props']).toBeUndefined();
     expect(schema.grouping.properties.dragSortBy['x-decorator-props']).toMatchObject({
