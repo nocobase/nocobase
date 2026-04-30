@@ -17,23 +17,29 @@ NocoBase 文档站维护 `cn / en / ja / es / pt / de / fr / ru / id / vi` 共 1
 
 ## 用法
 
-从仓库根目录运行：
+脚本会自己探测 docsRoot——支持两种 cwd：仓库根目录或 `docs/` 目录。从哪儿跑都行：
 
 ```bash
-# 默认扫 docs/docs 下所有非 cn 语言（ar 除外，见下文）
+# 从仓库根目录跑
 node docs/scripts/check-tree-alignment.mjs
 node docs/scripts/check-meta-alignment.mjs
 node docs/scripts/check-nav-alignment.mjs
 node docs/scripts/check-home-alignment.mjs
 node docs/scripts/check-bloated-files.mjs
 
+# 或从 docs/ 目录跑（CI 一般在这里跑）
+cd docs
+node scripts/check-tree-alignment.mjs
+node scripts/check-meta-alignment.mjs
+# ...
+
 # 只查特定语言
 node docs/scripts/check-bloated-files.mjs --lang=es
 
-# 指定不同的 docs 根目录
-node docs/scripts/check-tree-alignment.mjs path/to/docs/docs
+# 显式传 docs 根目录（cwd 不在仓库内时）
+node docs/scripts/check-tree-alignment.mjs /abs/path/to/docs/docs
 
-# i18n coverage：跟前五个不一样，输入是 PR 改动的文件列表（不扫文件树）
+# i18n coverage：输入是 PR 改动的文件列表（不扫文件树，cwd 无所谓）
 gh pr view <pr-number> --json files --jq '.files[].path' | node docs/scripts/check-i18n-coverage.mjs
 node docs/scripts/check-i18n-coverage.mjs --files=changed-files.txt
 ```
@@ -82,12 +88,12 @@ gh pr edit <pr-number> --add-label skip-i18n-check
 
 ## 依赖
 
-- `check-home-alignment.mjs` 用 `js-yaml` 解析 frontmatter，从当前工作目录的 `node_modules` 解析。仓库执行过 `yarn install` 后默认包含，无需额外安装。
-- 其他四个脚本仅用 Node 内置模块（`fs` / `path`），零依赖。
+- `check-home-alignment.mjs` 用 `js-yaml` 解析 frontmatter，按 cwd 链路找它的 `node_modules`：先看 `<cwd>/node_modules`，再看 `<cwd>/docs/node_modules`，覆盖「从 repo root 跑」和「从 docs/ 跑」两种场景。`yarn install` 之后会作为 rspress 间接依赖装到 `docs/node_modules`，无需手动安装。
+- 其他五个脚本仅用 Node 内置模块（`fs` / `path`），零依赖。
 
 ## 平台兼容
 
-五个脚本路径处理统一用 `path.posix.join` 拼相对路径，CRLF / LF 都能解析。Windows、macOS、Linux 都能跑，输出里的相对路径统一是正斜杠。
+六个脚本路径处理统一用 `path.posix.join` 拼相对路径，CRLF / LF 都能解析。Windows、macOS、Linux 都能跑，输出里的相对路径统一是正斜杠。
 
 ## 暂不维护的语言
 

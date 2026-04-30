@@ -35,6 +35,15 @@ function parseArgs(argv) {
   return args;
 }
 
+// 探测 docsRoot：兼容两种 cwd——repo root（'docs/docs'）和 docs/（'./docs'）。
+// 找到带 cn/ 子目录的就用，都没有再退回到 'docs/docs' 让后续校验报清晰错。
+function defaultDocsRoot() {
+  for (const candidate of ['docs/docs', './docs']) {
+    if (fs.existsSync(path.join(candidate, 'cn'))) return candidate;
+  }
+  return 'docs/docs';
+}
+
 function listMdFiles(root) {
   const out = [];
   function walk(dir, rel) {
@@ -67,8 +76,12 @@ function maxLineLength(file) {
 
 function main() {
   const args = parseArgs(process.argv);
-  const docsRoot = args.positional[0] || 'docs/docs';
+  const docsRoot = args.positional[0] || defaultDocsRoot();
   const cnRoot = path.join(docsRoot, 'cn');
+  if (!fs.existsSync(cnRoot)) {
+    console.error(`找不到 ${cnRoot}（请在 NocoBase 主仓库根目录或 docs/ 目录下运行，或传 docs 根的绝对路径作为第一个位置参数）`);
+    process.exit(1);
+  }
 
   const langs = args.lang
     ? [args.lang]
