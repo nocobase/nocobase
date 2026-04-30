@@ -16,7 +16,7 @@ import {
 } from '../../../lib/publish.js';
 import { failTask, startTask, succeedTask } from '../../../lib/ui.js';
 
-export default class PublishFilePull extends Command {
+export default class ReleaseFilePull extends Command {
   static override summary = 'Download a remote publish file into the global CLI publish workspace';
 
   static override examples = [
@@ -58,7 +58,7 @@ export default class PublishFilePull extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishFilePull);
+    const { flags } = await this.parse(ReleaseFilePull);
     const type = assertPublishType(flags.type);
     const source = flags.source ? assertPublishRemoteFileSource(flags.source) : defaultRemoteFileSource(type);
 
@@ -89,9 +89,8 @@ export default class PublishFilePull extends Command {
       this.log(`Local file: ${downloaded.localPath}`);
       this.log(`Checksum: ${downloaded.checksum}`);
     } catch (error: any) {
-      failTask('Publish file pull failed');
+      failTask('Release file pull failed');
       this.error(error.message);
     }
   }
 }
-

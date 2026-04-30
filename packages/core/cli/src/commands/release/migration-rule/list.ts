@@ -26,7 +26,7 @@ function getSystemRule(rule: any) {
   return rule?.rules?.systemDefined?.globalRule;
 }
 
-export default class PublishMigrationRuleList extends Command {
+export default class ReleaseMigrationRuleList extends Command {
   static override summary = 'List migration rules on a NocoBase environment';
 
   static override examples = [
@@ -54,7 +54,7 @@ export default class PublishMigrationRuleList extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishMigrationRuleList);
+    const { flags } = await this.parse(ReleaseMigrationRuleList);
     const rules = await listMigrationRules({
       env: flags.env,
       page: flags.page,
@@ -86,4 +86,3 @@ export default class PublishMigrationRuleList extends Command {
     ));
   }
 }
-

@@ -30,7 +30,7 @@ import {
 } from '../../lib/publish.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
 
-export default class PublishGenerate extends Command {
+export default class ReleaseGenerate extends Command {
   static override summary = 'Generate a publish file on an environment and download it locally';
 
   static override examples = [
@@ -69,7 +69,7 @@ export default class PublishGenerate extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishGenerate);
+    const { flags } = await this.parse(ReleaseGenerate);
     const type = assertPublishType(flags.type);
     const migrationRuleId = flags['migration-rule'] || flags.rule;
 
@@ -111,7 +111,7 @@ export default class PublishGenerate extends Command {
       this.log(`Local file: ${outputPath}`);
       this.log(`Artifact: ${generated.artifactId}`);
     } catch (error: any) {
-      failTask('Publish generate failed');
+      failTask('Release generate failed');
       this.error(error.message);
     }
   }

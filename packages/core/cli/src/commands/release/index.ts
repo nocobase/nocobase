@@ -9,14 +9,14 @@
 
 import { Command, loadHelpClass } from '@oclif/core';
 
-export default class Publish extends Command {
-  static override summary = 'Generate, copy, and execute NocoBase publish files';
+export default class Release extends Command {
+  static override summary = 'Generate, upload, and execute NocoBase publish files';
 
   async run(): Promise<void> {
-    await this.parse(Publish);
+    await this.parse(Release);
     const Help = await loadHelpClass(this.config);
     await new Help(this.config, this.config.pjson.oclif.helpOptions ?? this.config.pjson.helpOptions).showHelp([
-      this.id ?? 'publish',
+      this.id ?? 'release',
       ...this.argv,
     ]);
   }

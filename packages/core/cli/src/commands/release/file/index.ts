@@ -9,16 +9,15 @@
 
 import { Command, loadHelpClass } from '@oclif/core';
 
-export default class PublishMigrationRule extends Command {
-  static override summary = 'List, inspect, and create migration rules for publish files';
+export default class ReleaseFile extends Command {
+  static override summary = 'List and pull local or remote publish files';
 
   async run(): Promise<void> {
-    await this.parse(PublishMigrationRule);
+    await this.parse(ReleaseFile);
     const Help = await loadHelpClass(this.config);
     await new Help(this.config, this.config.pjson.oclif.helpOptions ?? this.config.pjson.helpOptions).showHelp([
-      this.id ?? 'publish:migration-rule',
+      this.id ?? 'release:file',
       ...this.argv,
     ]);
   }
 }
-

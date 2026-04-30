@@ -25,7 +25,7 @@ function formatValue(value: unknown) {
   return String(value);
 }
 
-export default class PublishFileList extends Command {
+export default class ReleaseFileList extends Command {
   static override summary = 'List local cached files or remote publish files';
 
   static override examples = [
@@ -69,7 +69,7 @@ export default class PublishFileList extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishFileList);
+    const { flags } = await this.parse(ReleaseFileList);
     const scope = assertPublishFileScope(flags.scope);
     const type = assertPublishType(flags.type);
 
@@ -149,4 +149,3 @@ export default class PublishFileList extends Command {
     ));
   }
 }
-

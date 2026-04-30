@@ -30,7 +30,7 @@ import {
 } from '../../lib/publish.js';
 import { failTask, startTask, succeedTask } from '../../lib/ui.js';
 
-export default class PublishCopy extends Command {
+export default class ReleaseUpload extends Command {
   static override summary = 'Upload a local publish file to a target environment staging area';
 
   static override examples = [
@@ -59,7 +59,7 @@ export default class PublishCopy extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishCopy);
+    const { flags } = await this.parse(ReleaseUpload);
     const type = assertPublishType(flags.type);
     const filePath = resolveLocalPublishFile({
       type,
@@ -103,7 +103,7 @@ export default class PublishCopy extends Command {
         this.log(`Warning: ${uploaded.error}`);
       }
     } catch (error: any) {
-      failTask('Publish copy failed');
+      failTask('Release upload failed');
       this.error(error.message);
     }
   }

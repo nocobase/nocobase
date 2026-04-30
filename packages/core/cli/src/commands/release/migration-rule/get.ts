@@ -18,7 +18,7 @@ function formatValue(value: unknown) {
   return String(value);
 }
 
-export default class PublishMigrationRuleGet extends Command {
+export default class ReleaseMigrationRuleGet extends Command {
   static override summary = 'Get one migration rule by ID';
 
   static override examples = [
@@ -43,7 +43,7 @@ export default class PublishMigrationRuleGet extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishMigrationRuleGet);
+    const { flags } = await this.parse(ReleaseMigrationRuleGet);
     const rule = await getMigrationRule({
       env: flags.env,
       id: flags.id,
@@ -68,4 +68,3 @@ export default class PublishMigrationRuleGet extends Command {
     ));
   }
 }
-

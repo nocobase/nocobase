@@ -28,7 +28,7 @@ import {
 } from '../../lib/publish.js';
 import { confirmAction, failTask, startTask, succeedTask } from '../../lib/ui.js';
 
-export default class PublishExecute extends Command {
+export default class ReleaseExecute extends Command {
   static override summary = 'Execute a staged publish file on a target environment';
 
   static override examples = [
@@ -50,7 +50,7 @@ export default class PublishExecute extends Command {
       required: true,
     }),
     file: Flags.string({
-      description: 'File name previously uploaded by `nb publish copy`',
+      description: 'File name previously uploaded by `nb release upload`',
     }),
     artifact: Flags.string({
       description: 'Server-side staged artifact ID. Use this when local manifest is unavailable.',
@@ -89,7 +89,7 @@ export default class PublishExecute extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishExecute);
+    const { flags } = await this.parse(ReleaseExecute);
     const type = assertPublishType(flags.type);
 
     if (!flags.artifact && !flags.file) {
@@ -106,7 +106,7 @@ export default class PublishExecute extends Command {
       });
       artifactId = entry?.uploadedArtifactId;
       if (!artifactId) {
-        this.error(`No uploaded artifact found for ${fileName} on ${flags.env}. Run \`nb publish copy\` first or use --artifact.`);
+        this.error(`No uploaded artifact found for ${fileName} on ${flags.env}. Run \`nb release upload\` first or use --artifact.`);
       }
     }
 
@@ -149,7 +149,7 @@ export default class PublishExecute extends Command {
         this.log(`Error: ${executed.error}`);
       }
     } catch (error: any) {
-      failTask('Publish execute failed');
+      failTask('Release execute failed');
       this.error(error.message);
     }
   }

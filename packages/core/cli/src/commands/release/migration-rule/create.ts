@@ -18,7 +18,7 @@ import {
 } from '../../../lib/publish.js';
 import { failTask, startTask, succeedTask } from '../../../lib/ui.js';
 
-export default class PublishMigrationRuleCreate extends Command {
+export default class ReleaseMigrationRuleCreate extends Command {
   static override summary = 'Create a global migration rule for publish migration files';
 
   static override description = [
@@ -62,7 +62,7 @@ export default class PublishMigrationRuleCreate extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(PublishMigrationRuleCreate);
+    const { flags } = await this.parse(ReleaseMigrationRuleCreate);
     const values = buildMigrationRuleValues({
       name: flags.name,
       description: flags.description,
@@ -87,9 +87,8 @@ export default class PublishMigrationRuleCreate extends Command {
       this.log(`User-defined tables: ${values.rules.userDefined.globalRule}`);
       this.log(`System tables: ${values.rules.systemDefined.globalRule}`);
     } catch (error: any) {
-      failTask('Publish migration-rule create failed');
+      failTask('Release migration-rule create failed');
       this.error(error.message);
     }
   }
 }
-
