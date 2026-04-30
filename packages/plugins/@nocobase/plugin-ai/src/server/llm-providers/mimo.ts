@@ -74,12 +74,15 @@ export class MiMoProvider extends LLMProvider {
   }
 
   protected builtInTools(): any[] {
-    return [
-      {
-        type: 'web_search',
-        force_search: true,
-      },
-    ];
+    if (this.modelOptions?.builtIn?.webSearch === true) {
+      return [
+        {
+          type: 'web_search',
+          force_search: true,
+        },
+      ];
+    }
+    return [];
   }
 
   isToolConflict(): boolean {
