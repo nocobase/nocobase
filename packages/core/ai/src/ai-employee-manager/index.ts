@@ -109,7 +109,7 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
       tools = tools?.length ? tools.filter((s) => s.name?.startsWith('workflowCaller-')) : [];
       const mergedTools = new Set([...tools, ...(employee.tools ?? [])]);
       const values: Record<string, unknown> = {
-        category: employee.category ?? current.nickname,
+        category: employee.category ?? current.category,
         nickname: employee.nickname ?? current.nickname,
         position: employee.position ?? current.position,
         avatar: employee.avatar ?? current.avatar,
