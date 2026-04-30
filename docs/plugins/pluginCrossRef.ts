@@ -315,7 +315,10 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       if (crossRefs.length === 0) return [];
 
       const root = config.root || path.join(process.cwd(), 'docs');
-      const tempDir = path.join(process.cwd(), 'node_modules', '.rspress', 'cross-ref');
+      // 按语言隔离临时目录，避免并行构建（CI 中多语言同时跑）共用同名文件 cross-ref-N.md
+      // 导致后写覆盖先写，使虚拟路由的源内容串到错误的语言。
+      const lang = process.env.DOCS_LANG || 'en';
+      const tempDir = path.join(process.cwd(), 'node_modules', '.rspress', 'cross-ref', lang);
       fs.mkdirSync(tempDir, { recursive: true });
 
       return crossRefs
