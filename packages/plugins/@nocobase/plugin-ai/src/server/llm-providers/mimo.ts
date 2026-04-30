@@ -72,16 +72,20 @@ export class MiMoProvider extends LLMProvider {
     }
     return null;
   }
-}
 
-export const miMoProviderOptions: LLMProviderMeta = {
-  title: 'MiMo',
-  supportedModel: [SupportedModel.LLM],
-  models: {
-    [SupportedModel.LLM]: ['mimo-v2.5-pro', 'mimo-v2.5'],
-  },
-  provider: MiMoProvider,
-};
+  protected builtInTools(): any[] {
+    return [
+      {
+        type: 'web_search',
+        force_search: true,
+      },
+    ];
+  }
+
+  isToolConflict(): boolean {
+    return true;
+  }
+}
 
 class ChatMiMoCompletions extends ReasoningChatOpenAI {
   _convertCompletionsDeltaToBaseMessageChunk(delta, rawResponse, defaultRole): BaseMessageChunk {
@@ -101,3 +105,13 @@ class ChatMiMoCompletions extends ReasoningChatOpenAI {
     return chunk;
   }
 }
+
+export const miMoProviderOptions: LLMProviderMeta = {
+  title: 'MiMo',
+  supportWebSearch: true,
+  supportedModel: [SupportedModel.LLM],
+  models: {
+    [SupportedModel.LLM]: ['mimo-v2.5-pro', 'mimo-v2.5'],
+  },
+  provider: MiMoProvider,
+};
