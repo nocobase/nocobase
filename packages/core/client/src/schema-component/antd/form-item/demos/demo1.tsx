@@ -1,5 +1,3 @@
-
-
 import {
   APIClientProvider,
   CurrentUserProvider,
@@ -13,7 +11,7 @@ import { mockAPIClient } from '../../../../testUtils';
 
 const { apiClient, mockRequest } = mockAPIClient();
 mockRequest.onGet('/auth:check').reply(() => {
-  return [200, { data: {} }];
+  return [200, { data: { id: 1 } }];
 });
 
 const schema = {

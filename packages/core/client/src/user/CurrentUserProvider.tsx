@@ -92,10 +92,11 @@ export const CurrentUserProvider = (props) => {
   const location = useLocation();
   const runtimeFlowEngine = app?.flowEngine || flowEngine;
   const [redirectingToSignin, setRedirectingToSignin] = useState(false);
-  const basename = app.router.getBasename?.() || app.router.basename;
+  const router = app?.router;
+  const basename = router?.getBasename?.() || router?.basename;
   const currentPathname = removeBasename(location.pathname, basename);
   const shouldCheckCurrentUser =
-    !isBuiltinAuthRoute(currentPathname) && !app.router.isSkippedAuthCheckRoute(location.pathname);
+    !isBuiltinAuthRoute(currentPathname) && !router?.isSkippedAuthCheckRoute?.(location.pathname);
   const result = useRequest<any>(
     async () => {
       if (!shouldCheckCurrentUser) {
