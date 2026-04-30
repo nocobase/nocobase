@@ -67,20 +67,19 @@
         "type": "custom-link",
         "label": "New AI Employee",
         "link": "/ai-employees/features/new-ai-employees"
+      },
+      {
+        "type": "custom-link",
+        "label": "Permission Control",
+        "link": "/ai-employees/permission"
+      },
+      {
+        "type": "custom-link",
+        "label": "File Management",
+        "link": "/ai-employees/file-manager"
       }
     ]
   },
-  {
-    "type": "custom-link",
-    "label": "Permission Control",
-    "link": "/ai-employees/permission"
-  },
-  {
-    "type": "custom-link",
-    "label": "File Management",
-    "link": "/ai-employees/file-manager"
-  },
-
   {
     "type": "custom-link",
     "label": "AI Knowledge Base",
@@ -159,6 +158,11 @@
     "type": "custom-link",
     "label": "Application Practices",
     "items": [
+      {
+        "type": "custom-link",
+        "label": "Generate Business Analysis Report",
+        "link": "/ai-employees/scenarios/business-report"
+      },
       {
         "type": "custom-link",
         "label": "Viz: CRM Scenario Configuration",

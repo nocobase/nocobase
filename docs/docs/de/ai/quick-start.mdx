@@ -1,0 +1,175 @@
+---
+title: "Anbindungsanleitung für AI Agents"
+description: "Installieren Sie die NocoBase CLI, verbinden oder installieren Sie eine NocoBase-Anwendung und ermöglichen Sie es einem AI Agent, Ihr Geschäftssystem zu bedienen."
+keywords: "NocoBase CLI,AI Agent,Anbindung,Verbindung,Installation,Skills,Schnellstart"
+sidebar: false
+---
+
+# Anbindungsanleitung für AI Agents
+
+NocoBase unterstützt die Zusammenarbeit mit AI Agents in vollem Umfang – Sie können in natürlicher Sprache Datenmodellierung, Seitenaufbau, Workflow-Orchestrierung, Berechtigungskonfiguration und sogar die Entwicklung eigener Plugins erledigen. Egal, ob Sie Claude Code, Codex, Cursor oder ein anderes KI-Tool verwenden – Sie können über die folgenden zwei Grundkomponenten mit NocoBase zusammenarbeiten:
+
+1. **[NocoBase CLI](../api/cli/index.md)** – das Kommandozeilenwerkzeug zum Initialisieren, Verbinden und Verwalten von NocoBase-Anwendungen in Ihrem lokalen Arbeitsbereich. Sie hilft Ihnen, eine NocoBase-Anwendung vorzubereiten, die CLI-env-Konfiguration zu speichern, und stellt Befehle für Start, Stopp, Logs, Upgrade, Bereinigung und weitere alltägliche Verwaltungsaufgaben bereit, sodass ein AI Agent NocoBase verbinden und nutzen kann.
+
+Die CLI unterstützt zwei gängige Initialisierungswege:
+
+- Eine bestehende NocoBase-Anwendung verbinden, damit ein AI Agent sie direkt nutzen kann.
+- Über Docker, npm oder Git eine neue NocoBase-Anwendung installieren und als CLI-env speichern.
+
+2. **[NocoBase Skills](https://github.com/nocobase/skills)** – Domänenwissenpakete, die einem AI Agent das Konfigurations- und Entwicklungsmodell von NocoBase verständlich machen. Abgedeckt werden Datenmodellierung, Oberflächenkonfiguration, Workflow-Verwaltung, Berechtigungskonfiguration, Plugin-Entwicklung und weitere Fähigkeitsbereiche. Während der Initialisierung (`nb init`) installiert die NocoBase CLI die Skills automatisch – eine manuelle Installation ist nicht erforderlich.
+
+Sobald die CLI installiert und initialisiert ist, kann der AI Agent Ihre NocoBase-Anwendung direkt bedienen.
+
+## Voraussetzungen
+
+Stellen Sie sicher, dass die folgenden Umgebungsanforderungen erfüllt sind, bevor Sie beginnen:
+
+- Node.js >= 22
+- Yarn 1.x
+- Es wird empfohlen, einen AI Agent zu verwenden, der von einem führenden Modell wie Claude oder GPT angetrieben wird. Das tatsächliche Ergebnis hängt stark vom verwendeten Modell ab; wir empfehlen, vorrangig die neuesten Flaggschiffmodelle zu verwenden, um die beste Erfahrung zu erzielen.
+
+import { Tab, Tabs } from '@rspress/core/theme';
+
+## Neues NocoBase installieren und mit einem AI Agent verbinden
+
+> Falls Sie bereits eine laufende NocoBase-Instanz haben, lesen Sie direkt den nächsten Abschnitt [AI Agent mit bestehendem NocoBase verbinden](#ai-agent-mit-bestehendem-nocobase-verbinden).
+
+Falls Sie noch keine NocoBase-Anwendung haben, können Sie über die CLI eine neue NocoBase-Anwendung installieren und initialisieren und sie anschließend mit einem AI Agent verbinden.
+
+<Tabs>
+<Tab label="Manuell installieren und verbinden" value="manual-install">
+
+#### Schritt 1: CLI installieren
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version // Erfolgreiche Installation bestätigen
+```
+
+#### Schritt 2: Initialisieren
+
+```bash
+nb init --ui
+```
+
+:::tip Speicherort der Konfigurationsdateien
+
+Die bei der Initialisierung erzeugten Konfigurationsdateien und Anwendungsdaten werden standardmäßig im Home-Verzeichnis des Nutzers gespeichert. Details siehe [Umgebungsvariable NB_CLI_ROOT](../api/cli/index.md#environment-variables).
+
+:::
+
+Der Browser öffnet automatisch eine visuelle Konfigurationsseite und führt Sie in 5 Schritten durch die Konfiguration:
+
+1. **Konfiguration starten** – Anwendungsnamen festlegen (gleichzeitig der CLI-Umgebungsname) und „Neuinstallation" auswählen
+2. **Anwendung erstellen** – Installationsmethode (Docker / npm / Git) wählen, Port und weitere Grundkonfigurationen festlegen
+3. **Anwendungsdateien herunterladen** – Quelle und Version wählen, NocoBase-Quellcode oder Image herunterladen
+4. **Datenbank konfigurieren** – Eingebaute Datenbank verwenden oder externe Datenbank konfigurieren (PostgreSQL, MySQL, MariaDB)
+5. **Administratorkonto erstellen** – E-Mail und Passwort des Administrators festlegen
+
+![nocobase cli visueller Assistent](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+
+Nach Abschluss der Installation öffnen Sie den Browser unter `http://localhost:13000` (Standardport) und melden sich mit dem soeben festgelegten Administratorkonto an.
+
+(Falls Sie lieber in der Kommandozeile arbeiten, können Sie auch direkt `nb init` ausführen, um den interaktiven Assistenten zu starten, oder `nb init --env=app -y`, um die Standardkonfiguration mit einem Befehl zu übernehmen.)
+
+#### Schritt 3: AI Agent in Betrieb nehmen
+
+Öffnen Sie eine neue Sitzung Ihres AI Agents oder starten Sie sie neu, dann kann der AI Agent NocoBase bedienen. Die CLI-Konfiguration wird in einem globalen Verzeichnis gespeichert (standardmäßig `~/.nocobase/`) und kann von einem AI Agent aus jedem beliebigen Verzeichnis aufgerufen werden.
+
+</Tab>
+<Tab label="Mit AI Agent installieren und verbinden" value="ai-install">
+
+Kopieren Sie den folgenden Prompt in Ihren KI-Assistenten (Claude Code, Codex, Cursor, Trae usw.); er installiert die CLI und führt Sie durch die Initialisierung des neuen NocoBase:
+
+```
+Hilf mir, die NocoBase CLI zu installieren und die Initialisierung abzuschließen: https://docs.nocobase.com/de/ai/ai-quick-start.md (Bitte direkt den Inhalt des Links abrufen)
+```
+
+Sobald die Konfiguration abgeschlossen ist, starten Sie die Sitzung Ihres AI Agents neu und Sie können NocoBase bedienen.
+
+</Tab>
+</Tabs>
+
+## AI Agent mit bestehendem NocoBase verbinden
+
+Falls Sie bereits eine laufende NocoBase-Instanz haben, können Sie diese direkt von einem AI Agent verbinden lassen. **Da sich die KI-Fähigkeiten schnell weiterentwickeln, unterstützt derzeit nur die neueste Beta-Version den vollständigen Funktionsumfang. Mindestens erforderliche Version: >= 2.1.0-beta.20. Es wird dringend empfohlen, auf die neueste Version zu aktualisieren.**
+
+<Tabs>
+<Tab label="Manuell verbinden" value="manual-connect">
+
+#### Schritt 1: CLI installieren
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version // Erfolgreiche Installation bestätigen
+```
+
+#### Schritt 2: Initialisieren und verbinden
+
+```bash
+nb init --ui
+```
+
+:::tip Speicherort der Konfigurationsdateien
+
+Die bei der Initialisierung erzeugten Konfigurationsdateien werden standardmäßig im Home-Verzeichnis des Nutzers gespeichert. Details siehe [Umgebungsvariable NB_CLI_ROOT](../api/cli/index.md#environment-variables).
+
+:::
+
+Der Browser öffnet automatisch eine visuelle Konfigurationsseite. Wählen Sie im ersten Schritt „Konfiguration starten" die Option „Bestehende Anwendung verbinden" und gehen Sie wie folgt vor:
+
+1. **API-Adresse eingeben** – die API-Adresse Ihrer bestehenden NocoBase-Instanz eingeben (z. B. `http://localhost:13000/api`)
+2. **Authentifizierungsmethode wählen** – eine [Authentifizierungsmethode](../ai-builder/security) auswählen (für den schnellen Einstieg empfehlen wir OAuth)
+
+![nocobase cli visueller Assistent](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+
+Installationsmethode, Datenbank und Administratorkonto müssen nicht konfiguriert werden – der Assistent überspringt diese Schritte.
+
+#### Schritt 3: AI Agent in Betrieb nehmen
+
+Öffnen Sie eine neue Sitzung Ihres AI Agents oder starten Sie sie neu, dann kann der AI Agent NocoBase bedienen. Die CLI-Konfiguration wird in einem globalen Verzeichnis gespeichert (standardmäßig `~/.nocobase/`) und kann von einem AI Agent aus jedem beliebigen Verzeichnis aufgerufen werden.
+
+</Tab>
+<Tab label="Mit AI Agent verbinden" value="ai-connect">
+
+Kopieren Sie den folgenden Prompt in Ihren KI-Assistenten; er installiert die CLI und führt Sie durch die Konfiguration zur Verbindung mit der bestehenden NocoBase-Instanz. Wählen Sie im ersten Schritt des visuellen Assistenten einfach „Bestehende Anwendung verbinden":
+
+```
+Hilf mir, die NocoBase CLI zu installieren und die Initialisierung abzuschließen: https://docs.nocobase.com/de/ai/ai-quick-start.md (Bitte direkt den Inhalt des Links abrufen)
+```
+
+Sobald die Konfiguration abgeschlossen ist, starten Sie die Sitzung Ihres AI Agents neu und Sie können NocoBase bedienen.
+
+</Tab>
+</Tabs>
+
+## Wie geht es weiter?
+
+### Anwendungsumgebungen verwalten
+
+Falls Sie bestehende NocoBase-Instanzen verwalten müssen (z. B. Test- oder Produktionsumgebung) oder zwischen mehreren Umgebungen wechseln, lesen Sie [Umgebungsverwaltung](../ai-builder/env-bootstrap) – dort werden Umgebungsprüfung, Hinzufügen von Umgebungen, Upgrades und Fehlerdiagnose behandelt.
+
+### Mit dem KI-Builder beginnen
+
+Beschreiben Sie Anforderungen in natürlicher Sprache, und die KI erledigt für Sie Datenmodellierung, Seitenaufbau und Workflow-Orchestrierung – ersetzen Sie manuelle Konfiguration durch Dialog. Lesen Sie [Schnellstart KI-Builder](../ai-builder/index.md#dialog-statt-manueller-konfiguration).
+
+### KI-gestützte Plugin-Entwicklung fortsetzen
+
+Falls Sie eigene Plugins entwickeln müssen, kann KI ebenfalls helfen – vom Scaffolding über Komponentencode bis zur Geschäftslogik deckt sie den gesamten Plugin-Entwicklungsprozess ab. Lesen Sie [KI-gestützte Plugin-Entwicklung](../ai-dev/index.md#von-einem-satz-zu-einem-vollständigen-plugin).
+
+### KI-Mitarbeiter einsetzen
+
+Arbeiten Sie direkt in der NocoBase-Oberfläche mit KI-Mitarbeitern zusammen – Datenanalyse, Berichterstellung, Übersetzung, Entscheidungsunterstützung, ohne das Geschäftssystem zu verlassen. Lesen Sie [KI-Mitarbeiter](../ai-employees/index.md).
+
+### NocoBase-CLI-Befehlsreferenz
+
+Falls Sie bereits eine laufende NocoBase-Anwendung haben oder die Initialisierung erfolgreich abgeschlossen wurde und Sie die Anwendung weiter entwickeln, debuggen oder verwalten möchten, finden Sie alle Parameter aller `nb`-Befehle in der [NocoBase-CLI-Befehlsreferenz](../api/cli/index.md).
+
+## Verwandte Links
+
+- [KI-Builder](../ai-builder/index.md) – Bauen Sie NocoBase-Anwendungen von Grund auf mit KI
+- [KI-gestützte Plugin-Entwicklung](../ai-dev/index.md) – KI-gestützte Entwicklung von NocoBase-Plugins
+- [KI-Mitarbeiter](../ai-employees/index.md) – Mit KI in der Geschäftsoberfläche zusammenarbeiten
+- [Umgebungsverwaltung](../ai-builder/env-bootstrap) – Umgebungsprüfung, Hinzufügen von Umgebungen, Upgrades und Fehlerdiagnose
+- [NocoBase-CLI-Befehlsreferenz](../api/cli/index.md) – Vollständige Parameterbeschreibung aller Befehle
+- [Vergleich der Installationsmethoden und Versionen](../get-started/quickstart) – Verschiedene Installationsmethoden und Versionskanäle von NocoBase

@@ -5,8 +5,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Descripción general",
-    "link": "/workflow/index"
+    "label": "Visión general",
+    "link": "/workflow/"
   },
   {
     "type": "custom-link",
@@ -20,8 +20,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Descripción general",
-        "link": "/workflow/triggers/index"
+        "label": "Visión general",
+        "link": "/workflow/triggers/"
       },
       {
         "type": "custom-link",
@@ -67,8 +67,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Descripción general",
-        "link": "/workflow/nodes/index"
+        "label": "Visión general",
+        "link": "/workflow/nodes/"
       },
       {
         "type": "custom-link",
@@ -274,8 +274,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Descripción general",
-        "link": "/workflow/development/index"
+        "label": "Visión general",
+        "link": "/workflow/development/"
       },
       {
         "type": "custom-link",

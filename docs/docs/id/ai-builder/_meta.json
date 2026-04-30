@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Mulai Cepat",
+    "link": "/ai-builder/"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "Keamanan & Audit"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "Manajemen Lingkungan"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "Pemodelan Data"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "Konfigurasi UI"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "Manajemen Workflow"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "Konfigurasi Permission"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "Solusi"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "Manajemen Plugin"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "Manajemen Publikasi"
+  }
+]

@@ -17,6 +17,11 @@
         "type": "custom-link",
         "label": "Email",
         "link": "/notification-manager/notification-email/"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeCom",
+        "link": "/notification-manager/wecom/"
       }
     ]
   },

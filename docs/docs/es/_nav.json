@@ -4,6 +4,14 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "Tutoriales",
+    "link": "/tutorials/v2/"
+  },
+  {
     "text": "Manual",
     "link": "/guide/"
   },

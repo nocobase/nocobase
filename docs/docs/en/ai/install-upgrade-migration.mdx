@@ -1,0 +1,407 @@
+---
+title: "Installation, Upgrade and Migration Guide: Using the NocoBase CLI"
+description: "Migrate from legacy Docker, create-nocobase-app, and Git-source installations to the new NocoBase CLI workflow."
+keywords: "NocoBase CLI,installation migration,upgrade migration,nb init,nb app upgrade,Docker,create-nocobase-app,Git source"
+---
+
+# Installation, Upgrade and Migration Guide: Using the NocoBase CLI
+
+:::danger
+The CLI's installation and application maintenance capabilities are still under active development. They are currently better suited for local development, test environments, and AI Agent integration scenarios. We do not recommend using them directly for production installation, upgrade, or operations.
+:::
+
+The new NocoBase CLI (`nb`) consolidates installation, connection, start, stop, log inspection, upgrade, and cleanup into a single command set. Compared with the legacy approach, where Docker, create-nocobase-app, and Git-source installations each have their own dedicated documentation, the CLI is better suited for local development, test environment maintenance, as well as AI Agent integration and collaboration.
+
+This guide is intended for the following scenarios:
+
+- You are installing or upgrading NocoBase using the legacy documentation and want to switch to the new CLI workflow.
+- You already have a NocoBase deployment from a legacy installation method and want the CLI to manage or connect to it.
+- You need to prepare a connectable, maintainable NocoBase environment for an AI Agent.
+
+## Differences between the legacy and new approaches
+
+The legacy approach splits documentation by installation source. Each source requires its own download, configuration, installation, startup, and upgrade commands.
+
+**Legacy installation docs**
+
+- [Docker installation](/get-started/installation/docker)
+- [create-nocobase-app installation](/get-started/installation/create-nocobase-app)
+- [Git source installation](/get-started/installation/git)
+
+**Legacy upgrade docs**
+
+- [Upgrading a Docker installation](/get-started/upgrading/docker)
+- [Upgrading a create-nocobase-app installation](/get-started/upgrading/create-nocobase-app)
+- [Upgrading a Git source installation](/get-started/upgrading/git)
+
+The new approach uses `nb init` as the entry point and stores the application source, runtime directory, storage directory, database, and API connection information in a single CLI env. Whether the source is Docker, npm, or Git, the same `nb app`, `nb source`, and `nb db` commands are used for maintenance whenever possible.
+
+| Scenario | Legacy approach | New CLI approach |
+| --- | --- | --- |
+| Installation entry point | `docker compose`, `create-nocobase-app`, `git clone` | `nb init` or `nb init --ui` |
+| Application runtime management | Switch directories, edit compose, run yarn/pm2 commands | `nb app start/stop/restart/logs/down` |
+| Upgrade | Separate command set per installation method | `nb app upgrade -e <env>` |
+| Development mode | `yarn dev` | `nb source dev -e <env>` |
+| Database status | Manually inspect containers or database services | `nb db ps -e <env>` |
+| View environment status and details | Manually track paths, ports, and access URLs | `nb env list`, `nb env info <env>` |
+| Connect to existing applications | Not unified across legacy install docs | `nb init --ui` or `nb init --api-base-url` |
+
+## Install the CLI
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version
+```
+
+After installation, you can view help:
+
+```bash
+nb --help
+nb init --help
+```
+
+## Install NocoBase the new way
+
+### Recommended: use the visual wizard
+
+```bash
+nb init --ui
+```
+
+The wizard walks you through:
+
+- Creating a new application or connecting to an existing one
+- Installation source: Docker, npm, or Git
+- NocoBase version
+- Built-in or external database
+- Admin account and password
+
+### Use the terminal interactive wizard
+
+```bash
+nb init
+```
+
+### Use non-interactive commands
+
+The default installation uses Docker with the built-in PostgreSQL database:
+
+```bash
+nb init --yes --env app1
+```
+
+Install a specific version with Docker:
+
+```bash
+nb init --yes --env app1 --source docker --version beta
+```
+
+Install with npm:
+
+```bash
+nb init --yes --env app1 --source npm --version beta --app-port 13080
+```
+
+Install from Git source:
+
+```bash
+nb init --yes --env app1 --source git --version beta
+```
+
+Install from Git source with a specific built-in database type:
+
+```bash
+nb init --yes --env app1 --source git --version beta --db-dialect mysql
+```
+
+Connect to an existing NocoBase application:
+
+```bash
+# OAuth authentication is used by default
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# Use Token authentication
+nb init --yes --env app1 \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+:::tip
+`--env` is the environment name within the CLI. Subsequent commands such as start, upgrade, and log viewing can target the same application via `-e app1`.
+:::
+
+## Upgrade the new way
+
+In the legacy approach, Docker, create-nocobase-app, and Git source each have their own upgrade commands. The new CLI unifies them as:
+
+```bash
+nb app upgrade -e app1
+```
+
+If you only want to run the upgrade flow against the source code or images you already have, without pulling new code or images:
+
+```bash
+nb app upgrade -e app1 --skip-code-update
+```
+
+Or use the shorthand:
+
+```bash
+nb app upgrade -e app1 -s
+```
+
+## Common maintenance commands
+
+| Action | Command |
+| --- | --- |
+| Start application | `nb app start -e app1` |
+| Stop application | `nb app stop -e app1` |
+| Restart application | `nb app restart -e app1` |
+| View logs | `nb app logs -e app1` |
+| View env and API authentication status | `nb env list` |
+| View env details | `nb env info app1` |
+| View built-in database status | `nb db ps -e app1` |
+| Upgrade application | `nb app upgrade -e app1` |
+| Stop and clean up runtime resources | `nb app down -e app1` |
+
+By default, `nb app down` stops the application and removes the runtime containers and local application files managed by the CLI, while preserving storage data and the env configuration. To remove everything you must explicitly confirm:
+
+```bash
+nb app down -e app1 --all --yes
+```
+
+:::warning
+`--all --yes` deletes the storage data and CLI env configuration for the env. Only use it when you are sure you have backups and no longer need this environment.
+:::
+
+## Daily development commands
+
+`nb source` manages local source code projects. It is mainly used for npm and Git source envs.
+
+| Action | Command |
+| --- | --- |
+| Run application in development mode | `nb source dev -e app1` |
+| Build source | `nb source build --cwd /your/workspace/app1/source` |
+| Run tests | `nb source test --cwd /your/workspace/app1/source` |
+| Download or refresh source/images | `nb source download --source git --version beta` |
+
+:::tip
+Docker envs are typically managed via `nb app start`, `nb app logs`, and `nb app upgrade`, and do not use `nb source dev`.
+:::
+
+## NB_CLI_ROOT and directory layout
+
+The CLI stores global configuration and local application files under the directory referenced by `NB_CLI_ROOT`.
+
+By default, `NB_CLI_ROOT` is the current user's home directory, that is, the path returned by Node.js `os.homedir()`. For example, on macOS this is typically `/Users/<user>`. So, without any extra configuration, files generated by `nb init --yes --env app1` usually live at:
+
+```text
+~
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+You can also specify `NB_CLI_ROOT` explicitly:
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+```
+
+After that, the configuration file and default application directory are placed under that directory:
+
+```text
+/your/workspace
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+Where:
+
+- `.nocobase/config.json` stores envs, the current environment, API URL, source path, storage path, database configuration, and so on.
+- `<envName>/source` is the source code or application directory managed by the CLI.
+- `<envName>/storage` is the application storage directory managed by the CLI.
+
+:::warning
+Once an application has been initialized, keep using the same `NB_CLI_ROOT`. If you change `NB_CLI_ROOT` later, the CLI will look for `.nocobase/config.json` under the new directory, and any relative `appRootPath` or `storagePath` values will be resolved against the new directory, which may cause the application to be missing or read/write the wrong directory.
+:::
+
+The CLI currently uses only the global config scope. To change where configuration and local application files are stored, set `NB_CLI_ROOT`.
+
+When inspecting and locating applications, prefer `nb env list` and `nb env info`:
+
+```bash
+# List configured envs and API authentication status
+nb env list
+
+# View detailed information for a specific env
+nb env info app1
+```
+
+`nb env list` is intended as a quick overview. The `App Status` column reflects the authentication status obtained by accessing the application API with the saved Token/OAuth credentials, and no longer shows the database status. To check the runtime status of the built-in database, use:
+
+```bash
+nb db ps -e app1
+```
+
+Only switch the default env when you actually need to:
+
+```bash
+nb env use app1
+```
+
+## Migrate from the legacy approach to the CLI
+
+There are two migration strategies: **connect to an existing application**, or **bring a local application directory under CLI management**. If your legacy application is already running stably, we recommend starting with "connect to an existing application", which carries the lowest risk.
+
+### Option 1: Connect to an existing application
+
+Use this option when NocoBase is already running through Docker, create-nocobase-app, Git source, or a server deployment.
+
+```bash
+# OAuth authentication is used by default
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# Use Token authentication
+nb init --yes --env "app$RANDOM" \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+This option only stores the API connection. The CLI does not take over starting, stopping, or upgrading the legacy application, nor does it manage its source or storage directories. It is suitable for letting an AI Agent or CLI API commands connect to an existing application.
+
+To refresh authentication:
+
+```bash
+nb env auth app1
+```
+
+### Option 2: Create a new CLI env and migrate files
+
+Use this option when you want `nb app` and `nb source` to manage the local application going forward.
+
+Before migrating, complete the following:
+
+1. Stop the legacy application.
+2. Back up the legacy database.
+3. Back up the legacy `storage` directory.
+4. Record the key environment variables of the legacy application, such as `APP_KEY`, `TZ`, `DB_*`, and `DB_UNDERSCORED`.
+
+#### Migrating from a legacy Docker installation
+
+A legacy Docker installation typically keeps application data in the `storage` directory inside the project:
+
+```text
+/old-docker-project
+├── docker-compose.yml
+└── storage
+```
+
+We recommend choosing a new `NB_CLI_ROOT` first, then creating a new Docker env with the CLI. The example below assumes `NB_CLI_ROOT` is `/your/workspace`.
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app2 --source docker --version beta
+nb app stop -e app2
+```
+
+The new env uses the following directories by default:
+
+```text
+/your/workspace
+└── app2
+    ├── source
+    └── storage
+```
+
+Then copy the legacy `storage` to `/your/workspace/app2/storage` and make sure the database connection and `APP_KEY` match the legacy environment.
+
+After copying and confirming the database configuration, start the application:
+
+```bash
+nb app start -e app2
+nb app logs -e app2
+```
+
+#### Migrating from a legacy create-nocobase-app or Git source installation
+
+In legacy npm/Git installations, the source code, `.env`, and `storage` typically live in the same project directory:
+
+```text
+/old-nocobase
+├── .env
+├── package.json
+├── packages
+└── storage
+```
+
+We recommend choosing a new `NB_CLI_ROOT` first, then creating a new npm or Git env. The example below assumes `NB_CLI_ROOT` is `/your/workspace`.
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app3 --source git --version beta
+nb app stop -e app3
+```
+
+Then migrate as needed:
+
+- Move the custom plugin source from the legacy project into the corresponding location under `/your/workspace/app3/source`.
+- Copy `storage` from the legacy project to `/your/workspace/app3/storage`.
+- Sync the key settings from the legacy `.env` into the CLI env configuration or the initialization arguments.
+- To keep using the original database, disable the built-in database during initialization and provide the legacy database connection details.
+
+Example of initializing with an external database:
+
+```bash
+nb init --yes --env app3 --source git --version beta \
+  --no-builtin-db \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
+```
+
+Once migrated, start the application and check the logs:
+
+```bash
+nb app start -e app3
+nb app logs -e app3
+```
+
+:::warning
+Never overwrite `source` or `storage`, or run an upgrade against a production database, without backups. Always do a full dry run in a test environment before performing the actual migration.
+:::
+
+## Legacy command quick reference
+
+| Legacy command | New CLI command |
+| --- | --- |
+| `docker compose up -d app` | `nb app start -e app1` |
+| `docker compose stop app` | `nb app stop -e app1` |
+| `docker compose logs -f app` | `nb app logs -e app1` |
+| `docker compose pull app && docker compose up -d app` | `nb app upgrade -e app1` |
+| `yarn create nocobase-app my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `npx create-nocobase-app@beta my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `git clone ... -b next --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version beta` |
+| `git clone ... -b develop --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version alpha` |
+| `yarn dev` | `nb source dev -e app1` |
+| `yarn nocobase upgrade` | `nb app upgrade -e app1` |
+| `yarn nocobase upgrade --skip-code-update` | `nb app upgrade -e app1 -s` |
+| Manually tracking multiple application URLs | `nb env list`, `nb env info app1` |
+| Manually connecting to existing applications | `nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api` |
+
+## Related links
+
+- [AI Agent integration guide](/ai/quick-start)
+- [NocoBase CLI command reference](/api/cli)
+- [Comparison of installation methods and versions](/get-started/quickstart)
+- [Install and upgrade plugins](/get-started/install-upgrade-plugins)

@@ -12,8 +12,6 @@ import { throwBadRequest } from '../errors';
 import { normalizeFlowSurfaceComposeKey } from '../service-utils';
 import type { FlowSurfaceApplyBlueprintAssetMap } from './public-types';
 
-export const APPLY_BLUEPRINT_CREATE_MENU_GROUP_METADATA_KEYS = ['icon', 'tooltip', 'hideInMenu'] as const;
-
 export function assertPlainObject(value: any, context: string) {
   if (!_.isPlainObject(value)) {
     throwBadRequest(`${context} must be an object`);

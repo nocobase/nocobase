@@ -5,8 +5,14 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "type": "custom-link",
+    "label": "Requisitos del sistema",
+    "link": "/get-started/system-requirements"
+  },
+  {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "Comparación de métodos de instalación y versiones"
   },
   {
     "type": "custom-link",
@@ -66,6 +72,22 @@
       },
       {
         "type": "custom-link",
+        "label": "Despliegue en intranet",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker",
+            "link": "/get-started/deployment/intranet/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app",
+            "link": "/get-started/deployment/intranet/create-nocobase-app"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
         "label": "Proxy de recursos estáticos",
         "items": [
           {
@@ -112,5 +134,10 @@
     "type": "custom-link",
     "label": "Instalación y actualización de plugins",
     "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "Contribución de traducciones",
+    "link": "/get-started/translations"
   }
 ]

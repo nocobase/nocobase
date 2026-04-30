@@ -15,6 +15,16 @@
     "label": "Instalación"
   },
   {
+    "type": "dir",
+    "name": "guide",
+    "label": "Guía de operaciones"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "Registro de cambios"
+  },
+  {
     "type": "file",
     "name": "v1",
     "label": "CRM heredado (v1)"
