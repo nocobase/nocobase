@@ -9,7 +9,7 @@
 
 export const KANBAN_UNKNOWN_COLUMN_KEY = '__unknown__';
 export const DEFAULT_KANBAN_PAGE_SIZE = 10;
-export const DEFAULT_KANBAN_COLUMN_WIDTH = 300;
+export const DEFAULT_KANBAN_COLUMN_WIDTH = 250;
 
 export const KANBAN_COLOR_OPTIONS = [
   'default',
