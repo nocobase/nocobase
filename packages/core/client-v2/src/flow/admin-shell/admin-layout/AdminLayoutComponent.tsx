@@ -373,6 +373,7 @@ export const AdminLayoutComponent = observer((props: any) => {
   const { token } = antdTheme.useToken();
   const customToken = token as CustomToken;
   const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
+  const menuRouteRefreshVersion = adminLayoutModel?.menuRouteRefreshVersion || 0;
   const isMobileSider = isMobileLayout || isMobileViewport;
   const [collapsed, setCollapsed] = useState(isMobileSider);
   const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() => readFlowSettingsPreference());
@@ -505,7 +506,7 @@ export const AdminLayoutComponent = observer((props: any) => {
       children: [],
     };
     setRoute(nextRoute);
-  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
+  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, menuRouteRefreshVersion, t]);
 
   useEffect(() => {
     const syncId = ++flowSettingsSyncRef.current;

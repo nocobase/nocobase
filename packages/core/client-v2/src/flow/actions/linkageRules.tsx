@@ -478,6 +478,41 @@ export const linkageSetActionProps = defineAction({
   },
 });
 
+export const linkageSetMenuItemProps = defineAction({
+  name: 'linkageSetMenuItemProps',
+  title: tExpr('Set menu item state'),
+  scene: ActionScene.MENU_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder={t('Please select state')}
+            style={{ width: '100%' }}
+            options={[
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
+            ]}
+            allowClear
+          />
+        );
+      },
+    },
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hidden' });
+  },
+});
+
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
   title: tExpr('Set field state'),
@@ -1287,6 +1322,7 @@ export const linkageRunjs = defineAction({
     ActionScene.BLOCK_LINKAGE_RULES,
     ActionScene.FIELD_LINKAGE_RULES,
     ActionScene.ACTION_LINKAGE_RULES,
+    ActionScene.MENU_LINKAGE_RULES,
     ActionScene.DETAILS_FIELD_LINKAGE_RULES,
     ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
@@ -1951,7 +1987,11 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
-    model.hidden = !!newProps.hiddenModel;
+    if (typeof model.setHidden === 'function') {
+      model.setHidden(!!newProps.hiddenModel);
+    } else {
+      model.hidden = !!newProps.hiddenModel;
+    }
 
     if (newProps.required === true) {
       const rules = (model.props.rules || []).filter((rule) => !rule.required);
@@ -2098,6 +2138,32 @@ export const actionLinkageRules = defineAction({
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.ACTION_LINKAGE_RULES),
           title: tExpr('Linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
+});
+
+export const menuLinkageRules = defineAction({
+  name: 'menuLinkageRules',
+  title: tExpr('Menu linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.MENU_LINKAGE_RULES),
+          title: tExpr('Menu linkage rules'),
         },
       },
     };
