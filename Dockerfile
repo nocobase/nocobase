@@ -20,7 +20,7 @@ expect {
 }
 EOD
 
-RUN npm install -g @nocobase/cli@${NB_CLI_VERSION} --registry $VERDACCIO_URL --prefix /opt/nb && \
+RUN npm install -g @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb && \
   npm cache clean --force
 
 RUN yarn config set registry $VERDACCIO_URL && \
