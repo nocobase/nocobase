@@ -63,5 +63,65 @@
     "type": "file",
     "name": "12-subtasks-workhours",
     "label": "Kapitel 11: Unteraufgaben und Arbeitszeitberechnung"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "Kapitel 12: Besprechungsraum-Buchung und Workflow"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "Benutzerregistrierungs-Prüfung umsetzen"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "CRM-Lead-Konvertierung umsetzen"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Markdown-Block-Tipps"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "Überblick: CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "Lead-Nachverfolgung und Statusverwaltung"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "CRM Sales Cloud-System"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "Daten mit API-Keys abrufen"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Verwendung von Markdown-Vorlagenvariablen"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "NocoBase schneller bereitstellen"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "Visualisierung der CRM-Sales-Pipeline"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "CRM-Demo: Bereitstellungsleitfaden"
   }
 ]
