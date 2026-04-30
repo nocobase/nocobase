@@ -497,6 +497,8 @@ export const useChatMessageActions = () => {
       console.error(err);
       if (err.name === 'AbortError') {
         clearAllPendingStreamUpdates();
+        setResponseLoading(false);
+        setWebSearching(null);
         return;
       } else {
         error = true;
@@ -615,6 +617,7 @@ export const useChatMessageActions = () => {
       onConversationCreate?.(sessionId);
     }
 
+    setWebSearching(null);
     setResponseLoading(true);
 
     if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
@@ -663,6 +666,8 @@ export const useChatMessageActions = () => {
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
     } catch (err) {
       if (err.name === 'CanceledError') {
+        setResponseLoading(false);
+        setWebSearching(null);
         return;
       }
       setResponseLoading(false);
@@ -675,6 +680,7 @@ export const useChatMessageActions = () => {
   const resendMessages = async ({ sessionId, messageId, aiEmployee, important }: ResendOptions) => {
     const currentMessages = useChatMessagesStore.getState().messages;
     const index = currentMessages.findIndex((msg) => msg.key === messageId);
+    setWebSearching(null);
     setResponseLoading(true);
     setMessages((prev) => [
       ...prev.slice(0, index),
@@ -718,6 +724,8 @@ export const useChatMessageActions = () => {
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
     } catch (err) {
       if (err.name === 'CanceledError') {
+        setResponseLoading(false);
+        setWebSearching(null);
         return;
       }
       setResponseLoading(false);
@@ -760,6 +768,7 @@ export const useChatMessageActions = () => {
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
+      setWebSearching(null);
       // Read model from store at call time to avoid stale closure.
       // If not ready yet, resolve it through shared model rules.
       let model = useChatBoxStore.getState().model;
@@ -787,6 +796,8 @@ export const useChatMessageActions = () => {
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       } catch (err) {
         if (err.name === 'CanceledError') {
+          setResponseLoading(false);
+          setWebSearching(null);
           return;
         }
         setResponseLoading(false);
