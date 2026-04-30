@@ -995,9 +995,36 @@ describe('AdminLayoutModel menu items', () => {
       t: (title) => title,
     });
 
-    expect(runtimeRoute?.hideInMenu).toBe(true);
-    expect(designableRoute?.hideInMenu).toBe(false);
+    expect(runtimeRoute).toBeNull();
+    expect(designableRoute?.hideInMenu).toBeFalsy();
     expect(adminLayoutModel.menuRouteRefreshVersion).toBe(refreshBefore + 1);
+  });
+
+  it('should render hidden menu item with opacity and keep original title in config mode', () => {
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-hidden-in-config',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    model.setProps({
+      item: {
+        name: 'Page 1',
+        path: '/admin/page-1',
+        _route: createRoute(),
+        _model: model,
+      },
+      dom: React.createElement('span', null, 'Page 1'),
+      options: { isMobile: false, collapsed: false },
+      renderType: 'item',
+    });
+
+    const rendered = (model as any).renderHiddenInConfig();
+
+    expect(rendered?.props?.style).toMatchObject({ opacity: 0.3 });
+    expect(rendered?.props?.children?.props?.dom?.props?.children).toBe('Page 1');
   });
 
   it('should keep variable-aware editors for link menu settings', async () => {

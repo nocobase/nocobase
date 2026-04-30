@@ -264,6 +264,19 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     }
   }
 
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    const { item, dom, options, renderType } = this.props;
+    if (!item || !renderType) {
+      return null;
+    }
+
+    return (
+      <div style={{ opacity: 0.3 }}>
+        <AdminLayoutMenuItemRenderer item={item} dom={dom} options={options} renderType={renderType} />
+      </div>
+    );
+  }
+
   async createMenuRoute(
     route: NocoBaseDesktopRoute,
     options?: {
@@ -545,6 +558,10 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return null;
     }
 
+    if (!options.designable && this.hidden) {
+      return null;
+    }
+
     const shouldShowIconInTitle = shouldRenderIconInTitle({ depth, isMobile: options.isMobile });
     const { name, icon } = buildMenuTitleWithIcon(route, options.t, shouldShowIconInTitle);
 
@@ -555,7 +572,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         name,
         icon,
         path: getAdminLayoutMenuVirtualPath('link', identity),
-        hideInMenu: route.hideInMenu || (!options.designable && this.hidden),
+        hideInMenu: route.hideInMenu,
         _route: route,
         _parentRoute: parentRoute,
         _depth: depth,
@@ -577,7 +594,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         icon,
         path,
         redirect: route.schemaUid ? `/admin/${route.schemaUid}` : undefined,
-        hideInMenu: route.hideInMenu || (!options.designable && this.hidden),
+        hideInMenu: route.hideInMenu,
         disabled: !runtimeTarget.runtimePath,
         _runtimePath: runtimeTarget.runtimePath,
         _navigationMode: runtimeTarget.navigationMode,
@@ -618,7 +635,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           children[0]?.key === 'x-designer-button'
             ? undefined
             : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || route.id}`,
-        hideInMenu: route.hideInMenu || (!options.designable && this.hidden),
+        hideInMenu: route.hideInMenu,
         _runtimePath: runtimeTarget.runtimePath,
         _navigationMode: runtimeTarget.navigationMode,
         _isLegacy: runtimeTarget.isLegacy,
