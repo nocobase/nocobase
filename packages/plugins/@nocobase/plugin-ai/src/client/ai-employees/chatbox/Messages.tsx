@@ -12,7 +12,7 @@ import { Bubble } from '@ant-design/x';
 import { Spin, Layout, Divider, Button, Space, Typography } from 'antd';
 import { RightOutlined, DownOutlined, LoadingOutlined } from '@ant-design/icons';
 import { namespace, useT } from '../../locale';
-import { useAPIClient, useApp, useToken } from '@nocobase/client';
+import { useApp, useToken } from '@nocobase/client';
 import { useChat } from './hooks/useChat';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
@@ -52,14 +52,16 @@ export const Messages: React.FC = () => {
   const { token } = useToken();
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
+  const currentEmployee = useChatBoxStore.use.currentEmployee?.();
 
   const roles = useChatBoxStore.use.roles();
 
   const messages = chat.use.messages();
+  const responseLoading = chat.use.responseLoading();
 
   const updateTools = useChatToolsStore.use.updateTools();
 
-  const { messagesService, lastMessageRef } = useChatMessageActions();
+  const { messagesService, lastMessageRef, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
   const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const firstMessageIndex = renderedMessages.findIndex(
@@ -125,6 +127,41 @@ export const Messages: React.FC = () => {
 
     return () => cancelAnimationFrame(frame);
   }, [messages]);
+
+  useEffect(() => {
+    if (!currentConversation || !currentEmployee || messagesService.loading || responseLoading) {
+      return;
+    }
+
+    let cancelled = false;
+    const sessionId = currentConversation;
+    const aiEmployee = currentEmployee;
+
+    const maybeResumeStream = async () => {
+      const llmActiveState = await getConversationLLMActiveState(sessionId);
+      if (cancelled || llmActiveState !== 'streaming') {
+        return;
+      }
+      await resumeStream({
+        sessionId,
+        aiEmployee,
+      });
+    };
+
+    maybeResumeStream().catch(console.error);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentConversation,
+    currentEmployee,
+    messagesService.loading,
+    renderedMessages,
+    responseLoading,
+    getConversationLLMActiveState,
+    resumeStream,
+  ]);
 
   const renderConversationToggleDivider = (
     item: Extract<RenderedItem, { type: 'conversation-group' }>,
@@ -278,17 +315,14 @@ export const Messages: React.FC = () => {
 };
 
 const BackgroundWorkingHint: React.FC = () => {
-  const api = useAPIClient();
   const t = useT();
-  const { messagesService } = useChatMessageActions();
+  const { messagesService, getConversationLLMActiveState } = useChatMessageActions();
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const chat = useChat(currentConversation);
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
   const messages = chat.use.messages();
   const [show, setShow] = useState(false);
   const messageCount = useRef(0);
-  const { updateReadonly } = useWorkflowTasks();
-  const setResponseLoading = chat.setResponseLoading;
 
   const refreshMessages = useCallback(() => {
     if (currentConversation) {
@@ -298,16 +332,14 @@ const BackgroundWorkingHint: React.FC = () => {
 
   const doStateCheck = useCallback(async () => {
     if (currentConversation) {
-      const res = await api.resource('aiConversations').get({
-        filter: { sessionId: currentConversation },
-      });
-      if (res.data?.data?.llmActiveState === 'invoking') {
+      const llmActiveState = await getConversationLLMActiveState(currentConversation);
+      if (llmActiveState === 'invoking') {
         setShow(true);
       } else {
         setShow(false);
       }
     }
-  }, [api, currentConversation]);
+  }, [currentConversation, getConversationLLMActiveState]);
 
   useEffect(() => {
     const messagesLength = messages.length;
