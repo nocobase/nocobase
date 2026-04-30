@@ -17,7 +17,7 @@ import {
 import {
   buildToolCodeBlock,
   compactPatchForDisplay,
-  getStableToolArgs,
+  shouldSkipCodeToolCardRender,
 } from '../../ai-employees/ai-coding/ui/CodeToolCard';
 import { useChatMessagesStore } from '../../ai-employees/chatbox/stores/chat-messages';
 
@@ -207,58 +207,63 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
 });
 
 describe('tool code card rendering', () => {
-  it('keeps the last valid args while streamed args are temporarily invalid', () => {
-    const initial = buildToolCodeBlock({
+  it('skips rendering while streamed args are temporarily invalid', () => {
+    const previous = {
       id: 'write-1',
       name: 'writeJSCode',
       args: { code: 'const value = 1;' },
-    } as any);
-
-    const next = buildToolCodeBlock({
+    } as any;
+    const next = {
       id: 'write-1',
       name: 'writeJSCode',
       args: '{"code":',
-    } as any);
+    } as any;
 
-    expect(initial).toEqual({ language: 'js', value: 'const value = 1;' });
-    expect(next).toEqual(initial);
-    expect(
-      getStableToolArgs({
-        id: 'write-1',
-        name: 'writeJSCode',
-        args: '{"code":',
-      } as any),
-    ).toEqual({ code: 'const value = 1;' });
+    expect(buildToolCodeBlock(previous)).toEqual({ language: 'js', value: 'const value = 1;' });
+    expect(buildToolCodeBlock(next)).toBeNull();
+    expect(shouldSkipCodeToolCardRender({ toolCall: previous } as any, { toolCall: next } as any)).toBe(true);
   });
 
-  it('does not replace cached args with empty or truncated streamed args', () => {
-    const initial = buildToolCodeBlock({
+  it('skips rendering while streamed args are empty or truncated', () => {
+    const previous = {
       id: 'write-streaming',
       name: 'writeJSCode',
       args: { code: 'const a = 1;\nconst b = 2;\nconst c = 3;' },
-    } as any);
-
-    const empty = buildToolCodeBlock({
+    } as any;
+    const empty = {
       id: 'write-streaming',
       name: 'writeJSCode',
       args: { code: '' },
-    } as any);
-
-    const truncated = buildToolCodeBlock({
+    } as any;
+    const truncated = {
       id: 'write-streaming',
       name: 'writeJSCode',
       args: { code: 'const a = 1;' },
-    } as any);
+    } as any;
 
-    expect(empty).toEqual(initial);
-    expect(truncated).toEqual(initial);
-    expect(
-      getStableToolArgs({
-        id: 'write-streaming',
-        name: 'writeJSCode',
-        args: { code: '' },
-      } as any),
-    ).toEqual({ code: 'const a = 1;\nconst b = 2;\nconst c = 3;' });
+    expect(buildToolCodeBlock(previous)).toEqual({
+      language: 'js',
+      value: 'const a = 1;\nconst b = 2;\nconst c = 3;',
+    });
+    expect(buildToolCodeBlock(empty)).toBeNull();
+    expect(buildToolCodeBlock(truncated)).toEqual({ language: 'js', value: 'const a = 1;' });
+    expect(shouldSkipCodeToolCardRender({ toolCall: previous } as any, { toolCall: empty } as any)).toBe(true);
+    expect(shouldSkipCodeToolCardRender({ toolCall: previous } as any, { toolCall: truncated } as any)).toBe(true);
+  });
+
+  it('renders when streamed args become complete enough', () => {
+    const previous = {
+      id: 'write-streaming',
+      name: 'writeJSCode',
+      args: { code: 'const a = 1;\nconst b = 2;\nconst c = 3;' },
+    } as any;
+    const next = {
+      id: 'write-streaming',
+      name: 'writeJSCode',
+      args: { code: 'const a = 1;\nconst b = 2;\nconst c = 3;\nctx.render(c);' },
+    } as any;
+
+    expect(shouldSkipCodeToolCardRender({ toolCall: previous } as any, { toolCall: next } as any)).toBe(false);
   });
 
   it('returns an empty code block instead of undefined before code arrives', () => {

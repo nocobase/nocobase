@@ -12,7 +12,6 @@ import { ToolsUIProperties } from '@nocobase/client';
 import { jsonrepair } from 'jsonrepair';
 import { CodeBasic } from '../../chatbox/markdown/Code';
 
-const toolArgsCache = new Map<string, Record<string, unknown>>();
 const MIN_STREAMING_UPDATE_RATIO = 0.8;
 
 function parseToolCallArgs(args: unknown) {
@@ -40,29 +39,36 @@ function getCodeArg(toolName: string, args: Record<string, unknown>) {
   return undefined;
 }
 
-export function getStableToolArgs(toolCall: ToolsUIProperties['toolCall']) {
+function getParsedToolArgs(toolCall: ToolsUIProperties['toolCall']) {
   const parsedArgs = parseToolCallArgs(toolCall.args);
-  const cached = toolArgsCache.get(toolCall.id);
   if (!parsedArgs || typeof parsedArgs !== 'object') {
-    return cached ?? null;
+    return null;
   }
 
-  const args = parsedArgs as Record<string, unknown>;
-  const nextCode = getCodeArg(toolCall.name, args);
-  const cachedCode = cached ? getCodeArg(toolCall.name, cached) : undefined;
-  if (cachedCode) {
-    if (!nextCode) {
-      return cached;
-    }
-    if (nextCode.length < cachedCode.length * MIN_STREAMING_UPDATE_RATIO) {
-      return cached;
-    }
+  return parsedArgs as Record<string, unknown>;
+}
+
+export function shouldSkipCodeToolCardRender(prevProps: ToolsUIProperties, nextProps: ToolsUIProperties) {
+  const prevCodeBlock = buildToolCodeBlock(prevProps.toolCall);
+  if (!prevCodeBlock) {
+    return false;
   }
 
-  if (nextCode || !cached) {
-    toolArgsCache.set(toolCall.id, args);
+  const nextArgs = getParsedToolArgs(nextProps.toolCall);
+  if (!nextArgs) {
+    return true;
   }
-  return toolArgsCache.get(toolCall.id) ?? null;
+
+  const prevCode = getCodeArg(prevProps.toolCall.name, getParsedToolArgs(prevProps.toolCall) ?? {});
+  const nextCode = getCodeArg(nextProps.toolCall.name, nextArgs);
+  if (!prevCode) {
+    return false;
+  }
+  if (!nextCode) {
+    return true;
+  }
+
+  return nextCode.length < prevCode.length * MIN_STREAMING_UPDATE_RATIO;
 }
 
 function splitLinesPreserveNewline(input: string) {
@@ -152,22 +158,22 @@ export function compactPatchForDisplay(patch: string) {
 }
 
 export function buildToolCodeBlock(toolCall: ToolsUIProperties['toolCall']) {
-  const args = getStableToolArgs(toolCall);
+  const args = getParsedToolArgs(toolCall);
   if (!args) {
     return null;
   }
 
-  if (toolCall.name === 'writeJSCode' && typeof args.code === 'string') {
+  if (toolCall.name === 'writeJSCode' && typeof args.code === 'string' && args.code) {
     return { language: 'js', value: args.code };
   }
-  if (toolCall.name === 'patchJSCode' && typeof args.patch === 'string') {
+  if (toolCall.name === 'patchJSCode' && typeof args.patch === 'string' && args.patch) {
     return { language: 'diff', value: compactPatchForDisplay(args.patch) };
   }
 
   return null;
 }
 
-export const CodeToolCard: React.FC<ToolsUIProperties> = ({ toolCall }) => {
+const CodeToolCardBase: React.FC<ToolsUIProperties> = ({ toolCall }) => {
   const codeBlock = buildToolCodeBlock(toolCall);
   if (!codeBlock) {
     return null;
@@ -179,3 +185,5 @@ export const CodeToolCard: React.FC<ToolsUIProperties> = ({ toolCall }) => {
     </div>
   );
 };
+
+export const CodeToolCard = React.memo(CodeToolCardBase, shouldSkipCodeToolCardRender);
