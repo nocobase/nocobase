@@ -13,7 +13,11 @@ import axios from 'axios';
 import fs from 'fs-extra';
 import tar from 'tar';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
-import { createStoragePluginsSymlink, resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
+import {
+  createStoragePluginsSymlink,
+  removeStoragePluginSymlink,
+  resolvePluginStoragePath,
+} from '../../../lib/plugin-storage.js';
 import {
   parseLicenseKey,
   readSavedLicenseKey,
@@ -41,6 +45,23 @@ export type LicensePluginSyncResult = {
     warning?: string;
   }>;
 };
+
+export type LicensePluginSyncDetail = LicensePluginSyncResult['details'][number];
+
+export type LicensePluginCleanResult = {
+  commercialPlugins: string[];
+  removed: string[];
+  skipped: string[];
+  storagePath: string;
+  details: Array<{
+    packageName: string;
+    action: 'removed' | 'skipped';
+    outputDir: string;
+    removedSymlink: boolean;
+  }>;
+};
+
+export type LicensePluginCleanDetail = LicensePluginCleanResult['details'][number];
 
 function resolvePkgBaseUrl(): string {
   return String(process.env.NOCOBASE_PKG_URL ?? '').trim() || 'https://pkg.nocobase.com/';
@@ -267,9 +288,22 @@ async function removeUnlicensedPlugin(pluginName: string, storagePath: string): 
   return true;
 }
 
+async function removeDownloadedPlugin(pluginName: string, storagePath: string): Promise<boolean> {
+  const dir = path.resolve(storagePath, pluginName);
+  if (!(await fs.pathExists(dir))) {
+    return false;
+  }
+  await fs.remove(dir);
+  return true;
+}
+
 export async function syncLicensedPlugins(
   runtime: ManagedAppRuntime,
-  options: { version: string; dryRun?: boolean },
+  options: {
+    version: string;
+    dryRun?: boolean;
+    onProgress?: (detail: LicensePluginSyncDetail) => void | Promise<void>;
+  },
 ): Promise<LicensePluginSyncResult> {
   const keyData = await loadSavedLicenseKeyData(runtime);
   const baseURL = resolvePkgBaseUrl();
@@ -290,11 +324,16 @@ export async function syncLicensedPlugins(
     details: [],
   };
 
+  const emitDetail = async (detail: LicensePluginSyncDetail) => {
+    result.details.push(detail);
+    await options.onProgress?.(detail);
+  };
+
   for (const pluginName of commercialPlugins) {
     if (!licensedPlugins.includes(pluginName)) {
       if (options.dryRun) {
         result.removed.push(pluginName);
-        result.details.push({
+        await emitDetail({
           packageName: pluginName,
           action: 'removed',
           outputDir: path.resolve(storagePath, pluginName),
@@ -303,7 +342,7 @@ export async function syncLicensedPlugins(
       }
       if (await removeUnlicensedPlugin(pluginName, storagePath)) {
         result.removed.push(pluginName);
-        result.details.push({
+        await emitDetail({
           packageName: pluginName,
           action: 'removed',
           outputDir: path.resolve(storagePath, pluginName),
@@ -316,14 +355,14 @@ export async function syncLicensedPlugins(
     if (options.dryRun) {
       if (await isDownloaded(pluginName, storagePath, options.version)) {
         result.skipped.push(pluginName);
-        result.details.push({
+        await emitDetail({
           packageName: pluginName,
           action: 'skipped',
           outputDir: path.resolve(storagePath, pluginName),
         });
       } else {
         result.installed.push(pluginName);
-        result.details.push({
+        await emitDetail({
           packageName: pluginName,
           action: 'installed',
           outputDir: path.resolve(storagePath, pluginName),
@@ -350,7 +389,7 @@ export async function syncLicensedPlugins(
     } else {
       result.skipped.push(pluginName);
     }
-    result.details.push({
+    await emitDetail({
       packageName: pluginName,
       action,
       outputDir: path.resolve(storagePath, pluginName),
@@ -360,6 +399,69 @@ export async function syncLicensedPlugins(
 
   if (!options.dryRun) {
     await createStoragePluginsSymlink(runtime.env.storagePath, nodeModulesPath);
+  }
+
+  return result;
+}
+
+export async function cleanLicensedPlugins(
+  runtime: ManagedAppRuntime,
+  options: {
+    dryRun?: boolean;
+    onProgress?: (detail: LicensePluginCleanDetail) => void | Promise<void>;
+  } = {},
+): Promise<LicensePluginCleanResult> {
+  const { commercialPlugins } = await fetchLicensedPluginPackages(runtime);
+  const storagePath = resolvePluginStoragePath(runtime.env.storagePath);
+  const nodeModulesPath = String(runtime.env.envVars.NODE_MODULES_PATH ?? '').trim();
+  const result: LicensePluginCleanResult = {
+    commercialPlugins,
+    removed: [],
+    skipped: [],
+    storagePath,
+    details: [],
+  };
+
+  const emitDetail = async (detail: LicensePluginCleanDetail) => {
+    result.details.push(detail);
+    await options.onProgress?.(detail);
+  };
+
+  for (const pluginName of commercialPlugins) {
+    const outputDir = path.resolve(storagePath, pluginName);
+    const exists = await fs.pathExists(outputDir);
+
+    if (!exists) {
+      result.skipped.push(pluginName);
+      await emitDetail({
+        packageName: pluginName,
+        action: 'skipped',
+        outputDir,
+        removedSymlink: false,
+      });
+      continue;
+    }
+
+    if (options.dryRun) {
+      result.removed.push(pluginName);
+      await emitDetail({
+        packageName: pluginName,
+        action: 'removed',
+        outputDir,
+        removedSymlink: Boolean(nodeModulesPath),
+      });
+      continue;
+    }
+
+    await removeDownloadedPlugin(pluginName, storagePath);
+    const removedSymlink = await removeStoragePluginSymlink(pluginName, runtime.env.storagePath, nodeModulesPath);
+    result.removed.push(pluginName);
+    await emitDetail({
+      packageName: pluginName,
+      action: 'removed',
+      outputDir,
+      removedSymlink,
+    });
   }
 
   return result;

@@ -8,9 +8,27 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import pc from 'picocolors';
 import { licenseEnvFlag, licenseJsonFlag, requireLicenseRuntime } from '../shared.js';
 import { syncLicensedPlugins } from './shared.js';
-import { renderTable } from '../../../lib/ui.js';
+import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
+import { startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
+
+const SYNC_LOADING_DELAY_MS = 1200;
+const SYNC_LOADING_UPDATE_MS = 5000;
+
+function formatActionLabel(action: 'installed' | 'updated' | 'removed' | 'skipped') {
+  switch (action) {
+    case 'installed':
+      return pc.green('installed');
+    case 'updated':
+      return pc.cyan('updated');
+    case 'removed':
+      return pc.yellow('removed');
+    case 'skipped':
+      return pc.dim('skipped');
+  }
+}
 
 export default class LicensePluginsSync extends Command {
   static override summary = 'Synchronize commercial plugins for the selected env';
@@ -32,16 +50,84 @@ export default class LicensePluginsSync extends Command {
     version: Flags.string({
       description: 'Registry version or dist-tag to synchronize. Defaults to the current workspace version.',
     }),
+    verbose: Flags.boolean({
+      char: 'V',
+      description: 'Show detailed per-plugin sync logs',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsSync);
     const runtime = await requireLicenseRuntime(flags.env);
     const version = String(flags.version ?? this.config.pjson.version ?? 'latest').trim() || 'latest';
-    const result = await syncLicensedPlugins(runtime, {
-      version,
-      dryRun: Boolean(flags['dry-run']),
-    });
+    const shouldStreamLogs = !flags.json && Boolean(flags.verbose);
+    const pluginStoragePath = resolvePluginStoragePath(runtime.env.storagePath);
+    const shouldShowLoading = !flags.json && !flags.verbose;
+
+    if (!flags.json) {
+      this.log(
+        pc.bold(
+          flags['dry-run']
+            ? `Commercial plugin sync preview for env "${runtime.envName}"`
+            : `Commercial plugin sync for env "${runtime.envName}"`,
+        ),
+      );
+      this.log(pc.dim(`Version: ${version}`));
+      this.log(pc.dim(`Plugin storage path: ${pluginStoragePath}`));
+    }
+
+    let loadingStarted = false;
+    let loadingTimer: ReturnType<typeof setTimeout> | undefined;
+    let updateTimer: ReturnType<typeof setInterval> | undefined;
+    let elapsedSeconds = 0;
+
+    if (shouldShowLoading) {
+      loadingTimer = setTimeout(() => {
+        loadingStarted = true;
+        elapsedSeconds = Math.floor(SYNC_LOADING_DELAY_MS / 1000);
+        startTask(
+          flags['dry-run']
+            ? 'Preparing commercial plugin sync preview. Please wait...'
+            : 'Synchronizing commercial plugins. Please wait...',
+        );
+        updateTimer = setInterval(() => {
+          elapsedSeconds += Math.floor(SYNC_LOADING_UPDATE_MS / 1000);
+          updateTask(
+            flags['dry-run']
+              ? `Preparing commercial plugin sync preview. Still working... (${elapsedSeconds}s elapsed)`
+              : `Synchronizing commercial plugins. Still working... (${elapsedSeconds}s elapsed)`,
+          );
+        }, SYNC_LOADING_UPDATE_MS);
+      }, SYNC_LOADING_DELAY_MS);
+    }
+
+    let result;
+    try {
+      result = await syncLicensedPlugins(runtime, {
+        version,
+        dryRun: Boolean(flags['dry-run']),
+        onProgress: shouldStreamLogs
+          ? async (detail) => {
+            this.log(`${formatActionLabel(detail.action)} ${pc.bold(detail.packageName)}`);
+            this.log(pc.dim(`  output: ${detail.outputDir}`));
+            if (detail.warning) {
+              this.log(pc.yellow(`  warning: ${detail.warning}`));
+            }
+          }
+          : undefined,
+      });
+    } finally {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+      }
+      if (updateTimer) {
+        clearInterval(updateTimer);
+      }
+      if (loadingStarted) {
+        stopTask();
+      }
+    }
     const payload = {
       ok: true,
       env: runtime.envName,
@@ -56,26 +142,42 @@ export default class LicensePluginsSync extends Command {
       return;
     }
 
-    this.log(
-      flags['dry-run']
-        ? `Commercial plugin sync preview for env "${runtime.envName}"`
-        : `Commercial plugin sync for env "${runtime.envName}"`,
-    );
-    this.log(`Plugin storage path: ${result.storagePath}`);
-    this.log(renderTable(
-      ['Action', 'Packages'],
-      [
-        ['install', result.installed.join(', ') || '-'],
-        ['update', result.updated.join(', ') || '-'],
-        ['remove', result.removed.join(', ') || '-'],
-        ['skip', result.skipped.join(', ') || '-'],
-      ],
-    ));
-    for (const detail of result.details) {
-      this.log(`${detail.action}: ${detail.packageName} -> ${detail.outputDir}`);
+    if (loadingStarted) {
+      succeedTask(
+        flags['dry-run']
+          ? 'Commercial plugin sync preview is ready.'
+          : 'Commercial plugin sync completed.',
+      );
     }
-    for (const warning of result.warnings) {
-      this.log(`Warning: ${warning}`);
+
+    if (!flags.verbose) {
+      const changes = [];
+      if (result.installed.length > 0) {
+        changes.push(pc.green(`${result.installed.length} installed`));
+      }
+      if (result.updated.length > 0) {
+        changes.push(pc.cyan(`${result.updated.length} updated`));
+      }
+      if (result.removed.length > 0) {
+        changes.push(pc.yellow(`${result.removed.length} removed`));
+      }
+      if (result.skipped.length > 0) {
+        changes.push(pc.dim(`${result.skipped.length} skipped`));
+      }
+      if (changes.length === 0) {
+        changes.push(pc.dim('no plugin changes'));
+      }
+      this.log(`Result: ${changes.join(', ')}`);
+    } else {
+      this.log(
+        `Summary: ${result.installed.length} installed, ${result.updated.length} updated, ${result.removed.length} removed, ${result.skipped.length} skipped, ${result.warnings.length} warnings`,
+      );
+    }
+
+    if (result.warnings.length > 0 && !flags.verbose) {
+      for (const warning of result.warnings) {
+        this.log(pc.yellow(`Warning: ${warning}`));
+      }
     }
   }
 }

@@ -108,3 +108,46 @@ export async function createStoragePluginsSymlink(
       await createStoragePluginSymlink(storagePluginsPath, nodeModulesPath, pluginName)),
   );
 }
+
+export async function removeStoragePluginSymlink(
+  pluginName: string,
+  storagePath?: string,
+  nodeModulesPath = String(process.env.NODE_MODULES_PATH ?? '').trim(),
+): Promise<boolean> {
+  if (!nodeModulesPath) {
+    return false;
+  }
+
+  const storagePluginsPath = resolvePluginStoragePath(storagePath);
+  const targetPath = path.resolve(storagePluginsPath, pluginName);
+  const linkPath = path.resolve(nodeModulesPath, pluginName);
+  if (!(await fs.pathExists(linkPath))) {
+    return false;
+  }
+
+  let statResult;
+  try {
+    statResult = await fs.lstat(linkPath);
+  } catch {
+    return false;
+  }
+
+  if (!statResult.isSymbolicLink()) {
+    return false;
+  }
+
+  let resolvedLinkTarget = '';
+  try {
+    const linkTarget = await fs.readlink(linkPath);
+    resolvedLinkTarget = path.resolve(path.dirname(linkPath), linkTarget);
+  } catch {
+    return false;
+  }
+
+  if (resolvedLinkTarget !== targetPath) {
+    return false;
+  }
+
+  await fs.remove(linkPath);
+  return true;
+}
