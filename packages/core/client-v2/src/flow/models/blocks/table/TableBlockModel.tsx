@@ -314,7 +314,14 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   onSuccess: (values) => {
                     const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
-                    setNestedValue(this.resource.getData(), recordIndex, record);
+                    if (typeof recordIndex === 'number') {
+                      this.resource.setItem(recordIndex, record);
+                    } else {
+                      const nextData = _.cloneDeep(this.resource.getData());
+                      setNestedValue(nextData, recordIndex, record);
+                      this.resource.setData(nextData);
+                    }
+                    this.resource.emit('refresh');
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.createFork({}, `${recordIndex}`);
                     // Provide expandable meta for current row record based on the collection in context

@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockDatabase, Database, Repository } from '@nocobase/database';
+import { createMockDatabase, Database, DatetimeNoTzField, Repository } from '@nocobase/database';
+
+class CustomDatetimeNoTzField extends DatetimeNoTzField {}
 
 describe('datetimeNoTz date operator test', () => {
   let db: Database;
@@ -204,5 +206,43 @@ describe('datetimeNoTz date operator test', () => {
     });
 
     expect(count).toBe(2);
+  });
+
+  test('custom datetimeNoTz field class should use no-timezone date filter', async () => {
+    await db.close();
+    db = await createMockDatabase({
+      timezone: '+08:00',
+    });
+
+    db.registerFieldTypes({
+      datetimeNoTz: CustomDatetimeNoTzField,
+    });
+
+    await db.clean({ drop: true });
+    const Test = db.collection({
+      name: 'custom_tests',
+      fields: [
+        {
+          name: 'date1',
+          type: 'datetimeNoTz',
+        },
+      ],
+    });
+    repository = Test.repository;
+    await db.sync();
+
+    await repository.create({
+      values: {
+        date1: '2023-01-01 00:00:00',
+      },
+    });
+
+    const count = await repository.count({
+      filter: {
+        'date1.$dateOn': '2023-01-01',
+      },
+    });
+
+    expect(count).toBe(1);
   });
 });

@@ -8,9 +8,8 @@
  */
 
 import { observer, useForm } from '@formily/react';
-import { useCollectionManager_deprecated } from '@nocobase/client';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
-import { Alert, Empty, Select, Space, Spin } from 'antd';
+import { Alert, Select, Space, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { KanbanBlockModel } from '../KanbanBlockModel';
 import {
@@ -46,13 +45,14 @@ export const KanbanGroupingSelector = observer(
     onChange,
     model,
     collection,
-    dataSourceKey,
+    disabled,
   }: {
     value?: KanbanGroupOption[] | KanbanGroupingValue;
     onChange?: (value: KanbanGroupOption[]) => void;
     model?: KanbanBlockModel;
     collection?: any;
     dataSourceKey?: string;
+    disabled?: boolean;
   }) => {
     const form = useForm();
     let settingsContext: any;
@@ -64,9 +64,6 @@ export const KanbanGroupingSelector = observer(
 
     const resolvedModel = model || settingsContext?.model;
     const resolvedCollection = resolvedModel?.collection || collection || settingsContext?.collection;
-    const resolvedDataSourceKey =
-      resolvedCollection?.dataSourceKey || dataSourceKey || settingsContext?.dataSource?.key;
-    useCollectionManager_deprecated(resolvedDataSourceKey);
 
     const translate = useCallback(
       (key: string) => resolvedModel?.translate?.(key, { ns: 'kanban' }) || key,
@@ -190,23 +187,20 @@ export const KanbanGroupingSelector = observer(
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         {optionsError ? <Alert type="error" message={optionsError} showIcon /> : null}
         <Spin spinning={optionsLoading}>
-          {currentField ? (
-            <Select
-              mode="multiple"
-              style={{ width: '100%' }}
-              value={selectedValues}
-              options={availableOptions.map((option) => ({
-                label: option.label,
-                value: option.value,
-              }))}
-              placeholder={translate('Select group values')}
-              onChange={(nextValues) => {
-                emitChange(buildSelectedGroupOptions(availableOptions, nextValues));
-              }}
-            />
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={translate('Select a grouping field first')} />
-          )}
+          <Select
+            mode="multiple"
+            disabled={disabled || !currentField}
+            style={{ width: '100%' }}
+            value={selectedValues}
+            options={availableOptions.map((option) => ({
+              label: option.label,
+              value: option.value,
+            }))}
+            placeholder={translate(currentField ? 'Select group values' : 'Select a grouping field first')}
+            onChange={(nextValues) => {
+              emitChange(buildSelectedGroupOptions(availableOptions, nextValues));
+            }}
+          />
         </Spin>
       </Space>
     );

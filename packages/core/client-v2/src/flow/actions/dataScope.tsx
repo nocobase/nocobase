@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, MultiRecordResource, pruneFilter, tExpr, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
-import _ from 'lodash';
+import { defineAction, MultiRecordResource, tExpr, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { isEmptyFilter } from '@nocobase/utils/client';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';
 import { FieldModel } from '../models/base/FieldModel';
+import { normalizeDataScopeFilter } from './dataScopeFilter';
 
 export const dataScope = defineAction({
   name: 'dataScope',
@@ -43,6 +43,7 @@ export const dataScope = defineAction({
       filter: { logic: '$and', items: [] },
     };
   },
+  useRawParams: true,
   async handler(ctx, params) {
     // @ts-ignore
     const resource = ctx.model?.resource as MultiRecordResource;
@@ -50,7 +51,8 @@ export const dataScope = defineAction({
       return;
     }
 
-    const filter = pruneFilter(transformFilter(params.filter));
+    const resolvedFilter = await ctx.resolveJsonTemplate(params.filter);
+    const filter = normalizeDataScopeFilter(params.filter, resolvedFilter);
 
     if (isEmptyFilter(filter)) {
       resource.removeFilterGroup(ctx.model.uid);

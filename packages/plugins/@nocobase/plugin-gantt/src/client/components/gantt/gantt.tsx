@@ -112,6 +112,7 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     tasks,
     expandAndCollapseAll,
     fieldNames,
+    enableDragToReschedule = true,
     loading,
   } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { designable } = useDesignable();
@@ -499,6 +500,7 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     onDoubleClick,
     onClick: handleBarClick,
     onDelete,
+    enableDragToReschedule,
     loading,
   };
 

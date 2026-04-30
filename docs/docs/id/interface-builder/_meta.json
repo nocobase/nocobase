@@ -1,0 +1,554 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/interface-builder/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Block",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/interface-builder/blocks/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Data Block",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Table",
+            "link": "/interface-builder/blocks/data-blocks/table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Form",
+            "link": "/interface-builder/blocks/data-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Detail",
+            "link": "/interface-builder/blocks/data-blocks/details"
+          },
+          {
+            "type": "custom-link",
+            "label": "List",
+            "link": "/interface-builder/blocks/data-blocks/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "Grid Card",
+            "link": "/interface-builder/blocks/data-blocks/grid-card"
+          },
+          {
+            "type": "custom-link",
+            "label": "Chart",
+            "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Calendar",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kanban",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Filter Block",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Form",
+            "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tree",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Block Lainnya",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Action Panel",
+            "link": "/interface-builder/blocks/other-blocks/action-panel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Iframe",
+            "link": "/interface-builder/blocks/other-blocks/iframe"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/interface-builder/blocks/other-blocks/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Block",
+            "link": "/interface-builder/blocks/other-blocks/js-block"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Block",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Cakupan Data",
+            "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Metode Pemuatan Data",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
+            "label": "Layout",
+            "link": "/interface-builder/blocks/block-settings/block-layout"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aturan Linkage Block",
+            "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aturan Linkage Field",
+            "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aturan Sort",
+            "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Drag Sort",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hapus Block",
+            "link": "/interface-builder/blocks/block-settings/block-delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Judul Block",
+            "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tinggi Block",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Draft Form",
+            "link": "/interface-builder/form-drafts"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Field",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/interface-builder/fields/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Umum",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Field Table",
+            "link": "/interface-builder/fields/generic/table-column"
+          },
+          {
+            "type": "custom-link",
+            "label": "Field Detail",
+            "link": "/interface-builder/fields/generic/detail-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Field Filter Form",
+            "link": "/interface-builder/fields/generic/filter-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Field Form",
+            "link": "/interface-builder/fields/generic/form-item"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Khusus",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tanggal",
+            "link": "/interface-builder/fields/specific/date-picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "File Manager",
+            "link": "/interface-builder/fields/specific/file-manager"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sub-Form",
+            "link": "/interface-builder/fields/specific/sub-form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dropdown Select",
+            "link": "/interface-builder/fields/specific/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Data Picker",
+            "link": "/interface-builder/fields/specific/picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cascade Select",
+            "link": "/interface-builder/fields/specific/cascade-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sub-Table (Edit Inline)",
+            "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sub-Table (Edit Popup)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sub-Detail",
+            "link": "/interface-builder/fields/specific/sub-detail"
+          },
+          {
+            "type": "custom-link",
+            "label": "Title",
+            "link": "/interface-builder/fields/specific/title"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Field",
+            "link": "/interface-builder/fields/specific/js-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/fields/specific/js-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Column",
+            "link": "/interface-builder/fields/specific/js-column"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Field",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Nilai Default",
+            "link": "/interface-builder/fields/field-settings/default-value"
+          },
+          {
+            "type": "custom-link",
+            "label": "Label Field",
+            "link": "/interface-builder/fields/field-settings/edit-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tampilkan Label",
+            "link": "/interface-builder/fields/field-settings/show-label"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tooltip Field",
+            "link": "/interface-builder/fields/field-settings/edit-tooltip"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cakupan Data",
+            "link": "/interface-builder/fields/field-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Komponen Field",
+            "link": "/interface-builder/fields/field-settings/field-component"
+          },
+          {
+            "type": "custom-link",
+            "label": "Format Angka",
+            "link": "/interface-builder/fields/field-settings/number-format"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pattern",
+            "link": "/interface-builder/fields/field-settings/pattern"
+          },
+          {
+            "type": "custom-link",
+            "label": "Wajib Diisi",
+            "link": "/interface-builder/fields/field-settings/required"
+          },
+          {
+            "type": "custom-link",
+            "label": "Field Judul",
+            "link": "/interface-builder/fields/field-settings/title-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aturan Validasi",
+            "link": "/interface-builder/fields/field-settings/validation-rules"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Komponen Field Relasi",
+        "link": "/interface-builder/fields/association-field"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Action",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/interface-builder/actions/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Action",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Edit Tombol",
+            "link": "/interface-builder/actions/action-settings/edit-button"
+          },
+          {
+            "type": "custom-link",
+            "label": "Konfirmasi Ganda",
+            "link": "/interface-builder/actions/action-settings/double-check"
+          },
+          {
+            "type": "custom-link",
+            "label": "Penugasan Field",
+            "link": "/interface-builder/actions/action-settings/assign-values"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bind Workflow",
+            "link": "/interface-builder/actions/action-settings/bind-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Edit Popup",
+            "link": "/interface-builder/actions/action-settings/edit-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aturan Linkage Action",
+            "link": "/interface-builder/actions/action-settings/linkage-rule"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Tipe Action",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tambah Baru",
+            "link": "/interface-builder/actions/types/add-new"
+          },
+          {
+            "type": "custom-link",
+            "label": "Lihat",
+            "link": "/interface-builder/actions/types/view"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hapus",
+            "link": "/interface-builder/actions/types/delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Edit",
+            "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Duplikat",
+            "link": "/interface-builder/actions/types/duplicate"
+          },
+          {
+            "type": "custom-link",
+            "label": "Impor",
+            "link": "/interface-builder/actions/types/import"
+          },
+          {
+            "type": "custom-link",
+            "label": "Impor Pro",
+            "link": "/interface-builder/actions/types/import-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ekspor",
+            "link": "/interface-builder/actions/types/export"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ekspor Pro",
+            "link": "/interface-builder/actions/types/export-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ekspor Lampiran",
+            "link": "/interface-builder/actions/types/export-attachments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Filter",
+            "link": "/interface-builder/actions/types/filter"
+          },
+          {
+            "type": "custom-link",
+            "label": "Link",
+            "link": "/interface-builder/actions/types/link"
+          },
+          {
+            "type": "custom-link",
+            "label": "Buka Popup",
+            "link": "/interface-builder/actions/types/pop-up"
+          },
+          {
+            "type": "custom-link",
+            "label": "Refresh",
+            "link": "/interface-builder/actions/types/refresh"
+          },
+          {
+            "type": "custom-link",
+            "label": "Submit Data",
+            "link": "/interface-builder/actions/types/submit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Trigger Workflow",
+            "link": "/interface-builder/actions/types/trigger-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Update Record",
+            "link": "/interface-builder/actions/types/update-record"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bulk Update",
+            "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bulk Edit",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tambah Sub-Record",
+            "link": "/interface-builder/actions/types/add-child"
+          },
+          {
+            "type": "custom-link",
+            "label": "Custom Request",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Action",
+            "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Izin Action",
+        "link": "/interface-builder/actions/permission"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Lanjutan",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Aturan Linkage",
+        "link": "/interface-builder/linkage-rule"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event Flow",
+        "link": "/interface-builder/event-flow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variabel",
+        "link": "/interface-builder/variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "RunJS",
+        "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Template",
+        "link": "/interface-builder/ui-templates"
+      }
+    ]
+  }
+]

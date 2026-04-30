@@ -50,7 +50,7 @@
   "Select group values": "选择分组值",
   "The order of the selected values determines the kanban column order": "看板的列顺序基于值选择的顺序确定",
   "Set column width": "设置列宽",
-  "Single select and many-to-one fields can be used as the grouping field": "单选和多对一字段可以用作分组字段",
+  "Single select and many-to-one fields can be used as the grouping field": "下拉单选、单选框和多对一字段可以用作分组字段",
   "Small": "小",
   "Sort": "排序",
   "Sorting field": "排序字段",

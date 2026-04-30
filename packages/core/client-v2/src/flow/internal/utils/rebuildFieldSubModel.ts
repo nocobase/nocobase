@@ -10,8 +10,9 @@
 /**
  * 通用的字段子模型重建工具：
  * - 保留原有 uid
- * - 通过 FieldModel 入口 + fieldBinding.use 动态选择目标字段类
+ * - 直接重建为目标字段类，保持与 defineChildren 初始创建逻辑一致
  * - 支持同步父项模式（pattern）
+ * - 同一字段模型类型下保留已有字段设置；切换到其他字段模型类型时丢弃不兼容设置
  * - 重建后触发 beforeRender（useCache: false）
  */
 import { FieldModel } from '../../models/base/FieldModel';
@@ -39,6 +40,16 @@ type RebuildOptions = {
   fieldSettingsInit?: unknown;
 };
 
+function normalizeModelUse(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'function' && value.name) {
+    return value.name;
+  }
+  return undefined;
+}
+
 export function getFieldBindingUse(fieldModel?: FieldModel): string | undefined {
   const bindingUse = (fieldModel?.stepParams as FieldStepParams | undefined)?.fieldBinding?.use;
   return typeof bindingUse === 'string' ? bindingUse : undefined;
@@ -61,13 +72,18 @@ export async function rebuildFieldSubModel({
       delete prevSubModels[key];
     }
   }
-  const prevStepParams: FieldStepParams = (fieldModel?.stepParams as FieldStepParams) || {};
+  const currentUse = normalizeModelUse(getFieldBindingUse(fieldModel) || fieldModel?.use);
+  const shouldPreserveStepParams = currentUse === targetUse;
+  const prevStepParams: FieldStepParams = shouldPreserveStepParams
+    ? (fieldModel?.stepParams as FieldStepParams) || {}
+    : {};
   const nextFieldSettingsInit = fieldSettingsInit ?? parentModel.getFieldSettingsInitParams?.();
+  const { fieldBinding: _fieldBinding, ...restStepParams } = prevStepParams;
 
   const nextStepParams: FieldStepParams = {
-    ...prevStepParams,
-    fieldBinding: { ...prevStepParams.fieldBinding, use: targetUse },
+    ...restStepParams,
     fieldSettings: {
+      ...(restStepParams.fieldSettings || {}),
       init: nextFieldSettingsInit,
     },
   };
@@ -81,7 +97,7 @@ export async function rebuildFieldSubModel({
 
   const subModel = parentModel.setSubModel('field', {
     uid: fieldUid,
-    use: FieldModel,
+    use: targetUse,
     props: { ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
     stepParams: nextStepParams as StepParams,
     // Preserve existing subModels (e.g. SubTable columns) so switching field component back and forth

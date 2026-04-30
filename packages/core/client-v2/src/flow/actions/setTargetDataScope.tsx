@@ -12,14 +12,13 @@ import {
   defineAction,
   FlowModel,
   MultiRecordResource,
-  pruneFilter,
   useFlowContext,
   tExpr,
 } from '@nocobase/flow-engine';
-import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
-import _ from 'lodash';
+import { isEmptyFilter } from '@nocobase/utils/client';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';
+import { normalizeDataScopeFilter } from './dataScopeFilter';
 
 export const setTargetDataScope = defineAction({
   name: 'setTargetDataScope',
@@ -62,8 +61,10 @@ export const setTargetDataScope = defineAction({
       filter: { logic: '$and', items: [] },
     };
   },
+  useRawParams: true,
   async handler(ctx, params) {
-    const targetBlockUid = params.targetBlockUid;
+    const resolvedParams = await ctx.resolveJsonTemplate(params);
+    const targetBlockUid = resolvedParams.targetBlockUid;
     if (!targetBlockUid) {
       return;
     }
@@ -74,7 +75,7 @@ export const setTargetDataScope = defineAction({
         return;
       }
 
-      const filter = pruneFilter(transformFilter(params.filter));
+      const filter = normalizeDataScopeFilter(params.filter, resolvedParams.filter);
 
       if (isEmptyFilter(filter)) {
         resource.removeFilterGroup(`setTargetDataScope_${ctx.model.uid}`);

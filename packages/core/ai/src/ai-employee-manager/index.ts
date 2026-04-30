@@ -80,6 +80,7 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
         await this.aiEmployeesModel.create(
           {
             username: employee.username,
+            category: employee.category ?? 'business',
             nickname: employee.nickname,
             position: employee.position,
             avatar: employee.avatar,
@@ -106,8 +107,9 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
       const current = existed.toJSON() as AIEmployeeEntry;
       let { tools } = current?.skillSettings ?? { tools: [] };
       tools = tools?.length ? tools.filter((s) => s.name?.startsWith('workflowCaller-')) : [];
-      const mergedTools = new Set([...tools, ...employee.tools]);
+      const mergedTools = new Set([...tools, ...(employee.tools ?? [])]);
       const values: Record<string, unknown> = {
+        category: employee.category ?? current.category,
         nickname: employee.nickname ?? current.nickname,
         position: employee.position ?? current.position,
         avatar: employee.avatar ?? current.avatar,
@@ -115,7 +117,7 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
         greeting: employee.greeting ?? current.greeting,
         defaultPrompt: employee.systemPrompt,
         skillSettings: {
-          skills: [...employee.skills],
+          skills: [...(employee.skills ?? [])],
           tools: [...mergedTools],
         },
         sort: employee.sort,

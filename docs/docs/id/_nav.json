@@ -1,0 +1,34 @@
+[
+  {
+    "text": "Mulai",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "Tutorial",
+    "link": "/tutorials/v2/"
+  },
+  {
+    "text": "Panduan",
+    "link": "/guide/"
+  },
+  {
+    "text": "Pengembangan",
+    "link": "/development/"
+  },
+  {
+    "text": "Plugin",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  },
+  {
+    "text": "Beranda",
+    "link": "https://www.nocobase.com/"
+  }
+]

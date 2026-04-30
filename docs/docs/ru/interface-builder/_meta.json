@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Обзор",
-    "link": "/interface-builder"
+    "link": "/interface-builder/"
   },
   {
     "type": "custom-link",
@@ -11,7 +11,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/interface-builder/blocks"
+        "link": "/interface-builder/blocks/"
       },
       {
         "type": "custom-link",
@@ -47,6 +47,16 @@
             "type": "custom-link",
             "label": "Диаграмма",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Календарь",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "Канбан",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },
@@ -59,6 +69,11 @@
             "type": "custom-link",
             "label": "Форма",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Дерево",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -160,7 +175,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/interface-builder/fields"
+        "link": "/interface-builder/fields/"
       },
       {
         "type": "custom-link",
@@ -337,7 +352,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/interface-builder/actions"
+        "link": "/interface-builder/actions/"
       },
       {
         "type": "custom-link",
@@ -361,7 +376,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Привязка рабочего процесса",
+            "label": "Привязка Workflow",
             "link": "/interface-builder/actions/action-settings/bind-workflow"
           },
           {
@@ -458,7 +473,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Запустить рабочий процесс",
+            "label": "Запустить Workflow",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -483,8 +498,18 @@
           },
           {
             "type": "custom-link",
+            "label": "Пользовательский запрос",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },
@@ -521,7 +546,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Шаблоны UI",
+        "label": "UI-шаблоны",
         "link": "/interface-builder/ui-templates"
       }
     ]

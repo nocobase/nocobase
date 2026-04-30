@@ -12,7 +12,7 @@ import { AIEmployee } from '../types';
 const BUILDER_AI_USERNAMES = ['nathan', 'orin', 'dara'];
 
 export const isBuiltIn = (aiEmployee: AIEmployee) => {
-  return aiEmployee?.builtIn;
+  return aiEmployee?.builtIn && aiEmployee?.deprecated !== true;
 };
 
 export const isEngineer = (aiEmployee: AIEmployee) => {

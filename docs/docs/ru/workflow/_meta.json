@@ -1,12 +1,12 @@
 [
   {
     "type": "section-header",
-    "label": "Рабочий процесс"
+    "label": "Workflow"
   },
   {
     "type": "custom-link",
     "label": "Обзор",
-    "link": "/workflow/index"
+    "link": "/workflow/"
   },
   {
     "type": "custom-link",
@@ -21,7 +21,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/workflow/triggers/index"
+        "link": "/workflow/triggers/"
       },
       {
         "type": "custom-link",
@@ -50,7 +50,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Одобрение",
+        "label": "Согласование",
         "link": "/workflow/triggers/approval"
       },
       {
@@ -68,7 +68,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/workflow/nodes/index"
+        "link": "/workflow/nodes/"
       },
       {
         "type": "custom-link",
@@ -200,7 +200,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Одобрение",
+            "label": "Согласование",
             "link": "/workflow/nodes/approval"
           },
           {
@@ -275,7 +275,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/workflow/development/index"
+        "link": "/workflow/development/"
       },
       {
         "type": "custom-link",

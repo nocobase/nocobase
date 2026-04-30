@@ -8,14 +8,112 @@
  */
 
 import { observable } from '@formily/reactive';
-import { BlockSceneEnum, CollectionBlockModel, FieldModel, isTitleField } from '@nocobase/client';
-import { DisplayItemModel, MultiRecordResource } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
+import {
+  AddChildActionModel,
+  ActionModel,
+  BlockSceneEnum,
+  CollectionActionGroupModel,
+  CollectionBlockModel,
+  isTitleField,
+  RecordActionGroupModel,
+} from '@nocobase/client';
+import {
+  AddSubModelButton,
+  buildSubModelItem,
+  defineFlow,
+  DndProvider,
+  DragHandler,
+  Droppable,
+  DisplayItemModel,
+  FlowModel,
+  FlowModelContext,
+  FlowModelRenderer,
+  FlowSettingsButton,
+  FlowsFloatContextMenu,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
+import { Space } from 'antd';
 import React from 'react';
 import { TreeBlockView } from './components/TreeBlockView';
 import { tExpr } from '../locale';
 import { treeConnectDataBlocks } from './treeConnectDataBlocks';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 200, 500];
+const TREE_ADD_CHILD_FORM_DATA_KEY = '__treeAddChildFormData';
+const TREE_NODE_ACTION_MODEL_NAMES = [
+  'ViewActionModel',
+  'EditActionModel',
+  'DeleteActionModel',
+  'AddChildActionModel',
+  'JSItemActionModel',
+  'JSRecordActionModel',
+];
+const TREE_SEARCH_ACTION_MODEL_NAMES = ['AddNewActionModel', 'JSItemActionModel', 'JSCollectionActionModel'];
+
+const getEffectiveFieldModelUse = (fieldModel: any) => {
+  return fieldModel?.getStepParams?.('fieldBinding', 'use') || fieldModel?.use;
+};
+
+const getTitleFieldStepParams = (fieldModel: any, initParams: any, preservePrevious: boolean) => {
+  const previousStepParams = preservePrevious ? fieldModel?.getStepParams?.() || {} : {};
+  const { fieldBinding: _fieldBinding, ...stepParams } = previousStepParams;
+
+  return {
+    ...stepParams,
+    fieldSettings: {
+      ...(stepParams.fieldSettings || {}),
+      init: initParams,
+    },
+  };
+};
+
+const getTreeAddChildFormDataFromContext = (ctx: FlowModelContext) => {
+  const model = ctx.model as any;
+  const blockModel = ctx.blockModel as TreeBlockModel;
+  const cacheKey = blockModel?.getTreeAddChildFormDataInputKey?.();
+
+  return cacheKey && ctx.inputArgs?.[cacheKey]
+    ? ctx.inputArgs[cacheKey]
+    : blockModel?.getTreeAddChildFormData?.(model.uid, ctx.inputArgs?.sourceId);
+};
+
+const addChildPopupSettingsFlow = AddChildActionModel.globalFlowRegistry.getFlow('popupSettings').toData();
+
+const buildTreeActionItems = async (
+  ctx: FlowModelContext,
+  actionModelNames: string[],
+  ActionGroupModelClass: typeof CollectionActionGroupModel | typeof RecordActionGroupModel,
+  scene: 'collection' | 'record',
+) => {
+  const items = [];
+
+  for (const modelName of actionModelNames) {
+    const ModelClass = ctx.engine.getModelClass(modelName) as typeof ActionModel;
+    if (!ModelClass) {
+      continue;
+    }
+    if (!ActionGroupModelClass.isActionModelVisible(ModelClass, ctx)) {
+      continue;
+    }
+    if (!ModelClass._isScene?.(scene) && !ActionGroupModelClass.models.has(modelName)) {
+      continue;
+    }
+
+    const item = await buildSubModelItem(ModelClass as any, ctx);
+    if (item) {
+      items.push(item);
+    }
+  }
+
+  return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
+};
+
+const buildTreeSearchActionItems = (ctx: FlowModelContext) =>
+  buildTreeActionItems(ctx, TREE_SEARCH_ACTION_MODEL_NAMES, CollectionActionGroupModel, 'collection');
+
+const buildTreeNodeActionItems = (ctx: FlowModelContext) =>
+  buildTreeActionItems(ctx, TREE_NODE_ACTION_MODEL_NAMES, RecordActionGroupModel, 'record');
 
 export class TreeBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.filter;
@@ -25,10 +123,14 @@ export class TreeBlockModel extends CollectionBlockModel {
     return items.filter((item) => item.key !== 'block-reference:convert-to-template');
   }
 
-  settingsMenuLevel = 2;
+  _defaultCustomModelClasses = {
+    CollectionActionGroupModel: 'CollectionActionGroupModel',
+    RecordActionGroupModel: 'RecordActionGroupModel',
+  };
 
   selectedKeys = observable.ref<React.Key[]>([]);
   selectedFilterValues = observable.ref<React.Key[]>([]);
+  private treeAddChildFormDataCache = new Map<string, any>();
 
   defaultProps = {
     searchable: true,
@@ -42,6 +144,48 @@ export class TreeBlockModel extends CollectionBlockModel {
       get: () => this.collection?.getField?.(this.getTitleFieldName()),
       cache: false,
     });
+    this.ensureTitleFieldSettingsContainer();
+    this.migrateLegacyTitleFieldSubModel();
+    this.migrateLegacyActionSubModels();
+  }
+
+  protected onUnmount(): void {
+    super.onUnmount();
+    this.treeAddChildFormDataCache.clear();
+  }
+
+  private migrateLegacyTitleFieldSubModel() {
+    const legacyField = this.subModels?.['field'];
+    if (legacyField instanceof FlowModel) {
+      const container = this.getTitleFieldSettingsContainer();
+      if (!container.hasSubModel('field')) {
+        (container.subModels as any).field = legacyField;
+        legacyField.setParent?.(container);
+      }
+      delete (this.subModels as any).field;
+    }
+  }
+
+  private migrateLegacyActionSubModels() {
+    const legacyActions = this.subModels?.['actions'];
+    if (Array.isArray(legacyActions) && legacyActions.length) {
+      const container = this.getActionsContainer();
+      if (!container.hasSubModel('actions')) {
+        (container.subModels as any).actions = legacyActions;
+        legacyActions.forEach((action) => action.setParent?.(container));
+      }
+      delete (this.subModels as any).actions;
+    }
+
+    const legacyNodeActions = this.subModels?.['nodeActions'];
+    if (Array.isArray(legacyNodeActions) && legacyNodeActions.length) {
+      const container = this.getNodeActionsContainer();
+      if (!container.hasSubModel('actions')) {
+        (container.subModels as any).actions = legacyNodeActions;
+        legacyNodeActions.forEach((action) => action.setParent?.(container));
+      }
+      delete (this.subModels as any).nodeActions;
+    }
   }
 
   get operator() {
@@ -67,8 +211,148 @@ export class TreeBlockModel extends CollectionBlockModel {
     return super.resource as MultiRecordResource;
   }
 
+  getActionsContainer() {
+    return this.ensureActionContainer('actionsContainer');
+  }
+
+  getTitleFieldSettingsContainer() {
+    return this.ensureTitleFieldSettingsContainer();
+  }
+
+  getNodeActionsContainer() {
+    return this.ensureActionContainer('nodeActionsContainer');
+  }
+
+  private ensureTitleFieldSettingsContainer() {
+    if (!this.subModels?.['titleFieldSettingsContainer']) {
+      this.setSubModel('titleFieldSettingsContainer', {
+        use: 'TreeTitleFieldSettingsModel',
+      });
+    }
+
+    return this.subModels.titleFieldSettingsContainer as TreeTitleFieldSettingsModel;
+  }
+
+  private ensureActionContainer(subModelKey: 'actionsContainer' | 'nodeActionsContainer') {
+    if (!this.subModels?.[subModelKey]) {
+      this.setSubModel(subModelKey, {
+        use: 'TreeActionGroupModel',
+      });
+    }
+
+    return this.subModels[subModelKey] as TreeActionGroupModel;
+  }
+
+  renderConfigureActions() {
+    const container = this.getActionsContainer();
+
+    return (
+      <AddSubModelButton
+        key="tree-actions-add"
+        model={container}
+        items={buildTreeSearchActionItems}
+        subModelKey="actions"
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
+  }
+
+  renderActions() {
+    const isConfigMode = !!this.context.flowSettingsEnabled;
+    const container = this.getActionsContainer();
+
+    if (!isConfigMode && !container.hasSubModel('actions')) {
+      return null;
+    }
+
+    return (
+      <DndProvider>
+        <Space wrap>
+          {container.mapSubModels('actions', (action: ActionModel) => {
+            if (action.hidden && !isConfigMode) {
+              return;
+            }
+
+            return (
+              <Droppable model={action} key={action.uid}>
+                <FlowModelRenderer
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            );
+          })}
+          {this.renderConfigureActions()}
+        </Space>
+      </DndProvider>
+    );
+  }
+
+  renderConfigureNodeActions() {
+    const container = this.getNodeActionsContainer();
+
+    return (
+      <AddSubModelButton
+        key="tree-node-actions-add"
+        model={container}
+        items={buildTreeNodeActionItems}
+        subModelKey="actions"
+        afterSubModelInit={async (actionModel) => {
+          actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
+        }}
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
+  }
+
+  renderTitleFieldSettings(children: React.ReactNode) {
+    const container = this.getTitleFieldSettingsContainer();
+
+    return (
+      <FlowsFloatContextMenu
+        model={container}
+        showBackground={false}
+        showBorder={false}
+        showDeleteButton={false}
+        showCopyUidButton={false}
+        settingsMenuLevel={2}
+      >
+        {children}
+      </FlowsFloatContextMenu>
+    );
+  }
+
   getTitleFieldName() {
     return this.props?.fieldNames?.title || this.collection?.filterTargetKey;
+  }
+
+  private getTreeAddChildFormDataCacheKey(actionUid: string, sourceId: any) {
+    return [actionUid, sourceId].filter((value) => value !== undefined && value !== null).join(':');
+  }
+
+  getTreeAddChildFormData(actionUid: string, sourceId: any) {
+    const cacheKey = this.getTreeAddChildFormDataCacheKey(actionUid, sourceId);
+    return cacheKey ? this.treeAddChildFormDataCache.get(cacheKey) : undefined;
+  }
+
+  setTreeAddChildFormData(actionUid: string, sourceId: any, formData: any) {
+    const cacheKey = this.getTreeAddChildFormDataCacheKey(actionUid, sourceId);
+    if (cacheKey) {
+      this.treeAddChildFormDataCache.set(cacheKey, formData);
+    }
+  }
+
+  getTreeAddChildFormDataInputKey() {
+    return TREE_ADD_CHILD_FORM_DATA_KEY;
   }
 
   getFieldNames() {
@@ -123,9 +407,13 @@ export class TreeBlockModel extends CollectionBlockModel {
       return null;
     }
 
-    const currentFieldModel = this.subModels.field as any;
+    const container = this.getTitleFieldSettingsContainer?.() || this;
+    const currentFieldModel = container.subModels.field as any;
     const currentFieldPath = currentFieldModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-    const currentBindingUse = currentFieldModel?.getStepParams?.('fieldBinding', 'use') || currentFieldModel?.use;
+    const currentBindingUse = getEffectiveFieldModelUse(currentFieldModel);
+    const currentModelUse = currentFieldModel?.use;
+    const shouldPreserveStepParams = currentFieldPath === titleFieldName && currentBindingUse === binding.modelName;
+    const nextStepParams = getTitleFieldStepParams(currentFieldModel, initParams, shouldPreserveStepParams);
     const nextProps = {
       ...(typeof binding.defaultProps === 'function'
         ? binding.defaultProps(bindingCtx, titleField)
@@ -134,18 +422,9 @@ export class TreeBlockModel extends CollectionBlockModel {
       clickToOpen: false,
     };
 
-    if (currentFieldModel && currentFieldPath === titleFieldName && currentBindingUse === binding.modelName) {
+    if (currentFieldModel && shouldPreserveStepParams && currentModelUse === binding.modelName) {
       currentFieldModel.setProps(nextProps);
-      currentFieldModel.setStepParams({
-        ...currentFieldModel.getStepParams(),
-        fieldBinding: {
-          ...(currentFieldModel.getStepParams('fieldBinding') || {}),
-          use: binding.modelName,
-        },
-        fieldSettings: {
-          init: initParams,
-        },
-      });
+      currentFieldModel.setStepParams(nextStepParams);
       await currentFieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
       if (options.persist) {
         await currentFieldModel.save?.();
@@ -155,25 +434,23 @@ export class TreeBlockModel extends CollectionBlockModel {
     }
 
     if (currentFieldModel?.uid) {
-      currentFieldModel.invalidateFlowCache?.('beforeRender', true);
-      this.flowEngine.removeModelWithSubModels(currentFieldModel.uid);
+      if (options.persist && this.flowEngine.destroyModel) {
+        await this.flowEngine.destroyModel(currentFieldModel.uid);
+      } else {
+        currentFieldModel.invalidateFlowCache?.('beforeRender', true);
+        this.flowEngine.removeModelWithSubModels(currentFieldModel.uid);
+      }
     }
 
-    const fieldModel = this.setSubModel('field', {
+    const fieldModel = container.setSubModel('field', {
       uid: currentFieldModel?.uid,
-      use: FieldModel,
+      use: binding.modelName,
       props: nextProps,
-      stepParams: {
-        fieldBinding: {
-          use: binding.modelName,
-        },
-        fieldSettings: {
-          init: initParams,
-        },
-      } as any,
+      stepParams: nextStepParams as any,
     });
 
     if (options.persist) {
+      await container.save?.();
       await fieldModel.save?.();
     }
     await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
@@ -188,6 +465,36 @@ export class TreeBlockModel extends CollectionBlockModel {
   }
 }
 
+export class TreeTitleFieldSettingsModel extends FlowModel<{
+  subModels: {
+    field: FlowModel;
+  };
+}> {
+  get treeBlockModel() {
+    return this.parent as TreeBlockModel;
+  }
+}
+
+TreeTitleFieldSettingsModel.define({
+  createModelOptions: {
+    use: 'TreeTitleFieldSettingsModel',
+  },
+  hide: true,
+});
+
+export class TreeActionGroupModel extends FlowModel<{
+  subModels: {
+    actions: ActionModel[];
+  };
+}> {}
+
+TreeActionGroupModel.define({
+  createModelOptions: {
+    use: 'TreeActionGroupModel',
+  },
+  hide: true,
+});
+
 TreeBlockModel.registerFlow({
   key: 'titleFieldModelSync',
   on: 'beforeRender',
@@ -198,6 +505,83 @@ TreeBlockModel.registerFlow({
       },
       async handler(ctx) {
         await (ctx.model as TreeBlockModel).syncTitleFieldSubModel();
+      },
+    },
+  },
+});
+
+AddChildActionModel.registerFlow({
+  ...defineFlow(addChildPopupSettingsFlow),
+  steps: {
+    treeAddChildFormDataInit: {
+      sort: -1000,
+      async handler(ctx) {
+        const formData = getTreeAddChildFormDataFromContext(ctx);
+        if (!formData || ctx.inputArgs?.formData) {
+          return;
+        }
+
+        ctx.inputArgs.formData = formData;
+      },
+    },
+    ...addChildPopupSettingsFlow.steps,
+  },
+});
+
+TreeTitleFieldSettingsModel.registerFlow({
+  key: 'treeTitleFieldSettings',
+  sort: 1000,
+  title: tExpr('Tree node settings'),
+  steps: {
+    titleField: {
+      title: tExpr('Title field'),
+      uiMode(ctx) {
+        const model = (ctx.model as TreeTitleFieldSettingsModel).treeBlockModel;
+        const collection = model.collection;
+        const dataSourceManager = ctx.app.dataSourceManager;
+        const options = (collection?.getFields?.() || [])
+          .filter((field) => isTitleField(dataSourceManager, field.options || field))
+          .map((field) => ({
+            label: field.title || field.name,
+            value: field.name,
+          }));
+
+        return {
+          type: 'select',
+          key: 'titleField',
+          props: {
+            options,
+          },
+        };
+      },
+      defaultParams(ctx) {
+        return {
+          titleField: (ctx.model as TreeTitleFieldSettingsModel).treeBlockModel.getTitleFieldName(),
+        };
+      },
+      async beforeParamsSave(ctx, params, previousParams) {
+        if (params.titleField === previousParams.titleField) {
+          return;
+        }
+
+        const model = (ctx.model as TreeTitleFieldSettingsModel).treeBlockModel;
+        model.setProps({
+          fieldNames: {
+            ...(model.props?.fieldNames || {}),
+            title: params.titleField,
+          },
+        });
+
+        await model.syncTitleFieldSubModel(params.titleField, { persist: true });
+      },
+      handler(ctx, params) {
+        const model = (ctx.model as TreeTitleFieldSettingsModel).treeBlockModel;
+        model.setProps({
+          fieldNames: {
+            ...(model.props?.fieldNames || {}),
+            title: params.titleField,
+          },
+        });
       },
     },
   },
@@ -237,54 +621,6 @@ TreeBlockModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({ includeDescendants: params.includeDescendants !== false });
         void ctx.model.context.filterManager?.refreshTargetsByFilter?.(ctx.model.uid);
-      },
-    },
-    titleField: {
-      title: tExpr('Title field'),
-      uiMode(ctx) {
-        const collection = ctx.model.collection;
-        const dataSourceManager = ctx.app.dataSourceManager;
-        const options = (collection?.getFields?.() || [])
-          .filter((field) => isTitleField(dataSourceManager, field.options || field))
-          .map((field) => ({
-            label: field.title || field.name,
-            value: field.name,
-          }));
-
-        return {
-          type: 'select',
-          key: 'titleField',
-          props: {
-            options,
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          titleField: ctx.model.getTitleFieldName(),
-        };
-      },
-      async beforeParamsSave(ctx, params, previousParams) {
-        if (params.titleField === previousParams.titleField) {
-          return;
-        }
-
-        ctx.model.setProps({
-          fieldNames: {
-            ...(ctx.model.props?.fieldNames || {}),
-            title: params.titleField,
-          },
-        });
-
-        await (ctx.model as TreeBlockModel).syncTitleFieldSubModel(params.titleField, { persist: true });
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          fieldNames: {
-            ...(ctx.model.props?.fieldNames || {}),
-            title: params.titleField,
-          },
-        });
       },
     },
     pageSize: {

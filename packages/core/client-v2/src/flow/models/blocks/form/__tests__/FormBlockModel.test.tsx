@@ -85,6 +85,7 @@ async function setupFormModel() {
       { name: 'assignees', type: 'belongsToMany', target: 'users', interface: 'm2m' },
       { name: 'note', type: 'string', interface: 'text' },
       { name: 'status', type: 'string', interface: 'text' },
+      { name: 'rawPayload', type: 'json', filterable: true },
     ],
   });
 
@@ -281,6 +282,27 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(Array.isArray(params.assignees.filterByTk)).toBe(true);
     expect(params.assignees.filterByTk).toEqual([3, 5]);
     expect(params.note).toBeUndefined();
+  });
+
+  it('keeps interfaced fields in formValues meta even when they are not configured in the form grid', async () => {
+    const model = await setupFormModel();
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+    mockFormGridEnabledFields(model, ['customer', 'note']);
+
+    const opt = (model.context as any).getPropertyOptions('formValues');
+    const meta = await opt.meta();
+    const props = await meta.properties();
+
+    expect(props).toHaveProperty('customer');
+    expect(props).toHaveProperty('note');
+    expect(props).toHaveProperty('status');
+    expect(props).toHaveProperty('assignees');
+    expect(props).not.toHaveProperty('rawPayload');
   });
 
   it('registers formValuesChange event and eventSettings flow', async () => {

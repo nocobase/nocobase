@@ -1,0 +1,407 @@
+---
+title: "Hướng dẫn cài đặt và chuyển đổi nâng cấp: Sử dụng NocoBase CLI"
+description: "Chuyển từ các phương thức cài đặt và nâng cấp cũ (Docker, create-nocobase-app, mã nguồn Git) sang quy trình mới của NocoBase CLI."
+keywords: "NocoBase CLI,Chuyển đổi cài đặt,Chuyển đổi nâng cấp,nb init,nb app upgrade,Docker,create-nocobase-app,Mã nguồn Git"
+---
+
+# Hướng dẫn cài đặt và chuyển đổi nâng cấp: Sử dụng NocoBase CLI
+
+:::danger
+Khả năng cài đặt và bảo trì ứng dụng của CLI vẫn đang được phát triển, hiện phù hợp hơn cho phát triển cục bộ, môi trường test và các tình huống tích hợp AI Agent. Không khuyến nghị dùng trực tiếp để cài đặt, nâng cấp và vận hành môi trường production.
+:::
+
+NocoBase CLI mới (`nb`) hợp nhất các thao tác cài đặt, kết nối, khởi động, dừng, xem log, nâng cấp và dọn dẹp vào một bộ lệnh thống nhất. So với quy trình được duy trì riêng biệt trong tài liệu cũ theo Docker, create-nocobase-app, mã nguồn Git, CLI phù hợp hơn cho phát triển cục bộ, bảo trì môi trường test, cũng như tích hợp và cộng tác với AI Agent.
+
+Bài viết này phù hợp với các tình huống sau:
+
+- Bạn đang cài đặt hoặc nâng cấp NocoBase theo tài liệu cũ và muốn chuyển sang phương thức CLI mới.
+- Bạn đã có một NocoBase được triển khai theo cách cũ và muốn để CLI quản lý hoặc kết nối với nó.
+- Bạn cần chuẩn bị một môi trường NocoBase có thể kết nối và bảo trì cho AI Agent.
+
+## Sự khác biệt giữa cách cũ và cách mới
+
+Cách cũ chia tài liệu theo nguồn cài đặt, mỗi nguồn cần thực hiện các lệnh tải xuống, cấu hình, cài đặt, khởi động và nâng cấp riêng biệt.
+
+**Tài liệu cài đặt cũ**
+
+- [Cài đặt qua Docker](/get-started/installation/docker)
+- [Cài đặt qua create-nocobase-app](/get-started/installation/create-nocobase-app)
+- [Cài đặt qua mã nguồn Git](/get-started/installation/git)
+
+**Tài liệu nâng cấp cũ**
+
+- [Nâng cấp khi cài qua Docker](/get-started/upgrading/docker)
+- [Nâng cấp khi cài qua create-nocobase-app](/get-started/upgrading/create-nocobase-app)
+- [Nâng cấp khi cài qua mã nguồn Git](/get-started/upgrading/git)
+
+Cách mới lấy `nb init` làm điểm vào, sử dụng một CLI env duy nhất để ghi nhận nguồn ứng dụng, thư mục chạy, thư mục lưu trữ, cơ sở dữ liệu và thông tin kết nối API. Sau đó, dù nguồn là Docker, npm hay Git, đều cố gắng dùng cùng bộ lệnh `nb app`, `nb source`, `nb db` để bảo trì.
+
+| Tình huống | Cách cũ | Cách CLI mới |
+| --- | --- | --- |
+| Điểm vào cài đặt | `docker compose`, `create-nocobase-app`, `git clone` | `nb init` hoặc `nb init --ui` |
+| Quản lý chạy ứng dụng | Chuyển thư mục, sửa compose, chạy lệnh yarn/pm2 | `nb app start/stop/restart/logs/down` |
+| Nâng cấp | Mỗi cách cài đặt một bộ lệnh | `nb app upgrade -e <env>` |
+| Chế độ phát triển | `yarn dev` | `nb source dev -e <env>` |
+| Trạng thái cơ sở dữ liệu | Xem container hoặc dịch vụ CSDL thủ công | `nb db ps -e <env>` |
+| Xem trạng thái và chi tiết môi trường | Ghi nhớ thủ công đường dẫn, cổng và địa chỉ truy cập | `nb env list`, `nb env info <env>` |
+| Tích hợp ứng dụng đã có | Tài liệu cài đặt cũ chưa bao quát thống nhất | `nb init --ui` hoặc `nb init --api-base-url` |
+
+## Cài đặt CLI
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version
+```
+
+Sau khi cài đặt có thể xem trợ giúp:
+
+```bash
+nb --help
+nb init --help
+```
+
+## Sử dụng cách mới để cài đặt NocoBase
+
+### Khuyến nghị: Sử dụng trình hướng dẫn trực quan
+
+```bash
+nb init --ui
+```
+
+Trình hướng dẫn sẽ giúp bạn chọn:
+
+- Tạo ứng dụng mới hoặc kết nối ứng dụng đã có
+- Nguồn cài đặt: Docker, npm, Git
+- Phiên bản NocoBase
+- Sử dụng cơ sở dữ liệu tích hợp sẵn hoặc cơ sở dữ liệu bên ngoài
+- Tài khoản và mật khẩu quản trị
+
+### Sử dụng trình hướng dẫn tương tác trên terminal
+
+```bash
+nb init
+```
+
+### Sử dụng lệnh phi tương tác
+
+Phương thức cài đặt mặc định là Docker và sử dụng PostgreSQL tích hợp sẵn:
+
+```bash
+nb init --yes --env app1
+```
+
+Cài đặt phiên bản chỉ định qua Docker:
+
+```bash
+nb init --yes --env app1 --source docker --version beta
+```
+
+Cài đặt qua npm:
+
+```bash
+nb init --yes --env app1 --source npm --version beta --app-port 13080
+```
+
+Cài đặt qua mã nguồn Git:
+
+```bash
+nb init --yes --env app1 --source git --version beta
+```
+
+Cài đặt qua mã nguồn Git và chỉ định loại CSDL tích hợp sẵn:
+
+```bash
+nb init --yes --env app1 --source git --version beta --db-dialect mysql
+```
+
+Kết nối với ứng dụng NocoBase đã có:
+
+```bash
+# Mặc định sử dụng xác thực OAuth
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# Sử dụng xác thực token
+nb init --yes --env app1 \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+:::tip
+`--env` là tên môi trường trong CLI, các lệnh sau như khởi động, nâng cấp, xem log đều có thể chỉ định ứng dụng đích qua `-e app1`.
+:::
+
+## Sử dụng cách mới để nâng cấp
+
+Trong cách cũ, lệnh nâng cấp của Docker, create-nocobase-app, mã nguồn Git khác nhau; CLI mới thống nhất thành:
+
+```bash
+nb app upgrade -e app1
+```
+
+Nếu chỉ muốn dùng mã nguồn hoặc image đã tải xuống để chạy quy trình nâng cấp, không kéo code hoặc image mới:
+
+```bash
+nb app upgrade -e app1 --skip-code-update
+```
+
+Hoặc dùng dạng viết tắt:
+
+```bash
+nb app upgrade -e app1 -s
+```
+
+## Các lệnh bảo trì thường dùng
+
+| Thao tác | Lệnh |
+| --- | --- |
+| Khởi động ứng dụng | `nb app start -e app1` |
+| Dừng ứng dụng | `nb app stop -e app1` |
+| Khởi động lại ứng dụng | `nb app restart -e app1` |
+| Xem log | `nb app logs -e app1` |
+| Xem trạng thái env và xác thực API | `nb env list` |
+| Xem chi tiết env | `nb env info app1` |
+| Xem trạng thái CSDL tích hợp sẵn | `nb db ps -e app1` |
+| Nâng cấp ứng dụng | `nb app upgrade -e app1` |
+| Dừng và dọn dẹp tài nguyên chạy | `nb app down -e app1` |
+
+`nb app down` mặc định sẽ dừng ứng dụng, xóa container đang chạy do CLI quản lý và file ứng dụng cục bộ, nhưng vẫn giữ lại dữ liệu storage và cấu hình env. Khi muốn xóa toàn bộ nội dung phải xác nhận rõ ràng:
+
+```bash
+nb app down -e app1 --all --yes
+```
+
+:::warning
+`--all --yes` sẽ xóa dữ liệu storage và cấu hình CLI env của env đó. Vui lòng chỉ sử dụng khi đã xác nhận đã sao lưu và không cần môi trường đó nữa.
+:::
+
+## Các lệnh phát triển hằng ngày
+
+`nb source` dùng để quản lý dự án mã nguồn cục bộ, chủ yếu áp dụng cho npm và Git source env.
+
+| Thao tác | Lệnh |
+| --- | --- |
+| Chạy ứng dụng ở chế độ dev | `nb source dev -e app1` |
+| Build mã nguồn | `nb source build --cwd /your/workspace/app1/source` |
+| Chạy test | `nb source test --cwd /your/workspace/app1/source` |
+| Tải xuống hoặc làm mới mã nguồn/image | `nb source download --source git --version beta` |
+
+:::tip
+Docker env thường được quản lý qua `nb app start`, `nb app logs` và `nb app upgrade`, không sử dụng `nb source dev`.
+:::
+
+## NB_CLI_ROOT và cấu trúc thư mục
+
+CLI sẽ lưu cấu hình toàn cục và file ứng dụng cục bộ tại thư mục tương ứng với `NB_CLI_ROOT`.
+
+Mặc định, `NB_CLI_ROOT` là thư mục home của người dùng hiện tại, tức là đường dẫn được Node.js `os.homedir()` trả về. Ví dụ trên macOS thường là `/Users/<user>`. Vì vậy, nếu không có cấu hình bổ sung, các file được tạo bởi `nb init --yes --env app1` thường sẽ ở:
+
+```text
+~
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+Bạn cũng có thể chỉ định rõ `NB_CLI_ROOT`:
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+```
+
+Sau khi thiết lập, file cấu hình và thư mục ứng dụng mặc định đều sẽ nằm trong thư mục này:
+
+```text
+/your/workspace
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+Trong đó:
+
+- `.nocobase/config.json` lưu các thông tin về env, môi trường hiện tại, địa chỉ API, đường dẫn mã nguồn, đường dẫn storage, cấu hình CSDL...
+- `<envName>/source` là thư mục mã nguồn hoặc ứng dụng do CLI quản lý.
+- `<envName>/storage` là thư mục lưu trữ ứng dụng do CLI quản lý.
+
+:::warning
+Sau khi khởi tạo cùng một ứng dụng, vui lòng giữ nguyên `NB_CLI_ROOT`. Nếu sau này bạn đổi `NB_CLI_ROOT`, CLI sẽ tìm `.nocobase/config.json` ở thư mục mới, đồng thời `appRootPath`, `storagePath` ở dạng đường dẫn tương đối cũng sẽ được phân giải theo thư mục mới, có thể dẫn đến không tìm thấy ứng dụng hoặc đọc/ghi sai thư mục.
+:::
+
+CLI hiện chỉ sử dụng scope cấu hình toàn cục. Nếu cần điều chỉnh vị trí lưu cấu hình và file ứng dụng cục bộ, vui lòng thiết lập `NB_CLI_ROOT`.
+
+Khi xem và xác định ứng dụng, ưu tiên sử dụng `nb env list` và `nb env info`:
+
+```bash
+# Xem env đã cấu hình và trạng thái xác thực API
+nb env list
+
+# Xem thông tin chi tiết của một env
+nb env info app1
+```
+
+`nb env list` hướng đến tổng quan nhanh, trong đó `App Status` là trạng thái xác thực có được sau khi truy cập API ứng dụng bằng Token/OAuth đã lưu, không còn hiển thị trạng thái CSDL. Khi cần xem trạng thái chạy của CSDL tích hợp sẵn, vui lòng sử dụng:
+
+```bash
+nb db ps -e app1
+```
+
+Chỉ khi cần chuyển env mặc định, mới sử dụng:
+
+```bash
+nb env use app1
+```
+
+## Chuyển từ cách cũ sang CLI
+
+Có hai chiến lược chuyển đổi: **kết nối ứng dụng đã có**, hoặc **đưa thư mục ứng dụng cục bộ vào quản lý của CLI**. Nếu ứng dụng cũ của bạn đã chạy ổn định, khuyến nghị dùng "kết nối ứng dụng đã có" trước, rủi ro thấp nhất.
+
+### Cách 1: Kết nối ứng dụng đã có
+
+Phù hợp với NocoBase đã được chạy qua Docker, create-nocobase-app, mã nguồn Git hoặc triển khai trên server.
+
+```bash
+# Mặc định sử dụng xác thực OAuth
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# Sử dụng xác thực token
+nb init --yes --env "app$RANDOM" \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+Cách này chỉ lưu kết nối API, CLI sẽ không tiếp quản việc khởi động, dừng, nâng cấp, thư mục mã nguồn hoặc thư mục storage của ứng dụng cũ. Phù hợp để AI Agent hoặc lệnh CLI API kết nối với ứng dụng đã có.
+
+Nếu cần làm mới xác thực:
+
+```bash
+nb env auth app1
+```
+
+### Cách 2: Tạo CLI env mới sau đó chuyển file
+
+Phù hợp với tình huống bạn muốn dùng `nb app` và `nb source` để quản lý ứng dụng cục bộ về sau.
+
+Trước khi chuyển, hãy hoàn tất:
+
+1. Dừng ứng dụng cũ.
+2. Sao lưu CSDL cũ.
+3. Sao lưu thư mục `storage` cũ.
+4. Ghi lại các biến môi trường quan trọng của ứng dụng cũ, ví dụ `APP_KEY`, `TZ`, `DB_*`, `DB_UNDERSCORED`.
+
+#### Chuyển từ cài đặt Docker cũ
+
+Cách Docker cũ thường đặt dữ liệu ứng dụng trong `storage` của thư mục dự án:
+
+```text
+/old-docker-project
+├── docker-compose.yml
+└── storage
+```
+
+Khuyến nghị xác định `NB_CLI_ROOT` mới trước, sau đó dùng CLI để tạo Docker env mới. Ví dụ dưới đây giả định `NB_CLI_ROOT` là `/your/workspace`.
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app2 --source docker --version beta
+nb app stop -e app2
+```
+
+Env mới sẽ mặc định sử dụng các thư mục sau:
+
+```text
+/your/workspace
+└── app2
+    ├── source
+    └── storage
+```
+
+Sau đó sao chép `storage` cũ vào `/your/workspace/app2/storage`, đảm bảo kết nối CSDL và `APP_KEY` cùng các cấu hình khác giống với môi trường cũ.
+
+Sau khi sao chép xong và xác nhận cấu hình CSDL, hãy khởi động ứng dụng:
+
+```bash
+nb app start -e app2
+nb app logs -e app2
+```
+
+#### Chuyển từ cài đặt create-nocobase-app hoặc mã nguồn Git cũ
+
+Cách npm/Git cũ thường đặt mã nguồn, `.env` và `storage` trong cùng một thư mục dự án:
+
+```text
+/old-nocobase
+├── .env
+├── package.json
+├── packages
+└── storage
+```
+
+Khuyến nghị xác định `NB_CLI_ROOT` mới trước, sau đó tạo npm hoặc Git env mới. Ví dụ dưới đây giả định `NB_CLI_ROOT` là `/your/workspace`.
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app3 --source git --version beta
+nb app stop -e app3
+```
+
+Sau đó chuyển theo nhu cầu:
+
+- Chuyển mã nguồn Plugin tùy chỉnh từ dự án cũ vào thư mục tương ứng `/your/workspace/app3/source`.
+- Sao chép `storage` từ dự án cũ vào `/your/workspace/app3/storage`.
+- Đồng bộ các cấu hình quan trọng từ `.env` cũ sang cấu hình CLI env hoặc tham số khởi tạo.
+- Khi sử dụng CSDL gốc, vui lòng tắt CSDL tích hợp sẵn khi khởi tạo và điền thông tin kết nối CSDL cũ.
+
+Ví dụ khởi tạo với CSDL bên ngoài:
+
+```bash
+nb init --yes --env app3 --source git --version beta \
+  --no-builtin-db \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
+```
+
+Sau khi chuyển xong, khởi động và xem log:
+
+```bash
+nb app start -e app3
+nb app logs -e app3
+```
+
+:::warning
+Đừng ghi đè trực tiếp `source`, `storage` hoặc kết nối CSDL production để chạy nâng cấp khi chưa sao lưu. Trước khi chuyển chính thức, khuyến nghị diễn tập đầy đủ một lần ở môi trường test.
+:::
+
+## Bảng tra cứu nhanh chuyển đổi lệnh cũ
+
+| Lệnh cũ | Lệnh CLI mới |
+| --- | --- |
+| `docker compose up -d app` | `nb app start -e app1` |
+| `docker compose stop app` | `nb app stop -e app1` |
+| `docker compose logs -f app` | `nb app logs -e app1` |
+| `docker compose pull app && docker compose up -d app` | `nb app upgrade -e app1` |
+| `yarn create nocobase-app my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `npx create-nocobase-app@beta my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `git clone ... -b next --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version beta` |
+| `git clone ... -b develop --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version alpha` |
+| `yarn dev` | `nb source dev -e app1` |
+| `yarn nocobase upgrade` | `nb app upgrade -e app1` |
+| `yarn nocobase upgrade --skip-code-update` | `nb app upgrade -e app1 -s` |
+| Ghi nhớ thủ công nhiều địa chỉ ứng dụng | `nb env list`, `nb env info app1` |
+| Kết nối ứng dụng đã có thủ công | `nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api` |
+
+## Liên kết liên quan
+
+- [Hướng dẫn tích hợp AI Agent](/ai/quick-start)
+- [Tài liệu tham khảo lệnh NocoBase CLI](/api/cli)
+- [So sánh phương thức cài đặt và phiên bản](/get-started/quickstart)
+- [Cài đặt và nâng cấp Plugin](/get-started/install-upgrade-plugins)

@@ -57,7 +57,7 @@ pkg: "@nocobase/plugin-block-grid-card"
 - [Массовое обновление](/interface-builder/actions/types/bulk-update)
 - [Экспорт вложений](/interface-builder/actions/types/export-attachments)
 - [Запустить рабочий процесс](/interface-builder/actions/types/trigger-workflow)
-- [ИИ-сотрудник](/interface-builder/actions/types/ai-employee)
+- [AI-сотрудник](/interface-builder/actions/types/ai-employee)
 - [JS-действие](/interface-builder/actions/types/js-action)
 
 ### Действия для записи
@@ -71,5 +71,5 @@ pkg: "@nocobase/plugin-block-grid-card"
 - [Обновить запись](/interface-builder/actions/types/update-record)
 - [Печать по шаблону](/template-print/index)
 - [Запустить рабочий процесс](/interface-builder/actions/types/trigger-workflow)
-- [ИИ-сотрудник](/interface-builder/actions/types/ai-employee)
+- [AI-сотрудник](/interface-builder/actions/types/ai-employee)
 - [JS-действие](/interface-builder/actions/types/js-action)
