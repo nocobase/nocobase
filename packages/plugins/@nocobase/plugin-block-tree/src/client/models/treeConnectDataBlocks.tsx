@@ -306,9 +306,6 @@ const highlightTargetBlock = (model: CollectionBlockModel | undefined) => {
     return;
   }
 
-  if (element.dataset.treeHighlightBoxShadow === undefined) {
-    element.dataset.treeHighlightBoxShadow = element.style.boxShadow || '';
-  }
   if (element.dataset.treeHighlightOutline === undefined) {
     element.dataset.treeHighlightOutline = element.style.outline || '';
   }
@@ -316,9 +313,8 @@ const highlightTargetBlock = (model: CollectionBlockModel | undefined) => {
     element.dataset.treeHighlightTransition = element.style.transition || '';
   }
 
-  element.style.boxShadow = '0 0 10px 0 #ccc';
-  element.style.outline = '1px solid var(--colorSettings)';
-  element.style.transition = 'box-shadow 0.2s ease, outline 0.2s ease';
+  element.style.outline = '2px solid var(--colorBorderSettingsHover)';
+  element.style.transition = element.dataset.treeHighlightTransition || '';
 };
 
 const unhighlightTargetBlock = (model: CollectionBlockModel | undefined) => {
@@ -328,10 +324,8 @@ const unhighlightTargetBlock = (model: CollectionBlockModel | undefined) => {
     return;
   }
 
-  element.style.boxShadow = element.dataset.treeHighlightBoxShadow || '';
   element.style.outline = element.dataset.treeHighlightOutline || '';
   element.style.transition = element.dataset.treeHighlightTransition || '';
-  delete element.dataset.treeHighlightBoxShadow;
   delete element.dataset.treeHighlightOutline;
   delete element.dataset.treeHighlightTransition;
 };
@@ -346,6 +340,7 @@ function TreeConnectDataBlocksPanel(props: {
   const [config, setConfig] = React.useState<ConnectFieldsConfig>(() =>
     normalizeTreeConnectConfig(model.context.filterManager?.getConnectFieldsConfig(model.uid)),
   );
+  const [blockGridVersion, setBlockGridVersion] = React.useState(0);
   const [saving, setSaving] = React.useState(false);
   const [hoveredRowId, setHoveredRowId] = React.useState<string>();
   const hoveredTargetIdRef = React.useRef<string>();
@@ -371,7 +366,7 @@ function TreeConnectDataBlocksPanel(props: {
 
   const supportedTargets = React.useMemo(() => {
     return getSupportedTargets(model, t);
-  }, [model, t]);
+  }, [blockGridVersion, model, t]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -409,15 +404,25 @@ function TreeConnectDataBlocksPanel(props: {
       setConfig((previousConfig) => (isSameConnectConfig(previousConfig, nextConfig) ? previousConfig : nextConfig));
       notifySummaryChange(nextConfig);
     };
+    const handleSubModelChanged = () => {
+      setBlockGridVersion((version) => version + 1);
+    };
     const handleSubModelRemoved = () => {
+      handleSubModelChanged();
       void syncAfterChange();
     };
 
+    blockGridModel.emitter.on('onSubModelAdded', handleSubModelChanged);
     blockGridModel.emitter.on('onSubModelRemoved', handleSubModelRemoved);
+    blockGridModel.emitter.on('onSubModelReplaced', handleSubModelRemoved);
+    blockGridModel.emitter.on('onSubModelDestroyed', handleSubModelRemoved);
 
     return () => {
       cancelled = true;
+      blockGridModel.emitter.off('onSubModelAdded', handleSubModelChanged);
       blockGridModel.emitter.off('onSubModelRemoved', handleSubModelRemoved);
+      blockGridModel.emitter.off('onSubModelReplaced', handleSubModelRemoved);
+      blockGridModel.emitter.off('onSubModelDestroyed', handleSubModelRemoved);
     };
   }, [model, notifySummaryChange]);
 

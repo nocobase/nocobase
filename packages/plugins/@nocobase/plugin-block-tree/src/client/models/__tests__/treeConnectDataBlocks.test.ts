@@ -7,25 +7,70 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { pruneDisconnectedTreeTargets, syncTreeConnectConfig, treeConnectDataBlocks } from '../treeConnectDataBlocks';
 
 describe('treeConnectDataBlocks', () => {
-  const createModel = (options?: { filterConfig?: any; targets?: any[]; saveConnectFieldsConfig?: any }) => {
+  const createEmitter = () => {
+    const listeners = new Map<string, Set<(...args: any[]) => void>>();
+
+    return {
+      on: vi.fn((event: string, listener: (...args: any[]) => void) => {
+        if (!listeners.has(event)) {
+          listeners.set(event, new Set());
+        }
+        listeners.get(event)?.add(listener);
+      }),
+      off: vi.fn((event: string, listener: (...args: any[]) => void) => {
+        listeners.get(event)?.delete(listener);
+      }),
+      emit: (event: string, ...args: any[]) => {
+        listeners.get(event)?.forEach((listener) => listener(...args));
+      },
+    };
+  };
+
+  const createCollection = (name: string, dataSourceKey = 'main') => ({
+    name,
+    title: name,
+    dataSourceKey,
+    filterTargetKey: 'id',
+    getFields: vi.fn(() => []),
+  });
+
+  const createModel = (options?: {
+    filterConfig?: any;
+    targets?: any[];
+    saveConnectFieldsConfig?: any;
+    collection?: any;
+    emitter?: ReturnType<typeof createEmitter>;
+  }) => {
     const saveConnectFieldsConfig = options?.saveConnectFieldsConfig || vi.fn(async () => {});
     const getConnectFieldsConfig = vi.fn(() => options?.filterConfig);
     const targets = options?.targets || [];
+    const collection = options?.collection || createCollection('tree');
 
     return {
       uid: 'tree-filter-1',
       title: 'Tree filter',
+      collection,
       context: {
         t: (value: string) => value,
+        collection,
+        dataSourceManager: {
+          getDataSource: vi.fn(() => ({
+            collectionManager: {
+              getAllCollectionsInheritChain: vi.fn((name: string) => [name]),
+            },
+          })),
+        },
         filterManager: {
           getConnectFieldsConfig,
           saveConnectFieldsConfig,
         },
         blockGridModel: {
+          emitter: options?.emitter,
           filterSubModels: vi.fn(() => targets),
         },
       },
@@ -139,5 +184,35 @@ describe('treeConnectDataBlocks', () => {
     expect(params._summary).toBeUndefined();
     expect(model.stepParams.treeSettings.connectFields.summary).toBeUndefined();
     expect(model.stepParams.treeSettings.connectFields._summary).toBeUndefined();
+  });
+
+  it('refreshes supported targets when a data block is added to the grid', async () => {
+    const emitter = createEmitter();
+    const collection = createCollection('tree');
+    const targets: any[] = [];
+    const model = createModel({ collection, emitter, targets });
+    const uiMode = treeConnectDataBlocks.uiMode({
+      model,
+      t: (value: string) => value,
+    } as any);
+
+    render(uiMode.props.dropdownRender(null, vi.fn(), vi.fn()));
+
+    expect(screen.queryByText(/Table 2/)).not.toBeInTheDocument();
+
+    targets.push({
+      uid: 'table-2',
+      title: 'Table 2',
+      collection,
+      resource: {
+        supportsFilter: true,
+      },
+    });
+
+    await act(async () => {
+      emitter.emit('onSubModelAdded');
+    });
+
+    expect(screen.getByText('Table 2 #tabl')).toBeInTheDocument();
   });
 });
