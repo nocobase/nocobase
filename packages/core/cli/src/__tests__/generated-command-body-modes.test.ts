@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -147,6 +156,27 @@ test('buildExamples should not mix required body flags with --body examples', ()
   ]);
 });
 
+test('buildExamples should include output and file flags for binary multipart operations', () => {
+  const examples = buildExamples('test upload', {
+    parameters: [
+      {
+        name: 'file',
+        flagName: 'file',
+        in: 'body',
+        required: true,
+        type: 'string',
+        format: 'binary',
+        isFile: true,
+      },
+    ],
+    hasBody: true,
+    requestContentType: 'multipart/form-data',
+    responseType: 'binary',
+  });
+
+  expect(examples).toEqual(['nb api test upload --file <path> --output <path>']);
+});
+
 test('createGeneratedFlags should group body, raw JSON body, and global flags separately for help output', () => {
   const flags = createGeneratedFlags(testApiOperation);
 
@@ -156,4 +186,37 @@ test('createGeneratedFlags should group body, raw JSON body, and global flags se
   expect(flags['body-file'].helpGroup).toBe('Raw JSON Body');
   expect(flags.env.helpGroup).toBe('Global');
   expect(flags['api-base-url'].helpGroup).toBe('Global');
+});
+
+test('createGeneratedFlags should expose output for binary responses and omit raw JSON flags for multipart bodies', () => {
+  const operation: GeneratedOperation = {
+    commandId: 'test upload',
+    method: 'post',
+    pathTemplate: '/test:upload',
+    parameters: [
+      {
+        name: 'file',
+        flagName: 'file',
+        in: 'body',
+        required: true,
+        type: 'string',
+        format: 'binary',
+        isFile: true,
+      },
+    ],
+    hasBody: true,
+    bodyRequired: true,
+    requestContentType: 'multipart/form-data',
+    responseType: 'binary',
+    examples: [],
+  };
+
+  const flags = createGeneratedFlags(operation);
+
+  expect(flags.file.required).toBe(true);
+  expect(flags.file.helpGroup).toBe('Body Field');
+  expect(flags.output.required).toBe(true);
+  expect(flags.output.helpGroup).toBe('Output');
+  expect(flags.body).toBe(undefined);
+  expect(flags['body-file']).toBe(undefined);
 });

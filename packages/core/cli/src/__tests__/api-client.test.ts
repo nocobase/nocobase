@@ -7,6 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
 
 vi.mock('../lib/env-auth.js', () => ({
@@ -124,4 +136,81 @@ test('executeApiRequest preserves authorization across same-url http to https re
       redirect: 'manual',
     },
   ]);
+});
+
+test('executeApiRequest sends multipart file bodies without setting JSON content type', async () => {
+  const filePath = join(tmpdir(), `nocobase-cli-upload-${Date.now()}.txt`);
+  await fs.writeFile(filePath, 'upload body', 'utf8');
+  let requestHeaders: Headers | undefined;
+  let requestBody: BodyInit | null | undefined;
+
+  globalThis.fetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+    requestHeaders = init?.headers as Headers;
+    requestBody = init?.body;
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  try {
+    await executeApiRequest({
+      flags: {
+        file: filePath,
+      },
+      operation: {
+        method: 'post',
+        pathTemplate: '/files:upload',
+        requestContentType: 'multipart/form-data',
+        hasBody: true,
+        bodyRequired: true,
+        parameters: [
+          {
+            name: 'file',
+            flagName: 'file',
+            in: 'body',
+            required: true,
+            type: 'string',
+            isFile: true,
+          },
+        ],
+      },
+    });
+
+    expect(requestHeaders?.get('content-type')).toBe(null);
+    expect(requestBody).toBeInstanceOf(FormData);
+  } finally {
+    await fs.unlink(filePath).catch(() => undefined);
+  }
+});
+
+test('executeApiRequest writes binary responses to --output', async () => {
+  const outputPath = join(tmpdir(), `nocobase-cli-download-${Date.now()}.bin`);
+
+  globalThis.fetch = (async () => {
+    return new Response('download body', {
+      status: 200,
+      headers: { 'content-type': 'application/octet-stream' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const response = await executeApiRequest({
+      flags: {
+        output: outputPath,
+      },
+      operation: {
+        method: 'get',
+        pathTemplate: '/files:download',
+        responseType: 'binary',
+        parameters: [],
+      },
+    });
+
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual({ output: outputPath });
+    await expect(fs.readFile(outputPath, 'utf8')).resolves.toBe('download body');
+  } finally {
+    await fs.unlink(outputPath).catch(() => undefined);
+  }
 });

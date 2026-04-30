@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {Command, Flags} from '@oclif/core';
 import type {Interfaces} from '@oclif/core';
 import {executeApiRequest} from './api-client.js';
@@ -20,7 +29,9 @@ export interface GeneratedParameter {
   required?: boolean;
   description?: string;
   type?: string;
+  format?: string;
   isArray?: boolean;
+  isFile?: boolean;
   jsonEncoded?: boolean;
   jsonShape?: string;
 }
@@ -44,11 +55,15 @@ export interface GeneratedOperation {
   parameters: GeneratedParameter[];
   hasBody?: boolean;
   bodyRequired?: boolean;
+  requestContentType?: 'application/json' | 'multipart/form-data';
+  responseType?: 'json' | 'binary';
 }
 
 function buildParameterFlag(parameter: GeneratedParameter, options?: { required?: boolean }) {
   const hints: string[] = [parameter.in];
-  if (parameter.type === 'object' || parameter.type === 'array' || parameter.jsonEncoded) {
+  if (parameter.isFile) {
+    hints.push('file path');
+  } else if (parameter.type === 'object' || parameter.type === 'array' || parameter.jsonEncoded) {
     hints.push('JSON');
   } else if (parameter.isArray) {
     hints.push('repeatable');
@@ -109,11 +124,11 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
       // Body flags are an alternative authoring path to --body/--body-file.
       // Enforce required body semantics later in parseBody(), after we know
       // which input mode the user chose.
-      required: parameter.in === 'body' ? false : parameter.required,
+      required: parameter.in === 'body' && !parameter.isFile ? false : parameter.required,
     });
   }
 
-  if (operation.hasBody) {
+  if (operation.hasBody && operation.requestContentType !== 'multipart/form-data') {
     flags.body = Flags.string({
       description: 'Full JSON request body string. Do not combine with body field flags.',
       helpGroup: 'Raw JSON Body',
@@ -123,6 +138,14 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
       description: 'Path to a JSON file containing the full request body. Do not combine with body field flags.',
       helpGroup: 'Raw JSON Body',
       exclusive: ['body'],
+    });
+  }
+
+  if (operation.responseType === 'binary') {
+    flags.output = Flags.string({
+      description: 'Path where the downloaded response should be written.',
+      helpGroup: 'Output',
+      required: true,
     });
   }
 
@@ -181,6 +204,8 @@ export abstract class GeneratedApiCommand extends Command {
         parameters: ctor.operation.parameters,
         hasBody: ctor.operation.hasBody,
         bodyRequired: ctor.operation.bodyRequired,
+        requestContentType: ctor.operation.requestContentType,
+        responseType: ctor.operation.responseType,
       },
     });
 
