@@ -29,16 +29,36 @@ import { createRequire } from 'node:module';
 
 const SKIP_LANGS = new Set(['ar']);
 
-// js-yaml 从当前 cwd 的 node_modules 解析（脚本随 skill 分发，不带 deps）
-const cwdRequire = createRequire(path.join(process.cwd(), '__pkg__'));
-let yaml;
-try {
-  yaml = cwdRequire('js-yaml');
-} catch (err) {
-  console.error('找不到 js-yaml。请在 NocoBase 主仓库根目录下运行（确保已执行 yarn install）。');
-  console.error(`原始错误：${err.message}`);
+// 探测 docsRoot：兼容两种 cwd——repo root（'docs/docs'）和 docs/（'./docs'）。
+// 找到带 cn/ 子目录的就用，都没有再退回到 'docs/docs' 让后续校验报清晰错。
+function defaultDocsRoot() {
+  for (const candidate of ['docs/docs', './docs']) {
+    if (fs.existsSync(path.join(candidate, 'cn'))) return candidate;
+  }
+  return 'docs/docs';
+}
+
+// js-yaml 从 cwd 链路上的多个候选位置解析。脚本随仓库分发不带 deps，
+// js-yaml 来自 yarn install 装下来的 docs/node_modules（rspress 间接 dep）。
+// 兼容两种 cwd：repo root（找 docs/node_modules）和 docs/（找 ./node_modules）。
+function loadJsYaml() {
+  const candidates = [
+    path.join(process.cwd(), '__pkg__'),                  // <cwd>/node_modules
+    path.join(process.cwd(), 'docs', '__pkg__'),          // <cwd>/docs/node_modules
+  ];
+  let lastErr;
+  for (const c of candidates) {
+    try {
+      return createRequire(c)('js-yaml');
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  console.error('找不到 js-yaml。请在 NocoBase 主仓库根目录或 docs/ 目录下运行（确保已执行 yarn install）。');
+  console.error(`原始错误：${lastErr?.message ?? '(unknown)'}`);
   process.exit(1);
 }
+const yaml = loadJsYaml();
 
 function parseArgs(argv) {
   const args = { positional: [] };
@@ -122,10 +142,10 @@ function diff(cn, lang) {
 
 function main() {
   const args = parseArgs(process.argv);
-  const docsRoot = args.positional[0] || 'docs/docs';
+  const docsRoot = args.positional[0] || defaultDocsRoot();
   const cnFile = path.join(docsRoot, 'cn', 'index.md');
   if (!fs.existsSync(cnFile)) {
-    console.error(`找不到 ${cnFile}（请在 NocoBase 主仓库根目录运行，或传入 docs 根的绝对路径）`);
+    console.error(`找不到 ${cnFile}（请在 NocoBase 主仓库根目录或 docs/ 目录下运行，或传 docs 根的绝对路径作为第一个位置参数）`);
     process.exit(1);
   }
 

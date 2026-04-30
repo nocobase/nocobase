@@ -239,7 +239,11 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       // 1. 扫描所有 _meta.json 检测跨模块引用（以顶层目录为单位判断）
       for (const metaFile of findAllMetaJson(root)) {
         const dir = path.dirname(metaFile);
-        const relDir = '/' + path.relative(root, dir);
+        // path.relative 在 Windows 上返回反斜杠分隔的路径，必须规范化成 POSIX
+        // 风格的 URL 路径，否则下游 getTopLevelDir 按 '/' split 拿到的 topDir
+        // 会被污染（如 '/api\cli'），最终生成 '/api\cli/start' 这种带反斜杠
+        // 的虚拟路由跟正常路由冲突，rspress 报 routePath ... has already been added。
+        const relDir = '/' + path.relative(root, dir).split(path.sep).join('/');
         const topDir = getTopLevelDir(relDir);
 
         const meta: unknown = JSON.parse(fs.readFileSync(metaFile, 'utf-8'));
