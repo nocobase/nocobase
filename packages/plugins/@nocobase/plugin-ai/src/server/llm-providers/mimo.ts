@@ -10,9 +10,11 @@
 import { LLMProvider } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import _ from 'lodash';
-import { ChatOpenAI, convertCompletionsDeltaToBaseMessageChunk } from '@langchain/openai';
+import { convertCompletionsDeltaToBaseMessageChunk } from '@langchain/openai';
 import { AIMessageChunk, BaseMessageChunk } from '@langchain/core/messages';
 import { ReasoningChatOpenAI } from './common/reasoning';
+import { AttachmentModel } from '@nocobase/plugin-file-manager';
+import { Model } from '@nocobase/database';
 
 export class MiMoProvider extends LLMProvider {
   declare chatModel: ReasoningChatOpenAI;
@@ -43,6 +45,12 @@ export class MiMoProvider extends LLMProvider {
       },
       verbose: true,
     });
+  }
+
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    const media = ['image/'];
+    const supportedMedia = media.some((it) => attachment?.mimetype?.startsWith(it));
+    return supportedMedia;
   }
 
   parseResponseMessage(message: Model) {
