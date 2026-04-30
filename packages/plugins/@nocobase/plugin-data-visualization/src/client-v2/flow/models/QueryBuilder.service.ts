@@ -65,6 +65,10 @@ export function getFieldOptions(dm: any, compile: (v: any) => string, collection
       title: compile(getFieldTitle(field)),
       key: value,
       value: field.name,
+      type: field.type,
+      interface: field.interface,
+      uiSchema: field.uiSchema,
+      target: field.target,
     };
 
     if (depth < 1) {

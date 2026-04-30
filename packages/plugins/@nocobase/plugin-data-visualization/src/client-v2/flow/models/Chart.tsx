@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { forwardRef, useEffect, useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import ECharts from './ECharts';
 import { Empty, Result, Typography, Spin } from 'antd';
 import { EChartsOption, EChartsType } from 'echarts';
@@ -17,6 +17,7 @@ const { Paragraph, Text } = Typography;
 
 export interface ChartOptions {
   option: EChartsOption;
+  Component?: React.FC<any>;
   dataSource: any;
   onRefReady?: (chart: EChartsType) => void;
   loading?: boolean;
@@ -38,32 +39,38 @@ const ErrorFallback = ({ error }) => {
   );
 };
 
-export const Chart = forwardRef<EChartsType, ChartOptions>(({ option, dataSource, onRefReady, loading }, ref) => {
-  const [errorKey, setErrorKey] = useState(0);
-  const t = useT();
+export const Chart = forwardRef<EChartsType, ChartOptions>(
+  ({ option, Component, dataSource, onRefReady, loading }, ref) => {
+    const [errorKey, setErrorKey] = useState(0);
+    const t = useT();
 
-  if (loading) {
+    if (loading) {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: 400 }}>
+          <Spin />
+        </div>
+      );
+    }
+
+    if (!option || !dataSource) {
+      return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
+    }
+
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: 400 }}>
-        <Spin />
-      </div>
+      <ErrorBoundary
+        onError={console.error}
+        FallbackComponent={ErrorFallback}
+        onReset={() => {
+          setErrorKey((v) => v + 1);
+        }}
+        resetKeys={[option]}
+      >
+        {Component ? (
+          <Component ref={ref} onRefReady={onRefReady} {...option} />
+        ) : (
+          <ECharts key={errorKey} ref={ref} onRefReady={onRefReady} option={option} />
+        )}
+      </ErrorBoundary>
     );
-  }
-
-  if (!option || !dataSource) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
-  }
-
-  return (
-    <ErrorBoundary
-      onError={console.error}
-      FallbackComponent={ErrorFallback}
-      onReset={() => {
-        setErrorKey((v) => v + 1);
-      }}
-      resetKeys={[option]}
-    >
-      <ECharts key={errorKey} ref={ref} onRefReady={onRefReady} option={option} />
-    </ErrorBoundary>
-  );
-});
+  },
+);

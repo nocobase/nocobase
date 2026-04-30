@@ -8,11 +8,44 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
+import { Schema } from '@formily/react';
 
 import { ChartGroup } from './chart';
 
+type FieldInterfaceConfig = {
+  valueFormatter: (field: any, value: any, context?: any) => any;
+};
+
+const valueFormatter: FieldInterfaceConfig['valueFormatter'] = (field, value, context) => {
+  const options = field?.uiSchema?.enum || field?.options?.uiSchema?.enum;
+  const parseEnumValues = (options: { label: string; value: string }[], value: any) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => parseEnumValues(options, v));
+    }
+    const option = options.find((option) => option.value === (value?.toString?.() || value));
+    return Schema.compile(option?.label || value, { t: context?.t || ((key: string) => key) });
+  };
+  if (!options || !Array.isArray(options)) {
+    return value;
+  }
+  return parseEnumValues(options, value);
+};
+
 export class PluginDataVisualizationClient extends Plugin {
   public charts = new ChartGroup();
+
+  fieldInterfaceConfigs: {
+    [fieldInterface: string]: FieldInterfaceConfig;
+  } = {
+    select: { valueFormatter },
+    multipleSelect: { valueFormatter },
+    radioGroup: { valueFormatter },
+    checkboxGroup: { valueFormatter },
+  };
+
+  registerFieldInterfaceConfig(key: string, config: FieldInterfaceConfig) {
+    this.fieldInterfaceConfigs[key] = config;
+  }
 
   async load() {
     this.flowEngine.registerModelLoaders({

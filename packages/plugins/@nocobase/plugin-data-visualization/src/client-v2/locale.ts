@@ -25,3 +25,11 @@ export function useChartsTranslation() {
 export function useT() {
   return useChartsTranslation()[0];
 }
+
+export function tStr(key: string) {
+  return `{{t(${JSON.stringify(key)}, { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`;
+}
+
+export function lang(key: string) {
+  return tStr(key);
+}

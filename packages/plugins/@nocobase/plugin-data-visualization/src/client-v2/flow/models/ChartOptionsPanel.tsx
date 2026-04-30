@@ -19,13 +19,13 @@ import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { getFieldOptions } from './QueryBuilder.service';
 import { useCompile } from '../utils';
 
-const flattenFieldTitleMap = (options: any[] = [], prefix: string[] = [], map = new Map<string, string>()) => {
+const flattenFieldOptionMap = (options: any[] = [], prefix: string[] = [], map = new Map<string, any>()) => {
   for (const option of options) {
     if (!option?.name) continue;
     const path = [...prefix, option.name];
-    map.set(path.join('.'), option.title || option.name);
+    map.set(path.join('.'), option);
     if (option.children?.length) {
-      flattenFieldTitleMap(option.children, path, map);
+      flattenFieldOptionMap(option.children, path, map);
     }
   }
   return map;
@@ -58,35 +58,43 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   const dm = ctx?.model?.context?.dataSourceManager;
   const compile = useCompile();
   const uid = ctx?.model?.uid;
-  const previewData = configStore.results[uid]?.result || [];
+  const previewData = configStore.results[uid]?.result;
   const previewColumns = React.useMemo<string[]>(() => Object.keys(previewData?.[0] ?? {}), [previewData]);
   const query = form?.values?.query;
   const collectionPath = query?.collectionPath;
 
-  const fieldTitleMap = React.useMemo(() => {
-    return flattenFieldTitleMap(getFieldOptions(dm, compile, collectionPath));
+  const fieldOptionMap = React.useMemo(() => {
+    return flattenFieldOptionMap(getFieldOptions(dm, compile, collectionPath));
   }, [collectionPath, compile, dm]);
 
   const columnOptions = React.useMemo(() => {
     const items = [...(query?.dimensions || []), ...(query?.measures || [])];
-    const queryColumnMap = new Map<string, string>();
+    const queryColumnMap = new Map<string, any>();
     const derivedColumns: string[] = [];
 
     for (const item of items) {
       const fieldPath = toFieldPath(item?.field);
       if (!fieldPath) continue;
       const key = item?.alias || fieldPath;
-      queryColumnMap.set(key, item?.alias || fieldTitleMap.get(fieldPath) || fieldPath);
+      const fieldOption = fieldOptionMap.get(fieldPath);
+      queryColumnMap.set(key, {
+        ...(fieldOption || {}),
+        key,
+        name: key,
+        value: key,
+        label: item?.alias || fieldOption?.title || fieldPath,
+      });
       derivedColumns.push(key);
     }
 
     const columns = Array.from(new Set([...derivedColumns, ...previewColumns]));
 
     return columns.map((column) => ({
+      ...(queryColumnMap.get(column) || fieldOptionMap.get(column) || {}),
       value: column,
-      label: queryColumnMap.get(column) || fieldTitleMap.get(column) || column,
+      label: queryColumnMap.get(column)?.label || fieldOptionMap.get(column)?.title || column,
     }));
-  }, [fieldTitleMap, previewColumns, query?.dimensions, query?.measures]);
+  }, [fieldOptionMap, previewColumns, query?.dimensions, query?.measures]);
 
   // 受控 value 与回写 formily
   const mode = form?.values?.chart?.option?.mode || 'basic';
@@ -179,6 +187,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
         <ChartOptionsBuilder
           columns={columnOptions.map((item) => item.value)}
           fieldOptions={columnOptions}
+          query={query}
           initialValues={builderValue}
           onChange={handleBuilderChange}
         />

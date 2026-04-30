@@ -17,6 +17,7 @@ import {
 import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button } from 'antd';
+import dayjs from 'dayjs';
 import { tExpr, useT } from '../../locale';
 import { convertDatasetFormats, debugLog, normalizeEChartsOption, sleep } from '../utils';
 import { Chart, ChartOptions } from './Chart';
@@ -24,6 +25,7 @@ import { ConfigPanel } from './ConfigPanel';
 import { ChartResource } from '../resources/ChartResource';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
+import PluginDataVisualizationClient from '../../plugin';
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
 
@@ -36,7 +38,39 @@ type ChartBlockModelStructure = {
 type ChartProps = {
   chart: ChartOptions & {
     optionRaw?: string;
+    Component?: React.FC<any>;
   };
+};
+
+const toFieldPath = (field: string | string[] | undefined) => {
+  if (!field) return '';
+  return Array.isArray(field) ? field.filter(Boolean).join('.') : field;
+};
+
+const toFieldSegments = (field: string | string[] | undefined) => {
+  if (!field) return [];
+  return Array.isArray(field) ? field.filter(Boolean) : field.split('.').filter(Boolean);
+};
+
+const getCollectionFieldLabel = (field?: any) => {
+  return field?.uiSchema?.title ?? field?.options?.uiSchema?.title ?? field?.title ?? field?.name;
+};
+
+const createDateFormatTransformer = (format?: string) => {
+  if (!format) return;
+  return (value: any) => {
+    if (value === null || value === undefined || value === '') {
+      return value;
+    }
+    const date = dayjs(value);
+    return date.isValid() ? date.format(format) : value;
+  };
+};
+
+const composeTransformers = (...transformers: (((value: any) => any) | undefined)[]) => {
+  const validTransformers = transformers.filter(Boolean) as ((value: any) => any)[];
+  if (!validTransformers.length) return;
+  return (value: any) => validTransformers.reduce((result, transformer) => transformer(result), value);
 };
 
 export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
@@ -250,7 +284,33 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   // 应用图表配置（仅设置，不负责渲染）
-  async applyChartOptions(payload: { mode: 'basic' | 'custom'; builder?: any; raw?: string }) {
+  async applyChartOptions(payload: { mode: 'basic' | 'custom'; builder?: any; raw?: string; query?: any }) {
+    if (payload.mode === 'basic') {
+      const chart = this.getRegisteredChart(payload.builder?.type);
+      if (chart) {
+        const rawData = convertDatasetFormats(this.resource.getData())?.objects || [];
+        const fieldProps = this.getRegisteredChartFieldProps(payload.query, rawData);
+        const data = this.formatRegisteredChartData(rawData, fieldProps);
+        const option = chart.getProps({
+          data,
+          general: this.getRegisteredChartGeneral(payload.builder),
+          advanced: payload.builder?.advanced || {},
+          fieldProps: this.getRegisteredChartDisplayFieldProps(fieldProps),
+        });
+
+        normalizeEChartsOption(option);
+
+        this.setProps({
+          chart: {
+            ...this.props.chart,
+            Component: chart.Component,
+            option,
+          },
+        });
+        return;
+      }
+    }
+
     const optionRaw = payload.mode === 'basic' ? genRawByBuilder(payload.builder) : payload.raw;
     const { success, value, error, timeout } = await this.context.runjs(optionRaw);
     if (!success && error) {
@@ -263,10 +323,104 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.setProps({
       chart: {
         ...this.props.chart,
+        Component: undefined,
         optionRaw, // js文本
         option: value, // js对象
       },
     });
+  }
+
+  getRegisteredChart(type?: string) {
+    if (!type) return;
+    return this.getDataVisualizationPlugin()?.charts?.getChart?.(type);
+  }
+
+  getDataVisualizationPlugin() {
+    const pm = this.context.app?.pm;
+    return pm?.get(PluginDataVisualizationClient) as PluginDataVisualizationClient;
+  }
+
+  getRegisteredChartGeneral(builder: any = {}) {
+    const { type, advanced, ...general } = builder || {};
+    return general;
+  }
+
+  getRegisteredChartFieldProps(query: any, data: Record<string, any>[] = []) {
+    const fieldProps: Record<string, any> = {};
+    const addField = (name: string, label?: string, field?: any, item?: any) => {
+      if (!name || fieldProps[name]) return;
+      fieldProps[name] = {
+        label: label || getCollectionFieldLabel(field) || name,
+        interface: field?.interface,
+        transformer: this.getRegisteredChartFieldTransformer(field, item),
+      };
+    };
+
+    (query?.dimensions || []).forEach((item) => {
+      const name = item?.alias || toFieldPath(item?.field);
+      const collectionField = this.getCollectionFieldByPath(query, item?.field);
+      addField(name, item?.alias || getCollectionFieldLabel(collectionField), collectionField, item);
+    });
+
+    (query?.measures || []).forEach((item) => {
+      const name = item?.alias || toFieldPath(item?.field);
+      const collectionField = this.getCollectionFieldByPath(query, item?.field);
+      addField(name, item?.alias || getCollectionFieldLabel(collectionField), collectionField, item);
+    });
+
+    Object.keys(data[0] || {}).forEach((name) => addField(name));
+
+    return fieldProps;
+  }
+
+  formatRegisteredChartData(data: Record<string, any>[] = [], fieldProps: Record<string, any> = {}) {
+    return data.map((row) => {
+      const next = { ...row };
+      Object.entries(fieldProps).forEach(([key, props]) => {
+        if (props?.transformer && Object.prototype.hasOwnProperty.call(next, key)) {
+          next[key] = props.transformer(next[key]);
+        }
+      });
+      return next;
+    });
+  }
+
+  getRegisteredChartDisplayFieldProps(fieldProps: Record<string, any> = {}) {
+    return Object.entries(fieldProps).reduce((result, [key, props]) => {
+      const { transformer, ...displayProps } = props || {};
+      result[key] = displayProps;
+      return result;
+    }, {});
+  }
+
+  getRegisteredChartFieldTransformer(field?: any, item?: any) {
+    if (!field) return createDateFormatTransformer(item?.format);
+    const plugin = this.getDataVisualizationPlugin();
+    const formatter = item?.aggregation ? undefined : plugin?.fieldInterfaceConfigs?.[field.interface]?.valueFormatter;
+    return composeTransformers(
+      formatter ? (value: any) => formatter(field, value, this.context) : undefined,
+      createDateFormatTransformer(item?.format),
+    );
+  }
+
+  getCollectionFieldByPath(query: any, field: string | string[] | undefined) {
+    const fieldSegments = toFieldSegments(field);
+    if (!fieldSegments.length) return;
+
+    const [dataSourceKey = DEFAULT_DATA_SOURCE_KEY, collectionName] = query?.collectionPath || [];
+    let collection = collectionName
+      ? this.context.dataSourceManager?.getCollection?.(dataSourceKey, collectionName)
+      : this.context.collection;
+
+    let collectionField: any;
+    for (const [index, fieldName] of fieldSegments.entries()) {
+      collectionField = collection?.getField?.(fieldName);
+      if (!collectionField) return;
+      if (index < fieldSegments.length - 1) {
+        collection = collectionField.targetCollection;
+      }
+    }
+    return collectionField;
   }
 
   // 应用事件配置（仅设置，不负责渲染）
@@ -450,6 +604,7 @@ ChartBlockModel.registerFlow({
             mode: chart.option?.mode || 'basic',
             builder: chart.option?.builder,
             raw: chart.option?.raw,
+            query,
           });
 
           // 事件部分
