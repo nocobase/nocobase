@@ -189,6 +189,7 @@ export abstract class BaseApplication<
     this.configureContext();
     this.addBaseProviders();
     this.addCustomProviders();
+    this.addFinalProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
     this.ws = this.createWebSocketClient(options);
@@ -338,6 +339,9 @@ export abstract class BaseApplication<
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(GlobalThemeProvider);
     this.use(AntdAppProvider);
+  }
+
+  protected addFinalProviders() {
     this.use(FlowEngineGlobalsContextProvider);
   }
 
