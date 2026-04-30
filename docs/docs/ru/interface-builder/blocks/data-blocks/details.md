@@ -76,4 +76,4 @@
 - [Обновить запись](/interface-builder/actions/types/update-record)
 - [Запустить рабочий процесс](/interface-builder/actions/types/trigger-workflow)
 - [JS Action](/interface-builder/actions/types/js-action)
-- [ИИ-сотрудник](/interface-builder/actions/types/ai-employee)
+- [AI-сотрудник](/interface-builder/actions/types/ai-employee)

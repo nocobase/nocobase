@@ -5,8 +5,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Descripción general",
-    "link": "/calculation-engine/index"
+    "label": "Visión general",
+    "link": "/calculation-engine/"
   },
   {
     "type": "custom-link",

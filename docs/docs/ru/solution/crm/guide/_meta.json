@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Руководство по работе"
+  },
+  {
+    "type": "file",
+    "name": "guide-overview",
+    "label": "Обзор системы и панели мониторинга"
+  },
+  {
+    "type": "file",
+    "name": "guide-leads",
+    "label": "Управление Лидами"
+  },
+  {
+    "type": "file",
+    "name": "guide-opportunities",
+    "label": "Управление Сделками"
+  },
+  {
+    "type": "file",
+    "name": "guide-products-orders",
+    "label": "Товары, предложения и Заказы"
+  },
+  {
+    "type": "file",
+    "name": "guide-customers-emails",
+    "label": "Клиенты, контакты и email"
+  },
+  {
+    "type": "file",
+    "name": "guide-roles",
+    "label": "Роли и права"
+  }
+]

@@ -1,0 +1,67 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Überblick: Aufgabenverwaltungssystem"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Kapitel 1: Erste Schritte mit NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "Kapitel 2: Aufgabenverwaltungssystem entwerfen"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "Kapitel 3: Aufgabendatenverwaltung"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "Kapitel 4: Aufgaben- und Kommentar-Plugins"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "Kapitel 5: Tabs und dynamische Blocks"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "Kapitel 6: Benutzer und Berechtigungen"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "Kapitel 7: Workflow"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "Überblick: Projektmanagement-Plattform"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "Kapitel 8: Knowledge Base – Baumtabelle"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "Kapitel 9: Aufgaben-Dashboard und Diagramme"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "Kapitel 10: Dashboard-Filter und -Bedingungen"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "Kapitel 11: Unteraufgaben und Arbeitszeitberechnung"
+  }
+]

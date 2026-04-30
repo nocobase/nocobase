@@ -15,6 +15,16 @@
     "label": "Como instalar"
   },
   {
+    "type": "dir",
+    "name": "guide",
+    "label": "Guia de operação"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "Registro de alterações"
+  },
+  {
     "type": "file",
     "name": "v1",
     "label": "CRM legado (v1)"

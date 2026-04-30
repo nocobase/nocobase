@@ -1,0 +1,287 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "nb"
+  },
+  {
+    "type": "file",
+    "name": "init",
+    "label": "nb init"
+  },
+  {
+    "type": "custom-link",
+    "label": "nb app",
+    "link": "/api/cli/app/",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb app start",
+        "link": "/api/cli/app/start"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb app stop",
+        "link": "/api/cli/app/stop"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb app restart",
+        "link": "/api/cli/app/restart"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb app logs",
+        "link": "/api/cli/app/logs"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb app down",
+        "link": "/api/cli/app/down"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb app upgrade",
+        "link": "/api/cli/app/upgrade"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "nb source",
+    "link": "/api/cli/source/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb source download",
+        "link": "/api/cli/source/download"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb source dev",
+        "link": "/api/cli/source/dev"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb source build",
+        "link": "/api/cli/source/build"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb source test",
+        "link": "/api/cli/source/test"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb db",
+    "link": "/api/cli/db/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb db ps",
+        "link": "/api/cli/db/ps"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb db start",
+        "link": "/api/cli/db/start"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb db stop",
+        "link": "/api/cli/db/stop"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb db logs",
+        "link": "/api/cli/db/logs"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb env",
+    "link": "/api/cli/env/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb env add",
+        "link": "/api/cli/env/add"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb env update",
+        "link": "/api/cli/env/update"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb env list",
+        "link": "/api/cli/env/list"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb env info",
+        "link": "/api/cli/env/info"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb env remove",
+        "link": "/api/cli/env/remove"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb env auth",
+        "link": "/api/cli/env/auth"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb env use",
+        "link": "/api/cli/env/use"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb api",
+    "link": "/api/cli/api/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb api resource",
+        "link": "/api/cli/api/resource/",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb api resource list",
+            "link": "/api/cli/api/resource/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb api resource get",
+            "link": "/api/cli/api/resource/get"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb api resource create",
+            "link": "/api/cli/api/resource/create"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb api resource update",
+            "link": "/api/cli/api/resource/update"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb api resource destroy",
+            "link": "/api/cli/api/resource/destroy"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb api resource query",
+            "link": "/api/cli/api/resource/query"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "type": "custom-link",
+        "label": "nb api Dynamische Befehle",
+        "link": "/api/cli/api/dynamic"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb plugin",
+    "link": "/api/cli/plugin/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb plugin list",
+        "link": "/api/cli/plugin/list"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb plugin enable",
+        "link": "/api/cli/plugin/enable"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb plugin disable",
+        "link": "/api/cli/plugin/disable"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb self",
+    "link": "/api/cli/self/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb self check",
+        "link": "/api/cli/self/check"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb self update",
+        "link": "/api/cli/self/update"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb skills",
+    "link": "/api/cli/skills/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb skills check",
+        "link": "/api/cli/skills/check"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb skills install",
+        "link": "/api/cli/skills/install"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb skills update",
+        "link": "/api/cli/skills/update"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb skills remove",
+        "link": "/api/cli/skills/remove"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb scaffold",
+    "link": "/api/cli/scaffold/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb scaffold plugin",
+        "link": "/api/cli/scaffold/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb scaffold migration",
+        "link": "/api/cli/scaffold/migration"
+      }
+    ],
+    "collapsed": true
+  }
+]

@@ -5,8 +5,14 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "type": "custom-link",
+    "label": "Системные требования",
+    "link": "/get-started/system-requirements"
+  },
+  {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "Способы установки и сравнение версий"
   },
   {
     "type": "custom-link",
@@ -66,6 +72,22 @@
       },
       {
         "type": "custom-link",
+        "label": "Развертывание во внутренней сети",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker",
+            "link": "/get-started/deployment/intranet/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app",
+            "link": "/get-started/deployment/intranet/create-nocobase-app"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
         "label": "Прокси для статических ресурсов",
         "items": [
           {
@@ -80,7 +102,7 @@
           },
           {
             "type": "custom-link",
-            "label": "CDN",
+            "label": "cdn",
             "link": "/get-started/deployment/static-resource-proxy/cdn"
           }
         ]
@@ -112,5 +134,10 @@
     "type": "custom-link",
     "label": "Установка и обновление плагинов",
     "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "Вклад в переводы",
+    "link": "/get-started/translations"
   }
 ]
