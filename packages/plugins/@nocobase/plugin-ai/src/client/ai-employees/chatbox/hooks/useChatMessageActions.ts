@@ -224,6 +224,15 @@ export const useChatMessageActions = () => {
       }
     };
 
+    const clearAllPendingStreamUpdates = () => {
+      for (const pending of pendingStreamUpdates.values()) {
+        if (pending.timer) {
+          clearTimeout(pending.timer);
+        }
+      }
+      pendingStreamUpdates.clear();
+    };
+
     const enqueueStreamUpdate = (
       key: string,
       store: MessagesStore,
@@ -484,7 +493,10 @@ export const useChatMessageActions = () => {
       }
     } catch (err) {
       console.error(err);
-      if (err.name !== 'AbortError') {
+      if (err.name === 'AbortError') {
+        clearAllPendingStreamUpdates();
+        return;
+      } else {
         error = true;
         result = err.message;
 

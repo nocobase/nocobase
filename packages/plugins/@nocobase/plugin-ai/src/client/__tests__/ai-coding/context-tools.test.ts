@@ -13,6 +13,7 @@ import {
   lintAndTestJSTool,
   patchJSCodeTool,
   readJSCodeTool,
+  writeJSCodeTool,
 } from '../../ai-employees/ai-coding/tools/context-tools';
 import {
   buildToolCodeBlock,
@@ -107,6 +108,47 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     }
   });
 
+  it('validates explicitly provided empty code instead of falling back to the editor', async () => {
+    const previewedCode: string[] = [];
+    const previousState = useChatMessagesStore.getState();
+    useChatMessagesStore.setState({
+      ...previousState,
+      currentEditorRefUid: 'editor-empty-lint',
+      editorRef: {
+        'editor-empty-lint': {
+          read: () => 'ctx.render("editor");',
+          write: () => undefined,
+          run: async () => undefined,
+          snippetEntries: [],
+          logs: [],
+        } as any,
+      },
+    });
+
+    try {
+      const result = await lintAndTestJSTool[1].invoke.call(
+        {
+          flowContext: {
+            previewRunJS: async (code: string) => {
+              previewedCode.push(code);
+              return {
+                success: true,
+                message: 'RunJS preview succeeded: no issues found. Logs: 0.',
+              };
+            },
+          },
+        },
+        {} as any,
+        { code: '' },
+      );
+
+      expect(result.status).toBe('success');
+      expect(previewedCode).toEqual(['']);
+    } finally {
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
   it('patches the current editor code without requiring model-managed hashes', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
     const previousState = useChatMessagesStore.getState();
@@ -137,6 +179,64 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
 
       expect(result.status).toBe('success');
       expect(code).toBe('const label = "new";\nctx.render(label);\n');
+    } finally {
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
+  it('returns a structured error when writeJSCode receives invalid params', async () => {
+    let code = 'const value = 1;';
+    const previousState = useChatMessagesStore.getState();
+    useChatMessagesStore.setState({
+      ...previousState,
+      currentEditorRefUid: 'editor-invalid-write',
+      editorRef: {
+        'editor-invalid-write': {
+          read: () => code,
+          write: (nextCode: string) => {
+            code = nextCode;
+          },
+          snippetEntries: [],
+          logs: [],
+        } as any,
+      },
+    });
+
+    try {
+      const result = await writeJSCodeTool[1].invoke.call({}, {} as any, {});
+
+      expect(result.status).toBe('error');
+      expect(result.content.message).toContain('`code` must be a string');
+      expect(code).toBe('const value = 1;');
+    } finally {
+      useChatMessagesStore.setState(previousState, true);
+    }
+  });
+
+  it('returns a structured error when patchJSCode receives invalid params', async () => {
+    let code = 'const label = "old";\nctx.render(label);\n';
+    const previousState = useChatMessagesStore.getState();
+    useChatMessagesStore.setState({
+      ...previousState,
+      currentEditorRefUid: 'editor-invalid-patch',
+      editorRef: {
+        'editor-invalid-patch': {
+          read: () => code,
+          write: (nextCode: string) => {
+            code = nextCode;
+          },
+          snippetEntries: [],
+          logs: [],
+        } as any,
+      },
+    });
+
+    try {
+      const result = await patchJSCodeTool[1].invoke.call({}, {} as any, {});
+
+      expect(result.status).toBe('error');
+      expect(result.content.message).toContain('`patch` must be a non-empty string');
+      expect(code).toBe('const label = "old";\nctx.render(label);\n');
     } finally {
       useChatMessagesStore.setState(previousState, true);
     }

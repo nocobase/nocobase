@@ -164,7 +164,16 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
     ui: {
       card: CodeToolCard,
     },
-    async invoke(_app, { code }) {
+    async invoke(_app, args) {
+      if (typeof args?.code !== 'string') {
+        return {
+          status: 'error',
+          content: {
+            success: false,
+            message: 'Write code failed: `code` must be a string.',
+          },
+        };
+      }
       const { uid, editorRef } = getCurrentEditorRef();
       if (!uid || !editorRef) {
         return {
@@ -175,6 +184,7 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
           },
         };
       }
+      const { code } = args;
       editorRef.write(code);
       const version = bumpEditorVersion(uid);
       return {
@@ -225,10 +235,19 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
     ui: {
       card: CodeToolCard,
     },
-    async invoke(_app, { patch }) {
+    async invoke(_app, args) {
+      if (typeof args?.patch !== 'string' || args.patch.length === 0) {
+        return {
+          status: 'error',
+          content: {
+            success: false,
+            message: 'Patch failed: `patch` must be a non-empty string.',
+          },
+        };
+      }
       try {
         const current = getEditorState();
-        const nextCode = applyUnifiedDiff(current.code, patch);
+        const nextCode = applyUnifiedDiff(current.code, args.patch);
         current.editorRef.write(nextCode);
         const version = bumpEditorVersion(current.uid);
         return {
@@ -273,7 +292,7 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         };
       }
       try {
-        const editorState = args?.code ? null : getEditorState();
+        const editorState = typeof args?.code === 'string' ? null : getEditorState();
         const code = args?.code ?? editorState.code;
         const content = await ctx.previewRunJS(code);
         if (editorState && isPreviewSuccess(content) && typeof editorState.editorRef.run === 'function') {
