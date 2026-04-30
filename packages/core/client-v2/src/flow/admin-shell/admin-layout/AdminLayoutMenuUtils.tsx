@@ -15,6 +15,7 @@ import {
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
+  observer,
 } from '@nocobase/flow-engine';
 import { App, Badge, Tooltip } from 'antd';
 import type { HookAPI } from 'antd/es/modal/useModal';
@@ -889,13 +890,15 @@ export const shouldRenderIconInTitle = ({ depth, isMobile }: { depth: number; is
   return depth > 1 || (isMobile && depth > 0);
 };
 
+const HiddenMenuItemPlaceholder = () => <span data-nb-hidden-menu-item="true" />;
+
 export const AdminLayoutMenuModelRenderer: FC<{
   model: FlowModel;
   item: AdminLayoutMenuNode;
   dom: React.ReactNode;
   renderType: AdminLayoutMenuRenderType;
   options?: AdminLayoutMenuRenderOptions;
-}> = ({ model, item, dom, renderType, options }) => {
+}> = observer(({ model, item, dom, renderType, options }) => {
   const token = model.context.themeToken;
 
   useEffect(() => {
@@ -906,6 +909,10 @@ export const AdminLayoutMenuModelRenderer: FC<{
       options,
     });
   }, [dom, item, model, options, renderType]);
+
+  if (!model.context.flowSettingsEnabled && model.hidden) {
+    return <HiddenMenuItemPlaceholder />;
+  }
 
   return (
     <ResetThemeTokenAndKeepAlgorithm>
@@ -931,7 +938,7 @@ export const AdminLayoutMenuModelRenderer: FC<{
       </Droppable>
     </ResetThemeTokenAndKeepAlgorithm>
   );
-};
+});
 
 export function getAdminLayoutMenuInitializerButton(
   testId: string,
