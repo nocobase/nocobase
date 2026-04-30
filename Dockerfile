@@ -1,6 +1,5 @@
 FROM node:22-bookworm as app-builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
-ARG NB_CLI_VERSION=2.1.0-beta.24
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
@@ -20,9 +19,6 @@ expect {
 }
 EOD
 
-RUN npm install -g @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb && \
-  npm cache clean --force
-
 RUN yarn config set registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
@@ -35,6 +31,8 @@ RUN yarn config set registry $VERDACCIO_URL && \
   rm -rf /app/my-nocobase-app/packages/app/client/src/.umi && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
+
+RUN yarn global add @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb
 
 FROM scratch as app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
