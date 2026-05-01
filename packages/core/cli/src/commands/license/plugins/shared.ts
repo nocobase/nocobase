@@ -8,10 +8,10 @@
  */
 
 import path from 'node:path';
+import { access, mkdir, readFile, realpath, rm } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createGunzip } from 'node:zlib';
-import fs from 'fs-extra';
 import tar from 'tar';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
 import {
@@ -71,6 +71,15 @@ function resolvePkgBaseUrl(pkgUrl?: string): string {
 
 function responseBodyToNodeReadable(body: ReadableStream<Uint8Array>): Readable {
   return Readable.fromWeb(body as unknown as NodeReadableStream);
+}
+
+async function pathExists(target: string): Promise<boolean> {
+  try {
+    await access(target);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function loginPkg(baseURL: string, keyData: LicenseKeyData): Promise<string> {
@@ -140,13 +149,13 @@ export async function fetchLicensedPluginPackages(
 
 async function isDownloaded(pluginName: string, storagePath: string, version?: string): Promise<boolean> {
   const packageFile = path.resolve(storagePath, pluginName, 'package.json');
-  if (!(await fs.pathExists(packageFile))) {
+  if (!(await pathExists(packageFile))) {
     return false;
   }
   if (!version) {
     return true;
   }
-  const json = await fs.readJson(packageFile);
+  const json = JSON.parse(await readFile(packageFile, 'utf8'));
   return String(json.version ?? '').trim() === version;
 }
 
@@ -156,7 +165,7 @@ async function isDevPackage(pluginName: string): Promise<boolean> {
     path.resolve(process.cwd(), 'packages/pro-plugins', pluginName, 'package.json'),
   ];
   for (const filePath of candidates) {
-    if (await fs.pathExists(filePath)) {
+    if (await pathExists(filePath)) {
       return true;
     }
   }
@@ -174,11 +183,11 @@ async function isDependencyPackage(
 
   const packageJsonInNodeModules = path.resolve(nodeModulesPath, pluginName, 'package.json');
   const packageJsonInStorage = path.resolve(storagePath, pluginName, 'package.json');
-  if (!(await fs.pathExists(packageJsonInNodeModules)) || !(await fs.pathExists(packageJsonInStorage))) {
+  if (!(await pathExists(packageJsonInNodeModules)) || !(await pathExists(packageJsonInStorage))) {
     return false;
   }
-  const realNodeModulesPath = await fs.realpath(packageJsonInNodeModules);
-  const realStoragePath = await fs.realpath(packageJsonInStorage);
+  const realNodeModulesPath = await realpath(packageJsonInNodeModules);
+  const realStoragePath = await realpath(packageJsonInStorage);
   return realNodeModulesPath !== realStoragePath;
 }
 
@@ -268,10 +277,10 @@ async function downloadPlugin(
   }
 
   const outputDir = path.resolve(storagePath, pluginName);
-  const existedBefore = await fs.pathExists(path.resolve(storagePath, pluginName, 'package.json'));
+  const existedBefore = await pathExists(path.resolve(storagePath, pluginName, 'package.json'));
   try {
-    await fs.remove(outputDir);
-    await fs.mkdirp(outputDir);
+    await rm(outputDir, { recursive: true, force: true });
+    await mkdir(outputDir, { recursive: true });
 
     const response = await fetch(tarballUrl, {
       headers: {
@@ -307,19 +316,19 @@ async function downloadPlugin(
 
 async function removeUnlicensedPlugin(pluginName: string, storagePath: string): Promise<boolean> {
   const dir = path.resolve(storagePath, pluginName);
-  if (!(await fs.pathExists(dir))) {
+  if (!(await pathExists(dir))) {
     return false;
   }
-  await fs.remove(dir);
+  await rm(dir, { recursive: true, force: true });
   return true;
 }
 
 async function removeDownloadedPlugin(pluginName: string, storagePath: string): Promise<boolean> {
   const dir = path.resolve(storagePath, pluginName);
-  if (!(await fs.pathExists(dir))) {
+  if (!(await pathExists(dir))) {
     return false;
   }
-  await fs.remove(dir);
+  await rm(dir, { recursive: true, force: true });
   return true;
 }
 
@@ -457,7 +466,7 @@ export async function cleanLicensedPlugins(
 
   for (const pluginName of commercialPlugins) {
     const outputDir = path.resolve(storagePath, pluginName);
-    const exists = await fs.pathExists(outputDir);
+    const exists = await pathExists(outputDir);
 
     if (!exists) {
       result.skipped.push(pluginName);

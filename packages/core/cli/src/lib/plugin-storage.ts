@@ -8,7 +8,16 @@
  */
 
 import path from 'node:path';
-import fs from 'fs-extra';
+import { access, lstat, mkdir, readdir, readlink, realpath, rm, stat, symlink } from 'node:fs/promises';
+
+async function pathExists(target: string): Promise<boolean> {
+  try {
+    await access(target);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function resolvePluginStoragePath(storagePath?: string): string {
   const configured = String(process.env.PLUGIN_STORAGE_PATH ?? '').trim();
@@ -26,13 +35,13 @@ export function resolvePluginStoragePath(storagePath?: string): string {
 
 async function getStoragePluginNames(target: string): Promise<string[]> {
   const plugins: string[] = [];
-  const items = await fs.readdir(target);
+  const items = await readdir(target);
 
   for (const item of items) {
     const itemPath = path.resolve(target, item);
 
     if (item.startsWith('@')) {
-      const statResult = await fs.stat(itemPath);
+      const statResult = await stat(itemPath);
       if (!statResult.isDirectory()) {
         continue;
       }
@@ -41,7 +50,7 @@ async function getStoragePluginNames(target: string): Promise<string[]> {
       continue;
     }
 
-    if (await fs.pathExists(path.resolve(itemPath, 'package.json'))) {
+    if (await pathExists(path.resolve(itemPath, 'package.json'))) {
       plugins.push(item);
     }
   }
@@ -54,13 +63,13 @@ async function ensureOrgDirectory(nodeModulesPath: string, pluginName: string): 
     return;
   }
   const [orgName] = pluginName.split('/');
-  await fs.ensureDir(path.resolve(nodeModulesPath, orgName));
+  await mkdir(path.resolve(nodeModulesPath, orgName), { recursive: true });
 }
 
 async function isSymlinkValid(linkPath: string, targetPath: string): Promise<boolean> {
   try {
-    if (await fs.pathExists(linkPath)) {
-      const realPath = await fs.realpath(linkPath);
+    if (await pathExists(linkPath)) {
+      const realPath = await realpath(linkPath);
       return realPath === targetPath;
     }
   } catch {
@@ -75,7 +84,7 @@ async function createStoragePluginSymlink(
   pluginName: string,
 ): Promise<void> {
   const targetPath = path.resolve(storagePluginsPath, pluginName);
-  if (!(await fs.pathExists(targetPath))) {
+  if (!(await pathExists(targetPath))) {
     return;
   }
 
@@ -85,8 +94,8 @@ async function createStoragePluginSymlink(
     return;
   }
 
-  await fs.remove(linkPath);
-  await fs.symlink(targetPath, linkPath, 'dir');
+  await rm(linkPath, { recursive: true, force: true });
+  await symlink(targetPath, linkPath, 'dir');
 }
 
 export async function createStoragePluginsSymlink(
@@ -98,7 +107,7 @@ export async function createStoragePluginsSymlink(
   }
 
   const storagePluginsPath = resolvePluginStoragePath(storagePath);
-  if (!(await fs.pathExists(storagePluginsPath))) {
+  if (!(await pathExists(storagePluginsPath))) {
     return;
   }
 
@@ -121,13 +130,13 @@ export async function removeStoragePluginSymlink(
   const storagePluginsPath = resolvePluginStoragePath(storagePath);
   const targetPath = path.resolve(storagePluginsPath, pluginName);
   const linkPath = path.resolve(nodeModulesPath, pluginName);
-  if (!(await fs.pathExists(linkPath))) {
+  if (!(await pathExists(linkPath))) {
     return false;
   }
 
   let statResult;
   try {
-    statResult = await fs.lstat(linkPath);
+    statResult = await lstat(linkPath);
   } catch {
     return false;
   }
@@ -138,7 +147,7 @@ export async function removeStoragePluginSymlink(
 
   let resolvedLinkTarget = '';
   try {
-    const linkTarget = await fs.readlink(linkPath);
+    const linkTarget = await readlink(linkPath);
     resolvedLinkTarget = path.resolve(path.dirname(linkPath), linkTarget);
   } catch {
     return false;
@@ -148,6 +157,6 @@ export async function removeStoragePluginSymlink(
     return false;
   }
 
-  await fs.remove(linkPath);
+  await rm(linkPath, { recursive: true, force: true });
   return true;
 }
