@@ -9,7 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import {
-  ensureInstanceId,
+  generateAndSaveInstanceId,
   licenseEnvFlag,
   licenseJsonFlag,
   readSavedInstanceId,
@@ -18,9 +18,9 @@ import {
 } from './shared.js';
 
 export default class LicenseId extends Command {
-  static override summary = 'Show the instance ID used for commercial license activation';
+  static override summary = 'Show the instance ID for the selected env';
   static override description =
-    'Resolve the selected env, generate the commercial licensing instance ID when needed, and save it under `storage/.license/instance-id`.';
+    'Show the commercial licensing instance ID for the selected env, generating and saving it if needed.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env app1',
@@ -40,9 +40,12 @@ export default class LicenseId extends Command {
     const { flags } = await this.parse(LicenseId);
     const runtime = await requireLicenseRuntime(flags.env);
     const savedBefore = await readSavedInstanceId(runtime);
-    const instanceId = await ensureInstanceId(runtime, { force: Boolean(flags.force) });
+    const shouldGenerate = Boolean(flags.force) || !savedBefore;
+    const instanceId = shouldGenerate
+      ? await generateAndSaveInstanceId(runtime)
+      : savedBefore!;
     const filePath = resolveInstanceIdFile(runtime);
-    const generated = Boolean(flags.force) || !savedBefore;
+    const generated = shouldGenerate;
 
     if (flags.json) {
       this.log(JSON.stringify({

@@ -12,8 +12,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getEnvAsync, getInstanceIdAsync, keyDecrypt } from '@nocobase/license-kit';
 import _ from 'lodash';
+import {
+  checkExternalDbConnection,
+  readExternalDbConnectionConfig,
+} from '../../lib/db-connection-check.ts';
 import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
+import { commandOutput } from '../../lib/run-npm.js';
 import { appUrl } from '../env/shared.js';
 
 export const licenseEnvFlag = Flags.string({
@@ -27,6 +32,8 @@ export const licenseJsonFlag = Flags.boolean({
 });
 
 const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
+const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
+const DEFAULT_DOCKER_VERSION = 'alpha';
 
 export const licensePkgUrlFlag = Flags.string({
   description: 'Commercial package service base URL',
@@ -104,9 +111,53 @@ export async function readSavedInstanceId(runtime: ManagedAppRuntime): Promise<s
   }
 }
 
-async function withLicenseEnv<T>(runtime: ManagedAppRuntime, task: () => Promise<T>): Promise<T> {
+function trimValue(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text || undefined;
+}
+
+function normalizeDockerPlatform(value: unknown): string | undefined {
+  const text = trimValue(value);
+  if (!text || text === 'auto') {
+    return undefined;
+  }
+
+  if (text === 'linux/amd64' || text === 'linux/arm64') {
+    return text;
+  }
+
+  return undefined;
+}
+
+function buildLicenseDbConfigFromEnvVars(envVars: Record<string, string>) {
+  return {
+    builtinDb: false,
+    dbDialect: trimValue(envVars.DB_DIALECT),
+    dbHost: trimValue(envVars.DB_HOST),
+    dbPort: trimValue(envVars.DB_PORT),
+    dbDatabase: trimValue(envVars.DB_DATABASE),
+    dbUser: trimValue(envVars.DB_USER),
+    dbPassword: envVars.DB_PASSWORD,
+  };
+}
+
+export async function validateLicenseDbConnectionFromEnvVars(envVars: Record<string, string>): Promise<void> {
+  const connectionConfig = readExternalDbConnectionConfig(buildLicenseDbConfigFromEnvVars(envVars));
+  if (!connectionConfig) {
+    throw new Error('Unsupported or incomplete database settings for instance ID generation.');
+  }
+
+  const validationError = await checkExternalDbConnection(connectionConfig);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+}
+
+export async function withLicenseEnvVars<T>(
+  nextEnv: Record<string, string>,
+  task: () => Promise<T>,
+): Promise<T> {
   const previous: Record<string, string | undefined> = {};
-  const nextEnv = runtime.env.envVars;
 
   for (const [key, value] of Object.entries(nextEnv)) {
     previous[key] = process.env[key];
@@ -127,18 +178,106 @@ async function withLicenseEnv<T>(runtime: ManagedAppRuntime, task: () => Promise
   }
 }
 
+async function withLicenseEnv<T>(runtime: ManagedAppRuntime, task: () => Promise<T>): Promise<T> {
+  return await withLicenseEnvVars(runtime.env.envVars, task);
+}
+
 export async function getCurrentLicenseEnv(runtime: ManagedAppRuntime): Promise<any> {
   return await withLicenseEnv(runtime, async () => await getEnvAsync());
 }
 
-export async function generateAndSaveInstanceId(runtime: ManagedAppRuntime): Promise<string> {
-  const instanceId = String(await withLicenseEnv(runtime, async () => await getInstanceIdAsync())).trim();
+export async function generateInstanceIdFromEnvVars(envVars: Record<string, string>): Promise<string> {
+  const instanceId = String(await withLicenseEnvVars(envVars, async () => await getInstanceIdAsync())).trim();
   if (!instanceId) {
     throw new Error('Generated instance ID is empty.');
   }
-  await mkdir(resolveLicenseDir(runtime), { recursive: true });
-  await writeFile(resolveInstanceIdFile(runtime), `${instanceId}\n`);
   return instanceId;
+}
+
+export async function generateValidatedInstanceIdFromEnvVars(envVars: Record<string, string>): Promise<string> {
+  await validateLicenseDbConnectionFromEnvVars(envVars);
+  return await generateInstanceIdFromEnvVars(envVars);
+}
+
+async function generateInstanceIdForDockerRuntime(
+  runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
+): Promise<string> {
+  const config = runtime.env.config ?? {};
+  const imageRef = `${trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY}:${trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION}`;
+  const args = [
+    'run',
+    '--rm',
+    '--network',
+    runtime.workspaceName,
+  ];
+  const dockerPlatform = normalizeDockerPlatform(config.dockerPlatform);
+  if (dockerPlatform) {
+    args.push('--platform', dockerPlatform);
+  }
+  args.push(
+    '--entrypoint',
+    'nb',
+    imageRef,
+    'license',
+    'generate-id',
+    '--db-dialect',
+    String(runtime.env.envVars.DB_DIALECT ?? ''),
+    '--db-host',
+    String(runtime.env.envVars.DB_HOST ?? ''),
+    '--db-port',
+    String(runtime.env.envVars.DB_PORT ?? ''),
+    '--db-database',
+    String(runtime.env.envVars.DB_DATABASE ?? ''),
+    '--db-user',
+    String(runtime.env.envVars.DB_USER ?? ''),
+    '--db-password',
+    String(runtime.env.envVars.DB_PASSWORD ?? ''),
+    '--json',
+  );
+
+  const output = await commandOutput('docker', args, {
+    errorName: 'docker run',
+  });
+
+  let payload: { instanceId?: unknown };
+  try {
+    payload = JSON.parse(output) as { instanceId?: unknown };
+  } catch {
+    throw new Error(`Failed to parse instance ID response from Docker: ${output}`);
+  }
+
+  const instanceId = trimValue(payload.instanceId);
+  if (!instanceId) {
+    throw new Error('Docker instance ID generation did not return an instance ID.');
+  }
+  return instanceId;
+}
+
+export async function generateInstanceIdForRuntime(runtime: ManagedAppRuntime): Promise<string> {
+  if (runtime.kind === 'docker') {
+    return await generateInstanceIdForDockerRuntime(runtime);
+  }
+
+  if (runtime.kind === 'local') {
+    return await generateValidatedInstanceIdFromEnvVars(runtime.env.envVars);
+  }
+
+  throw new Error(`Env "${runtime.envName}" does not support automatic instance ID generation.`);
+}
+
+export async function saveInstanceId(runtime: ManagedAppRuntime, instanceId: string): Promise<string> {
+  const normalized = String(instanceId ?? '').trim();
+  if (!normalized) {
+    throw new Error('Generated instance ID is empty.');
+  }
+  await mkdir(resolveLicenseDir(runtime), { recursive: true });
+  await writeFile(resolveInstanceIdFile(runtime), `${normalized}\n`);
+  return normalized;
+}
+
+export async function generateAndSaveInstanceId(runtime: ManagedAppRuntime): Promise<string> {
+  const instanceId = await generateInstanceIdForRuntime(runtime);
+  return await saveInstanceId(runtime, instanceId);
 }
 
 export async function ensureInstanceId(runtime: ManagedAppRuntime, options: { force?: boolean } = {}): Promise<string> {
