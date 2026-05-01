@@ -12,7 +12,7 @@ import { access, mkdir, readFile, realpath, rm } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createGunzip } from 'node:zlib';
-import tar from 'tar';
+import * as tar from 'tar';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
 import {
   createStoragePluginsSymlink,
