@@ -39,18 +39,19 @@ RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
     LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE%\'} && \
     LICENSE_KIT_VERSION=$(npm view "@nocobase/license-kit@${LICENSE_KIT_RANGE}" version --registry https://registry.npmjs.org/) && \
     mkdir -p /tmp/nb-cli && \
-    cat <<'EOD' > /tmp/nb-cli/package.json
-{
-  "private": true,
-  "dependencies": {
-    "@nocobase/cli": "latest"
-  },
-  "resolutions": {
-    "@nocobase/license-kit": "__LICENSE_KIT_TARBALL__"
-  }
-}
-EOD
-    sed -i "s|__LICENSE_KIT_TARBALL__|https://registry.npmjs.org/@nocobase/license-kit/-/license-kit-${LICENSE_KIT_VERSION}.tgz|" /tmp/nb-cli/package.json && \
+    printf '%s\n' \
+      '{' \
+      '  "private": true,' \
+      '  "dependencies": {' \
+      '    "@nocobase/cli": "latest"' \
+      '  },' \
+      '  "resolutions": {' \
+      "    \"@nocobase/license-kit\": \"https://registry.npmjs.org/@nocobase/license-kit/-/license-kit-${LICENSE_KIT_VERSION}.tgz\"" \
+      '  }' \
+      '}' > /tmp/nb-cli/package.json; \
+  fi
+
+RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
     cd /tmp/nb-cli && \
     yarn install --production --registry $VERDACCIO_URL && \
     mkdir -p /opt/nb/bin && \
