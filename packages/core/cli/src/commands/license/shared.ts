@@ -129,6 +129,61 @@ function normalizeDockerPlatform(value: unknown): string | undefined {
   return undefined;
 }
 
+function resolveDockerLicenseImageRef(runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>): string {
+  const config = runtime.env.config ?? {};
+  return `${trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY}:${trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION}`;
+}
+
+function buildDockerLicenseDbFlagArgs(envVars: Record<string, string>): string[] {
+  return [
+    '--db-dialect',
+    String(envVars.DB_DIALECT ?? ''),
+    '--db-host',
+    String(envVars.DB_HOST ?? ''),
+    '--db-port',
+    String(envVars.DB_PORT ?? ''),
+    '--db-database',
+    String(envVars.DB_DATABASE ?? ''),
+    '--db-user',
+    String(envVars.DB_USER ?? ''),
+    '--db-password',
+    String(envVars.DB_PASSWORD ?? ''),
+  ];
+}
+
+async function runDockerLicenseJsonCommand(
+  runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
+  commandArgs: string[],
+): Promise<any> {
+  const args = [
+    'run',
+    '--rm',
+    '--network',
+    runtime.workspaceName,
+  ];
+  const dockerPlatform = normalizeDockerPlatform(runtime.env.config?.dockerPlatform);
+  if (dockerPlatform) {
+    args.push('--platform', dockerPlatform);
+  }
+  args.push(
+    '--entrypoint',
+    'nb',
+    resolveDockerLicenseImageRef(runtime),
+    ...commandArgs,
+    '--json',
+  );
+
+  const output = await commandOutput('docker', args, {
+    errorName: 'docker run',
+  });
+
+  try {
+    return JSON.parse(output);
+  } catch {
+    throw new Error(`Failed to parse Docker license command response: ${output}`);
+  }
+}
+
 function buildLicenseDbConfigFromEnvVars(envVars: Record<string, string>) {
   return {
     builtinDb: false,
@@ -183,6 +238,15 @@ async function withLicenseEnv<T>(runtime: ManagedAppRuntime, task: () => Promise
 }
 
 export async function getCurrentLicenseEnv(runtime: ManagedAppRuntime): Promise<any> {
+  if (runtime.kind === 'docker') {
+    const payload = await runDockerLicenseJsonCommand(runtime, [
+      'license',
+      'env',
+      ...buildDockerLicenseDbFlagArgs(runtime.env.envVars),
+    ]);
+    return payload?.env;
+  }
+
   return await withLicenseEnv(runtime, async () => await getEnvAsync());
 }
 
@@ -202,49 +266,11 @@ export async function generateValidatedInstanceIdFromEnvVars(envVars: Record<str
 async function generateInstanceIdForDockerRuntime(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
 ): Promise<string> {
-  const config = runtime.env.config ?? {};
-  const imageRef = `${trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY}:${trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION}`;
-  const args = [
-    'run',
-    '--rm',
-    '--network',
-    runtime.workspaceName,
-  ];
-  const dockerPlatform = normalizeDockerPlatform(config.dockerPlatform);
-  if (dockerPlatform) {
-    args.push('--platform', dockerPlatform);
-  }
-  args.push(
-    '--entrypoint',
-    'nb',
-    imageRef,
+  const payload = await runDockerLicenseJsonCommand(runtime, [
     'license',
     'generate-id',
-    '--db-dialect',
-    String(runtime.env.envVars.DB_DIALECT ?? ''),
-    '--db-host',
-    String(runtime.env.envVars.DB_HOST ?? ''),
-    '--db-port',
-    String(runtime.env.envVars.DB_PORT ?? ''),
-    '--db-database',
-    String(runtime.env.envVars.DB_DATABASE ?? ''),
-    '--db-user',
-    String(runtime.env.envVars.DB_USER ?? ''),
-    '--db-password',
-    String(runtime.env.envVars.DB_PASSWORD ?? ''),
-    '--json',
-  );
-
-  const output = await commandOutput('docker', args, {
-    errorName: 'docker run',
-  });
-
-  let payload: { instanceId?: unknown };
-  try {
-    payload = JSON.parse(output) as { instanceId?: unknown };
-  } catch {
-    throw new Error(`Failed to parse instance ID response from Docker: ${output}`);
-  }
+    ...buildDockerLicenseDbFlagArgs(runtime.env.envVars),
+  ]) as { instanceId?: unknown };
 
   const instanceId = trimValue(payload.instanceId);
   if (!instanceId) {

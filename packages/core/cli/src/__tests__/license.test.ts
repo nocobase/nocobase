@@ -447,6 +447,120 @@ test('license id generates through docker when the selected env uses docker sour
   }
 });
 
+test('license activate validates docker envs through docker license env inspection', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+
+  try {
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'docker',
+      envName: 'app1',
+      source: 'docker',
+      containerName: 'nb-demo-app1-app',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {
+          appPort: '13000',
+          dockerRegistry: 'registry.cn-beijing.aliyuncs.com/nocobase/nocobase',
+          dockerPlatform: 'linux/amd64',
+          downloadVersion: 'pr-9313',
+        },
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          DB_DIALECT: 'postgres',
+          DB_HOST: 'db.internal',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'secret',
+        },
+      },
+    });
+    mocks.commandOutput
+      .mockResolvedValueOnce(JSON.stringify({
+        ok: true,
+        env: {
+          sys: 'linux',
+          osVer: '1',
+          db: {
+            id: 'db-1',
+            type: 'postgres',
+            name: 'nocobase',
+          },
+        },
+      }));
+    mocks.keyDecrypt.mockReturnValue(JSON.stringify({
+      licenseKey: {
+        domain: '127.0.0.1:13000',
+        licenseStatus: 'active',
+      },
+      instanceData: {
+        sys: 'linux',
+        osVer: '1',
+        db: {
+          id: 'db-1',
+          type: 'postgres',
+          name: 'nocobase',
+        },
+      },
+    }));
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'app1',
+          json: false,
+          key: 'license-key-raw',
+          'key-file': undefined,
+          online: false,
+        },
+      })),
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicenseActivate.prototype.run.call(command);
+
+    expect(mocks.commandOutput).toHaveBeenCalledWith(
+      'docker',
+      [
+        'run',
+        '--rm',
+        '--network',
+        'nb-demo',
+        '--platform',
+        'linux/amd64',
+        '--entrypoint',
+        'nb',
+        'registry.cn-beijing.aliyuncs.com/nocobase/nocobase:pr-9313',
+        'license',
+        'env',
+        '--db-dialect',
+        'postgres',
+        '--db-host',
+        'db.internal',
+        '--db-port',
+        '5432',
+        '--db-database',
+        'nocobase',
+        '--db-user',
+        'nocobase',
+        '--db-password',
+        'secret',
+        '--json',
+      ],
+      { errorName: 'docker run' },
+    );
+    expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
 test('license generate-id returns an instance id without saving it', async () => {
   const { default: LicenseGenerateId } = await import('../commands/license/generate-id.js');
   const originalHost = process.env.DB_HOST;
