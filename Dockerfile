@@ -1,4 +1,4 @@
-FROM node:22-bookworm as app-builder
+FROM node:22-bookworm AS app-builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
@@ -34,7 +34,27 @@ RUN yarn config set registry $VERDACCIO_URL && \
   rm -rf /app/my-nocobase-app
 
 RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    yarn global add @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb && \
+    LICENSE_KIT_RANGE=$(npm view @nocobase/cli dependencies.@nocobase/license-kit --registry $VERDACCIO_URL) && \
+    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE#\'} && \
+    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE%\'} && \
+    LICENSE_KIT_VERSION=$(npm view "@nocobase/license-kit@${LICENSE_KIT_RANGE}" version --registry https://registry.npmjs.org/) && \
+    mkdir -p /tmp/nb-cli && \
+    cat > /tmp/nb-cli/package.json <<EOD && \
+{
+  "private": true,
+  "dependencies": {
+    "@nocobase/cli": "latest"
+  },
+  "resolutions": {
+    "@nocobase/license-kit": "https://registry.npmjs.org/@nocobase/license-kit/-/license-kit-${LICENSE_KIT_VERSION}.tgz"
+  }
+}
+EOD
+    cd /tmp/nb-cli && \
+    yarn install --production --registry $VERDACCIO_URL && \
+    mkdir -p /opt/nb/bin && \
+    cp -a /tmp/nb-cli/node_modules /opt/nb/ && \
+    ln -sf /opt/nb/node_modules/.bin/nb /opt/nb/bin/nb && \
     NB_SKIP_STARTUP_UPDATE=1 /opt/nb/bin/nb --version && \
     tar -zcf /nb.tar.gz -C /opt nb; \
   else \
@@ -42,17 +62,17 @@ RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
     tar -zcf /nb.tar.gz -C /tmp/empty-nb-artifact .; \
   fi
 
-FROM scratch as app-artifact
+FROM scratch AS app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
 COPY --from=app-builder /nb.tar.gz /nb.tar.gz
 
-FROM node:22-bookworm-slim as nb-unpack
+FROM node:22-bookworm-slim AS nb-unpack
 COPY nb.tar.gz /tmp/nb.tar.gz
 RUN mkdir -p /opt/nb && \
   tar -zxf /tmp/nb.tar.gz -C /opt && \
   rm -f /tmp/nb.tar.gz
 
-FROM node:22-bookworm-slim as runtime
+FROM node:22-bookworm-slim AS runtime
 ARG COMMIT_HASH
 ARG INSTALL_NB_CLI=0
 
