@@ -46,6 +46,12 @@ FROM scratch as app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
 COPY --from=app-builder /nb.tar.gz /nb.tar.gz
 
+FROM node:22-bookworm-slim as nb-unpack
+COPY nb.tar.gz /tmp/nb.tar.gz
+RUN mkdir -p /opt/nb && \
+  tar -zxf /tmp/nb.tar.gz -C /opt && \
+  rm -f /tmp/nb.tar.gz
+
 FROM node:22-bookworm-slim as runtime
 ARG COMMIT_HASH
 ARG INSTALL_NB_CLI=0
@@ -74,12 +80,9 @@ RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY nocobase.tar.gz /app/nocobase.tar.gz
 COPY dist.tar.gz /app/nocobase-docs.tar.gz
-COPY nb.tar.gz /app/nb.tar.gz
+COPY --from=nb-unpack /opt/nb /opt/nb
 
-RUN mkdir -p /opt && \
-  tar -zxf /app/nb.tar.gz -C /opt && \
-  rm -f /app/nb.tar.gz && \
-  if [ "$INSTALL_NB_CLI" = "1" ]; then \
+RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
     NB_SKIP_STARTUP_UPDATE=1 nb --version; \
   fi
 
