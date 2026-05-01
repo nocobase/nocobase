@@ -10,6 +10,7 @@
 import { Command, Flags } from '@oclif/core';
 import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
+import type { EnvConfigEntry } from '../../lib/auth-store.js';
 import {
   checkExternalDbConnection,
   formatDbCheckAddress,
@@ -81,7 +82,7 @@ function formatMissingFieldsMessage(missing: string[], hasEnv: boolean): string 
 
 function resolveDbConfigFromFlags(
   flags: DbCheckFlags,
-  envConfig?: Record<string, unknown>,
+  envConfig?: Partial<EnvConfigEntry>,
 ): ResolvedDbCheckInput['dbConfig'] {
   return {
     builtinDb: false,
