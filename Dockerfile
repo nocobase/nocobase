@@ -3,6 +3,7 @@ ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
+ARG INSTALL_NB_CLI=0
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
@@ -32,15 +33,24 @@ RUN yarn config set registry $VERDACCIO_URL && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
 
-# RUN yarn global add @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb
+RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
+    yarn global add @nocobase/cli --registry $VERDACCIO_URL --prefix /opt/nb && \
+    NB_SKIP_STARTUP_UPDATE=1 /opt/nb/bin/nb --version && \
+    tar -zcf /nb.tar.gz -C /opt nb; \
+  else \
+    mkdir -p /tmp/empty-nb-artifact && \
+    tar -zcf /nb.tar.gz -C /tmp/empty-nb-artifact .; \
+  fi
 
 FROM scratch as app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
+COPY --from=app-builder /nb.tar.gz /nb.tar.gz
 
 FROM node:22-bookworm-slim as runtime
 ARG COMMIT_HASH
+ARG INSTALL_NB_CLI=0
 
-# ENV PATH="/opt/nb/bin:${PATH}"
+ENV PATH="/opt/nb/bin:${PATH}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -64,7 +74,14 @@ RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY nocobase.tar.gz /app/nocobase.tar.gz
 COPY dist.tar.gz /app/nocobase-docs.tar.gz
-# COPY --from=app-builder /opt/nb /opt/nb
+COPY nb.tar.gz /app/nb.tar.gz
+
+RUN mkdir -p /opt && \
+  tar -zxf /app/nb.tar.gz -C /opt && \
+  rm -f /app/nb.tar.gz && \
+  if [ "$INSTALL_NB_CLI" = "1" ]; then \
+    NB_SKIP_STARTUP_UPDATE=1 nb --version; \
+  fi
 
 WORKDIR /app/nocobase
 
