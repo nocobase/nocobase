@@ -7,15 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
@@ -27,6 +18,7 @@ import path from 'path';
 import { build as tsupBuild } from 'tsup';
 import { EsbuildSupportExts, globExcludeFiles, PLUGIN_COMMERCIAL } from './constant';
 import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
+import { deleteServerFiles } from './deleteServerFiles';
 import { getPackageJson, PkgLog, UserConfig } from './utils';
 import {
   buildCheck,
@@ -293,37 +285,6 @@ async function copyAiDocSources(cwd: string, log: PkgLog) {
     await fs.ensureDir(path.dirname(rootMetaPath));
     await fs.writeJSON(rootMetaPath, Array.from(rootMetaMap.values()), { spaces: 2 });
   }
-}
-
-export function deleteServerFiles(cwd: string, log: PkgLog) {
-  log('delete server files');
-  const files = fg.globSync(['*'], {
-    cwd: path.join(cwd, target_dir),
-    absolute: true,
-    deep: 1,
-    onlyFiles: true,
-  });
-  const dirs = fg.globSync(['*', '!client', '!node_modules'], {
-    cwd: path.join(cwd, target_dir),
-    absolute: true,
-    deep: 1,
-    onlyDirectories: true,
-  });
-  const extraClientDirs = fg.globSync(['client-v2'], {
-    cwd: path.join(cwd, target_dir),
-    absolute: true,
-    deep: 1,
-    onlyDirectories: true,
-  });
-  [...files, ...dirs.filter((item) => !extraClientDirs.includes(item)), ...extraClientDirs].forEach((item) => {
-    if (item.endsWith(`${path.sep}client-v2`) || item.endsWith(`/client-v2`)) {
-      return;
-    }
-    if (item.endsWith(`${path.sep}client`) || item.endsWith(`/client`)) {
-      return;
-    }
-    fs.removeSync(item);
-  });
 }
 
 export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
