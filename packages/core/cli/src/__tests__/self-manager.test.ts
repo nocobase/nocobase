@@ -10,15 +10,36 @@
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
+import { afterEach, beforeEach } from 'vitest';
 import { expect, test, vi } from 'vitest';
 import {
   compareVersions,
   formatUnsupportedSelfUpdateMessage,
   getSelfUpdatePackageSpec,
   getRecommendedSelfUpdateCommand,
+  inspectSelfInstall,
   inspectSelfStatus,
   updateSelf,
 } from '../lib/self-manager.js';
+
+const originalCliRoot = process.env.NB_CLI_ROOT;
+
+beforeEach(async () => {
+  const temp = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-self-home-'));
+  process.env.NB_CLI_ROOT = temp;
+});
+
+afterEach(async () => {
+  if (process.env.NB_CLI_ROOT) {
+    await fsp.rm(process.env.NB_CLI_ROOT, { recursive: true, force: true });
+  }
+
+  if (originalCliRoot === undefined) {
+    delete process.env.NB_CLI_ROOT;
+  } else {
+    process.env.NB_CLI_ROOT = originalCliRoot;
+  }
+});
 
 test('compareVersions handles prerelease ordering', () => {
   expect(compareVersions('2.1.0-beta.18', '2.1.0-beta.17')).toBeGreaterThan(0);
@@ -49,6 +70,65 @@ test('inspectSelfStatus resolves latest version and install support for npm-glob
   expect(status.updateAvailable).toBe(true);
   expect(status.updatable).toBe(true);
   expect(status.updateBlockedReason).toBeUndefined();
+});
+
+test('inspectSelfStatus caches install method by bin path', async () => {
+  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'npm' && args.join(' ') === 'prefix -g') {
+      return '/opt/global';
+    }
+    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
+      return JSON.stringify({ latest: '2.1.0' });
+    }
+    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  });
+
+  const packageRoot = path.join('/opt', 'apps', 'demo', 'node_modules', '@nocobase', 'cli');
+
+  const first = await inspectSelfStatus({
+    packageRoot,
+    currentVersion: '2.1.0-beta.17',
+    channel: 'auto',
+    commandOutputFn: commandOutputFn as any,
+  });
+
+  const prefixCallsAfterFirst = commandOutputFn.mock.calls.filter(
+    ([name, args]) => name === 'npm' && Array.isArray(args) && args.join(' ') === 'prefix -g',
+  ).length;
+
+  const second = await inspectSelfStatus({
+    packageRoot,
+    currentVersion: '2.1.0-beta.17',
+    channel: 'auto',
+    commandOutputFn: commandOutputFn as any,
+  });
+
+  const prefixCallsAfterSecond = commandOutputFn.mock.calls.filter(
+    ([name, args]) => name === 'npm' && Array.isArray(args) && args.join(' ') === 'prefix -g',
+  ).length;
+
+  expect(first.installMethod).toBe('package-local');
+  expect(second.installMethod).toBe('package-local');
+  expect(prefixCallsAfterFirst).toBe(1);
+  expect(prefixCallsAfterSecond).toBe(1);
+});
+
+test('inspectSelfInstall only performs install-method detection', async () => {
+  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'npm' && args.join(' ') === 'prefix -g') {
+      return '/opt/global';
+    }
+    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  });
+
+  const install = await inspectSelfInstall({
+    packageRoot: path.join('/opt', 'apps', 'demo', 'node_modules', '@nocobase', 'cli'),
+    commandOutputFn: commandOutputFn as any,
+  });
+
+  expect(install.installMethod).toBe('package-local');
+  expect(commandOutputFn).toHaveBeenCalledTimes(1);
+  expect(commandOutputFn).toHaveBeenCalledWith('npm', ['prefix', '-g'], expect.objectContaining({ errorName: 'npm prefix' }));
 });
 
 test('updateSelf rejects unsupported install methods', async () => {
