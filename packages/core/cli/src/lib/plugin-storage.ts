@@ -20,14 +20,14 @@ async function pathExists(target: string): Promise<boolean> {
 }
 
 export function resolvePluginStoragePath(storagePath?: string): string {
-  const configured = String(process.env.PLUGIN_STORAGE_PATH ?? '').trim();
-  if (configured) {
-    return path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured);
-  }
-
   const root = String(storagePath ?? process.env.STORAGE_PATH ?? '').trim();
   if (root) {
     return path.join(path.isAbsolute(root) ? root : path.resolve(process.cwd(), root), 'plugins');
+  }
+
+  const configured = String(process.env.PLUGIN_STORAGE_PATH ?? '').trim();
+  if (configured) {
+    return path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured);
   }
 
   return path.resolve(process.cwd(), 'storage', 'plugins');
