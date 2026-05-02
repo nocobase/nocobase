@@ -95,6 +95,16 @@ interface BodyCellComponentProps {
   isSubTable?: boolean;
 }
 
+// Field interfaces whose columns are right-aligned by default in tables.
+// Right-alignment makes decimal-aligned values comparable at a glance, which
+// matches accounting/spreadsheet convention. Users can override per column
+// via x-component-props.align.
+const NUMERIC_COLUMN_INTERFACES = new Set([
+  'number',
+  'integer',
+  'percent',
+]);
+
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
   return (props.field || field) as ArrayField;
@@ -238,6 +248,14 @@ const useTableColumns = (
           uiSchema.default = defaultValue;
         }
 
+        // Auto right-align numeric columns (decimal-aligned reads better in tables;
+        // matches accounting/spreadsheet convention). Explicit `align` in
+        // x-component-props still wins.
+        const explicitAlign = columnSchema['x-component-props']?.align;
+        const isNumericInterface = NUMERIC_COLUMN_INTERFACES.has(_interface);
+        const autoAlign = isNumericInterface ? 'right' : undefined;
+        const align = explicitAlign ?? autoAlign;
+
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>
@@ -256,6 +274,7 @@ const useTableColumns = (
           columnHidden: schemaHidden,
           fixed: columnFixed,
           ...columnSchema['x-component-props'],
+          align,
           width: columnWidth,
           schema: columnSchema,
           render: (value, record, index) => {

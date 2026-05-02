@@ -126,6 +126,38 @@ describe('ReadPretty:formatUnitConversion', () => {
   });
 });
 
+describe('ReadPretty:formatNumber locale-aware default separator', () => {
+  test('en-US locale defaults to comma-thousands / dot-decimal', () => {
+    const result = formatNumber({ value: 1234567.89, step: 0.01, locale: 'en-US' });
+    expect(result).toBe('1,234,567.89');
+  });
+  test('de-DE locale defaults to dot-thousands / comma-decimal', () => {
+    const result = formatNumber({ value: 1234567.89, step: 0.01, locale: 'de-DE' });
+    expect(result).toBe('1.234.567,89');
+  });
+  test('fr-FR locale defaults to space-thousands / dot-decimal', () => {
+    const result = formatNumber({ value: 1234567.89, step: 0.01, locale: 'fr-FR' });
+    expect(result).toBe('1 234 567.89');
+  });
+  test('explicit separator wins over locale', () => {
+    const result = formatNumber({
+      value: 1234567.89,
+      step: 0.01,
+      locale: 'de-DE',
+      separator: '0,0.00',
+    });
+    expect(result).toBe('1,234,567.89');
+  });
+  test('falls back to en-US format when locale is unknown', () => {
+    const result = formatNumber({ value: 1234.5, step: 0.01, locale: 'xx-YY' });
+    expect(result).toBe('1,234.50');
+  });
+  test('language-only locale code is supported (e.g. "de" without region)', () => {
+    const result = formatNumber({ value: 1234.5, step: 0.01, locale: 'de' });
+    expect(result).toBe('1.234,50');
+  });
+});
+
 describe('ReadPretty:MAX_SAFE_INTEGER', () => {
   test('value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER', () => {
     const result = formatNumber({
