@@ -247,14 +247,6 @@ DB_LOGGING=on
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-ファイルベースのログの保存パスです。デフォルトは `storage/logs` です。
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 出力するログのレベルです。開発環境のデフォルト値は `debug`、本番環境のデフォルト値は `info` です。選択可能なオプション：

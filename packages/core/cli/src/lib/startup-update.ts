@@ -9,8 +9,10 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as p from '@clack/prompts';
 import {
+  inspectSelfInstall,
   inspectSelfStatus,
   type SelfInstallMethod,
   type SelfStatus,
@@ -25,6 +27,7 @@ const NB_SKIP_STARTUP_UPDATE_ENV = 'NB_SKIP_STARTUP_UPDATE';
 
 type StartupUpdateState = {
   lastCheckedDate?: string;
+  entries?: Record<string, { policy?: 'disabled' | 'daily'; lastCheckedDate?: string }>;
 };
 
 type StartupUpdatePromptResult =
@@ -38,7 +41,35 @@ function getStateFile() {
   return path.join(resolveCliHomeDir('global'), STARTUP_UPDATE_STATE_FILE);
 }
 
+function getCurrentInstallBinPath() {
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'bin', 'run.js');
+}
+
+function getCurrentInstallEntry(state: StartupUpdateState) {
+  return state.entries?.[getCurrentInstallBinPath()];
+}
+
 function todayStamp(now = new Date()) {
+  const timeZone = String(process.env.TZ ?? '').trim();
+  if (timeZone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(now);
+      const year = parts.find((part) => part.type === 'year')?.value;
+      const month = parts.find((part) => part.type === 'month')?.value;
+      const day = parts.find((part) => part.type === 'day')?.value;
+      if (year && month && day) {
+        return `${year}-${month}-${day}`;
+      }
+    } catch {
+      // Fall back to the host local timezone.
+    }
+  }
+
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
@@ -73,8 +104,57 @@ async function writeState(state: StartupUpdateState) {
   await fs.writeFile(filePath, JSON.stringify(state, null, 2));
 }
 
+function readCurrentInstallLastCheckedDate(state: StartupUpdateState): string | undefined {
+  return getCurrentInstallEntry(state)?.lastCheckedDate ?? state.lastCheckedDate;
+}
+
+async function writeCurrentInstallEntry(
+  updater: (
+    current: { policy?: 'disabled' | 'daily'; lastCheckedDate?: string } | undefined,
+    state: StartupUpdateState,
+  ) => { policy?: 'disabled' | 'daily'; lastCheckedDate?: string },
+) {
+  const state = await readState();
+  const installBinPath = getCurrentInstallBinPath();
+  const nextEntry = updater(getCurrentInstallEntry(state), state);
+  await writeState({
+    ...state,
+    entries: {
+      ...(state.entries ?? {}),
+      [installBinPath]: nextEntry,
+    },
+  });
+}
+
 async function markChecked(now = new Date()) {
-  await writeState({ lastCheckedDate: todayStamp(now) });
+  await writeCurrentInstallEntry((current, state) => {
+    return {
+      policy: current?.policy ?? 'daily',
+      lastCheckedDate: todayStamp(now),
+    };
+  });
+}
+
+async function disableStartupUpdateForCurrentInstall() {
+  await writeCurrentInstallEntry((current, state) => {
+    return {
+      policy: 'disabled',
+      lastCheckedDate:
+        current?.lastCheckedDate
+        ?? state.lastCheckedDate,
+    };
+  });
+}
+
+async function enableDailyStartupUpdateForCurrentInstall() {
+  await writeCurrentInstallEntry((current, state) => {
+    return {
+      policy: 'daily',
+      lastCheckedDate:
+        current?.lastCheckedDate
+        ?? state.lastCheckedDate,
+    };
+  });
 }
 
 export async function shouldRunStartupUpdateCheck(argv: string[], now = new Date()) {
@@ -87,7 +167,22 @@ export async function shouldRunStartupUpdateCheck(argv: string[], now = new Date
   }
 
   const state = await readState();
-  return state.lastCheckedDate !== todayStamp(now);
+  const currentEntry = getCurrentInstallEntry(state);
+  if (currentEntry?.policy === 'disabled') {
+    return false;
+  }
+  if (currentEntry?.policy === 'daily') {
+    return readCurrentInstallLastCheckedDate(state) !== todayStamp(now);
+  }
+
+  const selfInstall = await inspectSelfInstall();
+  if (!shouldEnableStartupUpdateForInstallMethod(selfInstall.installMethod)) {
+    await disableStartupUpdateForCurrentInstall();
+    return false;
+  }
+
+  await enableDailyStartupUpdateForCurrentInstall();
+  return readCurrentInstallLastCheckedDate(state) !== todayStamp(now);
 }
 
 export function shouldEnableStartupUpdateForInstallMethod(installMethod: SelfInstallMethod) {
@@ -234,9 +329,6 @@ export async function maybeRunStartupUpdatePrompt(argv: string[]): Promise<Start
   }
 
   const selfStatus = await inspectSelfStatus();
-  if (!shouldEnableStartupUpdateForInstallMethod(selfStatus.installMethod)) {
-    return { kind: 'skipped' };
-  }
 
   const skillsStatus = await inspectSkillsStatus();
   if (!hasPendingUpdates(selfStatus, skillsStatus)) {
