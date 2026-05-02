@@ -9,13 +9,21 @@
 
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
 import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
+import { commandOutput } from '../../../lib/run-npm.js';
 import { startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
 
 const SYNC_LOADING_DELAY_MS = 1200;
 const SYNC_LOADING_UPDATE_MS = 5000;
+const LOCAL_CLI_PACKAGE_JSON_PATH = 'node_modules/@nocobase/cli/package.json';
+const DOCKER_CLI_PACKAGE_JSON_PATH = '/opt/nb/node_modules/@nocobase/cli/package.json';
+const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
+const DEFAULT_DOCKER_VERSION = 'alpha';
 
 function formatActionLabel(action: 'installed' | 'updated' | 'removed' | 'skipped') {
   switch (action) {
@@ -28,6 +36,105 @@ function formatActionLabel(action: 'installed' | 'updated' | 'removed' | 'skippe
     case 'skipped':
       return pc.dim('skipped');
   }
+}
+
+function trimValue(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text || undefined;
+}
+
+function normalizeDockerPlatform(value: unknown): string | undefined {
+  const text = trimValue(value);
+  if (!text || text === 'auto') {
+    return undefined;
+  }
+  if (text === 'linux/amd64' || text === 'linux/arm64') {
+    return text;
+  }
+  return undefined;
+}
+
+function normalizePluginRegistryVersion(version: string): string {
+  const normalized = version.trim();
+  const match = normalized.match(/^(.+-beta\.\d+)\.\d{8,}$/);
+  if (match) {
+    return match[1];
+  }
+  return normalized;
+}
+
+async function parseVersionFromPackageJson(content: string, sourceLabel: string): Promise<string> {
+  let parsed: { version?: unknown };
+  try {
+    parsed = JSON.parse(content) as { version?: unknown };
+  } catch {
+    throw new Error(`Failed to parse ${sourceLabel}.`);
+  }
+
+  const version = trimValue(parsed.version);
+  if (!version) {
+    throw new Error(`Missing version in ${sourceLabel}.`);
+  }
+  return version;
+}
+
+async function resolveLocalAppVersion(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): Promise<string> {
+  const packageJsonPath = path.join(runtime.projectRoot, LOCAL_CLI_PACKAGE_JSON_PATH);
+  let content: string;
+  try {
+    content = await readFile(packageJsonPath, 'utf8');
+  } catch {
+    throw new Error(`Missing ${LOCAL_CLI_PACKAGE_JSON_PATH} for env "${runtime.envName}" at ${packageJsonPath}.`);
+  }
+  return await parseVersionFromPackageJson(content, packageJsonPath);
+}
+
+async function resolveDockerAppVersion(runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>): Promise<string> {
+  const config = runtime.env.config ?? {};
+  const imageRef = `${trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY}:${trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION}`;
+  const args = [
+    'run',
+    '--rm',
+    '--network',
+    runtime.workspaceName,
+  ];
+  const dockerPlatform = normalizeDockerPlatform(config.dockerPlatform);
+  if (dockerPlatform) {
+    args.push('--platform', dockerPlatform);
+  }
+  args.push(
+    '--entrypoint',
+    'node',
+    imageRef,
+    '-p',
+    `JSON.stringify(require(${JSON.stringify(DOCKER_CLI_PACKAGE_JSON_PATH)}).version)`,
+  );
+
+  let output: string;
+  try {
+    output = await commandOutput('docker', args, {
+      errorName: 'docker run',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Missing ${DOCKER_CLI_PACKAGE_JSON_PATH} for env "${runtime.envName}" inside Docker image ${imageRef}. ${message}`);
+  }
+
+  const version = trimValue(output.replace(/^"+|"+$/g, ''));
+  if (!version) {
+    throw new Error(`Missing version in ${DOCKER_CLI_PACKAGE_JSON_PATH} for env "${runtime.envName}" inside Docker image ${imageRef}.`);
+  }
+  return version;
+}
+
+async function resolveManagedAppVersion(runtime: ManagedAppRuntime): Promise<string> {
+  if (runtime.kind === 'local') {
+    return await resolveLocalAppVersion(runtime);
+  }
+  if (runtime.kind === 'docker') {
+    return await resolveDockerAppVersion(runtime);
+  }
+  throw new Error(`Env "${runtime.envName}" does not support automatic app version detection.`);
 }
 
 export default class LicensePluginsSync extends Command {
@@ -61,7 +168,8 @@ export default class LicensePluginsSync extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsSync);
     const runtime = await requireLicenseRuntime(flags.env);
-    const version = String(flags.version ?? this.config.pjson.version ?? 'latest').trim() || 'latest';
+    const version = trimValue(flags.version) || await resolveManagedAppVersion(runtime);
+    const registryVersion = normalizePluginRegistryVersion(version);
     const shouldStreamLogs = !flags.json && Boolean(flags.verbose);
     const pluginStoragePath = resolvePluginStoragePath(runtime.env.storagePath);
     const shouldShowLoading = !flags.json && !flags.verbose;
@@ -74,7 +182,10 @@ export default class LicensePluginsSync extends Command {
             : `Commercial plugin sync for env "${runtime.envName}"`,
         ),
       );
-      this.log(pc.dim(`Version: ${version}`));
+      this.log(pc.dim(`App version: ${version}`));
+      if (registryVersion !== version) {
+        this.log(pc.dim(`Download version: ${registryVersion}`));
+      }
       this.log(pc.dim(`Plugin storage path: ${pluginStoragePath}`));
     }
 
@@ -107,7 +218,7 @@ export default class LicensePluginsSync extends Command {
     try {
       result = await syncLicensedPlugins(runtime, {
         pkgUrl: flags['pkg-url'],
-        version,
+        version: registryVersion,
         dryRun: Boolean(flags['dry-run']),
         onProgress: shouldStreamLogs
           ? async (detail) => {
@@ -136,6 +247,7 @@ export default class LicensePluginsSync extends Command {
       kind: runtime.kind,
       dryRun: Boolean(flags['dry-run']),
       version,
+      registryVersion,
       ...result,
     };
 
