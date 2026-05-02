@@ -9,10 +9,9 @@
 
 import net from 'node:net';
 import path from 'node:path';
-import { afterEach, beforeEach, test, expect } from 'vitest';
+import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
 import { resolveCliHomeRoot, resolveEnvRelativePath, resolveEnvRoot } from '../lib/cli-home.js';
-import { validateAvailableTcpPort } from '../lib/prompt-validators.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
 
@@ -496,33 +495,46 @@ test('install resolves an available app port default when the preferred port is 
 
 test('install seeds app port initial values unless the user provided --app-port', async () => {
   const installStatics = Install as unknown as InstallStatics;
+  const resolveAvailableDefaultPort = vi
+    .spyOn(Install as unknown as {
+      resolveAvailableDefaultPort: (
+        defaultPort: string,
+        options?: { label?: string; warn?: boolean },
+      ) => Promise<string>;
+    }, 'resolveAvailableDefaultPort')
+    .mockResolvedValueOnce('61522');
 
-  const initialValues = await installStatics.buildAppPromptInitialValues({
-    envName: 'demo',
-    flags: {},
-  });
-  expect(initialValues.appRootPath).toBe('./demo/source/');
-  expect(initialValues.storagePath).toBe('./demo/storage/');
-  expect(typeof initialValues.appPort).toBe('string');
-  expect(await validateAvailableTcpPort(String(initialValues.appPort))).toBe(undefined);
-  expect(await installStatics.buildAppPromptInitialValues({
-    envName: 'demo',
-    flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
-  })).toEqual({});
+  try {
+    const initialValues = await installStatics.buildAppPromptInitialValues({
+      envName: 'demo',
+      flags: {},
+    });
+    expect(initialValues.appRootPath).toBe('./demo/source/');
+    expect(initialValues.storagePath).toBe('./demo/storage/');
+    expect(initialValues.appPort).toBe('61522');
+    expect(resolveAvailableDefaultPort).toHaveBeenCalledWith('13000', {
+      label: 'Default app port',
+      warn: true,
+    });
+    expect(await installStatics.buildAppPromptInitialValues({
+      envName: 'demo',
+      flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
+    })).toEqual({});
+  } finally {
+    resolveAvailableDefaultPort.mockRestore();
+  }
 });
 
 test('install seeds built-in database host port for npm/git sources when the default port is busy', async () => {
   const installStatics = Install as unknown as InstallStatics;
-  const server = net.createServer();
-  let serverStarted = false;
-
-  await new Promise<void>((resolve) => {
-    server.once('error', () => resolve());
-    server.listen(54321, '127.0.0.1', () => {
-      serverStarted = true;
-      resolve();
-    });
-  });
+  const resolveAvailableDefaultPort = vi
+    .spyOn(Install as unknown as {
+      resolveAvailableDefaultPort: (
+        defaultPort: string,
+        options?: { label?: string; warn?: boolean },
+      ) => Promise<string>;
+    }, 'resolveAvailableDefaultPort')
+    .mockResolvedValueOnce('61523');
 
   try {
     const initialValues = await installStatics.buildDbPromptInitialValues({
@@ -535,20 +547,13 @@ test('install seeds built-in database host port for npm/git sources when the def
         dbDialect: 'kingbase',
       },
     });
-    expect(initialValues.dbPort).not.toBe('54321');
-    expect(await validateAvailableTcpPort(String(initialValues.dbPort))).toBe(undefined);
+    expect(initialValues.dbPort).toBe('61523');
+    expect(resolveAvailableDefaultPort).toHaveBeenCalledWith('54321', {
+      label: 'Default kingbase port',
+      warn: true,
+    });
   } finally {
-    if (serverStarted) {
-      await new Promise<void>((resolve, reject) => {
-        server.close((error) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-          resolve();
-        });
-      });
-    }
+    resolveAvailableDefaultPort.mockRestore();
   }
 });
 
