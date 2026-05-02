@@ -63,7 +63,7 @@ function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
 }
 
 const getLoggerFilePath = (...paths) => {
-  return path.resolve(process.env.LOGGER_BASE_PATH || storagePathJoin('logs'), ...paths);
+  return path.resolve(storagePathJoin('logs'), ...paths);
 };
 
 const logger = createSystemLogger({

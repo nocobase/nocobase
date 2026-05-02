@@ -190,14 +190,6 @@ Opções disponíveis:
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-## LOGGER_BASE_PATH
-
-Caminho de armazenamento dos logs em arquivo. O padrão é `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ## LOGGER_LEVEL
 
 Nível de log de saída. No ambiente de desenvolvimento o padrão é `debug`; em produção, `info`. Opções disponíveis:
