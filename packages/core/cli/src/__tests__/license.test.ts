@@ -1803,6 +1803,146 @@ test('license plugins sync keeps the raw version in output and shortens the regi
   }
 });
 
+test('license plugins sync normalizes rc app version to release registry version', async () => {
+  const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+  const licenseDir = path.join(storagePath, '.license');
+  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
+
+  try {
+    await mkdir(licenseDir, { recursive: true });
+    await mkdir(cliPackageDir, { recursive: true });
+    await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
+    await writeFile(
+      path.join(cliPackageDir, 'package.json'),
+      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-rc.20260501164635' }),
+    );
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'app1',
+      source: 'npm',
+      projectRoot: path.join(storagePath, 'app'),
+      workspaceName: 'nb-demo',
+      env: {
+        config: {},
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          NODE_MODULES_PATH: path.join(storagePath, 'node_modules'),
+        },
+      },
+    });
+    mocks.keyDecrypt.mockReturnValue(JSON.stringify({
+      accessKeyId: 'ak',
+      accessKeySecret: 'sk',
+      service: {
+        domain: 'https://pkg.example.com/',
+      },
+    }));
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicensePluginsSync.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'app1',
+          json: true,
+          'dry-run': true,
+          version: undefined,
+          verbose: false,
+        },
+      })),
+      config: {
+        pjson: {
+          version: '2.1.0-rc',
+        },
+      },
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicensePluginsSync.prototype.run.call(command);
+
+    expect(JSON.parse(String(log.mock.calls[0]?.[0] ?? ''))).toMatchObject({
+      version: '2.1.0-rc.20260501164635',
+      registryVersion: '2.1.0',
+    });
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('license plugins sync normalizes alpha app version to alpha registry version', async () => {
+  const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+  const licenseDir = path.join(storagePath, '.license');
+  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
+
+  try {
+    await mkdir(licenseDir, { recursive: true });
+    await mkdir(cliPackageDir, { recursive: true });
+    await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
+    await writeFile(
+      path.join(cliPackageDir, 'package.json'),
+      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-alpha.24.20260501164635' }),
+    );
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'app1',
+      source: 'npm',
+      projectRoot: path.join(storagePath, 'app'),
+      workspaceName: 'nb-demo',
+      env: {
+        config: {},
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          NODE_MODULES_PATH: path.join(storagePath, 'node_modules'),
+        },
+      },
+    });
+    mocks.keyDecrypt.mockReturnValue(JSON.stringify({
+      accessKeyId: 'ak',
+      accessKeySecret: 'sk',
+      service: {
+        domain: 'https://pkg.example.com/',
+      },
+    }));
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicensePluginsSync.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'app1',
+          json: true,
+          'dry-run': true,
+          version: undefined,
+          verbose: false,
+        },
+      })),
+      config: {
+        pjson: {
+          version: '2.1.0-alpha.24',
+        },
+      },
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicensePluginsSync.prototype.run.call(command);
+
+    expect(JSON.parse(String(log.mock.calls[0]?.[0] ?? ''))).toMatchObject({
+      version: '2.1.0-alpha.24.20260501164635',
+      registryVersion: '2.1.0-alpha.24',
+    });
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
 test('license plugins clean previews downloaded commercial plugins', async () => {
   const { default: LicensePluginsClean } = await import('../commands/license/plugins/clean.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));

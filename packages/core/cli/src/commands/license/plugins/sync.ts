@@ -56,9 +56,17 @@ function normalizeDockerPlatform(value: unknown): string | undefined {
 
 function normalizePluginRegistryVersion(version: string): string {
   const normalized = version.trim();
-  const match = normalized.match(/^(.+-beta\.\d+)\.\d{8,}$/);
-  if (match) {
-    return match[1];
+  const rcMatch = normalized.match(/^(.+)-rc\.\d{8,}$/);
+  if (rcMatch) {
+    return rcMatch[1];
+  }
+  const betaMatch = normalized.match(/^(.+-beta\.\d+)\.\d{8,}$/);
+  if (betaMatch) {
+    return betaMatch[1];
+  }
+  const alphaMatch = normalized.match(/^(.+-alpha\.\d+)\.\d{8,}$/);
+  if (alphaMatch) {
+    return alphaMatch[1];
   }
   return normalized;
 }
