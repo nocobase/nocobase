@@ -1107,6 +1107,39 @@ test('logs reads docker app logs', async () => {
   ]]);
 });
 
+test('logs defaults to recent docker app logs without follow', async () => {
+  const { default: Logs } = await import('../commands/app/logs.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {},
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      tail: 100,
+    },
+  });
+
+  await Logs.prototype.run.call(command);
+
+  expect(mocks.printInfo.mock.calls).toEqual([
+    ['Showing recent logs for "docker-local".'],
+  ]);
+  expect(mocks.run.mock.calls).toEqual([[
+    'docker',
+    ['logs', '--tail', '100', 'nb-demo-docker-local-app'],
+    {
+      errorName: 'docker logs',
+      stdio: 'inherit',
+    },
+  ]]);
+});
+
 test('logs explains when the requested env does not exist', async () => {
   const { default: Logs } = await import('../commands/app/logs.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue(undefined);
@@ -1658,6 +1691,46 @@ test('db logs routes built-in database envs to docker logs', async () => {
   expect(mocks.run.mock.calls).toEqual([[
     'docker',
     ['logs', '--tail', '50', 'nb-demo-app1-postgres'],
+    {
+      errorName: 'docker logs',
+      stdio: 'inherit',
+    },
+  ]]);
+});
+
+test('db logs defaults to recent built-in database logs without follow', async () => {
+  const { default: DbLogs } = await import('../commands/db/logs.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app1',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: true,
+        dbDialect: 'postgres',
+        dbPort: 5432,
+      },
+    },
+  });
+  mocks.buildDockerDbContainerName.mockReturnValue('nb-demo-app1-postgres');
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
+      tail: 100,
+    },
+  });
+
+  await DbLogs.prototype.run.call(command);
+
+  expect(mocks.printInfo.mock.calls).toEqual([
+    ['Showing recent built-in database logs for "app1".'],
+  ]);
+  expect(mocks.run.mock.calls).toEqual([[
+    'docker',
+    ['logs', '--tail', '100', 'nb-demo-app1-postgres'],
     {
       errorName: 'docker logs',
       stdio: 'inherit',
