@@ -11,7 +11,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
-import { resolveProjectCwd, run } from '../lib/run-npm.js';
+import { commandOutputViaFile, resolveProjectCwd, run } from '../lib/run-npm.js';
 
 test('run preserves arguments containing spaces', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-'));
@@ -26,6 +26,26 @@ test('run preserves arguments containing spaces', async () => {
 
   try {
     await run(process.execPath, [script, 'INIT_ROOT_NICKNAME=Super Admin']);
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('commandOutputViaFile captures long stdout without truncation', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-output-file-'));
+  const script = path.join(dir, 'print-long-json.cjs');
+  const payload = Array.from({ length: 300 }, (_, index) => ({
+    name: `skill-${index}`,
+    value: 'x'.repeat(80),
+  }));
+  await fsp.writeFile(
+    script,
+    `process.stdout.write(${JSON.stringify(JSON.stringify(payload))});`,
+  );
+
+  try {
+    const output = await commandOutputViaFile(process.execPath, [script]);
+    expect(JSON.parse(output)).toEqual(payload);
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }

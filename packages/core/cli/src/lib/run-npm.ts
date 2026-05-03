@@ -17,6 +17,8 @@
  */
 
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import os from 'node:os';
 import type { ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import spawn from 'cross-spawn';
@@ -212,6 +214,69 @@ export function commandOutput(
       reject(new Error(details ? `${label} exited with code ${code}: ${details}` : `${label} exited with code ${code}`));
     });
   });
+}
+
+async function readCommandOutputFile(filePath: string): Promise<string> {
+  try {
+    return await fsp.readFile(filePath, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+export async function commandOutputViaFile(
+  name: string,
+  args: string[],
+  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
+): Promise<string> {
+  const cwd = resolveCwd(options?.cwd);
+  const label = options?.errorName ?? name;
+  const command = resolveCommandName(name);
+  const captureDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-output-'));
+  const stdoutPath = path.join(captureDir, 'stdout.log');
+  const stderrPath = path.join(captureDir, 'stderr.log');
+  const stdoutHandle = await fsp.open(stdoutPath, 'w');
+  const stderrHandle = await fsp.open(stderrPath, 'w');
+
+  try {
+    const result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
+      const child = spawn(command, [...args], {
+        cwd,
+        env: {
+          ...process.env,
+          ...options?.env,
+        },
+        stdio: ['ignore', stdoutHandle.fd, stderrHandle.fd],
+        windowsHide: process.platform === 'win32',
+      });
+
+      child.once('error', reject);
+      child.once('close', (code, signal) => {
+        resolve({ code, signal });
+      });
+    });
+
+    await stdoutHandle.close();
+    await stderrHandle.close();
+
+    const stdout = await readCommandOutputFile(stdoutPath);
+    const stderr = await readCommandOutputFile(stderrPath);
+
+    if (result.code === 0) {
+      return stdout.trim();
+    }
+    if (result.signal) {
+      throw new Error(`${label} exited due to signal ${result.signal}`);
+    }
+
+    const details = stderr.trim() || stdout.trim();
+    throw new Error(
+      details ? `${label} exited with code ${result.code}: ${details}` : `${label} exited with code ${result.code}`,
+    );
+  } finally {
+    await Promise.allSettled([stdoutHandle.close(), stderrHandle.close()]);
+    await fsp.rm(captureDir, { recursive: true, force: true });
+  }
 }
 
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */

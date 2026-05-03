@@ -11,7 +11,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { resolveCliHomeDir } from './cli-home.js';
 import { compareVersions } from './self-manager.js';
-import { commandOutput, run } from './run-npm.js';
+import { commandOutput, commandOutputViaFile, run } from './run-npm.js';
 
 export const NOCOBASE_SKILLS_SOURCE = 'nocobase/skills';
 export const NOCOBASE_SKILLS_PACKAGE_NAME = '@nocobase/skills';
@@ -118,7 +118,7 @@ async function writeManagedSkillsState(workspaceRoot: string, state: ManagedSkil
 export async function listGlobalSkills(options: SkillsManagerOptions = {}): Promise<InstalledSkill[]> {
   const globalRoot = resolveSkillsRoot(options);
   await ensureSkillsWorkspaceRoot(globalRoot);
-  const output = await (options.commandOutputFn ?? commandOutput)('npx', ['-y', 'skills', 'list', '-g', '--json'], {
+  const output = await (options.commandOutputFn ?? commandOutputViaFile)('npx', ['-y', 'skills', 'list', '-g', '--json'], {
     cwd: globalRoot,
     errorName: 'skills list',
   });
