@@ -20,6 +20,9 @@ RUN cd /app \
 
 FROM node:22-bookworm-slim
 
+ARG CNA_VERSION
+ENV NB_SKIP_STARTUP_UPDATE=1
+
 # COPY ./sources.list /etc/apt/sources.list
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && case "${dpkgArch##*-}" in \
@@ -27,13 +30,17 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   ppc64el) ARCH='ppc64le';; \
   s390x) ARCH='s390x';; \
   arm64) ARCH='arm64';; \
-  armhf) ARCH='armv7l';; \
-  i386) ARCH='x86';; \
-  *) echo "unsupported architecture"; exit 1 ;; \
-  esac \
+    armhf) ARCH='armv7l';; \
+    i386) ARCH='x86';; \
+    *) echo "unsupported architecture"; exit 1 ;; \
+    esac \
   && set -ex \
   # libatomic1 for arm
-  && apt-get update && apt-get install -y nginx libaio1
+  && apt-get update && apt-get install -y nginx libaio1 \
+  && npm install -g @nocobase/cli@${CNA_VERSION} \
+  && npm cache clean --force \
+  && rm -rf /root/.npm \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz

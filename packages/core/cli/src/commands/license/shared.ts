@@ -18,6 +18,7 @@ import {
 } from '../../lib/db-connection-check.ts';
 import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
+import { buildRuntimeEnvVars } from '../../lib/runtime-env-vars.js';
 import { resolveLicensePkgUrlFromConfig } from '../../lib/cli-config.js';
 import { commandOutput } from '../../lib/run-npm.js';
 import { appUrl } from '../env/shared.js';
@@ -234,15 +235,16 @@ export async function withLicenseEnvVars<T>(
 }
 
 async function withLicenseEnv<T>(runtime: ManagedAppRuntime, task: () => Promise<T>): Promise<T> {
-  return await withLicenseEnvVars(runtime.env.envVars, task);
+  return await withLicenseEnvVars(await buildRuntimeEnvVars(runtime), task);
 }
 
 export async function getCurrentLicenseEnv(runtime: ManagedAppRuntime): Promise<any> {
   if (runtime.kind === 'docker') {
+    const envVars = await buildRuntimeEnvVars(runtime);
     const payload = await runDockerLicenseJsonCommand(runtime, [
       'license',
       'env',
-      ...buildDockerLicenseDbFlagArgs(runtime.env.envVars),
+      ...buildDockerLicenseDbFlagArgs(envVars),
     ]);
     return payload?.env;
   }
@@ -266,10 +268,11 @@ export async function generateValidatedInstanceIdFromEnvVars(envVars: Record<str
 async function generateInstanceIdForDockerRuntime(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
 ): Promise<string> {
+  const envVars = await buildRuntimeEnvVars(runtime);
   const payload = await runDockerLicenseJsonCommand(runtime, [
     'license',
     'generate-id',
-    ...buildDockerLicenseDbFlagArgs(runtime.env.envVars),
+    ...buildDockerLicenseDbFlagArgs(envVars),
   ]) as { instanceId?: unknown };
 
   const instanceId = trimValue(payload.instanceId);
@@ -285,7 +288,7 @@ export async function generateInstanceIdForRuntime(runtime: ManagedAppRuntime): 
   }
 
   if (runtime.kind === 'local') {
-    return await generateValidatedInstanceIdFromEnvVars(runtime.env.envVars);
+    return await generateValidatedInstanceIdFromEnvVars(await buildRuntimeEnvVars(runtime));
   }
 
   throw new Error(`Env "${runtime.envName}" does not support automatic instance ID generation.`);
