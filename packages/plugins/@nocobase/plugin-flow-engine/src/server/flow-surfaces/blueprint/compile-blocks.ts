@@ -10,10 +10,8 @@
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
-import {
-  mergeFlowSurfaceDefaultBlockActions,
-  type FlowSurfaceDefaultBlockActionDescriptor,
-} from '../default-block-actions';
+import { mergeFlowSurfaceDefaultBlockActions } from '../default-block-actions';
+import type { FlowSurfaceDefaultBlockActionDescriptor } from '../default-block-actions';
 import {
   assertFlowSurfaceConcreteDefaultFilterItem,
   backfillFlowSurfaceFilterActionDefaultFilter,
@@ -24,8 +22,9 @@ import {
   FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
   attachFlowSurfaceApplyBlueprintPopupDefaults,
   buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
-  type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
 } from './defaults';
+import type { FlowSurfaceApplyBlueprintPopupDefaultsMetadata } from './defaults';
+import { normalizeBlockHiddenPopupSettings } from '../hidden-popup-contract';
 import type { FlowSurfaceResourceBindingKey } from '../types';
 import type {
   FlowSurfaceApplyBlueprintActionSpec,
@@ -185,6 +184,34 @@ function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
     throwBadRequest(`${context}.layout is not supported; layout is only allowed on tabs[] and popup`);
   }
+}
+
+function normalizeApplyBlueprintCalendarPopupSettings(
+  settings: Record<string, any>,
+  blockContext: string,
+  defaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+) {
+  return normalizeBlockHiddenPopupSettings(
+    settings,
+    blockContext,
+    ['quickCreatePopup', 'eventPopup'],
+    defaultsMetadata,
+    throwBadRequest,
+  );
+}
+
+function normalizeApplyBlueprintKanbanPopupSettings(
+  settings: Record<string, any>,
+  blockContext: string,
+  defaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+) {
+  return normalizeBlockHiddenPopupSettings(
+    settings,
+    blockContext,
+    ['quickCreatePopup', 'cardPopup'],
+    defaultsMetadata,
+    throwBadRequest,
+  );
 }
 
 function assertApplyBlueprintFieldsLayoutHost(block: Record<string, any>, context: string) {
@@ -1261,6 +1288,11 @@ function compileBlocks(
       type: blockType,
       settings,
     });
+    if (blockType === 'calendar') {
+      settings = normalizeApplyBlueprintCalendarPopupSettings(settings, blockContext, popupDefaultsMetadata);
+    } else if (blockType === 'kanban') {
+      settings = normalizeApplyBlueprintKanbanPopupSettings(settings, blockContext, popupDefaultsMetadata);
+    }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('applyBlueprint', block.defaultFilter, {
       blockType,
