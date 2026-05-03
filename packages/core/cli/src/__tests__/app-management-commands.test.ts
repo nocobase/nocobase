@@ -578,6 +578,50 @@ test('start restores the built-in database before launching the app', async () =
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
 });
 
+test('start restores the built-in database with docker.container-prefix instead of workspaceName', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app528',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    workspaceName: 'nocobase-team',
+    dockerContainerPrefix: 'nb-team',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+      config: {
+        builtinDb: true,
+        dbDialect: 'postgres',
+        dbHost: '127.0.0.1',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+        builtinDbImage: 'postgres:16',
+        storagePath: './local/storage',
+      },
+    },
+  });
+  mocks.commandSucceeds.mockResolvedValueOnce(true);
+  mocks.dockerContainerExists.mockResolvedValueOnce(true);
+  mocks.startDockerContainer.mockResolvedValueOnce('started');
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app528',
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  expect(mocks.startDockerContainer.mock.calls[0]).toEqual([
+    'nb-team-app528-postgres',
+    { stdio: 'ignore' },
+  ]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
+});
+
 test('start restores saved npm/git source files before launching when the app root is missing', async () => {
   const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
