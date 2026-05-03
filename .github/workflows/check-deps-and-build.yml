@@ -40,7 +40,6 @@ jobs:
       status: ${{ steps.check.outputs.status }}
     steps:
       - uses: actions/create-github-app-token@v1
-        continue-on-error: true
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
@@ -51,7 +50,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Checkout pro-plugins
-        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
@@ -61,7 +59,6 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Switch pro-plugins branch
-        continue-on-error: true
         run: |
           cd packages/pro-plugins
           if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
@@ -78,18 +75,22 @@ jobs:
           TARGET_BRANCH="${{ github.base_ref || github.ref_name }}"
           case "$TARGET_BRANCH" in
             develop)
-              echo "plugins=${{ needs.get-plugins.outputs.alpha-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              plugins='${{ needs.get-plugins.outputs.alpha-plugins || '[]' }}'
               ;;
             next)
-              echo "plugins=${{ needs.get-plugins.outputs.beta-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              plugins='${{ needs.get-plugins.outputs.beta-plugins || '[]' }}'
               ;;
             *)
-              echo "plugins=${{ needs.get-plugins.outputs.rc-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              plugins='${{ needs.get-plugins.outputs.rc-plugins || '[]' }}'
               ;;
           esac
+          {
+            echo "plugins<<PLUGIN_SET_EOF"
+            echo "$plugins"
+            echo "PLUGIN_SET_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Clone standalone plugin repos
-        continue-on-error: true
         shell: bash
         run: |
           PLUGINS='${{ steps.plugin-set.outputs.plugins }}'
@@ -102,7 +103,7 @@ jobs:
               echo "Cloning $repo..."
               git clone -b ${{ github.base_ref || github.ref_name }} \
                 https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git \
-                packages/pro-plugins/@nocobase/$repo 2>/dev/null || true
+                packages/pro-plugins/@nocobase/$repo
             fi
           done
 
@@ -190,7 +191,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
-        continue-on-error: true
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
@@ -201,7 +201,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Checkout pro-plugins
-        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
@@ -211,7 +210,6 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Switch pro-plugins branch
-        continue-on-error: true
         run: |
           cd packages/pro-plugins
           if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
@@ -228,18 +226,22 @@ jobs:
           TARGET_BRANCH="${{ github.base_ref || github.ref_name }}"
           case "$TARGET_BRANCH" in
             develop)
-              echo "plugins=${{ needs.get-plugins.outputs.alpha-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              plugins='${{ needs.get-plugins.outputs.alpha-plugins || '[]' }}'
               ;;
             next)
-              echo "plugins=${{ needs.get-plugins.outputs.beta-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              plugins='${{ needs.get-plugins.outputs.beta-plugins || '[]' }}'
               ;;
             *)
-              echo "plugins=${{ needs.get-plugins.outputs.rc-plugins || '[]' }}" >> "$GITHUB_OUTPUT"
+              plugins='${{ needs.get-plugins.outputs.rc-plugins || '[]' }}'
               ;;
           esac
+          {
+            echo "plugins<<PLUGIN_SET_EOF"
+            echo "$plugins"
+            echo "PLUGIN_SET_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Clone standalone plugin repos
-        continue-on-error: true
         shell: bash
         run: |
           PLUGINS='${{ steps.plugin-set.outputs.plugins }}'
@@ -250,7 +252,7 @@ jobs:
             if [[ ! -d "packages/pro-plugins/@nocobase/$repo" ]]; then
               git clone -b ${{ github.base_ref || github.ref_name }} \
                 https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git \
-                packages/pro-plugins/@nocobase/$repo 2>/dev/null || true
+                packages/pro-plugins/@nocobase/$repo
             fi
           done
 
