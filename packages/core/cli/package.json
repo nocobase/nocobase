@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-alpha.26",
+  "version": "2.1.0-alpha.27",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
@@ -95,9 +95,9 @@
   },
   "devDependencies": {
     "@types/node": "^18.19.130",
-    "vitest": "^1.5.0",
     "tsx": "^4.20.6",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^1.5.0"
   },
   "repository": {
     "type": "git",
