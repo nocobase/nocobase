@@ -16,6 +16,7 @@ import {
   getEffectiveCliConfigValue,
 } from './cli-config.js';
 import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from './run-npm.js';
+import { buildRuntimeEnvVars } from './runtime-env-vars.js';
 
 const DOCKER_APP_WORKDIR = '/app/nocobase';
 
@@ -186,9 +187,10 @@ export async function runLocalNocoBaseCommand(
   args: string[],
   options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
 ): Promise<void> {
+  const envVars = await buildRuntimeEnvVars(runtime);
   await runNocoBaseCommand(args, {
     cwd: runtime.projectRoot,
-    env: runtime.env.envVars,
+    env: envVars,
     stdio: options?.stdio,
   });
 }

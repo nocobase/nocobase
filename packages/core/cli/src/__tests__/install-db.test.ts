@@ -355,7 +355,6 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     builtinDb: true,
     dbDialect: 'postgres',
     builtinDbImage: 'registry.example.com/postgres:16',
-    dbHost: 'demo-postgres',
     dbPort: '5432',
     dbDatabase: 'nocobase',
     dbUser: 'nocobase',
@@ -366,6 +365,41 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     rootNickname: 'Admin',
     accessToken: 'token-123',
   });
+});
+
+test('install saved env config omits dbHost for builtin local databases and keeps dbPort', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig({
+    envName: 'demo',
+    appResults: {
+      appPort: '13080',
+      appKey: 'app-key-123',
+      timeZone: 'Asia/Shanghai',
+      storagePath: './storage/demo',
+    },
+    downloadResults: {
+      source: 'git',
+      version: 'alpha',
+    },
+    dbResults: {
+      builtinDb: true,
+      dbDialect: 'postgres',
+      builtinDbImage: 'registry.example.com/postgres:16',
+      dbHost: '127.0.0.1',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    },
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13080/api',
+      authType: 'oauth',
+    },
+  });
+
+  expect(envConfig.dbHost).toBe(undefined);
+  expect(envConfig.dbPort).toBe('5432');
 });
 
 test('install saved env config records when an env uses an external database', () => {
@@ -462,6 +496,8 @@ test('install saved env config records docker download settings for later upgrad
   expect(envConfig.downloadVersion).toBe('alpha');
   expect(envConfig.dockerRegistry).toBe('nocobase/nocobase');
   expect(envConfig.dockerPlatform).toBe('linux/amd64');
+  expect(envConfig.dbHost).toBe(undefined);
+  expect(envConfig.dbPort).toBe(undefined);
 });
 
 test('install resolves an available app port default when the preferred port is busy', async () => {

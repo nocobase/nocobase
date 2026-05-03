@@ -349,8 +349,12 @@ export class Env {
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);
-    put('DB_HOST', this.config.dbHost);
-    put('DB_PORT', this.config.dbPort);
+    if (!this.config.builtinDb) {
+      put('DB_HOST', this.config.dbHost);
+      put('DB_PORT', this.config.dbPort);
+    } else if (String(this.config.source ?? '').trim() !== 'docker') {
+      put('DB_PORT', this.config.dbPort);
+    }
     put('DB_DATABASE', this.config.dbDatabase);
     put('DB_USER', this.config.dbUser);
     put('DB_PASSWORD', this.config.dbPassword);

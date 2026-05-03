@@ -11,6 +11,7 @@ import { Command, Flags } from '@oclif/core';
 import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import type { EnvConfigEntry } from '../../lib/auth-store.js';
+import { resolveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import {
   checkExternalDbConnection,
   formatDbCheckAddress,
@@ -152,7 +153,14 @@ async function resolveDbCheckInput(
     command.error(formatMissingManagedAppEnvMessage(envName));
   }
 
-  const dbConfig = resolveDbConfigFromFlags(flags, runtime!.env.config);
+  const envConfig = { ...runtime!.env.config };
+  if ((runtime!.kind === 'local' || runtime!.kind === 'docker') && runtime!.env.config.builtinDb) {
+    const builtinDbConnection = await resolveBuiltinDbConnection(runtime!);
+    envConfig.dbHost = builtinDbConnection.dbHost;
+    envConfig.dbPort = builtinDbConnection.dbPort;
+    envConfig.dbDialect = builtinDbConnection.dbDialect;
+  }
+  const dbConfig = resolveDbConfigFromFlags(flags, envConfig);
   validateDbConfigOrThrow(command, dbConfig, true);
   return {
     envName: runtime!.envName,

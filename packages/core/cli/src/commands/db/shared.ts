@@ -8,12 +8,12 @@
  */
 
 import {
-  buildDockerDbContainerName,
   dockerContainerExists,
   dockerContainerIsRunning,
   type ManagedAppRuntime,
   resolveManagedAppRuntime,
 } from '../../lib/app-runtime.js';
+import { resolveBuiltinDbConnection } from '../../lib/builtin-db.js';
 
 export type DbStatus = 'running' | 'stopped' | 'missing' | 'external' | 'http' | 'ssh';
 
@@ -58,18 +58,14 @@ export async function resolveDbRuntime(envName?: string): Promise<ResolvedDbRunt
   const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
 
   if ((runtime.kind === 'local' || runtime.kind === 'docker') && runtime.env.config.builtinDb) {
-    const containerName = buildDockerDbContainerName(
-      runtime.envName,
-      dbDialect,
-      runtime.dockerContainerPrefix || runtime.workspaceName,
-    );
+    const connection = await resolveBuiltinDbConnection(runtime);
     return {
       kind: 'builtin',
       envName: runtime.envName,
       source,
-      dbDialect,
-      containerName,
-      address: formatAddress(runtime.env.config.dbHost, runtime.env.config.dbPort, containerName),
+      dbDialect: connection.dbDialect,
+      containerName: connection.containerName,
+      address: formatAddress(connection.dbHost, connection.dbPort, connection.containerName),
       appRuntime: runtime,
     };
   }
