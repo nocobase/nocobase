@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => ({
   resolveManagedAppApiBaseUrl: vi.fn(),
   formatAppUrl: vi.fn(),
   removeEnv: vi.fn(),
+  upsertEnv: vi.fn(),
   startTask: vi.fn(),
   updateTask: vi.fn(),
   stopTask: vi.fn(),
@@ -187,6 +188,7 @@ vi.mock('../lib/auth-store.js', () => ({
   removeEnv: mocks.removeEnv,
   listEnvs: mocks.listEnvs,
   getEnv: mocks.getEnv,
+  upsertEnv: mocks.upsertEnv,
 }));
 
 vi.mock('../lib/api-client.js', () => ({
@@ -307,6 +309,7 @@ beforeEach(() => {
     currentEnv: 'default',
     hasEnvs: false,
   });
+  mocks.upsertEnv.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -2713,6 +2716,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
       '--no-build',
     ],
   ]]);
+  expect(mocks.upsertEnv).not.toHaveBeenCalled();
   expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
     [
       {
@@ -2764,6 +2768,75 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
   ]);
 });
 
+test('upgrade uses --version for local npm envs and saves it on success', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+      config: {
+        downloadVersion: 'alpha',
+        appRootPath: '/tmp/nocobase',
+        npmRegistry: 'https://registry.npmmirror.com',
+        devDependencies: true,
+        build: false,
+      },
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => 'ok',
+    })),
+  );
+  const runCommand = vi.fn(async () => ({ projectRoot: '/tmp/nocobase' }));
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+      version: 'beta',
+    },
+  }, runCommand);
+
+  await Upgrade.prototype.run.call(command);
+
+  expect(runCommand.mock.calls).toEqual([[
+    'source:download',
+    [
+      '-y',
+      '--no-intro',
+      '--source',
+      'npm',
+      '--replace',
+      '--version',
+      'beta',
+      '--output-dir',
+      '/tmp/nocobase',
+      '--npm-registry',
+      'https://registry.npmmirror.com',
+      '--dev-dependencies',
+      '--no-build',
+    ],
+  ]]);
+  expect(mocks.upsertEnv).toHaveBeenCalledWith(
+    'local',
+    {
+      downloadVersion: 'beta',
+      appRootPath: '/tmp/nocobase',
+      npmRegistry: 'https://registry.npmmirror.com',
+      devDependencies: true,
+      build: false,
+    },
+  );
+});
+
 test('upgrade skips download for local app-path envs and still restarts with quickstart', async () => {
   const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -2811,6 +2884,68 @@ test('upgrade skips download for local app-path envs and still restarts with qui
   ]]);
 });
 
+test('upgrade rejects --version for local app-path envs', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local-app',
+    source: 'local',
+    projectRoot: '/tmp/local-app',
+    env: {
+      baseUrl: 'http://127.0.0.1:14000/api',
+      appPort: 14000,
+      envVars: { APP_PORT: '14000' },
+      config: {
+        appRootPath: '/tmp/local-app',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local-app',
+      version: 'beta',
+    },
+  });
+
+  await expect(Upgrade.prototype.run.call(command)).rejects.toThrow(
+    /does not support `nb app upgrade --version`/i,
+  );
+});
+
+test('upgrade rejects --skip-code-update together with --version', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'alpha',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      version: 'beta',
+      'skip-code-update': true,
+    },
+  });
+
+  await expect(Upgrade.prototype.run.call(command)).rejects.toThrow(
+    /`--version` and `--skip-code-update` cannot be used together/i,
+  );
+});
+
 test('upgrade refreshes docker envs by pulling the image and recreating the container', async () => {
   const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -2819,6 +2954,8 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
     source: 'docker',
     containerName: 'nb-demo-docker-local-app',
     workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
     env: {
       baseUrl: 'http://127.0.0.1:13000/api',
       appPort: 13000,
@@ -2872,6 +3009,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
       'linux/arm64',
     ],
   ]]);
+  expect(mocks.upsertEnv).not.toHaveBeenCalled();
   expect(mocks.stopDockerContainer.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     { stdio: 'ignore' },
@@ -2923,6 +3061,89 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
   ]);
 });
 
+test('upgrade uses --version for docker envs and saves it on success', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        dockerPlatform: 'linux/arm64',
+        downloadVersion: 'alpha',
+        storagePath: '/tmp/storage/local',
+        appKey: 'app-key',
+        timezone: 'Asia/Shanghai',
+        dbDialect: 'postgres',
+        dbHost: 'nb-demo-postgres',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+      },
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => 'ok',
+    })),
+  );
+  const runCommand = vi.fn(async () => undefined);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      version: 'beta',
+    },
+  }, runCommand);
+
+  await Upgrade.prototype.run.call(command);
+
+  expect(runCommand.mock.calls).toEqual([[
+    'source:download',
+    [
+      '-y',
+      '--no-intro',
+      '--source',
+      'docker',
+      '--replace',
+      '--docker-registry',
+      'nocobase/nocobase',
+      '--version',
+      'beta',
+      '--docker-platform',
+      'linux/arm64',
+    ],
+  ]]);
+  expect(mocks.upsertEnv).toHaveBeenCalledWith(
+    'docker-local',
+    {
+      dockerRegistry: 'nocobase/nocobase',
+      dockerPlatform: 'linux/arm64',
+      downloadVersion: 'beta',
+      storagePath: '/tmp/storage/local',
+      appKey: 'app-key',
+      timezone: 'Asia/Shanghai',
+      dbDialect: 'postgres',
+      dbHost: 'nb-demo-postgres',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+    },
+  );
+});
+
 test('upgrade can restart docker envs without pulling a new image', async () => {
   const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -2931,6 +3152,8 @@ test('upgrade can restart docker envs without pulling a new image', async () => 
     source: 'docker',
     containerName: 'nb-demo-docker-local-app',
     workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
     env: {
       baseUrl: 'http://127.0.0.1:13000/api',
       appPort: 13000,
@@ -2970,6 +3193,7 @@ test('upgrade can restart docker envs without pulling a new image', async () => 
   await Upgrade.prototype.run.call(command);
 
   expect(runCommand.mock.calls.length).toBe(0);
+  expect(mocks.upsertEnv).not.toHaveBeenCalled();
   expect(mocks.stopDockerContainer.mock.calls).toEqual([[
     'nb-demo-docker-local-app',
     { stdio: 'ignore' },
@@ -2979,6 +3203,64 @@ test('upgrade can restart docker envs without pulling a new image', async () => 
     { stdio: 'ignore' },
   ]]);
   expect(mocks.run.mock.calls.length).toBe(0);
+});
+
+test('upgrade requires saved downloadVersion for managed npm envs when --version is omitted', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+      config: {
+        appRootPath: '/tmp/nocobase',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+    },
+  });
+
+  await expect(Upgrade.prototype.run.call(command)).rejects.toThrow(/does not have a saved `downloadVersion`/i);
+});
+
+test('upgrade does not save --version when local refresh fails', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+      config: {
+        downloadVersion: 'alpha',
+        appRootPath: '/tmp/nocobase',
+      },
+    },
+  });
+  const runCommand = vi.fn(async () => {
+    throw new Error('download failed');
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+      version: 'beta',
+    },
+  }, runCommand);
+
+  await expect(Upgrade.prototype.run.call(command)).rejects.toThrow(/couldn't refresh nocobase/i);
+  expect(mocks.upsertEnv).not.toHaveBeenCalled();
 });
 
 test('pm enable routes docker envs to docker exec nocobase pm enable', async () => {
