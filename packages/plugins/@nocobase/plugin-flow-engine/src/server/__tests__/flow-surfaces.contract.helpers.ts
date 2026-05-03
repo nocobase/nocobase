@@ -140,7 +140,7 @@ function installFlowSurfacesTemplateRepositoryMock(
     },
     async create(options: any = {}) {
       templateSequence += 1;
-      const now = new Date(`2026-01-01T00:00:${String(templateSequence).padStart(2, '0')}Z`).toISOString();
+      const now = new Date(Date.UTC(2026, 0, 1, 0, 0, templateSequence)).toISOString();
       const row = {
         id: templateSequence,
         createdAt: now,

@@ -294,6 +294,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
   });
 
   it('should create flow-model calendar blocks through applyBlueprint', async () => {
+    const quickCreatePopup = {
+      mode: 'dialog',
+      size: 'large',
+    };
+    const eventPopup = {
+      mode: 'drawer',
+      size: 'large',
+    };
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -304,6 +312,29 @@ describe('flowSurfaces applyBlueprint contract', () => {
         },
         page: {
           title: 'Calendar blueprint',
+        },
+        defaults: {
+          collections: {
+            calendar_events: {
+              fieldGroups: [
+                {
+                  key: 'eventMain',
+                  title: 'Event main',
+                  fields: ['title', 'status', 'startsAt', 'endsAt'],
+                },
+              ],
+              popups: {
+                addNew: {
+                  name: 'Create calendar event',
+                  description: 'Create one calendar event.',
+                },
+                view: {
+                  name: 'Calendar event details',
+                  description: 'View one calendar event.',
+                },
+              },
+            },
+          },
         },
         tabs: [
           {
@@ -324,14 +355,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   quickCreateEvent: false,
                   showLunar: true,
                   weekStart: 0,
-                  quickCreatePopup: {
-                    mode: 'dialog',
-                    size: 'large',
-                  },
-                  eventPopup: {
-                    mode: 'drawer',
-                    size: 'large',
-                  },
+                  quickCreatePopup,
+                  eventPopup,
                 },
                 actions: ['today', 'turnPages', 'title', 'selectView', 'refresh'],
               },
@@ -359,14 +384,6 @@ describe('flowSurfaces applyBlueprint contract', () => {
         enableQuickCreateEvent: false,
         showLunar: true,
         weekStart: 0,
-        quickCreatePopupSettings: {
-          mode: 'dialog',
-          size: 'large',
-        },
-        eventPopupSettings: {
-          mode: 'drawer',
-          size: 'large',
-        },
       },
       stepParams: {
         cardSettings: {
@@ -380,6 +397,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
             collectionName: 'calendar_events',
           },
         },
+        calendarSettings: {
+          quickCreatePopupSettings: quickCreatePopup,
+          eventPopupSettings: eventPopup,
+        },
       },
       subModels: {
         quickCreateAction: {
@@ -390,19 +411,55 @@ describe('flowSurfaces applyBlueprint contract', () => {
         },
       },
     });
+    expect(calendarBlock.props.quickCreatePopupSettings).toBeUndefined();
+    expect(calendarBlock.props.eventPopupSettings).toBeUndefined();
     expect(calendarBlock.subModels.quickCreateAction.uid).toBe(`${calendarBlock.uid}-quickCreateAction`);
     expect(calendarBlock.subModels.eventViewAction.uid).toBe(`${calendarBlock.uid}-eventViewAction`);
     expect(calendarBlock.subModels.quickCreateAction.stepParams.popupSettings.openView).toMatchObject({
-      uid: `${calendarBlock.uid}-quickCreateAction`,
       collectionName: 'calendar_events',
       mode: 'dialog',
       size: 'large',
     });
     expect(calendarBlock.subModels.eventViewAction.stepParams.popupSettings.openView).toMatchObject({
-      uid: `${calendarBlock.uid}-eventViewAction`,
       collectionName: 'calendar_events',
       mode: 'drawer',
       size: 'large',
+    });
+    const quickCreateTemplateUid = calendarBlock.subModels.quickCreateAction.popup?.template?.uid;
+    const eventTemplateUid = calendarBlock.subModels.eventViewAction.popup?.template?.uid;
+    expect(quickCreateTemplateUid).toBeTruthy();
+    expect(eventTemplateUid).toBeTruthy();
+    expect(quickCreateTemplateUid).not.toBe(eventTemplateUid);
+
+    const quickCreatePopupSurface = await readPrimaryPopupBlockFromAction(`${calendarBlock.uid}-quickCreateAction`);
+    const eventPopupBlock = await readPrimaryPopupBlockFromAction(`${calendarBlock.uid}-eventViewAction`);
+    expect(quickCreatePopupSurface.popupBlock?.use).toBe('CreateFormModel');
+    expect(eventPopupBlock.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(
+      collectDescendantNodes(
+        quickCreatePopupSurface.popupBlock,
+        (item) => item?.use === 'DividerItemModel' && item?.props?.label === 'Event main',
+      ),
+    ).toHaveLength(1);
+    expect(
+      collectDescendantNodes(
+        eventPopupBlock.popupBlock,
+        (item) => item?.use === 'DividerItemModel' && item?.props?.label === 'Event main',
+      ),
+    ).toHaveLength(1);
+    const persistedQuickCreateAction = await flowRepo.findModelById(`${calendarBlock.uid}-quickCreateAction`, {
+      includeAsyncNode: true,
+    });
+    const persistedEventAction = await flowRepo.findModelById(`${calendarBlock.uid}-eventViewAction`, {
+      includeAsyncNode: true,
+    });
+    expect(persistedQuickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: quickCreatePopupSurface.popupSurface.tree.uid,
+      popupTemplateUid: quickCreateTemplateUid,
+    });
+    expect(persistedEventAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: eventPopupBlock.popupSurface.tree.uid,
+      popupTemplateUid: eventTemplateUid,
     });
     expect(readNodeActionUses(calendarBlock)).toEqual(
       expect.arrayContaining([

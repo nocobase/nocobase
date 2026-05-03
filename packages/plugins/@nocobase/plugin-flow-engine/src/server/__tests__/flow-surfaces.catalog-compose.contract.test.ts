@@ -28,12 +28,15 @@ import {
   FLOW_SURFACES_MINIMAL_TEST_PLUGINS,
   FLOW_SURFACES_TEST_PLUGINS,
 } from './flow-surfaces.test-plugins';
+import { expectTemplateUsage, saveTemplate } from './flow-surfaces.templates.helpers';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
 describe('flowSurfaces catalog + compose contract', () => {
   let context: FlowSurfacesContractContext;
   let app: FlowSurfacesContractContext['app'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
+  const calendarPopupSourceTables = new Map<string, any>();
 
   async function createSyntheticApprovalSurface(targetFlowRepo = flowRepo) {
     const pageUid = uid();
@@ -99,6 +102,64 @@ describe('flowSurfaces catalog + compose contract', () => {
     };
   }
 
+  async function expectCalendarPopupTemplateBinding(
+    calendarUid: string,
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    templateUid?: string,
+  ) {
+    const action = await flowRepo.findModelById(`${calendarUid}-${actionKey}`, { includeAsyncNode: true });
+    const openView = action?.stepParams?.popupSettings?.openView;
+    if (templateUid) {
+      expect(openView).toMatchObject({
+        popupTemplateUid: templateUid,
+      });
+      return;
+    }
+    expect(openView?.popupTemplateUid).toBeUndefined();
+    expect(openView?.popupTemplateMode).toBeUndefined();
+  }
+
+  async function expectPersistedCalendarPopupOpenView(
+    calendarUid: string,
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    openView: Record<string, any>,
+  ) {
+    const action = await flowRepo.findModelById(`${calendarUid}-${actionKey}`, { includeAsyncNode: true });
+    expect(action?.stepParams?.popupSettings?.openView).toMatchObject(openView);
+  }
+
+  async function patchCalendarPopupOpenView(
+    calendarUid: string,
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    openView: Record<string, any>,
+  ) {
+    const actionUid = `${calendarUid}-${actionKey}`;
+    const action = await flowRepo.findModelById(actionUid, { includeAsyncNode: true });
+    await flowRepo.patch({
+      uid: actionUid,
+      stepParams: _.merge({}, action?.stepParams || {}, {
+        popupSettings: {
+          openView,
+        },
+      }),
+    });
+  }
+
+  function collectDescendantNodes(node: any, predicate: (input: any) => boolean, bucket: any[] = []) {
+    if (!node || typeof node !== 'object') {
+      return bucket;
+    }
+    if (predicate(node)) {
+      bucket.push(node);
+    }
+    for (const value of Object.values(node.subModels || {})) {
+      for (const child of _.castArray(value as any)) {
+        collectDescendantNodes(child, predicate, bucket);
+      }
+    }
+    return bucket;
+  }
+
   function expectAssignedValuesMirrors(actionTree: any, assignedValues: Record<string, any>) {
     expect(actionTree.stepParams?.assignSettings?.assignFieldValues?.assignedValues).toEqual(assignedValues);
     expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
@@ -127,9 +188,145 @@ describe('flowSurfaces catalog + compose contract', () => {
     );
   }
 
+  async function createCalendarTestCollection(collectionName: string) {
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        createdAt: false,
+        updatedAt: false,
+        timestamps: false,
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'select' },
+          { name: 'startsAt', type: 'date', interface: 'datetime' },
+          { name: 'endsAt', type: 'date', interface: 'datetime' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['title', 'status', 'startsAt', 'endsAt'],
+    });
+  }
+
+  async function getCalendarPopupSourceTable(collectionName: string) {
+    const existing = calendarPopupSourceTables.get(collectionName);
+    if (existing?.uid) {
+      return existing;
+    }
+    const page = await createPage(rootAgent, {
+      title: `Calendar popup source page ${collectionName}`,
+      tabTitle: `Calendar popup source tab ${collectionName}`,
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    calendarPopupSourceTables.set(collectionName, table);
+    return table;
+  }
+
+  async function createCalendarPopupTemplate(type: 'addNew' | 'view' | 'edit', collectionName: string) {
+    const sourceTable = await getCalendarPopupSourceTable(collectionName);
+    const actionResource = type === 'addNew' ? 'addAction' : 'addRecordAction';
+    const action = getData(
+      await rootAgent.resource('flowSurfaces')[actionResource]({
+        values: {
+          target: {
+            uid: sourceTable.uid,
+          },
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName,
+          },
+          type,
+          popup: {
+            blocks: [
+              {
+                key: `${type}CalendarPopupBlock`,
+                type: type === 'addNew' ? 'createForm' : type === 'edit' ? 'editForm' : 'details',
+                resource: {
+                  binding: type === 'addNew' ? 'currentCollection' : 'currentRecord',
+                },
+                fields: ['title'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    return saveTemplate(rootAgent, {
+      target: {
+        uid: action.uid,
+      },
+      name: `Calendar ${type} popup template ${uid()}`,
+      description: `Reusable calendar ${type} popup template for hidden calendar popup actions.`,
+      saveMode: 'duplicate',
+    });
+  }
+
+  async function createExternalCalendarPopupTargets(collectionName: string) {
+    const table = await getCalendarPopupSourceTable(collectionName);
+    const quickCreateTarget = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'addNew',
+          popup: {
+            blocks: [
+              {
+                key: 'externalQuickCreateCalendarPopupBlock',
+                type: 'createForm',
+                resource: {
+                  binding: 'currentCollection',
+                },
+                fields: ['title'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const eventTarget = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'edit',
+          popup: {
+            blocks: [
+              {
+                key: 'externalEventCalendarPopupBlock',
+                type: 'editForm',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['title'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    return {
+      quickCreateTargetUid: quickCreateTarget.uid,
+      eventTargetUid: eventTarget.uid,
+    };
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext();
     ({ app, flowRepo, rootAgent } = context);
+    calendarPopupSourceTables.clear();
   }, 120000);
 
   afterAll(async () => {
@@ -715,13 +912,16 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     const quickCreateAction = calendarReadback.tree.subModels?.quickCreateAction;
     const eventViewAction = calendarReadback.tree.subModels?.eventViewAction;
+    const quickCreateTemplateUid = quickCreateAction?.popup?.template?.uid;
+    const eventViewTemplateUid = eventViewAction?.popup?.template?.uid;
+    expect(quickCreateTemplateUid).toBeTruthy();
+    expect(eventViewTemplateUid).toBeTruthy();
     expect(quickCreateAction).toMatchObject({
       uid: `${calendar.uid}-quickCreateAction`,
       use: 'CalendarQuickCreateActionModel',
       stepParams: {
         popupSettings: {
           openView: {
-            uid: `${calendar.uid}-quickCreateAction`,
             dataSourceKey: 'main',
             collectionName: 'calendar_events',
             pageModelClass: 'ChildPageModel',
@@ -735,13 +935,18 @@ describe('flowSurfaces catalog + compose contract', () => {
       stepParams: {
         popupSettings: {
           openView: {
-            uid: `${calendar.uid}-eventViewAction`,
             dataSourceKey: 'main',
             collectionName: 'calendar_events',
             pageModelClass: 'ChildPageModel',
           },
         },
       },
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      popupTemplateUid: quickCreateTemplateUid,
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      popupTemplateUid: eventViewTemplateUid,
     });
 
     const configureRes = await rootAgent.resource('flowSurfaces').configure({
@@ -802,15 +1007,9 @@ describe('flowSurfaces catalog + compose contract', () => {
       enableQuickCreateEvent: false,
       showLunar: true,
       weekStart: 0,
-      quickCreatePopupSettings: {
-        mode: 'dialog',
-        size: 'large',
-      },
-      eventPopupSettings: {
-        mode: 'drawer',
-        size: 'small',
-      },
     });
+    expect(configured.tree.props).not.toHaveProperty('quickCreatePopupSettings');
+    expect(configured.tree.props).not.toHaveProperty('eventPopupSettings');
     expect(configured.tree.stepParams?.calendarSettings).toMatchObject({
       titleField: {
         titleField: 'title',
@@ -849,8 +1048,21 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
       },
     });
+    expect(configured.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      tryTemplate: false,
+    });
+    expect(configured.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).not.toHaveProperty('filterByTk');
+    expect(configured.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).not.toHaveProperty(
+      'associationName',
+    );
+    expect(configured.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).not.toHaveProperty('sourceId');
+    expect(configured.tree.stepParams?.calendarSettings?.eventPopupSettings).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+    });
     expect(configured.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
-      uid: `${calendar.uid}-quickCreateAction`,
       mode: 'dialog',
       size: 'large',
       dataSourceKey: 'main',
@@ -872,7 +1084,6 @@ describe('flowSurfaces catalog + compose contract', () => {
       'popupTemplateHasSourceId',
     );
     expect(configured.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
-      uid: `${calendar.uid}-eventViewAction`,
       mode: 'drawer',
       size: 'small',
       dataSourceKey: 'main',
@@ -965,6 +1176,278 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(readErrorMessage(invalidCollectionRes)).toContain(`must contain at least one date field`);
   });
 
+  it('should mirror direct calendar popup props writes into stepParams and hidden popup hosts', async () => {
+    const collectionName = `calendar_direct_props_popup_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar direct popup props page',
+      tabTitle: 'Calendar direct popup props tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplate.uid);
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        props: {
+          quickCreatePopupSettings: {
+            mode: 'dialog',
+            size: 'large',
+            popupTemplateUid: null,
+          },
+          eventPopupSettings: {
+            mode: 'drawer',
+            size: 'small',
+            popupTemplateUid: null,
+          },
+        },
+      },
+    });
+    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      tryTemplate: false,
+    });
+    expect(readback.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).not.toHaveProperty('popupTemplateUid');
+    expect(readback.tree.stepParams?.calendarSettings?.eventPopupSettings).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+      tryTemplate: false,
+    });
+    expect(readback.tree.stepParams?.calendarSettings?.eventPopupSettings).not.toHaveProperty('popupTemplateUid');
+    expect(readback.tree.props).not.toHaveProperty('quickCreatePopupSettings');
+    expect(readback.tree.props).not.toHaveProperty('eventPopupSettings');
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toBeUndefined();
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      mode: 'dialog',
+      size: 'large',
+      collectionName,
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      mode: 'drawer',
+      size: 'small',
+      collectionName,
+    });
+  });
+
+  it('should preserve calendar action-level popup display overrides and partial popup template updates', async () => {
+    const collectionName = `calendar_partial_popup_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar partial popup page',
+      tabTitle: 'Calendar partial popup tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const initialReadback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    const quickCreateTemplateUid = initialReadback.tree.subModels?.quickCreateAction?.popup?.template?.uid;
+    const eventTemplateUid = initialReadback.tree.subModels?.eventViewAction?.popup?.template?.uid;
+    expect(quickCreateTemplateUid).toBeTruthy();
+    expect(eventTemplateUid).toBeTruthy();
+
+    await patchCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      ...(initialReadback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView || {}),
+      mode: 'dialog',
+      size: 'large',
+      title: 'Quick create override',
+      pageModelClass: 'ChildPageModel',
+    });
+    await patchCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      ...(initialReadback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView || {}),
+      mode: 'dialog',
+      size: 'large',
+      title: 'Event view override',
+      pageModelClass: 'ChildPageModel',
+    });
+
+    const actionOverrideReadback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(actionOverrideReadback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject(
+      {
+        mode: 'dialog',
+        size: 'large',
+        title: 'Quick create override',
+      },
+    );
+    expect(actionOverrideReadback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      title: 'Event view override',
+    });
+    expect(actionOverrideReadback.tree.subModels?.quickCreateAction?.popup?.template?.uid).toBe(quickCreateTemplateUid);
+    expect(actionOverrideReadback.tree.subModels?.eventViewAction?.popup?.template?.uid).toBe(eventTemplateUid);
+
+    const bindTemplateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        props: {
+          quickCreatePopupSettings: {
+            popupTemplateUid: quickCreateTemplateUid,
+          },
+          eventPopupSettings: {
+            popupTemplateUid: eventTemplateUid,
+          },
+        },
+      },
+    });
+    expect(bindTemplateRes.status, readErrorMessage(bindTemplateRes)).toBe(200);
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        props: {
+          quickCreatePopupSettings: {
+            mode: 'drawer',
+          },
+          eventPopupSettings: {
+            size: 'small',
+          },
+        },
+      },
+    });
+    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
+
+    const partialUpdateReadback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(partialUpdateReadback.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).toMatchObject({
+      mode: 'drawer',
+      popupTemplateUid: quickCreateTemplateUid,
+    });
+    expect(partialUpdateReadback.tree.stepParams?.calendarSettings?.eventPopupSettings).toMatchObject({
+      size: 'small',
+      popupTemplateUid: eventTemplateUid,
+    });
+    expect(partialUpdateReadback.tree.subModels?.quickCreateAction?.popup?.template?.uid).toBe(quickCreateTemplateUid);
+    expect(partialUpdateReadback.tree.subModels?.eventViewAction?.popup?.template?.uid).toBe(eventTemplateUid);
+    expect(partialUpdateReadback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      title: 'Quick create override',
+    });
+    expect(partialUpdateReadback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      title: 'Event view override',
+    });
+  });
+
+  it('should rebuild calendar hidden popup targets when the block resource changes', async () => {
+    const sourceCollectionName = `calendar_resource_popup_source_${uid()}`;
+    const targetCollectionName = `calendar_resource_popup_target_${uid()}`;
+    await createCalendarTestCollection(sourceCollectionName);
+    await createCalendarTestCollection(targetCollectionName);
+
+    const page = await createPage(rootAgent, {
+      title: 'Calendar resource popup page',
+      tabTitle: 'Calendar resource popup tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: sourceCollectionName,
+      },
+    });
+    const initialReadback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    const quickCreateTemplateUid = initialReadback.tree.subModels?.quickCreateAction?.popup?.template?.uid;
+    const eventTemplateUid = initialReadback.tree.subModels?.eventViewAction?.popup?.template?.uid;
+    expect(quickCreateTemplateUid).toBeTruthy();
+    expect(eventTemplateUid).toBeTruthy();
+
+    await patchCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      ...(initialReadback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView || {}),
+      mode: 'dialog',
+      size: 'large',
+      title: 'Quick create resource override',
+    });
+    await patchCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      ...(initialReadback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView || {}),
+      mode: 'dialog',
+      size: 'large',
+      title: 'Event resource override',
+    });
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        changes: {
+          resource: {
+            dataSourceKey: 'main',
+            collectionName: targetCollectionName,
+          },
+        },
+      },
+    });
+    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    const quickCreateOpenView = readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView;
+    const eventOpenView = readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView;
+    expect(quickCreateOpenView).toMatchObject({
+      collectionName: targetCollectionName,
+      dataSourceKey: 'main',
+      mode: 'dialog',
+      size: 'large',
+      title: 'Quick create resource override',
+    });
+    expect(eventOpenView).toMatchObject({
+      collectionName: targetCollectionName,
+      dataSourceKey: 'main',
+      mode: 'dialog',
+      size: 'large',
+      title: 'Event resource override',
+    });
+    expect(quickCreateOpenView?.popupTemplateUid).not.toBe(quickCreateTemplateUid);
+    expect(eventOpenView?.popupTemplateUid).not.toBe(eventTemplateUid);
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template?.uid).not.toBe(quickCreateTemplateUid);
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template?.uid).not.toBe(eventTemplateUid);
+  });
+
   it('should let explicit calendar block height settings override the full-height creation default', async () => {
     const page = await createPage(rootAgent, {
       title: 'Calendar explicit height page',
@@ -992,6 +1475,868 @@ describe('flowSurfaces catalog + compose contract', () => {
       heightMode: 'specifyValue',
       height: 420,
     });
+  });
+
+  it('should auto-bind compatible popup templates for default calendar hidden popup hosts', async () => {
+    const collectionName = `calendar_popup_template_auto_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    await expectTemplateUsage(rootAgent, quickCreateTemplate.uid, 0);
+    await expectTemplateUsage(rootAgent, eventViewTemplate.uid, 0);
+
+    const page = await createPage(rootAgent, {
+      title: 'Calendar popup template auto-bind page',
+      tabTitle: 'Calendar popup template auto-bind tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toMatchObject({
+      uid: quickCreateTemplate.uid,
+      mode: 'reference',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toMatchObject({
+      uid: eventViewTemplate.uid,
+      mode: 'reference',
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      collectionName,
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      collectionName,
+    });
+    expect(await flowRepo.findModelById(`${calendar.uid}-quickCreateAction`, { includeAsyncNode: true })).toMatchObject(
+      {
+        stepParams: {
+          popupSettings: {
+            openView: {
+              popupTemplateUid: quickCreateTemplate.uid,
+            },
+          },
+        },
+      },
+    );
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplate.uid);
+  });
+
+  it('should canonicalize compose calendar hidden popup settings into stepParams before binding templates', async () => {
+    const collectionName = `calendar_compose_popup_canonical_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar compose popup canonical page',
+      tabTitle: 'Calendar compose popup canonical tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'append',
+        blocks: [
+          {
+            key: 'usersCalendar',
+            type: 'calendar',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName,
+            },
+            settings: {
+              titleField: 'title',
+              startField: 'startsAt',
+              quickCreatePopupSettings: {
+                mode: 'dialog',
+                size: 'large',
+                tryTemplate: true,
+              },
+              eventPopupSettings: {
+                mode: 'drawer',
+                size: 'small',
+                tryTemplate: true,
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const calendarUid = getData(composeRes)?.blocks?.[0]?.uid;
+    expect(calendarUid).toBeTruthy();
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendarUid,
+    });
+    expect(readback.tree.props).not.toHaveProperty('quickCreatePopupSettings');
+    expect(readback.tree.props).not.toHaveProperty('eventPopupSettings');
+    expect(readback.tree.stepParams?.calendarSettings?.quickCreatePopupSettings).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(readback.tree.stepParams?.calendarSettings?.eventPopupSettings).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toMatchObject({
+      uid: quickCreateTemplate.uid,
+      mode: 'reference',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toMatchObject({
+      uid: eventViewTemplate.uid,
+      mode: 'reference',
+    });
+    await expectCalendarPopupTemplateBinding(calendarUid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendarUid, 'eventViewAction', eventViewTemplate.uid);
+  });
+
+  it('should not bind record-scoped popup templates to calendar quick-create hosts', async () => {
+    const collectionName = `calendar_record_scoped_guard_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar record-scoped quick-create template guard page',
+      tabTitle: 'Calendar record-scoped quick-create template guard tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const recordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'recordScopedCalendarPopupDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['title'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const recordScopedTemplate = await saveTemplate(rootAgent, {
+      target: {
+        uid: recordAction.uid,
+      },
+      name: `Calendar record-scoped popup template ${uid()}`,
+      description: 'Record-scoped popup template that quick-create must not reuse.',
+      saveMode: 'duplicate',
+    });
+
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+
+    const generatedQuickCreateTemplateUid = readback.tree.subModels?.quickCreateAction?.popup?.template?.uid;
+    expect(generatedQuickCreateTemplateUid).toBeTruthy();
+    expect(generatedQuickCreateTemplateUid).not.toBe(recordScopedTemplate.uid);
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      collectionName,
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      popupTemplateUid: generatedQuickCreateTemplateUid,
+      collectionName,
+    });
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toMatchObject({
+      uid: recordScopedTemplate.uid,
+      mode: 'reference',
+    });
+    const { popupBlock } = await readPrimaryPopupBlock(`${calendar.uid}-quickCreateAction`);
+    expect(popupBlock?.use).toBe('CreateFormModel');
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', generatedQuickCreateTemplateUid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', recordScopedTemplate.uid);
+  });
+
+  it('should auto-complete and save calendar hidden popup templates when no compatible template exists', async () => {
+    const collectionName = `calendar_popup_template_generate_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar popup template auto-generate page',
+      tabTitle: 'Calendar popup template auto-generate tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        quickCreatePopup: {
+          mode: 'dialog',
+          size: 'large',
+        },
+        eventPopup: {
+          mode: 'drawer',
+          size: 'small',
+        },
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    const quickCreateTemplateUid = readback.tree.subModels?.quickCreateAction?.popup?.template?.uid;
+    const eventViewTemplateUid = readback.tree.subModels?.eventViewAction?.popup?.template?.uid;
+    expect(quickCreateTemplateUid).toBeTruthy();
+    expect(eventViewTemplateUid).toBeTruthy();
+    expect(quickCreateTemplateUid).not.toBe(eventViewTemplateUid);
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      collectionName,
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+      collectionName,
+    });
+    const quickCreatePopup = await readPrimaryPopupBlock(`${calendar.uid}-quickCreateAction`);
+    const eventViewPopup = await readPrimaryPopupBlock(`${calendar.uid}-eventViewAction`);
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      mode: 'dialog',
+      size: 'large',
+      uid: quickCreatePopup.popupSurface.tree.uid,
+      popupTemplateUid: quickCreateTemplateUid,
+      collectionName,
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      mode: 'drawer',
+      size: 'small',
+      uid: eventViewPopup.popupSurface.tree.uid,
+      popupTemplateUid: eventViewTemplateUid,
+      collectionName,
+    });
+
+    expect(quickCreatePopup.popupBlock?.use).toBe('CreateFormModel');
+    expect(eventViewPopup.popupBlock?.use).toBe('DetailsBlockModel');
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplateUid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplateUid);
+  });
+
+  it('should auto-bind calendar popup templates while preserving display popup settings', async () => {
+    const collectionName = `calendar_explicit_popup_guard_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar explicit popup settings template guard page',
+      tabTitle: 'Calendar explicit popup settings template guard tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        quickCreatePopup: {
+          mode: 'dialog',
+          size: 'large',
+        },
+        eventPopup: {
+          mode: 'drawer',
+          size: 'small',
+        },
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toMatchObject({
+      uid: quickCreateTemplate.uid,
+      mode: 'reference',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toMatchObject({
+      uid: eventViewTemplate.uid,
+      mode: 'reference',
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      popupTemplateUid: quickCreateTemplate.uid,
+      mode: 'dialog',
+      size: 'large',
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      popupTemplateUid: eventViewTemplate.uid,
+      mode: 'drawer',
+      size: 'small',
+    });
+    const persistedCalendar = await flowRepo.findModelById(calendar.uid, { includeAsyncNode: true });
+    expect(persistedCalendar?.stepParams?.calendarSettings?.quickCreatePopupSettings).toMatchObject({
+      popupTemplateUid: quickCreateTemplate.uid,
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(persistedCalendar?.stepParams?.calendarSettings?.eventPopupSettings).toMatchObject({
+      popupTemplateUid: eventViewTemplate.uid,
+      mode: 'drawer',
+      size: 'small',
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplate.uid);
+  });
+
+  it('should auto-bind applyBlueprint calendar popup templates while preserving display popup settings', async () => {
+    const collectionName = `calendar_blueprint_explicit_popup_guard_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        page: {
+          title: 'Calendar explicit popup blueprint page',
+        },
+        tabs: [
+          {
+            title: 'Calendar',
+            blocks: [
+              {
+                key: 'eventsCalendar',
+                type: 'calendar',
+                collection: collectionName,
+                settings: {
+                  quickCreatePopup: {
+                    mode: 'dialog',
+                    size: 'large',
+                  },
+                  eventPopup: {
+                    mode: 'drawer',
+                    size: 'small',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const calendar = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CalendarBlockModel')[0];
+    expect(calendar).toBeTruthy();
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    const calendarBlock = readback.tree;
+    expect(calendarBlock?.subModels?.quickCreateAction?.popup?.template).toMatchObject({
+      uid: quickCreateTemplate.uid,
+      mode: 'reference',
+    });
+    expect(calendarBlock?.subModels?.eventViewAction?.popup?.template).toMatchObject({
+      uid: eventViewTemplate.uid,
+      mode: 'reference',
+    });
+    expect(calendarBlock?.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(calendarBlock?.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      popupTemplateUid: quickCreateTemplate.uid,
+      mode: 'dialog',
+      size: 'large',
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      popupTemplateUid: eventViewTemplate.uid,
+      mode: 'drawer',
+      size: 'small',
+    });
+    const persistedCalendar = await flowRepo.findModelById(calendar.uid, { includeAsyncNode: true });
+    expect(persistedCalendar?.stepParams?.calendarSettings?.quickCreatePopupSettings).toMatchObject({
+      popupTemplateUid: quickCreateTemplate.uid,
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(persistedCalendar?.stepParams?.calendarSettings?.eventPopupSettings).toMatchObject({
+      popupTemplateUid: eventViewTemplate.uid,
+      mode: 'drawer',
+      size: 'small',
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplate.uid);
+  });
+
+  it('should honor calendar popup tryTemplate false as an auto-bind opt-out', async () => {
+    const collectionName = `calendar_try_template_false_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar popup tryTemplate false page',
+      tabTitle: 'Calendar popup tryTemplate false tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        quickCreatePopup: {
+          tryTemplate: false,
+        },
+        eventPopup: {
+          tryTemplate: false,
+        },
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: `${calendar.uid}-quickCreateAction`,
+      collectionName,
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: `${calendar.uid}-eventViewAction`,
+      collectionName,
+    });
+    expect(
+      readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView?.tryTemplate,
+    ).toBeUndefined();
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView?.tryTemplate).toBeUndefined();
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction');
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction');
+  });
+
+  it('should normalize explicit calendar popup template settings into persisted template references', async () => {
+    const collectionName = `calendar_explicit_popup_template_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar explicit popup template page',
+      tabTitle: 'Calendar explicit popup template tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        quickCreatePopup: {
+          template: {
+            uid: quickCreateTemplate.uid,
+            mode: 'reference',
+          },
+          mode: 'dialog',
+          size: 'large',
+        },
+        eventPopup: {
+          template: {
+            uid: eventViewTemplate.uid,
+            mode: 'reference',
+          },
+          mode: 'drawer',
+          size: 'small',
+        },
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toMatchObject({
+      uid: quickCreateTemplate.uid,
+      mode: 'reference',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toMatchObject({
+      uid: eventViewTemplate.uid,
+      mode: 'reference',
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      popupTemplateUid: quickCreateTemplate.uid,
+      mode: 'dialog',
+      size: 'large',
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      popupTemplateUid: eventViewTemplate.uid,
+      mode: 'drawer',
+      size: 'small',
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplate.uid);
+  });
+
+  it('should preserve explicit calendar popup copied template targets without repeated duplication', async () => {
+    const collectionName = `calendar_explicit_popup_template_copy_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar explicit popup template copy page',
+      tabTitle: 'Calendar explicit popup template copy tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        quickCreatePopup: {
+          template: {
+            uid: quickCreateTemplate.uid,
+            mode: 'copy',
+          },
+          mode: 'dialog',
+          size: 'large',
+        },
+        eventPopup: {
+          template: {
+            uid: eventViewTemplate.uid,
+            mode: 'copy',
+          },
+          mode: 'drawer',
+          size: 'small',
+        },
+      },
+    });
+
+    const initialQuickCreateAction = await flowRepo.findModelById(`${calendar.uid}-quickCreateAction`, {
+      includeAsyncNode: true,
+    });
+    const initialEventViewAction = await flowRepo.findModelById(`${calendar.uid}-eventViewAction`, {
+      includeAsyncNode: true,
+    });
+    const initialQuickCreateOpenView = initialQuickCreateAction?.stepParams?.popupSettings?.openView;
+    const initialEventViewOpenView = initialEventViewAction?.stepParams?.popupSettings?.openView;
+    expect(initialQuickCreateOpenView).toMatchObject({
+      popupTemplateUid: quickCreateTemplate.uid,
+      popupTemplateMode: 'copy',
+      popupTemplateContext: true,
+      mode: 'dialog',
+      size: 'large',
+    });
+    expect(initialEventViewOpenView).toMatchObject({
+      popupTemplateUid: eventViewTemplate.uid,
+      popupTemplateMode: 'copy',
+      popupTemplateContext: true,
+      mode: 'drawer',
+      size: 'small',
+    });
+    expect(initialQuickCreateOpenView?.uid).toBeTruthy();
+    expect(initialQuickCreateOpenView?.uid).not.toBe(`${calendar.uid}-quickCreateAction`);
+    expect(initialEventViewOpenView?.uid).toBeTruthy();
+    expect(initialEventViewOpenView?.uid).not.toBe(`${calendar.uid}-eventViewAction`);
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup).toMatchObject({
+      mode: 'copy',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.popup).toMatchObject({
+      mode: 'copy',
+    });
+
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'quickCreateAction', {
+      uid: initialQuickCreateOpenView.uid,
+      popupTemplateUid: quickCreateTemplate.uid,
+      popupTemplateMode: 'copy',
+      popupTemplateContext: true,
+      mode: 'dialog',
+      size: 'large',
+    });
+    await expectPersistedCalendarPopupOpenView(calendar.uid, 'eventViewAction', {
+      uid: initialEventViewOpenView.uid,
+      popupTemplateUid: eventViewTemplate.uid,
+      popupTemplateMode: 'copy',
+      popupTemplateContext: true,
+      mode: 'drawer',
+      size: 'small',
+    });
+  });
+
+  it('should validate initial calendar popup settings on addBlock', async () => {
+    const collectionName = `calendar_invalid_initial_popup_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar invalid initial popup page',
+      tabTitle: 'Calendar invalid initial popup tab',
+    });
+
+    const missingTargetRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'calendar',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName,
+        },
+        settings: {
+          quickCreatePopup: {
+            uid: `missing-calendar-popup-target-${uid()}`,
+          },
+        },
+      },
+    });
+    expect(missingTargetRes.status).toBe(400);
+    expect(readErrorMessage(missingTargetRes)).toContain('openView.uid must reference an existing node');
+
+    const invalidModeRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'calendar',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName,
+        },
+        settings: {
+          quickCreatePopup: {
+            tryTemplate: false,
+            mode: 'sidecar',
+          },
+        },
+      },
+    });
+    expect(invalidModeRes.status).toBe(400);
+    expect(readErrorMessage(invalidModeRes)).toContain("openView.mode only supports 'drawer', 'dialog' or 'embed'");
+  });
+
+  it('should clear existing calendar popup template usage when configure opts out with tryTemplate false', async () => {
+    const collectionName = `calendar_config_try_template_false_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar configure tryTemplate false page',
+      tabTitle: 'Calendar configure tryTemplate false tab',
+    });
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplate.uid);
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        changes: {
+          quickCreatePopup: {
+            tryTemplate: false,
+          },
+          eventPopup: {
+            tryTemplate: false,
+          },
+        },
+      },
+    });
+    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: `${calendar.uid}-quickCreateAction`,
+      collectionName,
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: `${calendar.uid}-eventViewAction`,
+      collectionName,
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction');
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction');
+  });
+
+  it('should clear existing calendar popup template usage when configure points to external targets', async () => {
+    const collectionName = `calendar_config_external_popup_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    const quickCreateTemplate = await createCalendarPopupTemplate('addNew', collectionName);
+    const eventViewTemplate = await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar configure external popup page',
+      tabTitle: 'Calendar configure external popup tab',
+    });
+    const { quickCreateTargetUid, eventTargetUid } = await createExternalCalendarPopupTargets(collectionName);
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction', quickCreateTemplate.uid);
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction', eventViewTemplate.uid);
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: calendar.uid,
+        },
+        changes: {
+          quickCreatePopup: {
+            uid: quickCreateTargetUid,
+            mode: 'dialog',
+          },
+          eventPopup: {
+            uid: eventTargetUid,
+            mode: 'drawer',
+          },
+        },
+      },
+    });
+    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: quickCreateTargetUid,
+      mode: 'dialog',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: eventTargetUid,
+      mode: 'drawer',
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction');
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction');
+  });
+
+  it('should preserve external calendar popup target uids instead of auto-binding popup templates', async () => {
+    const collectionName = `calendar_external_popup_target_${uid()}`;
+    await createCalendarTestCollection(collectionName);
+    await createCalendarPopupTemplate('addNew', collectionName);
+    await createCalendarPopupTemplate('view', collectionName);
+    const page = await createPage(rootAgent, {
+      title: 'Calendar external popup target page',
+      tabTitle: 'Calendar external popup target tab',
+    });
+    const { quickCreateTargetUid, eventTargetUid } = await createExternalCalendarPopupTargets(collectionName);
+    const calendar = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        quickCreatePopup: {
+          uid: quickCreateTargetUid,
+          mode: 'dialog',
+        },
+        eventPopup: {
+          uid: eventTargetUid,
+          mode: 'drawer',
+        },
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendar.uid,
+    });
+    expect(readback.tree.subModels?.quickCreateAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.eventViewAction?.popup?.template).toBeUndefined();
+    expect(readback.tree.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: quickCreateTargetUid,
+      mode: 'dialog',
+    });
+    expect(readback.tree.subModels?.eventViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      uid: eventTargetUid,
+      mode: 'drawer',
+    });
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'quickCreateAction');
+    await expectCalendarPopupTemplateBinding(calendar.uid, 'eventViewAction');
   });
 
   it('should create configure and batch-add flow-model tree blocks', async () => {
@@ -1921,6 +3266,14 @@ describe('flowSurfaces catalog + compose contract', () => {
         dataSourceKey: 'main',
         collectionName: 'calendar_events',
       },
+      settings: {
+        quickCreatePopup: {
+          tryTemplate: false,
+        },
+        eventPopup: {
+          tryTemplate: false,
+        },
+      },
     });
 
     const quickCreateForm = await addBlockData(rootAgent, {
@@ -2000,6 +3353,14 @@ describe('flowSurfaces catalog + compose contract', () => {
       resourceInit: {
         dataSourceKey: 'main',
         collectionName: 'calendar_events',
+      },
+      settings: {
+        quickCreatePopup: {
+          tryTemplate: false,
+        },
+        eventPopup: {
+          tryTemplate: false,
+        },
       },
     });
     const quickCreateActionUid = `${calendar.uid}-quickCreateAction`;
