@@ -251,6 +251,7 @@ export async function ensureBuiltinDbReady(
   const plan = Install.buildBuiltinDbPlan({
     envName: runtime.envName,
     workspaceName: runtime.workspaceName,
+    dockerContainerPrefix: runtime.dockerContainerPrefix,
     storagePath: config.storagePath,
     source: runtime.source,
     dbDialect: config.dbDialect,
