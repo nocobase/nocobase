@@ -18,6 +18,7 @@ import {
   type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
+import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import { commandSucceeds, run } from '../../lib/run-npm.js';
 import { failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
 
@@ -429,9 +430,10 @@ export default class AppUpgrade extends Command {
     const storagePath = readEnvValue(runtime.env, 'storagePath');
     const appKey = readEnvValue(runtime.env, 'appKey');
     const timeZone = readEnvValue(runtime.env, 'timezone');
-    const dbDialect = readEnvValue(runtime.env, 'dbDialect');
-    const dbHost = readEnvValue(runtime.env, 'dbHost');
-    const dbPort = readEnvValue(runtime.env, 'dbPort');
+    const builtinDbConnection = runtime.env.config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
+    const dbDialect = builtinDbConnection?.dbDialect || readEnvValue(runtime.env, 'dbDialect');
+    const dbHost = builtinDbConnection?.dbHost || readEnvValue(runtime.env, 'dbHost');
+    const dbPort = builtinDbConnection?.dbPort || readEnvValue(runtime.env, 'dbPort');
     const dbDatabase = readEnvValue(runtime.env, 'dbDatabase');
     const dbUser = readEnvValue(runtime.env, 'dbUser');
     const dbPassword = readEnvValue(runtime.env, 'dbPassword');

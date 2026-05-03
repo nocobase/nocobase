@@ -1268,6 +1268,8 @@ test('env info shows grouped app details with secrets masked by default', async 
     envName: 'app1',
     source: 'npm',
     projectRoot: '/tmp/local-app',
+    dockerContainerPrefix: 'nb-demo',
+    workspaceName: 'nb-demo',
     env: {
       apiBaseUrl: 'http://127.0.0.1:13000/api',
       storagePath: '/tmp/storage/local',
@@ -1879,12 +1881,12 @@ test('db check routes docker envs through docker run nb db check', async () => {
     envName: 'app1',
     source: 'docker',
     containerName: 'nb-demo-app1-app',
+    dockerContainerPrefix: 'nb-demo',
     workspaceName: 'nb-demo',
     env: {
       config: {
+        builtinDb: true,
         dbDialect: 'postgres',
-        dbHost: 'db.internal',
-        dbPort: '5432',
         dbDatabase: 'nocobase',
         dbUser: 'nocobase',
         dbPassword: 'secret',
@@ -1935,7 +1937,7 @@ test('db check routes docker envs through docker run nb db check', async () => {
       '--db-dialect',
       'postgres',
       '--db-host',
-      'db.internal',
+      'nb-demo-app1-postgres',
       '--db-port',
       '5432',
       '--db-database',
@@ -1950,6 +1952,52 @@ test('db check routes docker envs through docker run nb db check', async () => {
   );
   expect(mocks.checkExternalDbConnection).not.toHaveBeenCalled();
   expect(command.log.mock.calls[0]?.[0]).toContain('Database check passed for env "app1"');
+});
+
+test('db check derives builtin local database host when it is not saved in env config', async () => {
+  const { default: DbCheck } = await import('../commands/db/check.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'app1',
+    source: 'npm',
+    projectRoot: '/tmp/app1',
+    dockerContainerPrefix: 'nb-demo',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: true,
+        dbDialect: 'postgres',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'secret',
+      },
+      envVars: {
+        DB_DIALECT: 'postgres',
+        DB_PORT: '5432',
+        DB_DATABASE: 'nocobase',
+        DB_USER: 'nocobase',
+        DB_PASSWORD: 'secret',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'app1',
+      json: false,
+    },
+  });
+
+  await DbCheck.prototype.run.call(command);
+
+  expect(mocks.checkExternalDbConnection.mock.calls[0]?.[0]).toMatchObject({
+    dialect: 'postgres',
+    host: '127.0.0.1',
+    port: 5432,
+    database: 'nocobase',
+    user: 'nocobase',
+  });
 });
 
 test('test recreates the built-in test database before running tests', async () => {

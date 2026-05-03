@@ -10,6 +10,7 @@
 import { mkdir, readdir } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
 import { dockerContainerExists, startDockerContainer } from './app-runtime.js';
+import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
 import { resolveConfiguredEnvPath } from './cli-home.js';
 import { commandSucceeds, run } from './run-npm.js';
 import Install from '../commands/install.js';
@@ -119,9 +120,10 @@ export function buildSavedDockerRunArgs(
       : trimValue(runtime.env.appPort);
   const appKey = trimValue(config.appKey);
   const timeZone = trimValue(config.timezone) || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const dbDialect = trimValue(config.dbDialect);
-  const dbHost = trimValue(config.dbHost);
-  const dbPort = trimValue(config.dbPort);
+  const builtinDbConnection = config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
+  const dbDialect = builtinDbConnection?.dbDialect || trimValue(config.dbDialect);
+  const dbHost = builtinDbConnection?.dbHost || trimValue(config.dbHost);
+  const dbPort = builtinDbConnection?.dbPort || trimValue(config.dbPort);
   const dbDatabase = trimValue(config.dbDatabase);
   const dbUser = trimValue(config.dbUser);
   const dbPassword = trimValue(config.dbPassword);
@@ -247,6 +249,7 @@ export async function ensureBuiltinDbReady(
   if (!config.builtinDb) {
     return;
   }
+  const builtinDbConnection = await resolveBuiltinDbConnection(runtime);
 
   const plan = Install.buildBuiltinDbPlan({
     envName: runtime.envName,
@@ -254,9 +257,9 @@ export async function ensureBuiltinDbReady(
     dockerContainerPrefix: runtime.dockerContainerPrefix,
     storagePath: config.storagePath,
     source: runtime.source,
-    dbDialect: config.dbDialect,
-    dbHost: config.dbHost,
-    dbPort: config.dbPort,
+    dbDialect: builtinDbConnection.dbDialect,
+    dbHost: builtinDbConnection.dbHost,
+    dbPort: builtinDbConnection.dbPort,
     dbDatabase: config.dbDatabase,
     dbUser: config.dbUser,
     dbPassword: config.dbPassword,
