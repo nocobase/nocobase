@@ -163,7 +163,7 @@ async function promptOnlineActivationInput(
     password,
     appName,
     confirmed: Boolean(confirmedAnswer),
-    serviceUrl: resolveLicenseServiceUrl(initial.serviceUrl),
+    serviceUrl: await resolveLicenseServiceUrl(initial.serviceUrl),
   };
 }
 
@@ -292,12 +292,13 @@ export default class LicenseActivate extends Command {
     }
 
     if (online) {
+      const resolvedServiceUrl = await resolveLicenseServiceUrl(flags['pkg-url']);
       const initialOnline = {
         account: resolveOnlineInputValue(flags.account),
         password: resolveOnlineInputValue(flags.password),
         appName: resolveOnlineInputValue(flags.desc),
         confirmed: flags.yes ? true : undefined,
-        serviceUrl: resolveLicenseServiceUrl(flags['pkg-url']),
+        serviceUrl: resolvedServiceUrl,
       };
 
       let onlineInput = initialOnline;

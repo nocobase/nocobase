@@ -80,10 +80,6 @@
         },
         "scope": {
           "message": "Where should this connection be saved?",
-          "autoLabel": "Auto",
-          "autoHint": "project if this repo already has .nocobase, otherwise global",
-          "projectLabel": "Project",
-          "projectHint": ".nocobase in this repo",
           "globalLabel": "Global",
           "globalHint": "user-level config"
         },

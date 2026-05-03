@@ -58,7 +58,11 @@ export async function resolveDbRuntime(envName?: string): Promise<ResolvedDbRunt
   const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
 
   if ((runtime.kind === 'local' || runtime.kind === 'docker') && runtime.env.config.builtinDb) {
-    const containerName = buildDockerDbContainerName(runtime.envName, dbDialect, runtime.workspaceName);
+    const containerName = buildDockerDbContainerName(
+      runtime.envName,
+      dbDialect,
+      runtime.dockerContainerPrefix || runtime.workspaceName,
+    );
     return {
       kind: 'builtin',
       envName: runtime.envName,

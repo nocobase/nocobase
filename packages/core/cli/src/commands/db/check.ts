@@ -200,7 +200,7 @@ async function runDockerDbCheck(
     'run',
     '--rm',
     '--network',
-    runtime.workspaceName,
+    runtime.dockerNetworkName || runtime.workspaceName,
   ];
   const dockerPlatform = normalizeDockerPlatform(config.dockerPlatform);
   if (dockerPlatform) {

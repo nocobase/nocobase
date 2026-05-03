@@ -11,7 +11,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
-import { resolveCliHomeRoot, resolveEnvRelativePath, resolveEnvRoot } from '../lib/cli-home.js';
+import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
 
@@ -80,9 +80,10 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     dbPassword: 'demo_pass',
   });
 
-  const prefix = `nb-${path.basename(resolveEnvRoot()).toLowerCase()}`;
-  const containerName = `${prefix}-demo-postgres`;
-  expect(plan.networkName).toBe(prefix);
+  const networkName = 'nocobase';
+  const containerPrefix = 'nb';
+  const containerName = `${containerPrefix}-demo-postgres`;
+  expect(plan.networkName).toBe(networkName);
   expect(plan.containerName).toBe(containerName);
   expect(plan.dbHost).toBe('127.0.0.1');
   expect(plan.dbPort).toBe('5433');
@@ -97,7 +98,7 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '--restart',
     'always',
     '--network',
-    prefix,
+    networkName,
     '-e',
     'POSTGRES_USER=demo_user',
     '-e',
@@ -183,7 +184,7 @@ test('builtin db plan does not publish host port for docker source and uses cont
     dbPassword: 'nocobase',
   });
 
-  expect(plan.dbHost).toBe(`nb-${path.basename(resolveEnvRoot()).toLowerCase()}-dockerapp-postgres`);
+  expect(plan.dbHost).toBe('nb-dockerapp-postgres');
   expect(plan.args.includes('-p')).toBe(false);
 });
 
@@ -235,10 +236,11 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
 
 test('docker app plan wires app, db, network, port, and image settings', () => {
   const installStatics = Install as unknown as InstallStatics;
-  const prefix = `nb-${path.basename(resolveEnvRoot()).toLowerCase()}`;
+  const networkName = 'nocobase';
+  const containerPrefix = 'nb';
   const plan = installStatics.buildDockerAppPlan({
     envName: 'demo',
-    networkName: prefix,
+    networkName,
     appResults: {
       appPort: '13000',
       storagePath: './storage/demo',
@@ -251,7 +253,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
     },
     dbResults: {
       dbDialect: 'postgres',
-      dbHost: `${prefix}-demo-postgres`,
+      dbHost: `${containerPrefix}-demo-postgres`,
       dbPort: '5432',
       dbDatabase: 'nocobase',
       dbUser: 'nocobase',
@@ -266,8 +268,8 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   });
 
   expect(plan.source).toBe('docker');
-  expect(plan.networkName).toBe(prefix);
-  expect(plan.containerName).toBe(`${prefix}-demo-app`);
+  expect(plan.networkName).toBe(networkName);
+  expect(plan.containerName).toBe(`${containerPrefix}-demo-app`);
   expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop');
   expect(plan.appPort).toBe('13000');
   expect(plan.storagePath).toBe(resolveEnvRelativePath('./storage/demo'));
@@ -276,7 +278,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.timeZone.length > 0).toBe(true);
   expect(plan.args.includes('--platform')).toBe(false);
   expect(plan.args.includes('--network')).toBe(true);
-  expect(plan.args.includes(prefix)).toBe(true);
+  expect(plan.args.includes(networkName)).toBe(true);
   expect(plan.args.includes('13000:80')).toBe(true);
   expect(plan.args.includes('--port')).toBe(false);
   expect(plan.args.includes('INIT_APP_LANG=zh-CN')).toBe(true);
@@ -287,7 +289,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.args.includes(`APP_KEY=${plan.appKey}`)).toBe(true);
   expect(plan.args.includes(`TZ=${plan.timeZone}`)).toBe(true);
   expect(plan.args.includes('DB_DIALECT=postgres')).toBe(true);
-  expect(plan.args.includes(`DB_HOST=${prefix}-demo-postgres`)).toBe(true);
+  expect(plan.args.includes(`DB_HOST=${containerPrefix}-demo-postgres`)).toBe(true);
   expect(plan.args.includes('DB_PORT=5432')).toBe(true);
   expect(plan.args.includes('DB_DATABASE=nocobase')).toBe(true);
   expect(plan.args.includes('DB_USER=nocobase')).toBe(true);
