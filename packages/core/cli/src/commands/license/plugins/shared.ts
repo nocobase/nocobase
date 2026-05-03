@@ -8,14 +8,13 @@
  */
 
 import path from 'node:path';
-import { access, mkdir, readFile, realpath, rm } from 'node:fs/promises';
+import { access, mkdir, rm } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createGunzip } from 'node:zlib';
 import * as tar from 'tar';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
 import {
-  createStoragePluginsSymlink,
   removeStoragePluginSymlink,
   resolvePluginStoragePath,
 } from '../../../lib/plugin-storage.js';
@@ -65,8 +64,8 @@ export type LicensePluginCleanResult = {
 
 export type LicensePluginCleanDetail = LicensePluginCleanResult['details'][number];
 
-function resolvePkgBaseUrl(pkgUrl?: string): string {
-  return resolveLicensePkgUrl(pkgUrl);
+async function resolvePkgBaseUrl(pkgUrl?: string): Promise<string> {
+  return await resolveLicensePkgUrl(pkgUrl);
 }
 
 function responseBodyToNodeReadable(body: ReadableStream<Uint8Array>): Readable {
@@ -122,7 +121,7 @@ export async function fetchLicensedPluginPackages(
   } = {},
 ): Promise<LicensedPluginPackages> {
   const keyData = await loadSavedLicenseKeyData(runtime);
-  const baseURL = resolvePkgBaseUrl(options.pkgUrl);
+  const baseURL = await resolvePkgBaseUrl(options.pkgUrl);
   const token = await loginPkg(baseURL, keyData);
   const response = await fetch(`${baseURL}pro-packages`, {
     headers: {
@@ -145,50 +144,6 @@ export async function fetchLicensedPluginPackages(
     commercialPlugins: rawData?.meta?.commercial_plugins || [],
     licensedPlugins: rawData?.data || [],
   };
-}
-
-async function isDownloaded(pluginName: string, storagePath: string, version?: string): Promise<boolean> {
-  const packageFile = path.resolve(storagePath, pluginName, 'package.json');
-  if (!(await pathExists(packageFile))) {
-    return false;
-  }
-  if (!version) {
-    return true;
-  }
-  const json = JSON.parse(await readFile(packageFile, 'utf8'));
-  return String(json.version ?? '').trim() === version;
-}
-
-async function isDevPackage(pluginName: string): Promise<boolean> {
-  const candidates = [
-    path.resolve(process.cwd(), 'packages/plugins', pluginName, 'package.json'),
-    path.resolve(process.cwd(), 'packages/pro-plugins', pluginName, 'package.json'),
-  ];
-  for (const filePath of candidates) {
-    if (await pathExists(filePath)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-async function isDependencyPackage(
-  pluginName: string,
-  storagePath: string,
-  nodeModulesPath: string,
-): Promise<boolean> {
-  if (!nodeModulesPath) {
-    return false;
-  }
-
-  const packageJsonInNodeModules = path.resolve(nodeModulesPath, pluginName, 'package.json');
-  const packageJsonInStorage = path.resolve(storagePath, pluginName, 'package.json');
-  if (!(await pathExists(packageJsonInNodeModules)) || !(await pathExists(packageJsonInStorage))) {
-    return false;
-  }
-  const realNodeModulesPath = await realpath(packageJsonInNodeModules);
-  const realStoragePath = await realpath(packageJsonInStorage);
-  return realNodeModulesPath !== realStoragePath;
 }
 
 async function packageMetadata(baseURL: string, token: string, pluginName: string): Promise<any | undefined> {
@@ -246,15 +201,7 @@ async function downloadPlugin(
   pluginName: string,
   requestedVersion: string,
   storagePath: string,
-  nodeModulesPath: string,
 ): Promise<{ action: 'installed' | 'updated' | 'skipped'; warning?: string }> {
-  if (await isDevPackage(pluginName)) {
-    return { action: 'skipped' };
-  }
-  if (await isDependencyPackage(pluginName, storagePath, nodeModulesPath)) {
-    return { action: 'skipped' };
-  }
-
   const metadata = await packageMetadata(baseURL, token, pluginName);
   if (!metadata) {
     return {
@@ -272,10 +219,6 @@ async function downloadPlugin(
   }
 
   const [resolvedVersion, tarballUrl] = tarball;
-  if (await isDownloaded(pluginName, storagePath, resolvedVersion)) {
-    return { action: 'skipped' };
-  }
-
   const outputDir = path.resolve(storagePath, pluginName);
   const existedBefore = await pathExists(path.resolve(storagePath, pluginName, 'package.json'));
   try {
@@ -342,7 +285,7 @@ export async function syncLicensedPlugins(
   },
 ): Promise<LicensePluginSyncResult> {
   const keyData = await loadSavedLicenseKeyData(runtime);
-  const baseURL = resolvePkgBaseUrl(options.pkgUrl);
+  const baseURL = await resolvePkgBaseUrl(options.pkgUrl);
   const token = await loginPkg(baseURL, keyData);
   const { commercialPlugins, licensedPlugins } = await fetchLicensedPluginPackages(runtime, { pkgUrl: options.pkgUrl });
 
@@ -389,21 +332,15 @@ export async function syncLicensedPlugins(
 
   for (const pluginName of licensedPlugins) {
     if (options.dryRun) {
-      if (await isDownloaded(pluginName, storagePath, options.version)) {
-        result.skipped.push(pluginName);
-        await emitDetail({
-          packageName: pluginName,
-          action: 'skipped',
-          outputDir: path.resolve(storagePath, pluginName),
-        });
-      } else {
-        result.installed.push(pluginName);
-        await emitDetail({
-          packageName: pluginName,
-          action: 'installed',
-          outputDir: path.resolve(storagePath, pluginName),
-        });
-      }
+      const outputDir = path.resolve(storagePath, pluginName);
+      const existedBefore = await pathExists(path.resolve(outputDir, 'package.json'));
+      const action = existedBefore ? 'updated' : 'installed';
+      result[action].push(pluginName);
+      await emitDetail({
+        packageName: pluginName,
+        action,
+        outputDir,
+      });
       continue;
     }
 
@@ -413,7 +350,6 @@ export async function syncLicensedPlugins(
       pluginName,
       options.version,
       storagePath,
-      nodeModulesPath,
     );
     if (warning) {
       result.warnings.push(warning);
@@ -431,10 +367,6 @@ export async function syncLicensedPlugins(
       outputDir: path.resolve(storagePath, pluginName),
       ...(warning ? { warning } : {}),
     });
-  }
-
-  if (!options.dryRun) {
-    await createStoragePluginsSymlink(runtime.env.storagePath, nodeModulesPath);
   }
 
   return result;

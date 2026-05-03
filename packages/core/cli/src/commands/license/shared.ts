@@ -18,6 +18,7 @@ import {
 } from '../../lib/db-connection-check.ts';
 import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
+import { resolveLicensePkgUrlFromConfig } from '../../lib/cli-config.js';
 import { commandOutput } from '../../lib/run-npm.js';
 import { appUrl } from '../env/shared.js';
 
@@ -37,7 +38,6 @@ const DEFAULT_DOCKER_VERSION = 'alpha';
 
 export const licensePkgUrlFlag = Flags.string({
   description: 'Commercial package service base URL',
-  default: DEFAULT_LICENSE_PKG_URL,
   hidden: true,
 });
 
@@ -159,7 +159,7 @@ async function runDockerLicenseJsonCommand(
     'run',
     '--rm',
     '--network',
-    runtime.workspaceName,
+    runtime.dockerNetworkName || runtime.workspaceName,
   ];
   const dockerPlatform = normalizeDockerPlatform(runtime.env.config?.dockerPlatform);
   if (dockerPlatform) {
@@ -489,12 +489,12 @@ export function redactLicenseKey(value: string): string {
   return `${text.slice(0, 4)}...${text.slice(-4)}`;
 }
 
-export function resolveLicenseServiceUrl(value?: string): string {
-  return resolveLicensePkgUrl(value).replace(/\/+$/, '');
+export async function resolveLicenseServiceUrl(value?: string): Promise<string> {
+  return (await resolveLicensePkgUrl(value)).replace(/\/+$/, '');
 }
 
-export function resolveLicensePkgUrl(value?: string): string {
-  const normalized = String(value ?? '').trim() || DEFAULT_LICENSE_PKG_URL;
+export async function resolveLicensePkgUrl(value?: string): Promise<string> {
+  const normalized = String(value ?? '').trim() || await resolveLicensePkgUrlFromConfig();
   return normalized.replace(/\/+$/, '') + '/';
 }
 

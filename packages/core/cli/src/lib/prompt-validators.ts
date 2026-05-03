@@ -213,14 +213,14 @@ export async function validateAvailableTcpPort(value: PromptValue): Promise<stri
   }
   const port = parseTcpPort(raw)!;
 
-  const available = await canListenOnTcpPort(port);
-  if (!available) {
-    return translateCli('validators.tcpPort.alreadyInUse', { port });
-  }
-
   const dockerPorts = await getDockerPublishedTcpPorts();
   if (dockerPorts.has(port)) {
     return translateCli('validators.tcpPort.alreadyInUseByDocker', { port });
+  }
+
+  const available = await canListenOnTcpPort(port);
+  if (!available) {
+    return translateCli('validators.tcpPort.alreadyInUse', { port });
   }
 
   return undefined;

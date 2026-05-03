@@ -11,6 +11,8 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { gzipSync } from 'node:zlib';
+import { setCliConfigValue } from '../lib/cli-config.js';
 
 function serviceUrl() {
   return 'https://pkg.nocobase.com';
@@ -18,6 +20,43 @@ function serviceUrl() {
 
 function pkgUrl() {
   return 'https://pkg.nocobase.com/';
+}
+
+function createMockTarGz(files: Array<{ name: string; content: string }>): Uint8Array {
+  const records: Buffer[] = [];
+
+  for (const file of files) {
+    const content = Buffer.from(file.content);
+    const header = Buffer.alloc(512, 0);
+    const name = `package/${file.name}`;
+    header.write(name, 0, Math.min(Buffer.byteLength(name), 100), 'utf8');
+    header.write('0000777\0', 100, 'ascii');
+    header.write('0000000\0', 108, 'ascii');
+    header.write('0000000\0', 116, 'ascii');
+    header.write(content.length.toString(8).padStart(11, '0') + '\0', 124, 'ascii');
+    header.write('00000000000\0', 136, 'ascii');
+    header.fill(0x20, 148, 156);
+    header[156] = '0'.charCodeAt(0);
+    header.write('ustar\0', 257, 'ascii');
+    header.write('00', 263, 'ascii');
+
+    let checksum = 0;
+    for (const byte of header) {
+      checksum += byte;
+    }
+    header.write(checksum.toString(8).padStart(6, '0'), 148, 'ascii');
+    header[154] = 0;
+    header[155] = 0x20;
+
+    records.push(header, content);
+    const remainder = content.length % 512;
+    if (remainder !== 0) {
+      records.push(Buffer.alloc(512 - remainder, 0));
+    }
+  }
+
+  records.push(Buffer.alloc(1024, 0));
+  return gzipSync(Buffer.concat(records));
 }
 
 const mocks = vi.hoisted(() => ({
@@ -177,6 +216,15 @@ beforeEach(() => {
     if (String(url).includes('plugin-a.tgz')) {
       const stream = new ReadableStream<Uint8Array>({
         start(controller) {
+          controller.enqueue(createMockTarGz([
+            {
+              name: 'package.json',
+              content: JSON.stringify({
+                name: '@nocobase/plugin-a',
+                version: '2.1.0-beta.24',
+              }),
+            },
+          ]));
           controller.close();
         },
       });
@@ -1167,8 +1215,28 @@ test('license activate supports interactive online activation', async () => {
 
 test('license plugin helpers normalize package registry urls', async () => {
   const module = await import('../commands/license/shared.js');
-  expect(module.resolveLicensePkgUrl(pkgUrl().replace(/\/$/, ''))).toBe(pkgUrl());
-  expect(module.resolveLicenseServiceUrl(`${serviceUrl()}/`)).toBe(serviceUrl());
+  expect(await module.resolveLicensePkgUrl(pkgUrl().replace(/\/$/, ''))).toBe(pkgUrl());
+  expect(await module.resolveLicenseServiceUrl(`${serviceUrl()}/`)).toBe(serviceUrl());
+});
+
+test('license plugin helpers fall back to configured pkg url', async () => {
+  const previous = process.env.NB_CLI_ROOT;
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-license-config-'));
+  process.env.NB_CLI_ROOT = tempHome;
+
+  try {
+    await setCliConfigValue('license.pkg-url', 'https://pkg.example.com', { scope: 'global' });
+    const module = await import('../commands/license/shared.js');
+    expect(await module.resolveLicensePkgUrl()).toBe('https://pkg.example.com/');
+    expect(await module.resolveLicenseServiceUrl()).toBe('https://pkg.example.com');
+  } finally {
+    if (previous === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previous;
+    }
+    await rm(tempHome, { recursive: true, force: true });
+  }
 });
 
 test('license activate supports interactive cancellation', async () => {
@@ -1410,80 +1478,6 @@ test('license plugins sync outputs per-plugin details in verbose mode', async ()
     expect(log.mock.calls[6]?.[0]).toContain('@nocobase/plugin-a');
     expect(log.mock.calls[7]?.[0]).toContain(path.join(storagePath, 'plugins', '@nocobase/plugin-a'));
     expect(log.mock.calls[8]?.[0]).toContain('Summary: 1 installed, 0 updated, 1 removed, 0 skipped, 0 warnings');
-  } finally {
-    await rm(storagePath, { recursive: true, force: true });
-  }
-});
-
-test('license plugins sync uses the selected env storage path for plugin symlinks', async () => {
-  const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
-  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
-  const licenseDir = path.join(storagePath, '.license');
-  const nodeModulesPath = path.join(storagePath, 'node_modules');
-  const appPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
-  const downloadedPluginDir = path.join(storagePath, 'plugins', '@nocobase', 'plugin-a');
-
-  try {
-    await mkdir(licenseDir, { recursive: true });
-    await mkdir(appPackageDir, { recursive: true });
-    await mkdir(downloadedPluginDir, { recursive: true });
-    await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
-    await writeFile(
-      path.join(appPackageDir, 'package.json'),
-      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-beta.24.20260501164635' }),
-    );
-    await writeFile(
-      path.join(downloadedPluginDir, 'package.json'),
-      JSON.stringify({ name: '@nocobase/plugin-a', version: '2.1.0-beta.24' }),
-    );
-    mocks.resolveManagedAppRuntime.mockResolvedValue({
-      kind: 'local',
-      envName: 'app1',
-      source: 'npm',
-      projectRoot: path.join(storagePath, 'app'),
-      workspaceName: 'nb-demo',
-      env: {
-        config: {},
-        storagePath,
-        envVars: {
-          STORAGE_PATH: storagePath,
-          NODE_MODULES_PATH: nodeModulesPath,
-        },
-      },
-    });
-    mocks.keyDecrypt.mockReturnValue(JSON.stringify({
-      accessKeyId: 'ak',
-      accessKeySecret: 'sk',
-      service: {
-        domain: 'https://pkg.example.com/',
-      },
-    }));
-
-    const log = vi.fn();
-    const command = Object.assign(Object.create(LicensePluginsSync.prototype), {
-      parse: vi.fn(async () => ({
-        flags: {
-          env: 'app1',
-          json: false,
-          'dry-run': false,
-          version: '2.1.0-beta.24',
-          verbose: false,
-        },
-      })),
-      config: {
-        pjson: {
-          version: '2.1.0-beta.24',
-        },
-      },
-      log,
-      error: (message: string) => {
-        throw new Error(message);
-      },
-    });
-
-    await LicensePluginsSync.prototype.run.call(command);
-
-    expect(mocks.createStoragePluginsSymlink).toHaveBeenCalledWith(storagePath, nodeModulesPath);
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
