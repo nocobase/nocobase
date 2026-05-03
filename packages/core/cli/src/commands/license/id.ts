@@ -16,6 +16,7 @@ import {
   requireLicenseRuntime,
   resolveInstanceIdFile,
 } from './shared.js';
+import { announceTargetEnv } from '../../lib/ui.js';
 
 export default class LicenseId extends Command {
   static override summary = 'Show the instance ID for the selected env';
@@ -39,6 +40,9 @@ export default class LicenseId extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicenseId);
     const runtime = await requireLicenseRuntime(flags.env);
+    if (!flags.json) {
+      announceTargetEnv(runtime.envName);
+    }
     const savedBefore = await readSavedInstanceId(runtime);
     const shouldGenerate = Boolean(flags.force) || !savedBefore;
     const instanceId = shouldGenerate

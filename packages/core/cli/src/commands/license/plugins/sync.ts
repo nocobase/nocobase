@@ -16,7 +16,7 @@ import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRunti
 import { syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
 import { commandOutput } from '../../../lib/run-npm.js';
-import { startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
+import { announceTargetEnv, startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
 
 const SYNC_LOADING_DELAY_MS = 1200;
 const SYNC_LOADING_UPDATE_MS = 5000;
@@ -176,6 +176,9 @@ export default class LicensePluginsSync extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsSync);
     const runtime = await requireLicenseRuntime(flags.env);
+    if (!flags.json) {
+      announceTargetEnv(runtime.envName);
+    }
     const version = trimValue(flags.version) || await resolveManagedAppVersion(runtime);
     const registryVersion = normalizePluginRegistryVersion(version);
     const shouldStreamLogs = !flags.json && Boolean(flags.verbose);

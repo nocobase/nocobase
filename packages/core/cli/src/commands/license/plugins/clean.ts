@@ -12,6 +12,7 @@ import pc from 'picocolors';
 import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { cleanLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
+import { announceTargetEnv } from '../../../lib/ui.js';
 
 function formatActionLabel(action: 'removed' | 'skipped') {
   switch (action) {
@@ -51,6 +52,9 @@ export default class LicensePluginsClean extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsClean);
     const runtime = await requireLicenseRuntime(flags.env);
+    if (!flags.json) {
+      announceTargetEnv(runtime.envName);
+    }
     const shouldStreamLogs = !flags.json && Boolean(flags.verbose);
     const pluginStoragePath = resolvePluginStoragePath(runtime.env.storagePath);
 

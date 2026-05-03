@@ -12,7 +12,7 @@ import {
   formatMissingManagedAppEnvMessage,
   stopDockerContainer,
 } from '../../lib/app-runtime.js';
-import { failTask, startTask, succeedTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
 import { formatUnmanagedDbMessage, resolveDbRuntime } from './shared.js';
 
 function formatDbStopFailure(envName: string, message: string): string {
@@ -65,6 +65,8 @@ export default class DbStop extends Command {
     if (runtime.kind !== 'builtin') {
       this.error(formatUnmanagedDbMessage('stop', runtime));
     }
+
+    announceTargetEnv(runtime.envName);
 
     startTask(`Stopping the built-in database for "${runtime.envName}"...`);
     try {

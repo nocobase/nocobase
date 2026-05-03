@@ -26,7 +26,7 @@ import {
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
-import { failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
@@ -142,6 +142,8 @@ export default class AppStart extends Command {
         ].join('\n'),
       );
     }
+
+    announceTargetEnv(runtime.envName);
 
     if (runtime.kind === 'docker') {
       const unsupportedFlags = [

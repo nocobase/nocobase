@@ -68,6 +68,7 @@ const mocks = vi.hoisted(() => ({
   readExternalDbConnectionConfig: vi.fn(),
   commandOutput: vi.fn(),
   isInteractiveTerminal: vi.fn(),
+  announceTargetEnv: vi.fn(),
   promptSelect: vi.fn(),
   promptText: vi.fn(),
   promptPassword: vi.fn(),
@@ -114,6 +115,7 @@ vi.mock('../lib/ui.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/ui.js')>();
   return {
     ...actual,
+    announceTargetEnv: mocks.announceTargetEnv,
     isInteractiveTerminal: mocks.isInteractiveTerminal,
     renderTable: mocks.renderTable,
   };
@@ -573,6 +575,7 @@ test('license activate validates docker envs through docker license env inspecti
 
     await LicenseActivate.prototype.run.call(command);
 
+    expect(mocks.announceTargetEnv).toHaveBeenCalledWith('app1');
     expect(mocks.commandOutput).toHaveBeenCalledWith(
       'docker',
       [
@@ -795,6 +798,7 @@ test('license activate validates and saves a matching license key', async () => 
 
     await LicenseActivate.prototype.run.call(command);
 
+    expect(mocks.announceTargetEnv).toHaveBeenCalledWith('app1');
     const saved = await readFile(path.join(storagePath, '.license', 'license-key'), 'utf8');
     expect(saved).toBe('license-key-raw');
     expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
@@ -1395,6 +1399,7 @@ test('license plugins sync supports dry-run previews', async () => {
 
     await LicensePluginsSync.prototype.run.call(command);
 
+    expect(mocks.announceTargetEnv).toHaveBeenCalledWith('app1');
     expect(log.mock.calls[0]?.[0]).toContain('Commercial plugin sync preview');
     expect(log.mock.calls[1]?.[0]).toContain('App version: 2.1.0-beta.24.20260501164635');
     expect(log.mock.calls[2]?.[0]).toContain('Download version: 2.1.0-beta.24');
@@ -1992,6 +1997,7 @@ test('license plugins clean previews downloaded commercial plugins', async () =>
 
     await LicensePluginsClean.prototype.run.call(command);
 
+    expect(mocks.announceTargetEnv).toHaveBeenCalledWith('app1');
     expect(log.mock.calls[0]?.[0]).toContain('Commercial plugin clean preview');
     expect(log.mock.calls[1]?.[0]).toContain(path.join(storagePath, 'plugins'));
     expect(log.mock.calls[2]?.[0]).toContain('Result:');
