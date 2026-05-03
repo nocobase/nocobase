@@ -126,12 +126,15 @@ function builtinDbContainerName(runtime: Extract<ManagedAppRuntime, { kind: 'loc
   }
 
   const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
-  const workspaceName = runtime.workspaceName;
-  return buildDockerDbContainerName(runtime.envName, dbDialect, workspaceName);
+  return buildDockerDbContainerName(
+    runtime.envName,
+    dbDialect,
+    runtime.dockerContainerPrefix || runtime.workspaceName,
+  );
 }
 
 function managedDockerNetworkName(runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>): string | undefined {
-  return runtime.workspaceName?.trim() || undefined;
+  return runtime.dockerNetworkName?.trim() || runtime.workspaceName?.trim() || undefined;
 }
 
 async function confirmDownAll(envName: string, yes: boolean): Promise<boolean> {
