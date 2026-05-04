@@ -73,6 +73,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
     return readNodeActionUses(actionsColumn);
   }
 
+  function readTableRecordActions(node: any) {
+    const actionsColumn = _.castArray(node?.subModels?.columns || []).find(
+      (column: any) => column?.use === 'TableActionsColumnModel',
+    );
+    return _.castArray(actionsColumn?.subModels?.actions || []);
+  }
+
   function readCardItemRecordActionUses(node: any) {
     return _.castArray(node?.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use);
   }
@@ -3987,6 +3994,178 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
 
     expect(validStringRes.status).toBe(200);
+  });
+
+  it('should inject addChild into tree table record actions by default', async () => {
+    const unique = Date.now();
+    const pageTitle = `Tree table blueprint default addChild ${unique}`;
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: pageTitle,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'categoriesTable',
+                type: 'table',
+                collection: 'categories',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
+
+    const addChild = readTableRecordActions(tableReadback.tree).find(
+      (action: any) => action?.use === 'AddChildActionModel',
+    );
+    expect(addChild?.uid).toBeTruthy();
+    const { actionReadback, popupSurface, popupBlock } = await readPrimaryPopupBlockFromAction(addChild.uid);
+    expect(actionReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+    });
+    expect(actionReadback.tree.stepParams?.popupSettings?.openView?.sourceId).toBeUndefined();
+    expect(popupSurface.tree?.use).toBe('AddChildActionModel');
+    expect(popupBlock?.use).toBe('CreateFormModel');
+    expect(popupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+  });
+
+  it('should keep explicit tree table record actions and still inject addChild', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Tree table explicit record actions ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['title'],
+                recordActions: ['view', 'edit', 'delete'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    const recordActionUses = readTableRecordActionUses(tableReadback.tree);
+    expect(recordActionUses).toEqual(
+      expect.arrayContaining(['ViewActionModel', 'EditActionModel', 'DeleteActionModel', 'AddChildActionModel']),
+    );
+    expect(recordActionUses.filter((item) => item === 'AddChildActionModel')).toHaveLength(1);
+    expect(recordActionUses).toHaveLength(4);
+  });
+
+  it('should keep explicit tree table addChild record actions without duplication', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Tree table explicit addChild ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'categories',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['title'],
+                recordActions: ['addChild'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    expect(readTableRecordActionUses(tableReadback.tree).filter((item) => item === 'AddChildActionModel')).toHaveLength(
+      1,
+    );
+  });
+
+  it('should not inject addChild for treeTable tables backed by non-tree collections', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Non-tree table addChild ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  treeTable: true,
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    expect(readTableRecordActionUses(tableReadback.tree)).not.toContain('AddChildActionModel');
   });
 
   it('should accept applyBlueprint defaults without attaching popup metadata to injected non-popup actions', async () => {

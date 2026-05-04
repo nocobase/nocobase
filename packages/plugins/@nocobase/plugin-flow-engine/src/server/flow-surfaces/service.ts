@@ -3613,6 +3613,8 @@ export class FlowSurfacesService {
     }
     return compileFlowSurfaceApplyBlueprintRequest(document, {
       replaceTarget,
+      getCollection: (dataSourceKey, collectionName) =>
+        this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
   }
 
@@ -7936,6 +7938,8 @@ export class FlowSurfacesService {
     document.tabs.forEach((tab, tabIndex) => {
       const composeValues = compileTabComposeValues(tab, document, tabIndex, {
         mode: document.mode === 'replace' ? 'replace' : 'append',
+        getCollection: (dataSourceKey, collectionName) =>
+          this.getCollection(dataSourceKey || 'main', collectionName || ''),
       });
       this.validatePopupTemplateAliasesInBlocks(
         _.castArray(composeValues.blocks || []),
@@ -12557,24 +12561,26 @@ export class FlowSurfacesService {
     );
   }
 
-  private async resolveOwnerCollectionForAddChild(node?: any, transaction?: any) {
+  private async resolveAddChildOwnerResourceContext(node?: any, transaction?: any) {
     const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
     const resourceInit =
       _.get(ownerNode, ['stepParams', 'resourceSettings', 'init']) ||
       (ownerNode?.uid
         ? (await this.locator.resolveCollectionContext(ownerNode.uid, transaction).catch(() => null))?.resourceInit
         : null);
-    return this.resolveCollectionFromInit(resourceInit);
+    return {
+      ownerNode,
+      resourceInit,
+      collection: this.resolveCollectionFromInit(resourceInit),
+    };
+  }
+
+  private async resolveOwnerCollectionForAddChild(node?: any, transaction?: any) {
+    return (await this.resolveAddChildOwnerResourceContext(node, transaction)).collection;
   }
 
   private async resolveAddChildResourceInitForOwnerNode(node?: any, transaction?: any) {
-    const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
-    const resourceInit =
-      _.get(ownerNode, ['stepParams', 'resourceSettings', 'init']) ||
-      (ownerNode?.uid
-        ? (await this.locator.resolveCollectionContext(ownerNode.uid, transaction).catch(() => null))?.resourceInit
-        : null);
-    const collection = this.resolveCollectionFromInit(resourceInit);
+    const { resourceInit, collection } = await this.resolveAddChildOwnerResourceContext(node, transaction);
     const associationName = this.resolveTreeChildrenAssociationName(collection);
     if (!associationName) {
       throwBadRequest(
@@ -12644,13 +12650,6 @@ export class FlowSurfacesService {
         }' does not expose a tree children field`,
       );
     }
-
-    if (await this.canUseAddChildOnOwnerNode(ownerNode, transaction)) {
-      return;
-    }
-    throwBadRequest(
-      `flowSurfaces ${context} type 'addChild' only supports tables bound to tree collections with tree table enabled`,
-    );
   }
 
   private async filterTargetRecordActions(items: any[], node: any, transaction?: any) {
