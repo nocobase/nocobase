@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "Tài liệu NocoBase CLI (lệnh nb): khởi tạo, quản lý env, chạy ứng dụng, source, database, plugin, API, tự cập nhật CLI và quản lý Skills."
-keywords: "NocoBase CLI,nb,Dòng lệnh,Tham khảo lệnh,Quản lý env,Quản lý plugin,API"
+description: "Tài liệu NocoBase CLI (lệnh nb): khởi tạo, cấu hình, quản lý môi trường, runtime ứng dụng, mã nguồn, cơ sở dữ liệu, plugin, giấy phép thương mại, API, tự cập nhật CLI và quản lý Skills."
+keywords: "NocoBase CLI,nb,dòng lệnh,tài liệu lệnh,cấu hình,quản lý môi trường,quản lý plugin,giấy phép thương mại,API"
 ---
 
 # NocoBase CLI
@@ -33,8 +33,10 @@ Các nhóm lệnh sau hiển thị trong `nb --help`:
 | --- | --- |
 | [`nb api`](./api/index.md) | Gọi NocoBase API thông qua CLI. |
 | [`nb app`](./app/index.md) | Quản lý runtime ứng dụng: khởi động, dừng, khởi động lại, log và nâng cấp. |
+| [`nb config`](./config/index.md) | Quản lý cấu hình mặc định của CLI. |
 | [`nb db`](./db/index.md) | Quản lý database tích hợp của env đã chọn. |
 | [`nb env`](./env/index.md) | Quản lý môi trường, trạng thái, chi tiết và lệnh runtime của project NocoBase. |
+| [`nb license`](./license/index.md) | Quản lý giấy phép thương mại và các plugin được cấp phép. |
 | [`nb plugin`](./plugin/index.md) | Quản lý plugin của env NocoBase đã chọn. |
 | [`nb scaffold`](./scaffold/index.md) | Sinh scaffold để phát triển plugin NocoBase. |
 | [`nb self`](./self/index.md) | Kiểm tra hoặc cập nhật chính NocoBase CLI. |
@@ -62,7 +64,9 @@ Xem help của một lệnh hoặc nhóm lệnh:
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## Ví dụ
@@ -102,6 +106,20 @@ Gọi API:
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+Xem cấu hình mặc định của CLI:
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+Xem trạng thái giấy phép thương mại:
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## Biến môi trường

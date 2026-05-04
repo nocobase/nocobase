@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "Referensi NocoBase CLI (perintah nb): inisialisasi, manajemen lingkungan, runtime aplikasi, source code, database, plugin, API, pembaruan mandiri CLI dan manajemen Skills."
-keywords: "NocoBase CLI,nb,command line,referensi perintah,manajemen lingkungan,manajemen plugin,API"
+description: "Referensi NocoBase CLI (perintah nb): inisialisasi, konfigurasi, manajemen lingkungan, runtime aplikasi, source code, database, plugin, lisensi komersial, API, pembaruan mandiri CLI dan manajemen Skills."
+keywords: "NocoBase CLI,nb,command line,referensi perintah,konfigurasi,manajemen lingkungan,manajemen plugin,lisensi komersial,API"
 ---
 
 # NocoBase CLI
@@ -33,8 +33,10 @@ Grup perintah berikut akan ditampilkan di `nb --help`:
 | --- | --- |
 | [`nb api`](./api/index.md) | Memanggil API NocoBase melalui CLI. |
 | [`nb app`](./app/index.md) | Mengelola runtime aplikasi: start, stop, restart, logs, dan upgrade. |
+| [`nb config`](./config/index.md) | Mengelola konfigurasi default CLI. |
 | [`nb db`](./db/index.md) | Mengelola database bawaan dari env yang dipilih. |
 | [`nb env`](./env/index.md) | Mengelola lingkungan proyek NocoBase, status, detail, dan perintah runtime. |
+| [`nb license`](./license/index.md) | Mengelola lisensi komersial dan plugin berlisensi. |
 | [`nb plugin`](./plugin/index.md) | Mengelola plugin dari env NocoBase yang dipilih. |
 | [`nb scaffold`](./scaffold/index.md) | Menghasilkan scaffold pengembangan plugin NocoBase. |
 | [`nb self`](./self/index.md) | Memeriksa atau memperbarui NocoBase CLI itu sendiri. |
@@ -62,7 +64,9 @@ Lihat help perintah atau grup perintah tertentu:
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## Contoh
@@ -102,6 +106,20 @@ Memanggil API:
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+Melihat konfigurasi default CLI:
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+Melihat status lisensi komersial:
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## Variabel Lingkungan

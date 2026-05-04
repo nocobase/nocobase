@@ -1,0 +1,34 @@
+---
+title: "nb config get"
+description: "nb config get 命令参考：读取某个 CLI 配置项的生效值。"
+keywords: "nb config get,NocoBase CLI,读取配置"
+---
+
+# nb config get
+
+读取指定 CLI 配置项的生效值。若未显式设置，则返回默认值。
+
+## 用法
+
+```bash
+nb config get <key>
+```
+
+## 参数
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `<key>` | string | 配置项名称：`license.pkg-url`、`docker.network`、`docker.container-prefix` |
+
+## 示例
+
+```bash
+nb config get license.pkg-url
+nb config get docker.network
+nb config get docker.container-prefix
+```
+
+## 相关命令
+
+- [`nb config set`](./set.md)
+- [`nb config list`](./list.md)
