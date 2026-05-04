@@ -12,6 +12,7 @@ import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { Image, Space, Tooltip, message } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FilePreviewRenderer,
   getFallbackIcon,
@@ -97,6 +98,7 @@ const FilePreview = ({
 
 const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
+  const { t } = useTranslation(); //  i18n added
   const [current, setCurrent] = React.useState(0);
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const list = React.useMemo(
@@ -161,7 +163,9 @@ const Preview = (props) => {
         link.click();
       } catch (error) {
         console.error('File download failed:', error);
-        message.error('File download failed');
+
+        // FIXED (i18n)
+        message.error(t('file-manager:File download failed'));
       } finally {
         if (link) {
           link.remove();
@@ -174,7 +178,7 @@ const Preview = (props) => {
         }
       }
     },
-    [current, list],
+    [current, list, t], // added t dependency
   );
   const onOpenAtIndex = React.useCallback((index: number) => {
     setCurrent(index);
