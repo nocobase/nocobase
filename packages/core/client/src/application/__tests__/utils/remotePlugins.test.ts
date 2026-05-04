@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '../../Plugin';
+import { getRequireJs } from '../../utils/requirejs';
 import {
   configRequirejs,
   defineDevPlugins,
@@ -108,6 +109,32 @@ describe('remotePlugins', () => {
         '@nocobase/demo': 'https://demo.com',
       },
     });
+  });
+
+  test('should not append duplicate .js for plugin URLs without query strings', () => {
+    const requirejs = getRequireJs();
+
+    requirejs.requirejs.config({
+      paths: {
+        '@nocobase/demo': '/static/plugins/@nocobase/demo/dist/client/index.js',
+      },
+    });
+
+    expect(requirejs.requirejs.toUrl('@nocobase/demo')).toBe('/static/plugins/@nocobase/demo/dist/client/index.js');
+  });
+
+  test('should keep hashed plugin URLs unchanged', () => {
+    const requirejs = getRequireJs();
+
+    requirejs.requirejs.config({
+      paths: {
+        '@nocobase/demo': '/static/plugins/@nocobase/demo/dist/client/index.js?hash=12345678',
+      },
+    });
+
+    expect(requirejs.requirejs.toUrl('@nocobase/demo')).toBe(
+      '/static/plugins/@nocobase/demo/dist/client/index.js?hash=12345678',
+    );
   });
 
   describe('processRemotePlugins()', () => {
