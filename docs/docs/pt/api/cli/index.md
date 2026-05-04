@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "Referência do NocoBase CLI (comando nb): inicialização, gerenciamento de ambientes, execução da aplicação, código-fonte, banco de dados, plugins, API, autoatualização do CLI e gerenciamento de Skills."
-keywords: "NocoBase CLI,nb,linha de comando,referência de comandos,gerenciamento de ambientes,gerenciamento de plugins,API"
+description: "Referência do NocoBase CLI (comando nb): inicialização, configuração, gerenciamento de ambientes, execução da aplicação, código-fonte, banco de dados, plugins, licenciamento comercial, API, autoatualização do CLI e gerenciamento de Skills."
+keywords: "NocoBase CLI,nb,linha de comando,referência de comandos,configuração,gerenciamento de ambientes,gerenciamento de plugins,licenciamento comercial,API"
 ---
 
 # NocoBase CLI
@@ -33,8 +33,10 @@ Os seguintes grupos de comandos são exibidos em `nb --help`:
 | --- | --- |
 | [`nb api`](./api/index.md) | Chamar a API do NocoBase via CLI. |
 | [`nb app`](./app/index.md) | Gerenciar o estado de execução da aplicação: iniciar, parar, reiniciar, logs e upgrade. |
+| [`nb config`](./config/index.md) | Gerenciar a configuração padrão do CLI. |
 | [`nb db`](./db/index.md) | Gerenciar o banco de dados embutido do env selecionado. |
 | [`nb env`](./env/index.md) | Gerenciar ambientes, status, detalhes e comandos em tempo de execução do projeto NocoBase. |
+| [`nb license`](./license/index.md) | Gerenciar o licenciamento comercial e os plugins licenciados. |
 | [`nb plugin`](./plugin/index.md) | Gerenciar os plugins do env NocoBase selecionado. |
 | [`nb scaffold`](./scaffold/index.md) | Gerar scaffolding de desenvolvimento de plugins NocoBase. |
 | [`nb self`](./self/index.md) | Verificar ou atualizar o próprio NocoBase CLI. |
@@ -62,7 +64,9 @@ Visualizar a ajuda de um comando ou grupo de comandos específico:
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## Exemplos
@@ -102,6 +106,20 @@ Chamar a API:
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+Ver a configuração padrão do CLI:
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+Ver o status da licença comercial:
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## Variáveis de ambiente

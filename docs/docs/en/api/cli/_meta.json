@@ -49,6 +49,34 @@
   },
   {
     "type": "custom-link",
+    "label": "nb config",
+    "link": "/api/cli/config/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb config get",
+        "link": "/api/cli/config/get"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb config set",
+        "link": "/api/cli/config/set"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb config delete",
+        "link": "/api/cli/config/delete"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb config list",
+        "link": "/api/cli/config/list"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
     "label": "nb source",
     "link": "/api/cli/source/",
     "items": [
@@ -80,7 +108,16 @@
     "label": "nb db",
     "link": "/api/cli/db/",
     "items": [
-      { "type": "custom-link", "label": "nb db ps", "link": "/api/cli/db/ps" },
+      {
+        "type": "custom-link",
+        "label": "nb db check",
+        "link": "/api/cli/db/check"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb db ps",
+        "link": "/api/cli/db/ps"
+      },
       {
         "type": "custom-link",
         "label": "nb db start",
@@ -95,6 +132,52 @@
         "type": "custom-link",
         "label": "nb db logs",
         "link": "/api/cli/db/logs"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb license",
+    "link": "/api/cli/license/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb license activate",
+        "link": "/api/cli/license/activate"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb license id",
+        "link": "/api/cli/license/id"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb license status",
+        "link": "/api/cli/license/status"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb license plugins",
+        "link": "/api/cli/license/plugins/",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb license plugins list",
+            "link": "/api/cli/license/plugins/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb license plugins sync",
+            "link": "/api/cli/license/plugins/sync"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb license plugins clean",
+            "link": "/api/cli/license/plugins/clean"
+          }
+        ],
+        "collapsed": true
       }
     ],
     "collapsed": true

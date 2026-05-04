@@ -43,14 +43,9 @@ function hasBooleanFlag(argv: string[], name: string) {
   const exact = `--${name}`;
   const negated = `--no-${name}`;
   const prefix = `--${name}=`;
-  const alias = name === 'verbose' ? '-V' : undefined;
 
   for (const value of argv) {
     if (value === exact) {
-      return true;
-    }
-
-    if (alias && value === alias) {
       return true;
     }
 

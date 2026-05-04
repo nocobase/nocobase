@@ -35,6 +35,7 @@ function formatMissingFieldsMessage(missing: string[]): string {
 }
 
 export default class LicenseGenerateId extends Command {
+  static override hidden = true;
   static override summary = 'Generate a commercial license instance ID from explicit database settings';
   static override description =
     'Generate the commercial licensing instance ID from explicit `--db-*` flags. This command only prints the generated ID and does not save it.';

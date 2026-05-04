@@ -18,6 +18,7 @@ nb db <command>
 
 | Lệnh | Mô tả |
 | --- | --- |
+| [`nb db check`](./check.md) | Kiểm tra xem kết nối cơ sở dữ liệu có truy cập được không. |
 | [`nb db ps`](./ps.md) | Xem trạng thái runtime của database tích hợp |
 | [`nb db start`](./start.md) | Khởi động container database tích hợp |
 | [`nb db stop`](./stop.md) | Dừng container database tích hợp |
@@ -26,6 +27,8 @@ nb db <command>
 ## Ví dụ
 
 ```bash
+nb db check --env app1
+nb db check --db-dialect postgres --db-host 127.0.0.1 --db-port 5432 --db-database nocobase --db-user nocobase --db-password secret
 nb db ps
 nb db ps --env app1
 nb db start --env app1

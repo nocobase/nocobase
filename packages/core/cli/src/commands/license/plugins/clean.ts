@@ -43,7 +43,6 @@ export default class LicensePluginsClean extends Command {
       default: false,
     }),
     verbose: Flags.boolean({
-      char: 'V',
       description: 'Show detailed per-plugin clean logs',
       default: false,
     }),

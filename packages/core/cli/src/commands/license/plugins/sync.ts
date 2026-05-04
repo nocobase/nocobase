@@ -166,7 +166,6 @@ export default class LicensePluginsSync extends Command {
       description: 'Registry version or dist-tag to synchronize. Defaults to the current workspace version.',
     }),
     verbose: Flags.boolean({
-      char: 'V',
       description: 'Show detailed per-plugin sync logs',
       default: false,
     }),

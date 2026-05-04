@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "NocoBase CLI (nb command) reference: initialization, environment management, app runtime, source, database, plugins, API, CLI self updates, and Skills management."
-keywords: "NocoBase CLI,nb,command line,command reference,environment management,plugin management,API"
+description: "NocoBase CLI (nb command) reference: initialization, configuration, environment management, app runtime, source, database, plugins, commercial licensing, API, CLI self updates, and Skills management."
+keywords: "NocoBase CLI,nb,command line,command reference,configuration,environment management,plugin management,commercial licensing,API"
 ---
 
 # NocoBase CLI
@@ -33,8 +33,10 @@ The root command mainly displays help and dispatches execution to command groups
 | --- | --- |
 | [`nb api`](./api/index.md) | Work with NocoBase API. |
 | [`nb app`](./app/index.md) | Manage NocoBase app runtimes: start, stop, restart, logs, and upgrades. |
+| [`nb config`](./config/index.md) | Manage CLI configuration defaults. |
 | [`nb db`](./db/index.md) | Manage the built-in database for the selected env. |
 | [`nb env`](./env/index.md) | Manage NocoBase project environments, status, details, and command runtimes. |
+| [`nb license`](./license/index.md) | Manage commercial licensing and licensed plugins. |
 | [`nb plugin`](./plugin/index.md) | Manage plugins in the selected NocoBase env. |
 | [`nb scaffold`](./scaffold/index.md) | Generate NocoBase plugin development scaffolds. |
 | [`nb self`](./self/index.md) | Inspect or update the NocoBase CLI itself. |
@@ -62,7 +64,9 @@ Show help for a command or command group:
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## Examples
@@ -102,6 +106,20 @@ Call an API:
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+View CLI default config:
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+View commercial license status:
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## Environment variables
