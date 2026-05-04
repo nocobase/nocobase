@@ -2128,6 +2128,7 @@
             "buttonSettings": {
               "general": {
                 "title": "Bulk Delete",
+                "tooltip": "{{t(\"Delete\")}}",
                 "type": ""
               }
             }
@@ -3779,6 +3780,7 @@
         "buttonSettings": {
           "general": {
             "title": "Bulk Delete",
+            "tooltip": "{{t(\"Delete\")}}",
             "type": ""
           }
         }

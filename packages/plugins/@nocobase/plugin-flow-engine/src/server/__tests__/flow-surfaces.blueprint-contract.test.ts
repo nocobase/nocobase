@@ -3961,6 +3961,19 @@ describe('flowSurfaces applyBlueprint contract', () => {
             title: `Valid addChild blueprint ${Date.now()}`,
           },
         },
+        defaults: {
+          collections: {
+            categories: {
+              fieldGroups: [
+                {
+                  key: 'categoryMain',
+                  title: 'Category main',
+                  fields: ['title', 'parent'],
+                },
+              ],
+            },
+          },
+        },
         tabs: [
           {
             title: 'Overview',

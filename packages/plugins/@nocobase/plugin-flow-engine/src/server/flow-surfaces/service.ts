@@ -15975,28 +15975,30 @@ export class FlowSurfacesService {
       };
     }
 
+    const props = buildDefinedPayload({
+      title: changes.title,
+      tooltip: changes.tooltip,
+      icon: changes.icon,
+      type: changes.type,
+      htmlType: changes.htmlType,
+      position: changes.position,
+      danger: changes.danger,
+      color: changes.color,
+      ...(hasOwnDefined(changes, 'filterableFieldNames')
+        ? { filterableFieldNames: _.cloneDeep(changes.filterableFieldNames) }
+        : {}),
+      ...(hasOwnDefined(changes, 'defaultFilter')
+        ? {
+            defaultFilterValue: normalizedDefaultFilter,
+            filterValue: _.cloneDeep(normalizedDefaultFilter),
+          }
+        : {}),
+    });
+
     return this.updateSettings(
       {
         target,
-        props: buildDefinedPayload({
-          title: changes.title,
-          tooltip: changes.tooltip,
-          icon: changes.icon,
-          type: changes.type,
-          htmlType: changes.htmlType,
-          position: changes.position,
-          danger: changes.danger,
-          color: changes.color,
-          ...(hasOwnDefined(changes, 'filterableFieldNames')
-            ? { filterableFieldNames: _.cloneDeep(changes.filterableFieldNames) }
-            : {}),
-          ...(hasOwnDefined(changes, 'defaultFilter')
-            ? {
-                defaultFilterValue: normalizedDefaultFilter,
-                filterValue: _.cloneDeep(normalizedDefaultFilter),
-              }
-            : {}),
-        }),
+        ...(Object.keys(props).length ? { props } : {}),
         stepParams: Object.keys(stepParams).length ? stepParams : undefined,
       },
       {

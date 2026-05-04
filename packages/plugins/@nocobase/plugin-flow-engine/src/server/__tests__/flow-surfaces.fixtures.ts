@@ -1202,7 +1202,7 @@ function extractFixtureSubmitAction(node: any) {
 function extractFixtureButtonSettings(node: any) {
   const general = node?.stepParams?.buttonSettings?.general || {};
   return compactObject({
-    general: compactObject(_.pick(general, ['title', 'type'])),
+    general: compactObject(_.pick(general, ['title', 'tooltip', 'type'])),
   });
 }
 
@@ -1346,7 +1346,7 @@ function projectSubmitAction(node: any) {
 function projectButtonSettings(node: any) {
   const general = node?.stepParams?.buttonSettings?.general || {};
   return compactObject({
-    general: compactObject(_.pick(general, ['title', 'type'])),
+    general: compactObject(_.pick(general, ['title', 'tooltip', 'type'])),
   });
 }
 

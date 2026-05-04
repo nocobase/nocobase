@@ -2131,6 +2131,7 @@
             "buttonSettings": {
               "general": {
                 "title": "Bulk Delete",
+                "tooltip": "{{t(\"Delete\")}}",
                 "type": ""
               }
             }

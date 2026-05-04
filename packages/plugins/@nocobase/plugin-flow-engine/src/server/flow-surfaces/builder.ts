@@ -1069,8 +1069,10 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       icon: 'DownOutlined',
     },
     BulkDeleteActionModel: {
-      title: '{{t("Delete")}}',
+      title: '',
+      tooltip: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
+      position: 'right',
     },
     BulkEditActionModel: {
       title: '{{t("Bulk edit")}}',

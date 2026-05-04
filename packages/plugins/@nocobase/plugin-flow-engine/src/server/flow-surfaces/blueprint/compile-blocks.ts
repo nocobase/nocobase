@@ -180,7 +180,7 @@ const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
   'updateRecord',
   'duplicate',
 ]);
-const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES = new Set(['addNew', 'view', 'edit']);
+const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES = new Set(['addNew', 'addChild', 'view', 'edit']);
 const APPLY_BLUEPRINT_BLOCK_TYPES = new Set<string>(APPLY_BLUEPRINT_BLOCK_TYPE_ENUM);
 const APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR =
   "type 'addChild' must be authored under recordActions and is only valid when the live target catalog.recordActions exposes it for a tree collection table with treeTable enabled";
@@ -903,6 +903,15 @@ function attachCompiledPopupDefaults(
   return attachFlowSurfaceApplyBlueprintPopupDefaults(popup, metadata);
 }
 
+function attachDefaultActionPopupMetadata(
+  popup: Record<string, any> | undefined,
+  actionType: string | undefined,
+  metadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+) {
+  const defaultPopup = actionType === 'addChild' && _.isUndefined(popup) ? {} : popup;
+  return attachCompiledPopupDefaults(defaultPopup, metadata);
+}
+
 function compilePopup(
   popup: FlowSurfaceApplyBlueprintPopup | undefined,
   scopePrefix: string,
@@ -1167,7 +1176,7 @@ function compileAction(
       key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, `${type}_${index + 1}`), `${context}[${index}]`),
       type,
       ...(APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES.has(type)
-        ? { popup: attachCompiledPopupDefaults(undefined, popupDefaultsMetadata) }
+        ? { popup: attachDefaultActionPopupMetadata(undefined, type, popupDefaultsMetadata) }
         : {}),
     };
   }
@@ -1188,7 +1197,7 @@ function compileAction(
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   const popup = shouldAttachDefaultPopupMetadata(input.popup, type)
-    ? attachCompiledPopupDefaults(popupResult.popup, popupDefaultsMetadata)
+    ? attachDefaultActionPopupMetadata(popupResult.popup, type, popupDefaultsMetadata)
     : popupResult.popup;
   return buildDefinedPayload({
     key,

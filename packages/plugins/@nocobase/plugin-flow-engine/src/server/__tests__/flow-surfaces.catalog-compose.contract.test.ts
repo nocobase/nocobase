@@ -188,6 +188,32 @@ describe('flowSurfaces catalog + compose contract', () => {
     );
   }
 
+  function expectIconOnlyCollectionActionDefaults(
+    action: any,
+    expected: {
+      use: string;
+      tooltip: string;
+      icon: string;
+      type?: string;
+    },
+  ) {
+    expect(action?.use).toBe(expected.use);
+    expect(action?.props).toMatchObject({
+      title: '',
+      tooltip: expected.tooltip,
+      icon: expected.icon,
+      position: 'right',
+      ...(expected.type ? { type: expected.type } : {}),
+    });
+    expect(action?.stepParams?.buttonSettings?.general).toMatchObject({
+      title: '',
+      tooltip: expected.tooltip,
+      icon: expected.icon,
+      ...(expected.type ? { type: expected.type } : {}),
+    });
+    expect(action?.stepParams?.buttonSettings?.general?.position).toBeUndefined();
+  }
+
   async function createCalendarTestCollection(collectionName: string) {
     await rootAgent.resource('collections').create({
       values: {
@@ -690,6 +716,14 @@ describe('flowSurfaces catalog + compose contract', () => {
         type: 'string',
       },
       openView: {
+        type: 'object',
+      },
+    });
+    expect(tableCatalog.actions.find((item: any) => item.key === 'bulkDelete')?.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      confirm: {
         type: 'object',
       },
     });
@@ -4015,7 +4049,6 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(_.castArray(tableReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
       expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
     );
-
     const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
       (item: any) => item?.use === 'TableActionsColumnModel',
     )?.uid;
@@ -5133,6 +5166,67 @@ describe('flowSurfaces catalog + compose contract', () => {
       type: 'primary',
       icon: 'EditOutlined',
     });
+  });
+
+  it('should create explicit bulk delete with icon-only right collection action defaults', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Bulk delete action style page',
+      tabTitle: 'Bulk delete action style tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+
+    const bulkDeleteAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'bulkDelete',
+        },
+      }),
+    );
+    const explicitBulkDeleteAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'bulkDelete',
+          settings: {
+            title: 'Remove selected',
+            position: 'left',
+          },
+        },
+      }),
+    );
+
+    const bulkDeleteReadback = await getSurface(rootAgent, {
+      uid: bulkDeleteAction.uid,
+    });
+    expectIconOnlyCollectionActionDefaults(bulkDeleteReadback.tree, {
+      use: 'BulkDeleteActionModel',
+      tooltip: '{{t("Delete")}}',
+      icon: 'DeleteOutlined',
+    });
+
+    const explicitBulkDeleteReadback = await getSurface(rootAgent, {
+      uid: explicitBulkDeleteAction.uid,
+    });
+    expect(explicitBulkDeleteReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      title: 'Remove selected',
+      tooltip: '{{t("Delete")}}',
+      icon: 'DeleteOutlined',
+    });
+    expect(explicitBulkDeleteReadback.tree.stepParams?.buttonSettings?.general?.type).toBeUndefined();
   });
 
   it('should compose a grid-card block with item fields block actions and record actions', async () => {
