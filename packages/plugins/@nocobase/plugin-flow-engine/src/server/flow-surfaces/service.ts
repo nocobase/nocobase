@@ -4389,6 +4389,106 @@ export class FlowSurfacesService {
     return this.buildPopupTemplateOpenView(template, 'reference', templateTargetUid);
   }
 
+  private shouldHydrateDetachedPopupTemplateBlockResourceContext(
+    blockNode: any,
+    context: {
+      dataSourceKey?: string;
+      collectionName?: string;
+      associationName?: string;
+      sourceId?: string;
+    },
+  ) {
+    if (!this.isCollectionBlockUse(blockNode?.use) || !context.associationName || !context.sourceId) {
+      return false;
+    }
+    const init = _.get(blockNode, ['stepParams', 'resourceSettings', 'init']) || {};
+    const popupDataSourceKey = context.dataSourceKey || 'main';
+    const blockDataSourceKey = init.dataSourceKey || 'main';
+    if (
+      !context.collectionName ||
+      blockDataSourceKey !== popupDataSourceKey ||
+      init.collectionName !== context.collectionName
+    ) {
+      return false;
+    }
+    const blockAssociationName = String(init.associationName || '').trim();
+    if (blockAssociationName && blockAssociationName !== context.associationName) {
+      return false;
+    }
+    if (
+      hasConfiguredFlowContextValue(init.sourceId) &&
+      !this.isSameConfiguredFlowContextValue(init.sourceId, context.sourceId)
+    ) {
+      return false;
+    }
+    return (
+      blockAssociationName !== context.associationName ||
+      !this.isSameConfiguredFlowContextValue(init.sourceId, context.sourceId)
+    );
+  }
+
+  private collectDetachedPopupTemplateBlockResourceContextPatches(
+    node: any,
+    context: {
+      dataSourceKey?: string;
+      collectionName?: string;
+      associationName?: string;
+      sourceId?: string;
+    },
+    patches: Array<{ uid: string; stepParams: Record<string, any> }> = [],
+  ) {
+    if (!node || typeof node !== 'object') {
+      return patches;
+    }
+    if (node.uid && this.shouldHydrateDetachedPopupTemplateBlockResourceContext(node, context)) {
+      const nextStepParams = _.cloneDeep(node.stepParams || {});
+      const currentInit = _.get(nextStepParams, ['resourceSettings', 'init']) || {};
+      _.set(
+        nextStepParams,
+        ['resourceSettings', 'init'],
+        buildDefinedPayload({
+          ...currentInit,
+          dataSourceKey: context.dataSourceKey || currentInit.dataSourceKey || 'main',
+          collectionName: context.collectionName || currentInit.collectionName,
+          associationName: context.associationName,
+          sourceId: context.sourceId,
+        }),
+      );
+      patches.push({
+        uid: node.uid,
+        stepParams: nextStepParams,
+      });
+    }
+    for (const value of Object.values(node.subModels || {})) {
+      for (const child of _.castArray(value as any)) {
+        this.collectDetachedPopupTemplateBlockResourceContextPatches(child, context, patches);
+      }
+    }
+    return patches;
+  }
+
+  private async hydrateDetachedPopupTemplateBlockResourceContext(
+    detachedTarget: any,
+    context: {
+      dataSourceKey?: string;
+      collectionName?: string;
+      associationName?: string;
+      sourceId?: string;
+    },
+    transaction?: any,
+  ) {
+    const patches = this.collectDetachedPopupTemplateBlockResourceContextPatches(detachedTarget, context);
+    for (const patch of patches) {
+      await this.repository.patch(
+        {
+          uid: patch.uid,
+          stepParams: patch.stepParams,
+        },
+        { transaction },
+      );
+    }
+  }
+
   private async hydrateDetachedPopupTemplateSourceContext(
     templateTargetUid: string,
     inferred: {
@@ -4418,39 +4518,38 @@ export class FlowSurfacesService {
     }
 
     const resolvedOpenViewStep = findFlowTemplateOpenViewStep(detachedTarget) || inferred.openViewStep;
-    if (!resolvedOpenViewStep) {
-      return;
+    if (resolvedOpenViewStep) {
+      const nextStepParams = _.cloneDeep(detachedTarget.stepParams || {});
+      const currentGroup = _.isPlainObject(nextStepParams[resolvedOpenViewStep.flowKey])
+        ? _.cloneDeep(nextStepParams[resolvedOpenViewStep.flowKey])
+        : {};
+      const currentOpenView = _.isPlainObject(currentGroup[resolvedOpenViewStep.stepKey])
+        ? _.omit(stripTemplateInternalOpenViewFields(currentGroup[resolvedOpenViewStep.stepKey]) || {}, ['uid'])
+        : {};
+      const nextOpenView = buildDefinedPayload({
+        ...currentOpenView,
+        dataSourceKey: inferred.dataSourceKey || currentOpenView.dataSourceKey,
+        collectionName: inferred.collectionName || currentOpenView.collectionName,
+        associationName: inferred.associationName || currentOpenView.associationName,
+        filterByTk: inferred.filterByTk || currentOpenView.filterByTk,
+        sourceId: inferred.sourceId || currentOpenView.sourceId,
+      });
+
+      if (!_.isEqual(nextOpenView, currentOpenView)) {
+        currentGroup[resolvedOpenViewStep.stepKey] = nextOpenView;
+        nextStepParams[resolvedOpenViewStep.flowKey] = currentGroup;
+        await this.repository.patch(
+          {
+            uid: detachedTarget.uid,
+            stepParams: nextStepParams,
+          },
+          { transaction },
+        );
+        detachedTarget.stepParams = nextStepParams;
+      }
     }
 
-    const nextStepParams = _.cloneDeep(detachedTarget.stepParams || {});
-    const currentGroup = _.isPlainObject(nextStepParams[resolvedOpenViewStep.flowKey])
-      ? _.cloneDeep(nextStepParams[resolvedOpenViewStep.flowKey])
-      : {};
-    const currentOpenView = _.isPlainObject(currentGroup[resolvedOpenViewStep.stepKey])
-      ? _.omit(stripTemplateInternalOpenViewFields(currentGroup[resolvedOpenViewStep.stepKey]) || {}, ['uid'])
-      : {};
-    const nextOpenView = buildDefinedPayload({
-      ...currentOpenView,
-      dataSourceKey: inferred.dataSourceKey || currentOpenView.dataSourceKey,
-      collectionName: inferred.collectionName || currentOpenView.collectionName,
-      associationName: inferred.associationName || currentOpenView.associationName,
-      filterByTk: inferred.filterByTk || currentOpenView.filterByTk,
-      sourceId: inferred.sourceId || currentOpenView.sourceId,
-    });
-
-    if (_.isEqual(nextOpenView, currentOpenView)) {
-      return;
-    }
-
-    currentGroup[resolvedOpenViewStep.stepKey] = nextOpenView;
-    nextStepParams[resolvedOpenViewStep.flowKey] = currentGroup;
-    await this.repository.patch(
-      {
-        uid: detachedTarget.uid,
-        stepParams: nextStepParams,
-      },
-      { transaction },
-    );
+    await this.hydrateDetachedPopupTemplateBlockResourceContext(detachedTarget, inferred, transaction);
   }
 
   private async clearFlowTemplateUsagesByModelUids(modelUids: Iterable<string>, transaction?: any) {
@@ -4700,7 +4799,7 @@ export class FlowSurfacesService {
     const currentGroup = _.isPlainObject(nextStepParams[openViewStep.flowKey])
       ? _.cloneDeep(nextStepParams[openViewStep.flowKey])
       : {};
-    currentGroup[openViewStep.stepKey] = {
+    let nextOpenView = {
       ..._.omit(openViewStep.openView || {}, [
         'popupTemplateUid',
         'popupTemplateMode',
@@ -4710,6 +4809,10 @@ export class FlowSurfacesService {
       ]),
       ...this.buildPopupTemplateReferenceOpenView(template, templateTargetUid),
     };
+    if (String(sourceNode.use || '').trim() === 'AddChildActionModel') {
+      nextOpenView = await this.normalizeAddChildOpenViewForAction(sourceNode, nextOpenView, transaction);
+    }
+    currentGroup[openViewStep.stepKey] = nextOpenView;
     nextStepParams[openViewStep.flowKey] = currentGroup;
     await this.cleanupLocalPopupSurfaceForHost(sourceNode.uid, transaction, sourceNode);
     await this.repository.patch(
@@ -5052,6 +5155,13 @@ export class FlowSurfacesService {
         ]),
         ...this.buildPopupTemplateOpenView(resolved.template, 'copy', popupUid),
       };
+      if (String(node.use || '').trim() === 'AddChildActionModel') {
+        currentGroup[resolved.openViewStep.stepKey] = await this.normalizeAddChildOpenViewForAction(
+          node,
+          currentGroup[resolved.openViewStep.stepKey],
+          options.transaction,
+        );
+      }
       nextStepParams[resolved.openViewStep.flowKey] = currentGroup;
       await this.cleanupLocalPopupSurfaceForHost(node.uid, options.transaction, node);
       await this.repository.patch(
@@ -7466,10 +7576,13 @@ export class FlowSurfacesService {
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
       : null;
+    const resourceInit = this.isAddChildCatalogItem(actionCatalogItem)
+      ? await this.resolveAddChildResourceInitForOwnerNode(container.ownerNode, options.transaction)
+      : values.resourceInit || resourceContext?.resourceInit;
     const action = buildActionTree({
       use: actionCatalogItem.use,
       containerUse: container.containerUse,
-      resourceInit: values.resourceInit || resourceContext?.resourceInit,
+      resourceInit,
       props: values.props,
       decoratorProps: values.decoratorProps,
       stepParams: values.stepParams,
@@ -8041,6 +8154,9 @@ export class FlowSurfacesService {
 
   private resolveDefaultActionPopupSemanticUse(use?: string): string | undefined {
     const normalizedUse = String(use || '').trim();
+    if (normalizedUse === 'AddChildActionModel') {
+      return 'AddNewActionModel';
+    }
     if (normalizedUse === 'CalendarQuickCreateActionModel') {
       return 'AddNewActionModel';
     }
@@ -8288,6 +8404,9 @@ export class FlowSurfacesService {
   }
 
   private getPopupTryTemplateExpectedAssociationName(targetContext?: FlowSurfaceTemplateListTargetContext) {
+    if (String(targetContext?.node?.use || '').trim() === 'AddChildActionModel') {
+      return String(this.resolvePopupHostOpenView(targetContext.node)?.associationName || '').trim() || undefined;
+    }
     if (targetContext?.popupProfile?.isPopupSurface) {
       return String(targetContext.popupProfile.associationName || '').trim() || undefined;
     }
@@ -8297,6 +8416,7 @@ export class FlowSurfacesService {
   private getPopupTryTemplatePriority(
     template: Pick<FlowSurfaceTemplateRow, 'associationName'>,
     expectedAssociationName?: string,
+    options: { requireExactAssociationName?: boolean } = {},
   ) {
     const templateAssociationName = String(template.associationName || '').trim() || undefined;
     if (!expectedAssociationName) {
@@ -8305,10 +8425,20 @@ export class FlowSurfacesService {
     if (templateAssociationName === expectedAssociationName) {
       return 0;
     }
+    if (options.requireExactAssociationName) {
+      return null;
+    }
     if (!templateAssociationName) {
       return 1;
     }
     return null;
+  }
+
+  private shouldRequireExactPopupTryTemplateAssociation(targetContext?: FlowSurfaceTemplateListTargetContext) {
+    return (
+      String(targetContext?.node?.use || '').trim() === 'AddChildActionModel' &&
+      !!this.getPopupTryTemplateExpectedAssociationName(targetContext)
+    );
   }
 
   private getRequestedPopupDefaultType(popup: Record<string, any> | undefined): 'view' | 'edit' | undefined {
@@ -8437,12 +8567,15 @@ export class FlowSurfacesService {
       targetContext,
       options.popupActionContext,
     );
+    const requireExactAssociationName = this.shouldRequireExactPopupTryTemplateAssociation(targetContext);
 
     for (const priority of [0, 1] as const) {
       for (const template of annotatedTemplates) {
         if (
           template.available !== true ||
-          this.getPopupTryTemplatePriority(template, expectedAssociationName) !== priority
+          this.getPopupTryTemplatePriority(template, expectedAssociationName, {
+            requireExactAssociationName,
+          }) !== priority
         ) {
           continue;
         }
@@ -8615,6 +8748,7 @@ export class FlowSurfacesService {
     options: {
       transaction?: any;
       popupTemplateHostUid?: string;
+      popupTemplateHostUse?: string;
       popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
     } = {},
   ) {
@@ -8675,7 +8809,7 @@ export class FlowSurfacesService {
       if (templateRef.mode === 'copy') {
         await this.ensurePopupSurface(resolvedUid, options.transaction);
       }
-      const nextTemplateOpenView = this.buildPopupTemplateOpenView(template, templateRef.mode, resolvedUid);
+      let nextTemplateOpenView = this.buildPopupTemplateOpenView(template, templateRef.mode, resolvedUid);
       Object.keys(normalizedOpenView).forEach((key) => {
         if (
           key === 'template' ||
@@ -8688,6 +8822,9 @@ export class FlowSurfacesService {
           delete normalizedOpenView[key];
         }
       });
+      if (String(options.popupTemplateHostUse || '').trim() === 'AddChildActionModel') {
+        nextTemplateOpenView = _.omit(nextTemplateOpenView, ['sourceId']);
+      }
       Object.assign(normalizedOpenView, nextTemplateOpenView);
     }
     if (!_.isUndefined(normalizedOpenView.uid)) {
@@ -10331,6 +10468,7 @@ export class FlowSurfacesService {
       {
         transaction: options.transaction,
         popupTemplateHostUid: options.popupTemplateHostUid,
+        popupTemplateHostUse: current?.use,
         popupActionContext,
       },
     );
@@ -11085,6 +11223,7 @@ export class FlowSurfacesService {
     options: {
       transaction?: any;
       popupTemplateHostUid?: string;
+      popupTemplateHostUse?: string;
       popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
     } = {},
   ) {
@@ -11100,11 +11239,19 @@ export class FlowSurfacesService {
       }
       const requestedOpenView = _.get(nextPayload, openViewPath);
       const currentOpenView = _.get(current, openViewPath);
-      const nextOpenView = await this.normalizeOpenView(actionName, requestedOpenView, {
+      let nextOpenView = await this.normalizeOpenView(actionName, requestedOpenView, {
         transaction: options.transaction,
         popupTemplateHostUid,
+        popupTemplateHostUse: options.popupTemplateHostUse || current?.use,
         popupActionContext: options.popupActionContext,
       });
+      if (
+        flowKey === 'popupSettings' &&
+        String(current?.use || '').trim() === 'AddChildActionModel' &&
+        _.isPlainObject(nextOpenView)
+      ) {
+        nextOpenView = await this.normalizeAddChildOpenViewForAction(current, nextOpenView, options.transaction);
+      }
       if (
         this.isTryTemplateOnlyOpenViewRequest(requestedOpenView) &&
         _.isPlainObject(nextOpenView) &&
@@ -12369,6 +12516,18 @@ export class FlowSurfacesService {
     return item?.key === 'addChild' || item?.use === 'AddChildActionModel';
   }
 
+  private resolveTreeChildrenField(collection?: any) {
+    return getCollectionFields(collection).find(
+      (field) => field?.treeChildren === true || field?.options?.treeChildren === true,
+    );
+  }
+
+  private resolveTreeChildrenAssociationName(collection?: any) {
+    const collectionName = getCollectionName(collection);
+    const childrenFieldName = getFieldName(this.resolveTreeChildrenField(collection));
+    return collectionName && childrenFieldName ? `${collectionName}.${childrenFieldName}` : undefined;
+  }
+
   private isTreeCollection(collection?: any) {
     return collection?.template === 'tree' || collection?.options?.template === 'tree' || collection?.tree === true;
   }
@@ -12408,17 +12567,85 @@ export class FlowSurfacesService {
     return this.resolveCollectionFromInit(resourceInit);
   }
 
+  private async resolveAddChildResourceInitForOwnerNode(node?: any, transaction?: any) {
+    const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
+    const resourceInit =
+      _.get(ownerNode, ['stepParams', 'resourceSettings', 'init']) ||
+      (ownerNode?.uid
+        ? (await this.locator.resolveCollectionContext(ownerNode.uid, transaction).catch(() => null))?.resourceInit
+        : null);
+    const collection = this.resolveCollectionFromInit(resourceInit);
+    const associationName = this.resolveTreeChildrenAssociationName(collection);
+    if (!associationName) {
+      throwBadRequest(
+        `flowSurfaces addRecordAction type 'addChild' cannot resolve tree children association for '${
+          String(resourceInit?.collectionName || '').trim() || 'unknown'
+        }'`,
+      );
+    }
+    return buildDefinedPayload({
+      dataSourceKey: resourceInit?.dataSourceKey || 'main',
+      collectionName: resourceInit?.collectionName,
+      associationName,
+    });
+  }
+
+  private async normalizeAddChildOpenViewForAction(actionNode: any, openView: any, transaction?: any) {
+    if (!_.isPlainObject(openView)) {
+      return openView;
+    }
+    const parentUid =
+      String(actionNode?.parentId || '').trim() ||
+      (actionNode?.uid ? await this.locator.findParentUid(actionNode.uid, transaction).catch(() => '') : '');
+    const parentNode = parentUid
+      ? await this.repository.findModelById(parentUid, {
+          transaction,
+          includeAsyncNode: true,
+        })
+      : null;
+    const addChildResourceInit = await this.resolveAddChildResourceInitForOwnerNode(parentNode, transaction);
+
+    return buildDefinedPayload({
+      ..._.omit(_.cloneDeep(openView), ['sourceId']),
+      dataSourceKey: addChildResourceInit.dataSourceKey,
+      collectionName: addChildResourceInit.collectionName,
+      associationName: addChildResourceInit.associationName,
+    });
+  }
+
   private async canUseAddChildOnOwnerNode(node?: any, transaction?: any) {
     const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
     if (ownerNode?.use !== 'TableBlockModel' || !this.isTreeTableEnabled(ownerNode)) {
       return false;
     }
     const collection = await this.resolveOwnerCollectionForAddChild(ownerNode, transaction);
-    return this.isTreeCollection(collection);
+    return this.isTreeCollection(collection) && !!this.resolveTreeChildrenAssociationName(collection);
   }
 
   private async assertAddChildSupportedForOwnerNode(node: any, context: string, transaction?: any) {
-    if (await this.canUseAddChildOnOwnerNode(node, transaction)) {
+    const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
+    if (ownerNode?.use !== 'TableBlockModel' || !this.isTreeTableEnabled(ownerNode)) {
+      throwBadRequest(
+        `flowSurfaces ${context} type 'addChild' only supports tables bound to tree collections with tree table enabled`,
+      );
+    }
+
+    const collection = await this.resolveOwnerCollectionForAddChild(ownerNode, transaction);
+    if (!this.isTreeCollection(collection)) {
+      throwBadRequest(
+        `flowSurfaces ${context} type 'addChild' only supports tables bound to tree collections with tree table enabled`,
+      );
+    }
+
+    if (!this.resolveTreeChildrenAssociationName(collection)) {
+      throwBadRequest(
+        `flowSurfaces ${context} type 'addChild' tree collection '${
+          getCollectionName(collection) || 'unknown'
+        }' does not expose a tree children field`,
+      );
+    }
+
+    if (await this.canUseAddChildOnOwnerNode(ownerNode, transaction)) {
       return;
     }
     throwBadRequest(
@@ -15523,6 +15750,14 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any; openViewActionName?: string; current?: any },
   ) {
+    const currentNode =
+      options.current ||
+      (target.uid
+        ? await this.repository.findModelById(target.uid, {
+            transaction: options.transaction,
+            includeAsyncNode: true,
+          })
+        : null);
     changes = await this.normalizeActionPanelActionChanges(changes, options);
     const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('action', changes, allowedKeys);
@@ -15598,8 +15833,12 @@ export class FlowSurfacesService {
       } else if (!POPUP_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support openView`);
       } else {
+        let openView = _.cloneDeep(changes.openView);
+        if (use === 'AddChildActionModel') {
+          openView = await this.normalizeAddChildOpenViewForAction(currentNode, openView, options.transaction);
+        }
         stepParams.popupSettings = {
-          openView: _.cloneDeep(changes.openView),
+          openView,
         };
       }
     }

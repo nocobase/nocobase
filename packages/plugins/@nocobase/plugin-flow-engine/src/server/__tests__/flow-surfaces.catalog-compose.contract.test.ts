@@ -5396,6 +5396,140 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   });
 
+  it('should bind addChild popup create form to the tree children association', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Add child association popup page',
+      tabTitle: 'Add child association popup tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'categories',
+      },
+      settings: {
+        treeTable: true,
+      },
+    });
+
+    const addChildRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'addChild',
+      },
+    });
+    expect(addChildRes.status).toBe(200);
+    const addChild = getData(addChildRes);
+
+    const { actionSurface, popupBlock } = await readPrimaryPopupBlock(addChild.uid);
+    expect(actionSurface.tree.use).toBe('AddChildActionModel');
+    expect(actionSurface.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+    });
+    expect(actionSurface.tree.stepParams?.popupSettings?.openView?.sourceId).toBeUndefined();
+    expect(popupBlock?.use).toBe('CreateFormModel');
+    expect(popupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: addChild.uid,
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'categories',
+            mode: 'dialog',
+          },
+        },
+      },
+    });
+    expect(configureRes.status).toBe(200);
+    const configuredAddChild = await getSurface(rootAgent, {
+      uid: addChild.uid,
+    });
+    expect(configuredAddChild.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+      mode: 'dialog',
+    });
+    expect(configuredAddChild.tree.stepParams?.popupSettings?.openView?.sourceId).toBeUndefined();
+  });
+
+  it('should reject addChild for tree tables without a tree children field', async () => {
+    const collectionName = `tree_without_children_${uid()}`;
+    await rootAgent.resource('collections').apply({
+      values: {
+        name: collectionName,
+        title: 'Tree without children',
+        template: 'tree',
+        fields: [{ name: 'title', interface: 'input', title: 'Title' }],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['title', 'parentId'],
+    });
+
+    const destroyChildrenRes = await rootAgent.resource('collections.fields', collectionName).destroy({
+      filterByTk: 'children',
+    });
+    expect(destroyChildrenRes.status).toBe(200);
+    expect(app.db.getCollection(collectionName)?.getField?.('children')).toBeFalsy();
+
+    const page = await createPage(rootAgent, {
+      title: 'Tree table without children field page',
+      tabTitle: 'Tree table without children field tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        treeTable: true,
+      },
+    });
+
+    const tableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+        },
+      }),
+    );
+    expect(tableCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
+
+    const addChildRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'addChild',
+      },
+    });
+    expect(addChildRes.status).toBe(400);
+    expect(readErrorMessage(addChildRes)).toContain('does not expose a tree children field');
+  });
+
   it('should reject legacy scope overrides mixed into compose actions and recordActions', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose scope validation page',
