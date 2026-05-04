@@ -5010,7 +5010,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(listBlock.itemUid).toBeTruthy();
     expect(listBlock.itemGridUid).toBeTruthy();
     expect(listBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
-    expect(listBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
+    expect(listBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'addNew']);
     expect(listBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'edit', 'popup', 'delete']);
     const popupActionResult = listBlock.recordActions.find((item: any) => item.type === 'popup');
     expect(popupActionResult.popupPageUid).toBeTruthy();
@@ -5023,9 +5023,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(listReadback.tree.use).toBe('ListBlockModel');
     expect(listReadback.tree.subModels?.item?.use).toBe('ListItemModel');
     expect(listReadback.tree.subModels?.item?.subModels?.grid?.use).toBe('DetailsGridModel');
-    expect(_.castArray(listReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
-    );
+    expect(_.castArray(listReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+    ]);
     expect(
       _.castArray(listReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
         (item: any) => item?.subModels?.field?.stepParams?.fieldSettings?.init?.fieldPath,
@@ -5268,7 +5270,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardBlock.itemUid).toBeTruthy();
     expect(gridCardBlock.itemGridUid).toBeTruthy();
     expect(gridCardBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
-    expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
+    expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'addNew']);
     expect(gridCardBlock.recordActions.map((item: any) => item.type)).toEqual([
       'view',
       'edit',
@@ -5285,9 +5287,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardReadback.tree.use).toBe('GridCardBlockModel');
     expect(gridCardReadback.tree.subModels?.item?.use).toBe('GridCardItemModel');
     expect(gridCardReadback.tree.subModels?.item?.subModels?.grid?.use).toBe('DetailsGridModel');
-    expect(_.castArray(gridCardReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
-    );
+    expect(_.castArray(gridCardReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+    ]);
     expect(
       _.castArray(gridCardReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
         (item: any) => item?.subModels?.field?.stepParams?.fieldSettings?.init?.fieldPath,
@@ -5328,9 +5332,35 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(tableRecordActionsRes.status).toBe(200);
 
     const tableBlock = getData(tableRecordActionsRes).blocks.find((item: any) => item.key === 'table');
-    expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
+    expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'bulkDelete', 'addNew']);
     expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'delete']);
     expect(tableBlock.actionsColumnUid).toBeTruthy();
+
+    const tableActionReadback = await getSurface(rootAgent, {
+      uid: tableBlock.uid,
+    });
+    const tableActions = _.castArray(tableActionReadback.tree.subModels?.actions || []);
+    expect(tableActions.map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
+    ]);
+    const explicitRefreshAction = tableActions.find((item: any) => item?.use === 'RefreshActionModel');
+    const explicitAddNewAction = tableActions.find((item: any) => item?.use === 'AddNewActionModel');
+    expect(explicitRefreshAction?.uid).toBe(tableBlock.actions.find((item: any) => item.type === 'refresh')?.uid);
+    expect(explicitAddNewAction?.uid).toBe(tableBlock.actions.find((item: any) => item.type === 'addNew')?.uid);
+    const defaultBulkDeleteAction = tableActions.find((item: any) => item?.use === 'BulkDeleteActionModel');
+    expectIconOnlyCollectionActionDefaults(defaultBulkDeleteAction, {
+      use: 'BulkDeleteActionModel',
+      tooltip: '{{t("Delete")}}',
+      icon: 'DeleteOutlined',
+    });
+    expect(defaultBulkDeleteAction?.stepParams?.deleteSettings?.confirm).toMatchObject({
+      enable: true,
+      title: '{{t("Delete record")}}',
+      content: '{{t("Are you sure you want to delete it?")}}',
+    });
 
     const tableRecordActionReadback = await getSurface(rootAgent, {
       uid: tableBlock.actionsColumnUid,

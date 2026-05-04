@@ -1187,7 +1187,7 @@ describe('flowSurfaces kanban contract', () => {
     expect(kanbanBlock.itemUid).toBeTruthy();
     expect(kanbanBlock.itemGridUid).toBeTruthy();
     expect(kanbanBlock.fields.map((item: any) => item.fieldPath)).toEqual(['title']);
-    expect(kanbanBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh', 'popup', 'js']);
+    expect(kanbanBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'addNew', 'popup', 'js']);
 
     const readback = await getSurface(rootAgent, {
       uid: kanbanBlock.uid,

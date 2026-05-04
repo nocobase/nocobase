@@ -3627,8 +3627,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(readNodeActionUses(tableReadback.tree)).toEqual([
       'FilterActionModel',
-      'AddNewActionModel',
       'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
     ]);
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
       'DeleteActionModel',
@@ -3638,8 +3639,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(readNodeActionUses(listReadback.tree)).toEqual([
       'FilterActionModel',
-      'AddNewActionModel',
       'RefreshActionModel',
+      'AddNewActionModel',
     ]);
     expect(readCardItemRecordActionUses(listReadback.tree)).toEqual([
       'DeleteActionModel',
@@ -3649,8 +3650,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(readNodeActionUses(gridCardReadback.tree)).toEqual([
       'FilterActionModel',
-      'AddNewActionModel',
       'RefreshActionModel',
+      'AddNewActionModel',
     ]);
     expect(readCardItemRecordActionUses(gridCardReadback.tree)).toEqual([
       'DeleteActionModel',
@@ -4383,14 +4384,17 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const tableActions = _.castArray(tableReadback.tree?.subModels?.actions || []);
     const filterAction = tableActions.find((item: any) => item?.use === 'FilterActionModel');
     const refreshAction = tableActions.find((item: any) => item?.use === 'RefreshActionModel');
+    const bulkDeleteAction = tableActions.find((item: any) => item?.use === 'BulkDeleteActionModel');
 
     expect(tableActions.map((item: any) => item?.use)).toEqual([
       'FilterActionModel',
-      'AddNewActionModel',
       'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
     ]);
     expect(filterAction?.popup?.template).toBeUndefined();
     expect(refreshAction?.popup?.template).toBeUndefined();
+    expect(bulkDeleteAction?.popup?.template).toBeUndefined();
   });
 
   it.each([

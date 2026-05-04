@@ -2448,7 +2448,9 @@ export class FlowSurfacesService {
       return buildDefinedPayload({
         dataSourceKey: input.popupProfile.dataSourceKey || 'main',
         collectionName: input.popupProfile.collectionName,
-        filterByTk: input.popupProfile.filterByTk,
+        filterByTk: input.popupProfile.currentCollection
+          ? `{{ctx.record.${this.getCollectionFilterTargetKey(input.popupProfile.currentCollection)}}}`
+          : input.popupProfile.filterByTk,
         ...(preserveAssociationContext
           ? {
               associationName: input.popupProfile.associationName,
@@ -10149,6 +10151,20 @@ export class FlowSurfacesService {
     if (this.normalizeOptionalPopupTitle(currentOpenView.title) === openViewTitle) {
       return;
     }
+    const popupProfile = await this.resolvePopupBlockProfile(
+      actionNode.uid,
+      null,
+      actionNode,
+      options.transaction,
+    ).catch(() => null);
+    const filterTargetKey = popupProfile?.currentCollection
+      ? this.getCollectionFilterTargetKey(popupProfile.currentCollection)
+      : null;
+    const currentFilterByTk = _.isString(currentOpenView.filterByTk) ? currentOpenView.filterByTk.trim() : '';
+    const preserveCustomFilterByTk =
+      currentFilterByTk &&
+      currentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
+      currentFilterByTk !== (filterTargetKey ? `{{ctx.record.${filterTargetKey}}}` : '');
 
     const nextStepParams = _.cloneDeep(actionNode?.stepParams || {});
     const currentGroup = _.isPlainObject(nextStepParams[openViewStep.flowKey])
@@ -10157,6 +10173,11 @@ export class FlowSurfacesService {
     currentGroup[openViewStep.stepKey] = buildDefinedPayload({
       ...currentOpenView,
       title: openViewTitle,
+      filterByTk: preserveCustomFilterByTk
+        ? currentOpenView.filterByTk
+        : filterTargetKey
+          ? `{{ctx.record.${filterTargetKey}}}`
+          : currentOpenView.filterByTk,
     });
     nextStepParams[openViewStep.flowKey] = currentGroup;
     await this.repository.patch(
@@ -10201,12 +10222,26 @@ export class FlowSurfacesService {
     const nextStepParams = _.cloneDeep(actionNode.stepParams || {});
     const currentGroup = _.isPlainObject(nextStepParams[flowKey]) ? _.cloneDeep(nextStepParams[flowKey]) : {};
     const currentGroupOpenView = _.isPlainObject(currentGroup[stepKey]) ? currentGroup[stepKey] : {};
+    const filterTargetKey = popupProfile?.currentCollection
+      ? this.getCollectionFilterTargetKey(popupProfile.currentCollection)
+      : null;
+    const currentFilterByTk = _.isString(currentGroupOpenView?.filterByTk)
+      ? currentGroupOpenView.filterByTk.trim()
+      : '';
+    const preserveCustomFilterByTk =
+      currentFilterByTk &&
+      currentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
+      currentFilterByTk !== '{{ctx.record.' + filterTargetKey + '}}';
     const nextOpenView = buildDefinedPayload({
       ...currentGroupOpenView,
       dataSourceKey: currentOpenView?.dataSourceKey || popupProfile?.dataSourceKey || 'main',
       collectionName,
       associationName: currentOpenView?.associationName || popupProfile?.associationName,
-      filterByTk: popupProfile?.filterByTk || '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: preserveCustomFilterByTk
+        ? currentGroupOpenView.filterByTk
+        : filterTargetKey
+          ? `{{ctx.record.${filterTargetKey}}}`
+          : popupProfile?.filterByTk || '{{ctx.view.inputArgs.filterByTk}}',
       sourceId: currentOpenView?.sourceId || popupProfile?.sourceId,
     });
 
