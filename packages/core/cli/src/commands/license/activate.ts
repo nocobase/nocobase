@@ -23,7 +23,7 @@ import {
   sanitizeLicenseOutput,
   validateLicenseKey,
 } from './shared.js';
-import { isInteractiveTerminal } from '../../lib/ui.js';
+import { announceTargetEnv, isInteractiveTerminal } from '../../lib/ui.js';
 import { appUrl } from '../env/shared.js';
 
 type ActivationMode = 'key' | 'online' | 'cancel';
@@ -260,6 +260,9 @@ export default class LicenseActivate extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicenseActivate);
     const runtime = await requireLicenseRuntime(flags.env);
+    if (!flags.json) {
+      announceTargetEnv(runtime.envName);
+    }
     let key = String(flags.key ?? '').trim();
     let keyFile = String(flags['key-file'] ?? '').trim();
     let online = Boolean(flags.online);

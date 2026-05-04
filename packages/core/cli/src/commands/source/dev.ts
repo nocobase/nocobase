@@ -13,7 +13,7 @@ import {
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
-import { printInfo } from '../../lib/ui.js';
+import { announceTargetEnv, printInfo } from '../../lib/ui.js';
 
 function formatUnsupportedRuntimeMessage(kind: 'docker' | 'http' | 'ssh', envName: string): string {
   if (kind === 'docker') {
@@ -128,6 +128,8 @@ export default class SourceDev extends Command {
     if (runtime.kind === 'docker' || runtime.kind === 'http' || runtime.kind === 'ssh') {
       this.error(formatUnsupportedRuntimeMessage(runtime.kind, runtime.envName));
     }
+
+    announceTargetEnv(runtime.envName);
 
     const devPort = flags.port
       || (runtime.env.appPort !== undefined && runtime.env.appPort !== null
