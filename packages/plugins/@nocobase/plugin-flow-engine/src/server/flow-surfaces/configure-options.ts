@@ -747,6 +747,10 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'ViewActionModel':
     case 'EditActionModel':
     case 'PopupCollectionActionModel':
+    case 'CalendarQuickCreateActionModel':
+    case 'CalendarEventViewActionModel':
+    case 'KanbanQuickCreateActionModel':
+    case 'KanbanCardViewActionModel':
     case 'UploadActionModel':
       return merged(ACTION_OPEN_VIEW_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'DeleteActionModel':
