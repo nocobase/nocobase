@@ -12,6 +12,7 @@ import {
   FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS,
   FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
   createFlowSurfacesContractContext,
+  addBlockData,
   createPage,
   createMenu,
   destroyFlowSurfacesContractContext,
@@ -59,6 +60,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
   function readDirectFormFieldPaths(node: any) {
     return _.castArray(node?.subModels?.grid?.subModels?.items || [])
       .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+      .filter(Boolean);
+  }
+
+  function readDirectFormDividerLabels(node: any) {
+    return _.castArray(node?.subModels?.grid?.subModels?.items || [])
+      .filter((item: any) => item?.use === 'DividerItemModel')
+      .map((item: any) => item?.props?.label)
       .filter(Boolean);
   }
 
@@ -3912,6 +3920,19 @@ describe('flowSurfaces applyBlueprint contract', () => {
             title: `Invalid addChild blueprint ${Date.now()}`,
           },
         },
+        defaults: {
+          collections: {
+            categories: {
+              fieldGroups: [
+                {
+                  key: 'categoryMain',
+                  title: 'Category main',
+                  fields: ['title', 'parent'],
+                },
+              ],
+            },
+          },
+        },
         tabs: [
           {
             title: 'Overview',
@@ -3964,6 +3985,26 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
+    const addChild = readTableRecordActions(tableReadback.tree).find(
+      (action: any) => action?.use === 'AddChildActionModel',
+    );
+    expect(addChild?.uid).toBeTruthy();
+    const { actionReadback, popupBlock } = await readPrimaryPopupBlockFromAction(addChild.uid);
+    expect(actionReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+    });
+    expect(actionReadback.tree.stepParams?.popupSettings?.openView?.sourceId).toBeUndefined();
+    expect(popupBlock?.use).toBe('CreateFormModel');
+    expect(popupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+    expect(readDirectFormDividerLabels(popupBlock)).toEqual(['Category main']);
+    expect(readDirectFormFieldPaths(popupBlock)).toEqual(['title', 'parent']);
 
     const validStringRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -3972,6 +4013,19 @@ describe('flowSurfaces applyBlueprint contract', () => {
         navigation: {
           item: {
             title: `Valid addChild shorthand blueprint ${Date.now()}`,
+          },
+        },
+        defaults: {
+          collections: {
+            categories: {
+              fieldGroups: [
+                {
+                  key: 'categoryMain',
+                  title: 'Category main',
+                  fields: ['title', 'parent'],
+                },
+              ],
+            },
           },
         },
         tabs: [
@@ -3994,6 +4048,34 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
 
     expect(validStringRes.status).toBe(200);
+    const stringData = getData(validStringRes);
+    const stringTableBlock = collectDescendantNodes(
+      stringData.surface.tree,
+      (item) => item?.use === 'TableBlockModel',
+    )[0];
+    const stringTableReadback = await getSurface(rootAgent, { uid: stringTableBlock?.uid });
+    expect(readTableRecordActionUses(stringTableReadback.tree)).toEqual(['AddChildActionModel']);
+    const stringAddChild = readTableRecordActions(stringTableReadback.tree).find(
+      (action: any) => action?.use === 'AddChildActionModel',
+    );
+    expect(stringAddChild?.uid).toBeTruthy();
+    const { actionReadback: stringActionReadback, popupBlock: stringPopupBlock } =
+      await readPrimaryPopupBlockFromAction(stringAddChild.uid);
+    expect(stringActionReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+    });
+    expect(stringActionReadback.tree.stepParams?.popupSettings?.openView?.sourceId).toBeUndefined();
+    expect(stringPopupBlock?.use).toBe('CreateFormModel');
+    expect(stringPopupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+    expect(readDirectFormDividerLabels(stringPopupBlock)).toEqual(['Category main']);
+    expect(readDirectFormFieldPaths(stringPopupBlock)).toEqual(['title', 'parent']);
   });
 
   it('should inject addChild into tree table record actions by default', async () => {
@@ -4165,6 +4247,67 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(executeRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
+    expect(readTableRecordActionUses(tableReadback.tree)).not.toContain('AddChildActionModel');
+  });
+
+  it('should not inject default addChild into template-backed tree tables', async () => {
+    const sourcePage = await createPage(rootAgent, {
+      title: `Tree table block template source ${Date.now()}`,
+      tabTitle: 'Source',
+    });
+    const sourceTable = await addBlockData(rootAgent, {
+      target: { uid: sourcePage.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'categories',
+      },
+      settings: {
+        treeTable: true,
+      },
+    });
+    const blockTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceTable.uid },
+          name: `Tree table block template ${Date.now()}`,
+          description: 'Tree table block template for applyBlueprint default action guard.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Tree table template-backed blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'templatedTreeTable',
+                template: {
+                  uid: blockTemplate.uid,
+                  mode: 'copy',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const templatedTable = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    expect(templatedTable?.uid).toBeTruthy();
+    const tableReadback = await getSurface(rootAgent, { uid: templatedTable.uid });
     expect(readTableRecordActionUses(tableReadback.tree)).not.toContain('AddChildActionModel');
   });
 

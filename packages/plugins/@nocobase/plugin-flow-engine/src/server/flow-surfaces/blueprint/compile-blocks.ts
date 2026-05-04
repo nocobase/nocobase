@@ -29,7 +29,7 @@ import {
 import type { FlowSurfaceApplyBlueprintPopupDefaultsMetadata } from './defaults';
 import { normalizeBlockHiddenPopupSettings } from '../hidden-popup-contract';
 import type { FlowSurfaceResourceBindingKey } from '../types';
-import { getCollectionFields, getCollectionName, getFieldName } from '../service-helpers';
+import { getCollectionFields, getFieldName } from '../service-helpers';
 import type {
   FlowSurfaceApplyBlueprintCollectionResolver,
   FlowSurfaceApplyBlueprintActionSpec,
@@ -1230,36 +1230,28 @@ function resolveTreeChildrenFieldName(collection?: any) {
   return getFieldName(field);
 }
 
-function resolveTreeTableCollectionContext(
+function canInjectTreeTableAddChildDefault(
   block: FlowSurfaceApplyBlueprintBlockSpec,
   getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
 ) {
   if (!getCollection) {
-    return null;
+    return false;
   }
   const resource = _.isPlainObject(block.resource) ? block.resource : undefined;
   const dataSourceKey =
     readOptionalString(block.dataSourceKey) || readOptionalString(resource?.dataSourceKey) || 'main';
   const collectionName = readOptionalString(block.collection) || readOptionalString(resource?.collectionName);
   if (!collectionName) {
-    return null;
+    return false;
   }
   const collection = getCollection(dataSourceKey, collectionName);
   if (!collection) {
-    return null;
+    return false;
   }
   if (!isTreeCollection(collection)) {
-    return null;
+    return false;
   }
-  const treeChildrenFieldName = resolveTreeChildrenFieldName(collection);
-  if (!treeChildrenFieldName) {
-    return null;
-  }
-  return {
-    dataSourceKey,
-    collectionName: getCollectionName(collection) || collectionName,
-    treeChildrenFieldName,
-  };
+  return !!resolveTreeChildrenFieldName(collection);
 }
 
 function hasExplicitAddChildRecordAction(recordActions: any[]) {
@@ -1443,10 +1435,11 @@ function compileBlocks(
         getCollection,
       ),
     );
-    const treeTableCollectionContext =
-      blockType === 'table' && settings?.treeTable === true
-        ? resolveTreeTableCollectionContext(block, getCollection)
-        : undefined;
+    const shouldInjectAddChild =
+      blockType === 'table' &&
+      _.isUndefined(template) &&
+      settings?.treeTable === true &&
+      canInjectTreeTableAddChildDefault(block, getCollection);
     const injectedActionIndexes = {
       actions: explicitActions.length,
       recordActions: explicitRecordActions.length,
@@ -1466,9 +1459,7 @@ function compileBlocks(
         ),
     });
     const finalRecordActions =
-      blockType === 'table' &&
-      treeTableCollectionContext &&
-      !hasExplicitAddChildRecordAction(mergedActions.recordActions)
+      blockType === 'table' && shouldInjectAddChild && !hasExplicitAddChildRecordAction(mergedActions.recordActions)
         ? [
             ...mergedActions.recordActions,
             buildTreeTableAddChildDefaultAction(
