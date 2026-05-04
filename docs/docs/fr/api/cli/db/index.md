@@ -18,6 +18,7 @@ nb db <command>
 
 | Commande | Description |
 | --- | --- |
+| [`nb db check`](./check.md) | Vérifier si la connexion à la base de données est accessible. |
 | [`nb db ps`](./ps.md) | Consulter l'état d'exécution de la base intégrée |
 | [`nb db start`](./start.md) | Démarrer le conteneur de la base intégrée |
 | [`nb db stop`](./stop.md) | Arrêter le conteneur de la base intégrée |
@@ -26,6 +27,8 @@ nb db <command>
 ## Exemples
 
 ```bash
+nb db check --env app1
+nb db check --db-dialect postgres --db-host 127.0.0.1 --db-port 5432 --db-database nocobase --db-user nocobase --db-password secret
 nb db ps
 nb db ps --env app1
 nb db start --env app1

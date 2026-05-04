@@ -18,6 +18,7 @@ nb db <command>
 
 | Command | Description |
 | --- | --- |
+| [`nb db check`](./check.md) | Check whether a database connection is reachable. |
 | [`nb db ps`](./ps.md) | View built-in database runtime status |
 | [`nb db start`](./start.md) | Start the built-in database container |
 | [`nb db stop`](./stop.md) | Stop the built-in database container |
@@ -26,6 +27,8 @@ nb db <command>
 ## Examples
 
 ```bash
+nb db check --env app1
+nb db check --db-dialect postgres --db-host 127.0.0.1 --db-port 5432 --db-database nocobase --db-user nocobase --db-password secret
 nb db ps
 nb db ps --env app1
 nb db start --env app1
