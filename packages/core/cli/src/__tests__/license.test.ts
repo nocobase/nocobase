@@ -1342,7 +1342,7 @@ test('license plugins sync supports dry-run previews', async () => {
   const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
   const licenseDir = path.join(storagePath, '.license');
-  const appPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
+  const appPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'app');
 
   try {
     await mkdir(licenseDir, { recursive: true });
@@ -1350,7 +1350,7 @@ test('license plugins sync supports dry-run previews', async () => {
     await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
     await writeFile(
       path.join(appPackageDir, 'package.json'),
-      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-beta.24.20260501164635' }),
+      JSON.stringify({ name: '@nocobase/app', version: '2.1.0-beta.24.20260501164635' }),
     );
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
@@ -1417,7 +1417,7 @@ test('license plugins sync outputs per-plugin details in verbose mode', async ()
   const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
   const licenseDir = path.join(storagePath, '.license');
-  const appPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
+  const appPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'app');
 
   try {
     await mkdir(licenseDir, { recursive: true });
@@ -1425,7 +1425,7 @@ test('license plugins sync outputs per-plugin details in verbose mode', async ()
     await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
     await writeFile(
       path.join(appPackageDir, 'package.json'),
-      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-beta.24.20260501164635' }),
+      JSON.stringify({ name: '@nocobase/app', version: '2.1.0-beta.24.20260501164635' }),
     );
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
@@ -1622,7 +1622,7 @@ test('license plugins sync reads app version from docker image when version flag
         },
       },
     });
-    mocks.commandOutput.mockResolvedValueOnce('"2.1.0-beta.24.20260501164635"');
+    mocks.commandOutput.mockResolvedValueOnce('@nocobase/cli/2.1.0-beta.24.20260501164635 darwin-arm64 node-v22.22.2');
     mocks.keyDecrypt.mockReturnValue(JSON.stringify({
       accessKeyId: 'ak',
       accessKeySecret: 'sk',
@@ -1665,10 +1665,9 @@ test('license plugins sync reads app version from docker image when version flag
         '--platform',
         'linux/amd64',
         '--entrypoint',
-        'node',
+        'nb',
         'registry.cn-beijing.aliyuncs.com/nocobase/nocobase:pr-9313',
-        '-p',
-        'JSON.stringify(require("/opt/nb/node_modules/@nocobase/cli/package.json").version)',
+        '--version',
       ],
       { errorName: 'docker run' },
     );
@@ -1725,7 +1724,7 @@ test('license plugins sync errors when local app package version is missing', as
     });
 
     await expect((() => LicensePluginsSync.prototype.run.call(command))()).rejects.toThrow(
-      /Missing node_modules\/@nocobase\/cli\/package\.json/,
+      /Missing node_modules\/@nocobase\/app\/package\.json/,
     );
   } finally {
     await rm(storagePath, { recursive: true, force: true });
@@ -1736,7 +1735,7 @@ test('license plugins sync keeps the raw version in output and shortens the regi
   const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
   const licenseDir = path.join(storagePath, '.license');
-  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
+  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'app');
 
   try {
     await mkdir(licenseDir, { recursive: true });
@@ -1744,7 +1743,7 @@ test('license plugins sync keeps the raw version in output and shortens the regi
     await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
     await writeFile(
       path.join(cliPackageDir, 'package.json'),
-      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-beta.24.20260501164635' }),
+      JSON.stringify({ name: '@nocobase/app', version: '2.1.0-beta.24.20260501164635' }),
     );
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
@@ -1806,7 +1805,7 @@ test('license plugins sync normalizes rc app version to release registry version
   const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
   const licenseDir = path.join(storagePath, '.license');
-  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
+  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'app');
 
   try {
     await mkdir(licenseDir, { recursive: true });
@@ -1814,7 +1813,7 @@ test('license plugins sync normalizes rc app version to release registry version
     await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
     await writeFile(
       path.join(cliPackageDir, 'package.json'),
-      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-rc.20260501164635' }),
+      JSON.stringify({ name: '@nocobase/app', version: '2.1.0-rc.20260501164635' }),
     );
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
@@ -1876,7 +1875,7 @@ test('license plugins sync normalizes alpha app version to alpha registry versio
   const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
   const licenseDir = path.join(storagePath, '.license');
-  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'cli');
+  const cliPackageDir = path.join(storagePath, 'app', 'node_modules', '@nocobase', 'app');
 
   try {
     await mkdir(licenseDir, { recursive: true });
@@ -1884,7 +1883,7 @@ test('license plugins sync normalizes alpha app version to alpha registry versio
     await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
     await writeFile(
       path.join(cliPackageDir, 'package.json'),
-      JSON.stringify({ name: '@nocobase/cli', version: '2.1.0-alpha.24.20260501164635' }),
+      JSON.stringify({ name: '@nocobase/app', version: '2.1.0-alpha.24.20260501164635' }),
     );
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
