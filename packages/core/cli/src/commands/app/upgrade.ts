@@ -20,7 +20,7 @@ import {
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
 import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import { commandSucceeds, run } from '../../lib/run-npm.js';
-import { failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
 
 const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
@@ -751,6 +751,8 @@ export default class AppUpgrade extends Command {
         ].join('\n'),
       );
     }
+
+    announceTargetEnv(runtime.envName);
 
     try {
       const resolvedVersion = AppUpgrade.resolveUpgradeVersion(runtime, parsed);

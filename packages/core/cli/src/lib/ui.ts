@@ -107,6 +107,10 @@ export function printInfo(message: string) {
   console.log(pc.cyan(message));
 }
 
+export function announceTargetEnv(envName: string) {
+  printInfo(`Target env: ${envName}`);
+}
+
 export function printVerbose(message: string) {
   if (!verboseMode) {
     return;

@@ -16,12 +16,11 @@ import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRunti
 import { syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
 import { commandOutput } from '../../../lib/run-npm.js';
-import { startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
+import { announceTargetEnv, startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
 
 const SYNC_LOADING_DELAY_MS = 1200;
 const SYNC_LOADING_UPDATE_MS = 5000;
-const LOCAL_CLI_PACKAGE_JSON_PATH = 'node_modules/@nocobase/cli/package.json';
-const DOCKER_CLI_PACKAGE_JSON_PATH = '/opt/nb/node_modules/@nocobase/cli/package.json';
+const LOCAL_APP_PACKAGE_JSON_PATH = 'node_modules/@nocobase/app/package.json';
 const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
 const DEFAULT_DOCKER_VERSION = 'alpha';
 
@@ -87,12 +86,12 @@ async function parseVersionFromPackageJson(content: string, sourceLabel: string)
 }
 
 async function resolveLocalAppVersion(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): Promise<string> {
-  const packageJsonPath = path.join(runtime.projectRoot, LOCAL_CLI_PACKAGE_JSON_PATH);
+  const packageJsonPath = path.join(runtime.projectRoot, LOCAL_APP_PACKAGE_JSON_PATH);
   let content: string;
   try {
     content = await readFile(packageJsonPath, 'utf8');
   } catch {
-    throw new Error(`Missing ${LOCAL_CLI_PACKAGE_JSON_PATH} for env "${runtime.envName}" at ${packageJsonPath}.`);
+    throw new Error(`Missing ${LOCAL_APP_PACKAGE_JSON_PATH} for env "${runtime.envName}" at ${packageJsonPath}.`);
   }
   return await parseVersionFromPackageJson(content, packageJsonPath);
 }
@@ -112,10 +111,9 @@ async function resolveDockerAppVersion(runtime: Extract<ManagedAppRuntime, { kin
   }
   args.push(
     '--entrypoint',
-    'node',
+    'nb',
     imageRef,
-    '-p',
-    `JSON.stringify(require(${JSON.stringify(DOCKER_CLI_PACKAGE_JSON_PATH)}).version)`,
+    '--version',
   );
 
   let output: string;
@@ -125,12 +123,13 @@ async function resolveDockerAppVersion(runtime: Extract<ManagedAppRuntime, { kin
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Missing ${DOCKER_CLI_PACKAGE_JSON_PATH} for env "${runtime.envName}" inside Docker image ${imageRef}. ${message}`);
+    throw new Error(`Failed to read app version for env "${runtime.envName}" from Docker image ${imageRef}. ${message}`);
   }
 
-  const version = trimValue(output.replace(/^"+|"+$/g, ''));
+  const versionMatch = output.match(/@nocobase\/cli\/([^\s]+)/);
+  const version = trimValue(versionMatch?.[1] ?? output.replace(/^"+|"+$/g, ''));
   if (!version) {
-    throw new Error(`Missing version in ${DOCKER_CLI_PACKAGE_JSON_PATH} for env "${runtime.envName}" inside Docker image ${imageRef}.`);
+    throw new Error(`Missing app version for env "${runtime.envName}" inside Docker image ${imageRef}.`);
   }
   return version;
 }
@@ -176,6 +175,9 @@ export default class LicensePluginsSync extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsSync);
     const runtime = await requireLicenseRuntime(flags.env);
+    if (!flags.json) {
+      announceTargetEnv(runtime.envName);
+    }
     const version = trimValue(flags.version) || await resolveManagedAppVersion(runtime);
     const registryVersion = normalizePluginRegistryVersion(version);
     const shouldStreamLogs = !flags.json && Boolean(flags.verbose);

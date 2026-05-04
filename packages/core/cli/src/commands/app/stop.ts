@@ -14,7 +14,7 @@ import {
   runLocalNocoBaseCommand,
   stopDockerContainer,
 } from '../../lib/app-runtime.js';
-import { failTask, startTask, succeedTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
 
 function formatStopFailure(envName: string, message: string): string {
   if (/does not exist/i.test(message)) {
@@ -85,6 +85,8 @@ export default class AppStop extends Command {
         ].join('\n'),
       );
     }
+
+    announceTargetEnv(runtime.envName);
 
     if (runtime.kind === 'docker') {
       startTask(`Stopping NocoBase for "${runtime.envName}"...`);
