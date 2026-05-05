@@ -18263,6 +18263,7 @@ export class FlowSurfacesService {
             'dragEnabled',
             'dragSortBy',
             'quickCreateEnabled',
+            'globalSort',
           ])
         : {}),
       ..._.cloneDeep(input.props || {}),
