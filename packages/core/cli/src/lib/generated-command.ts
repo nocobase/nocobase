@@ -80,6 +80,7 @@ function buildParameterFlag(parameter: GeneratedParameter, options?: { required?
   if (parameter.type === 'boolean') {
     return Flags.boolean({
       description,
+      allowNo: true,
       ...(helpGroup ? {helpGroup} : {}),
       ...(required ? {required: true as const} : {}),
     });

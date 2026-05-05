@@ -43,11 +43,34 @@ const testApiOperation: GeneratedOperation = {
   examples: [],
 };
 
+const testListOperation: GeneratedOperation = {
+  commandId: 'test list',
+  method: 'get',
+  pathTemplate: '/test:list',
+  parameters: [
+    {
+      name: 'paginate',
+      flagName: 'paginate',
+      in: 'query',
+      type: 'boolean',
+    },
+  ],
+  examples: [],
+};
+
 class ParseOnlyTestApiCommand extends Command {
   static override flags = createGeneratedFlags(testApiOperation);
 
   async run() {
     return this.parse(ParseOnlyTestApiCommand);
+  }
+}
+
+class ParseOnlyTestListCommand extends Command {
+  static override flags = createGeneratedFlags(testListOperation);
+
+  async run() {
+    return this.parse(ParseOnlyTestListCommand);
   }
 }
 
@@ -64,6 +87,12 @@ test('body-file path should not require inline body or body field flags at parse
   const result = await ParseOnlyTestApiCommand.run(['--body-file', '/tmp/test-api.json']);
   expect(result.flags['body-file']).toBe('/tmp/test-api.json');
   expect(result.flags.body).toBe(undefined);
+});
+
+test('generated boolean flags should accept --no-* form', async () => {
+  const result = await ParseOnlyTestListCommand.run(['--no-paginate']);
+
+  expect(result.flags.paginate).toBe(false);
 });
 
 test('parseBody should still enforce required body fields when flag mode is used', async () => {
