@@ -1579,6 +1579,37 @@
       ],
       "actions": [
         {
+          "uid": "eztudtbv65tc",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Refresh",
+                "type": ""
+              }
+            }
+          },
+          "subKey": "actions",
+          "subType": "array",
+          "sortIndex": 1
+        },
+        {
+          "uid": "grjq7718le6z",
+          "use": "BulkDeleteActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Bulk Delete",
+                "tooltip": "{{t(\"Delete\")}}",
+                "type": ""
+              }
+            }
+          },
+          "subKey": "actions",
+          "subType": "array",
+          "sortIndex": 2
+        },
+        {
           "uid": "fh5uz91gg4jg",
           "use": "AddNewActionModel",
           "stepParams": {
@@ -2104,36 +2135,6 @@
               "sortIndex": 1
             }
           },
-          "sortIndex": 1
-        },
-        {
-          "uid": "eztudtbv65tc",
-          "use": "RefreshActionModel",
-          "stepParams": {
-            "buttonSettings": {
-              "general": {
-                "title": "Refresh",
-                "type": ""
-              }
-            }
-          },
-          "subKey": "actions",
-          "subType": "array",
-          "sortIndex": 2
-        },
-        {
-          "uid": "grjq7718le6z",
-          "use": "BulkDeleteActionModel",
-          "stepParams": {
-            "buttonSettings": {
-              "general": {
-                "title": "Bulk Delete",
-                "type": ""
-              }
-            }
-          },
-          "subKey": "actions",
-          "subType": "array",
           "sortIndex": 3
         }
       ]
@@ -3779,6 +3780,7 @@
         "buttonSettings": {
           "general": {
             "title": "Bulk Delete",
+            "tooltip": "{{t(\"Delete\")}}",
             "type": ""
           }
         }

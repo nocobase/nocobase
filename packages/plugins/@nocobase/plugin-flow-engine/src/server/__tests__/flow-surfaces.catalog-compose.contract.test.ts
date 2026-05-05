@@ -32,6 +32,12 @@ import { expectTemplateUsage, saveTemplate } from './flow-surfaces.templates.hel
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
 describe('flowSurfaces catalog + compose contract', () => {
+  const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
+    'FilterActionModel',
+    'RefreshActionModel',
+    'AddNewActionModel',
+  ]);
+
   let context: FlowSurfacesContractContext;
   let app: FlowSurfacesContractContext['app'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
@@ -67,6 +73,28 @@ describe('flowSurfaces catalog + compose contract', () => {
       tabUid,
       gridUid,
     };
+  }
+
+  async function createTimestampedEmployeesCollection() {
+    const collectionName = `employees_with_created_at_${uid()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        createdAt: true,
+        updatedAt: true,
+        fields: [
+          { name: 'nickname', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'input' },
+          { name: 'createdAt', type: 'date', interface: 'createdAt', field: 'createdAt' },
+          { name: 'updatedAt', type: 'date', interface: 'updatedAt', field: 'updatedAt' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['nickname', 'createdAt', 'updatedAt'],
+    });
+    return collectionName;
   }
 
   async function readPrimaryPopupBlock(actionUid: string) {
@@ -186,6 +214,32 @@ describe('flowSurfaces catalog + compose contract', () => {
     return _.castArray(actionTree.subModels?.assignForm?.subModels?.grid?.subModels?.items || []).find(
       (candidate: any) => candidate?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath,
     );
+  }
+
+  function expectIconOnlyCollectionActionDefaults(
+    action: any,
+    expected: {
+      use: string;
+      tooltip: string;
+      icon: string;
+      type?: string;
+    },
+  ) {
+    expect(action?.use).toBe(expected.use);
+    expect(action?.props).toMatchObject({
+      title: '',
+      tooltip: expected.tooltip,
+      icon: expected.icon,
+      position: 'right',
+      ...(expected.type ? { type: expected.type } : {}),
+    });
+    expect(action?.stepParams?.buttonSettings?.general).toMatchObject({
+      title: '',
+      tooltip: expected.tooltip,
+      icon: expected.icon,
+      ...(expected.type ? { type: expected.type } : {}),
+    });
+    expect(action?.stepParams?.buttonSettings?.general?.position).toBeUndefined();
   }
 
   async function createCalendarTestCollection(collectionName: string) {
@@ -690,6 +744,14 @@ describe('flowSurfaces catalog + compose contract', () => {
         type: 'string',
       },
       openView: {
+        type: 'object',
+      },
+    });
+    expect(tableCatalog.actions.find((item: any) => item.key === 'bulkDelete')?.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      confirm: {
         type: 'object',
       },
     });
@@ -4012,10 +4074,11 @@ describe('flowSurfaces catalog + compose contract', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(expect.arrayContaining(['username', 'nickname']));
-    expect(_.castArray(tableReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
-    );
-
+    expect(
+      _.castArray(tableReadback.tree.subModels?.actions || [])
+        .map((item: any) => item?.use)
+        .filter((use) => DEFAULT_COLLECTION_BLOCK_ACTION_USES.has(use)),
+    ).toEqual(['FilterActionModel', 'RefreshActionModel', 'AddNewActionModel']);
     const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
       (item: any) => item?.use === 'TableActionsColumnModel',
     )?.uid;
@@ -4977,7 +5040,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(listBlock.itemUid).toBeTruthy();
     expect(listBlock.itemGridUid).toBeTruthy();
     expect(listBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
-    expect(listBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
+    expect(listBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'addNew']);
     expect(listBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'edit', 'popup', 'delete']);
     const popupActionResult = listBlock.recordActions.find((item: any) => item.type === 'popup');
     expect(popupActionResult.popupPageUid).toBeTruthy();
@@ -4990,9 +5053,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(listReadback.tree.use).toBe('ListBlockModel');
     expect(listReadback.tree.subModels?.item?.use).toBe('ListItemModel');
     expect(listReadback.tree.subModels?.item?.subModels?.grid?.use).toBe('DetailsGridModel');
-    expect(_.castArray(listReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
-    );
+    expect(_.castArray(listReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+    ]);
     expect(
       _.castArray(listReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
         (item: any) => item?.subModels?.field?.stepParams?.fieldSettings?.init?.fieldPath,
@@ -5135,6 +5200,67 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   });
 
+  it('should create explicit bulk delete with icon-only right collection action defaults', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Bulk delete action style page',
+      tabTitle: 'Bulk delete action style tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+
+    const bulkDeleteAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'bulkDelete',
+        },
+      }),
+    );
+    const explicitBulkDeleteAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'bulkDelete',
+          settings: {
+            title: 'Remove selected',
+            position: 'left',
+          },
+        },
+      }),
+    );
+
+    const bulkDeleteReadback = await getSurface(rootAgent, {
+      uid: bulkDeleteAction.uid,
+    });
+    expectIconOnlyCollectionActionDefaults(bulkDeleteReadback.tree, {
+      use: 'BulkDeleteActionModel',
+      tooltip: '{{t("Delete")}}',
+      icon: 'DeleteOutlined',
+    });
+
+    const explicitBulkDeleteReadback = await getSurface(rootAgent, {
+      uid: explicitBulkDeleteAction.uid,
+    });
+    expect(explicitBulkDeleteReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      title: 'Remove selected',
+      tooltip: '{{t("Delete")}}',
+      icon: 'DeleteOutlined',
+    });
+    expect(explicitBulkDeleteReadback.tree.stepParams?.buttonSettings?.general?.type).toBeUndefined();
+  });
+
   it('should compose a grid-card block with item fields block actions and record actions', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose grid-card page',
@@ -5174,7 +5300,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardBlock.itemUid).toBeTruthy();
     expect(gridCardBlock.itemGridUid).toBeTruthy();
     expect(gridCardBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
-    expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
+    expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'addNew']);
     expect(gridCardBlock.recordActions.map((item: any) => item.type)).toEqual([
       'view',
       'edit',
@@ -5191,9 +5317,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardReadback.tree.use).toBe('GridCardBlockModel');
     expect(gridCardReadback.tree.subModels?.item?.use).toBe('GridCardItemModel');
     expect(gridCardReadback.tree.subModels?.item?.subModels?.grid?.use).toBe('DetailsGridModel');
-    expect(_.castArray(gridCardReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
-    );
+    expect(_.castArray(gridCardReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+    ]);
     expect(
       _.castArray(gridCardReadback.tree.subModels?.item?.subModels?.grid?.subModels?.items || []).map(
         (item: any) => item?.subModels?.field?.stepParams?.fieldSettings?.init?.fieldPath,
@@ -5234,9 +5362,35 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(tableRecordActionsRes.status).toBe(200);
 
     const tableBlock = getData(tableRecordActionsRes).blocks.find((item: any) => item.key === 'table');
-    expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'addNew', 'refresh']);
+    expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'bulkDelete', 'addNew']);
     expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'delete']);
     expect(tableBlock.actionsColumnUid).toBeTruthy();
+
+    const tableActionReadback = await getSurface(rootAgent, {
+      uid: tableBlock.uid,
+    });
+    const tableActions = _.castArray(tableActionReadback.tree.subModels?.actions || []);
+    expect(tableActions.map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
+    ]);
+    const explicitRefreshAction = tableActions.find((item: any) => item?.use === 'RefreshActionModel');
+    const explicitAddNewAction = tableActions.find((item: any) => item?.use === 'AddNewActionModel');
+    expect(explicitRefreshAction?.uid).toBe(tableBlock.actions.find((item: any) => item.type === 'refresh')?.uid);
+    expect(explicitAddNewAction?.uid).toBe(tableBlock.actions.find((item: any) => item.type === 'addNew')?.uid);
+    const defaultBulkDeleteAction = tableActions.find((item: any) => item?.use === 'BulkDeleteActionModel');
+    expectIconOnlyCollectionActionDefaults(defaultBulkDeleteAction, {
+      use: 'BulkDeleteActionModel',
+      tooltip: '{{t("Delete")}}',
+      icon: 'DeleteOutlined',
+    });
+    expect(defaultBulkDeleteAction?.stepParams?.deleteSettings?.confirm).toMatchObject({
+      enable: true,
+      title: '{{t("Delete record")}}',
+      content: '{{t("Are you sure you want to delete it?")}}',
+    });
 
     const tableRecordActionReadback = await getSurface(rootAgent, {
       uid: tableBlock.actionsColumnUid,
@@ -5394,6 +5548,140 @@ describe('flowSurfaces catalog + compose contract', () => {
       mode: 'drawer',
       size: 'medium',
     });
+  });
+
+  it('should bind addChild popup create form to the tree children association', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Add child association popup page',
+      tabTitle: 'Add child association popup tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'categories',
+      },
+      settings: {
+        treeTable: true,
+      },
+    });
+
+    const addChildRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'addChild',
+      },
+    });
+    expect(addChildRes.status).toBe(200);
+    const addChild = getData(addChildRes);
+
+    const { actionSurface, popupBlock } = await readPrimaryPopupBlock(addChild.uid);
+    expect(actionSurface.tree.use).toBe('AddChildActionModel');
+    expect(actionSurface.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+    });
+    expect(actionSurface.tree.stepParams?.popupSettings?.openView?.sourceId).toBeUndefined();
+    expect(popupBlock?.use).toBe('CreateFormModel');
+    expect(popupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+      sourceId: '{{ctx.view.inputArgs.sourceId}}',
+    });
+
+    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: addChild.uid,
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'categories',
+            mode: 'dialog',
+          },
+        },
+      },
+    });
+    expect(configureRes.status).toBe(200);
+    const configuredAddChild = await getSurface(rootAgent, {
+      uid: addChild.uid,
+    });
+    expect(configuredAddChild.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'categories',
+      associationName: 'categories.children',
+      mode: 'dialog',
+    });
+    expect(configuredAddChild.tree.stepParams?.popupSettings?.openView?.sourceId).toBeUndefined();
+  });
+
+  it('should reject addChild for tree tables without a tree children field', async () => {
+    const collectionName = `tree_without_children_${uid()}`;
+    await rootAgent.resource('collections').apply({
+      values: {
+        name: collectionName,
+        title: 'Tree without children',
+        template: 'tree',
+        fields: [{ name: 'title', interface: 'input', title: 'Title' }],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['title', 'parentId'],
+    });
+
+    const destroyChildrenRes = await rootAgent.resource('collections.fields', collectionName).destroy({
+      filterByTk: 'children',
+    });
+    expect(destroyChildrenRes.status).toBe(200);
+    expect(app.db.getCollection(collectionName)?.getField?.('children')).toBeFalsy();
+
+    const page = await createPage(rootAgent, {
+      title: 'Tree table without children field page',
+      tabTitle: 'Tree table without children field tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+      settings: {
+        treeTable: true,
+      },
+    });
+
+    const tableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+        },
+      }),
+    );
+    expect(tableCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
+
+    const addChildRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'addChild',
+      },
+    });
+    expect(addChildRes.status).toBe(400);
+    expect(readErrorMessage(addChildRes)).toContain('does not expose a tree children field');
   });
 
   it('should reject legacy scope overrides mixed into compose actions and recordActions', async () => {
@@ -7247,6 +7535,121 @@ describe('flowSurfaces catalog + compose contract', () => {
         direction: 'desc',
       },
     ]);
+  });
+
+  it('should default missing table and list sorting to createdAt desc in compose', async () => {
+    const collectionName = await createTimestampedEmployeesCollection();
+    const page = await createPage(rootAgent, {
+      title: 'Compose default sorting page',
+      tabTitle: 'Compose default sorting tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName,
+            },
+            fields: ['nickname'],
+          },
+          {
+            key: 'employeesList',
+            type: 'list',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName,
+            },
+            fields: ['nickname'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const data = getData(composeRes);
+    const tableBlock = getComposeBlock(data, 'employeesTable');
+    const listBlock = getComposeBlock(data, 'employeesList');
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
+    const listReadback = await getSurface(rootAgent, { uid: listBlock.uid });
+
+    expect(tableReadback.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+    ]);
+    expect(listReadback.tree.stepParams?.listSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+    ]);
+  });
+
+  it('should default missing list sorting to createdAt desc in addBlock', async () => {
+    const collectionName = await createTimestampedEmployeesCollection();
+    const page = await createPage(rootAgent, {
+      title: 'Add block default sorting page',
+      tabTitle: 'Add block default sorting tab',
+    });
+
+    const listBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'list',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const listReadback = await getSurface(rootAgent, { uid: listBlock.uid });
+
+    expect(listReadback.tree.stepParams?.listSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+    ]);
+  });
+
+  it('should not default missing sorting when the collection has no createdAt field', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose no createdAt sorting page',
+      tabTitle: 'Compose no createdAt sorting tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'eventsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'calendar_events',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const tableBlock = getComposeBlock(getData(composeRes), 'eventsTable');
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
+
+    expect(tableReadback.tree.stepParams?.tableSettings?.defaultSorting).toBeUndefined();
   });
 
   it('should compose update actions with assignValues settings and mirror assignedValues', async () => {

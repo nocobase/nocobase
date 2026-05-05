@@ -14,6 +14,7 @@ import { resolveSupportedActionCatalogItem, resolveSupportedBlockCatalogItem } f
 import { CHART_DEFAULT_DATA_SOURCE_KEY } from './chart-config';
 import { buildApprovalActionDefaults, buildApprovalBlockDefaults, buildApprovalFieldTree } from './approval';
 import { buildDefinedPayload, getSingleNodeSubModel } from './service-utils';
+import { FLOW_SURFACE_DEFAULT_SORTING } from './public-compatibility';
 import { buildHiddenPopupOpenView, normalizeHiddenPopupSettings } from './hidden-popup-contract';
 
 type BuildFieldParams = {
@@ -320,6 +321,7 @@ export function buildBlockTree(options: {
   use?: string;
   containerUse?: string;
   resourceInit?: Record<string, any>;
+  enableDefaultSorting?: boolean;
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
   stepParams?: Record<string, any>;
@@ -372,6 +374,9 @@ export function buildBlockTree(options: {
     _.set(baseStepParams, ['chartSettings', 'configure'], nextConfigure);
   } else if (Object.keys(normalizedResourceInit).length) {
     _.set(baseStepParams, ['resourceSettings', 'init'], normalizedResourceInit);
+  }
+  if (options.enableDefaultSorting) {
+    applyDefaultSortingIfMissing(baseStepParams, use);
   }
 
   const model: FlowSurfaceNodeSpec = {
@@ -1069,8 +1074,10 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       icon: 'DownOutlined',
     },
     BulkDeleteActionModel: {
-      title: '{{t("Delete")}}',
+      title: '',
+      tooltip: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
+      position: 'right',
     },
     BulkEditActionModel: {
       title: '{{t("Bulk edit")}}',
@@ -1214,6 +1221,29 @@ function applyContainerActionStyle(props: Record<string, any>, containerUse?: st
   return props;
 }
 
+const BLOCK_DEFAULT_SORTING_PATH_BY_USE: Partial<Record<string, string[]>> = {
+  KanbanBlockModel: ['kanbanSettings', 'defaultSorting', 'sort'],
+  TreeBlockModel: ['treeSettings', 'defaultSorting', 'sort'],
+  TableBlockModel: ['tableSettings', 'defaultSorting', 'sort'],
+  DetailsBlockModel: ['detailsSettings', 'defaultSorting', 'sort'],
+  ListBlockModel: ['listSettings', 'defaultSorting', 'sort'],
+  GridCardBlockModel: ['GridCardSettings', 'defaultSorting', 'sort'],
+  MapBlockModel: ['createMapBlock', 'lineSort', 'sort'],
+};
+
+function applyDefaultSortingIfMissing(stepParams: Record<string, any>, use: string) {
+  const path = BLOCK_DEFAULT_SORTING_PATH_BY_USE[use];
+  if (!path) {
+    return;
+  }
+  const currentSorting = _.get(stepParams, path);
+  if (Array.isArray(currentSorting) || _.isNull(currentSorting) || _.isUndefined(currentSorting)) {
+    if (!_.has(stepParams, path) || _.isNull(currentSorting) || _.isUndefined(currentSorting)) {
+      _.set(stepParams, path, _.cloneDeep(FLOW_SURFACE_DEFAULT_SORTING));
+    }
+  }
+}
+
 function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
   if (use === 'JSBlockModel') {
     return {
@@ -1278,6 +1308,21 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
         includeDescendants: true,
       },
     };
+  }
+  if (use === 'TableBlockModel') {
+    return {};
+  }
+  if (use === 'DetailsBlockModel') {
+    return {};
+  }
+  if (use === 'ListBlockModel') {
+    return {};
+  }
+  if (use === 'GridCardBlockModel') {
+    return {};
+  }
+  if (use === 'MapBlockModel') {
+    return {};
   }
   return {};
 }

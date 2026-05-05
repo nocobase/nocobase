@@ -1061,6 +1061,10 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(validDetailsSettings.status).toBe(200);
+    const detailsReadback = await getSurface(rootAgent, {
+      uid: detailsUid,
+    });
+    expect(detailsReadback.tree.stepParams?.detailsSettings?.defaultSorting?.sort).toEqual([]);
 
     const invalidDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
