@@ -21,7 +21,6 @@ function writePlugin(root: string, baseDir: string, packageName: string) {
 }
 
 describe('plugin symlink sync', () => {
-  const originalCwd = process.cwd();
   const originalEnv = {
     NODE_MODULES_PATH: process.env.NODE_MODULES_PATH,
     PLUGIN_STORAGE_PATH: process.env.PLUGIN_STORAGE_PATH,
@@ -29,7 +28,6 @@ describe('plugin symlink sync', () => {
   };
 
   afterEach(() => {
-    process.chdir(originalCwd);
     process.env.NODE_MODULES_PATH = originalEnv.NODE_MODULES_PATH;
     process.env.PLUGIN_STORAGE_PATH = originalEnv.PLUGIN_STORAGE_PATH;
     process.env.STORAGE_PATH = originalEnv.STORAGE_PATH;
@@ -38,7 +36,7 @@ describe('plugin symlink sync', () => {
 
   it('keeps real directories in node_modules and rebuilds symlinks by priority', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-plugin-symlink-'));
-    process.chdir(root);
+    vi.spyOn(process, 'cwd').mockReturnValue(root);
     process.env.NODE_MODULES_PATH = path.join(root, 'node_modules');
     process.env.PLUGIN_STORAGE_PATH = path.join(root, 'storage', 'plugins');
     process.env.STORAGE_PATH = path.join(root, 'storage');
