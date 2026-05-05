@@ -103,6 +103,61 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
   }
 
+  async function createRequiredDefaultsCollection() {
+    const collectionName = `flow_surface_required_blueprint_${_.uniqueId()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        fields: [
+          {
+            name: 'requiredText',
+            type: 'string',
+            interface: 'input',
+            validation: {
+              type: 'string',
+              rules: [{ key: `required_${_.uniqueId()}`, name: 'required' }],
+            },
+          },
+          {
+            name: 'optionalText',
+            type: 'string',
+            interface: 'input',
+          },
+          {
+            name: 'requiredOptionsText',
+            type: 'string',
+            interface: 'input',
+            validation: {
+              type: 'string',
+              rules: [{ key: `required_options_${_.uniqueId()}`, name: 'required' }],
+            },
+          },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [collectionName]: ['requiredText', 'optionalText', 'requiredOptionsText'],
+    });
+    return collectionName;
+  }
+
+  function expectRequiredFormItemDefaults(node: any) {
+    expect(node?.props?.required).toBe(true);
+    expect(node?.stepParams?.editItemSettings?.required?.required).toBe(true);
+  }
+
+  function expectNoRequiredFormItemDefaults(node: any) {
+    expect(node?.props?.required).toBeUndefined();
+    expect(node?.stepParams?.editItemSettings?.required).toBeUndefined();
+  }
+
+  function findGridItemByFieldPath(blockNode: any, fieldPath: string) {
+    return _.castArray(blockNode?.subModels?.grid?.subModels?.items || []).find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath,
+    );
+  }
+
   function expectAssignFormGridItems(actionTree: any, assignedValues: Record<string, any>) {
     const items = _.castArray(actionTree.subModels?.assignForm?.subModels?.grid?.subModels?.items || []);
     expect(items).toHaveLength(Object.keys(assignedValues).length);
@@ -225,6 +280,87 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
   afterAll(async () => {
     await destroyFlowSurfacesContractContext(context);
+  });
+
+  it('should default collection required validation onto applyBlueprint create and edit form items only', async () => {
+    const collectionName = await createRequiredDefaultsCollection();
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint required defaults',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'createForm',
+                type: 'createForm',
+                collection: collectionName,
+                fields: ['requiredText', 'optionalText', 'requiredOptionsText'],
+                actions: ['submit'],
+              },
+              {
+                key: 'editForm',
+                type: 'editForm',
+                collection: collectionName,
+                fields: ['requiredText'],
+                actions: ['submit'],
+              },
+              {
+                key: 'details',
+                type: 'details',
+                collection: collectionName,
+                fields: ['requiredText'],
+              },
+              {
+                key: 'table',
+                type: 'table',
+                collection: collectionName,
+                fields: ['requiredText'],
+              },
+              {
+                key: 'filter',
+                type: 'filterForm',
+                collection: collectionName,
+                fields: [
+                  {
+                    key: 'requiredFilter',
+                    field: 'requiredText',
+                    target: 'table',
+                  },
+                ],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const blocks = _.castArray(getRouteBackedTabs(data.surface)[0]?.subModels?.grid?.subModels?.items || []);
+    const createForm = blocks.find((item: any) => item?.use === 'CreateFormModel');
+    const editForm = blocks.find((item: any) => item?.use === 'EditFormModel');
+    const details = blocks.find((item: any) => item?.use === 'DetailsBlockModel');
+    const table = blocks.find((item: any) => item?.use === 'TableBlockModel');
+    const filter = blocks.find((item: any) => item?.use === 'FilterFormBlockModel');
+
+    expectRequiredFormItemDefaults(findGridItemByFieldPath(createForm, 'requiredText'));
+    expectNoRequiredFormItemDefaults(findGridItemByFieldPath(createForm, 'optionalText'));
+    expectRequiredFormItemDefaults(findGridItemByFieldPath(createForm, 'requiredOptionsText'));
+    expectRequiredFormItemDefaults(findGridItemByFieldPath(editForm, 'requiredText'));
+    expectNoRequiredFormItemDefaults(findGridItemByFieldPath(details, 'requiredText'));
+    expectNoRequiredFormItemDefaults(
+      _.castArray(table?.subModels?.columns || []).find(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'requiredText',
+      ),
+    );
+    expectNoRequiredFormItemDefaults(findGridItemByFieldPath(filter, 'requiredText'));
   });
 
   it('should create one page from a simplified page blueprint and return only target/surface', async () => {

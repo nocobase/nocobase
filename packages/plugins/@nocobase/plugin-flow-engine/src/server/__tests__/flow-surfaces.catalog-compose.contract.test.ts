@@ -193,6 +193,65 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
   }
 
+  async function createRequiredDefaultsCollection() {
+    const collectionName = `flow_surface_required_defaults_${uid()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        fields: [
+          {
+            name: 'requiredText',
+            type: 'string',
+            interface: 'input',
+            validation: {
+              type: 'string',
+              rules: [{ key: `required_${uid()}`, name: 'required' }],
+            },
+          },
+          {
+            name: 'optionalText',
+            type: 'string',
+            interface: 'input',
+            validation: {
+              type: 'string',
+              rules: [],
+            },
+          },
+          {
+            name: 'requiredOptionsText',
+            type: 'string',
+            interface: 'input',
+            validation: {
+              type: 'string',
+              rules: [{ key: `required_options_${uid()}`, name: 'required' }],
+            },
+          },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['requiredText', 'optionalText', 'requiredOptionsText'],
+    });
+    return collectionName;
+  }
+
+  function expectRequiredFormItemDefaults(node: any) {
+    expect(node?.props?.required).toBe(true);
+    expect(node?.stepParams?.editItemSettings?.required?.required).toBe(true);
+  }
+
+  function expectNoRequiredFormItemDefaults(node: any) {
+    expect(node?.props?.required).toBeUndefined();
+    expect(node?.stepParams?.editItemSettings?.required).toBeUndefined();
+  }
+
+  function findGridItemByFieldPath(blockNode: any, fieldPath: string) {
+    return _.castArray(blockNode?.subModels?.grid?.subModels?.items || []).find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath,
+    );
+  }
+
   function expectAssignFormGridItems(actionTree: any, assignedValues: Record<string, any>) {
     const items = _.castArray(actionTree.subModels?.assignForm?.subModels?.grid?.subModels?.items || []);
     expect(items).toHaveLength(Object.keys(assignedValues).length);
@@ -387,6 +446,240 @@ describe('flowSurfaces catalog + compose contract', () => {
     await destroyFlowSurfacesContractContext(context);
   });
 
+  it('should default required validation onto form items created through addField and addFields only', async () => {
+    const collectionName = await createRequiredDefaultsCollection();
+    const page = await createPage(rootAgent, {
+      title: 'Required defaults direct add page',
+      tabTitle: 'Required defaults direct add tab',
+    });
+    const createForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'createForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const details = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const filterForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'filterForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+
+    const addRequired = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: createForm.uid,
+          },
+          fieldPath: 'requiredText',
+        },
+      }),
+    );
+    const addExplicitOptional = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: createForm.uid,
+          },
+          fieldPath: 'requiredText',
+          settings: {
+            required: false,
+          },
+        },
+      }),
+    );
+    const addFields = getData(
+      await rootAgent.resource('flowSurfaces').addFields({
+        values: {
+          target: {
+            uid: createForm.uid,
+          },
+          fields: [
+            {
+              key: 'optional',
+              fieldPath: 'optionalText',
+            },
+            {
+              key: 'requiredOptions',
+              fieldPath: 'requiredOptionsText',
+            },
+          ],
+        },
+      }),
+    );
+    expect(addFields.successCount).toBe(2);
+    expect(addFields.errorCount).toBe(0);
+
+    const addDetailsRequired = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: details.uid,
+          },
+          fieldPath: 'requiredText',
+        },
+      }),
+    );
+    const addTableRequired = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          fieldPath: 'requiredText',
+        },
+      }),
+    );
+    const addFilterRequired = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: filterForm.uid,
+          },
+          fieldPath: 'requiredText',
+          defaultTargetUid: table.uid,
+        },
+      }),
+    );
+
+    expectRequiredFormItemDefaults((await getSurface(rootAgent, { uid: addRequired.wrapperUid })).tree);
+    const explicitOptionalTree = (await getSurface(rootAgent, { uid: addExplicitOptional.wrapperUid })).tree;
+    expect(explicitOptionalTree?.props?.required).toBe(false);
+    expect(explicitOptionalTree?.stepParams?.editItemSettings?.required?.required).toBe(false);
+    expectNoRequiredFormItemDefaults(
+      (await getSurface(rootAgent, { uid: addFields.fields[0].result.wrapperUid })).tree,
+    );
+    expectRequiredFormItemDefaults((await getSurface(rootAgent, { uid: addFields.fields[1].result.wrapperUid })).tree);
+    expectNoRequiredFormItemDefaults((await getSurface(rootAgent, { uid: addDetailsRequired.wrapperUid })).tree);
+    expectNoRequiredFormItemDefaults((await getSurface(rootAgent, { uid: addTableRequired.wrapperUid })).tree);
+    expectNoRequiredFormItemDefaults((await getSurface(rootAgent, { uid: addFilterRequired.wrapperUid })).tree);
+  });
+
+  it('should default required validation onto inline form fields created through addBlock, addBlocks, and compose', async () => {
+    const collectionName = await createRequiredDefaultsCollection();
+    const page = await createPage(rootAgent, {
+      title: 'Required defaults inline add page',
+      tabTitle: 'Required defaults inline add tab',
+    });
+
+    const addBlockCreate = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'createForm',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName,
+          },
+          fields: ['requiredText', 'optionalText'],
+        },
+      }),
+    );
+    const addBlocks = getData(
+      await rootAgent.resource('flowSurfaces').addBlocks({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'editForm',
+              type: 'editForm',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName,
+              },
+              fields: ['requiredText'],
+            },
+          ],
+        },
+      }),
+    );
+    expect(addBlocks.successCount).toBe(1);
+    expect(addBlocks.errorCount).toBe(0);
+
+    const compose = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'composeCreate',
+              type: 'createForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName,
+              },
+              fields: ['requiredText', 'optionalText'],
+            },
+            {
+              key: 'composeEdit',
+              type: 'editForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName,
+              },
+              fields: ['requiredText'],
+            },
+          ],
+        },
+      }),
+    );
+
+    const addBlockSurface = await getSurface(rootAgent, {
+      uid: addBlockCreate.uid,
+    });
+    expectRequiredFormItemDefaults(findGridItemByFieldPath(addBlockSurface.tree, 'requiredText'));
+    expectNoRequiredFormItemDefaults(findGridItemByFieldPath(addBlockSurface.tree, 'optionalText'));
+
+    const addBlocksSurface = await getSurface(rootAgent, {
+      uid: addBlocks.blocks[0].result.uid,
+    });
+    expectRequiredFormItemDefaults(findGridItemByFieldPath(addBlocksSurface.tree, 'requiredText'));
+
+    const composeCreateSurface = await getSurface(rootAgent, {
+      uid: getComposeBlock(compose, 'composeCreate').uid,
+    });
+    const composeEditSurface = await getSurface(rootAgent, {
+      uid: getComposeBlock(compose, 'composeEdit').uid,
+    });
+    expectRequiredFormItemDefaults(findGridItemByFieldPath(composeCreateSurface.tree, 'requiredText'));
+    expectNoRequiredFormItemDefaults(findGridItemByFieldPath(composeCreateSurface.tree, 'optionalText'));
+    expectRequiredFormItemDefaults(findGridItemByFieldPath(composeEditSurface.tree, 'requiredText'));
+  });
+
   it('should expose full public action catalog variants without collapsing cross-scope action keys', async () => {
     const globalCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -437,6 +730,7 @@ describe('flowSurfaces catalog + compose contract', () => {
   });
 
   it('should compose approval blocks when workflow-approval is explicitly enabled for the test app', async () => {
+    const collectionName = await createRequiredDefaultsCollection();
     await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES);
     try {
       const approvalRootAgent: any = await loginFlowSurfacesRootAgent(app);
@@ -465,16 +759,27 @@ describe('flowSurfaces catalog + compose contract', () => {
                 type: 'approvalInitiator',
                 resource: {
                   dataSourceKey: 'main',
-                  collectionName: 'employees',
+                  collectionName,
                 },
-                fields: ['nickname'],
+                fields: ['optionalText', 'requiredText'],
               },
             ],
           },
         }),
       );
 
-      expect(getComposeBlock(composeResult, 'initiator').uid).toBeTruthy();
+      const initiatorBlock = getComposeBlock(composeResult, 'initiator');
+      expect(initiatorBlock.uid).toBeTruthy();
+      const optionalFieldWrapper = await getSurface(approvalRootAgent, {
+        uid: initiatorBlock.fields[0].wrapperUid,
+      });
+      const requiredFieldWrapper = await getSurface(approvalRootAgent, {
+        uid: initiatorBlock.fields[1].wrapperUid,
+      });
+      expect(optionalFieldWrapper.tree.use).toBe('PatternFormItemModel');
+      expect(requiredFieldWrapper.tree.use).toBe('PatternFormItemModel');
+      expectNoRequiredFormItemDefaults(optionalFieldWrapper.tree);
+      expectRequiredFormItemDefaults(requiredFieldWrapper.tree);
     } finally {
       await syncFlowSurfacesEnabledPlugins(app, FLOW_SURFACES_TEST_PLUGINS);
     }
