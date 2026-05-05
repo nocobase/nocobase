@@ -168,6 +168,67 @@ describe('flowSurfaces block header contracts', () => {
     );
   });
 
+  it('should default empty map line sorting to createdAt desc', async () => {
+    const service = new FlowSurfacesService({ db: {} } as any);
+    const updateSettings = vi.spyOn(service, 'updateSettings').mockResolvedValue({ uid: 'map-1' } as any);
+
+    await (service as any).configureMapBlock(
+      { uid: 'block-1' },
+      {
+        sorting: [],
+      },
+      {},
+    );
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      {
+        target: { uid: 'block-1' },
+        stepParams: {
+          createMapBlock: {
+            lineSort: {
+              sort: [
+                {
+                  field: 'createdAt',
+                  direction: 'desc',
+                },
+              ],
+            },
+          },
+        },
+      },
+      {},
+    );
+  });
+
+  it('should preserve explicit empty details sorting', async () => {
+    const service = new FlowSurfacesService({ db: {} } as any);
+    const updateSettings = vi.spyOn(service, 'updateSettings').mockResolvedValue({ uid: 'details-1' } as any);
+
+    await (service as any).configureDetailsBlock(
+      { uid: 'block-1' },
+      {
+        sorting: [],
+      },
+      {},
+    );
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      {
+        target: { uid: 'block-1' },
+        props: {},
+        decoratorProps: {},
+        stepParams: {
+          detailsSettings: {
+            defaultSorting: {
+              sort: [],
+            },
+          },
+        },
+      },
+      {},
+    );
+  });
+
   it('should persist affected block height configure changes through blockHeight cardSettings', async () => {
     const service = new FlowSurfacesService({ db: {} } as any);
     vi.spyOn(service as any, 'getCalendarBlockResourceInit').mockReturnValue({

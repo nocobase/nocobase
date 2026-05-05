@@ -137,7 +137,11 @@ import {
   getConfigureOptionsForResolvedNode,
   getConfigureOptionsForUse,
 } from './configure-options';
-import { normalizeFlowSurfacePublicSortingAlias } from './public-compatibility';
+import {
+  normalizeFlowSurfaceEmptySortingAsDefault,
+  normalizeFlowSurfaceDefaultSorting,
+  normalizeFlowSurfacePublicSortingAlias,
+} from './public-compatibility';
 import {
   buildCatalogCollectionCycleKey,
   buildFilterFieldMeta,
@@ -822,6 +826,7 @@ type FlowSurfacePopupBlockProfile = {
   filterByTk?: any;
   associationName?: string;
   sourceId?: any;
+  sourceIdInferred?: boolean;
   hasCurrentRecord: boolean;
   hasAssociationContext: boolean;
   scene: FlowSurfacePopupScene;
@@ -2114,10 +2119,35 @@ export class FlowSurfacesService {
       filterByTk,
       associationName,
       sourceId,
+      sourceIdInferred:
+        !hasConfiguredFlowContextValue(openView?.sourceId) &&
+        hasConfiguredFlowContextValue(sourceId) &&
+        this.isSameConfiguredFlowContextValue(sourceId, '{{ctx.view.inputArgs.sourceId}}'),
       hasCurrentRecord,
       hasAssociationContext,
       scene,
     };
+  }
+
+  private resolvePopupCurrentRecordResourceFilterByTk(
+    popupProfile: FlowSurfacePopupBlockProfile | null | undefined,
+    options: { usePopupInputArgsWhenSourceIdInferred?: boolean } = {},
+  ) {
+    if (!popupProfile?.currentCollection) {
+      return popupProfile?.filterByTk;
+    }
+    if (popupProfile.popupKind !== 'associationPopup') {
+      return popupProfile.filterByTk;
+    }
+    if (
+      options.usePopupInputArgsWhenSourceIdInferred &&
+      popupProfile.sourceIdInferred &&
+      popupProfile.popupHostUse &&
+      POPUP_ACTION_USES.has(popupProfile.popupHostUse)
+    ) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    return `{{ctx.record.${this.getCollectionFilterTargetKey(popupProfile.currentCollection)}}}`;
   }
 
   private resolvePopupAssociationFields(popupProfile: FlowSurfacePopupBlockProfile, blockUse: string) {
@@ -2448,9 +2478,9 @@ export class FlowSurfacesService {
       return buildDefinedPayload({
         dataSourceKey: input.popupProfile.dataSourceKey || 'main',
         collectionName: input.popupProfile.collectionName,
-        filterByTk: input.popupProfile.currentCollection
-          ? `{{ctx.record.${this.getCollectionFilterTargetKey(input.popupProfile.currentCollection)}}}`
-          : input.popupProfile.filterByTk,
+        filterByTk: this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile, {
+          usePopupInputArgsWhenSourceIdInferred: true,
+        }),
         ...(preserveAssociationContext
           ? {
               associationName: input.popupProfile.associationName,
@@ -4098,37 +4128,47 @@ export class FlowSurfacesService {
     actionName: string,
     hostUid: string | undefined,
     template: FlowSurfaceTemplateRow,
-    transaction?: any,
+    options: {
+      transaction?: any;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
+    } = {},
   ) {
     const normalizedHostUid = String(hostUid || '').trim();
     if (!normalizedHostUid) {
       return;
     }
     const hostNode = await this.repository.findModelById(normalizedHostUid, {
-      transaction,
+      transaction: options.transaction,
       includeAsyncNode: true,
     });
     if (!hostNode?.uid) {
       return;
     }
 
-    const popupProfile = await this.resolvePopupBlockProfile(normalizedHostUid, null, hostNode, transaction).catch(
-      () => null,
-    );
+    const popupProfile = await this.resolvePopupBlockProfile(
+      normalizedHostUid,
+      null,
+      hostNode,
+      options.transaction,
+    ).catch(() => null);
     if (!popupProfile?.isPopupSurface) {
       return;
     }
 
-    const disabledReason = await this.getPopupTemplateDisabledReason(template, {
-      target: { uid: normalizedHostUid },
-      resolved: {
-        uid: normalizedHostUid,
+    const disabledReason = await this.getPopupTemplateDisabledReason(
+      template,
+      {
         target: { uid: normalizedHostUid },
-        kind: 'node',
-      } as FlowSurfaceResolvedTarget,
-      node: hostNode,
-      popupProfile,
-    });
+        resolved: {
+          uid: normalizedHostUid,
+          target: { uid: normalizedHostUid },
+          kind: 'node',
+        } as FlowSurfaceResolvedTarget,
+        node: hostNode,
+        popupProfile,
+      },
+      options.popupActionContext,
+    );
     if (!disabledReason) {
       return;
     }
@@ -6791,6 +6831,7 @@ export class FlowSurfacesService {
       use: catalogItem.use,
       containerUse: parentNode?.use,
       resourceInit: effectiveResourceInit,
+      enableDefaultSorting: this.shouldEnableCreatedAtDefaultSorting(effectiveResourceInit),
       props: blockProps,
       decoratorProps: values.decoratorProps,
       stepParams:
@@ -7961,6 +8002,24 @@ export class FlowSurfacesService {
     return settings;
   }
 
+  private shouldEnableCreatedAtDefaultSorting(resourceInit?: Record<string, any>) {
+    const collectionName = String(resourceInit?.collectionName || '').trim();
+    if (!collectionName) {
+      return false;
+    }
+    const dataSourceKey = String(resourceInit?.dataSourceKey || 'main').trim() || 'main';
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    return !!resolveFieldFromCollection(collection, 'createdAt');
+  }
+
+  private normalizeBlockSortingInput(value: any, context: string) {
+    return normalizeFlowSurfaceDefaultSorting(value, context);
+  }
+
+  private normalizeMapSortingInput(value: any, context: string) {
+    return normalizeFlowSurfaceEmptySortingAsDefault(value, context);
+  }
+
   private normalizeInlinePopup(actionName: string, popup: any) {
     if (_.isUndefined(popup)) {
       return undefined;
@@ -8793,12 +8852,10 @@ export class FlowSurfacesService {
         transaction: options.transaction,
         expectedType: 'popup',
       });
-      await this.assertPopupTemplateCompatibility(
-        actionName,
-        options.popupTemplateHostUid,
-        template,
-        options.transaction,
-      );
+      await this.assertPopupTemplateCompatibility(actionName, options.popupTemplateHostUid, template, {
+        transaction: options.transaction,
+        popupActionContext: options.popupActionContext,
+      });
       const resolvedUid =
         templateRef.mode === 'copy'
           ? String(
@@ -10148,9 +10205,6 @@ export class FlowSurfacesService {
       return;
     }
     const currentOpenView = _.isPlainObject(openViewStep.openView) ? openViewStep.openView : {};
-    if (this.normalizeOptionalPopupTitle(currentOpenView.title) === openViewTitle) {
-      return;
-    }
     const popupProfile = await this.resolvePopupBlockProfile(
       actionNode.uid,
       null,
@@ -10160,25 +10214,28 @@ export class FlowSurfacesService {
     const filterTargetKey = popupProfile?.currentCollection
       ? this.getCollectionFilterTargetKey(popupProfile.currentCollection)
       : null;
+    const defaultFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(popupProfile);
     const currentFilterByTk = _.isString(currentOpenView.filterByTk) ? currentOpenView.filterByTk.trim() : '';
     const preserveCustomFilterByTk =
       currentFilterByTk &&
       currentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
       currentFilterByTk !== (filterTargetKey ? `{{ctx.record.${filterTargetKey}}}` : '');
+    const nextOpenView = buildDefinedPayload({
+      ...currentOpenView,
+      title: openViewTitle,
+      filterByTk: preserveCustomFilterByTk
+        ? currentOpenView.filterByTk
+        : defaultFilterByTk || currentOpenView.filterByTk,
+    });
+    if (_.isEqual(nextOpenView, currentOpenView)) {
+      return;
+    }
 
     const nextStepParams = _.cloneDeep(actionNode?.stepParams || {});
     const currentGroup = _.isPlainObject(nextStepParams[openViewStep.flowKey])
       ? _.cloneDeep(nextStepParams[openViewStep.flowKey])
       : {};
-    currentGroup[openViewStep.stepKey] = buildDefinedPayload({
-      ...currentOpenView,
-      title: openViewTitle,
-      filterByTk: preserveCustomFilterByTk
-        ? currentOpenView.filterByTk
-        : filterTargetKey
-          ? `{{ctx.record.${filterTargetKey}}}`
-          : currentOpenView.filterByTk,
-    });
+    currentGroup[openViewStep.stepKey] = nextOpenView;
     nextStepParams[openViewStep.flowKey] = currentGroup;
     await this.repository.patch(
       {
@@ -10228,6 +10285,7 @@ export class FlowSurfacesService {
     const currentFilterByTk = _.isString(currentGroupOpenView?.filterByTk)
       ? currentGroupOpenView.filterByTk.trim()
       : '';
+    const defaultFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(popupProfile);
     const preserveCustomFilterByTk =
       currentFilterByTk &&
       currentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
@@ -10239,9 +10297,7 @@ export class FlowSurfacesService {
       associationName: currentOpenView?.associationName || popupProfile?.associationName,
       filterByTk: preserveCustomFilterByTk
         ? currentGroupOpenView.filterByTk
-        : filterTargetKey
-          ? `{{ctx.record.${filterTargetKey}}}`
-          : popupProfile?.filterByTk || '{{ctx.view.inputArgs.filterByTk}}',
+        : defaultFilterByTk || popupProfile?.filterByTk || '{{ctx.view.inputArgs.filterByTk}}',
       sourceId: currentOpenView?.sourceId || popupProfile?.sourceId,
     });
 
@@ -10376,6 +10432,12 @@ export class FlowSurfacesService {
           openViewActionName: actionName,
         },
       );
+      if (this.isDefaultActionPopupUseForNode(actionNode)) {
+        await this.syncDefaultActionPopupOpenViewTitle(actionUid, actionNode, {
+          ...options,
+          openViewTitle: templateOpenViewTitle,
+        });
+      }
       this.registerInlinePopupTemplateAlias(actionName, popup, matchedTemplate, options.popupTemplateAliasSession);
       return;
     }
@@ -10490,6 +10552,7 @@ export class FlowSurfacesService {
     );
     this.syncCalendarPopupPropsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncKanbanPopupPropsForUpdateSettings(current, normalizedValues, nextPayload);
+    this.syncDefaultSortingForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncFilterActionSettingsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
     const updateActionAssignedValues = this.syncUpdateActionAssignedValuesForUpdateSettings(
@@ -10711,6 +10774,97 @@ export class FlowSurfacesService {
       if (Object.prototype.hasOwnProperty.call(nextPayload.props, key)) {
         delete nextPayload.props[key];
       }
+    }
+  }
+
+  private syncDefaultSortingForUpdateSettings(
+    current: any,
+    normalizedValues: Record<string, any>,
+    nextPayload: Record<string, any>,
+  ) {
+    if (!_.isPlainObject(normalizedValues?.stepParams)) {
+      return;
+    }
+    const currentUse = current?.use;
+    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+    let changed = false;
+
+    const normalizeGroupSort = (groupPath: string[], context: string) => {
+      const currentGroup = _.get(nextStepParams, groupPath);
+      if (!_.isPlainObject(currentGroup)) {
+        return;
+      }
+      if (!_.has(normalizedValues.stepParams, [...groupPath, 'defaultSorting', 'sort'])) {
+        return;
+      }
+      const defaultSorting = _.get(currentGroup, ['defaultSorting', 'sort']);
+      const normalizedSort = normalizeFlowSurfaceDefaultSorting(defaultSorting, context);
+      if (_.isEqual(defaultSorting, normalizedSort)) {
+        return;
+      }
+      _.set(nextStepParams, [...groupPath, 'defaultSorting', 'sort'], normalizedSort);
+      changed = true;
+    };
+
+    if (
+      currentUse === 'TableBlockModel' &&
+      Object.prototype.hasOwnProperty.call(normalizedValues.stepParams, 'tableSettings')
+    ) {
+      normalizeGroupSort(['tableSettings'], 'tableSettings.defaultSorting.sort');
+    }
+    if (
+      currentUse === 'DetailsBlockModel' &&
+      Object.prototype.hasOwnProperty.call(normalizedValues.stepParams, 'detailsSettings')
+    ) {
+      normalizeGroupSort(['detailsSettings'], 'detailsSettings.defaultSorting.sort');
+    }
+    if (
+      currentUse === 'ListBlockModel' &&
+      Object.prototype.hasOwnProperty.call(normalizedValues.stepParams, 'listSettings')
+    ) {
+      normalizeGroupSort(['listSettings'], 'listSettings.defaultSorting.sort');
+    }
+    if (
+      currentUse === 'GridCardBlockModel' &&
+      Object.prototype.hasOwnProperty.call(normalizedValues.stepParams, 'GridCardSettings')
+    ) {
+      normalizeGroupSort(['GridCardSettings'], 'GridCardSettings.defaultSorting.sort');
+    }
+    if (
+      currentUse === 'TreeBlockModel' &&
+      Object.prototype.hasOwnProperty.call(normalizedValues.stepParams, 'treeSettings')
+    ) {
+      normalizeGroupSort(['treeSettings'], 'treeSettings.defaultSorting.sort');
+    }
+    if (
+      currentUse === 'KanbanBlockModel' &&
+      Object.prototype.hasOwnProperty.call(normalizedValues.stepParams, 'kanbanSettings')
+    ) {
+      normalizeGroupSort(['kanbanSettings'], 'kanbanSettings.defaultSorting.sort');
+    }
+    if (
+      currentUse === 'MapBlockModel' &&
+      Object.prototype.hasOwnProperty.call(normalizedValues.stepParams, 'createMapBlock')
+    ) {
+      const createMapBlock = _.get(nextStepParams, ['createMapBlock']);
+      if (_.isPlainObject(createMapBlock)) {
+        if (!_.has(normalizedValues.stepParams, ['createMapBlock', 'lineSort', 'sort'])) {
+          return;
+        }
+        const defaultSorting = _.get(createMapBlock, ['lineSort', 'sort']);
+        const normalizedSort = normalizeFlowSurfaceEmptySortingAsDefault(
+          defaultSorting,
+          'createMapBlock.lineSort.sort',
+        );
+        if (!_.isEqual(defaultSorting, normalizedSort)) {
+          _.set(nextStepParams, ['createMapBlock', 'lineSort', 'sort'], normalizedSort);
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      nextPayload.stepParams = nextStepParams;
     }
   }
 
@@ -13766,7 +13920,13 @@ export class FlowSurfacesService {
                   ...(hasOwnDefined(changes, 'showRowNumbers')
                     ? { showRowNumbers: { showIndex: changes.showRowNumbers } }
                     : {}),
-                  ...(hasOwnDefined(changes, 'sorting') ? { defaultSorting: { sort: changes.sorting } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting')
+                    ? {
+                        defaultSorting: {
+                          sort: this.normalizeBlockSortingInput(changes.sorting, 'tableSettings.sorting'),
+                        },
+                      }
+                    : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
                   ...(hasOwnDefined(changes, 'treeTable') ? { treeTable: { treeTable: changes.treeTable } } : {}),
                   ...(hasOwnDefined(changes, 'defaultExpandAllRows')
@@ -14039,7 +14199,13 @@ export class FlowSurfacesService {
                   ...(hasOwnDefined(changes, 'titleField') ? { titleField: { titleField: nextFieldNames.title } } : {}),
                   ...(hasOwnDefined(changes, 'pageSize') ? { pageSize: { pageSize: changes.pageSize } } : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
-                  ...(hasOwnDefined(changes, 'sorting') ? { defaultSorting: { sort: changes.sorting } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting')
+                    ? {
+                        defaultSorting: {
+                          sort: this.normalizeBlockSortingInput(changes.sorting, 'treeSettings.sorting'),
+                        },
+                      }
+                    : {}),
                 }),
               }
             : {}),
@@ -14341,7 +14507,9 @@ export class FlowSurfacesService {
           }
         : {}),
       ...(hasOwnDefined(changes, 'styleVariant') ? { styleVariant: nextStyleVariantProp } : {}),
-      ...(hasOwnDefined(changes, 'sorting') ? { globalSort: changes.sorting } : {}),
+      ...(hasOwnDefined(changes, 'sorting')
+        ? { globalSort: this.normalizeBlockSortingInput(changes.sorting, 'kanban.globalSort') }
+        : {}),
       ...(shouldWriteDrag
         ? {
             dragEnabled: nextDragEnabled,
@@ -14396,7 +14564,7 @@ export class FlowSurfacesService {
               ...(hasOwnDefined(changes, 'sorting')
                 ? {
                     defaultSorting: {
-                      sort: changes.sorting,
+                      sort: this.normalizeBlockSortingInput(changes.sorting, 'kanbanSettings.defaultSorting.sort'),
                     },
                   }
                 : {}),
@@ -14705,7 +14873,13 @@ export class FlowSurfacesService {
                         }),
                       }
                     : {}),
-                  ...(hasOwnDefined(changes, 'sorting') ? { defaultSorting: { sort: changes.sorting } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting')
+                    ? {
+                        defaultSorting: {
+                          sort: this.normalizeBlockSortingInput(changes.sorting, 'detailsSettings.sorting'),
+                        },
+                      }
+                    : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
                   ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: { value: changes.linkageRules } } : {}),
                 }),
@@ -14800,7 +14974,13 @@ export class FlowSurfacesService {
                 listSettings: buildDefinedPayload({
                   ...(hasOwnDefined(changes, 'pageSize') ? { pageSize: { pageSize: changes.pageSize } } : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
-                  ...(hasOwnDefined(changes, 'sorting') ? { defaultSorting: { sort: changes.sorting } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting')
+                    ? {
+                        defaultSorting: {
+                          sort: this.normalizeBlockSortingInput(changes.sorting, 'listSettings.sorting'),
+                        },
+                      }
+                    : {}),
                   ...(hasOwnDefined(changes, 'layout') ? { layout: { layout: layoutValue } } : {}),
                 }),
               }
@@ -14839,7 +15019,13 @@ export class FlowSurfacesService {
                   ...(columns ? { columnCount: { columnCount: columns } } : {}),
                   ...(hasOwnDefined(changes, 'rowCount') ? { rowCount: { rowCount: changes.rowCount } } : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
-                  ...(hasOwnDefined(changes, 'sorting') ? { defaultSorting: { sort: changes.sorting } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting')
+                    ? {
+                        defaultSorting: {
+                          sort: this.normalizeBlockSortingInput(changes.sorting, 'GridCardSettings.sorting'),
+                        },
+                      }
+                    : {}),
                   ...(hasOwnDefined(changes, 'layout') ? { layout: { layout: layoutValue } } : {}),
                 }),
               }
@@ -15070,7 +15256,13 @@ export class FlowSurfacesService {
                       }
                     : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
-                  ...(hasOwnDefined(changes, 'sorting') ? { lineSort: { sort: changes.sorting } } : {}),
+                  ...(hasOwnDefined(changes, 'sorting')
+                    ? {
+                        lineSort: {
+                          sort: this.normalizeMapSortingInput(changes.sorting, 'createMapBlock.lineSort.sort'),
+                        },
+                      }
+                    : {}),
                   ...(hasOwnDefined(changes, 'zoom') ? { mapZoom: { zoom: changes.zoom } } : {}),
                 }),
               }
@@ -18146,6 +18338,9 @@ export class FlowSurfacesService {
       quickCreateEnabled: currentProps.quickCreateEnabled === true,
       dragEnabled: nextDragEnabled,
       dragSortBy: nextDragSortBy || undefined,
+      ...(Object.prototype.hasOwnProperty.call(currentProps, 'globalSort')
+        ? { globalSort: this.normalizeBlockSortingInput(currentProps.globalSort, 'kanban.globalSort') }
+        : {}),
     });
     delete (props as any).quickCreatePopup;
     delete (props as any).quickCreatePopupSettings;

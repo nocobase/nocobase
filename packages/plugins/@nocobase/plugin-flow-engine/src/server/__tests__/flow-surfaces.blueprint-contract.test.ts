@@ -26,6 +26,12 @@ import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { expectTemplateUsage, getListData } from './flow-surfaces.templates.helpers';
 
 describe('flowSurfaces applyBlueprint contract', () => {
+  const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
+    'FilterActionModel',
+    'RefreshActionModel',
+    'AddNewActionModel',
+  ]);
+
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
@@ -476,17 +482,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
       uid: eventPopupBlock.popupSurface.tree.uid,
       popupTemplateUid: eventTemplateUid,
     });
-    expect(readNodeActionUses(calendarBlock)).toEqual(
-      expect.arrayContaining([
-        'FilterActionModel',
-        'AddNewActionModel',
-        'CalendarTodayActionModel',
-        'CalendarNavActionModel',
-        'CalendarTitleActionModel',
-        'CalendarViewSelectActionModel',
-        'RefreshActionModel',
-      ]),
-    );
+    expect(readNodeActionUses(calendarBlock).filter((use) => DEFAULT_COLLECTION_BLOCK_ACTION_USES.has(use))).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+    ]);
   });
 
   it('should reject calendar main block fields fieldGroups and recordActions in applyBlueprint', async () => {
@@ -1065,6 +1065,43 @@ describe('flowSurfaces applyBlueprint contract', () => {
         direction: 'desc',
       },
     ]);
+  });
+
+  it('should preserve explicit empty table sorting in applyBlueprint', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Employees empty sorting blueprint',
+          },
+        },
+        page: {
+          title: 'Employees empty sorting blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  sorting: [],
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    expect(tableBlock?.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([]);
   });
 
   it('should reject empty block-level defaultFilter groups in applyBlueprint data blocks', async () => {

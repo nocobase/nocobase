@@ -237,8 +237,8 @@ describe('flowSurfaces kanban contract', () => {
     });
     expect(readKanbanActionUses(readback.tree)).toEqual([
       'FilterActionModel',
-      'AddNewActionModel',
       'RefreshActionModel',
+      'AddNewActionModel',
     ]);
     expect(readback.tree.subModels?.item).toMatchObject({
       use: 'KanbanCardItemModel',

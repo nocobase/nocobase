@@ -32,6 +32,12 @@ import { expectTemplateUsage, saveTemplate } from './flow-surfaces.templates.hel
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
 describe('flowSurfaces catalog + compose contract', () => {
+  const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
+    'FilterActionModel',
+    'RefreshActionModel',
+    'AddNewActionModel',
+  ]);
+
   let context: FlowSurfacesContractContext;
   let app: FlowSurfacesContractContext['app'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
@@ -4046,9 +4052,11 @@ describe('flowSurfaces catalog + compose contract', () => {
         .filter((item: any) => item?.use === 'TableColumnModel')
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(expect.arrayContaining(['username', 'nickname']));
-    expect(_.castArray(tableReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
-    );
+    expect(
+      _.castArray(tableReadback.tree.subModels?.actions || [])
+        .map((item: any) => item?.use)
+        .filter((use) => DEFAULT_COLLECTION_BLOCK_ACTION_USES.has(use)),
+    ).toEqual(['FilterActionModel', 'RefreshActionModel', 'AddNewActionModel']);
     const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
       (item: any) => item?.use === 'TableActionsColumnModel',
     )?.uid;
@@ -7505,6 +7513,119 @@ describe('flowSurfaces catalog + compose contract', () => {
         direction: 'desc',
       },
     ]);
+  });
+
+  it('should default missing table and list sorting to createdAt desc in compose', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose default sorting page',
+      tabTitle: 'Compose default sorting tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname'],
+          },
+          {
+            key: 'employeesList',
+            type: 'list',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const data = getData(composeRes);
+    const tableBlock = getComposeBlock(data, 'employeesTable');
+    const listBlock = getComposeBlock(data, 'employeesList');
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
+    const listReadback = await getSurface(rootAgent, { uid: listBlock.uid });
+
+    expect(tableReadback.tree.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+    ]);
+    expect(listReadback.tree.stepParams?.listSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+    ]);
+  });
+
+  it('should default missing list sorting to createdAt desc in addBlock', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Add block default sorting page',
+      tabTitle: 'Add block default sorting tab',
+    });
+
+    const listBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'list',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const listReadback = await getSurface(rootAgent, { uid: listBlock.uid });
+
+    expect(listReadback.tree.stepParams?.listSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'createdAt',
+        direction: 'desc',
+      },
+    ]);
+  });
+
+  it('should not default missing sorting when the collection has no createdAt field', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose no createdAt sorting page',
+      tabTitle: 'Compose no createdAt sorting tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'eventsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'calendar_events',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const tableBlock = getComposeBlock(getData(composeRes), 'eventsTable');
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
+
+    expect(tableReadback.tree.stepParams?.tableSettings?.defaultSorting).toBeUndefined();
   });
 
   it('should compose update actions with assignValues settings and mirror assignedValues', async () => {
