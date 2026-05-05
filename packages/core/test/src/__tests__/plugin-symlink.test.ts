@@ -64,9 +64,9 @@ describe('plugin symlink sync', () => {
     await syncPluginSymlinks();
 
     expect(fs.lstatSync(realNodeModulesDir).isSymbolicLink()).toBe(false);
-    expect(fs.realpathSync(linkedNodeModulesDir)).toBe(packagesPluginDir);
+    expect(fs.realpathSync(linkedNodeModulesDir)).toBe(fs.realpathSync(packagesPluginDir));
     expect(fs.realpathSync(path.join(root, 'node_modules', storageOnlyName))).toBe(
-      path.join(root, 'storage', 'plugins', storageOnlyName),
+      fs.realpathSync(path.join(root, 'storage', 'plugins', storageOnlyName)),
     );
     expect(fs.realpathSync(path.join(root, 'node_modules', '@scope', 'linked'))).not.toBe(proPluginDir);
   });
