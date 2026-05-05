@@ -10,9 +10,59 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContext, FlowEngine } from '@nocobase/flow-engine';
 import type { ActionDefinition } from '@nocobase/flow-engine';
-import { registerOpenViewPopupTemplateAction } from '../openViewActionExtensions';
+import {
+  appendPopupTemplateOptions,
+  buildPopupTemplateListFilter,
+  registerOpenViewPopupTemplateAction,
+} from '../openViewActionExtensions';
 
 describe('openViewActionExtensions (popup template)', () => {
+  it('builds a narrow popup template list filter for collection templates', () => {
+    expect(buildPopupTemplateListFilter({ dataSourceKey: 'main', collectionName: 'orders' })).toEqual({
+      $and: [
+        { type: 'popup' },
+        { dataSourceKey: 'main' },
+        { collectionName: 'orders' },
+        { $or: [{ associationName: null }, { associationName: '' }] },
+      ],
+    });
+  });
+
+  it('builds a narrow popup template list filter for association context without excluding relation templates', () => {
+    expect(
+      buildPopupTemplateListFilter({
+        dataSourceKey: 'main',
+        collectionName: 'roles',
+        associationName: 'users.roles',
+      }),
+    ).toEqual({
+      $and: [
+        { type: 'popup' },
+        { dataSourceKey: 'main' },
+        {
+          $or: [
+            {
+              $and: [{ collectionName: 'roles' }, { $or: [{ associationName: null }, { associationName: '' }] }],
+            },
+            { associationName: 'users.roles' },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('appends later popup template pages without moving newly enabled items to the front', () => {
+    const merged = appendPopupTemplateOptions(
+      [
+        { label: 'Disabled 1', value: 'disabled-1', disabled: true, __idx: 0 },
+        { label: 'Disabled 2', value: 'disabled-2', disabled: true, __idx: 1 },
+      ],
+      [{ label: 'Enabled later', value: 'enabled-later', disabled: false, __idx: 20 }],
+    );
+
+    expect(merged.map((item) => item.value)).toEqual(['disabled-1', 'disabled-2', 'enabled-later']);
+  });
+
   it('resolves popupTemplateUid to uid and delegates to base', async () => {
     const engine = new FlowEngine();
     const baseBefore = vi.fn(async () => {});
