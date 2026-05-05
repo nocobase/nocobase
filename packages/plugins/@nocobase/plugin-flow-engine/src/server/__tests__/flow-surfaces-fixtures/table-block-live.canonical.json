@@ -31,6 +31,31 @@
     "subModels": {
       "actions": [
         {
+          "alias": "node.RefreshActionModel1",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Refresh",
+                "type": ""
+              }
+            }
+          }
+        },
+        {
+          "alias": "node.BulkDeleteActionModel1",
+          "use": "BulkDeleteActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Bulk Delete",
+                "tooltip": "{{t(\"Delete\")}}",
+                "type": ""
+              }
+            }
+          }
+        },
+        {
           "alias": "action.addNew1",
           "use": "AddNewActionModel",
           "stepParams": {
@@ -498,30 +523,6 @@
                 }
               }
             ]
-          }
-        },
-        {
-          "alias": "node.RefreshActionModel1",
-          "use": "RefreshActionModel",
-          "stepParams": {
-            "buttonSettings": {
-              "general": {
-                "title": "Refresh",
-                "type": ""
-              }
-            }
-          }
-        },
-        {
-          "alias": "node.BulkDeleteActionModel1",
-          "use": "BulkDeleteActionModel",
-          "stepParams": {
-            "buttonSettings": {
-              "general": {
-                "title": "Bulk Delete",
-                "type": ""
-              }
-            }
           }
         }
       ],

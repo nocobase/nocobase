@@ -238,6 +238,11 @@ export type FlowSurfaceApplyBlueprintDocument = {
   reaction?: FlowSurfaceApplyBlueprintReaction;
 };
 
+export type FlowSurfaceApplyBlueprintCollectionResolver = (
+  dataSourceKey: string | undefined,
+  collectionName: string | undefined,
+) => any;
+
 export type FlowSurfaceApplyBlueprintReplaceTargetInfo = {
   locator: FlowSurfaceReadLocator;
   pageUid: string;

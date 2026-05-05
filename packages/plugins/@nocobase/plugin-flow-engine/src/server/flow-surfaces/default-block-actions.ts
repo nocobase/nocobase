@@ -25,6 +25,8 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
 > = {
   table: [
     { type: 'filter', scope: 'actions' },
+    { type: 'refresh', scope: 'actions' },
+    { type: 'bulkDelete', scope: 'actions' },
     {
       type: 'addNew',
       scope: 'actions',
@@ -33,10 +35,10 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
         [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
       },
     },
-    { type: 'refresh', scope: 'actions' },
   ],
   list: [
     { type: 'filter', scope: 'actions' },
+    { type: 'refresh', scope: 'actions' },
     {
       type: 'addNew',
       scope: 'actions',
@@ -45,10 +47,10 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
         [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
       },
     },
-    { type: 'refresh', scope: 'actions' },
   ],
   gridCard: [
     { type: 'filter', scope: 'actions' },
+    { type: 'refresh', scope: 'actions' },
     {
       type: 'addNew',
       scope: 'actions',
@@ -57,10 +59,10 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
         [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
       },
     },
-    { type: 'refresh', scope: 'actions' },
   ],
   calendar: [
     { type: 'filter', scope: 'actions' },
+    { type: 'refresh', scope: 'actions' },
     {
       type: 'addNew',
       scope: 'actions',
@@ -69,10 +71,10 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
         [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
       },
     },
-    { type: 'refresh', scope: 'actions' },
   ],
   kanban: [
     { type: 'filter', scope: 'actions' },
+    { type: 'refresh', scope: 'actions' },
     {
       type: 'addNew',
       scope: 'actions',
@@ -81,7 +83,6 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
         [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
       },
     },
-    { type: 'refresh', scope: 'actions' },
   ],
   createForm: [{ type: 'submit', scope: 'actions' }],
   editForm: [{ type: 'submit', scope: 'actions' }],

@@ -203,7 +203,7 @@ describe('flowSurfaces association contract', () => {
     expect(initialPopupDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -320,7 +320,7 @@ describe('flowSurfaces association contract', () => {
     expect(popupDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -330,7 +330,7 @@ describe('flowSurfaces association contract', () => {
     expect(popupGridDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -363,7 +363,7 @@ describe('flowSurfaces association contract', () => {
     expect(popupEditFormReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -673,7 +673,7 @@ describe('flowSurfaces association contract', () => {
     expect(legacyDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -708,7 +708,7 @@ describe('flowSurfaces association contract', () => {
     expect(legacyEditFormReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -801,6 +801,7 @@ describe('flowSurfaces association contract', () => {
       collectionName: 'roles',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
+      filterByTk: '{{ctx.record.name}}',
     });
 
     const nestedRoleDetails = getData(
@@ -821,7 +822,7 @@ describe('flowSurfaces association contract', () => {
     expect(nestedRoleDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
