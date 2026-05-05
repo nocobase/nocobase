@@ -75,6 +75,28 @@ describe('flowSurfaces catalog + compose contract', () => {
     };
   }
 
+  async function createTimestampedEmployeesCollection() {
+    const collectionName = `employees_with_created_at_${uid()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        createdAt: true,
+        updatedAt: true,
+        fields: [
+          { name: 'nickname', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'input' },
+          { name: 'createdAt', type: 'date', interface: 'createdAt', field: 'createdAt' },
+          { name: 'updatedAt', type: 'date', interface: 'updatedAt', field: 'updatedAt' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['nickname', 'createdAt', 'updatedAt'],
+    });
+    return collectionName;
+  }
+
   async function readPrimaryPopupBlock(actionUid: string) {
     const actionSurface = await getSurface(rootAgent, {
       uid: actionUid,
@@ -7516,6 +7538,7 @@ describe('flowSurfaces catalog + compose contract', () => {
   });
 
   it('should default missing table and list sorting to createdAt desc in compose', async () => {
+    const collectionName = await createTimestampedEmployeesCollection();
     const page = await createPage(rootAgent, {
       title: 'Compose default sorting page',
       tabTitle: 'Compose default sorting tab',
@@ -7532,7 +7555,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             type: 'table',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName,
             },
             fields: ['nickname'],
           },
@@ -7541,7 +7564,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             type: 'list',
             resource: {
               dataSourceKey: 'main',
-              collectionName: 'employees',
+              collectionName,
             },
             fields: ['nickname'],
           },
@@ -7571,6 +7594,7 @@ describe('flowSurfaces catalog + compose contract', () => {
   });
 
   it('should default missing list sorting to createdAt desc in addBlock', async () => {
+    const collectionName = await createTimestampedEmployeesCollection();
     const page = await createPage(rootAgent, {
       title: 'Add block default sorting page',
       tabTitle: 'Add block default sorting tab',
@@ -7583,7 +7607,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       type: 'list',
       resourceInit: {
         dataSourceKey: 'main',
-        collectionName: 'employees',
+        collectionName,
       },
     });
     const listReadback = await getSurface(rootAgent, { uid: listBlock.uid });
