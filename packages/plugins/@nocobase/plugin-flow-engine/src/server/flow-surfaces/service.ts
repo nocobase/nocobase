@@ -503,6 +503,7 @@ const FILTER_TARGET_BLOCK_USES = new Set([
 ]);
 const TREE_CONNECT_TARGET_BLOCK_USES = new Set(FILTER_TARGET_BLOCK_USES);
 const EDITABLE_FIELD_WRAPPER_USES = new Set(['FormItemModel', 'FilterFormItemModel', 'PatternFormItemModel']);
+const REQUIRED_COLLECTION_FIELD_FORM_WRAPPER_USES = new Set(['FormItemModel', 'PatternFormItemModel']);
 const DISPLAY_FIELD_WRAPPER_USES = new Set([
   'DetailsItemModel',
   'TableColumnModel',
@@ -7382,6 +7383,10 @@ export class FlowSurfacesService {
       boundFieldCapability.fieldUse,
       values.fieldProps || {},
     );
+    const requiredFieldWrapperDefaults = this.buildRequiredCollectionFieldFormWrapperDefaults({
+      wrapperUse: boundFieldCapability.wrapperUse,
+      field: resolvedField.field,
+    });
 
     const tree = buildFieldTree({
       wrapperUse: boundFieldCapability.wrapperUse,
@@ -7395,6 +7400,7 @@ export class FlowSurfacesService {
         {},
         defaultFieldState.wrapperProps || {},
         wrapperShouldPersistTitleField ? { titleField: defaultTitleField } : {},
+        requiredFieldWrapperDefaults.props,
         values.wrapperProps || {},
       ),
       fieldProps: _.merge(
@@ -7405,6 +7411,9 @@ export class FlowSurfacesService {
       ),
     });
     this.contractGuard.validateNodeTreeAgainstContract(tree.model);
+    if (requiredFieldWrapperDefaults.stepParams) {
+      tree.model.stepParams = _.merge({}, tree.model.stepParams || {}, requiredFieldWrapperDefaults.stepParams);
+    }
 
     await this.repository.upsertModel(
       {
@@ -11080,7 +11089,11 @@ export class FlowSurfacesService {
       }
 
       nextStepParams = nextStepParams ?? _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
-      if (_.has(nextStepParams, mirror.stepParamsPath)) {
+      if (
+        _.has(nextStepParams, mirror.stepParamsPath) &&
+        (!_.isEqual(_.get(current?.stepParams, mirror.stepParamsPath), _.get(current?.[mirror.domain], mirror.key)) ||
+          !_.isEqual(_.get(nextStepParams, mirror.stepParamsPath), _.get(current?.stepParams, mirror.stepParamsPath)))
+      ) {
         continue;
       }
       _.set(nextStepParams, mirror.stepParamsPath, value);
@@ -19534,6 +19547,38 @@ export class FlowSurfacesService {
       associationPathName: parsed.associationPathName,
       defaultTitleField: undefined,
       usesAssociationValueBinding: false,
+    };
+  }
+
+  private collectionFieldHasRequiredValidation(field: any) {
+    const rules = [
+      ..._.castArray(field?.validation?.rules || []),
+      ..._.castArray(field?.options?.validation?.rules || []),
+    ];
+    return rules.some((rule) => String(rule?.name || '').trim() === 'required');
+  }
+
+  private buildRequiredCollectionFieldFormWrapperDefaults(input: { wrapperUse?: string; field?: any }): {
+    props?: Record<string, any>;
+    stepParams?: Record<string, any>;
+  } {
+    if (
+      !REQUIRED_COLLECTION_FIELD_FORM_WRAPPER_USES.has(input.wrapperUse || '') ||
+      !this.collectionFieldHasRequiredValidation(input.field)
+    ) {
+      return {};
+    }
+    return {
+      props: {
+        required: true,
+      },
+      stepParams: {
+        editItemSettings: {
+          required: {
+            required: true,
+          },
+        },
+      },
     };
   }
 
