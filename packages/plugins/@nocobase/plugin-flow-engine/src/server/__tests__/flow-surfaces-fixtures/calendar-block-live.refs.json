@@ -5,11 +5,11 @@
   "node.FilterActionModel1": {
     "uid": "fcal9b1ock1-filterAction"
   },
-  "action.addNew1": {
-    "uid": "fcal9b1ock1-addNewAction"
-  },
   "node.RefreshActionModel1": {
     "uid": "fcal9b1ock1-refreshAction"
+  },
+  "action.addNew1": {
+    "uid": "fcal9b1ock1-addNewAction"
   },
   "action.calendarEventView1": {
     "uid": "fcal9b1ock1-eventViewAction"

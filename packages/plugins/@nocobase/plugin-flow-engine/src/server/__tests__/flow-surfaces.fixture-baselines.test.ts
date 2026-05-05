@@ -151,6 +151,7 @@ describe('flowSurfaces formal block fixtures', () => {
               pageModelClass: 'ChildPageModel',
               dataSourceKey: 'main',
               collectionName: 'pets',
+              filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
             },
           });
           break;

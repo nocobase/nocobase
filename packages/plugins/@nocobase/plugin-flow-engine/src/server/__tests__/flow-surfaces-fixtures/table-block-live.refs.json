@@ -2,6 +2,12 @@
   "block.table1": {
     "uid": "c2pkrw9t20qa"
   },
+  "node.RefreshActionModel1": {
+    "uid": "eztudtbv65tc"
+  },
+  "node.BulkDeleteActionModel1": {
+    "uid": "grjq7718le6z"
+  },
   "action.addNew1": {
     "uid": "fh5uz91gg4jg"
   },
@@ -82,12 +88,6 @@
   },
   "field.notes.inner": {
     "uid": "kc7b6xoq6ij1"
-  },
-  "node.RefreshActionModel1": {
-    "uid": "eztudtbv65tc"
-  },
-  "node.BulkDeleteActionModel1": {
-    "uid": "grjq7718le6z"
   },
   "field.name.wrapper1": {
     "uid": "nj2a09bmso7a"
