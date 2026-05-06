@@ -37,6 +37,7 @@ COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
 
 FROM node:22-bookworm-slim as runtime
 ARG COMMIT_HASH
+ARG NGINX_VERSION=1.30.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -45,7 +46,6 @@ RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org
 RUN wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  nginx \
   libaio1 \
   postgresql-client-16 \
   postgresql-client-17 \
@@ -54,9 +54,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libgssapi-krb5-2 \
   fonts-liberation \
   fonts-noto-cjk \
+  wget \
+  build-essential \
+  libssl-dev \
+  libxml2-dev \
+  libxslt1-dev \
+  libpcre3-dev \
+  zlib1g-dev \
   && rm -rf /var/lib/apt/lists/*
 
-RUN rm -rf /etc/nginx/sites-enabled/default
+RUN wget http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz -O /tmp/nginx.tar.gz \
+ && tar -zxvf /tmp/nginx.tar.gz -C /tmp \
+ && mv /tmp/nginx-${NGINX_VERSION} /tmp/nginx \
+ && rm -f /tmp/nginx.tar.gz
+
+RUN cd /tmp/nginx && ./configure \
+    --prefix=/usr/share/nginx \
+    --sbin-path=/usr/sbin/nginx \
+    --conf-path=/etc/nginx/nginx.conf \
+    --pid-path=/run/nginx.pid \
+    --lock-path=/run/lock/nginx.lock \
+    --error-log-path=/var/log/nginx/error.log \
+    --http-log-path=/var/log/nginx/access.log \
+    --modules-path=/usr/lib/nginx/modules \
+    --with-compat \
+    --with-http_ssl_module \
+ && make \
+ && make install \
+ && rm -rf /tmp/nginx
+
+RUN mkdir -p /etc/nginx/sites-enabled/ \
+ && rm -f /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY nocobase.tar.gz /app/nocobase.tar.gz
 COPY dist.tar.gz /app/nocobase-docs.tar.gz
@@ -69,5 +97,17 @@ RUN mkdir -p /app/nocobase/storage/uploads/ && \
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
+
+RUN apt-get purge -y \
+    build-essential \
+    libssl-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    libpcre3-dev \
+    zlib1g-dev \
+    linux-libc-dev \
+ && apt-get autoremove -y \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 CMD ["/app/docker-entrypoint.sh"]
