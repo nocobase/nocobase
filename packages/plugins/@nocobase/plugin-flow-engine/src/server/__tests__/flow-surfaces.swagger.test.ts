@@ -111,6 +111,7 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceDescribeSurfaceResponse',
       'FlowSurfaceApplyBlueprintReactionItem',
       'FlowSurfaceApplyBlueprintReaction',
+      'FlowSurfaceApplyBlueprintDefaultFieldSpec',
       'FlowSurfaceApplyBlueprintDefaultFieldGroup',
       'FlowSurfaceApplyBlueprintDefaultPopupName',
       'FlowSurfaceApplyBlueprintDefaultPopupActionMap',
@@ -309,6 +310,19 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.fieldGroups.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFieldGroup',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFieldGroup.properties.fields.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFieldSpec',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFieldSpec.oneOf).toEqual(
+      expect.arrayContaining([
+        { type: 'string' },
+        expect.objectContaining({
+          type: 'object',
+          required: ['field'],
+          additionalProperties: false,
+        }),
+      ]),
     );
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.popups.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultPopups',

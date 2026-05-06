@@ -42,10 +42,17 @@ export type FlowSurfaceDefaultActionPopupFieldCandidate = {
   fieldPath?: string;
 };
 
+export type FlowSurfaceDefaultActionPopupFieldGroupField =
+  | string
+  | {
+      field: string;
+      titleField?: string;
+    };
+
 export type FlowSurfaceDefaultActionPopupFieldGroupCandidate = {
   key?: string;
   title: string;
-  fields: string[];
+  fields: FlowSurfaceDefaultActionPopupFieldGroupField[];
 };
 
 type FlowSurfaceDefaultActionPopupFieldFilterOptions = {
@@ -306,6 +313,33 @@ function filterFlowSurfaceDefaultActionPopupFieldCandidates(
   return baseCandidates.filter((candidate) => String(candidate?.fieldPath || '').trim());
 }
 
+function getFlowSurfaceDefaultActionPopupFieldGroupFieldPath(field: any) {
+  if (typeof field === 'string') {
+    return field.trim();
+  }
+  if (!_.isPlainObject(field)) {
+    return '';
+  }
+  return String(field.field || field.fieldPath || '').trim();
+}
+
+function normalizeFlowSurfaceDefaultActionPopupFieldGroupField(
+  field: FlowSurfaceDefaultActionPopupFieldGroupField,
+  fieldPath: string,
+) {
+  if (!_.isPlainObject(field)) {
+    return fieldPath;
+  }
+  const titleField = String(field.titleField || '').trim();
+  return _.pickBy(
+    {
+      field: fieldPath,
+      titleField: titleField || undefined,
+    },
+    (value) => !_.isUndefined(value),
+  ) as FlowSurfaceDefaultActionPopupFieldGroupField;
+}
+
 export function pickFlowSurfaceDefaultActionPopupFieldGroups(
   candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
   fieldGroups: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] | undefined,
@@ -323,12 +357,18 @@ export function pickFlowSurfaceDefaultActionPopupFieldGroups(
       return [];
     }
     const fields = _.castArray(group?.fields || [])
-      .map((field) => String(field || '').trim())
-      .filter((field) => {
-        if (!field || !allowedFieldPaths.has(field) || usedFieldPaths.has(field)) {
+      .map((field) => {
+        const fieldPath = getFlowSurfaceDefaultActionPopupFieldGroupFieldPath(field);
+        if (!fieldPath || !allowedFieldPaths.has(fieldPath) || usedFieldPaths.has(fieldPath)) {
+          return null;
+        }
+        usedFieldPaths.add(fieldPath);
+        return normalizeFlowSurfaceDefaultActionPopupFieldGroupField(field, fieldPath);
+      })
+      .filter((field): field is FlowSurfaceDefaultActionPopupFieldGroupField => {
+        if (!field) {
           return false;
         }
-        usedFieldPaths.add(field);
         return true;
       });
     if (!fields.length) {

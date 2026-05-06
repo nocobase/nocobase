@@ -7412,18 +7412,10 @@ export class FlowSurfacesService {
       ),
     });
     this.contractGuard.validateNodeTreeAgainstContract(tree.model);
-    if (wrapperShouldPersistTitleField && boundFieldCapability.wrapperUse === 'TableColumnModel') {
-      tree.model.stepParams = _.merge({}, tree.model.stepParams || {}, {
-        tableColumnSettings: {
-          fieldNames: {
-            label: defaultTitleField,
-          },
-        },
-      });
-    }
     if (requiredFieldWrapperDefaults.stepParams) {
       tree.model.stepParams = _.merge({}, tree.model.stepParams || {}, requiredFieldWrapperDefaults.stepParams);
     }
+    this.syncCreatedFieldWrapperTitleFieldStepParams(tree.model);
 
     await this.repository.upsertModel(
       {
@@ -9931,16 +9923,25 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(field)) {
       return _.cloneDeep(field);
     }
+    const rawFieldPath =
+      (typeof field.fieldPath === 'string' && field.fieldPath.trim()) ||
+      (typeof field.field === 'string' && field.field.trim()) ||
+      '';
     const rawKey =
       (typeof field.key === 'string' && field.key.trim()) ||
-      (typeof field.fieldPath === 'string' && field.fieldPath.trim()) ||
+      rawFieldPath ||
       (typeof field.type === 'string' && field.type.trim()) ||
       '';
     if (!rawKey) {
       return _.cloneDeep(field);
     }
+    const nextField = _.cloneDeep(field);
+    if (rawFieldPath) {
+      delete nextField.field;
+      nextField.fieldPath = rawFieldPath;
+    }
     return {
-      ..._.cloneDeep(field),
+      ...nextField,
       key: normalizeFlowSurfaceComposeKey(`${namespace}.${rawKey}`, `${context}.key`),
     };
   }
@@ -11112,6 +11113,22 @@ export class FlowSurfacesService {
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
     }
+  }
+
+  private syncCreatedFieldWrapperTitleFieldStepParams(node: any) {
+    const mirror = (UPDATE_SETTINGS_STEP_PARAM_MIRRORS_BY_USE[node?.use || ''] || []).find(
+      (item) => item.domain === 'props' && item.key === 'titleField',
+    );
+    if (
+      !mirror ||
+      !_.isPlainObject(node?.props) ||
+      !Object.prototype.hasOwnProperty.call(node.props, 'titleField') ||
+      _.isUndefined(node.props.titleField)
+    ) {
+      return;
+    }
+    node.stepParams = _.cloneDeep(node.stepParams || {});
+    _.set(node.stepParams, mirror.stepParamsPath, node.props.titleField);
   }
 
   private syncUpdateActionAssignedValuesForUpdateSettings(

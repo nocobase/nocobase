@@ -1357,6 +1357,33 @@ describe('flowSurfaces association contract', () => {
       fieldPath: 'manager',
     });
 
+    const idTitleFieldTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const idTitleFieldRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: idTitleFieldTable.uid,
+        },
+        fieldPath: 'manager',
+        titleField: 'id',
+      },
+    });
+    expect(idTitleFieldRes.status, readErrorMessage(idTitleFieldRes)).toBe(200);
+    const idTitleManagerField = getData(idTitleFieldRes);
+    const idTitleWrapperReadback = await getSurface(rootAgent, { uid: idTitleManagerField.wrapperUid });
+    const idTitleInnerReadback = await getSurface(rootAgent, { uid: idTitleManagerField.fieldUid });
+    expect(idTitleWrapperReadback.tree.props?.titleField).toBe('id');
+    expect(idTitleInnerReadback.tree.props?.titleField).toBe('id');
+    expect(idTitleWrapperReadback.tree.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('id');
+
     const invalidTitleFieldRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
         target: {

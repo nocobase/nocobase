@@ -132,10 +132,17 @@ export type FlowSurfaceApplyBlueprintFieldGroupSpec = {
   fields: FlowSurfaceApplyBlueprintFieldSpec[];
 };
 
+export type FlowSurfaceApplyBlueprintDefaultFieldObjectSpec = {
+  field: string;
+  titleField?: string;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFieldSpec = string | FlowSurfaceApplyBlueprintDefaultFieldObjectSpec;
+
 export type FlowSurfaceApplyBlueprintDefaultFieldGroupSpec = {
   key?: string;
   title: string;
-  fields: string[];
+  fields: FlowSurfaceApplyBlueprintDefaultFieldSpec[];
 };
 
 export type FlowSurfaceApplyBlueprintDefaultPopupName = {

@@ -392,6 +392,17 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   },
                 ],
               },
+              {
+                key: 'employeesIdTitleTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    field: 'manager',
+                    titleField: 'id',
+                  },
+                ],
+              },
             ],
           },
         ],
@@ -400,14 +411,19 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
     const data = getData(executeRes);
-    const managerColumn = collectDescendantNodes(
+    const managerColumns = collectDescendantNodes(
       data.surface.tree,
       (item) => item?.use === 'TableColumnModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'manager',
-    )[0];
+    );
+    const managerColumn = managerColumns.find((item) => item?.props?.titleField === 'nickname');
+    const managerIdTitleColumn = managerColumns.find((item) => item?.props?.titleField === 'id');
 
     expect(managerColumn?.props?.titleField).toBe('nickname');
     expect(managerColumn?.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('nickname');
     expect(managerColumn?.subModels?.field?.props?.titleField).toBe('nickname');
+    expect(managerIdTitleColumn?.props?.titleField).toBe('id');
+    expect(managerIdTitleColumn?.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('id');
+    expect(managerIdTitleColumn?.subModels?.field?.props?.titleField).toBe('id');
   });
 
   it('should create one page from a simplified page blueprint and return only target/surface', async () => {
@@ -1842,7 +1858,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 {
                   key: 'sourceMain',
                   title: 'Source main',
-                  fields: ['title', 'note', 'target', 'createdAt'],
+                  fields: ['title', 'note', { field: 'target', titleField: 'label' }, 'createdAt'],
                 },
                 {
                   key: 'sourceAudit',
@@ -1939,6 +1955,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(addNewFields).toEqual(expect.arrayContaining(['title', 'note', 'target']));
     expect(addNewFields).not.toContain('createdAt');
     expect(addNewFields).not.toContain('updatedAt');
+    const addNewTargetField = collectDescendantNodes(
+      addNewPopup.popupBlock,
+      (item) => item?.use === 'FormItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'target',
+    )[0];
+    expect(addNewTargetField?.props?.titleField).toBe('label');
+    expect(addNewTargetField?.stepParams?.editItemSettings?.titleField?.label).toBe('label');
+    expect(addNewTargetField?.subModels?.field?.props?.titleField).toBe('label');
     expect(await findPopupTemplateByName(sourceAddName)).toMatchObject({
       name: sourceAddName,
       description: sourceAddDescription,
@@ -1950,6 +1973,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(viewTab?.props?.title).toBe(sourceViewName);
     expect(viewPopup.popupBlock?.use).toBe('DetailsBlockModel');
     expect(collectFieldPaths(viewPopup.popupBlock)).toEqual(expect.arrayContaining(['title', 'note', 'createdAt']));
+    const viewTargetField = collectDescendantNodes(
+      viewPopup.popupBlock,
+      (item) => item?.use === 'DetailsItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'target',
+    )[0];
+    expect(viewTargetField?.props?.titleField).toBe('label');
+    expect(viewTargetField?.stepParams?.detailItemSettings?.fieldNames?.label).toBe('label');
+    expect(viewTargetField?.subModels?.field?.props?.titleField).toBe('label');
     expect(await findPopupTemplateByName(sourceViewName)).toMatchObject({
       name: sourceViewName,
       description: sourceViewDescription,

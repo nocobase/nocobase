@@ -14,6 +14,7 @@ import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-
 import type {
   FlowSurfaceApplyBlueprintAssets,
   FlowSurfaceApplyBlueprintDefaultCollection,
+  FlowSurfaceApplyBlueprintDefaultFieldSpec,
   FlowSurfaceApplyBlueprintDefaultFieldGroupSpec,
   FlowSurfaceApplyBlueprintDefaultPopupActionMap,
   FlowSurfaceApplyBlueprintDefaultPopupName,
@@ -44,6 +45,7 @@ const APPLY_BLUEPRINT_REACTION_TYPES = [
 const APPLY_BLUEPRINT_REACTION_TYPE_SET = new Set<string>(APPLY_BLUEPRINT_REACTION_TYPES);
 const APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups'];
 const APPLY_BLUEPRINT_DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
+const APPLY_BLUEPRINT_DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
 const APPLY_BLUEPRINT_DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
@@ -156,6 +158,20 @@ function normalizeNavigation(input: any) {
   return Object.keys(normalized).length ? normalized : undefined;
 }
 
+function normalizeDefaultFieldGroupField(input: any, context: string): FlowSurfaceApplyBlueprintDefaultFieldSpec {
+  if (_.isString(input)) {
+    return assertNonEmptyString(input, context);
+  }
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FIELD_ALLOWED_KEYS);
+  return buildDefinedPayload({
+    field: assertNonEmptyString(input.field, `${context}.field`),
+    titleField: _.isUndefined(input.titleField)
+      ? undefined
+      : assertNonEmptyString(input.titleField, `${context}.titleField`),
+  }) as FlowSurfaceApplyBlueprintDefaultFieldSpec;
+}
+
 function normalizeDefaultFieldGroups(
   input: any,
   context: string,
@@ -177,7 +193,7 @@ function normalizeDefaultFieldGroups(
       key: readOptionalString(group.key),
       title: assertNonEmptyString(group.title, `${groupContext}.title`),
       fields: group.fields.map((field: any, fieldIndex: number) =>
-        assertNonEmptyString(field, `${groupContext}.fields[${fieldIndex}]`),
+        normalizeDefaultFieldGroupField(field, `${groupContext}.fields[${fieldIndex}]`),
       ),
     }) as FlowSurfaceApplyBlueprintDefaultFieldGroupSpec;
   });

@@ -3702,6 +3702,25 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceApplyBlueprintDefaultFieldSpec: {
+    oneOf: [
+      { type: 'string' },
+      {
+        type: 'object',
+        required: ['field'],
+        properties: {
+          field: { type: 'string' },
+          titleField: {
+            type: 'string',
+            description: 'Explicit display field for relation fields when the generated default popup adds this field.',
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    description:
+      'Collection-level default popup field candidate. Use string shorthand for ordinary fields or `{ field, titleField }` for relation fields that need an explicit display field.',
+  },
   FlowSurfaceApplyBlueprintDefaultFieldGroup: {
     type: 'object',
     required: ['title', 'fields'],
@@ -3713,7 +3732,7 @@ const schemas = {
       fields: {
         type: 'array',
         minItems: 1,
-        items: { type: 'string' },
+        items: ref('FlowSurfaceApplyBlueprintDefaultFieldSpec'),
       },
     },
     additionalProperties: false,

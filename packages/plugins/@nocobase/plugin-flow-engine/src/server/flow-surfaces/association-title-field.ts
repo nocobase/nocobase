@@ -118,6 +118,15 @@ export function assertCollectionTitleFieldExists(collection: any, fieldName: str
   }
   const field = resolveFieldFromCollection(collection, normalizedFieldName);
   if (!field) {
+    if (normalizedFieldName === 'id') {
+      return {
+        name: 'id',
+        field: 'id',
+        type: 'bigInt',
+        interface: 'id',
+        collection,
+      };
+    }
     throwBadRequest(
       `flowSurfaces collection '${
         getCollectionName(collection) || 'unknown'
