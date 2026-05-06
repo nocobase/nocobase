@@ -5,6 +5,35 @@
   },
   "tags": [],
   "paths": {
+    "/localization:getSources": {
+      "get": {
+        "tags": ["localization"],
+        "description": "List synchronization sources for localization resources",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/localization:sync": {
       "post": {
         "tags": ["localization"],
@@ -25,14 +54,172 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "type": {
+                  "types": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "enum": ["local", "menu", "db"]
+                      "enum": ["local", "db"]
                     }
                   }
                 }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/localization:export": {
+      "post": {
+        "tags": ["localization"],
+        "description": "Export localization translations as a portable translation pack",
+        "parameters": [
+          {
+            "name": "X-Locale",
+            "in": "header",
+            "defalut": "en-US",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "locale": {
+                    "type": "string"
+                  },
+                  "referenceLocale": {
+                    "type": "string",
+                    "default": "en-US"
+                  },
+                  "modules": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "hasTranslation": {
+                    "type": "boolean"
+                  },
+                  "includeEmpty": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "locale": {
+                      "type": "string"
+                    },
+                    "referenceLocale": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "module": {
+                            "type": "string"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "translation": {
+                            "type": "string"
+                          },
+                          "referenceTranslation": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/localization:import": {
+      "post": {
+        "tags": ["localization"],
+        "description": "Import localization translations from a translation pack",
+        "parameters": [
+          {
+            "name": "X-Locale",
+            "in": "header",
+            "defalut": "en-US",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "locale": {
+                    "type": "string"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["createOnly", "upsert", "overwrite"],
+                    "default": "createOnly"
+                  },
+                  "dryRun": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "publish": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "createTexts": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "module": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "translation": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["module", "text", "translation"]
+                    }
+                  }
+                },
+                "required": ["entries"]
               }
             }
           }

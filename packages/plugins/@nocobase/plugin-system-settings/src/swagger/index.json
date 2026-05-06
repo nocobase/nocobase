@@ -16,10 +16,78 @@
         }
       }
     },
-    "/systemSettings:update": {
+    "/systemSettings:put": {
       "post": {
-        "description": "",
+        "description": "Update system settings. This command maps to the server-side systemSettings:put action and performs a partial update. Omitted fields remain unchanged.",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "raw_title": {
+                    "type": "string",
+                    "description": "System title before localization rendering"
+                  },
+                  "showLogoOnly": {
+                    "type": "boolean",
+                    "description": "Whether to show only the logo without the system title"
+                  },
+                  "allowSignUp": {
+                    "type": "boolean",
+                    "description": "Whether self-service sign up is allowed"
+                  },
+                  "smsAuthEnabled": {
+                    "type": "boolean",
+                    "description": "Whether SMS authentication is enabled"
+                  },
+                  "logo": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Logo attachment record",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "filename": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "extname": {
+                        "type": "string"
+                      },
+                      "mimetype": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "enabledLanguages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Enabled system languages"
+                  },
+                  "appLang": {
+                    "type": "string",
+                    "description": "Default application language"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Additional system settings options",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"

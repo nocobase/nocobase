@@ -215,6 +215,31 @@
         }
       }
     },
+    "localization": {
+      "name": "localization",
+      "description": "Manage localization translation packs and locale cache.",
+      "include": true,
+      "resources": {
+        "includes": ["localization"],
+        "excludes": [],
+        "overrides": {
+          "localization": {
+            "name": "localization",
+            "description": "Sync, export, import, and publish localization resources.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "localization:getSources",
+                "localization:sync",
+                "localization:export",
+                "localization:import",
+                "localization:publish"
+              ]
+            }
+          }
+        }
+      }
+    },
     "backup": {
       "name": "backup",
       "description": "Create, inspect, download, remove, and restore NocoBase backups.",
@@ -308,7 +333,7 @@
           "systemSettings": {
             "name": "system-settings",
             "description": "Manage global system settings.",
-            "topLevel": false
+            "topLevel": true
           }
         }
       }
