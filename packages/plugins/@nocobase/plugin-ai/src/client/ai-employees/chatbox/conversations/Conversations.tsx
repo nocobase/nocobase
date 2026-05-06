@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useRef } from 'react';
 import { Badge, Input, Segmented, Space } from 'antd';
 import { css } from '@emotion/css';
 import { useRequest } from '@nocobase/client';
@@ -43,17 +43,57 @@ export const Conversations: React.FC = memo(() => {
   const setModel = useChatBoxStore.use.setModel();
   const expanded = useChatBoxStore.use.expanded();
 
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
+  const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const conversationSegmented = useChatConversationsStore.use.conversationSegmented();
   const setConversationSegmented = useChatConversationsStore.use.setConversationSegmented();
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
 
-  const { loadMessages } = useChatMessageActions();
+  const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
+  const chat = useChat(currentConversation);
 
   const { clear } = useChatBoxActions();
+  const latestOpenVersionRef = useRef(0);
+  const hasActiveStream = useCallback(
+    (sessionId: string) => {
+      const sessionState = chat.for(sessionId).getState();
+      return sessionState.responseLoading || !!sessionState.abortController;
+    },
+    [chat],
+  );
+  const resumeAfterLoad = useCallback(
+    async (sessionId: string, aiEmployee?: AIEmployee) => {
+      const openVersion = latestOpenVersionRef.current + 1;
+      latestOpenVersionRef.current = openVersion;
+
+      await loadMessages(sessionId);
+      if (
+        !aiEmployee ||
+        hasActiveStream(sessionId) ||
+        latestOpenVersionRef.current !== openVersion ||
+        useChatConversationsStore.getState().currentConversation !== sessionId
+      ) {
+        return;
+      }
+
+      const llmActiveState = await getConversationLLMActiveState(sessionId);
+      if (
+        hasActiveStream(sessionId) ||
+        latestOpenVersionRef.current !== openVersion ||
+        useChatConversationsStore.getState().currentConversation !== sessionId ||
+        llmActiveState !== 'streaming'
+      ) {
+        return;
+      }
+
+      await resumeStream({
+        sessionId,
+        aiEmployee,
+      });
+    },
+    [getConversationLLMActiveState, hasActiveStream, loadMessages, resumeStream],
+  );
 
   const openConversation = useCallback(
     (sessionId: string, username?: string, model?: ModelRef) => {
@@ -62,8 +102,9 @@ export const Conversations: React.FC = memo(() => {
         return;
       }
       setCurrentConversation(sessionId);
+      const aiEmployee = username ? aiEmployeesMap[username] : undefined;
       if (username) {
-        setCurrentEmployee(aiEmployeesMap[username]);
+        setCurrentEmployee(aiEmployee);
       } else {
         setCurrentEmployee(undefined);
       }
@@ -75,7 +116,7 @@ export const Conversations: React.FC = memo(() => {
       } else {
         setModel(null);
       }
-      loadMessages(sessionId);
+      resumeAfterLoad(sessionId, aiEmployee).catch(console.error);
       if (!expanded) {
         setShowConversations(false);
       }
@@ -88,7 +129,7 @@ export const Conversations: React.FC = memo(() => {
       chat,
       clear,
       setModel,
-      loadMessages,
+      resumeAfterLoad,
       expanded,
       setShowConversations,
     ],

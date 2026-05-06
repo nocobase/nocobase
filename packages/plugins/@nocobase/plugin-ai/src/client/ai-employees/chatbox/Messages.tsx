@@ -52,17 +52,15 @@ export const Messages: React.FC = () => {
   const { token } = useToken();
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
-  const currentEmployee = useChatBoxStore.use.currentEmployee?.();
 
   const roles = useChatBoxStore.use.roles();
 
   const messages = chat.use.messages();
   const messagesLoading = chat.use.messagesLoading();
-  const responseLoading = chat.use.responseLoading();
 
   const updateTools = useChatToolsStore.use.updateTools();
 
-  const { loadMessages, lastMessageRef, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
+  const { loadMessages, lastMessageRef } = useChatMessageActions();
   const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const firstMessageIndex = renderedMessages.findIndex(
@@ -128,40 +126,6 @@ export const Messages: React.FC = () => {
 
     return () => cancelAnimationFrame(frame);
   }, [messages]);
-
-  useEffect(() => {
-    if (!currentConversation || !currentEmployee || messagesLoading || responseLoading) {
-      return;
-    }
-
-    let cancelled = false;
-    const sessionId = currentConversation;
-    const aiEmployee = currentEmployee;
-
-    const maybeResumeStream = async () => {
-      const llmActiveState = await getConversationLLMActiveState(sessionId);
-      if (cancelled || llmActiveState !== 'streaming') {
-        return;
-      }
-      await resumeStream({
-        sessionId,
-        aiEmployee,
-      });
-    };
-
-    maybeResumeStream().catch(console.error);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    currentConversation,
-    currentEmployee,
-    messagesLoading,
-    responseLoading,
-    getConversationLLMActiveState,
-    resumeStream,
-  ]);
 
   const renderConversationToggleDivider = (
     item: Extract<RenderedItem, { type: 'conversation-group' }>,
