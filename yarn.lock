@@ -6042,6 +6042,13 @@
     pacote "^11.2.6"
     semver "^7.3.4"
 
+"@langchain/xai@1.3.3":
+  version "1.3.3"
+  resolved "https://registry.npmjs.org/@langchain/xai/-/xai-1.3.3.tgz#483e0be66fba50bb470f8e2686f93ed931e64eef"
+  integrity sha512-bK4WeoFPy8+sEwlJ6FsGWaf8uaNOCKd4QFydQibuRtkShFMnAdkombIdujlNTtNkycguftlWU45dihf72jHm6Q==
+  dependencies:
+    "@langchain/openai" "1.2.7"
+
 "@lerna/bootstrap@4.0.0":
   version "4.0.0"
   resolved "https://registry.npmmirror.com/@lerna/bootstrap/-/bootstrap-4.0.0.tgz#5f5c5e2c6cfc8fcec50cb2fbe569a8c607101891"
