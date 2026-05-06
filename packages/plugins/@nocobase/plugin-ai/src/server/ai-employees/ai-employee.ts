@@ -574,15 +574,15 @@ export class AIEmployee {
       },
     });
 
-    let systemMessage = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
-    const dataSourceMessage = this.getEmployeeDataSourceContext();
-    if (dataSourceMessage) {
-      systemMessage = `${systemMessage}\n${dataSourceMessage}`;
-    }
+    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
 
     let background = '';
     if (this.systemMessage) {
       background = await parseVariables(this.ctx, this.systemMessage);
+    }
+    const dataSourceMessage = this.getEmployeeDataSourceContext();
+    if (dataSourceMessage) {
+      background = `${background}\n${dataSourceMessage}`;
     }
 
     const aiMessages = await this.aiChatConversation.listMessages();
@@ -613,13 +613,12 @@ export class AIEmployee {
     const systemPrompt = getSystemPrompt({
       aiEmployee: {
         nickname: this.employee.nickname,
-        about: this.employee.about ?? this.employee.defaultPrompt,
+        about,
       },
       task: {
         background,
       },
       personal: userConfig?.prompt,
-      dataSources: dataSourceMessage,
       environment: {
         database: this.db.sequelize.getDialect(),
         locale: this.ctx.getCurrentLocale() || 'en-US',

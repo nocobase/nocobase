@@ -82,8 +82,9 @@ describe('SubTableColumnModel (nested subform)', () => {
       parentFieldIndex: ['users:0'],
     });
 
-    const rowFork = column.getFork('row:users:0:1');
-    expect(rowFork?.context?.fieldIndex).toEqual(['users:0', 'roles:1']);
+    const [rowFork] = Array.from(column.forks ?? []);
+    expect(rowFork).toBeDefined();
+    expect((rowFork as any)?.context?.fieldIndex).toEqual(['users:0', 'roles:1']);
 
     runtime.syncAssignRules([
       {

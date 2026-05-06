@@ -309,6 +309,7 @@ export class TableColumnModel extends DisplayItemModel {
             ? this.fieldPath.replace(`${this.context.prefixFieldPath}.`, '')
             : this.fieldPath;
           const value = get(record, namePath);
+          fork.setProps({ value });
           return (
             <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />

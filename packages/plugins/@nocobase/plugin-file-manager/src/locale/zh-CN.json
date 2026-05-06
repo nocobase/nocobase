@@ -20,6 +20,7 @@
   "File name": "文件名",
   "File pre-process parameters": "文件预处理参数",
   "File size limit": "文件大小限制",
+  "File download failed": "文件下载失败",
   "File storage": "文件存储器",
   "File type allowed (in MIME type format)": "允许的文件类型（MIME 格式）",
   "File type is not supported for previewing, please <1>download it to preview</1>": "文件类型不支持预览，请<1>下载后查看</1>",

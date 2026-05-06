@@ -101,15 +101,19 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     // 首次进入页面：等待子模型 beforeRender 完成（例如 name 初始化），再应用表单级默认值并触发筛选
     void this.applyDefaultsAndInitialFilter();
 
-    // 监听页面区块删除，自动清理已失效的筛选字段
+    // 监听页面区块删除，自动清理已失效的筛选字段。
+    // 这里使用 onSubModelDestroyed 而不是 onSubModelRemoved，避免弹窗关闭时
+    // 的临时模型卸载被误判成“用户删除了目标区块”。
     const blockGridModel = this.context.blockGridModel;
     if (blockGridModel?.emitter) {
-      const handleTargetRemoved = (model) => {
+      const handleTargetDestroyed = (model) => {
         if (!model?.uid || model.uid === this.uid) return;
-        this.handleTargetBlockRemoved(model.uid);
+        void this.handleTargetBlockRemoved(model.uid).catch((error) => {
+          console.error('Failed to handle destroyed target block in FilterFormBlockModel:', error);
+        });
       };
-      blockGridModel.emitter.on('onSubModelRemoved', handleTargetRemoved);
-      this.removeTargetBlockListener = () => blockGridModel.emitter.off('onSubModelRemoved', handleTargetRemoved);
+      blockGridModel.emitter.on('onSubModelDestroyed', handleTargetDestroyed);
+      this.removeTargetBlockListener = () => blockGridModel.emitter.off('onSubModelDestroyed', handleTargetDestroyed);
     }
   }
 

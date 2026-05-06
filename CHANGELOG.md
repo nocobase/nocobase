@@ -5,6 +5,108 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.49](https://github.com/nocobase/nocobase/compare/v2.0.48...v2.0.49) - 2026-05-06
+
+### 🚀 Improvements
+
+- **[undefined]** - ([#9349](https://github.com/nocobase/nocobase/pull/9349)) by @Molunerfinn
+
+### 🐛 Bug Fixes
+
+- **[Data source: Main]** Prevent crash when fields is undefined during collection loading ([#9174](https://github.com/nocobase/nocobase/pull/9174)) by @saraTabbane
+
+- **[UI templates]** Fixed an issue where the popup template list failed to correctly load available templates. ([#9332](https://github.com/nocobase/nocobase/pull/9332)) by @gchust
+
+- **[AI employees]** Fix the issue of occasional errors when AI employee use the DeepSeek v4 model ([#9348](https://github.com/nocobase/nocobase/pull/9348)) by @cgyrock
+
+- **[File manager]** Improved preview file download error handling ([#9103](https://github.com/nocobase/nocobase/pull/9103)) by @gaston98765
+
+- **[Workflow: Approval]** Fix the issue where filter and other query parameters now work in API of listing available approval workflows by @mytharcher
+
+## [v2.0.48](https://github.com/nocobase/nocobase/compare/v2.0.47...v2.0.48) - 2026-05-04
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fix the issue where the action button AI employee list displays developer employees ([#9320](https://github.com/nocobase/nocobase/pull/9320)) by @cgyrock
+
+- **[Workflow: Approval]**
+  - Fix the issue where file in original application no reloaded by @mytharcher
+
+  - Support to parse some client variables in approval actions by @mytharcher
+
+## [v2.0.47](https://github.com/nocobase/nocobase/compare/v2.0.46...v2.0.47) - 2026-05-01
+
+### 🎉 New Features
+
+- **[AI employees]** LLM provider now supports the Xiaomi MIMO platform ([#9315](https://github.com/nocobase/nocobase/pull/9315)) by @cgyrock
+
+### 🚀 Improvements
+
+- **[flow-engine]** Improve block drag layout behavior on v2 pages ([#9264](https://github.com/nocobase/nocobase/pull/9264)) by @zhangzhonghe
+
+- **[AI employees]** AI employee category adjustment ([#9274](https://github.com/nocobase/nocobase/pull/9274)) by @cgyrock
+
+- **[Workflow: Approval]** Mark association show mode loading from DB as legacy by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]** Fixed an issue where SQL Server external data source datetime filters could fail ([#9272](https://github.com/nocobase/nocobase/pull/9272)) by @2013xile
+
+- **[client]**
+  - Preserve null values for empty Data scope variable dependencies in v2 forms. ([#9287](https://github.com/nocobase/nocobase/pull/9287)) by @jiannx
+
+  - rerun JS column rendering when row data changes ([#9282](https://github.com/nocobase/nocobase/pull/9282)) by @jiannx
+
+  - Fix the issue where filter form fields disappear after reopening a popup record selector ([#9211](https://github.com/nocobase/nocobase/pull/9211)) by @zhangzhonghe
+
+  - Fixed an issue where JS field cells in v2 table blocks could appear blank after filtering or refreshing table data. ([#9285](https://github.com/nocobase/nocobase/pull/9285)) by @jiannx
+
+- **[flow-engine]** Fixed an issue where system-hidden fields could be selected in form-related variable. ([#9302](https://github.com/nocobase/nocobase/pull/9302)) by @gchust
+
+- **[Action: Import records]** Fix the issue where failed row index in importing records is not correct ([#9277](https://github.com/nocobase/nocobase/pull/9277)) by @mytharcher
+
+- **[Block: Gantt]** Add a Gantt block setting to enable drag to reschedule. ([#9301](https://github.com/nocobase/nocobase/pull/9301)) by @jiannx
+
+- **[AI employees]** Fix AI employee deepSeek V4 integration error ([#9275](https://github.com/nocobase/nocobase/pull/9275)) by @cgyrock
+
+- **[Action: Export records Pro]** Fix the issue where auto mode not works by @mytharcher
+
+- **[Workflow: Approval]**
+  - Fix type error by @mytharcher
+
+  - Fix approval execute timing so `latestExecutionId` is synced after approval commit by @mytharcher
+
+## [v2.0.46](https://github.com/nocobase/nocobase/compare/v2.0.45...v2.0.46) - 2026-04-28
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fixed an issue where default values would not apply when re-adding a record after it had been removed from a sub-table. ([#9192](https://github.com/nocobase/nocobase/pull/9192)) by @gchust
+
+  - set popover max-height and scrolling safeguards so the submit area remains reachable ([#9226](https://github.com/nocobase/nocobase/pull/9226)) by @jiannx
+
+- **[Authentication]** Fixed old sessions remaining active after a password change ([#9261](https://github.com/nocobase/nocobase/pull/9261)) by @2013xile
+
+- **[Data source: External MariaDB]** Fix test case failed because module importing not correct by @mytharcher
+
+## [v2.0.45](https://github.com/nocobase/nocobase/compare/v2.0.44...v2.0.45) - 2026-04-27
+
+### 🚀 Improvements
+
+- **[Workflow: JavaScript]** Upgrade Docker images, CI workflows, and the workflow JavaScript sandbox dependency for Node.js 22 compatibility. ([#9245](https://github.com/nocobase/nocobase/pull/9245)) by @Molunerfinn
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fixed the issue where variables in the system prompt of AI employees did not take effect ([#9256](https://github.com/nocobase/nocobase/pull/9256)) by @cgyrock
+
+- **[License settings]** update license save success message ([#9251](https://github.com/nocobase/nocobase/pull/9251)) by @jiannx
+
+- **[Action: Import records]** Fix the issue where import xlsx failed and throw no header matched error ([#9253](https://github.com/nocobase/nocobase/pull/9253)) by @mytharcher
+
+- **[Action: Import records Pro]** Fix the issue where import xlsx failed and throw no header matched error by @mytharcher
+
+- **[AI: Knowledge base]** Fix issue where deleting knowledge base documents did not delete associated vector data by @cgyrock
+
 ## [v2.0.44](https://github.com/nocobase/nocobase/compare/v2.0.43...v2.0.44) - 2026-04-26
 
 ### 🚀 Improvements

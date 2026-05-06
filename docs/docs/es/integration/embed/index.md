@@ -25,8 +25,8 @@ Una vez que haya activado la configuración de la interfaz, haga clic en «Copia
 
 ![](https://static-docs.nocobase.com/f11bd6d5e88d38731d7cd3cb149022c8.png)
 
-Al hacer clic, obtendrá un enlace que puede abrirse de forma independiente, por ejemplo, `https://xxx.com/embed/qs087rz4o2b`.
+Al hacer clic, obtendrá un enlace que puede abrirse de forma independiente, por ejemplo, `https://example.com/embed/qs087rz4o2b`.
 
 ![](https://static-docs.nocobase.com/9d847465e88d38731d7cd3cb149022c8.png)
 
-Si desea incrustar páginas de NocoBase en otros sitios web o aplicaciones, necesitará autenticación de usuario y deberá añadir el `token` al enlace, por ejemplo, `https://xxx.com/embed/qs087rz4o2b?token=xxx`.
+Si desea incrustar páginas de NocoBase en otros sitios web o aplicaciones, necesitará autenticación de usuario y deberá añadir el `token` al enlace, por ejemplo, `https://example.com/embed/qs087rz4o2b?token=xxx`.
