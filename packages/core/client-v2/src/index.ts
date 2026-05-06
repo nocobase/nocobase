@@ -33,4 +33,5 @@ export * from './collection-field-interface/CollectionFieldInterfaceManager';
 export * from './collection-manager/interfaces';
 export * from './flow-compat';
 export * from './flow';
+export { DEFAULT_DATA_SOURCE_KEY, isTitleField } from './flow-compat';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';

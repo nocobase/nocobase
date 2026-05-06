@@ -22,6 +22,7 @@ import { deepseekProviderOptions } from './llm-providers/deepseek';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { ollamaProviderOptions } from './llm-providers/ollama';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { xaiProviderOptions } from './llm-providers/xai';
 import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
 import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
@@ -162,6 +163,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions)
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
