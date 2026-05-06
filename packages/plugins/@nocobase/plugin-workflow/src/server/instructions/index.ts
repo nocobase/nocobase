@@ -31,7 +31,12 @@ export interface IJob {
  */
 export type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
 
-export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => InstructionResult;
+export type Runner = (
+  node: FlowNodeModel,
+  input: any,
+  processor: Processor,
+  options?: { signal?: AbortSignal },
+) => InstructionResult;
 
 export type InstructionInterface = {
   run: Runner;

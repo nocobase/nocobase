@@ -265,6 +265,41 @@ describe('workflow > Processor', () => {
       expect(jobs[0].status).toEqual(JOB_STATUS.ERROR);
       expect(jobs[0].result.message).toEqual('input failed');
     });
+
+    it('workflow timeout should abort pending execution', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 300,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'prompt',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(200);
+
+      let [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+      expect(execution.startedAt).toBeTruthy();
+      expect(execution.expiresAt).toBeTruthy();
+
+      await sleep(200);
+      await plugin.timeoutManager.scanExpired();
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ABORTED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.ABORTED);
+    });
   });
 
   describe('branch: condition', () => {

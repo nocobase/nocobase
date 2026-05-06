@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import actions, { Context } from '@nocobase/actions';
+import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
-import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import PluginWorkflowServer from '../Plugin';
+import { EXECUTION_STATUS } from '../constants';
+import { abortExecution } from '../executionAbort';
 
-export async function destroy(context: Context, next) {
+export async function destroy(context: Context, next: Next) {
   context.action.mergeParams({
     filter: {
       status: {
@@ -23,10 +25,10 @@ export async function destroy(context: Context, next) {
   await actions.destroy(context, next);
 }
 
-export async function cancel(context: Context, next) {
+export async function cancel(context: Context, next: Next) {
   const { filterByTk } = context.action.params;
+  const workflowPlugin = context.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
   const ExecutionRepo = context.db.getRepository('executions');
-  const JobRepo = context.db.getRepository('jobs');
   const execution = await ExecutionRepo.findOne({
     filterByTk,
     appends: ['jobs'],
@@ -38,26 +40,7 @@ export async function cancel(context: Context, next) {
     return context.throw(400);
   }
 
-  await context.db.sequelize.transaction(async (transaction) => {
-    await execution.update(
-      {
-        status: EXECUTION_STATUS.ABORTED,
-      },
-      { transaction },
-    );
-
-    const pendingJobs = execution.jobs.filter((job) => job.status === JOB_STATUS.PENDING);
-    await JobRepo.update({
-      values: {
-        status: JOB_STATUS.ABORTED,
-      },
-      filter: {
-        id: pendingJobs.map((job) => job.id),
-      },
-      individualHooks: false,
-      transaction,
-    });
-  });
+  await abortExecution(workflowPlugin, execution);
 
   context.body = execution;
   await next();

@@ -17,6 +17,7 @@ import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
+import { isWorkflowTimeoutError, WorkflowTimeoutError } from './timeout-errors';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
@@ -65,6 +66,8 @@ export default class Processor {
    * @experimental
    */
   lastSavedJob: JobModel | null = null;
+  abortController = new AbortController();
+  timeoutGuard: NodeJS.Timeout | null = null;
 
   constructor(
     public execution: ExecutionModel,
@@ -72,6 +75,29 @@ export default class Processor {
   ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
     this.transaction = options.transaction;
+  }
+
+  get abortSignal() {
+    return this.abortController.signal;
+  }
+
+  setTimeoutGuard(ms: number) {
+    if (this.timeoutGuard) {
+      clearTimeout(this.timeoutGuard);
+    }
+    this.timeoutGuard = setTimeout(() => {
+      this.abortForTimeout('timeout');
+    }, ms);
+  }
+
+  abortForTimeout(reason = 'timeout') {
+    if (!this.abortController.signal.aborted) {
+      this.abortController.abort(new WorkflowTimeoutError(`Workflow execution aborted by ${reason}`));
+    }
+  }
+
+  isTimeoutAborted() {
+    return this.abortSignal.aborted;
   }
 
   // make dual linked nodes list then cache
@@ -150,12 +176,13 @@ export default class Processor {
 
   public async start() {
     const { execution } = this;
-    if (execution.status) {
+    if (execution.status && execution.status !== EXECUTION_STATUS.STARTED) {
       this.logger.warn(`execution was ended with status ${execution.status} before, could not be started again`, {
         workflowId: execution.workflowId,
       });
       return;
     }
+    this.options.plugin.timeoutManager.bindProcessor(this);
     await this.prepare();
     if (this.nodes.length) {
       const head = this.nodes.find((item) => !item.upstream);
@@ -167,12 +194,13 @@ export default class Processor {
 
   public async resume(job: JobModel) {
     const { execution } = this;
-    if (execution.status) {
+    if (execution.status && execution.status !== EXECUTION_STATUS.STARTED) {
       this.logger.warn(`execution was ended with status ${execution.status} before, could not be resumed`, {
         workflowId: execution.workflowId,
       });
       return;
     }
+    this.options.plugin.timeoutManager.bindProcessor(this);
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);
     await this.recall(node, job);
@@ -180,10 +208,11 @@ export default class Processor {
 
   private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
     let job;
+    await this.options.plugin.timeoutManager.throwIfExpired(this.execution);
     try {
       // call instruction to get result and status
       this.logger.debug(`config of node`, { data: node.config, workflowId: node.workflowId });
-      job = await instruction(node, prevJob, this);
+      job = await instruction(node, prevJob, this, { signal: this.abortSignal } as any);
       if (job === null) {
         return this.exit();
       }
@@ -191,21 +220,30 @@ export default class Processor {
         return this.exit(true);
       }
     } catch (err) {
-      // for uncaught error, set to error
-      this.logger.error(
-        `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `,
-        { error: err, workflowId: node.workflowId },
-      );
-      job = {
-        result:
-          err instanceof Error
-            ? {
-                message: err.message,
-                ...err,
-              }
-            : err,
-        status: JOB_STATUS.ERROR,
-      };
+      if (isWorkflowTimeoutError(err)) {
+        job = {
+          result: {
+            message: err.message,
+          },
+          status: JOB_STATUS.ABORTED,
+        };
+      } else {
+        // for uncaught error, set to error
+        this.logger.error(
+          `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `,
+          { error: err, workflowId: node.workflowId },
+        );
+        job = {
+          result:
+            err instanceof Error
+              ? {
+                  message: err.message,
+                  ...err,
+                }
+              : err,
+          status: JOB_STATUS.ERROR,
+        };
+      }
       // if previous job is from resuming
       if (prevJob && prevJob.nodeId === node.id) {
         prevJob.set(job);
@@ -227,6 +265,10 @@ export default class Processor {
       },
     );
     this.logger.debug(`result of node`, { data: savedJob.result });
+
+    if (this.execution.status === EXECUTION_STATUS.ABORTED || this.isTimeoutAborted()) {
+      return this.exit(JOB_STATUS.ABORTED);
+    }
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
@@ -291,7 +333,12 @@ export default class Processor {
   }
 
   public async exit(s?: number | true) {
+    if (this.timeoutGuard) {
+      clearTimeout(this.timeoutGuard);
+      this.timeoutGuard = null;
+    }
     if (s === true) {
+      this.options.plugin.timeoutManager.unbindProcessor(this.execution.id);
       return;
     }
     if (this.jobsToSave.size) {
@@ -342,11 +389,14 @@ export default class Processor {
     }
     if (typeof s === 'number') {
       const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
-      await this.execution.update({ status }, { transaction: this.mainTransaction });
+      if (this.execution.status !== EXECUTION_STATUS.ABORTED) {
+        await this.execution.update({ status }, { transaction: this.mainTransaction });
+      }
     }
     if (this.mainTransaction && this.mainTransaction !== this.transaction) {
       await this.mainTransaction.commit();
     }
+    this.options.plugin.timeoutManager.unbindProcessor(this.execution.id);
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`, {
       workflowId: this.execution.workflowId,
     });

@@ -98,12 +98,46 @@ export default {
       defaultValue: false,
     },
     {
+      type: 'bigInt',
+      name: 'parentExecutionId',
+      interface: 'id',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Parent execution ID", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'InputNumber',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+    {
       type: 'json',
       name: 'stack',
     },
     {
       type: 'json',
       name: 'output',
+    },
+    {
+      type: 'datetime',
+      name: 'startedAt',
+      uiSchema: {
+        type: 'datetime',
+        title: `{{t("Started at", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+    {
+      type: 'datetime',
+      name: 'expiresAt',
+      uiSchema: {
+        type: 'datetime',
+        title: `{{t("Expires at", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
     },
     {
       type: 'datetime',
@@ -130,5 +164,9 @@ export default {
       },
     },
   ],
-  indexes: [{ fields: ['dispatched', 'id'] }],
+  indexes: [
+    { fields: ['dispatched', 'id'] },
+    { fields: ['status', 'expiresAt'] },
+    { fields: ['parentExecutionId', 'status'] },
+  ],
 };

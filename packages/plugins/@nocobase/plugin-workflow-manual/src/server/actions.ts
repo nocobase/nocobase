@@ -103,6 +103,10 @@ export async function submit(context: Context, next) {
 
   await next();
 
+  if (task.execution.status !== EXECUTION_STATUS.STARTED) {
+    return;
+  }
+
   task.job.execution = task.execution;
   task.job.latestTask = task;
 

@@ -261,6 +261,58 @@ describe('workflow > instructions > request', () => {
       await sleep(1500);
     });
 
+    it('workflow timeout should abort async request and discard late response', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 300,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_TIMEOUT,
+          method: 'GET',
+          timeout: 5000,
+        } as RequestInstructionConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(100);
+
+      const plugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
+      let [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+      expect(execution.startedAt).toBeTruthy();
+      expect(execution.expiresAt).toBeTruthy();
+
+      let [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(300);
+      await plugin.timeoutManager.scanExpired();
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+      [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
+
+      await sleep(2200);
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+      const jobs = await execution.getJobs();
+      expect(jobs).toHaveLength(1);
+      expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
+    });
+
     it('ignoreFail', async () => {
       await workflow.createNode({
         type: 'request',

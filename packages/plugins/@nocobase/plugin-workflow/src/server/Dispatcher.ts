@@ -30,6 +30,7 @@ export type EventOptions = {
   manually?: boolean;
   force?: boolean;
   stack?: Array<number | string>;
+  parentExecutionId?: number | string;
   onTriggerFail?: Function;
   [key: string]: any;
 } & Transactionable;
@@ -54,9 +55,6 @@ export default class Dispatcher {
       filterByTk: event.executionId,
     });
     if (!execution || execution.dispatched) {
-      this.plugin
-        .getLogger('dispatcher')
-        .info(`execution (${event.executionId}) from queue not found or not in queueing status, skip`);
       return;
     }
     this.plugin
@@ -333,7 +331,15 @@ export default class Dispatcher {
     const { deferred } = options;
     const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction, true);
     const sameTransaction = options.transaction === transaction;
-    const valid = await this.validateEvent(workflow, context, { ...options, transaction });
+    let stack = options.stack;
+    if (options.parentExecutionId && !stack) {
+      const parentExecution = await this.plugin.db.getRepository('executions').findOne({
+        filterByTk: options.parentExecutionId,
+        transaction,
+      });
+      stack = parentExecution ? [...(parentExecution.stack ?? []), parentExecution.id] : [];
+    }
+    const valid = await this.validateEvent(workflow, context, { ...options, stack, transaction });
     if (!valid) {
       if (!sameTransaction) {
         await transaction.commit();
@@ -349,7 +355,8 @@ export default class Dispatcher {
           context,
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
-          stack: options.stack,
+          stack,
+          parentExecutionId: options.parentExecutionId ?? null,
           dispatched: deferred ?? false,
           status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
           manually: options.manually,
@@ -467,6 +474,7 @@ export default class Dispatcher {
       await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction });
       logger.info(`execution (${execution.id}) from pending list updated to started`);
     }
+    await this.plugin.timeoutManager.ensureStarted(execution, { transaction: options.transaction as any });
     const processor = this.plugin.createProcessor(execution, options);
 
     logger.info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);

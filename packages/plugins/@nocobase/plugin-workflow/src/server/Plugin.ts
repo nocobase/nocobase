@@ -21,6 +21,7 @@ import { Logger, LoggerOptions } from '@nocobase/logger';
 
 import Dispatcher, { EventOptions } from './Dispatcher';
 import Processor from './Processor';
+import ExecutionTimeoutManager from './ExecutionTimeoutManager';
 import initActions from './actions';
 import { NodeValidationError } from './actions/nodes';
 import { WorkflowValidationError } from './actions/workflows';
@@ -54,6 +55,7 @@ export default class PluginWorkflowServer extends Plugin {
   snowflake: Snowflake;
 
   private dispatcher = new Dispatcher(this);
+  public readonly timeoutManager = new ExecutionTimeoutManager(this);
 
   public get channelPendingExecution() {
     return `${this.name}.pendingExecution`;
@@ -61,7 +63,8 @@ export default class PluginWorkflowServer extends Plugin {
 
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
-  private checker: NodeJS.Timeout = null;
+  private checker: NodeJS.Timeout | null = null;
+  private timeoutChecker: NodeJS.Timeout | null = null;
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
     if (cycling) {
@@ -167,9 +170,15 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     this.checker = setInterval(() => {
-      this.getLogger('dispatcher').debug(`(cycling) check for queueing executions`);
       this.dispatcher.dispatch();
     }, 300_000);
+
+    const timeoutInterval = 1000 + Math.floor(Math.random() * 400) - 200;
+    this.timeoutChecker = setInterval(() => {
+      this.timeoutManager.scanExpired().catch((error) => {
+        this.getLogger('dispatcher').error('scan expired executions failed', { error });
+      });
+    }, timeoutInterval);
 
     this.app.on('workflow:dispatch', () => {
       this.app.logger.info('workflow:dispatch');
@@ -186,6 +195,10 @@ export default class PluginWorkflowServer extends Plugin {
   private onBeforeStop = async () => {
     if (this.checker) {
       clearInterval(this.checker);
+    }
+    if (this.timeoutChecker) {
+      clearInterval(this.timeoutChecker);
+      this.timeoutChecker = null;
     }
 
     await this.dispatcher.beforeStop();

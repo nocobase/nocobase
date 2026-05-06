@@ -95,6 +95,7 @@ function getContentTypeTransformer(mimeType: string, app: Application) {
   }
 }
 
+<<<<<<< HEAD
 function createInvalidUrlError(cause?: unknown) {
   if (cause instanceof TypeError && typeof (cause as any).code !== 'undefined') {
     return cause;
@@ -117,6 +118,9 @@ function validateUrl(url: string) {
 }
 
 async function request(config: RequestInstructionConfig, app: Application) {
+=======
+async function request(config: RequestInstructionConfig, app: Application, signal?: AbortSignal) {
+>>>>>>> c692ee03cd (feat(plugin-workflow): add timeout option for workflows)
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
 
@@ -145,6 +149,7 @@ async function request(config: RequestInstructionConfig, app: Application) {
     headers,
     params,
     timeout,
+    signal,
     ...(method.toLowerCase() !== 'get' && data != null
       ? {
           data: transformer ? await transformer(data) : data,
@@ -233,7 +238,7 @@ export default class extends Instruction {
     onlyData: Joi.boolean().default(false),
   });
 
-  async run(node: FlowNodeModel, prevJob, processor: Processor) {
+  async run(node: FlowNodeModel, prevJob, processor: Processor, options?: { signal?: AbortSignal }) {
     const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 
     const { workflow } = processor.execution;
@@ -241,7 +246,7 @@ export default class extends Instruction {
 
     if (sync) {
       try {
-        const response = await request(config, this.workflow.app);
+        const response = await request(config, this.workflow.app, options?.signal);
         return {
           status: JOB_STATUS.RESOLVED,
           result: responseSuccess(response, config.onlyData),
@@ -267,7 +272,7 @@ export default class extends Instruction {
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
     try {
       processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
-      const response = await request(config, this.workflow.app);
+      const response = await request(config, this.workflow.app, options?.signal);
       processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
       jobDone.status = JOB_STATUS.RESOLVED;
       jobDone.result = responseSuccess(response, config.onlyData);
@@ -291,9 +296,14 @@ export default class extends Instruction {
       const job = await this.workflow.app.db.getRepository('jobs').findOne({
         filterByTk: id,
       });
-
-      job.set(jobDone);
-      this.workflow.resume(job);
+      const execution = await job.getExecution();
+      if (!execution.status) {
+        job.set(jobDone);
+        job.execution = execution;
+        this.workflow.resume(job);
+      } else {
+        processor.logger.warn(`request (#${node.id}) result discarded because execution (${execution.id}) is ended`);
+      }
     }
   }
 

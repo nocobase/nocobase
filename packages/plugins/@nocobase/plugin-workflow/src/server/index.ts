@@ -12,6 +12,7 @@ export * from './constants';
 export * from './instructions';
 export * from './functions';
 export * from './logicCalculate';
+export * from './timeout-errors';
 export { Trigger } from './triggers';
 export type { EventOptions } from './Dispatcher';
 export { default as Processor } from './Processor';

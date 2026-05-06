@@ -89,7 +89,7 @@ export default class MailerInstruction extends Instruction {
     return MailerInstruction.transporterMap.get(key)!;
   }
 
-  async run(node: FlowNodeModel, prevJob, processor: Processor) {
+  async run(node: FlowNodeModel, prevJob, processor: Processor, options?: { signal?: AbortSignal }) {
     const {
       provider,
       contentType,
@@ -176,9 +176,16 @@ export default class MailerInstruction extends Instruction {
       const job = await this.workflow.app.db.getRepository('jobs').findOne({
         filterByTk: id,
       });
-
-      job.set(jobDone);
-      this.workflow.resume(job);
+      const execution = await job.getExecution();
+      if (!execution.status) {
+        job.set(jobDone);
+        job.execution = execution;
+        this.workflow.resume(job);
+      } else {
+        processor.logger.warn(
+          `smtp-mailer (#${node.id}) result discarded because execution (${execution.id}) is ended`,
+        );
+      }
     }
   }
 

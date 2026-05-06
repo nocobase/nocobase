@@ -159,7 +159,9 @@ export default {
     {
       type: 'jsonb',
       name: 'options',
-      defaultValue: {},
+      defaultValue: {
+        timeout: 0,
+      },
     },
     {
       type: 'hasOne',
