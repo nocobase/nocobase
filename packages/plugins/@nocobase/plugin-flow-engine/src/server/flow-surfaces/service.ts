@@ -7234,6 +7234,7 @@ export class FlowSurfacesService {
       collectionName: resolvedField.collectionName,
       fieldPath: resolvedField.fieldPath,
       associationPathName: resolvedField.associationPathName,
+      ...(hasOwnDefined(values, 'titleField') ? { explicitTitleField: values.titleField } : {}),
       bindingChange: true,
       hasExistingTitleField: false,
       enabledPackages,
@@ -7411,6 +7412,15 @@ export class FlowSurfacesService {
       ),
     });
     this.contractGuard.validateNodeTreeAgainstContract(tree.model);
+    if (wrapperShouldPersistTitleField && boundFieldCapability.wrapperUse === 'TableColumnModel') {
+      tree.model.stepParams = _.merge({}, tree.model.stepParams || {}, {
+        tableColumnSettings: {
+          fieldNames: {
+            label: defaultTitleField,
+          },
+        },
+      });
+    }
     if (requiredFieldWrapperDefaults.stepParams) {
       tree.model.stepParams = _.merge({}, tree.model.stepParams || {}, requiredFieldWrapperDefaults.stepParams);
     }

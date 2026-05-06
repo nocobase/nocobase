@@ -151,7 +151,7 @@ const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.tryTemplate': BOOLEAN_SCHEMA,
 };
 const CONFIRM_ALLOWED_PATHS = ['confirm.enable', 'confirm.title', 'confirm.content'];
-const TABLE_COLUMN_ALLOWED_PATHS = ['title.title'];
+const TABLE_COLUMN_ALLOWED_PATHS = ['title.title', 'fieldNames.label'];
 const FILTER_FORM_ITEM_ALLOWED_PATHS = [
   'init.defaultTargetUid',
   'init.filterField.name',
@@ -1508,6 +1508,7 @@ ACTION_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     pathSchemas: {
       'title.title': STRING_SCHEMA,
+      'fieldNames.label': STRING_SCHEMA,
     },
   },
 });
@@ -1615,6 +1616,7 @@ TABLE_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     pathSchemas: {
       'title.title': STRING_SCHEMA,
+      'fieldNames.label': STRING_SCHEMA,
       'model.use': STRING_SCHEMA,
     },
   },
@@ -1640,6 +1642,7 @@ JS_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     pathSchemas: {
       'title.title': STRING_SCHEMA,
+      'fieldNames.label': STRING_SCHEMA,
     },
   },
   jsSettings: RUN_JS_SETTINGS_GROUP,

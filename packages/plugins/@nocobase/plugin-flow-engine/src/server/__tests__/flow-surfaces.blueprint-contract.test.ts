@@ -363,6 +363,53 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expectNoRequiredFormItemDefaults(findGridItemByFieldPath(filter, 'requiredText'));
   });
 
+  it('should persist explicit relation titleField from applyBlueprint table fields', async () => {
+    const title = `Relation title field blueprint ${Date.now()}`;
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title,
+          },
+        },
+        page: {
+          title,
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  'nickname',
+                  {
+                    field: 'manager',
+                    titleField: 'nickname',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const managerColumn = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.use === 'TableColumnModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'manager',
+    )[0];
+
+    expect(managerColumn?.props?.titleField).toBe('nickname');
+    expect(managerColumn?.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('nickname');
+    expect(managerColumn?.subModels?.field?.props?.titleField).toBe('nickname');
+  });
+
   it('should create one page from a simplified page blueprint and return only target/surface', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
