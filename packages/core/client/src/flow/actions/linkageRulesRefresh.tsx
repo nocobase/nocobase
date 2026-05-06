@@ -55,28 +55,53 @@ export const linkageRulesRefresh = defineAction({
     }
 
     // Dedupe concurrent refreshes triggered by deep dispatch (e.g. many items calling the same refresh).
+    // If a new request arrives during the current run, rerun once after it finishes so fast-changing form values
+    // cannot leave action linkage rules stale.
     const runKey = `${flowKey}:${stepKey}:${actionName}`;
-    const inflightMap: Map<string, Promise<any>> = (model.__linkageRulesRefreshInflight ||= new Map());
+    const inflightMap: Map<
+      string,
+      {
+        promise: Promise<any>;
+        pending: boolean;
+        latestCtx: typeof ctx;
+      }
+    > = (model.__linkageRulesRefreshInflight ||= new Map());
     const existing = inflightMap.get(runKey);
     if (existing) {
-      await existing;
+      existing.pending = true;
+      existing.latestCtx = ctx;
+      await existing.promise;
       return;
     }
 
-    const run = (async () => {
+    const state = {
+      promise: null as Promise<any>,
+      pending: false,
+      latestCtx: ctx,
+    };
+
+    const runOnce = async () => {
+      const runCtx = state.latestCtx;
       const raw = model?.getStepParams?.(flowKey, stepKey);
-      const resolved = await ctx.resolveJsonTemplate({ value: [], ...(raw || {}) });
-      const action = ctx.getAction?.(actionName);
+      const resolved = await runCtx.resolveJsonTemplate({ value: [], ...(raw || {}) });
+      const action = runCtx.getAction?.(actionName);
       if (action?.handler) {
-        await action.handler(ctx, resolved);
+        await action.handler(runCtx, resolved);
+      }
+    };
+
+    state.promise = (async () => {
+      try {
+        do {
+          state.pending = false;
+          await runOnce();
+        } while (state.pending);
+      } finally {
+        inflightMap.delete(runKey);
       }
     })();
 
-    inflightMap.set(runKey, run);
-    try {
-      await run;
-    } finally {
-      inflightMap.delete(runKey);
-    }
+    inflightMap.set(runKey, state);
+    await state.promise;
   },
 });
