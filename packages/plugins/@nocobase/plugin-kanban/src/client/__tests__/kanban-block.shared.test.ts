@@ -8,7 +8,9 @@
  */
 
 import { describe, expect, test } from 'vitest';
+import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
 import {
+  createColumnResource,
   getKanbanDesignSettingsHost,
   isKanbanDesignSettingsHost,
   shouldHideUnknownColumn,
@@ -115,5 +117,68 @@ describe('kanban design settings host', () => {
 
     expect(shouldMountUnknownColumn(options)).toBe(true);
     expect(shouldHideUnknownColumn(options)).toBe(false);
+  });
+
+  test('column resource uses resolved association sourceId from the base resource', () => {
+    const engine = new FlowEngine();
+    const createResource = () => engine.context.createResource(MultiRecordResource);
+    const baseResource = createResource();
+    baseResource.setSourceId(12);
+
+    const columnResource = createColumnResource(
+      {
+        getResourceSettingsInitParams: () => ({
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+          associationName: 'users.tasks',
+          sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+        }),
+        resource: baseResource,
+        context: {
+          createResource,
+        },
+        getPageSize: () => 20,
+        getGroupField: () => ({ name: 'status' }),
+        getConfiguredGroupOptions: () => [],
+      } as any,
+      { key: 'todo', value: 'todo', label: 'Todo', color: 'blue' },
+      1,
+      20,
+    );
+
+    expect(columnResource.getResourceName()).toBe('users.tasks');
+    expect(columnResource.getSourceId()).toBe(12);
+    expect(columnResource.getFilterByTk()).toBeNull();
+  });
+
+  test('column resource does not copy unresolved runtime templates into request params', () => {
+    const engine = new FlowEngine();
+    const createResource = () => engine.context.createResource(MultiRecordResource);
+    const baseResource = createResource();
+
+    const columnResource = createColumnResource(
+      {
+        getResourceSettingsInitParams: () => ({
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+          associationName: 'users.tasks',
+          sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+          filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+        }),
+        resource: baseResource,
+        context: {
+          createResource,
+        },
+        getPageSize: () => 20,
+        getGroupField: () => ({ name: 'status' }),
+        getConfiguredGroupOptions: () => [],
+      } as any,
+      { key: 'todo', value: 'todo', label: 'Todo', color: 'blue' },
+      1,
+      20,
+    );
+
+    expect(columnResource.getSourceId()).toBeNull();
+    expect(columnResource.getFilterByTk()).toBeNull();
   });
 });
