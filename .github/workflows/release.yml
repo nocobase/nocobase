@@ -1,26 +1,177 @@
 name: Release
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.ref_name }}
   cancel-in-progress: true
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git tag to release. Must start with v, for example v2.1.0-alpha.30'
+        required: true
+        type: string
+      skip_publish_npm:
+        description: 'Skip publishing to npmjs.org'
+        required: false
+        default: false
+        type: boolean
+      skip_publish_pkg:
+        description: 'Skip publishing to pkg.nocobase.com'
+        required: false
+        default: false
+        type: boolean
+      skip_publish_pkg_src:
+        description: 'Skip publishing to pkg-src.nocobase.com'
+        required: false
+        default: false
+        type: boolean
+      skip_publish_docker:
+        description: 'Skip publishing Docker images'
+        required: false
+        default: false
+        type: boolean
   push:
     tags:
       - 'v*'
 
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    outputs:
+      target_ref: ${{ steps.prepare.outputs.targetRef }}
+      release_version: ${{ steps.prepare.outputs.releaseVersion }}
+      major_minor_version: ${{ steps.prepare.outputs.majorMinorVersion }}
+      default_tag: ${{ steps.prepare.outputs.defaultTag }}
+      is_v1: ${{ steps.prepare.outputs.isV1 }}
+      run_npm_release: ${{ steps.prepare.outputs.runNpmRelease }}
+      run_pro_package_release: ${{ steps.prepare.outputs.runProPackageRelease }}
+      run_docker_release: ${{ steps.prepare.outputs.runDockerRelease }}
+      skip_publish_npm: ${{ steps.prepare.outputs.skipPublishNpm }}
+      skip_publish_pkg: ${{ steps.prepare.outputs.skipPublishPkg }}
+      skip_publish_pkg_src: ${{ steps.prepare.outputs.skipPublishPkgSrc }}
+      skip_publish_docker: ${{ steps.prepare.outputs.skipPublishDocker }}
+    steps:
+      - name: Prepare release context
+        id: prepare
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_SKIP_PUBLISH_NPM: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_publish_npm && 'true' || 'false' }}
+          INPUT_SKIP_PUBLISH_PKG: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_publish_pkg && 'true' || 'false' }}
+          INPUT_SKIP_PUBLISH_PKG_SRC: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_publish_pkg_src && 'true' || 'false' }}
+          INPUT_SKIP_PUBLISH_DOCKER: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_publish_docker && 'true' || 'false' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            TARGET_REF="$INPUT_REF"
+            SKIP_PUBLISH_NPM="$INPUT_SKIP_PUBLISH_NPM"
+            SKIP_PUBLISH_PKG="$INPUT_SKIP_PUBLISH_PKG"
+            SKIP_PUBLISH_PKG_SRC="$INPUT_SKIP_PUBLISH_PKG_SRC"
+            SKIP_PUBLISH_DOCKER="$INPUT_SKIP_PUBLISH_DOCKER"
+          else
+            TARGET_REF="$GITHUB_REF_NAME"
+            SKIP_PUBLISH_NPM=false
+            SKIP_PUBLISH_PKG=false
+            SKIP_PUBLISH_PKG_SRC=false
+            SKIP_PUBLISH_DOCKER=false
+          fi
+
+          if [[ -z "$TARGET_REF" ]]; then
+            echo "Release ref is required." >&2
+            exit 1
+          fi
+
+          if [[ ! "$TARGET_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.].*)?$ ]]; then
+            echo "Release ref must be a git tag like v2.1.0 or v2.1.0-alpha.30." >&2
+            exit 1
+          fi
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if ! gh api -H "Accept: application/vnd.github+json" "/repos/$GITHUB_REPOSITORY/git/ref/tags/$TARGET_REF" >/dev/null 2>&1; then
+              echo "Tag $TARGET_REF not found in $GITHUB_REPOSITORY." >&2
+              exit 1
+            fi
+
+            if [[ "$SKIP_PUBLISH_NPM" == "true" && "$SKIP_PUBLISH_PKG" == "true" && "$SKIP_PUBLISH_PKG_SRC" == "true" && "$SKIP_PUBLISH_DOCKER" == "true" ]]; then
+              echo "At least one release target must be enabled." >&2
+              exit 1
+            fi
+          fi
+
+          if [[ "$TARGET_REF" =~ ^v1\. ]]; then
+            DEFAULT_TAG=v1
+            IS_V1=true
+          elif [[ "$TARGET_REF" =~ beta ]]; then
+            DEFAULT_TAG=beta
+            IS_V1=false
+          elif [[ "$TARGET_REF" =~ alpha ]]; then
+            DEFAULT_TAG=alpha
+            IS_V1=false
+          else
+            DEFAULT_TAG=latest
+            IS_V1=false
+          fi
+
+          RELEASE_VERSION="${TARGET_REF#v}"
+          if [[ "$RELEASE_VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
+            MAJOR_MINOR_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          else
+            echo "Failed to parse major.minor version from $TARGET_REF." >&2
+            exit 1
+          fi
+
+          RUN_NPM_RELEASE=true
+          if [[ "$SKIP_PUBLISH_NPM" == "true" ]]; then
+            RUN_NPM_RELEASE=false
+          fi
+
+          RUN_PRO_PACKAGE_RELEASE=true
+          if [[ "$SKIP_PUBLISH_PKG" == "true" && "$SKIP_PUBLISH_PKG_SRC" == "true" ]]; then
+            RUN_PRO_PACKAGE_RELEASE=false
+          fi
+
+          RUN_DOCKER_RELEASE=true
+          if [[ "$SKIP_PUBLISH_DOCKER" == "true" ]]; then
+            RUN_DOCKER_RELEASE=false
+          fi
+
+          echo "targetRef=$TARGET_REF" >> "$GITHUB_OUTPUT"
+          echo "releaseVersion=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "majorMinorVersion=$MAJOR_MINOR_VERSION" >> "$GITHUB_OUTPUT"
+          echo "defaultTag=$DEFAULT_TAG" >> "$GITHUB_OUTPUT"
+          echo "isV1=$IS_V1" >> "$GITHUB_OUTPUT"
+          echo "runNpmRelease=$RUN_NPM_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "runProPackageRelease=$RUN_PRO_PACKAGE_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "runDockerRelease=$RUN_DOCKER_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "skipPublishNpm=$SKIP_PUBLISH_NPM" >> "$GITHUB_OUTPUT"
+          echo "skipPublishPkg=$SKIP_PUBLISH_PKG" >> "$GITHUB_OUTPUT"
+          echo "skipPublishPkgSrc=$SKIP_PUBLISH_PKG_SRC" >> "$GITHUB_OUTPUT"
+          echo "skipPublishDocker=$SKIP_PUBLISH_DOCKER" >> "$GITHUB_OUTPUT"
+
   get-plugins:
+    if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
+    needs:
+      - prepare-release
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
+      require_tag: ${{ github.event_name == 'workflow_dispatch' && needs.prepare-release.outputs.target_ref || '' }}
       # For v1.x maintenance releases, only include repos that have the v1 branch.
       # For v2+ we keep the original behavior (no filtering at this stage).
-      require_branch: ${{ startsWith(github.ref_name, 'v1.') && 'v1' || '' }}
+      require_branch: ${{ needs.prepare-release.outputs.is_v1 == 'true' && 'v1' || '' }}
     secrets: inherit
-  publish-npm:
-    needs: get-plugins
+
+  publish-packages:
+    if: ${{ always() && needs.prepare-release.result == 'success' && (needs.prepare-release.outputs.run_npm_release == 'true' || needs.prepare-release.outputs.run_pro_package_release == 'true') && (needs.get-plugins.result == 'success' || needs.get-plugins.result == 'skipped') }}
+    needs:
+      - prepare-release
+      - get-plugins
     runs-on: ubuntu-latest
+    env:
+      TARGET_REF: ${{ needs.prepare-release.outputs.target_ref }}
     steps:
       - name: Set Node.js 22
         uses: actions/setup-node@v3
@@ -30,24 +181,26 @@ jobs:
         id: get-info
         shell: bash
         run: |
-          # v1.x maintenance releases should publish under dist-tag `v1` (and must not touch `latest`).
-          if [[ "${{ github.ref_name }}" =~ ^v1\. ]]; then
-            echo "defaultTag=$(echo 'v1')" >> $GITHUB_OUTPUT
-            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.all-plugins }}')" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_name }}" =~ "beta" ]]; then
-            echo "defaultTag=$(echo 'beta')" >> $GITHUB_OUTPUT
-            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_name }}" =~ "alpha" ]]; then
-            echo "defaultTag=$(echo 'alpha')" >> $GITHUB_OUTPUT
-            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
+          echo "defaultTag=${{ needs.prepare-release.outputs.default_tag }}" >> "$GITHUB_OUTPUT"
+
+          if [[ "${{ needs.prepare-release.outputs.run_pro_package_release }}" != 'true' ]]; then
+            echo "proRepos=[]" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$TARGET_REF" =~ ^v1\. ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.all-plugins }}')" >> "$GITHUB_OUTPUT"
+          elif [[ "$TARGET_REF" =~ beta ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> "$GITHUB_OUTPUT"
+          elif [[ "$TARGET_REF" =~ alpha ]]; then
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> "$GITHUB_OUTPUT"
           else
             # rc
-            echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
-            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/create-github-app-token@v1
         id: validate-token
-        if: ${{ startsWith(github.ref_name, 'v1.') }}
+        if: ${{ needs.prepare-release.outputs.is_v1 == 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
@@ -60,19 +213,19 @@ jobs:
         run: |
           DIST_TAG="${{ steps.get-info.outputs.defaultTag }}"
           if [[ -n "$DIST_TAG" ]]; then
-            echo "DIST_TAG_ARG=--dist-tag=$DIST_TAG" >> $GITHUB_ENV
-            echo "NPM_TAG_ARG=--tag=$DIST_TAG" >> $GITHUB_ENV
+            echo "DIST_TAG_ARG=--dist-tag=$DIST_TAG" >> "$GITHUB_ENV"
+            echo "NPM_TAG_ARG=--tag=$DIST_TAG" >> "$GITHUB_ENV"
           else
-            echo "DIST_TAG_ARG=" >> $GITHUB_ENV
-            echo "NPM_TAG_ARG=" >> $GITHUB_ENV
+            echo "DIST_TAG_ARG=" >> "$GITHUB_ENV"
+            echo "NPM_TAG_ARG=" >> "$GITHUB_ENV"
           fi
 
       - name: Validate v1 tag exists in all selected repos
-        if: ${{ startsWith(github.ref_name, 'v1.') }}
+        if: ${{ needs.prepare-release.outputs.is_v1 == 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
-          TAG='${{ github.ref_name }}'
+          TAG="$TARGET_REF"
           missing=()
 
           for repo in $(echo '${{ steps.get-info.outputs.proRepos }}' | jq -r '.[]'); do
@@ -97,6 +250,7 @@ jobs:
 
       - uses: actions/create-github-app-token@v1
         id: app-token
+        if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
@@ -105,8 +259,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.prepare-release.outputs.target_ref }}
       - name: Send curl request and parse response
+        if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         env:
           PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
           PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
@@ -116,19 +271,20 @@ jobs:
           response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
             -H 'content-type: application/json' \
             --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
-          token1=$(echo $response1 | jq -r '.token')
+          token1=$(echo "$response1" | jq -r '.token')
           response2=$(curl -s 'https://pkg-src.nocobase.com/-/verdaccio/sec/login' \
             -H 'content-type: application/json' \
             --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
-          token2=$(echo $response2 | jq -r '.token')
-          echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
-          echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
+          token2=$(echo "$response2" | jq -r '.token')
+          echo "PKG_NOCOBASE_TOKEN=$token1" >> "$GITHUB_ENV"
+          echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> "$GITHUB_ENV"
       - name: yarn install and build
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn build
       - name: publish npmjs.org
+        if: ${{ needs.prepare-release.outputs.run_npm_release == 'true' }}
         continue-on-error: true
         run: |
           git config --global user.email "test@mail.com"
@@ -146,25 +302,29 @@ jobs:
           npm whoami
           yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ $DIST_TAG_ARG
       - name: Checkout pro-plugins
+        if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.prepare-release.outputs.target_ref }}
           token: ${{ steps.app-token.outputs.token }}
       - name: Clone pro repos
+        if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         shell: bash
         run: |
           for repo in ${{ join(fromJSON(steps.get-info.outputs.proRepos), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
-          git clone -b ${{ github.ref_name }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+            git clone -b $TARGET_REF https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: Build Pro plugins
+        if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn build packages/pro-plugins
       - name: Resolve pro plugin scopes
+        if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         id: pro-plugin-scopes
         shell: bash
         run: |
@@ -198,7 +358,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
       - name: publish pkg.nocobase.com
-        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
+        if: ${{ needs.prepare-release.outputs.skip_publish_pkg != 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' && steps.pro-plugin-scopes.outputs.count != '0' }}
         shell: bash
         run: |
           git reset --hard
@@ -213,7 +373,7 @@ jobs:
           ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
           EOF
       - name: publish pkg-src.nocobase.com
-        if: ${{ steps.pro-plugin-scopes.outputs.count != '0' }}
+        if: ${{ needs.prepare-release.outputs.skip_publish_pkg_src != 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' && steps.pro-plugin-scopes.outputs.count != '0' }}
         shell: bash
         run: |
           git reset --hard
@@ -228,90 +388,70 @@ jobs:
           done <<'EOF'
           ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
           EOF
+
   push-docker:
+    if: ${{ always() && needs.prepare-release.result == 'success' && needs.prepare-release.outputs.run_docker_release == 'true' && (needs.publish-packages.result == 'success' || needs.publish-packages.result == 'skipped') }}
     runs-on: ubuntu-latest
     needs:
-      - get-plugins
-      - publish-npm
+      - prepare-release
+      - publish-packages
     steps:
-      - name: Get info
-        id: get-info
-        shell: bash
-        run: |
-          echo "cnaVersion=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
-            echo "defaultTag=$(echo 'beta')" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_name }}" =~ "alpha" ]]; then
-            echo "defaultTag=$(echo 'alpha')" >> $GITHUB_OUTPUT
-          else
-            # rc
-            echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
-          fi
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.prepare-release.outputs.target_ref }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            nocobase/nocobase
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
       - name: Prepare all tags
-        id: prepare-tags
+        shell: bash
         run: |
-          DEFAULT_TAG=${{ steps.get-info.outputs.defaultTag }}
-          META_TAGS="${{ steps.meta.outputs.tags }}"
+          set -euo pipefail
+          RELEASE_VERSION="${{ needs.prepare-release.outputs.release_version }}"
+          MAJOR_MINOR_VERSION="${{ needs.prepare-release.outputs.major_minor_version }}"
+          DEFAULT_TAG="${{ needs.prepare-release.outputs.default_tag }}"
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
 
-          TAGS=()
+          TAGS=(
+            "nocobase/nocobase:$RELEASE_VERSION"
+            "$ALI_REG/nocobase/nocobase:$RELEASE_VERSION"
+            "nocobase/nocobase:$MAJOR_MINOR_VERSION"
+            "$ALI_REG/nocobase/nocobase:$MAJOR_MINOR_VERSION"
+          )
 
           # For v1 maintenance tags, do not push a floating default tag (e.g. `latest`).
-          if [[ "${{ github.ref_name }}" != v1.* ]]; then
+          if [[ "${{ needs.prepare-release.outputs.is_v1 }}" != 'true' ]]; then
             TAGS+=("nocobase/nocobase:$DEFAULT_TAG")
             TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG")
           fi
 
-          IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
-          for TAG in "${TAG_ARRAY[@]}"; do
-            TAGS+=("$TAG")
-            TAGS+=("$ALI_REG/$TAG")
-          done
-
           ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
-          echo "ALL_TAGS=$ALL_TAGS" >> $GITHUB_ENV
+          echo "ALL_TAGS=$ALL_TAGS" >> "$GITHUB_ENV"
       - name: Prepare all full tags
-        id: prepare-full-tags
+        shell: bash
         run: |
-          DEFAULT_TAG=${{ steps.get-info.outputs.defaultTag }}
-          META_TAGS="${{ steps.meta.outputs.tags }}"
+          set -euo pipefail
+          RELEASE_VERSION="${{ needs.prepare-release.outputs.release_version }}"
+          MAJOR_MINOR_VERSION="${{ needs.prepare-release.outputs.major_minor_version }}"
+          DEFAULT_TAG="${{ needs.prepare-release.outputs.default_tag }}"
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
 
-          TAGS=()
+          TAGS=(
+            "nocobase/nocobase:$RELEASE_VERSION-full"
+            "$ALI_REG/nocobase/nocobase:$RELEASE_VERSION-full"
+            "nocobase/nocobase:$MAJOR_MINOR_VERSION-full"
+            "$ALI_REG/nocobase/nocobase:$MAJOR_MINOR_VERSION-full"
+          )
 
           # For v1 maintenance tags, do not push a floating default tag (e.g. `latest-full`).
-          if [[ "${{ github.ref_name }}" != v1.* ]]; then
+          if [[ "${{ needs.prepare-release.outputs.is_v1 }}" != 'true' ]]; then
             TAGS+=("nocobase/nocobase:$DEFAULT_TAG-full")
             TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG-full")
           fi
 
-          IFS=',' read -ra TAG_ARRAY <<< "$META_TAGS"
-          for TAG in "${TAG_ARRAY[@]}"; do
-            TAGS+=("$TAG-full")
-            TAGS+=("$ALI_REG/$TAG-full")
-          done
-
           ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
-          echo "ALL_FULL_TAGS=$ALL_TAGS" >> $GITHUB_ENV
+          echo "ALL_FULL_TAGS=$ALL_TAGS" >> "$GITHUB_ENV"
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -328,7 +468,7 @@ jobs:
         with:
           context: ./docker/nocobase
           build-args: |
-            CNA_VERSION=${{ steps.get-info.outputs.cnaVersion }}
+            CNA_VERSION=${{ needs.prepare-release.outputs.release_version }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.ALL_TAGS }}
@@ -338,38 +478,55 @@ jobs:
           context: ./docker/nocobase
           file: ./docker/nocobase/Dockerfile-full
           build-args: |
-            CNA_VERSION=${{ steps.get-info.outputs.cnaVersion }}
+            CNA_VERSION=${{ needs.prepare-release.outputs.release_version }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.ALL_FULL_TAGS }}
+
   feishu-notify:
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() && needs.prepare-release.result == 'success' }}
     needs:
-      - publish-npm
+      - prepare-release
+      - publish-packages
       - push-docker
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.prepare-release.outputs.target_ref }}
       - name: Determine overall result
         id: result
         shell: bash
         run: |
-          if [[ "${{ needs.publish-npm.result }}" == "success" && "${{ needs.push-docker.result }}" == "success" ]]; then
-            echo "status=success" >> $GITHUB_OUTPUT
+          PACKAGES_REQUIRED=false
+          if [[ "${{ needs.prepare-release.outputs.run_npm_release }}" == "true" || "${{ needs.prepare-release.outputs.run_pro_package_release }}" == "true" ]]; then
+            PACKAGES_REQUIRED=true
+          fi
+
+          PACKAGES_OK=true
+          if [[ "$PACKAGES_REQUIRED" == "true" && "${{ needs.publish-packages.result }}" != "success" ]]; then
+            PACKAGES_OK=false
+          fi
+
+          DOCKER_OK=true
+          if [[ "${{ needs.prepare-release.outputs.run_docker_release }}" == "true" && "${{ needs.push-docker.result }}" != "success" ]]; then
+            DOCKER_OK=false
+          fi
+
+          if [[ "$PACKAGES_OK" == "true" && "$DOCKER_OK" == "true" ]]; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
           else
-            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "status=failure" >> "$GITHUB_OUTPUT"
           fi
       - name: Set current date
-        run: echo "CURRENT_DATE=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+        run: echo "CURRENT_DATE=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_ENV"
       - name: Send Feishu notification
         shell: bash
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
-          TITLE: "NocoBase 版本 ${{ github.ref_name }} Release 结果通知"
+          TITLE: "NocoBase 版本 ${{ needs.prepare-release.outputs.target_ref }} Release 结果通知"
           STATUS: ${{ steps.result.outputs.status }}
-          CONTENT: "**版本：**${{ github.ref_name }}\n**时间：**${{ env.CURRENT_DATE }}\n**状态：**${{ steps.result.outputs.status == 'success' && '✅ 构建成功' || '❌ 构建失败' }}"
+          CONTENT: "**版本：**${{ needs.prepare-release.outputs.target_ref }}\n**时间：**${{ env.CURRENT_DATE }}\n**状态：**${{ steps.result.outputs.status == 'success' && '✅ 构建成功' || '❌ 构建失败' }}"
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: bash scripts/feishu-notify.sh
