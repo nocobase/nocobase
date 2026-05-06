@@ -47,6 +47,39 @@ export interface GridLayoutData {
   rows: Record<string, string[][]>;
   sizes: Record<string, number[]>;
   rowOrder?: string[];
+  layout?: GridLayoutV2;
+}
+
+export interface GridLayoutV2 {
+  version: 2;
+  rows: GridRowV2[];
+}
+
+export interface GridRowV2 {
+  id: string;
+  cells: GridCellV2[];
+  sizes: number[];
+}
+
+export interface GridCellV2 {
+  id: string;
+  items?: string[];
+  rows?: GridRowV2[];
+}
+
+export interface GridLayoutPathEntry {
+  rowId: string;
+  cellId?: string;
+}
+
+export type GridLayoutPath = GridLayoutPathEntry[];
+
+export interface GridLayoutPosition {
+  path: GridLayoutPath;
+  rowIndex: number;
+  cellIndex: number;
+  itemIndex: number;
+  itemUid: string;
 }
 
 export interface ColumnSlot {
@@ -56,6 +89,7 @@ export interface ColumnSlot {
   insertIndex: number;
   position: 'before' | 'after';
   rect: Rect;
+  path?: GridLayoutPath;
 }
 
 export interface ColumnEdgeSlot {
@@ -64,6 +98,7 @@ export interface ColumnEdgeSlot {
   columnIndex: number;
   direction: 'left' | 'right';
   rect: Rect;
+  path?: GridLayoutPath;
 }
 
 export interface RowGapSlot {
@@ -71,6 +106,7 @@ export interface RowGapSlot {
   targetRowId: string;
   position: 'above' | 'below';
   rect: Rect;
+  path?: GridLayoutPath;
 }
 
 export interface EmptyRowSlot {
@@ -83,9 +119,21 @@ export interface EmptyColumnSlot {
   rowId: string;
   columnIndex: number;
   rect: Rect;
+  path?: GridLayoutPath;
 }
 
-export type LayoutSlot = ColumnSlot | ColumnEdgeSlot | RowGapSlot | EmptyRowSlot | EmptyColumnSlot;
+export interface ItemEdgeSlot {
+  type: 'item-edge';
+  rowId: string;
+  columnIndex: number;
+  itemIndex: number;
+  itemUid: string;
+  direction: 'left' | 'right';
+  rect: Rect;
+  path?: GridLayoutPath;
+}
+
+export type LayoutSlot = ColumnSlot | ColumnEdgeSlot | RowGapSlot | EmptyRowSlot | EmptyColumnSlot | ItemEdgeSlot;
 
 /**
  * 列内插入的配置
@@ -267,12 +315,51 @@ const createColumnInsertRect = (itemRect: Rect, position: 'before' | 'after'): R
   });
 };
 
+const parseLayoutPath = (value?: string): GridLayoutPath | undefined => {
+  if (!value) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) {
+      return undefined;
+    }
+    const path = parsed
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object' || typeof entry.rowId !== 'string') {
+          return null;
+        }
+        return {
+          rowId: entry.rowId,
+          ...(typeof entry.cellId === 'string' ? { cellId: entry.cellId } : {}),
+        };
+      })
+      .filter(Boolean) as GridLayoutPath;
+    return path.length ? path : undefined;
+  } catch (error) {
+    return undefined;
+  }
+};
+
+const createLegacyCellPath = (rowId: string, columnIndex: number): GridLayoutPath => [
+  {
+    rowId,
+    cellId: `${rowId}:cell:${columnIndex}`,
+  },
+];
+
 const expandColumnRect = (columnRect: Rect): Rect => ({
   top: columnRect.top,
   left: columnRect.left,
   width: columnRect.width,
   height: Math.max(columnRect.height, MIN_SLOT_THICKNESS),
 });
+
+const hasDirectNestedRows = (columnElement: HTMLElement) => {
+  return Array.from(columnElement.querySelectorAll('[data-grid-row-id]')).some((rowElement) => {
+    return (rowElement as HTMLElement).closest('[data-grid-column-row-id][data-grid-column-index]') === columnElement;
+  });
+};
 
 export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): LayoutSnapshot => {
   if (!container) {
@@ -282,23 +369,29 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
     };
   }
 
-  const containerRect = toRect(container.getBoundingClientRect());
+  const scope = (
+    container.hasAttribute('data-grid-root') ? container : container.querySelector('[data-grid-root]')
+  ) as HTMLElement | null;
+  const layoutContainer = scope || container;
+  const containerRect = toRect(layoutContainer.getBoundingClientRect());
   const slots: LayoutSlot[] = [];
 
   // 获取所有行元素，但只保留直接属于当前容器的（不在子 Grid 中的）
-  const allRowElements = Array.from(container.querySelectorAll('[data-grid-row-id]'));
+  const allRowElements = Array.from(layoutContainer.querySelectorAll('[data-grid-row-id]'));
+  const hasGridRootScope = layoutContainer.hasAttribute('data-grid-root');
   const rowElements = allRowElements.filter((el) => {
     const htmlEl = el as HTMLElement;
-    // 查找该元素最近的带 data-grid-row-id 的祖先容器
+    if (hasGridRootScope) {
+      return htmlEl.closest('[data-grid-root]') === layoutContainer;
+    }
+    // 兼容旧测试和旧 DOM：只保留当前容器的直接 Grid 行。
     let parent = htmlEl.parentElement;
-    while (parent && parent !== container) {
+    while (parent && parent !== layoutContainer) {
       if (parent.hasAttribute('data-grid-row-id')) {
-        // 说明这个元素在另一个 Grid 行内，是嵌套的
         return false;
       }
       parent = parent.parentElement;
     }
-    // 如果遍历到 container 都没遇到其他 grid-row，说明是直接子元素
     return true;
   }) as HTMLElement[];
 
@@ -315,24 +408,43 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
     return { slots, containerRect };
   }
 
-  rowElements.forEach((rowElement, rowIndex) => {
+  const getRowScopeElement = (rowElement: HTMLElement) => {
+    const parent = rowElement.parentElement;
+    if (!parent || !layoutContainer.contains(parent)) {
+      return layoutContainer;
+    }
+    return parent;
+  };
+
+  const rowElementsByScope = new Map<HTMLElement, HTMLElement[]>();
+  rowElements.forEach((rowElement) => {
+    const rowScopeElement = getRowScopeElement(rowElement);
+    rowElementsByScope.set(rowScopeElement, [...(rowElementsByScope.get(rowScopeElement) || []), rowElement]);
+  });
+
+  rowElements.forEach((rowElement) => {
     const rowId = rowElement.dataset.gridRowId;
     if (!rowId) {
       return;
     }
     const rowRect = toRect(rowElement.getBoundingClientRect());
+    const rowPath = parseLayoutPath(rowElement.dataset.gridPath) || [{ rowId }];
+    const rowScopeElement = getRowScopeElement(rowElement);
+    const rowScopeRect = toRect(rowScopeElement.getBoundingClientRect());
+    const rowElementsInScope = rowElementsByScope.get(rowScopeElement) || [];
 
-    if (rowIndex === 0) {
+    if (rowElementsInScope[0] === rowElement) {
       slots.push({
         type: 'row-gap',
         targetRowId: rowId,
         position: 'above',
-        rect: createRowGapRect(rowRect, 'above', containerRect),
+        rect: createRowGapRect(rowRect, 'above', rowScopeRect),
+        path: rowPath,
       });
     }
 
     const columnElements = Array.from(
-      container.querySelectorAll(`[data-grid-column-row-id="${rowId}"][data-grid-column-index]`),
+      layoutContainer.querySelectorAll(`[data-grid-column-row-id="${rowId}"][data-grid-column-index]`),
     ).filter((el) => {
       // 只保留当前 row 下的直接列，避免嵌套 Grid 中相同 rowId 的列混入
       return (el as HTMLElement).closest('[data-grid-row-id]') === rowElement;
@@ -347,6 +459,7 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
     sortedColumns.forEach((columnElement) => {
       const columnIndex = Number(columnElement.dataset.gridColumnIndex || 0);
       const columnRect = toRect(columnElement.getBoundingClientRect());
+      const columnPath = parseLayoutPath(columnElement.dataset.gridPath) || createLegacyCellPath(rowId, columnIndex);
 
       slots.push({
         type: 'column-edge',
@@ -354,6 +467,7 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
         columnIndex,
         direction: 'left',
         rect: createColumnEdgeRect(columnRect, 'left'),
+        path: columnPath,
       });
 
       slots.push({
@@ -362,6 +476,7 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
         columnIndex,
         direction: 'right',
         rect: createColumnEdgeRect(columnRect, 'right'),
+        path: columnPath,
       });
 
       const itemElements = Array.from(
@@ -378,11 +493,16 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
       });
 
       if (sortedItems.length === 0) {
+        if (hasDirectNestedRows(columnElement)) {
+          return;
+        }
+
         slots.push({
           type: 'empty-column',
           rowId,
           columnIndex,
           rect: expandColumnRect(columnRect),
+          path: columnPath,
         });
         return;
       }
@@ -395,10 +515,35 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
         insertIndex: 0,
         position: 'before',
         rect: createColumnInsertRect(firstItemRect, 'before'),
+        path: columnPath,
       });
 
       sortedItems.forEach((itemElement, itemIndex) => {
         const itemRect = toRect(itemElement.getBoundingClientRect());
+        const itemPath = parseLayoutPath(itemElement.dataset.gridPath) || columnPath;
+        const itemUid = itemElement.dataset.gridItemUid || '';
+        slots.push({
+          type: 'item-edge',
+          rowId,
+          columnIndex,
+          itemIndex,
+          itemUid,
+          direction: 'left',
+          rect: createColumnEdgeRect(itemRect, 'left'),
+          path: itemPath,
+        });
+
+        slots.push({
+          type: 'item-edge',
+          rowId,
+          columnIndex,
+          itemIndex,
+          itemUid,
+          direction: 'right',
+          rect: createColumnEdgeRect(itemRect, 'right'),
+          path: itemPath,
+        });
+
         slots.push({
           type: 'column',
           rowId,
@@ -406,6 +551,7 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
           insertIndex: itemIndex + 1,
           position: 'after',
           rect: createColumnInsertRect(itemRect, 'after'),
+          path: itemPath,
         });
       });
     });
@@ -414,7 +560,8 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
       type: 'row-gap',
       targetRowId: rowId,
       position: 'below',
-      rect: createRowGapRect(rowRect, 'below', containerRect),
+      rect: createRowGapRect(rowRect, 'below', rowScopeRect),
+      path: rowPath,
     });
   });
 
@@ -436,6 +583,8 @@ export const getSlotKey = (slot: LayoutSlot): string => {
       return `${slot.type}`;
     case 'empty-column':
       return `${slot.type}:${slot.rowId}:${slot.columnIndex}`;
+    case 'item-edge':
+      return `${slot.type}:${slot.rowId}:${slot.columnIndex}:${slot.itemUid}:${slot.direction}`;
   }
 };
 
@@ -454,21 +603,45 @@ const distanceToRect = (point: Point, rect: Rect): number => {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
+const slotPriority: Record<LayoutSlot['type'], number> = {
+  'item-edge': 5,
+  'column-edge': 4,
+  column: 3,
+  'row-gap': 2,
+  'empty-column': 1,
+  'empty-row': 0,
+};
+
 export const resolveDropIntent = (point: Point, slots: LayoutSlot[]): LayoutSlot | null => {
   if (!slots.length) {
     return null;
   }
 
-  const insideSlot = slots.find((slot) => isPointInsideRect(point, slot.rect));
-  if (insideSlot) {
-    return insideSlot;
+  let bestInsideSlot: LayoutSlot | null = null;
+  let bestInsidePriority = Number.NEGATIVE_INFINITY;
+  slots.forEach((slot) => {
+    if (!isPointInsideRect(point, slot.rect)) {
+      return;
+    }
+    const priority = slotPriority[slot.type];
+    if (priority > bestInsidePriority) {
+      bestInsidePriority = priority;
+      bestInsideSlot = slot;
+    }
+  });
+
+  if (bestInsideSlot) {
+    return bestInsideSlot;
   }
 
   let closest: LayoutSlot | null = null;
   let minDistance = Number.POSITIVE_INFINITY;
   slots.forEach((slot) => {
     const distance = distanceToRect(point, slot.rect);
-    if (distance < minDistance) {
+    if (
+      distance < minDistance ||
+      (distance === minDistance && closest && slotPriority[slot.type] > slotPriority[closest.type])
+    ) {
       minDistance = distance;
       closest = slot;
     }
@@ -528,7 +701,10 @@ const toIntSizes = (weights: number[], count: number): number[] => {
     return [];
   }
 
-  const normalizedWeights = weights.map((weight) => (Number.isFinite(weight) && weight > 0 ? weight : 1));
+  const normalizedWeights = Array.from({ length: count }, (_, index) => {
+    const weight = weights[index];
+    return Number.isFinite(weight) && weight > 0 ? weight : 1;
+  });
   const total = normalizedWeights.reduce((sum, weight) => sum + weight, 0) || count;
   const ratios = normalizedWeights.map((weight) => weight / total);
   const raw = ratios.map((ratio) => ratio * DEFAULT_GRID_COLUMNS);
@@ -567,6 +743,294 @@ const toIntSizes = (weights: number[], count: number): number[] => {
   }
 
   return floors;
+};
+
+const EMPTY_COLUMN_VALUE = 'EMPTY_COLUMN';
+
+const createTopLevelRow = (itemUid: string, id: string): GridRowV2 => ({
+  id,
+  cells: [
+    {
+      id: `${id}:cell:0`,
+      items: [itemUid],
+    },
+  ],
+  sizes: [DEFAULT_GRID_COLUMNS],
+});
+
+const convertLegacyRowsToLayout = (
+  rows: Record<string, string[][]> = {},
+  sizes: Record<string, number[]> = {},
+  rowOrder?: string[],
+): GridLayoutV2 => {
+  const order = deriveRowOrder(rows, rowOrder);
+  return {
+    version: 2,
+    rows: order
+      .map((rowId) => {
+        const cells = (rows[rowId] || []).map((items, columnIndex) => ({
+          id: `${rowId}:cell:${columnIndex}`,
+          items: [...items],
+        }));
+        return {
+          id: rowId,
+          cells,
+          sizes: toIntSizes(sizes[rowId] || new Array(cells.length).fill(1), cells.length),
+        };
+      })
+      .filter((row) => row.cells.length > 0),
+  };
+};
+
+const collectCellItems = (cell: GridCellV2): string[] => {
+  if (Array.isArray(cell.items)) {
+    return cell.items;
+  }
+
+  return (cell.rows || []).flatMap((row) => row.cells.flatMap((childCell) => collectCellItems(childCell)));
+};
+
+export const projectLayoutToLegacyRows = (layout: GridLayoutV2): GridLayoutData => {
+  const rows: Record<string, string[][]> = {};
+  const sizes: Record<string, number[]> = {};
+  const rowOrder: string[] = [];
+
+  const appendRows = (sourceRows: GridRowV2[], prefix = '') => {
+    sourceRows.forEach((row) => {
+      const rowId = prefix ? `${prefix}/${row.id}` : row.id;
+      const cells = row.cells.map((cell) => collectCellItems(cell)).filter((items) => items.length > 0);
+      if (cells.length > 0) {
+        rows[rowId] = cells;
+        sizes[rowId] = toIntSizes(row.sizes || new Array(cells.length).fill(1), cells.length);
+        rowOrder.push(rowId);
+      }
+    });
+  };
+
+  appendRows(layout.rows || []);
+  return { rows, sizes, rowOrder, layout };
+};
+
+const normalizeGridRows = (
+  rows: GridRowV2[],
+  options: {
+    validUids?: Set<string>;
+    seenUids: Set<string>;
+  },
+): GridRowV2[] => {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row, rowIndex) => {
+      const rawCells = Array.isArray(row?.cells) ? row.cells : [];
+      const rawSizes = Array.isArray(row?.sizes) ? row.sizes : [];
+      const cellsWithSizes = rawCells
+        .map((cell, cellIndex) => {
+          const id =
+            typeof cell?.id === 'string' && cell.id ? cell.id : `${row?.id || `row:${rowIndex}`}:cell:${cellIndex}`;
+          const size = rawSizes[cellIndex];
+          if (Array.isArray(cell?.rows) && cell.rows.length > 0) {
+            const childRows = normalizeGridRows(cell.rows, options);
+            if (childRows.length > 0) {
+              return { cell: { id, rows: childRows } as GridCellV2, size };
+            }
+          }
+
+          const rawItems = Array.isArray(cell?.items) ? cell.items : undefined;
+          const items = (rawItems || [])
+            .filter((itemUid) => typeof itemUid === 'string' && itemUid)
+            .filter((itemUid) => !options.validUids || options.validUids.has(itemUid) || itemUid === EMPTY_COLUMN_VALUE)
+            .filter((itemUid) => {
+              if (itemUid === EMPTY_COLUMN_VALUE) {
+                return true;
+              }
+              if (options.seenUids.has(itemUid)) {
+                return false;
+              }
+              options.seenUids.add(itemUid);
+              return true;
+            });
+
+          if (rawItems && (items.length > 0 || rawItems.length === 0)) {
+            return { cell: { id, items } as GridCellV2, size };
+          }
+
+          return null;
+        })
+        .filter(Boolean) as { cell: GridCellV2; size: number }[];
+      const cells = cellsWithSizes.map((entry) => entry.cell);
+
+      if (cells.length === 0) {
+        return null;
+      }
+
+      return {
+        id: typeof row?.id === 'string' && row.id ? row.id : `row:${rowIndex}`,
+        cells,
+        sizes: toIntSizes(
+          cellsWithSizes.map((entry) => entry.size),
+          cells.length,
+        ),
+      } as GridRowV2;
+    })
+    .filter(Boolean) as GridRowV2[];
+};
+
+const collapseCell = (cell: GridCellV2): GridCellV2 | null => {
+  if (cell.rows?.length) {
+    const rows = collapseRows(cell.rows);
+    if (rows.length === 0) {
+      return null;
+    }
+    if (rows.length === 1 && rows[0].cells.length === 1 && rows[0].sizes[0] === DEFAULT_GRID_COLUMNS) {
+      return {
+        id: cell.id,
+        ..._.omit(rows[0].cells[0], ['id']),
+      };
+    }
+    return { id: cell.id, rows };
+  }
+
+  if (Array.isArray(cell.items)) {
+    return { id: cell.id, items: cell.items.filter(Boolean) };
+  }
+  return null;
+};
+
+const collapseRows = (rows: GridRowV2[]): GridRowV2[] => {
+  return rows
+    .map((row) => {
+      const cellsWithSizes = row.cells
+        .map((cell, index) => {
+          const collapsed = collapseCell(cell);
+          return collapsed ? { cell: collapsed, size: row.sizes?.[index] } : null;
+        })
+        .filter(Boolean) as { cell: GridCellV2; size: number }[];
+      const cells = cellsWithSizes.map((entry) => entry.cell);
+      if (cells.length === 0) {
+        return null;
+      }
+      return {
+        id: row.id,
+        cells,
+        sizes: toIntSizes(
+          cellsWithSizes.map((entry) => entry.size),
+          cells.length,
+        ),
+      };
+    })
+    .filter(Boolean) as GridRowV2[];
+};
+
+export const normalizeGridLayout = ({
+  layout,
+  rows,
+  sizes,
+  rowOrder,
+  itemUids,
+  generateId = uid,
+  logger,
+  gridUid,
+}: {
+  layout?: GridLayoutV2 | null;
+  rows?: Record<string, string[][]>;
+  sizes?: Record<string, number[]>;
+  rowOrder?: string[];
+  itemUids?: string[];
+  generateId?: () => string;
+  logger?: Pick<Console, 'warn'>;
+  gridUid?: string;
+}): GridLayoutV2 => {
+  const validUids = itemUids ? new Set(itemUids) : undefined;
+  if (validUids) {
+    validUids.add(EMPTY_COLUMN_VALUE);
+  }
+
+  try {
+    const source =
+      layout?.version === 2
+        ? _.cloneDeep(layout)
+        : convertLegacyRowsToLayout(rows || {}, sizes || {}, rowOrder || Object.keys(rows || {}));
+    const seenUids = new Set<string>();
+    const next: GridLayoutV2 = {
+      version: 2,
+      rows: collapseRows(
+        normalizeGridRows(source.rows || [], {
+          validUids,
+          seenUids,
+        }),
+      ),
+    };
+
+    if (itemUids?.length) {
+      itemUids.forEach((itemUid) => {
+        if (itemUid === EMPTY_COLUMN_VALUE || seenUids.has(itemUid)) {
+          return;
+        }
+        const rowId = generateId();
+        next.rows.push(createTopLevelRow(itemUid, rowId));
+        seenUids.add(itemUid);
+      });
+    }
+
+    return next;
+  } catch (error) {
+    logger?.warn?.(`[GridModel] Failed to normalize grid layout${gridUid ? ` (${gridUid})` : ''}.`, error);
+    return {
+      version: 2,
+      rows: (itemUids || [])
+        .filter((itemUid) => itemUid !== EMPTY_COLUMN_VALUE)
+        .map((itemUid) => createTopLevelRow(itemUid, generateId())),
+    };
+  }
+};
+
+export const replaceUidInGridLayout = (layout: GridLayoutV2, fromUid: string, toUid: string): GridLayoutV2 => {
+  const replaceRows = (rows: GridRowV2[]): GridRowV2[] =>
+    rows.map((row) => ({
+      ...row,
+      cells: row.cells.map((cell) => {
+        if (cell.rows) {
+          return { ...cell, rows: replaceRows(cell.rows) };
+        }
+        return {
+          ...cell,
+          items: (cell.items || []).map((itemUid) => (itemUid === fromUid ? toUid : itemUid)),
+        };
+      }),
+    }));
+  return { version: 2, rows: replaceRows(_.cloneDeep(layout.rows || [])) };
+};
+
+export const findModelUidLayoutPosition = (layout: GridLayoutV2, uidValue: string): GridLayoutPosition | null => {
+  const visitRows = (rows: GridRowV2[], parentPath: GridLayoutPath): GridLayoutPosition | null => {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
+      for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+        const cell = row.cells[cellIndex];
+        const path = [...parentPath, { rowId: row.id, cellId: cell.id }];
+        if (cell.items) {
+          const itemIndex = cell.items.indexOf(uidValue);
+          if (itemIndex !== -1) {
+            return {
+              path,
+              rowIndex,
+              cellIndex,
+              itemIndex,
+              itemUid: uidValue,
+            };
+          }
+        }
+        if (cell.rows) {
+          const result = visitRows(cell.rows, path);
+          if (result) {
+            return result;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  return visitRows(layout.rows || [], []);
 };
 
 const normalizeRowSizes = (rowId: string, layout: GridLayoutData) => {
@@ -628,11 +1092,251 @@ const distributeSizesWithNewColumn = (
   return toIntSizes(weights, columnCount);
 };
 
+const resolveCellPath = (layout: GridLayoutV2, slot: LayoutSlot): GridLayoutPath | undefined => {
+  if ('path' in slot && slot.path?.length) {
+    return slot.path;
+  }
+  if ('rowId' in slot && 'columnIndex' in slot) {
+    return createLegacyCellPath(slot.rowId, slot.columnIndex);
+  }
+  return undefined;
+};
+
+const findRowListByPath = (layout: GridLayoutV2, path?: GridLayoutPath): GridRowV2[] => {
+  if (!path || path.length <= 1) {
+    return layout.rows;
+  }
+
+  let rows = layout.rows;
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const entry = path[i];
+    const row = rows.find((candidate) => candidate.id === entry.rowId);
+    const cell = row?.cells.find((candidate) => candidate.id === entry.cellId);
+    if (!cell?.rows) {
+      return rows;
+    }
+    rows = cell.rows;
+  }
+  return rows;
+};
+
+const findCellByPath = (layout: GridLayoutV2, path?: GridLayoutPath) => {
+  if (!path?.length) {
+    return null;
+  }
+
+  let rows = layout.rows;
+  for (let i = 0; i < path.length; i += 1) {
+    const entry = path[i];
+    const rowIndex = rows.findIndex((candidate) => candidate.id === entry.rowId);
+    const row = rows[rowIndex];
+    if (!row || !entry.cellId) {
+      return null;
+    }
+    const cellIndex = row.cells.findIndex((candidate) => candidate.id === entry.cellId);
+    const cell = row.cells[cellIndex];
+    if (!cell) {
+      return null;
+    }
+    if (i === path.length - 1) {
+      return { rows, row, cell, rowIndex, cellIndex };
+    }
+    rows = cell.rows || [];
+  }
+  return null;
+};
+
+const removeItemFromGridLayout = (layout: GridLayoutV2, sourceUid: string) => {
+  const removeFromRows = (rows: GridRowV2[]): GridRowV2[] =>
+    rows
+      .map((row) => {
+        const cellsWithSizes = row.cells
+          .map((cell, index) => {
+            if (cell.rows) {
+              const childRows = removeFromRows(cell.rows);
+              return childRows.length ? { cell: { ...cell, rows: childRows }, size: row.sizes?.[index] } : null;
+            }
+            const currentItems = cell.items || [];
+            const hadSourceUid = currentItems.includes(sourceUid);
+            const items = currentItems.filter((itemUid) => itemUid !== sourceUid);
+            if (hadSourceUid && !items.length) {
+              return null;
+            }
+            return { cell: { ...cell, items }, size: row.sizes?.[index] };
+          })
+          .filter(Boolean) as { cell: GridCellV2; size: number }[];
+        const cells = cellsWithSizes.map((entry) => entry.cell);
+
+        return cells.length
+          ? {
+              ...row,
+              cells,
+              sizes: toIntSizes(
+                cellsWithSizes.map((entry) => entry.size),
+                cells.length,
+              ),
+            }
+          : null;
+      })
+      .filter(Boolean) as GridRowV2[];
+
+  layout.rows = collapseRows(removeFromRows(layout.rows));
+};
+
+const createSingleCellRow = (itemUid: string, rowId: string, cellId: string): GridRowV2 => ({
+  id: rowId,
+  cells: [{ id: cellId, items: [itemUid] }],
+  sizes: [DEFAULT_GRID_COLUMNS],
+});
+
+const getGeneratedId = (
+  key: string,
+  options?: {
+    generatedIds?: Map<string, string>;
+    generateId?: (key: string) => string;
+  },
+) => {
+  const existing = options?.generatedIds?.get(key);
+  if (existing) {
+    return existing;
+  }
+  const value = options?.generateId?.(key) || uid();
+  options?.generatedIds?.set(key, value);
+  return value;
+};
+
+const simulateGridLayoutForSlot = ({
+  slot,
+  sourceUid,
+  layout,
+  generatedIds,
+  generateId,
+}: SimulateLayoutOptions): GridLayoutV2 => {
+  const original = normalizeGridLayout({
+    layout: layout.layout,
+    rows: layout.rows,
+    sizes: layout.sizes,
+    rowOrder: layout.rowOrder,
+  });
+  const cloned = _.cloneDeep(original);
+  const slotKey = getSlotKey(slot);
+  const sourcePosition = findModelUidLayoutPosition(cloned, sourceUid);
+  if (slot.type === 'item-edge' && slot.itemUid === sourceUid) {
+    return cloned;
+  }
+
+  const targetPath = resolveCellPath(cloned, slot);
+  const targetItemUid = slot.type === 'item-edge' ? slot.itemUid : undefined;
+  removeItemFromGridLayout(cloned, sourceUid);
+
+  switch (slot.type) {
+    case 'column': {
+      const target = findCellByPath(cloned, targetPath);
+      if (!target) {
+        break;
+      }
+      if (target.cell.rows) {
+        target.cell.rows.push(
+          createTopLevelRow(sourceUid, getGeneratedId(`${slotKey}:row`, { generatedIds, generateId })),
+        );
+        break;
+      }
+      target.cell.items ||= [];
+      const insertIndex = Math.max(0, Math.min(slot.insertIndex, target.cell.items.length));
+      target.cell.items.splice(insertIndex, 0, sourceUid);
+      break;
+    }
+    case 'empty-column': {
+      const target = findCellByPath(cloned, targetPath);
+      if (target) {
+        delete target.cell.rows;
+        target.cell.items = [sourceUid];
+      }
+      break;
+    }
+    case 'column-edge': {
+      const target = findCellByPath(cloned, targetPath);
+      if (!target) {
+        break;
+      }
+      const insertIndex = slot.direction === 'left' ? target.cellIndex : target.cellIndex + 1;
+      const cellId = getGeneratedId(`${slotKey}:cell`, { generatedIds, generateId });
+      target.row.cells.splice(insertIndex, 0, { id: cellId, items: [sourceUid] });
+      target.row.sizes = distributeSizesWithNewColumn(target.row.sizes, insertIndex, target.row.cells.length);
+      break;
+    }
+    case 'row-gap': {
+      const rows = findRowListByPath(cloned, slot.path);
+      const targetIndex = rows.findIndex((row) => row.id === slot.targetRowId);
+      const insertIndex = targetIndex === -1 ? rows.length : slot.position === 'above' ? targetIndex : targetIndex + 1;
+      const rowId = getGeneratedId(`${slotKey}:row`, { generatedIds, generateId });
+      rows.splice(insertIndex, 0, createSingleCellRow(sourceUid, rowId, `${rowId}:cell:0`));
+      break;
+    }
+    case 'empty-row': {
+      const rowId = getGeneratedId(`${slotKey}:row`, { generatedIds, generateId });
+      cloned.rows.push(createSingleCellRow(sourceUid, rowId, `${rowId}:cell:0`));
+      break;
+    }
+    case 'item-edge': {
+      if (!targetItemUid) {
+        break;
+      }
+      const target = findCellByPath(cloned, targetPath);
+      if (!target?.cell.items) {
+        break;
+      }
+      const targetIndex = target.cell.items.indexOf(targetItemUid);
+      if (targetIndex === -1) {
+        break;
+      }
+
+      const rows: GridRowV2[] = [];
+      target.cell.items.forEach((itemUid, index) => {
+        if (index === targetIndex) {
+          const rowId = getGeneratedId(`${slotKey}:target-row`, { generatedIds, generateId });
+          const leftItem = slot.direction === 'left' ? sourceUid : itemUid;
+          const rightItem = slot.direction === 'left' ? itemUid : sourceUid;
+          rows.push({
+            id: rowId,
+            cells: [
+              { id: getGeneratedId(`${slotKey}:target-cell:0`, { generatedIds, generateId }), items: [leftItem] },
+              { id: getGeneratedId(`${slotKey}:target-cell:1`, { generatedIds, generateId }), items: [rightItem] },
+            ],
+            sizes: [12, 12],
+          });
+          return;
+        }
+
+        const rowId = getGeneratedId(`${slotKey}:row:${index}`, { generatedIds, generateId });
+        rows.push(createSingleCellRow(itemUid, rowId, `${rowId}:cell:0`));
+      });
+      delete target.cell.items;
+      target.cell.rows = rows;
+      break;
+    }
+    default:
+      break;
+  }
+
+  const normalized = normalizeGridLayout({ layout: cloned });
+  if (sourcePosition && isSameGridLayout(normalized, original)) {
+    return original;
+  }
+  return normalized;
+};
+
+export const isSameGridLayout = (a: GridLayoutV2, b: GridLayoutV2): boolean => {
+  return JSON.stringify(a) === JSON.stringify(b);
+};
+
 export interface SimulateLayoutOptions {
   slot: LayoutSlot;
   sourceUid: string;
   layout: GridLayoutData;
   generateRowId?: () => string;
+  generatedIds?: Map<string, string>;
+  generateId?: (key: string) => string;
 }
 
 export const simulateLayoutForSlot = ({
@@ -640,7 +1344,21 @@ export const simulateLayoutForSlot = ({
   sourceUid,
   layout,
   generateRowId,
+  generatedIds,
+  generateId,
 }: SimulateLayoutOptions): GridLayoutData => {
+  if (layout.layout || slot.type === 'item-edge' || ('path' in slot && slot.path?.length)) {
+    const nextLayout = simulateGridLayoutForSlot({
+      slot,
+      sourceUid,
+      layout,
+      generateRowId,
+      generatedIds,
+      generateId,
+    });
+    return projectLayoutToLegacyRows(nextLayout);
+  }
+
   const cloned: GridLayoutData = {
     rows: _.cloneDeep(layout.rows),
     sizes: _.cloneDeep(layout.sizes),

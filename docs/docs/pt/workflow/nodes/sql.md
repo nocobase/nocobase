@@ -26,7 +26,7 @@ Na interface de configuração do fluxo de trabalho, clique no botão de adiçã
 
 ## Configuração do Nó
 
-![Nó SQL_Configuração do Nó](https://static-docs.nocobase.com/20240904002334.png)
+![Nó SQL_Configuração do Nó](https://static-docs.nocobase.com/20260414235136.png)
 
 ### Fonte de Dados
 
@@ -38,7 +38,19 @@ A fonte de dados deve ser do tipo banco de dados, como a fonte de dados principa
 
 Edite a instrução SQL. Atualmente, apenas uma instrução SQL é suportada.
 
-Insira as variáveis necessárias usando o botão de variável no canto superior direito do editor. Antes da execução, essas variáveis serão substituídas pelos seus valores correspondentes por meio de substituição de texto. O texto resultante será então usado como a instrução SQL final e enviado ao banco de dados para consulta.
+:::info
+A partir da `v2.0.30`, por razões de segurança, a substituição direta de variáveis por texto em instruções SQL não é mais suportada. Em vez disso, devem ser usadas consultas parametrizadas.
+:::
+
+Variáveis do contexto do processo podem ser usadas em instruções SQL, mas devem ser indicadas no formato `:variableName`, por exemplo:
+
+```sql
+SELECT * FROM users WHERE id = :userId;
+```
+
+### Lista de Parâmetros
+
+Na instrução SQL acima, `:userId` é um marcador de posição. A substituição dos marcadores deve ser configurada na "Lista de Parâmetros". O nome da variável usa o nome do marcador, como `userId`, e o valor pode ser selecionado do contexto do processo usando o seletor de variáveis.
 
 ## Resultado da Execução do Nó
 

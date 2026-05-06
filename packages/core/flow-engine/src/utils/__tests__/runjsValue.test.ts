@@ -41,4 +41,15 @@ describe('runjsValue utils', () => {
     expect(out.someVar).toContain('');
     expect(out.user).toContain('name');
   });
+
+  it('extractUsedVariablePathsFromRunJS: extracts ctx.getVar string paths', () => {
+    const code = `
+      const phone = await ctx.getVar('ctx.item.value.phone');
+      const assignee = await ctx.getVar("ctx.user.profile.name");
+      return [phone, assignee];
+    `;
+    const out = extractUsedVariablePathsFromRunJS(code);
+    expect(out.item).toContain('value.phone');
+    expect(out.user).toContain('profile.name');
+  });
 });

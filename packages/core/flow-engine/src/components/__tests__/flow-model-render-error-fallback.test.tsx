@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, cleanup, waitFor } from '@testing-library/react';
+import { render, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel, ModelRenderMode } from '../../models/flowModel';
@@ -94,6 +94,16 @@ const clickDeleteFromLastDropdown = async () => {
   menu.onClick?.({ key: 'delete' });
 };
 
+const getHost = (element: HTMLElement) => element.closest('[data-has-float-menu="true"]') as HTMLDivElement;
+
+const hoverHostAndClickDelete = async (element: HTMLElement) => {
+  const host = getHost(element);
+  if (host) {
+    fireEvent.mouseEnter(host);
+  }
+  await clickDeleteFromLastDropdown();
+};
+
 // ---------------- Tests ----------------
 describe('Delete problematic model via FlowSettings menu', () => {
   beforeEach(() => {
@@ -120,7 +130,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     // satisfy FlowsFloatContextMenu styles
     model.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
 
-    render(
+    const { findByTestId } = render(
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
@@ -130,7 +140,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
       </ConfigProvider>,
     );
 
-    await clickDeleteFromLastDropdown();
+    await hoverHostAndClickDelete(await findByTestId('result'));
     expect(engine.getModel(model.uid)).toBeUndefined();
   });
 
@@ -163,7 +173,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     parent.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
     child.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
 
-    render(
+    const { findByTestId } = render(
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
@@ -173,7 +183,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
       </ConfigProvider>,
     );
 
-    await clickDeleteFromLastDropdown();
+    await hoverHostAndClickDelete(await findByTestId('result'));
     expect(engine.getModel(child.uid)).toBeUndefined();
     const remain = (parent.subModels as any).items || [];
     expect(remain.find((m: FlowModel) => m.uid === child.uid)).toBeUndefined();
@@ -208,7 +218,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     parent.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
     child.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
 
-    render(
+    const { findByTestId } = render(
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
@@ -218,7 +228,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
       </ConfigProvider>,
     );
 
-    await clickDeleteFromLastDropdown();
+    await hoverHostAndClickDelete(await findByTestId('result'));
     expect(engine.getModel(child.uid)).toBeUndefined();
     const remain = (parent.subModels as any).cells || [];
     expect(remain.find((m: FlowModel) => m.uid === child.uid)).toBeUndefined();

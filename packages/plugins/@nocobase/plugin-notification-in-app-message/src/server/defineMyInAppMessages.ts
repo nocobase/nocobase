@@ -110,6 +110,7 @@ export default function defineMyInAppMessages(app: Application) {
               filter: {
                 userId,
               },
+              whitelist: ['status'],
             });
             return actions.update(ctx as Context, next);
           }

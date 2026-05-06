@@ -10,6 +10,28 @@
 import { defineAction, DisplayItemModel, FlowModelContext, tExpr } from '@nocobase/flow-engine';
 import { isTitleField } from '../../data-source';
 
+const normalizeFilterTargetKey = (filterTargetKey: any) => {
+  if (typeof filterTargetKey === 'string') {
+    return filterTargetKey;
+  }
+  if (Array.isArray(filterTargetKey) && filterTargetKey.length === 1) {
+    return filterTargetKey[0];
+  }
+  return undefined;
+};
+
+const resolveTargetCollectionField = (targetCollection: any, label?: string) => {
+  if (!targetCollection) {
+    return null;
+  }
+  const normalizedLabel =
+    label || targetCollection.titleCollectionField?.name || normalizeFilterTargetKey(targetCollection.filterTargetKey);
+  if (!normalizedLabel) {
+    return null;
+  }
+  return targetCollection.getField(normalizedLabel);
+};
+
 export const titleField = defineAction({
   name: 'titleField',
   title: tExpr('Title field'),
@@ -52,8 +74,14 @@ export const titleField = defineAction({
       if (fieldUid) {
         await ctx.engine.destroyModel(fieldUid);
       }
-      const targetCollectionField = targetCollection.getField(params.label);
+      const targetCollectionField = resolveTargetCollectionField(targetCollection, params.label);
+      if (!targetCollectionField) {
+        return;
+      }
       const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+      if (!binding) {
+        return;
+      }
       const use = binding.modelName;
       const model = ctx.model.setSubModel('field', {
         use,
@@ -77,15 +105,21 @@ export const titleField = defineAction({
   async handler(ctx: any, params) {
     const target = ctx.model.collectionField.target;
     const targetCollection = ctx.model.collectionField.targetCollection;
-    const filterKey = targetCollection.filterTargetKey;
-    const label = params.label;
+    const targetCollectionField = resolveTargetCollectionField(targetCollection, params.label);
+    if (!targetCollectionField) {
+      return;
+    }
+    const filterKey = normalizeFilterTargetKey(targetCollection.filterTargetKey) || targetCollectionField.name;
+    const label = targetCollectionField.name;
     const newFieldNames = {
       value: filterKey,
       label,
     };
     ctx.model.setProps({ fieldNames: newFieldNames });
-    const targetCollectionField = targetCollection.getField(label);
     const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+    if (!binding) {
+      return;
+    }
     const use = binding.modelName;
     if (!ctx.model.subModels['field']) {
       const model = ctx.model.setSubModel('field', {

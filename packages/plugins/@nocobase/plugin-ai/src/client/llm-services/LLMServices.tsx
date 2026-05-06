@@ -147,6 +147,7 @@ const providerDescriptions: Record<string, string> = {
   kimi: 'Kimi',
   xai: 'Grok models by xAI',
   ollama: 'Local models',
+  mimo: 'Xiaomi MIMO',
 };
 
 const providerSortOrder: string[] = [

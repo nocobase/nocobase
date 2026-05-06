@@ -36,7 +36,9 @@ import type {
 import { IModelComponentProps, ReadonlyModelProps } from '../types';
 import { isInheritedFrom, setupRuntimeContextSteps } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
+import type { MenuProps } from 'antd';
 import { Typography } from 'antd/lib';
+import { observer } from '..';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
 import { buildSubModelItem } from '../components/subModel/utils';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
@@ -46,8 +48,6 @@ import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
 import type { DispatchEventOptions, EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
-import type { MenuProps } from 'antd';
-import { observer } from '..';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -208,11 +208,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       if (changed.type === 'set' && _.isEqual(changed.value, changed.oldValue)) {
         return;
       }
+      const hasLastAutoRun = !!this._lastAutoRunParams;
 
       if (this.flowEngine) {
         this.invalidateFlowCache('beforeRender');
       }
-      this._rerunLastAutoRun();
+      if (hasLastAutoRun) {
+        this._rerunLastAutoRun();
+      }
       this.forks.forEach((fork) => {
         fork.rerender();
       });
@@ -858,6 +861,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }, 100);
 
+  private resetAutoRunState(): void {
+    this._rerunLastAutoRun?.cancel?.();
+    this._lastAutoRunParams = null;
+  }
+
   /**
    * 通用事件分发钩子：开始
    * 子类可覆盖；beforeRender 事件可通过抛出 FlowExitException 提前终止。
@@ -951,7 +959,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
 
       // 创建缓存的响应式包装器组件工厂（只创建一次）
-      const createReactiveWrapper = (modelInstance: any) => {
+      const createReactiveWrapper = (modelInstance: FlowModel) => {
         const ReactiveWrapper = observer(() => {
           // 触发响应式更新的关键属性访问（读取 run/渲染目标的 props）
           const renderTarget = modelInstance;
@@ -977,6 +985,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
               model: renderTarget,
             });
             return () => {
+              renderTarget.resetAutoRunState();
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }

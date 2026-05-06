@@ -69,7 +69,7 @@ export interface FlowModelRendererProps {
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
-        /** 自定义工具栏样式 */
+        /** 自定义工具栏样式，`top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -112,6 +112,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** `top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -126,6 +127,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
   fallback?: React.ReactNode;
+  useCache?: boolean;
 }> = observer(
   ({
     model,
@@ -138,12 +140,12 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     settingsMenuLevel,
     extraToolbarItems,
     fallback,
+    useCache,
   }) => {
     // hidden 占位由模型自身处理；无需在此注入
-
     const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, {
       throwOnError: false,
-      useCache: model.context.useCache,
+      useCache,
     });
     // 将错误下沉到 model 实例上，供内容层读取（类型安全的 WeakMap 存储）
     setAutoFlowError(model, autoFlowsError || null);
@@ -182,6 +184,7 @@ const FlowModelRendererCore: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** `top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -346,13 +349,15 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     extraToolbarItems,
     useCache,
   }) => {
+    const resolvedUseCache = typeof useCache === 'boolean' ? useCache : model?.context?.useCache;
+
     useEffect(() => {
-      if (model?.context) {
+      if (model?.context && typeof resolvedUseCache !== 'undefined') {
         model.context.defineProperty('useCache', {
-          value: typeof useCache === 'boolean' ? useCache : model.context.useCache,
+          value: resolvedUseCache,
         });
       }
-    }, [model?.context, useCache]);
+    }, [model?.context, resolvedUseCache]);
 
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息
@@ -373,6 +378,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
         settingsMenuLevel={settingsMenuLevel}
         extraToolbarItems={extraToolbarItems}
         fallback={fallback}
+        useCache={resolvedUseCache}
       />
     );
 

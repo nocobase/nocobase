@@ -28,12 +28,12 @@ import {
   resolveExpectedResourceInfoByModelChain,
   resolveTargetResourceByAssociation,
   tWithNs,
-  type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
+import type { PopupTemplateContextFlags } from './utils/templateCompatibility';
 import { mergeSelectOptions } from './utils/infiniteSelect';
 import _ from 'lodash';
 
-type TemplateRow = {
+export type TemplateRow = {
   uid: string;
   name?: string;
   description?: string;
@@ -48,6 +48,39 @@ type TemplateRow = {
 };
 
 type ExpectedResourceInfo = { dataSourceKey?: string; collectionName?: string; associationName?: string };
+
+export type PopupTemplateSelectOption = {
+  label: React.ReactNode;
+  value: string;
+  raw?: TemplateRow;
+  description?: string;
+  disabled?: boolean;
+  disabledReason?: string;
+  rawName?: string;
+  __idx?: number;
+};
+
+export function appendPopupTemplateOptions(prev: PopupTemplateSelectOption[], next: PopupTemplateSelectOption[]) {
+  const result = Array.isArray(prev) ? [...prev] : [];
+  const indexByValue = new Map<string, number>();
+  result.forEach((item, index) => {
+    const key = String(item?.value || '');
+    if (key) indexByValue.set(key, index);
+  });
+
+  for (const item of Array.isArray(next) ? next : []) {
+    const key = String(item?.value || '');
+    if (!key) continue;
+    const existingIndex = indexByValue.get(key);
+    if (typeof existingIndex === 'number') {
+      result[existingIndex] = { ...result[existingIndex], ...item };
+      continue;
+    }
+    indexByValue.set(key, result.length);
+    result.push(item);
+  }
+  return result;
+}
 
 const isAssociationField = (field: any): boolean => !!field?.isAssociationField?.();
 
@@ -131,12 +164,12 @@ const resolveResourceInfoFromActionParams = (
     associationName: rawAssociationName,
   };
 
-  const resolved =
-    mode === 'target'
-      ? resolveTargetResourceByAssociation(ctx, init)
-      : rawAssociationName
-        ? resolveBaseResourceByAssociation(init)
-        : undefined;
+  let resolved: ExpectedResourceInfo | undefined;
+  if (mode === 'target') {
+    resolved = resolveTargetResourceByAssociation(ctx, init);
+  } else if (rawAssociationName) {
+    resolved = resolveBaseResourceByAssociation(init);
+  }
   if (resolved) {
     return { ...resolved, ...(rawAssociationName ? { associationName: rawAssociationName } : {}) };
   }
@@ -480,6 +513,7 @@ const fetchPopupTemplates = async (
   ctx: any,
   keyword?: string,
   pagination?: { page?: number; pageSize?: number },
+  filter?: Record<string, any>,
 ): Promise<{ rows: TemplateRow[]; count?: number }> => {
   const api = ctx?.api;
   if (!api?.resource) return { rows: [] };
@@ -489,9 +523,7 @@ const fetchPopupTemplates = async (
     page,
     pageSize,
     search: keyword || undefined,
-    filter: {
-      type: 'popup',
-    },
+    filter: filter || { type: 'popup' },
   });
   const parsed = parseResourceListResponse<TemplateRow>(res);
   return { rows: parsed.rows, count: parsed.count };
@@ -505,6 +537,38 @@ const fetchTemplateByUid = async (ctx: any, templateUid: string): Promise<Templa
   if (!body) return null;
   return body as TemplateRow;
 };
+
+export function buildPopupTemplateListFilter(expected: ExpectedResourceInfo): Record<string, any> {
+  const dataSourceKey = normalizeStr(expected?.dataSourceKey);
+  const collectionName = normalizeStr(expected?.collectionName);
+  const associationName = normalizeStr(expected?.associationName);
+  const filters: Record<string, any>[] = [{ type: 'popup' }];
+  const noAssociationFilter = { $or: [{ associationName: null }, { associationName: '' }] };
+
+  if (dataSourceKey) {
+    filters.push({ dataSourceKey });
+  }
+
+  if (collectionName && associationName) {
+    filters.push({
+      $or: [
+        {
+          $and: [{ collectionName }, noAssociationFilter],
+        },
+        { associationName },
+      ],
+    });
+  } else if (collectionName) {
+    filters.push({ collectionName });
+    filters.push(noAssociationFilter);
+  } else if (associationName) {
+    filters.push({ associationName });
+  } else {
+    filters.push(noAssociationFilter);
+  }
+
+  return filters.length === 1 ? filters[0] : { $and: filters };
+}
 
 type PopupTemplateMeta = PopupTemplateContextFlags & { tpl: TemplateRow };
 
@@ -547,35 +611,10 @@ function PopupTemplateSelect(props: any) {
   const { value, onChange } = props as { value?: string; onChange?: (v: string | undefined) => void };
   const ctx = useFlowSettingsContext();
   const form = useForm();
-  const expectedResource = useMemo(
-    () => resolveExpectedResourceInfo(ctx as any, form?.values),
-    [
-      ctx,
-      (form as any)?.values?.dataSourceKey,
-      (form as any)?.values?.collectionName,
-      (form as any)?.values?.associationName,
-    ],
-  );
-  const expectedSourceResource = useMemo(
-    () => resolveExpectedSourceResourceInfo(ctx as any, form?.values),
-    [
-      ctx,
-      (form as any)?.values?.dataSourceKey,
-      (form as any)?.values?.collectionName,
-      (form as any)?.values?.associationName,
-    ],
-  );
-  const [options, setOptions] = useState<
-    Array<{
-      label: React.ReactNode;
-      value: string;
-      raw?: TemplateRow;
-      description?: string;
-      disabled?: boolean;
-      disabledReason?: string;
-      rawName?: string;
-    }>
-  >([]);
+  const formValues = form?.values;
+  const expectedResource = resolveExpectedResourceInfo(ctx as any, formValues);
+  const expectedSourceResource = resolveExpectedSourceResourceInfo(ctx as any, formValues);
+  const [options, setOptions] = useState<PopupTemplateSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectLoading, setSelectLoading] = useState(false);
   const [page, setPage] = useState(0);
@@ -623,7 +662,16 @@ function PopupTemplateSelect(props: any) {
       setHasMore(true);
       setLoading(true);
       try {
-        const { rows, count } = await fetchPopupTemplates(ctx, v, { page: 1, pageSize: TEMPLATE_LIST_PAGE_SIZE });
+        const filter = buildPopupTemplateListFilter(expectedResource);
+        const { rows, count } = await fetchPopupTemplates(
+          ctx,
+          v,
+          {
+            page: 1,
+            pageSize: TEMPLATE_LIST_PAGE_SIZE,
+          },
+          filter,
+        );
         const rawLength = rows.length;
         const withIndex = await Promise.all(rows.map(async (r, idx) => ({ ...(await toOption(r)), __idx: idx })));
         if (listVersionRef.current !== nextVersion) return;
@@ -642,7 +690,7 @@ function PopupTemplateSelect(props: any) {
         }
       }
     },
-    [ctx, toOption],
+    [ctx, expectedResource, toOption],
   );
 
   const loadMore = useCallback(async () => {
@@ -652,16 +700,22 @@ function PopupTemplateSelect(props: any) {
     loadingMoreRef.current = true;
     setLoading(true);
     try {
-      const { rows, count } = await fetchPopupTemplates(ctx, keyword, {
-        page: nextPage,
-        pageSize: TEMPLATE_LIST_PAGE_SIZE,
-      });
+      const filter = buildPopupTemplateListFilter(expectedResource);
+      const { rows, count } = await fetchPopupTemplates(
+        ctx,
+        keyword,
+        {
+          page: nextPage,
+          pageSize: TEMPLATE_LIST_PAGE_SIZE,
+        },
+        filter,
+      );
       const rawLength = rows.length;
       const withIndex = await Promise.all(
         rows.map(async (r, idx) => ({ ...(await toOption(r)), __idx: (nextPage - 1) * TEMPLATE_LIST_PAGE_SIZE + idx })),
       );
       if (listVersionRef.current !== version) return;
-      setOptions((prev) => mergeSelectOptions(prev || [], withIndex));
+      setOptions((prev) => appendPopupTemplateOptions(prev || [], withIndex));
       setPage(nextPage);
       setHasMore(calcHasMore({ page: nextPage, pageSize: TEMPLATE_LIST_PAGE_SIZE, rowsLength: rawLength, count }));
     } catch (e) {
@@ -674,7 +728,7 @@ function PopupTemplateSelect(props: any) {
         setLoading(false);
       }
     }
-  }, [ctx, hasMore, keyword, loading, page, toOption]);
+  }, [ctx, expectedResource, hasMore, keyword, loading, page, toOption]);
 
   useEffect(() => {
     let alive = true;

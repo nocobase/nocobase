@@ -258,6 +258,31 @@ describe('query', () => {
       expect(context2.action.params.values.queryParams.group).toEqual(['formatted-field']);
     });
 
+    it('should sanitize order direction', async () => {
+      const queryParser = createQueryParser(db);
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: {
+              collection: 'orders',
+              orders: [
+                {
+                  field: ['createdAt'],
+                  alias: 'createdAt',
+                  order: `ASC'); SELECT pg_sleep(1)--`,
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      await compose([parseFieldAndAssociations, queryParser.parse()])(context, async () => {});
+
+      expect(context.action.params.values.queryParams.order).toEqual([[db.sequelize.col('orders.created_at'), 'ASC']]);
+    });
+
     it('should parse filter', async () => {
       const filter = {
         createdAt: {
@@ -333,6 +358,38 @@ describe('query', () => {
       expect(new Date(dateOn).getTime()).toBeLessThanOrEqual(new Date().getTime());
       const userId = filter.$and[1].userId.$eq;
       expect(userId).toBe(user.id);
+    });
+
+    it('should reuse flow-engine variable resolver for filter values', async () => {
+      const user = await db.getRepository('users').findOne();
+      const context = {
+        ...ctx,
+        auth: {
+          user,
+        },
+        state: {
+          currentUser: user,
+        },
+        get: (key: string) => {
+          return {
+            'x-timezone': '',
+          }[key];
+        },
+        getCurrentLocale: () => 'en-US',
+        action: {
+          params: {
+            values: {
+              filter: {
+                userId: { $eq: '{{ ctx.user.id }}' },
+              },
+            },
+          },
+        },
+      };
+
+      await parseVariables(context, async () => {});
+
+      expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
     });
   });
 

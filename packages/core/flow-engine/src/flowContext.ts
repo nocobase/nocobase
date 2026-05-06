@@ -11,6 +11,7 @@ import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { APIClient, RequestOptions } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
+import axios from 'axios';
 import { MessageInstance } from 'antd/es/message/interface';
 import * as antd from 'antd';
 import type { HookAPI } from 'antd/es/modal/useModal';
@@ -57,6 +58,31 @@ import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
 import { externalReactRender, setupRunJSLibs } from './runjsLibs';
 import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
+
+function normalizePathname(pathname: string) {
+  return pathname.endsWith('/') ? pathname : `${pathname}/`;
+}
+
+function shouldBypassApiClient(url: string, app?: { getApiUrl?: (pathname?: string) => string }) {
+  try {
+    const requestUrl = new URL(url);
+    if (!['http:', 'https:'].includes(requestUrl.protocol)) {
+      return false;
+    }
+
+    if (!app?.getApiUrl) {
+      return true;
+    }
+
+    const apiUrl = new URL(app.getApiUrl());
+    const apiPath = normalizePathname(apiUrl.pathname);
+    const requestPath = normalizePathname(requestUrl.pathname);
+
+    return requestUrl.origin !== apiUrl.origin || !requestPath.startsWith(apiPath);
+  } catch {
+    return false;
+  }
+}
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -3024,6 +3050,10 @@ class BaseFlowEngineContext extends FlowContext {
       return this.engine.getModel(modelName, searchInPreviousEngines);
     });
     this.defineMethod('request', (options: RequestOptions) => {
+      const app = this.app as { getApiUrl?: (pathname?: string) => string } | undefined;
+      if (typeof options?.url === 'string' && shouldBypassApiClient(options.url, app)) {
+        return axios.request(options);
+      }
       return this.api.request(options);
     });
     this.defineMethod(

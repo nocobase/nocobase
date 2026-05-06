@@ -3,7 +3,14 @@
   "Execute a SQL statement in database.": "データベース内でSQL文を実行します。",
   "Include meta information of this query in result": "結果にこのクエリのメタ情報を含める",
   "SQL action": "SQL操作",
-  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQLクエリ結果は<1>JSONクエリノード</1>を介して使用できます（商用プラグイン）。",
+  "SQL query result could be used through <1>JSON query node</1>.": "SQLクエリ結果は<1>JSONクエリノード</1>を介して使用できます。",
   "Select a data source to execute SQL.": "SQLを実行するためのデータソースを選択します。",
-  "Usage of SQL query result is not supported yet.": "SQLクエリ結果はまだサポートされていません"
+  "Usage of SQL query result is not supported yet.": "SQLクエリ結果はまだサポートされていません",
+  "Current node is using unsafe injection mode (legacy), which has SQL injection risks.": "現在のノードは安全でないインジェクションモード（レガシー）を使用しており、SQLインジェクションのリスクがあります。",
+  "Migrate to safe mode": "安全モードに移行",
+  "Parameters": "パラメータ",
+  "SQL parameters. Use :name as placeholders in SQL and provide values here.": "SQLパラメータ。SQLで :name をプレースホルダとして使用し、ここで値を指定します。",
+  "Name": "名前",
+  "Value": "値",
+  "Add parameter": "パラメータを追加"
 }

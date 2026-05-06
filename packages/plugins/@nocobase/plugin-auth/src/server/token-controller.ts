@@ -111,40 +111,50 @@ export class TokenController implements TokenControlService {
   }
 
   renew: TokenControlService['renew'] = async (jti) => {
-    const repo = this.app.db.getRepository(issuedTokensCollectionName);
     const model = this.app.db.getModel(issuedTokensCollectionName);
+    const cacheKey = `jti-renewed-cahce:${jti}`;
 
-    const newId = randomUUID();
-    const issuedTime = Date.now();
-
-    const [count] = await model.update(
-      { jti: newId, issuedTime },
-
-      { where: { jti } },
-    );
-
-    if (count === 1) {
-      await this.cache.set(`jti-renewed-cahce:${jti}`, { jti: newId, issuedTime }, RENEWED_JTI_CACHE_MS);
-      this.logger.info('jti renewed', { oldJti: jti, newJti: newId, issuedTime });
-      return { jti: newId, issuedTime };
-    } else {
-      const cachedJtiData = await this.cache.get(`jti-renewed-cahce:${jti}`);
-      if (cachedJtiData) {
-        return cachedJtiData as { jti: string; issuedTime: EpochTimeStamp };
-      }
-
-      this.logger.error('jti renew failed', {
-        module: 'auth',
-        submodule: 'token-controller',
-        method: 'renew',
-        jti,
-        code: AuthErrorCode.TOKEN_RENEW_FAILED,
-      });
-
-      throw new AuthError({
-        message: 'Your session has expired. Please sign in again.',
-        code: AuthErrorCode.TOKEN_RENEW_FAILED,
-      });
+    const cachedJtiData = await this.cache.get(cacheKey);
+    if (cachedJtiData) {
+      return cachedJtiData as { jti: string; issuedTime: EpochTimeStamp };
     }
+
+    return (await this.cache.wrap(
+      cacheKey,
+      async () => {
+        const newId = randomUUID();
+        const issuedTime = Date.now();
+
+        const [count] = await model.update(
+          { jti: newId, issuedTime },
+
+          { where: { jti } },
+        );
+
+        if (count === 1) {
+          this.logger.info('jti renewed', { oldJti: jti, newJti: newId, issuedTime });
+          return { jti: newId, issuedTime };
+        }
+
+        const renewedJtiData = await this.cache.get(cacheKey);
+        if (renewedJtiData) {
+          return renewedJtiData as { jti: string; issuedTime: EpochTimeStamp };
+        }
+
+        this.logger.error('jti renew failed', {
+          module: 'auth',
+          submodule: 'token-controller',
+          method: 'renew',
+          jti,
+          code: AuthErrorCode.TOKEN_RENEW_FAILED,
+        });
+
+        throw new AuthError({
+          message: 'Your session has expired. Please sign in again.',
+          code: AuthErrorCode.TOKEN_RENEW_FAILED,
+        });
+      },
+      RENEWED_JTI_CACHE_MS,
+    )) as { jti: string; issuedTime: EpochTimeStamp };
   };
 }

@@ -25,8 +25,8 @@ pkg: "@nocobase/plugin-embed"
 
 ![](https://static-docs.nocobase.com/f11bd6d5e88d38731d7cd3cb149022c8.png)
 
-클릭하면 `https://xxx.com/embed/qs087rz4o2b` 와 같이 개별적으로 열 수 있는 링크를 얻을 수 있습니다.
+클릭하면 `https://example.com/embed/qs087rz4o2b` 와 같이 개별적으로 열 수 있는 링크를 얻을 수 있습니다.
 
 ![](https://static-docs.nocobase.com/9d847805a00fd07372a474665ec0e968.png)
 
-다른 웹사이트나 애플리케이션에 NocoBase 페이지를 임베드하려면 사용자 인증이 필요하며, `token`을 링크에 추가해야 합니다. 예를 들어 `https://xxx.com/embed/qs087rz4o2b?token=xxx` 와 같습니다.
+다른 웹사이트나 애플리케이션에 NocoBase 페이지를 임베드하려면 사용자 인증이 필요하며, `token`을 링크에 추가해야 합니다. 예를 들어 `https://example.com/embed/qs087rz4o2b?token=xxx` 와 같습니다.

@@ -28,6 +28,18 @@ import { FieldModel } from '../../base';
 import { FormComponent } from './FormBlockModel';
 import { FormItemModel } from './FormItemModel';
 
+export const QUICK_EDIT_POPOVER_MAX_HEIGHT = 'calc(100vh - 96px)';
+export const QUICK_EDIT_FORM_MAX_HEIGHT = 'calc(100vh - 160px)';
+export const QUICK_EDIT_MARKDOWN_HEIGHT = 'min(480px, calc(100vh - 320px))';
+
+export function getQuickEditFieldProps(collectionField: CollectionField, fieldProps?: Record<string, any>) {
+  const nextProps = { ...collectionField.getComponentProps(), ...(fieldProps || {}) };
+  if (['markdown', 'vditor'].includes(collectionField.interface) && nextProps.height == null) {
+    nextProps.height = QUICK_EDIT_MARKDOWN_HEIGHT;
+  }
+  return nextProps;
+}
+
 export class QuickEditFormModel extends FlowModel {
   fieldPath: string;
 
@@ -99,7 +111,10 @@ export class QuickEditFormModel extends FlowModel {
       placement: 'rightTop',
       styles: {
         body: {
-          width: 400,
+          width: 420,
+          maxHeight: QUICK_EDIT_POPOVER_MAX_HEIGHT,
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
         },
       },
       content: (popover) => {
@@ -160,20 +175,28 @@ export class QuickEditFormModel extends FlowModel {
 
     return (
       <FormComponent model={this}>
-        {this.mapSubModels('fields', (field) => {
-          return (
-            <FormItem
-              showLabel={false}
-              name={this.fieldPath}
-              key={field.uid}
-              initialValue={this.context.record?.[this.fieldPath]}
-              {...this.props}
-            >
-              <FieldModelRenderer model={field} fallback={<Skeleton.Input size="small" />} />
-            </FormItem>
-          );
-        })}
-        <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div
+          style={{
+            minHeight: 0,
+            overflowY: 'auto',
+            maxHeight: QUICK_EDIT_FORM_MAX_HEIGHT,
+          }}
+        >
+          {this.mapSubModels('fields', (field) => {
+            return (
+              <FormItem
+                showLabel={false}
+                name={this.fieldPath}
+                key={field.uid}
+                initialValue={this.context.record?.[this.fieldPath]}
+                {...this.props}
+              >
+                <FieldModelRenderer model={field} fallback={<Skeleton.Input size="small" />} />
+              </FormItem>
+            );
+          })}
+        </div>
+        <Space style={{ display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
           <Button
             onClick={() => {
               this.viewContainer.close();
@@ -257,7 +280,7 @@ QuickEditFormModel.registerFlow({
               },
             },
           });
-          fieldModel.setProps({ ...collectionField.getComponentProps(), ...ctx.model._fieldProps });
+          fieldModel.setProps(getQuickEditFieldProps(collectionField, ctx.model._fieldProps));
           fieldModel.setProps({ sourceFieldModelUid: ctx.inputArgs.sourceFieldModelUid });
           ctx.model.context.defineProperty('collectionField', {
             get: () => collectionField,

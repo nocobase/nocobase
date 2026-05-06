@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { parse } from '@nocobase/utils';
+import { parse, serverRequest } from '@nocobase/utils';
 
 import { appendArrayColumn } from '@nocobase/evaluators';
 import Application from '@nocobase/server';
@@ -172,6 +172,8 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   const axiosRequestConfig = {
     baseURL: ctx.origin,
     ...options,
+    // safeRequest checks this url value (before baseURL combination) so that
+    // relative paths pointing to the same server are not subject to the whitelist.
     url: getParsedValue(url, variables),
     headers: {
       Authorization: 'Bearer ' + ctx.getBearerToken(),
@@ -195,7 +197,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   );
 
   try {
-    const res = await axios(axiosRequestConfig);
+    const res = await serverRequest(axiosRequestConfig);
     this.logger.info(`custom-request:send:${filterByTk} success`);
     ctx.body = res.data;
     if (res.headers['content-disposition']) {

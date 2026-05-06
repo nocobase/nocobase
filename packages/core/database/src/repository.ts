@@ -289,13 +289,15 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       };
     }
 
+    const hasInclude = Array.isArray(options['include']) && options['include'].length > 0;
     const queryOptions: any = {
       ...options,
-      distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
-    if (Array.isArray(queryOptions.include) && queryOptions.include.length > 0) {
+    if (hasInclude) {
       queryOptions.include = processIncludes(queryOptions.include, this.collection.model);
+      queryOptions.distinct =
+        Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey();
     } else {
       delete queryOptions.include;
     }

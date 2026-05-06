@@ -74,7 +74,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     // 第一列只有 hidden，应该被过滤掉，只保留包含 v 的那一列
     expect(Object.keys(rows)).toEqual(['row1']);
     expect(rows.row1).toEqual([['v']]);
-    expect(sizes.row1).toEqual([16]);
+    expect(sizes.row1).toEqual([24]);
   });
 
   it('removes entire row when all columns are hidden-only', () => {
@@ -109,13 +109,14 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
   it('uses rowOrder when provided to keep row sequence', () => {
     engine.flowSettings.disable();
 
-    const visible = engine.createModel({ use: 'FlowModel', uid: 'v1' });
+    const visible1 = engine.createModel({ use: 'FlowModel', uid: 'v1' });
+    const visible2 = engine.createModel({ use: 'FlowModel', uid: 'v2' });
     const model = engine.createModel<GridModel>({
       use: 'GridModel',
       uid: 'grid-4',
       props: {
         rows: {
-          second: [['v1']],
+          second: [['v2']],
           first: [['v1']],
         },
         sizes: {
@@ -127,7 +128,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
       structure: {} as any,
     });
 
-    (model as any).subModels = { items: [visible] };
+    (model as any).subModels = { items: [visible1, visible2] };
 
     const { rows } = (model as any).getVisibleLayout();
     expect(Object.keys(rows)).toEqual(['first', 'second']);
@@ -136,13 +137,14 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
   it('falls back to rows key order when rowOrder is missing', () => {
     engine.flowSettings.disable();
 
-    const visible = engine.createModel({ use: 'FlowModel', uid: 'v1' });
+    const visible1 = engine.createModel({ use: 'FlowModel', uid: 'v1' });
+    const visible2 = engine.createModel({ use: 'FlowModel', uid: 'v2' });
     const model = engine.createModel<GridModel>({
       use: 'GridModel',
       uid: 'grid-5',
       props: {
         rows: {
-          second: [['v1']],
+          second: [['v2']],
           first: [['v1']],
         },
         sizes: {
@@ -153,7 +155,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
       structure: {} as any,
     });
 
-    (model as any).subModels = { items: [visible] };
+    (model as any).subModels = { items: [visible1, visible2] };
 
     const { rows } = (model as any).getVisibleLayout();
     expect(Object.keys(rows)).toEqual(['second', 'first']);
@@ -163,6 +165,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     engine.flowSettings.disable();
 
     const visible = engine.createModel({ use: 'FlowModel', uid: 'v' });
+    const visible2 = engine.createModel({ use: 'FlowModel', uid: 'v2' });
     const hidden = engine.createModel({ use: 'FlowModel', uid: 'h' }) as any;
     hidden.hidden = true;
 
@@ -171,7 +174,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
       uid: 'grid-6',
       props: {
         rows: {
-          row1: [['h', 'v'], ['v']],
+          row1: [['h', 'v'], ['v2']],
         },
         sizes: {
           row1: [8, 16],
@@ -180,12 +183,49 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
       structure: {} as any,
     });
 
-    (model as any).subModels = { items: [hidden, visible] };
+    (model as any).subModels = { items: [hidden, visible, visible2] };
 
     const { rows, sizes } = (model as any).getVisibleLayout();
     // 第一个单元格中的 h 应被剔除，只剩 v；列宽保持不变
-    expect(rows.row1).toEqual([['v'], ['v']]);
+    expect(rows.row1).toEqual([['v'], ['v2']]);
     expect(sizes.row1).toEqual([8, 16]);
+  });
+
+  it('preserves remaining column size ratios when filtering v2 layout columns', () => {
+    engine.flowSettings.disable();
+
+    const visible1 = engine.createModel({ use: 'FlowModel', uid: 'v1' });
+    const visible2 = engine.createModel({ use: 'FlowModel', uid: 'v2' });
+    const hidden = engine.createModel({ use: 'FlowModel', uid: 'h' }) as any;
+    hidden.hidden = true;
+
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-7',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'row1',
+              cells: [
+                { id: 'cell1', items: ['h'] },
+                { id: 'cell2', items: ['v1'] },
+                { id: 'cell3', items: ['v2'] },
+              ],
+              sizes: [4, 8, 12],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+
+    (model as any).subModels = { items: [hidden, visible1, visible2] };
+
+    const { rows, sizes } = (model as any).getVisibleLayout();
+    expect(rows.row1).toEqual([['v1'], ['v2']]);
+    expect(sizes.row1).toEqual([10, 14]);
   });
 
   it('ignores EMPTY_COLUMN uid in runtime mode without crashing', () => {
@@ -195,7 +235,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
 
     const model = engine.createModel<GridModel>({
       use: 'GridModel',
-      uid: 'grid-7',
+      uid: 'grid-8',
       props: {
         rows: {
           row1: [[EMPTY_COLUMN_UID, 'ghost', 'v'], ['ghost-2']],
@@ -210,8 +250,8 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     (model as any).subModels = { items: [visible] };
 
     const { rows, sizes } = (model as any).getVisibleLayout();
-    // unknown uid 视为可见（避免误删），但 EMPTY_COLUMN_UID 必须被剔除
-    expect(rows.row1).toEqual([['ghost', 'v'], ['ghost-2']]);
-    expect(sizes.row1).toEqual([8, 16]);
+    // 新布局归一化会移除不在 subModels.items 中的 uid，EMPTY_COLUMN_UID 也不会在运行态显示
+    expect(rows.row1).toEqual([['v']]);
+    expect(sizes.row1).toEqual([24]);
   });
 });

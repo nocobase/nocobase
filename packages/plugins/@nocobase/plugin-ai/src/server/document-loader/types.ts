@@ -9,8 +9,6 @@
 
 import { Document } from '@langchain/core/documents';
 
-export type SupportedDocumentExtname = '.pdf' | '.ppt' | '.pptx' | '.doc' | '.docx' | '.txt';
-
 export type DocumentParseMeta = {
   status: 'ready' | 'failed';
   parserVersion: string;

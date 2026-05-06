@@ -33,5 +33,10 @@
     "type": "custom-link",
     "label": "数组格式化",
     "link": "/template-print/syntax/formatters/array-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "媒体字段格式化",
+    "link": "/template-print/syntax/formatters/media-field-formatting"
   }
 ]

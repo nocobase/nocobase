@@ -359,6 +359,27 @@ TELEMETRY_METRIC_READER=console,prometheus
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### SERVER_REQUEST_WHITELIST
+
+SSRF（サーバーサイドリクエストフォージェリ）攻撃を防ぐための、サーバーから送信される HTTP リクエストの許可先ホワイトリスト。カンマ区切りで、正確な IP アドレス・CIDR 範囲・正確なホスト名・単一レベルのワイルドカードサブドメインを指定できます。
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**適用範囲**：ワークフローの「HTTP リクエスト」ノードおよびカスタムリクエストアクションボタン。相対パスのリクエスト（NocoBase 自身の API 呼び出し）は対象外です。
+
+**未設定時**：すべての `http`/`https` リクエストを許可（既存の動作）。**設定時**：ホワイトリストに一致するホストへのリクエストのみ許可し、一致しないリクエストはエラーになります。
+
+サポートされる形式：
+
+| 形式 | 例 | マッチ対象 |
+| --- | --- | --- |
+| 正確な IPv4 | `1.2.3.4` | その IP のみ |
+| IPv4 CIDR | `10.0.0.0/8` | サブネット内のすべての IP |
+| 正確なホスト名 | `api.example.com` | そのホスト名のみ |
+| ワイルドカードサブドメイン | `*.example.com` | 1 レベルのサブドメイン（例：`foo.example.com`）。`example.com` や `a.b.example.com` は**不一致** |
+
 ## 実験的な環境変数
 
 ### APPEND_PRESET_LOCAL_PLUGINS

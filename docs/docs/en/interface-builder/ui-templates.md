@@ -62,7 +62,7 @@ When a block is referencing a template, you can use `Convert reference to duplic
 
 ### Notes
 
-- `Duplicate` mode will regenerate UIDs for the block and its child nodes, some configurations that depend on UIDs may need to be reconfigured.
+- When creating a block using a template, the UIDs of the block and its child nodes will be regenerated, and some configurations that depend on the UIDs may need to be reconfigured.
 
 ## Field Template
 

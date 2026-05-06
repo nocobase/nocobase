@@ -501,6 +501,12 @@ export class Collection {
 
   get titleCollectionField() {
     const titleFieldName = this.options.titleField || this.filterTargetKey;
+    if (Array.isArray(titleFieldName)) {
+      if (titleFieldName.length !== 1) {
+        return undefined;
+      }
+      return this.getField(titleFieldName[0]);
+    }
     const titleCollectionField = this.getField(titleFieldName);
     return titleCollectionField;
   }

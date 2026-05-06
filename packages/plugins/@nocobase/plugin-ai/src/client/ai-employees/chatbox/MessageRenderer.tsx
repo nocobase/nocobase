@@ -66,6 +66,9 @@ const AITextMessageRenderer: React.FC<{
         size="small"
         bordered={false}
         defaultActiveKey="thinking"
+        style={{
+          marginBottom: 14,
+        }}
         items={[
           {
             key: 'thinking',
@@ -88,19 +91,20 @@ const AITextMessageRenderer: React.FC<{
 
   if (!provider?.components?.MessageRenderer) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 14,
-        }}
-      >
+      <>
         {reasoningPanel}
-        {typeof msg.content === 'string' && <Markdown message={msg} />}
-        {msg.tool_calls?.length ? (
-          <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />
-        ) : null}
-      </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {typeof msg.content === 'string' && <Markdown message={msg} />}
+          {msg.tool_calls?.length ? (
+            <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />
+          ) : null}
+        </div>
+      </>
     );
   }
   const M = provider.components.MessageRenderer;

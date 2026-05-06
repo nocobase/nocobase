@@ -5,6 +5,447 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.49](https://github.com/nocobase/nocobase/compare/v2.0.48...v2.0.49) - 2026-05-06
+
+### 🚀 Improvements
+
+- **[undefined]** - ([#9349](https://github.com/nocobase/nocobase/pull/9349)) by @Molunerfinn
+
+### 🐛 Bug Fixes
+
+- **[Data source: Main]** Prevent crash when fields is undefined during collection loading ([#9174](https://github.com/nocobase/nocobase/pull/9174)) by @saraTabbane
+
+- **[UI templates]** Fixed an issue where the popup template list failed to correctly load available templates. ([#9332](https://github.com/nocobase/nocobase/pull/9332)) by @gchust
+
+- **[AI employees]** Fix the issue of occasional errors when AI employee use the DeepSeek v4 model ([#9348](https://github.com/nocobase/nocobase/pull/9348)) by @cgyrock
+
+- **[File manager]** Improved preview file download error handling ([#9103](https://github.com/nocobase/nocobase/pull/9103)) by @gaston98765
+
+- **[Workflow: Approval]** Fix the issue where filter and other query parameters now work in API of listing available approval workflows by @mytharcher
+
+## [v2.0.48](https://github.com/nocobase/nocobase/compare/v2.0.47...v2.0.48) - 2026-05-04
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fix the issue where the action button AI employee list displays developer employees ([#9320](https://github.com/nocobase/nocobase/pull/9320)) by @cgyrock
+
+- **[Workflow: Approval]**
+  - Fix the issue where file in original application no reloaded by @mytharcher
+
+  - Support to parse some client variables in approval actions by @mytharcher
+
+## [v2.0.47](https://github.com/nocobase/nocobase/compare/v2.0.46...v2.0.47) - 2026-05-01
+
+### 🎉 New Features
+
+- **[AI employees]** LLM provider now supports the Xiaomi MIMO platform ([#9315](https://github.com/nocobase/nocobase/pull/9315)) by @cgyrock
+
+### 🚀 Improvements
+
+- **[flow-engine]** Improve block drag layout behavior on v2 pages ([#9264](https://github.com/nocobase/nocobase/pull/9264)) by @zhangzhonghe
+
+- **[AI employees]** AI employee category adjustment ([#9274](https://github.com/nocobase/nocobase/pull/9274)) by @cgyrock
+
+- **[Workflow: Approval]** Mark association show mode loading from DB as legacy by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]** Fixed an issue where SQL Server external data source datetime filters could fail ([#9272](https://github.com/nocobase/nocobase/pull/9272)) by @2013xile
+
+- **[client]**
+  - Preserve null values for empty Data scope variable dependencies in v2 forms. ([#9287](https://github.com/nocobase/nocobase/pull/9287)) by @jiannx
+
+  - rerun JS column rendering when row data changes ([#9282](https://github.com/nocobase/nocobase/pull/9282)) by @jiannx
+
+  - Fix the issue where filter form fields disappear after reopening a popup record selector ([#9211](https://github.com/nocobase/nocobase/pull/9211)) by @zhangzhonghe
+
+  - Fixed an issue where JS field cells in v2 table blocks could appear blank after filtering or refreshing table data. ([#9285](https://github.com/nocobase/nocobase/pull/9285)) by @jiannx
+
+- **[flow-engine]** Fixed an issue where system-hidden fields could be selected in form-related variable. ([#9302](https://github.com/nocobase/nocobase/pull/9302)) by @gchust
+
+- **[Action: Import records]** Fix the issue where failed row index in importing records is not correct ([#9277](https://github.com/nocobase/nocobase/pull/9277)) by @mytharcher
+
+- **[Block: Gantt]** Add a Gantt block setting to enable drag to reschedule. ([#9301](https://github.com/nocobase/nocobase/pull/9301)) by @jiannx
+
+- **[AI employees]** Fix AI employee deepSeek V4 integration error ([#9275](https://github.com/nocobase/nocobase/pull/9275)) by @cgyrock
+
+- **[Action: Export records Pro]** Fix the issue where auto mode not works by @mytharcher
+
+- **[Workflow: Approval]**
+  - Fix type error by @mytharcher
+
+  - Fix approval execute timing so `latestExecutionId` is synced after approval commit by @mytharcher
+
+## [v2.0.46](https://github.com/nocobase/nocobase/compare/v2.0.45...v2.0.46) - 2026-04-28
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fixed an issue where default values would not apply when re-adding a record after it had been removed from a sub-table. ([#9192](https://github.com/nocobase/nocobase/pull/9192)) by @gchust
+
+  - set popover max-height and scrolling safeguards so the submit area remains reachable ([#9226](https://github.com/nocobase/nocobase/pull/9226)) by @jiannx
+
+- **[Authentication]** Fixed old sessions remaining active after a password change ([#9261](https://github.com/nocobase/nocobase/pull/9261)) by @2013xile
+
+- **[Data source: External MariaDB]** Fix test case failed because module importing not correct by @mytharcher
+
+## [v2.0.45](https://github.com/nocobase/nocobase/compare/v2.0.44...v2.0.45) - 2026-04-27
+
+### 🚀 Improvements
+
+- **[Workflow: JavaScript]** Upgrade Docker images, CI workflows, and the workflow JavaScript sandbox dependency for Node.js 22 compatibility. ([#9245](https://github.com/nocobase/nocobase/pull/9245)) by @Molunerfinn
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fixed the issue where variables in the system prompt of AI employees did not take effect ([#9256](https://github.com/nocobase/nocobase/pull/9256)) by @cgyrock
+
+- **[License settings]** update license save success message ([#9251](https://github.com/nocobase/nocobase/pull/9251)) by @jiannx
+
+- **[Action: Import records]** Fix the issue where import xlsx failed and throw no header matched error ([#9253](https://github.com/nocobase/nocobase/pull/9253)) by @mytharcher
+
+- **[Action: Import records Pro]** Fix the issue where import xlsx failed and throw no header matched error by @mytharcher
+
+- **[AI: Knowledge base]** Fix issue where deleting knowledge base documents did not delete associated vector data by @cgyrock
+
+## [v2.0.44](https://github.com/nocobase/nocobase/compare/v2.0.43...v2.0.44) - 2026-04-26
+
+### 🚀 Improvements
+
+- **[AI employees]** Remove the recommended model in the LLM service configuration ([#9228](https://github.com/nocobase/nocobase/pull/9228)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]** relationship field hidden sort switch ([#9220](https://github.com/nocobase/nocobase/pull/9220)) by @jiannx
+
+## [v2.0.43](https://github.com/nocobase/nocobase/compare/v2.0.42...v2.0.43) - 2026-04-24
+
+### 🚀 Improvements
+
+- **[Workflow]** Improve execution list performance ([#9214](https://github.com/nocobase/nocobase/pull/9214)) by @mytharcher
+
+- **[Workflow: Approval]** Add indexes on approval records columns to improve performance on list and submit actions by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]** Fixed an issue where decimal fields with validation could reject valid numeric input ([#9204](https://github.com/nocobase/nocobase/pull/9204)) by @2013xile
+
+- **[Users]** Fixed dynamically configured fields in Edit profile not loading the latest user data ([#9205](https://github.com/nocobase/nocobase/pull/9205)) by @2013xile
+
+- **[AI employees]** Fix the issue of missing URL field values for attachments in AI employee form selections. ([#9216](https://github.com/nocobase/nocobase/pull/9216)) by @cgyrock
+
+- **[Data source manager]** Fixed an issue where grouped sorting on external data source sort fields could not be cleared ([#9203](https://github.com/nocobase/nocobase/pull/9203)) by @2013xile
+
+## [v2.0.42](https://github.com/nocobase/nocobase/compare/v2.0.41...v2.0.42) - 2026-04-23
+
+### 🚀 Improvements
+
+- **[build]** Knowledge base supports batch uploading files via ZIP ([#9206](https://github.com/nocobase/nocobase/pull/9206)) by @cgyrock
+
+- **[AI: Knowledge base]** Knowledge base supports batch uploading files via ZIP by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[data-source-manager]** Fixed nullable field sync ([#9189](https://github.com/nocobase/nocobase/pull/9189)) by @2013xile
+
+- **[client]** Fixed popup relation blocks and popup record variables using the wrong record identifier when collections use a non-primary unique key ([#9191](https://github.com/nocobase/nocobase/pull/9191)) by @2013xile
+
+- **[AI employees]** Fix issue where AI employees cannot fill relation field values in forms. ([#9182](https://github.com/nocobase/nocobase/pull/9182)) by @cgyrock
+
+- **[Multi-space]** Fixed the error of not finding collection in space permission verification by @jiannx
+
+- **[Workflow: Approval]** Fix approval reassignee search to query users beyond the first 200 candidates by @zhangzhonghe
+
+## [v2.0.41](https://github.com/nocobase/nocobase/compare/v2.0.40...v2.0.41) - 2026-04-22
+
+### 🎉 New Features
+
+- **[Auth: OIDC]** mapping attribute support custom fields by @chenzhizdt
+
+- **[DingTalk]** DingTalk: notifications, in-DingTalk auto login, and user sync. by @chenzhizdt
+
+### 🚀 Improvements
+
+- **[ai]** AI employee and knowledge base now support additional file types for upload (.xlsx, .xls, .csv, .md, .json) ([#9172](https://github.com/nocobase/nocobase/pull/9172)) by @cgyrock
+
+- **[undefined]** Add Arabic translation for guide section and navigation ([#9141](https://github.com/nocobase/nocobase/pull/9141)) by @saraTabbane
+
+### 🐛 Bug Fixes
+
+- **[data-source-manager]** Fix for percentage fields being reset to numeric ​​when resynchronizing external data sources ([#9178](https://github.com/nocobase/nocobase/pull/9178)) by @jiannx
+
+- **[client]**
+  - Fixed the issue where default value will not take effect after creating record. ([#9185](https://github.com/nocobase/nocobase/pull/9185)) by @gchust
+
+  - Fix the issue where the Add tab button is too close to the right edge ([#9177](https://github.com/nocobase/nocobase/pull/9177)) by @zhangzhonghe
+
+- **[Departments]** Fixed an issue where repeated department synchronization could not update department sort order ([#9173](https://github.com/nocobase/nocobase/pull/9173)) by @2013xile
+
+- **[Data source: Main]** Fixed field sync from database for connected views when the collection name differs from the database view name ([#9155](https://github.com/nocobase/nocobase/pull/9155)) by @2013xile
+
+- **[Workflow: JavaScript]** Fix security issue of script executing in `node:vm` mode ([#9084](https://github.com/nocobase/nocobase/pull/9084)) by @mytharcher
+
+- **[AI: Knowledge base]** Fix issue where vector database is not synced when deleting knowledge base documents. by @cgyrock
+
+- **[WeCom]** Fixed missing department order when synchronizing departments from WeCom by @2013xile
+
+## [v2.0.40](https://github.com/nocobase/nocobase/compare/v2.0.39...v2.0.40) - 2026-04-20
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed an issue where updating sub-table values through field assignment would result in data contamination. ([#9163](https://github.com/nocobase/nocobase/pull/9163)) by @gchust
+
+- **[data-source-manager]** Fixed an issue where sequence fields could be changed to string after database synchronization ([#9143](https://github.com/nocobase/nocobase/pull/9143)) by @2013xile
+
+- **[File manager]** Return null when preview URL is missing ([#9104](https://github.com/nocobase/nocobase/pull/9104)) by @gaston98765
+
+- **[Workflow: JavaScript]** Fix security issue of script executing in `node:vm` mode ([#9084](https://github.com/nocobase/nocobase/pull/9084)) by @mytharcher
+
+- **[Departments]**
+  - Fixed department lists in department management not following the `sort` field order ([#9150](https://github.com/nocobase/nocobase/pull/9150)) by @2013xile
+
+  - Fixed missing or stale main department values after saving user departments ([#9156](https://github.com/nocobase/nocobase/pull/9156)) by @2013xile
+
+## [v2.0.39](https://github.com/nocobase/nocobase/compare/v2.0.38...v2.0.39) - 2026-04-18
+
+### 🚀 Improvements
+
+- **[Departments]** Display the `parentId` foreign key field of department collection in the UI ([#9130](https://github.com/nocobase/nocobase/pull/9130)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[data-source-manager]** Fixed file collection field sync removing `preview` field ([#9129](https://github.com/nocobase/nocobase/pull/9129)) by @2013xile
+
+- **[client]**
+  - Fixed an issue where the association field component was incorrect in the field value settings. ([#9063](https://github.com/nocobase/nocobase/pull/9063)) by @gchust
+
+  - Fix the oversized height and width of tabs in page configuration mode ([#9144](https://github.com/nocobase/nocobase/pull/9144)) by @zhangzhonghe
+
+- **[database]** Fixed SQL injection risks in recursive tree eager loading and scoped sort initialization ([#9133](https://github.com/nocobase/nocobase/pull/9133)) by @2013xile
+
+- **[Data visualization]** Fixed chart block sorting to use aliased measures and dimensions in aggregated queries ([#9131](https://github.com/nocobase/nocobase/pull/9131)) by @2013xile
+
+- **[Collection: SQL]** Fixed missing SQL validation on SQL collection updates ([#9134](https://github.com/nocobase/nocobase/pull/9134)) by @2013xile
+
+## [v2.0.38](https://github.com/nocobase/nocobase/compare/v2.0.37...v2.0.38) - 2026-04-16
+
+### 🎉 New Features
+
+- **[AI employees]** Improve AI employees' ability to parse uploaded documents ([#9126](https://github.com/nocobase/nocobase/pull/9126)) by @cgyrock
+
+### 🚀 Improvements
+
+- **[logger]** Add `referer` information to request logs ([#9110](https://github.com/nocobase/nocobase/pull/9110)) by @2013xile
+
+- **[undefined]** Sync translated environment-variable and cluster-mode docs with the latest Chinese updates. ([#9115](https://github.com/nocobase/nocobase/pull/9115)) by @mytharcher
+
+- **[AI employees]** After AI employee block selection, fill form attachment into upload area ([#9127](https://github.com/nocobase/nocobase/pull/9127)) by @cgyrock
+
+- **[Workflow: Manual node]** Use `simplePagination` on workflow tasks related collections for better list performance ([#9117](https://github.com/nocobase/nocobase/pull/9117)) by @mytharcher
+
+- **[Workflow: Approval]** Use `simplePagination` on `approvals` and `approvalRecords` collection for better list performance by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fixed the optional options of single-select fields in field rule configuration are empty ([#9119](https://github.com/nocobase/nocobase/pull/9119)) by @jiannx
+
+  - Fixed incorrect default value settings for sub table in form. ([#9087](https://github.com/nocobase/nocobase/pull/9087)) by @gchust
+
+- **[Notification: In-app message]** Fix the issue where receiver select component works not correctly ([#9123](https://github.com/nocobase/nocobase/pull/9123)) by @mytharcher
+
+- **[AI employees]** Fix the issue where the baseURL settings of google-gen-ai's LLM service does not take effect ([#9107](https://github.com/nocobase/nocobase/pull/9107)) by @cgyrock
+
+- **[Email manager]** Remove form closing prompt after email is sent successfully by @jiannx
+
+## [v2.0.37](https://github.com/nocobase/nocobase/compare/v2.0.36...v2.0.37) - 2026-04-14
+
+### 🚀 Improvements
+
+- **[undefined]**
+  - Add Table of Contents to French README ([#9037](https://github.com/nocobase/nocobase/pull/9037)) by @saraTabbane
+
+  - Added TOC consistency across localized READMEs ([#9038](https://github.com/nocobase/nocobase/pull/9038)) by @gaston98765
+
+  - Add Arabic translation for documentation homepage ([#9043](https://github.com/nocobase/nocobase/pull/9043)) by @gaston98765
+
+  - Docs: add Arabic translation for get-started introduction pages ([#9044](https://github.com/nocobase/nocobase/pull/9044)) by @gaston98765
+
+- **[client]** add form required verification switch ([#9060](https://github.com/nocobase/nocobase/pull/9060)) by @jiannx
+
+### 🐛 Bug Fixes
+
+- **[utils]** Add security control for server HTTP request sending, to avoid possible SSRF ([#9079](https://github.com/nocobase/nocobase/pull/9079)) by @mytharcher
+Reference: [Environment variables](https://docs.nocobase.com/get-started/installation/env)
+## [v2.0.36](https://github.com/nocobase/nocobase/compare/v2.0.35...v2.0.36) - 2026-04-10
+
+### 🐛 Bug Fixes
+
+- **[client]** fix subtable adds many-to-many field error ([#9070](https://github.com/nocobase/nocobase/pull/9070)) by @jiannx
+
+- **[flow-engine]** Fixed the problem that many-to-one fields from external data sources cannot be added in the table block ([#9068](https://github.com/nocobase/nocobase/pull/9068)) by @jiannx
+
+- **[Notification manager]** Optimize in-app notification sending performance in workflow scenarios ([#9066](https://github.com/nocobase/nocobase/pull/9066)) by @mytharcher
+
+## [v2.0.35](https://github.com/nocobase/nocobase/compare/v2.0.34...v2.0.35) - 2026-04-09
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed an issue where the record pickup popup from a sub-table’s selection button could not correctly resolve parent item variable values. ([#8996](https://github.com/nocobase/nocobase/pull/8996)) by @gchust
+
+- **[Collection field: Code]** Correct the UI interface of the code fields ([#9061](https://github.com/nocobase/nocobase/pull/9061)) by @2013xile
+
+## [v2.0.34](https://github.com/nocobase/nocobase/compare/v2.0.33...v2.0.34) - 2026-04-08
+
+### 🎉 New Features
+
+- **[Migration manager]** support migration command by @chenos
+
+## [v2.0.33](https://github.com/nocobase/nocobase/compare/v2.0.32...v2.0.33) - 2026-04-08
+
+### 🎉 New Features
+
+- **[AI employees]** Add an LLIM-based web search tool for AI employees ([#9032](https://github.com/nocobase/nocobase/pull/9032)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fixed an issue where an incorrect unsaved changes confirmation message would appear for bulk edit action ([#9054](https://github.com/nocobase/nocobase/pull/9054)) by @gchust
+
+  - Fixed an issue where an incorrect secondary confirmation popup would appear when submitting the form after creating a record via a popup subtable. ([#9035](https://github.com/nocobase/nocobase/pull/9035)) by @gchust
+
+- **[data-source-manager]** Fixed an issue where some field types were not updated correctly after syncing fields from the database ([#9046](https://github.com/nocobase/nocobase/pull/9046)) by @2013xile
+
+- **[AI employees]** Fix AI employee document upload failure under subpath access with APP_PUBLIC_PATH configured. ([#9034](https://github.com/nocobase/nocobase/pull/9034)) by @cgyrock
+
+## [v2.0.32](https://github.com/nocobase/nocobase/compare/v2.0.31...v2.0.32) - 2026-04-04
+
+### 🚀 Improvements
+
+- **[undefined]** Add table of contents to README ([#8878](https://github.com/nocobase/nocobase/pull/8878)) by @gaston98765
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - subform relationship field failed to save ([#9004](https://github.com/nocobase/nocobase/pull/9004)) by @jiannx
+
+  - the subforms of the fields do not display data ([#9008](https://github.com/nocobase/nocobase/pull/9008)) by @jiannx
+
+  - Fixed the issue where ctx.request could not override the Authorization header. ([#8850](https://github.com/nocobase/nocobase/pull/8850)) by @gchust
+
+- **[server]** Add serving check to avoid app status updated by non-serving instance ([#8959](https://github.com/nocobase/nocobase/pull/8959)) by @mytharcher
+
+- **[AI employees]**
+  - Fixed the issue when using deepseek or minmax models on dashscope ([#9033](https://github.com/nocobase/nocobase/pull/9033)) by @cgyrock
+
+  - Fixed the issue where abort AI employees reasonning would cause the service to crash ([#9031](https://github.com/nocobase/nocobase/pull/9031)) by @cgyrock
+
+- **[Workflow: HTTP request node]** Sanitized workflow request node results to avoid exposing request config, defaulted new nodes to return response data only, and added debug logging for failed requests. ([#9024](https://github.com/nocobase/nocobase/pull/9024)) by @mytharcher
+
+- **[Collection field: Sort]** fix(field-sort): prevent crash when scopeKey attribute is undefined ([#9019](https://github.com/nocobase/nocobase/pull/9019)) by @gaston98765
+
+- **[Block: GridCard]** Fixed the problem that the button is not refreshed when the grid card is refreshed ([#9021](https://github.com/nocobase/nocobase/pull/9021)) by @jiannx
+
+- **[Workflow: Approval]**
+  - Add fault-tolerant on workflow deleted, to avoid load error in tasks list by @mytharcher
+
+  - Add fault-tolerant for no `latestRound` by @mytharcher
+
+## [v2.0.31](https://github.com/nocobase/nocobase/compare/v2.0.30...v2.0.31) - 2026-04-01
+
+### 🚀 Improvements
+
+- **[AI employees]** Optimize prompts for deepseek when handling unsupported file types ([#9003](https://github.com/nocobase/nocobase/pull/9003)) by @cgyrock
+
+- **[Workflow]** Change enabled switch size to small ([#9010](https://github.com/nocobase/nocobase/pull/9010)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed the issue where the copy of the associated fields in the table was not displayed correctly in the first rendering. ([#9007](https://github.com/nocobase/nocobase/pull/9007)) by @jiannx
+
+- **[flow-engine]** Fix clipped settings menus in popup ([#9005](https://github.com/nocobase/nocobase/pull/9005)) by @gchust
+
+- **[Notification: In-app message]** Fix action whitelist for in-app message updates to prevent unauthorized updates by non-owners. ([#9001](https://github.com/nocobase/nocobase/pull/9001)) by @mytharcher
+
+- **[AI employees]** Fixed the issue of abnormal web search behavior when using the Qwen  LLM ([#9012](https://github.com/nocobase/nocobase/pull/9012)) by @cgyrock
+
+## [v2.0.30](https://github.com/nocobase/nocobase/compare/v2.0.29...v2.0.30) - 2026-03-30
+
+### 🚀 Improvements
+
+- **[Workflow: JavaScript]** Add `isolated-vm` as default JavaScript execute engine for JavaScript node ([#8973](https://github.com/nocobase/nocobase/pull/8973)) by @mytharcher
+Reference: [JavaScript Node](https://docs.nocobase.com/cn/workflow/nodes/javascript)
+### 🐛 Bug Fixes
+
+- **[client]** Fixed incorrect secondary confirmation message when closing multi-level popup after modifying form data. ([#8944](https://github.com/nocobase/nocobase/pull/8944)) by @gchust
+
+- **[Workflow: SQL node]** Fix security issue in SQL node ([#8989](https://github.com/nocobase/nocobase/pull/8989)) by @mytharcher
+
+- **[AI employees]** Add ownership verification to the AI conversation API ([#8993](https://github.com/nocobase/nocobase/pull/8993)) by @cgyrock
+
+- **[Workflow: Approval]** Fix version limit of legacy migrations to avoid error thrown when start in latest version deployment by @mytharcher
+
+## [v2.0.29](https://github.com/nocobase/nocobase/compare/v2.0.28...v2.0.29) - 2026-03-29
+
+### 🚀 Improvements
+
+- **[undefined]** Reduced log noise during server startup by silencing unzip commands for LibreOffice and Oracle Instant Client ([#8984](https://github.com/nocobase/nocobase/pull/8984)) by @Rishabh1925
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where space in variable expression cause label not display ([#8988](https://github.com/nocobase/nocobase/pull/8988)) by @mytharcher
+
+- **[flow-engine]** Fixed an issue where menu items could not be selected when the UI component width in the configuration state was too small. ([#8954](https://github.com/nocobase/nocobase/pull/8954)) by @gchust
+
+- **[Data visualization]** When using variable-based filters, charts fail to resolve variable values correctly on the initial render ([#8964](https://github.com/nocobase/nocobase/pull/8964)) by @2013xile
+
+## [v2.0.28](https://github.com/nocobase/nocobase/compare/v2.0.27...v2.0.28) - 2026-03-27
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records]** fixed the problem of import failure after opening plugin-space ([#8968](https://github.com/nocobase/nocobase/pull/8968)) by @jiannx
+
+- **[Data visualization]** fixed the abnormal data statistics of the root role chart after enabling the space plugin ([#8969](https://github.com/nocobase/nocobase/pull/8969)) by @jiannx
+
+- **[Workflow: JavaScript]** Fix security issues ([#8967](https://github.com/nocobase/nocobase/pull/8967)) by @mytharcher
+
+- **[AI employees]** Adjust the gap between the tool card components in the AI Conversation ([#8965](https://github.com/nocobase/nocobase/pull/8965)) by @cgyrock
+
+- **[Action: Export records]** Limit import and export configuration of multi-layer related fields ([#8893](https://github.com/nocobase/nocobase/pull/8893)) by @jiannx
+
+- **[Action: Import records Pro]** limit import and export configuration of multi-layer related fields by @jiannx
+
+## [v2.0.27](https://github.com/nocobase/nocobase/compare/v2.0.26...v2.0.27) - 2026-03-26
+
+### 🚀 Improvements
+
+- **[Workflow]** Add variable for page size parameter ([#8951](https://github.com/nocobase/nocobase/pull/8951)) by @mytharcher
+
+- **[Workflow: Subflow]** Add defensive logic to avoid workflow hangs when exception occurs by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed the exception when adding child nodes to the tree table in the pop-up window ([#8872](https://github.com/nocobase/nocobase/pull/8872)) by @jiannx
+
+- **[server]** Avoid to handle sync-message after app stopped ([#8940](https://github.com/nocobase/nocobase/pull/8940)) by @mytharcher
+
+- **[Flow engine]** Remove legacy event copied from uiSchema repository to avoid error thrown when triggering ([#8957](https://github.com/nocobase/nocobase/pull/8957)) by @mytharcher
+
+- **[Authentication]** fix acl to support custom state filtering parameters ([#8918](https://github.com/nocobase/nocobase/pull/8918)) by @jiannx
+
+- **[Email manager]** Fixed signature being overwritten when using templates by @jiannx
+
+## [v2.0.26](https://github.com/nocobase/nocobase/compare/v2.0.25...v2.0.26) - 2026-03-25
+
+### 🚀 Improvements
+
+- **[client]** Optimize the horizontal layout of form actions ([#8869](https://github.com/nocobase/nocobase/pull/8869)) by @jiannx
+
+### 🐛 Bug Fixes
+
+- **[flow-engine]** Synchronize status to field configuration when form field is deleted ([#8857](https://github.com/nocobase/nocobase/pull/8857)) by @jiannx
+
+- **[Custom variables]** skip auth notify ([#8942](https://github.com/nocobase/nocobase/pull/8942)) by @chenos
+
 ## [v2.0.25](https://github.com/nocobase/nocobase/compare/v2.0.24...v2.0.25) - 2026-03-24
 
 ### 🚀 Improvements

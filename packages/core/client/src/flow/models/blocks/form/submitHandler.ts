@@ -10,20 +10,18 @@
 import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { EditFormModel } from './EditFormModel';
 import type { FormBlockModel } from './FormBlockModel';
-import { getValidationNamePathsExcludingHiddenModels, omitHiddenModelValuesFromSubmit } from './submitValues';
+import { omitHiddenModelValuesFromSubmit, shouldSkipSubmitValidation, validateSubmitForm } from './submitValues';
 
 export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?: any) => void) {
   const resource = ctx.resource;
   const blockModel = ctx.blockModel as FormBlockModel;
 
-  const validateNamePaths = ctx?.flowSettingsEnabled ? getValidationNamePathsExcludingHiddenModels(blockModel) : null;
-  if (Array.isArray(validateNamePaths)) {
-    if (validateNamePaths.length) {
-      await blockModel.form.validateFields(validateNamePaths as any);
-    }
-  } else {
-    await blockModel.form.validateFields();
-  }
+  await validateSubmitForm({
+    form: blockModel?.form,
+    blockModel,
+    flowSettingsEnabled: ctx?.flowSettingsEnabled,
+    skipValidator: shouldSkipSubmitValidation(ctx?.model),
+  });
   const rawValues = blockModel.form.getFieldsValue(true);
   const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
   if (resource instanceof SingleRecordResource) {
@@ -43,8 +41,9 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
       await resource.refresh();
     } else {
       blockModel.form.resetFields();
-      blockModel.resetUserModifiedFields?.();
       blockModel.emitter.emit('onFieldReset');
+      blockModel.resetUserModifiedFields?.();
+      blockModel.formValueRuntime?.resetAfterFormReset?.();
       if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
         ctx.view.inputArgs.onChange(data?.data);
       }
@@ -58,5 +57,6 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
     (await cb)
       ? await cb(values, currentFilterByTk)
       : await resource.update(currentFilterByTk, values, params.requestConfig);
+    blockModel.resetUserModifiedFields?.();
   }
 }

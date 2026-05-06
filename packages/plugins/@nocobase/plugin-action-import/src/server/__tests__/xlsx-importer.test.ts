@@ -10,8 +10,10 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { TemplateCreator } from '../services/template-creator';
 import { XlsxImporter } from '../services/xlsx-importer';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import * as process from 'node:process';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
 import moment from 'moment';
 import { PasswordField } from '@nocobase/database';
 
@@ -1475,7 +1477,7 @@ describe('basic importer', () => {
     });
 
     const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.sheet_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([]);
 
     XLSX.utils.sheet_add_aoa(
       worksheet,
@@ -2358,6 +2360,9 @@ describe('basic importer', () => {
       origin: 'A3',
     });
 
+    const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: TextareaCollection,
@@ -2368,10 +2373,10 @@ describe('basic importer', () => {
           defaultTitle: '多行文本',
         },
       ],
-      workbook: template,
+      workbook,
     });
 
-    expect(importer.run()).rejects.toThrow();
+    await expect(importer.run()).rejects.toThrow();
   });
 
   it('should import password field, insert data is encrypt', async () => {
@@ -2470,6 +2475,44 @@ describe('basic importer', () => {
 
     const count = await User.repository.count();
     expect(count).toBe(2);
+  });
+
+  it('should import a template that was edited in Numbers and re-saved (production round-trip)', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await app.db.sync();
+
+    const columns = [{ dataIndex: ['title'], defaultTitle: 'Title' }];
+
+    // Real-world fixture: a template downloaded from NocoBase, opened in
+    // Apple Numbers, populated with one row, and re-saved as .xlsx.
+    // Numbers' xlsx output trips up the production read path.
+    const buffer = fs.readFileSync(path.resolve(__dirname, './fixtures/posts-numbers-edited.xlsx'));
+
+    // Mirror the production read path in `getWorkbookWithBuffer`
+    // (packages/pro-plugins/.../utils/auto-mode.ts).
+    const workbook = XLSX.read(buffer, {
+      type: 'buffer',
+      WTF: true,
+      dense: true,
+      cellDates: true,
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      columns,
+      workbook,
+    });
+
+    await importer.run();
+
+    const posts = await Post.repository.find();
+    expect(posts).toHaveLength(1);
+    expect(posts[0].get('title')).toBe('test1');
   });
 });
 
@@ -2668,6 +2711,107 @@ describe('importer with specical field type', () => {
       if (process.env['DB_DIALECT'] === 'postgres') {
         expect(testFn).toBeCalled();
       }
+    });
+  });
+
+  describe('row index in error reports', () => {
+    let User;
+    let Profile;
+
+    beforeEach(async () => {
+      app = await createMockServer();
+      User = app.db.collection({
+        name: 'users',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      Profile = app.db.collection({
+        name: 'profiles',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsTo', name: 'user', target: 'users', interface: 'm2o' },
+        ],
+      });
+
+      await app.db.sync();
+      await User.repository.create({ values: { name: 'ValidUser' } });
+    });
+
+    const buildImporter = async (badRowIndex: number, totalRows: number, chunkSize?: number) => {
+      const columns = [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['user', 'name'], defaultTitle: 'User' },
+      ];
+
+      const templateCreator = new TemplateCreator({ collection: Profile, columns });
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      const rows: string[][] = [];
+      for (let i = 1; i <= totalRows; i++) {
+        if (i === badRowIndex) {
+          rows.push([`name${i}`, 'NonExistentUser']);
+        } else {
+          rows.push([`name${i}`, 'ValidUser']);
+        }
+      }
+      XLSX.utils.sheet_add_aoa(worksheet, rows, { origin: 'A2' });
+
+      return new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Profile,
+        columns,
+        workbook: template,
+        ...(chunkSize ? { chunkSize } : {}),
+      });
+    };
+
+    it('should report the actual row index when a parse error occurs in a single chunk', async () => {
+      // 12 data rows, row 12 is bad. Default chunkSize (1000) means single chunk.
+      const importer = await buildImporter(12, 12);
+
+      let error: any;
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeDefined();
+      expect(error.name).toBe('ImportValidationError');
+      expect(error.params?.rowIndex).toBe(12);
+    });
+
+    it('should report the actual row index when a parse error occurs across multiple chunks', async () => {
+      // chunkSize=5, 12 data rows, row 12 is bad. The bad row falls in the third chunk.
+      const importer = await buildImporter(12, 12, 5);
+
+      let error: any;
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeDefined();
+      expect(error.name).toBe('ImportValidationError');
+      expect(error.params?.rowIndex).toBe(12);
+    });
+
+    it('should report the actual row index when the first row of a non-first chunk fails', async () => {
+      // chunkSize=5, 12 data rows, row 6 is bad (first row of second chunk).
+      const importer = await buildImporter(6, 12, 5);
+
+      let error: any;
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeDefined();
+      expect(error.name).toBe('ImportValidationError');
+      expect(error.params?.rowIndex).toBe(6);
     });
   });
 });

@@ -10,8 +10,7 @@
 import { Model } from '@nocobase/database';
 import path from 'path';
 import fs from 'fs';
-import axios from 'axios';
-import { getDateVars, parse, parseFilter } from '@nocobase/utils';
+import { getDateVars, parse, serverRequest } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 
 export function sendSSEError(ctx: Context, error: Error | string, errorName?: string) {
@@ -56,7 +55,11 @@ export function parseResponseMessage(row: Model) {
 }
 
 export async function encodeLocalFile(url: string) {
+  if (process.env.APP_PUBLIC_PATH && url.startsWith(process.env.APP_PUBLIC_PATH)) {
+    url = url.slice(process.env.APP_PUBLIC_PATH.length);
+  }
   url = path.join(process.cwd(), url);
+
   const data = await fs.promises.readFile(url);
   return Buffer.from(data).toString('base64');
 }
@@ -68,7 +71,9 @@ export async function encodeFile(ctx: Context, url: string) {
   const referer = ctx.get('referer') || '';
   const ua = ctx.get('user-agent') || '';
   ctx.log.trace('llm message encode file', { url, referer, ua });
-  const response = await axios.get(url, {
+  const response = await serverRequest({
+    method: 'get',
+    url,
     responseType: 'arraybuffer',
     headers: {
       referer,

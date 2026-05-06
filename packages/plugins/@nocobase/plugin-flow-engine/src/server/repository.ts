@@ -996,11 +996,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
       // move node to new parent
       if (oldParentUid !== null && oldParentUid !== parentUid) {
-        await this.database.emitAsync('uiSchemaMove', savedNode, {
-          transaction,
-          oldParentUid,
-          parentUid,
-        });
+        // await this.database.emitAsync('uiSchemaMove', savedNode, {
+        //   transaction,
+        //   oldParentUid,
+        //   parentUid,
+        // });
 
         if (options.removeParentsIfNoChildren) {
           await this.recursivelyRemoveIfNoChildren({

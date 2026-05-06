@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import axios, { AxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { Readable } from 'stream';
+import { serverRequest } from '@nocobase/utils';
 
 export interface Header {
   name: string;
@@ -114,7 +115,7 @@ async function request(config: RequestInstructionConfig, app: Application) {
   }
 
   const transformer = getContentTypeTransformer(contentType, app);
-  return axios.request({
+  return serverRequest({
     url: trim(url),
     method,
     headers,
@@ -135,30 +136,45 @@ function responseSuccess(response, onlyData = false) {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers,
-        config: response.config,
         data: response.data,
       };
 }
 
 function responseFailure(error) {
-  let result = {
-    message: error.message,
-    stack: error.stack,
+  const result: Record<string, any> = {
+    message: error instanceof Error ? error.message : String(error),
   };
-  if (error.isAxiosError) {
-    if (error.response) {
-      Object.assign(result, {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        headers: error.response.headers,
-        config: error.response.config,
-        data: error.response.data,
-      });
-    } else if (error.request) {
-      result = error.toJSON();
-    }
+
+  if (typeof error?.code !== 'undefined') {
+    result['code'] = error.code;
   }
+
+  if (error?.isAxiosError && error.response) {
+    Object.assign(result, {
+      status: error.response.status,
+      statusText: error.response.statusText,
+      data: error.response.data,
+    });
+  }
+
   return result;
+}
+
+function logFailureDebug(logger, error) {
+  if (!error?.isAxiosError) {
+    return;
+  }
+
+  if (error.response) {
+    logger.debug('request failed response details', {
+      status: error.response.status,
+      statusText: error.response.statusText,
+      data: error.response.data,
+    });
+    return;
+  }
+
+  logger.debug('request failed error details', responseFailure(error));
 }
 
 export default class extends Instruction {
@@ -176,9 +192,10 @@ export default class extends Instruction {
           result: responseSuccess(response, config.onlyData),
         };
       } catch (error) {
+        logFailureDebug(this.workflow.app.logger, error);
         return {
           status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
-          result: error.isAxiosError ? error.toJSON() : error.message,
+          result: responseFailure(error),
         };
       }
     }
@@ -211,6 +228,7 @@ export default class extends Instruction {
       } else {
         processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
       }
+      logFailureDebug(processor.logger, error);
       jobDone.status = config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
       jobDone.result = responseFailure(error);
     } finally {
@@ -240,9 +258,10 @@ export default class extends Instruction {
         result: responseSuccess(response, config.onlyData),
       };
     } catch (error) {
+      logFailureDebug(this.workflow.app.logger, error);
       return {
         status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
-        result: error.isAxiosError ? error.toJSON() : error.message,
+        result: responseFailure(error),
       };
     }
   }

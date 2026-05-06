@@ -9,7 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import { Mutex } from 'async-mutex';
 import { XlsxImporter } from '../services/xlsx-importer';
 import { DataSource } from '@nocobase/data-source-manager';

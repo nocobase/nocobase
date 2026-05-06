@@ -65,12 +65,14 @@ Supposons qu'il y ait quatre nœuds : `node1`, `node2`, `node3` et `node4`. Ils 
 Lors du développement de plugins métier, vous pouvez séparer les services qui consomment des ressources importantes en fonction des exigences du scénario. Cela peut être réalisé de la manière suivante :
 
 1. Définissez un nouvel identifiant de service, par exemple `my-plugin:process`, pour la configuration de la variable d'environnement, et fournissez une documentation à ce sujet.
-2. Dans la logique métier côté serveur du plugin, utilisez l'interface `app.serving()` pour vérifier l'environnement et déterminer si le nœud actuel doit fournir un service spécifique en fonction de la variable d'environnement.
+2. Dans la logique métier côté serveur du plugin, utilisez l'interface `serving()` pour vérifier l'environnement et déterminer si le nœud actuel doit fournir un service spécifique en fonction de la variable d'environnement.
 
 ```javascript
+import { serving } from '@nocobase/server';
+
 const MY_PLUGIN_SERVICE_KEY = 'my-plugin:process';
 // Dans le code côté serveur du plugin
-if (this.app.serving(MY_PLUGIN_SERVICE_KEY)) {
+if (serving(MY_PLUGIN_SERVICE_KEY)) {
   // Traitez la logique métier de ce service
 } else {
   // Ne traitez pas la logique métier de ce service

@@ -7,17 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import path from 'node:path';
 import { AIMessageChunk } from '@langchain/core/messages';
-import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
-import PluginAIServer from '../../plugin';
 import { LLMProvider } from '../provider';
 import { LLMProviderMeta, SupportedModel } from '../../manager/ai-manager';
 import { CachedDocumentLoader } from '../../document-loader';
 import { KimiDocumentLoader } from './document-loader';
 import { ReasoningChatOpenAI } from '../common/reasoning';
+import { AttachmentModel } from '@nocobase/plugin-file-manager';
 
 export class KimiProvider extends LLMProvider {
   declare chatModel: ReasoningChatOpenAI;
@@ -77,35 +75,11 @@ export class KimiProvider extends LLMProvider {
     return null;
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
-    if (!attachment?.mimetype || attachment.mimetype.startsWith('image/')) {
-      return super.parseAttachment(ctx, attachment);
-    }
-    const parsed = await this.documentLoader.load(attachment);
-    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
-    if (!parsed.supported) {
-      return {
-        placement: 'system',
-        content: `File ${safeFilename} is not a supported document type for text parsing.`,
-      };
-    }
-    if (parsed.text.length === 0) {
-      return {
-        placement: 'system',
-        content: `The file provided by the user is an empty file, file name is "${safeFilename}"`,
-      };
-    }
-    return {
-      placement: 'system',
-      content: `<parsed_document filename="${safeFilename}">\n${parsed.text}\n</parsed_document>`,
-    };
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    return attachment.mimetype?.startsWith('image/') ?? false;
   }
 
-  private get aiPlugin(): PluginAIServer {
-    return this.app.pm.get('ai');
-  }
-
-  private get documentLoader() {
+  protected get documentLoader(): CachedDocumentLoader {
     if (!this._documentLoader) {
       const loader = new KimiDocumentLoader(this.aiPlugin.fileManager, {
         apiKey: this.serviceOptions?.apiKey,
