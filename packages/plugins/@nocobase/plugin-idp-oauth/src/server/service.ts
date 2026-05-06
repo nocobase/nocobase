@@ -8,12 +8,14 @@
  */
 
 import type { Cache } from '@nocobase/cache';
+import { defaultTokenPolicyConfig } from '@nocobase/plugin-auth';
 import Application, { AppSupervisor } from '@nocobase/server';
 import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { storagePathJoin } from '@nocobase/utils';
+import ms from 'ms';
 import { createDbAdapter } from './db-adapter';
 import { normalizeBasePath } from './utils';
 
@@ -60,9 +62,19 @@ type ProviderContext = {
 const defaultSupportedScopes = ['openid', 'offline_access', 'profile', 'email'] as const;
 const envJwksKeys = ['IDP_OAUTH_JWKS', 'OAUTH_JWKS'] as const;
 const MAX_CACHE_TTL_MS = 2_147_483_647;
+const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = Math.floor(ms(defaultTokenPolicyConfig.tokenExpirationTime) / 1000);
+const DEFAULT_SESSION_TTL_SECONDS = Math.floor(ms(defaultTokenPolicyConfig.sessionExpirationTime) / 1000);
 type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
   ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
   : { keys: Array<Record<string, any>> };
+
+function policyMillisecondsToSeconds(value: unknown, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.floor(value / 1000));
+}
 
 export class IdpOauthService {
   private providers = new Map<string, ProviderInstance>();
@@ -572,6 +584,12 @@ export class IdpOauthService {
       throw new Error('JWT secret is required for plugin-idp-oauth');
     }
     const jwks = await this.getProviderSigningJwks(appName);
+    const tokenPolicy = await this.app.authManager.tokenController.getConfig();
+    const accessTokenTtl = policyMillisecondsToSeconds(
+      tokenPolicy?.tokenExpirationTime,
+      DEFAULT_ACCESS_TOKEN_TTL_SECONDS,
+    );
+    const sessionTtl = policyMillisecondsToSeconds(tokenPolicy?.sessionExpirationTime, DEFAULT_SESSION_TTL_SECONDS);
 
     return {
       adapter: createDbAdapter(this.app, 'oidcStates'),
@@ -639,12 +657,12 @@ export class IdpOauthService {
         },
       },
       ttl: {
-        AccessToken: () => 10 * 60,
+        AccessToken: accessTokenTtl,
         AuthorizationCode: 60,
-        Grant: 14 * 24 * 60 * 60,
+        Grant: sessionTtl,
         IdToken: 60 * 60,
-        RefreshToken: () => 30 * 24 * 60 * 60,
-        Session: 14 * 24 * 60 * 60,
+        RefreshToken: sessionTtl,
+        Session: sessionTtl,
         Interaction: 60 * 60,
       },
       pkce: {

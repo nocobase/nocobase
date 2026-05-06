@@ -91,12 +91,12 @@ nb env auth local
 
 `nb env auth` lance le flux de connexion via le navigateur. Une fois l'authentification réussie, le CLI sauvegarde les informations d'authentification dans la configuration de l'environnement courant, après quoi vous pouvez continuer à laisser l'AI Agent appeler `nb api`.
 
-Dans l'implémentation par défaut actuelle :
+La durée de validité des tokens d'accès et de rafraîchissement OAuth suit la configuration de la [politique de Token](/security/token-policy/) du système.
 
-- La durée de validité du token d'accès OAuth est de **10 minutes**
-- La durée de validité du token de rafraîchissement OAuth est de **30 jours**
+- La durée de validité du token d'accès OAuth est identique à celle du Token système, avec une valeur par défaut de **1 jour**
+- La durée de validité du token de rafraîchissement OAuth est identique à celle de la session système, avec une valeur par défaut de **7 jours**
 
-Le CLI utilisera prioritairement le token de rafraîchissement pour rafraîchir automatiquement la session lorsque le token d'accès est sur le point d'expirer ; si le token de rafraîchissement a expiré, est indisponible, ou si le serveur n'a pas renvoyé de token de rafraîchissement, vous devez réexécuter `nb env auth`.
+Le CLI utilisera prioritairement le token de rafraîchissement pour rafraîchir automatiquement la session lorsque le token d'accès est sur le point d'expirer ; si le token de rafraîchissement a expiré, est indisponible, ou si le serveur n'a pas renvoyé de token de rafraîchissement, vous devez réexécuter `nb env auth`. Si vous modifiez la politique de Token, vous devez redémarrer le système pour que la modification prenne effet dans le service OAuth.
 
 La particularité d'OAuth est que les requêtes sont généralement exécutées dans le contexte de l'utilisateur connecté et de son rôle, et les enregistrements d'audit sont plus facilement attribuables à l'opérateur réel. Cette méthode est plus adaptée aux opérations impliquant une intervention humaine et nécessitant une confirmation d'identité.
 

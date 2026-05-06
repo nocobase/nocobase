@@ -11,7 +11,7 @@ import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
-import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
+import { defaultTokenPolicyConfig, tokenPolicyCollectionName, tokenPolicyRecordKey } from '../constants';
 import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
@@ -304,15 +304,10 @@ export class PluginAuthServer extends Plugin {
     if (res) {
       return;
     }
-    const config = {
-      tokenExpirationTime: '1d',
-      sessionExpirationTime: '7d',
-      expiredTokenRenewLimit: '1d',
-    };
     await tokenPolicyRepo.create({
       values: {
         key: tokenPolicyRecordKey,
-        config,
+        config: defaultTokenPolicyConfig,
       },
     });
   }
