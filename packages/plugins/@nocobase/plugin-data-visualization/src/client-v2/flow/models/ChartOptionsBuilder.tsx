@@ -163,7 +163,7 @@ export const ChartOptionsBuilder: React.FC<{
       { label: t('Doughnut'), value: 'doughnut' },
       { label: t('Funnel'), value: 'funnel' },
       { label: t('Scatter'), value: 'scatter' },
-    ];
+    ] as any;
 
     if (!registeredChartOptions.length) {
       return builtinOptions;
@@ -192,7 +192,7 @@ export const ChartOptionsBuilder: React.FC<{
       >
         {/* 图表类型 */}
         <Form.Item label={renderLabel(t('Chart type'), lang)} name="type" required>
-          <Select style={{ width: 180 }} options={chartTypeOptions} />
+          <Select style={{ width: 180 }} options={chartTypeOptions as any} />
         </Form.Item>
 
         {/* 图表属性 */}
