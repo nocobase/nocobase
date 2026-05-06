@@ -194,7 +194,7 @@ function shouldCommitImmediately(value: any) {
 }
 
 const FieldModelRendererOptimize = React.memo((props: any) => {
-  const { model, onChange, value, ...rest } = props;
+  const { model, onChange, value, commitOnChange, ...rest } = props;
   const pendingValueRef = React.useRef<any>(props?.value);
 
   useEffect(() => {
@@ -204,11 +204,11 @@ const FieldModelRendererOptimize = React.memo((props: any) => {
   const handleChange = React.useCallback(
     (value: any) => {
       pendingValueRef.current = value;
-      if (shouldCommitImmediately(value)) {
+      if (commitOnChange || shouldCommitImmediately(value)) {
         onChange?.(value);
       }
     },
-    [onChange],
+    [commitOnChange, onChange],
   );
 
   const handleCommit = React.useCallback(() => {
@@ -241,10 +241,11 @@ interface CellProps {
   rowFork?: any;
   memoKey?: string;
   width?: number;
+  commitOnChange?: boolean;
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width }) => {
+  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange }) => {
     const isNew = record?.__is_new__;
     return (
       <div
@@ -346,7 +347,11 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   }
                 />
               ) : (
-                <FieldModelRendererOptimize model={fork} id={[(parent as any).context.fieldPath, rowIdx]} />
+                <FieldModelRendererOptimize
+                  model={fork}
+                  id={[(parent as any).context.fieldPath, rowIdx]}
+                  commitOnChange={commitOnChange}
+                />
               )}
             </FormItem>
           );
@@ -360,6 +365,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
       prev.id === next.id &&
       prev.memoKey === next.memoKey &&
       prev.width === next.width &&
+      prev.commitOnChange === next.commitOnChange &&
       prev.rowIdx === next.rowIdx
     );
   },
@@ -426,6 +432,15 @@ export class SubTableColumnModel<
   // 让子表列使用父级关联模型的目标集合
   get collection() {
     return this.parent.collection;
+  }
+
+  get hasFormulaColumn() {
+    return (
+      this.parent?.mapSubModels('columns', (column: SubTableColumnModel) => {
+        const field = column.collectionField;
+        return field?.interface === 'formula' || field?.type === 'formula';
+      }) || []
+    ).some(Boolean);
   }
 
   onInit(options: any): void {
@@ -607,6 +622,7 @@ export class SubTableColumnModel<
           rowFork={rowFork}
           memoKey={rowForkKey}
           width={this.props.width}
+          commitOnChange={this.hasFormulaColumn}
         />
       );
     };
