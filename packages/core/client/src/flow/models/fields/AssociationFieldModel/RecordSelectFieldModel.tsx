@@ -39,6 +39,7 @@ import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 import { BlockSceneEnum } from '../../base';
 import { ActionWithoutPermission } from '../../base/ActionModel';
 import { EditFormModel } from '../../blocks';
+import { hasAncestorModel } from './recordSelectSettingsUtils';
 
 function isPlainObject(val: unknown): val is Record<string, any> {
   return !!val && typeof val === 'object' && !Array.isArray(val);
@@ -816,6 +817,9 @@ RecordSelectFieldModel.registerFlow({
       },
       hideInSettings(ctx) {
         if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
+          return true;
+        }
+        if (hasAncestorModel(ctx?.model, ['SubTableColumnModel', 'SubTableFieldModel'])) {
           return true;
         }
         return false;
