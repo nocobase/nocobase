@@ -19,7 +19,7 @@ import {
   resolveFieldFromCollection,
   resolveFieldTargetCollection,
 } from './service-helpers';
-import { resolveCollectionSafeTitleField } from './association-title-field';
+import { assertCollectionTitleFieldExists, resolveCollectionSafeTitleField } from './association-title-field';
 
 export const FLOW_SURFACE_PUBLIC_RELATION_FIELD_TYPES = [
   'text',
@@ -274,10 +274,14 @@ export function resolveRelationFieldType(input: {
   if (fields?.length) {
     assertTargetFieldNamesExist(targetCollection, fields, `${input.context}.fields`);
   }
-  if (titleField && !resolveFieldFromCollection(targetCollection, titleField)) {
-    throwBadRequest(
-      `flowSurfaces ${input.context}.titleField '${titleField}' does not exist on relation target collection`,
-    );
+  if (titleField) {
+    try {
+      assertCollectionTitleFieldExists(targetCollection, titleField);
+    } catch {
+      throwBadRequest(
+        `flowSurfaces ${input.context}.titleField '${titleField}' does not exist on relation target collection`,
+      );
+    }
   }
 
   return {

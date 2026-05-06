@@ -85,6 +85,19 @@ describe('flowSurfaces block header contracts', () => {
     }
   });
 
+  it('should expose table relation label settings only on real table field columns', () => {
+    const tableFieldColumnPaths =
+      getNodeContract('TableColumnModel').domains.stepParams?.groups?.tableColumnSettings?.allowedPaths || [];
+    const actionColumnPaths =
+      getNodeContract('TableActionsColumnModel').domains.stepParams?.groups?.tableColumnSettings?.allowedPaths || [];
+    const jsColumnPaths =
+      getNodeContract('JSColumnModel').domains.stepParams?.groups?.tableColumnSettings?.allowedPaths || [];
+
+    expect(tableFieldColumnPaths).toEqual(expect.arrayContaining(['title.title', 'fieldNames.label']));
+    expect(actionColumnPaths).toEqual(['title.title']);
+    expect(jsColumnPaths).toEqual(['title.title']);
+  });
+
   it('should expose block linkage cardSettings and reaction capabilities for markdown and iframe blocks', () => {
     for (const use of ['MarkdownBlockModel', 'IframeBlockModel']) {
       const contract = getNodeContract(use);

@@ -15,6 +15,7 @@ import {
   resolveAssociationSafeTitleField,
   resolveCollectionSafeTitleField,
 } from '../flow-surfaces/association-title-field';
+import { resolveRelationFieldType } from '../flow-surfaces/field-type-resolver';
 
 function createField(name: string, options: Record<string, any> = {}) {
   return {
@@ -249,6 +250,40 @@ describe('flowSurfaces association title field helpers', () => {
     expect(() => resolveCollectionSafeTitleField(collection)).toThrow(
       "flowSurfaces collection 'broken_targets' titleField 'missing' not found",
     );
+  });
+
+  it('should allow relation fieldType to use synthetic id titleField compatibility', () => {
+    const roles = createCollection('roles', [createField('name', { interface: 'input', titleable: true })]);
+    const users = createCollection('users', [
+      createField('roles', {
+        type: 'belongsToMany',
+        interface: 'm2m',
+        target: 'roles',
+      }),
+    ]);
+    const collections = new Map([
+      ['roles', roles],
+      ['users', users],
+    ]);
+    const rolesField = users.getField('roles');
+
+    expect(
+      resolveRelationFieldType({
+        fieldType: 'picker',
+        containerUse: 'FormItemModel',
+        field: rolesField,
+        dataSourceKey: 'main',
+        getCollection: (_dataSourceKey, collectionName) => collections.get(collectionName),
+        fields: ['name'],
+        titleField: 'id',
+        context: 'fields[0]',
+      }),
+    ).toMatchObject({
+      fieldType: 'picker',
+      titleField: 'id',
+      fields: ['name'],
+      selectorFields: ['name'],
+    });
   });
 
   it('should treat interface-level titleUsable metadata as a valid first titleable fallback', () => {
