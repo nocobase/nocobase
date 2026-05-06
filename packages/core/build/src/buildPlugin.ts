@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
@@ -307,10 +316,10 @@ export function deleteServerFiles(cwd: string, log: PkgLog) {
     onlyDirectories: true,
   });
   [...files, ...dirs.filter((item) => !extraClientDirs.includes(item)), ...extraClientDirs].forEach((item) => {
-    if (item.endsWith(`${path.sep}client-v2`)) {
+    if (item.endsWith(`${path.sep}client-v2`) || item.endsWith(`/client-v2`)) {
       return;
     }
-    if (item.endsWith(`${path.sep}client`)) {
+    if (item.endsWith(`${path.sep}client`) || item.endsWith(`/client`)) {
       return;
     }
     fs.removeSync(item);

@@ -203,7 +203,7 @@ describe('flowSurfaces association contract', () => {
     expect(initialPopupDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -320,7 +320,7 @@ describe('flowSurfaces association contract', () => {
     expect(popupDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -330,7 +330,7 @@ describe('flowSurfaces association contract', () => {
     expect(popupGridDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -363,7 +363,7 @@ describe('flowSurfaces association contract', () => {
     expect(popupEditFormReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -673,7 +673,7 @@ describe('flowSurfaces association contract', () => {
     expect(legacyDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -708,7 +708,7 @@ describe('flowSurfaces association contract', () => {
     expect(legacyEditFormReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -801,6 +801,7 @@ describe('flowSurfaces association contract', () => {
       collectionName: 'roles',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
+      filterByTk: '{{ctx.record.name}}',
     });
 
     const nestedRoleDetails = getData(
@@ -821,7 +822,7 @@ describe('flowSurfaces association contract', () => {
     expect(nestedRoleDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.name}}',
       associationName: 'users.roles',
       sourceId: '{{ctx.view.inputArgs.sourceId}}',
     });
@@ -1306,6 +1307,69 @@ describe('flowSurfaces association contract', () => {
     });
     expect(invalidTitleFieldRes.status).toBe(400);
     expect(readErrorMessage(invalidTitleFieldRes)).toContain("collection 'employees' titleField 'missing' not found");
+  });
+
+  it('should persist explicit relation titleField to wrapper props, inner props and table column step params on addField', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Explicit relation title field page',
+      tabTitle: 'Explicit relation title field tab',
+    });
+
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const managerField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          fieldPath: 'manager',
+          titleField: 'nickname',
+        },
+      }),
+    );
+
+    const wrapperReadback = await getSurface(rootAgent, { uid: managerField.wrapperUid });
+    const innerReadback = await getSurface(rootAgent, { uid: managerField.fieldUid });
+
+    expect(wrapperReadback.tree.use).toBe('TableColumnModel');
+    expect(innerReadback.tree.use).toBe('DisplayTextFieldModel');
+    expect(wrapperReadback.tree.props?.titleField).toBe('nickname');
+    expect(innerReadback.tree.props?.titleField).toBe('nickname');
+    expect(wrapperReadback.tree.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('nickname');
+    expect(wrapperReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'manager',
+    });
+    expect(innerReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'manager',
+    });
+
+    const invalidTitleFieldRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        fieldPath: 'manager',
+        titleField: 'missing',
+      },
+    });
+    expect(invalidTitleFieldRes.status).toBe(400);
+    expect(readErrorMessage(invalidTitleFieldRes)).toContain(
+      "flowSurfaces collection 'employees' titleField 'missing' not found",
+    );
   });
 
   it('should allow file-template attachment associations through strict registered bindings without titleField', async () => {

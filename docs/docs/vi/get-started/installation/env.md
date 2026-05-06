@@ -249,14 +249,6 @@ Các tùy chọn:
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Đường dẫn lưu trữ log dựa trên file, mặc định là `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Mức log xuất ra, môi trường phát triển mặc định là `debug`, môi trường production mặc định là `info`. Các tùy chọn:

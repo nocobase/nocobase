@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "NocoBase CLI（nb 命令）参考：初始化、环境管理、应用运行、源码、数据库、插件、API、CLI 自更新和 Skills 管理。"
-keywords: "NocoBase CLI,nb,命令行,命令参考,环境管理,插件管理,API"
+description: "NocoBase CLI（nb 命令）参考：初始化、配置、环境管理、应用运行、源码、数据库、插件、商业授权、API、CLI 自更新和 Skills 管理。"
+keywords: "NocoBase CLI,nb,命令行,命令参考,环境管理,插件管理,商业授权,API"
 ---
 
 # NocoBase CLI
@@ -33,8 +33,10 @@ nb [command]
 | --- | --- |
 | [`nb api`](./api/index.md) | 通过 CLI 调用 NocoBase API。 |
 | [`nb app`](./app/index.md) | 管理应用运行态：启动、停止、重启、日志和升级。 |
+| [`nb config`](./config/index.md) | 管理 CLI 默认配置。 |
 | [`nb db`](./db/index.md) | 管理选中 env 的内置数据库。 |
 | [`nb env`](./env/index.md) | 管理 NocoBase 项目环境、状态、详情和运行时命令。 |
+| [`nb license`](./license/index.md) | 管理商业授权和授权插件。 |
 | [`nb plugin`](./plugin/index.md) | 管理选中 NocoBase env 的插件。 |
 | [`nb scaffold`](./scaffold/index.md) | 生成 NocoBase 插件开发脚手架。 |
 | [`nb self`](./self/index.md) | 检查或更新 NocoBase CLI 本身。 |
@@ -62,7 +64,9 @@ nb --help
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## 示例
@@ -102,6 +106,20 @@ nb env update app1
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+查看 CLI 默认配置：
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+查看商业授权状态：
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## 环境变量

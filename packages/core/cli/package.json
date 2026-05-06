@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-beta.24",
+  "version": "2.1.0-beta.25",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
@@ -58,6 +58,12 @@
       "env": {
         "description": "Manage NocoBase project environments, status, details, and command runtimes."
       },
+      "license": {
+        "description": "Manage NocoBase commercial licensing and licensed plugins."
+      },
+      "config": {
+        "description": "Manage CLI configuration defaults."
+      },
       "self": {
         "description": "Inspect or update the NocoBase CLI itself."
       },
@@ -75,6 +81,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",
+    "@nocobase/license-kit": "^0.3.8",
     "@oclif/core": "^4.10.4",
     "cross-spawn": "^7.0.6",
     "lodash": "^4.17.21",
@@ -83,12 +90,14 @@
     "openapi-types": "^12.1.3",
     "ora": "^8.2.0",
     "pg": "^8.14.1",
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "tar": "^7.4.3"
   },
   "devDependencies": {
     "@types/node": "^18.19.130",
     "tsx": "^4.20.6",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^1.5.0"
   },
   "repository": {
     "type": "git",

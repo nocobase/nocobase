@@ -18,6 +18,7 @@ nb db <command>
 
 | コマンド | 説明 |
 | --- | --- |
+| [`nb db check`](./check.md) | データベース接続が利用可能か確認します。 |
 | [`nb db ps`](./ps.md) | 組み込みデータベースの実行状態を表示します |
 | [`nb db start`](./start.md) | 組み込みデータベースコンテナを起動します |
 | [`nb db stop`](./stop.md) | 組み込みデータベースコンテナを停止します |
@@ -26,6 +27,8 @@ nb db <command>
 ## 使用例
 
 ```bash
+nb db check --env app1
+nb db check --db-dialect postgres --db-host 127.0.0.1 --db-port 5432 --db-database nocobase --db-user nocobase --db-password secret
 nb db ps
 nb db ps --env app1
 nb db start --env app1

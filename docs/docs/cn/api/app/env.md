@@ -190,14 +190,6 @@ DB_LOGGING=on
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-## LOGGER_BASE_PATH
-
-基于文件的日志存储路径，默认为 `storage/logs`。
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ## LOGGER_LEVEL
 
 输出日志级别，开发环境默认值 `debug`, 生产环境默认值 `info`. 可选项：

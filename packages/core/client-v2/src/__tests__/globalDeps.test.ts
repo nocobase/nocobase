@@ -23,5 +23,6 @@ describe('client-v2 defineGlobalDeps', () => {
     expect(define).toHaveBeenCalledWith('@nocobase/utils/client', expect.any(Function));
     expect(define).toHaveBeenCalledWith('@nocobase/client-v2', expect.any(Function));
     expect(define).toHaveBeenCalledWith('@nocobase/flow-engine', expect.any(Function));
+    expect(define).toHaveBeenCalledWith('ahooks', expect.any(Function));
   });
 });

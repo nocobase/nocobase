@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { AuthModel, BasicAuth, default, presetAuthType } from './server';
+export { AuthModel, BasicAuth, default, presetAuthType, defaultTokenPolicyConfig } from './server';

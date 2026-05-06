@@ -7,7 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createWriteStream } from 'node:fs';
 import { promises as fs } from 'node:fs';
+import { basename, dirname } from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type { AuthStoreOptions } from './auth-store.js';
 import { resolveServerRequestTarget } from './env-auth.js';
 import { fetchWithPreservedAuthRedirect } from './http-request.js';
@@ -24,6 +37,7 @@ export interface RequestParameter {
   isArray?: boolean;
   description?: string;
   jsonEncoded?: boolean;
+  isFile?: boolean;
 }
 
 export interface RequestOperation {
@@ -32,6 +46,8 @@ export interface RequestOperation {
   parameters: RequestParameter[];
   hasBody?: boolean;
   bodyRequired?: boolean;
+  requestContentType?: 'application/json' | 'multipart/form-data';
+  responseType?: 'json' | 'binary';
 }
 
 export interface RequestOptions {
@@ -92,6 +108,22 @@ async function parseResponse(response: Response) {
     status: response.status,
     data,
   };
+}
+
+async function parseBinaryResponse(response: Response, outputPath: string) {
+  if (response.ok && response.body) {
+    await fs.mkdir(dirname(outputPath), { recursive: true }).catch(() => undefined);
+    await pipeline(Readable.fromWeb(response.body as any), createWriteStream(outputPath));
+    return {
+      ok: response.ok,
+      status: response.status,
+      data: {
+        output: outputPath,
+      },
+    };
+  }
+
+  return parseResponse(response);
 }
 
 function parseScalarValue(value: any, type?: string) {
@@ -171,6 +203,10 @@ function parseBodyFieldValue(rawValue: any, parameter: RequestParameter) {
 }
 
 export async function parseBody(flags: Record<string, any>, operation: RequestOperation) {
+  if (operation.requestContentType === 'multipart/form-data') {
+    return undefined;
+  }
+
   const inlineBody = flags.body as string | undefined;
   const bodyFile = flags['body-file'] as string | undefined;
   const bodyParameters = operation.parameters.filter((parameter) => parameter.in === 'body');
@@ -222,6 +258,48 @@ export async function parseBody(flags: Record<string, any>, operation: RequestOp
   }
 
   return undefined;
+}
+
+async function createMultipartBody(flags: Record<string, any>, operation: RequestOperation) {
+  const bodyParameters = operation.parameters.filter((parameter) => parameter.in === 'body');
+  const formData = new FormData();
+  let hasValues = false;
+
+  for (const parameter of bodyParameters) {
+    const rawValue = flags[parameter.flagName];
+    const hasValue = hasParameterValue(flags, parameter);
+
+    if (parameter.required && !hasValue) {
+      throw new Error(`Missing required body field --${parameter.flagName}`);
+    }
+
+    if (!hasValue) {
+      continue;
+    }
+
+    if (parameter.isFile) {
+      const filePath = String(rawValue);
+      const content = await fs.readFile(filePath);
+      const arrayBuffer = content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength) as ArrayBuffer;
+      formData.append(parameter.name, new Blob([arrayBuffer]), basename(filePath));
+      hasValues = true;
+      continue;
+    }
+
+    const value = parseBodyFieldValue(rawValue, parameter);
+    if (value === undefined) {
+      continue;
+    }
+
+    formData.append(parameter.name, typeof value === 'object' ? JSON.stringify(value) : String(value));
+    hasValues = true;
+  }
+
+  if (!hasValues && operation.bodyRequired) {
+    throw new Error('Missing multipart request body.');
+  }
+
+  return hasValues ? formData : undefined;
 }
 
 export async function executeApiRequest(options: RequestOptions) {
@@ -279,8 +357,11 @@ export async function executeApiRequest(options: RequestOptions) {
     }
   }
 
-  const body = await parseBody(options.flags, options.operation);
-  if (body !== undefined) {
+  const body =
+    options.operation.requestContentType === 'multipart/form-data'
+      ? await createMultipartBody(options.flags, options.operation)
+      : await parseBody(options.flags, options.operation);
+  if (body !== undefined && options.operation.requestContentType !== 'multipart/form-data') {
     headers.set('content-type', 'application/json');
   }
 
@@ -290,8 +371,16 @@ export async function executeApiRequest(options: RequestOptions) {
   const response = await fetchWithPreservedAuthRedirect(url.toString(), {
     method: options.operation.method.toUpperCase(),
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
   });
+
+  if (options.operation.responseType === 'binary') {
+    const outputPath = options.flags.output;
+    if (!outputPath) {
+      throw new Error('Missing required output path --output');
+    }
+    return parseBinaryResponse(response, outputPath);
+  }
 
   return parseResponse(response);
 }

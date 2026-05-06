@@ -21,7 +21,7 @@ export const collectReasoningMap = (messages: BaseMessage[]) => {
       continue;
     }
     const reasoningContent = message.additional_kwargs?.reasoning_content;
-    if (typeof reasoningContent !== 'string' || !reasoningContent) {
+    if (reasoningContent == null || typeof reasoningContent !== 'string') {
       continue;
     }
     reasoningMap.set(String(i), reasoningContent);
@@ -43,9 +43,7 @@ export const patchRequestMessagesReasoning = (request: any, reasoningMap?: Map<s
         continue;
       }
       const reasoningContent = reasoningMap.get(String(i));
-      if (reasoningContent) {
-        message.reasoning_content = reasoningContent;
-      }
+      message.reasoning_content = reasoningContent;
     }
   }
 };

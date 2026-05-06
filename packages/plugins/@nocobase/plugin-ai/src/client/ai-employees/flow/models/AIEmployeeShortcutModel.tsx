@@ -259,8 +259,14 @@ const TaskWebSearchSwitch: React.FC = observer(() => {
   );
 });
 
-const SkillsWrapper: React.FC<any> = (props) => {
+const SkillsWrapper: React.FC = observer(() => {
   const ctx = useFlowContext();
+  const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
+  const username = ctx.model.props?.aiEmployee?.username ?? '';
+  const defaultSkills: string[] = useMemo(() => {
+    return aiEmployeesMap[username]?.skillSettings?.skills?.map((name: string) => name) ?? [];
+  }, [aiEmployeesMap, username]);
+
   const field = useField<ArrayField>();
   const skillsSettingField = field.parent as ObjectField;
   const taskField = skillsSettingField?.parent as ObjectField;
@@ -275,11 +281,24 @@ const SkillsWrapper: React.FC<any> = (props) => {
     }
   }, [field, initials]);
 
-  return <Skills {...props} initials={initials} />;
-};
+  return (
+    <Skills
+      username={username}
+      defaultSkills={defaultSkills}
+      initials={field.value}
+      onChange={(value) => field.setValue(value)}
+    />
+  );
+});
 
-const ToolsWrapper: React.FC<any> = (props) => {
+const ToolsWrapper: React.FC = observer(() => {
   const ctx = useFlowContext();
+  const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
+  const username = ctx.model.props?.aiEmployee?.username ?? '';
+  const defaultTools: string[] = useMemo(() => {
+    return aiEmployeesMap[username]?.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
+  }, [aiEmployeesMap, username]);
+
   const field = useField<ArrayField>();
   const skillsSettingField = field.parent as ObjectField;
   const taskField = skillsSettingField?.parent as ObjectField;
@@ -294,8 +313,15 @@ const ToolsWrapper: React.FC<any> = (props) => {
     }
   }, [field, initials]);
 
-  return <Tools {...props} initials={initials} />;
-};
+  return (
+    <Tools
+      username={username}
+      defaultTools={defaultTools}
+      initials={field.value}
+      onChange={(value) => field.setValue(value)}
+    />
+  );
+});
 
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
@@ -348,11 +374,6 @@ AIEmployeeShortcutModel.registerFlow({
       uiSchema: async (ctx) => {
         await ctx.aiConfigRepository.getAIEmployees();
         const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
-        const username = ctx.model.props?.aiEmployee?.username ?? '';
-        const defaultSkills: string[] =
-          aiEmployeesMap[username]?.skillSettings?.skills?.map((name: string) => name) ?? [];
-        const defaultTools: string[] =
-          aiEmployeesMap[username]?.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
         return {
           profile: {
             type: 'void',
@@ -430,10 +451,6 @@ AIEmployeeShortcutModel.registerFlow({
                       type: 'array',
                       'x-decorator': 'FormItem',
                       'x-component': SkillsWrapper,
-                      'x-component-props': {
-                        username,
-                        defaultSkills,
-                      },
                       'x-decorator-props': {
                         layout: 'horizontal',
                         tooltip: tExpr('Configure the skills available to this task', {
@@ -446,10 +463,6 @@ AIEmployeeShortcutModel.registerFlow({
                       type: 'array',
                       'x-decorator': 'FormItem',
                       'x-component': ToolsWrapper,
-                      'x-component-props': {
-                        username,
-                        defaultTools,
-                      },
                       'x-decorator-props': {
                         layout: 'horizontal',
                         tooltip: tExpr('Configure the tools available to this task', {

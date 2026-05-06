@@ -8,10 +8,10 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
+import { FormItem, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { RemoteSelect, SchemaComponent } from '@nocobase/client';
 import { Schema, useField, useForm } from '@formily/react';
-import { ArrayField } from '@formily/core';
+import { ArrayField, ObjectField } from '@formily/core';
 import { Radio, RadioGroupProps, Space, Tooltip, Typography } from 'antd';
 import { namespace, useT } from '../locale';
 
@@ -51,37 +51,32 @@ const getRadioOptions = (t: ReturnType<typeof useT>, type: 'skills' | 'tools') =
   },
 ];
 
-export const Skills: React.FC<{ username: string; defaultSkills: string[]; initials?: string[] }> = ({
-  username,
-  defaultSkills,
-  initials,
-}) => {
+export const Skills: React.FC<{
+  username: string;
+  defaultSkills: string[];
+  initials?: string[];
+  onChange: (value?: string[]) => void;
+}> = ({ username, defaultSkills, initials, onChange }) => {
   const t = useT();
   const radioOptions = useMemo(() => getRadioOptions(t, 'skills'), [t]);
-  const field = useField<ArrayField>();
-  const form = useForm();
+
+  useEffect(() => {
+    setRadioValue(Array.isArray(initials) ? RadioOptions.custom.value : RadioOptions.preset.value);
+  }, [initials]);
 
   const handleChange = (value: string[]) => {
-    field.setValue(value.filter((skill) => defaultSkills.includes(skill)));
+    onChange(value?.filter((skill) => defaultSkills.includes(skill)));
   };
 
   const [radioValue, setRadioValue] = useState(RadioOptions.preset.value);
   const onRadioChange: RadioGroupProps['onChange'] = (e) => {
     setRadioValue(e.target.value);
     if (e.target.value === RadioOptions.preset.value) {
-      field.setValue(undefined);
+      onChange(undefined);
     } else {
-      field.setValue(defaultSkills);
+      onChange(defaultSkills);
     }
   };
-
-  useEffect(() => {
-    const hasInitialSkills = initials ?? Array.isArray(form.initialValues?.skillSettings?.skills);
-    if (!hasInitialSkills) {
-      form.setValuesIn('skillSettings.skills', undefined);
-    }
-    setRadioValue(hasInitialSkills ? RadioOptions.custom.value : RadioOptions.preset.value);
-  }, [form, initials]);
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
@@ -89,7 +84,7 @@ export const Skills: React.FC<{ username: string; defaultSkills: string[]; initi
       {radioValue === RadioOptions.custom.value && (
         <RemoteSelect
           key={username}
-          value={field.value}
+          value={initials}
           onChange={handleChange}
           manual={false}
           multiple={true}
@@ -113,37 +108,32 @@ export const Skills: React.FC<{ username: string; defaultSkills: string[]; initi
   );
 };
 
-export const Tools: React.FC<{ username: string; defaultTools: string[]; initials?: string[] }> = ({
-  username,
-  defaultTools,
-  initials,
-}) => {
+export const Tools: React.FC<{
+  username: string;
+  defaultTools: string[];
+  initials?: string[];
+  onChange: (value?: string[]) => void;
+}> = ({ username, defaultTools, initials, onChange }) => {
   const t = useT();
   const radioOptions = useMemo(() => getRadioOptions(t, 'tools'), [t]);
-  const field = useField<ArrayField>();
-  const form = useForm();
+
+  useEffect(() => {
+    setRadioValue(Array.isArray(initials) ? RadioOptions.custom.value : RadioOptions.preset.value);
+  }, [initials]);
 
   const handleChange = (value: string[]) => {
-    field.setValue(value.filter((tool) => defaultTools.includes(tool)));
+    onChange(value?.filter((tool) => defaultTools.includes(tool)));
   };
 
   const [radioValue, setRadioValue] = useState(RadioOptions.preset.value);
   const onRadioChange: RadioGroupProps['onChange'] = (e) => {
     setRadioValue(e.target.value);
     if (e.target.value === RadioOptions.preset.value) {
-      field.setValue(undefined);
+      onChange(undefined);
     } else {
-      field.setValue(defaultTools);
+      onChange(defaultTools);
     }
   };
-
-  useEffect(() => {
-    const hasInitialTools = initials ?? Array.isArray(form.initialValues?.skillSettings?.tools);
-    if (!hasInitialTools) {
-      form.setValuesIn('skillSettings.tools', undefined);
-    }
-    setRadioValue(hasInitialTools ? RadioOptions.custom.value : RadioOptions.preset.value);
-  }, [form, initials]);
 
   return (
     <Space style={{ width: '100%' }} direction="vertical">
@@ -151,7 +141,7 @@ export const Tools: React.FC<{ username: string; defaultTools: string[]; initial
       {radioValue === RadioOptions.custom.value && (
         <RemoteSelect
           key={username}
-          value={field.value}
+          value={initials}
           onChange={handleChange}
           manual={false}
           multiple={true}
@@ -226,47 +216,37 @@ export const SkillSettings: React.FC = observer(() => {
   const defaultTools: string[] = useMemo(() => {
     return aiEmployeesMap[username]?.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
   }, [aiEmployeesMap, username]);
+  const field = useField<ObjectField>();
   return (
-    <SchemaComponent
-      name={username}
-      components={{ Skills, Tools }}
-      schema={{
-        type: 'void',
-        properties: {
-          skills: {
-            title: tExpr('Skills', { ns: namespace }),
-            type: 'array',
-            'x-decorator': 'FormItem',
-            'x-component': Skills,
-            'x-component-props': {
-              username,
-              defaultSkills,
-            },
-            'x-decorator-props': {
-              layout: 'horizontal',
-              tooltip: tExpr('Configure the skills available to this task', {
-                ns: namespace,
-              }),
-            },
-          },
-          tools: {
-            title: tExpr('Tools', { ns: namespace }),
-            type: 'array',
-            'x-decorator': 'FormItem',
-            'x-component': Tools,
-            'x-component-props': {
-              username,
-              defaultTools,
-            },
-            'x-decorator-props': {
-              layout: 'horizontal',
-              tooltip: tExpr('Configure the tools available to this task', {
-                ns: namespace,
-              }),
-            },
-          },
-        },
-      }}
-    />
+    <>
+      <FormItem
+        label={ctx.t('Skills', { ns: namespace })}
+        layout="horizontal"
+        tooltip={ctx.t('Configure the skills available to this task', {
+          ns: namespace,
+        })}
+      >
+        <Skills
+          username={username}
+          defaultSkills={defaultSkills}
+          initials={field.value.skills}
+          onChange={(value) => (field.value.skills = value)}
+        />
+      </FormItem>
+      <FormItem
+        label={ctx.t('Tools', { ns: namespace })}
+        layout="horizontal"
+        tooltip={ctx.t('Configure the tools available to this task', {
+          ns: namespace,
+        })}
+      >
+        <Tools
+          username={username}
+          defaultTools={defaultTools}
+          initials={field.value.tools}
+          onChange={(value) => (field.value.tools = value)}
+        />
+      </FormItem>
+    </>
   );
 });

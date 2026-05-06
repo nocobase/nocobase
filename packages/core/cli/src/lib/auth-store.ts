@@ -11,10 +11,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
 import {
-  NB_CLI_ROOT_ENV,
   resolveCliHomeDir,
   resolveConfiguredEnvPath,
-  resolveDefaultConfigScope,
   resolveEnvRelativePath,
 } from './cli-home.js';
 
@@ -100,6 +98,15 @@ export interface EnvConfigEntry {
 export interface AuthConfig {
   /** Workspace-level name shared by all envs in this config. */
   name?: string;
+  settings?: {
+    license?: {
+      pkgUrl?: string;
+    };
+    docker?: {
+      network?: string;
+      containerPrefix?: string;
+    };
+  };
   currentEnv?: string;
   envs: Record<string, EnvConfigEntry>;
 }
@@ -193,8 +200,24 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
 }
 
 function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
+  const settings = config.settings ?? {};
   return {
     name: config.name || config.dockerResourcePrefix,
+    settings: {
+      ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
+      ...(
+        settings.docker?.network || settings.docker?.containerPrefix
+          ? {
+              docker: {
+                ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
+                ...(settings.docker?.containerPrefix
+                  ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
+                  : {}),
+              },
+            }
+          : {}
+      ),
+    },
     currentEnv: config.currentEnv || 'default',
     envs: Object.fromEntries(
       Object.entries(config.envs || {}).map(([envName, entry]) => [envName, normalizeEnvConfigEntry(entry) ?? {}]),
@@ -213,61 +236,24 @@ function createDefaultConfig(): AuthConfig {
   };
 }
 
-function hasConfiguredEnvs(config: AuthConfig) {
-  return Object.keys(config.envs).length > 0;
-}
-
-function shouldFallbackToLegacyProjectScope(options: AuthStoreOptions = {}) {
-  const requestedScope = options.scope ?? resolveDefaultConfigScope();
-  if (requestedScope !== 'global') {
-    return false;
-  }
-
-  return !process.env[NB_CLI_ROOT_ENV];
-}
-
-async function loadExactAuthConfig(options: AuthStoreOptions = {}): Promise<AuthConfig> {
+async function readStoredAuthConfig(filePath: string): Promise<AuthConfig | undefined> {
   try {
-    const content = await fs.readFile(getConfigFile(options), 'utf8');
+    const content = await fs.readFile(filePath, 'utf8');
     const parsed = JSON.parse(content) as AuthConfig & {
       dockerResourcePrefix?: string;
     };
     return normalizeAuthConfig(parsed);
   } catch (_error) {
-    return createDefaultConfig();
+    return undefined;
   }
 }
 
-async function resolveEnvStorageScope(
-  envName: string,
-  options: AuthStoreOptions = {},
-): Promise<AuthStoreOptions> {
-  const requestedScope = options.scope ?? resolveDefaultConfigScope();
-  if (requestedScope !== 'global') {
-    return { ...options, scope: requestedScope };
-  }
-
-  const globalConfig = await loadExactAuthConfig({ scope: 'global' });
-  if (globalConfig.envs[envName]) {
-    return { ...options, scope: 'global' };
-  }
-
-  const projectConfig = await loadExactAuthConfig({ scope: 'project' });
-  if (projectConfig.envs[envName]) {
-    return { ...options, scope: 'project' };
-  }
-
-  return { ...options, scope: 'global' };
+export async function loadExactAuthConfig(options: AuthStoreOptions = {}): Promise<AuthConfig> {
+  return (await readStoredAuthConfig(getConfigFile(options))) ?? createDefaultConfig();
 }
 
 export async function loadAuthConfig(options: AuthStoreOptions = {}): Promise<AuthConfig> {
-  const config = await loadExactAuthConfig(options);
-  if (!shouldFallbackToLegacyProjectScope(options) || hasConfiguredEnvs(config)) {
-    return config;
-  }
-
-  const legacyProjectConfig = await loadExactAuthConfig({ scope: 'project' });
-  return hasConfiguredEnvs(legacyProjectConfig) ? legacyProjectConfig : config;
+  return await loadExactAuthConfig(options);
 }
 
 export async function saveAuthConfig(config: AuthConfig, options: AuthStoreOptions = {}) {
@@ -290,29 +276,12 @@ export async function getCurrentEnvName(options: AuthStoreOptions = {}) {
 }
 
 export async function setCurrentEnv(envName: string, options: AuthStoreOptions = {}) {
-  const writeOptions = await resolveEnvStorageScope(envName, options);
-  const config = await loadExactAuthConfig(writeOptions);
+  const config = await loadExactAuthConfig(options);
   if (!config.envs[envName]) {
     throw new Error(`Env "${envName}" is not configured`);
   }
   config.currentEnv = envName;
-  await saveAuthConfig(config, writeOptions);
-}
-
-export async function ensureWorkspaceName(
-  defaultName: string,
-  options: AuthStoreOptions = {},
-): Promise<string> {
-  const config = await loadExactAuthConfig(options);
-  const existing = config.name?.trim();
-  if (existing) {
-    return existing;
-  }
-
-  const next = defaultName.trim();
-  config.name = next;
   await saveAuthConfig(config, options);
-  return next;
 }
 
 export class Env {
@@ -380,8 +349,12 @@ export class Env {
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);
-    put('DB_HOST', this.config.dbHost);
-    put('DB_PORT', this.config.dbPort);
+    if (!this.config.builtinDb) {
+      put('DB_HOST', this.config.dbHost);
+      put('DB_PORT', this.config.dbPort);
+    } else if (String(this.config.source ?? '').trim() !== 'docker') {
+      put('DB_PORT', this.config.dbPort);
+    }
     put('DB_DATABASE', this.config.dbDatabase);
     put('DB_USER', this.config.dbUser);
     put('DB_PASSWORD', this.config.dbPassword);
@@ -395,18 +368,7 @@ export async function getEnv(envName?: string, options: GetEnvOptions = {}): Pro
   const resolved = envName?.trim() || config.currentEnv || 'default';
   const envConfig = config.envs[resolved];
   if (!envConfig) {
-    if (!shouldFallbackToLegacyProjectScope(loadOptions)) {
-      return undefined;
-    }
-
-    const legacyProjectConfig = await loadExactAuthConfig({ scope: 'project' });
-    const legacyResolved = envName?.trim() || legacyProjectConfig.currentEnv || 'default';
-    const legacyEnvConfig = legacyProjectConfig.envs[legacyResolved];
-    if (!legacyEnvConfig) {
-      return undefined;
-    }
-
-    return new Env({ ...(normalizeEnvConfigEntry(legacyEnvConfig) ?? {}), name: legacyResolved });
+    return undefined;
   }
   return new Env({ ...(normalizeEnvConfigEntry(envConfig) ?? {}), name: resolved });
 }
@@ -444,12 +406,11 @@ async function writeEnv(
   updater: (previous: EnvConfigEntry | undefined) => EnvConfigEntry,
   options: AuthStoreOptions = {},
 ) {
-  const writeOptions = await resolveEnvStorageScope(envName, options);
-  const config = await loadExactAuthConfig(writeOptions);
+  const config = await loadExactAuthConfig(options);
   const previous = config.envs[envName];
   config.envs[envName] = updater(previous);
   config.currentEnv = envName;
-  await saveAuthConfig(config, writeOptions);
+  await saveAuthConfig(config, options);
 }
 
 export async function upsertEnv(
@@ -539,20 +500,18 @@ export async function setEnvRuntime(
   runtime: EnvConfigEntry['runtime'],
   options: AuthStoreOptions = {},
 ) {
-  const writeOptions = await resolveEnvStorageScope(envName, options);
-  const config = await loadExactAuthConfig(writeOptions);
+  const config = await loadExactAuthConfig(options);
   const current = config.envs[envName] ?? {};
   config.envs[envName] = {
     ...current,
     runtime,
   };
   config.currentEnv = envName;
-  await saveAuthConfig(config, writeOptions);
+  await saveAuthConfig(config, options);
 }
 
 export async function removeEnv(envName: string, options: AuthStoreOptions = {}) {
-  const writeOptions = await resolveEnvStorageScope(envName, options);
-  const config = await loadExactAuthConfig(writeOptions);
+  const config = await loadExactAuthConfig(options);
 
   if (!config.envs[envName]) {
     throw new Error(`Env "${envName}" is not configured`);
@@ -565,7 +524,7 @@ export async function removeEnv(envName: string, options: AuthStoreOptions = {})
     config.currentEnv = nextEnv ?? 'default';
   }
 
-  await saveAuthConfig(config, writeOptions);
+  await saveAuthConfig(config, options);
 
   return {
     removed: envName,

@@ -146,6 +146,7 @@ const providerDescriptions: Record<string, string> = {
   dashscope: 'Qwen (Tongyi)',
   kimi: 'Kimi',
   ollama: 'Local models',
+  mimo: 'Xiaomi MIMO',
 };
 
 const providerSortOrder: string[] = [

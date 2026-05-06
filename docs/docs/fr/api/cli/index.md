@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "Référence du NocoBase CLI (commande nb) : initialisation, gestion des environnements, exécution de l'application, sources, base de données, plugins, API, mise à jour automatique du CLI et gestion des Skills."
-keywords: "NocoBase CLI,nb,ligne de commande,référence des commandes,gestion des environnements,gestion des plugins,API"
+description: "Référence du NocoBase CLI (commande nb) : initialisation, configuration, gestion des environnements, exécution de l’application, code source, base de données, plugins, licence commerciale, API, auto-mise à jour du CLI et gestion des Skills."
+keywords: "NocoBase CLI,nb,ligne de commande,référence de commandes,configuration,gestion des environnements,gestion des plugins,licence commerciale,API"
 ---
 
 # NocoBase CLI
@@ -33,8 +33,10 @@ La commande racine sert principalement à afficher l'aide et à acheminer les ap
 | --- | --- |
 | [`nb api`](./api/index.md) | Appeler l'API NocoBase via le CLI. |
 | [`nb app`](./app/index.md) | Gérer l'état d'exécution de l'application : démarrer, arrêter, redémarrer, consulter les logs et mettre à niveau. |
+| [`nb config`](./config/index.md) | Gérer la configuration par défaut du CLI. |
 | [`nb db`](./db/index.md) | Gérer la base de données intégrée de l'env sélectionné. |
 | [`nb env`](./env/index.md) | Gérer les environnements de projet NocoBase, leur état, leurs détails et leurs commandes runtime. |
+| [`nb license`](./license/index.md) | Gérer les licences commerciales et les plugins sous licence. |
 | [`nb plugin`](./plugin/index.md) | Gérer les plugins de l'env NocoBase sélectionné. |
 | [`nb scaffold`](./scaffold/index.md) | Générer des squelettes pour le développement de plugins NocoBase. |
 | [`nb self`](./self/index.md) | Vérifier ou mettre à jour le NocoBase CLI lui-même. |
@@ -62,7 +64,9 @@ Afficher l'aide d'une commande ou d'un groupe de commandes spécifique :
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## Exemples
@@ -102,6 +106,20 @@ Appeler l'API :
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+Afficher la configuration par défaut du CLI :
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+Afficher l'état de la licence commerciale :
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## Variables d'environnement

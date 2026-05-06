@@ -564,15 +564,11 @@ function projectCalendarBlock(node: any) {
 }
 
 function projectCalendarPopupAction(node: any) {
-  const popupPage = firstChild(node?.subModels?.page);
   return compactObject({
     alias: node?.alias,
     use: node?.use,
     stepParams: compactObject({
       popupSettings: projectCalendarPopupSettings(node),
-    }),
-    subModels: compactObject({
-      page: popupPage ? [projectPopupPage(popupPage)] : undefined,
     }),
   });
 }
@@ -590,7 +586,6 @@ function projectCalendarPopupSettings(node: any) {
         'associationName',
         'filterByTk',
         'sourceId',
-        'title',
         'popupTemplateUid',
         'popupTemplateContext',
         'popupTemplateHasFilterByTk',
@@ -1017,15 +1012,11 @@ function extractFixtureCalendarBlock(node: any) {
 }
 
 function extractFixtureCalendarPopupAction(node: any) {
-  const popupPage = firstChild(node?.subModels?.page);
   return compactObject({
     alias: node?.alias,
     use: node?.use,
     stepParams: compactObject({
       popupSettings: extractFixtureCalendarPopupSettings(node),
-    }),
-    subModels: compactObject({
-      page: popupPage ? [extractFixturePopupPage(popupPage)] : undefined,
     }),
   });
 }
@@ -1043,7 +1034,6 @@ function extractFixtureCalendarPopupSettings(node: any) {
         'associationName',
         'filterByTk',
         'sourceId',
-        'title',
         'popupTemplateUid',
         'popupTemplateContext',
         'popupTemplateHasFilterByTk',
@@ -1212,7 +1202,7 @@ function extractFixtureSubmitAction(node: any) {
 function extractFixtureButtonSettings(node: any) {
   const general = node?.stepParams?.buttonSettings?.general || {};
   return compactObject({
-    general: compactObject(_.pick(general, ['title', 'type'])),
+    general: compactObject(_.pick(general, ['title', 'tooltip', 'type'])),
   });
 }
 
@@ -1356,7 +1346,7 @@ function projectSubmitAction(node: any) {
 function projectButtonSettings(node: any) {
   const general = node?.stepParams?.buttonSettings?.general || {};
   return compactObject({
-    general: compactObject(_.pick(general, ['title', 'type'])),
+    general: compactObject(_.pick(general, ['title', 'tooltip', 'type'])),
   });
 }
 

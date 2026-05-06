@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "Справочник по NocoBase CLI (команда nb): инициализация, управление окружениями, запуск приложений, исходный код, база данных, плагины, API, самообновление CLI и управление Skills."
-keywords: "NocoBase CLI,nb,командная строка,справочник команд,управление окружениями,управление плагинами,API"
+description: "Справочник по NocoBase CLI (команда nb): инициализация, конфигурация, управление окружениями, запуск приложений, исходный код, база данных, плагины, коммерческое лицензирование, API, самообновление CLI и управление Skills."
+keywords: "NocoBase CLI,nb,командная строка,справочник команд,конфигурация,управление окружениями,управление плагинами,коммерческое лицензирование,API"
 ---
 
 # NocoBase CLI
@@ -33,8 +33,10 @@ nb [command]
 | --- | --- |
 | [`nb api`](./api/index.md) | Вызов API NocoBase через CLI. |
 | [`nb app`](./app/index.md) | Управление состоянием приложения: запуск, остановка, перезапуск, логи и обновление. |
+| [`nb config`](./config/index.md) | Управление настройками CLI по умолчанию. |
 | [`nb db`](./db/index.md) | Управление встроенной базой данных выбранного env. |
 | [`nb env`](./env/index.md) | Управление окружениями проектов NocoBase, состоянием, деталями и runtime-командами. |
+| [`nb license`](./license/index.md) | Управление коммерческими лицензиями и лицензированными плагинами. |
 | [`nb plugin`](./plugin/index.md) | Управление плагинами выбранного env NocoBase. |
 | [`nb scaffold`](./scaffold/index.md) | Генерация шаблона разработки плагинов NocoBase. |
 | [`nb self`](./self/index.md) | Проверка или обновление самого NocoBase CLI. |
@@ -62,7 +64,9 @@ nb --help
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## Примеры
@@ -102,6 +106,20 @@ nb env update app1
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+Просмотр настроек CLI по умолчанию:
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+Просмотр статуса коммерческой лицензии:
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## Переменные окружения

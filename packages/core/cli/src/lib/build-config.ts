@@ -1,7 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {promises as fs} from 'node:fs';
 
 export interface ResourceBuildConfig {
   name?: string;
+  segments?: string[];
   description?: string;
   topLevel?: boolean;
   operations?: OperationBuildConfigSet;

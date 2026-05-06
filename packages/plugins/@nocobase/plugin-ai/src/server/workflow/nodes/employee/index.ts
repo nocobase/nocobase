@@ -52,165 +52,169 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
     await processor.exit();
 
-    try {
-      if (skillSettings && skillSettings.skillsVersion == null) {
-        skillSettings.skillsVersion = 2;
-      }
-      if (skillSettings && skillSettings.toolsVersion == null) {
-        skillSettings.toolsVersion = 2;
-      }
+    const runner = async () => {
+      try {
+        if (skillSettings && skillSettings.skillsVersion == null) {
+          skillSettings.skillsVersion = 2;
+        }
+        if (skillSettings && skillSettings.toolsVersion == null) {
+          skillSettings.toolsVersion = 2;
+        }
 
-      const { conversation, aiWorkflowTasks } = await this.createWorkflowTask({
-        username,
-        userMessage,
-        systemMessage,
-        skillSettings,
-        requiresApproval,
-        toolName,
-        node,
-        processor,
-        jobId: id,
-      });
+        const { conversation, aiWorkflowTasks } = await this.createWorkflowTask({
+          username,
+          userMessage,
+          systemMessage,
+          skillSettings,
+          requiresApproval,
+          toolName,
+          node,
+          processor,
+          jobId: id,
+        });
 
-      let currentRoles = input?.result?.roleName;
-      if (!currentRoles) {
-        const defaultRole = await this.workflow.db.getRepository('rolesUsers').findOne({
+        let currentRoles = input?.result?.roleName;
+        if (!currentRoles) {
+          const defaultRole = await this.workflow.db.getRepository('rolesUsers').findOne({
+            filter: {
+              userId: input?.result?.user?.id ?? userId,
+              default: true,
+            },
+          });
+          currentRoles = defaultRole?.roleName;
+        }
+
+        const employee = await this.workflow.db.getRepository('aiEmployees').findOne({
           filter: {
-            userId: input?.result?.user?.id ?? userId,
-            default: true,
+            username,
           },
         });
-        currentRoles = defaultRole?.roleName;
-      }
 
-      const employee = await this.workflow.db.getRepository('aiEmployees').findOne({
-        filter: {
-          username,
-        },
-      });
-
-      const aiEmployee = new AIEmployee({
-        ctx: {
-          app: this.workflow.app,
-          db: this.workflow.app.db,
-          log: this.workflow.app.log,
-          logger: this.workflow.app.log,
-          state: { currentRoles },
-          auth: {
-            user: {
-              id: input?.result?.user?.id ?? userId,
-            },
-          },
-          action: {
-            params: {
-              values: {
-                sessionId: conversation.sessionId,
-                model,
+        const aiEmployee = new AIEmployee({
+          ctx: {
+            app: this.workflow.app,
+            db: this.workflow.app.db,
+            log: this.workflow.app.log,
+            logger: this.workflow.app.log,
+            state: { currentRoles },
+            auth: {
+              user: {
+                id: input?.result?.user?.id ?? userId,
               },
             },
-          },
-        } as any,
-        employee,
-        sessionId: conversation.sessionId,
-        systemMessage,
-        skillSettings,
-        webSearch,
-        model,
-        tools: [{ name: toolName }],
-      });
-
-      const attachmentPart: Record<string, any> = {};
-      if (files?.length) {
-        const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
-        await resolveAttachments(files);
-        await resolveUrls(files);
-      }
-
-      let result;
-      let isToolInvoke = false;
-      let retry = 0;
-      do {
-        const userMessages = [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              content: userMessage,
-            },
-            ...attachmentPart,
-          },
-        ];
-        if (retry > 0) {
-          if (retry < 2) {
-            const firstUserMessage = await this.workflow.db
-              .getRepository('aiConversations.messages', conversation.sessionId)
-              .findOne({
-                filter: {
-                  role: 'user',
+            action: {
+              params: {
+                values: {
+                  sessionId: conversation.sessionId,
+                  model,
                 },
-                sort: ['messageId'],
-              });
-            const messageId = firstUserMessage?.messageId;
-            result = await aiEmployee.invoke({ messageId, userMessages });
-          } else {
-            result = await aiEmployee.invoke({
-              userMessages: [
-                {
-                  role: 'user',
-                  content: {
-                    type: 'text',
-                    content: `You failed to call the required tool "aiEmployeeWorkflowTaskOutput" in your previous response.
+              },
+            },
+          } as any,
+          employee,
+          sessionId: conversation.sessionId,
+          systemMessage,
+          skillSettings,
+          webSearch,
+          model,
+          tools: [{ name: toolName }],
+        });
+
+        const attachmentPart: Record<string, any> = {};
+        if (files?.length) {
+          const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
+          await resolveAttachments(files);
+          await resolveUrls(files);
+        }
+
+        let result;
+        let isToolInvoke = false;
+        let retry = 0;
+        do {
+          const userMessages = [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                content: userMessage,
+              },
+              ...attachmentPart,
+            },
+          ];
+          if (retry > 0) {
+            if (retry < 2) {
+              const firstUserMessage = await this.workflow.db
+                .getRepository('aiConversations.messages', conversation.sessionId)
+                .findOne({
+                  filter: {
+                    role: 'user',
+                  },
+                  sort: ['messageId'],
+                });
+              const messageId = firstUserMessage?.messageId;
+              result = await aiEmployee.invoke({ messageId, userMessages });
+            } else {
+              result = await aiEmployee.invoke({
+                userMessages: [
+                  {
+                    role: 'user',
+                    content: {
+                      type: 'text',
+                      content: `You failed to call the required tool "aiEmployeeWorkflowTaskOutput" in your previous response.
 Call "aiEmployeeWorkflowTaskOutput" now to submit the workflow outcome.
 Do not send another normal assistant response without invoking it.
                   `,
+                    },
                   },
-                },
-              ],
-            });
+                ],
+              });
+            }
+          } else {
+            result = await aiEmployee.invoke({ userMessages });
           }
-        } else {
-          result = await aiEmployee.invoke({ userMessages });
+
+          isToolInvoke = result.messages
+            .filter((it: any) => it.type === 'ai')
+            .flatMap((it: any) => it.tool_calls)
+            .some((it: any) => it.name === toolName);
+        } while (!isToolInvoke && retry++ < 2);
+
+        if (!isToolInvoke) {
+          throw new Error('AI employee not do job correctly');
         }
 
-        isToolInvoke = result.messages
-          .filter((it: any) => it.type === 'ai')
-          .flatMap((it: any) => it.tool_calls)
-          .some((it: any) => it.name === toolName);
-      } while (!isToolInvoke && retry++ < 2);
-
-      if (!isToolInvoke) {
-        throw new Error('AI employee not do job correctly');
-      }
-
-      await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
-    } catch (e: any) {
-      processor.logger.error(`ai employee invoke failed, ${e.message}`, {
-        node: node.id,
-        stack: e.stack,
-        chatOptions: node.config,
-      });
-      const job = await this.workflow.app.db.getRepository('jobs').findOne({
-        filterByTk: id,
-      });
-      job.set({
-        status: JOB_STATUS.ERROR,
-        result: e.message,
-      });
-      const aiWorkflowTask = await this.workflow.db.getRepository('aiWorkflowTasks').findOne({
-        filter: {
-          jobId: id,
-        },
-      });
-      if (aiWorkflowTask) {
-        await this.workflow.db.getRepository('aiWorkflowTasks').update({
-          values: { status: 'aborted' },
+        await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
+      } catch (e: any) {
+        processor.logger.error(`ai employee invoke failed, ${e.message}`, {
+          node: node.id,
+          stack: e.stack,
+          chatOptions: node.config,
+        });
+        const job = await this.workflow.app.db.getRepository('jobs').findOne({
+          filterByTk: id,
+        });
+        job.set({
+          status: JOB_STATUS.ERROR,
+          result: e.message,
+        });
+        const aiWorkflowTask = await this.workflow.db.getRepository('aiWorkflowTasks').findOne({
           filter: {
-            id: aiWorkflowTask.id,
+            jobId: id,
           },
         });
+        if (aiWorkflowTask) {
+          await this.workflow.db.getRepository('aiWorkflowTasks').update({
+            values: { status: 'aborted' },
+            filter: {
+              id: aiWorkflowTask.id,
+            },
+          });
+        }
+        await this.workflow.resume(job);
       }
-      await this.workflow.resume(job);
-    }
+    };
+
+    runner();
   }
 
   resume(node: FlowNodeModel, job: any, processor: Processor) {

@@ -519,7 +519,6 @@ exports.initEnv = function initEnv() {
     LOCAL_STORAGE_DEST: storagePathJoin('uploads'),
     PLUGIN_STORAGE_PATH: storagePathJoin('plugins'),
     PLAYWRIGHT_AUTH_FILE: storagePathJoin('playwright', '.auth', 'admin.json'),
-    LOGGER_BASE_PATH: storagePathJoin('logs'),
     WATCH_FILE: storagePathJoin('app.watch.ts'),
   });
 

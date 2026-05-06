@@ -336,6 +336,23 @@ nb api resource get --resource users --filter-by-tk 1 -e app1
 nb api resource create --resource users --values '{"nickname":"Ada"}' -e app1
 ```
 
+Create and download a backup:
+
+```bash
+nb api backup create -e app1
+nb api backup status --name backup_20260430_120000_1234.nbdata -e app1
+nb api backup download --name backup_20260430_120000_1234.nbdata --output ./backup.nbdata -e app1
+```
+
+Restore or run a migration package:
+
+```bash
+nb api backup restore-upload --file ./backup.nbdata -e app1
+nb api migration rules create --name default --user-defined-rule schema-only --system-defined-rule overwrite-first -e app1
+nb api migration create --rule-id 1 --title release-20260430 -e app1
+nb api migration execute --file ./migration.nbdata -e app1
+```
+
 Use `-j, --json-output` to print raw JSON when available:
 
 ```bash
@@ -350,9 +367,11 @@ Available API command topics:
 | `nb api api-keys` | Manage API keys for HTTP API access. |
 | `nb api app` | Manage application resources. |
 | `nb api authenticators` | Manage user authentication, including password auth, SMS auth, SSO protocols, and extensible providers. |
+| `nb api backup` | Create, download, remove, and restore backups. |
 | `nb api data-modeling` | Manage data sources, collections, and database modeling resources. |
 | `nb api file-manager` | Manage file storage services, file collections, and attachment fields. |
 | `nb api flow-surfaces` | Compose and mutate page, tab, block, field, and action surfaces. |
+| `nb api migration` | Create, check, execute, and inspect migration packages. |
 | `nb api pm` | Manage plugins through API commands. |
 | `nb api resource` | Work with generic collection resources. |
 | `nb api system-settings` | Adjust system title, logo, language, and other global settings. |

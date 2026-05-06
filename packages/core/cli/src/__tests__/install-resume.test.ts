@@ -549,6 +549,11 @@ test('install --resume --yes requires only setup-only flags that are not saved i
 test('install --resume allows reusing the saved docker app port when occupied by the same env container', async () => {
   const { default: Install } = await import('../commands/install.js');
 
+  const prefixSpy = vi
+    .spyOn(Install as unknown as {
+      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+    }, 'resolveResumeDockerContainerPrefix')
+    .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
     .spyOn(Install as unknown as {
       isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
@@ -562,18 +567,23 @@ test('install --resume allows reusing the saved docker app port when occupied by
   const error = await validate('53414', {
     resume: true,
     env: 'app25121',
-    workspaceName: 'nb-chen',
     source: 'docker',
   });
 
   expect(error).toBe(undefined);
   expect(commandSucceedsSpy).toHaveBeenCalledWith('nb-chen-app25121-app', '53414');
   commandSucceedsSpy.mockRestore();
+  prefixSpy.mockRestore();
 });
 
 test('install --resume keeps rejecting a port occupied by another resource', async () => {
   const { default: Install } = await import('../commands/install.js');
 
+  const prefixSpy = vi
+    .spyOn(Install as unknown as {
+      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+    }, 'resolveResumeDockerContainerPrefix')
+    .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
     .spyOn(Install as unknown as {
       isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
@@ -587,17 +597,22 @@ test('install --resume keeps rejecting a port occupied by another resource', asy
   const error = await validate('53414', {
     resume: true,
     env: 'app25121',
-    workspaceName: 'nb-chen',
     source: 'docker',
   });
 
   expect(error ?? '').toMatch(/already in use/i);
   commandSucceedsSpy.mockRestore();
+  prefixSpy.mockRestore();
 });
 
 test('install --resume allows reusing the saved built-in db port when occupied by the same env container', async () => {
   const { default: Install } = await import('../commands/install.js');
 
+  const prefixSpy = vi
+    .spyOn(Install as unknown as {
+      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+    }, 'resolveResumeDockerContainerPrefix')
+    .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
     .spyOn(Install as unknown as {
       isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
@@ -611,7 +626,6 @@ test('install --resume allows reusing the saved built-in db port when occupied b
   const error = await validate('53414', {
     resume: true,
     env: 'app25121',
-    workspaceName: 'nb-chen',
     source: 'git',
     builtinDb: true,
     dbDialect: 'postgres',
@@ -620,16 +634,12 @@ test('install --resume allows reusing the saved built-in db port when occupied b
   expect(error).toBe(undefined);
   expect(commandSucceedsSpy).toHaveBeenCalledWith('nb-chen-app25121-postgres', '53414');
   commandSucceedsSpy.mockRestore();
+  prefixSpy.mockRestore();
 });
 
 test('install --resume allows reusing the saved local app port when occupied by the same pm2 process', async () => {
   const { default: Install } = await import('../commands/install.js');
 
-  const workspaceSpy = vi
-    .spyOn(Install as unknown as {
-      resolveResumeWorkspaceName: (envName: string) => Promise<string | undefined>;
-    }, 'resolveResumeWorkspaceName')
-    .mockResolvedValue('nb-chen');
   const localPortSpy = vi
     .spyOn(Install as unknown as {
       isLocalPm2ProcessUsingPort: (appRootPath: string, port: string) => Promise<boolean>;
@@ -650,7 +660,6 @@ test('install --resume allows reusing the saved local app port when occupied by 
   expect(error).toBe(undefined);
   expect(localPortSpy).toHaveBeenCalledWith('./app25121/source/', '53414');
   localPortSpy.mockRestore();
-  workspaceSpy.mockRestore();
 });
 
 test('install app prompt catalog seeds resume=true when resuming', async () => {

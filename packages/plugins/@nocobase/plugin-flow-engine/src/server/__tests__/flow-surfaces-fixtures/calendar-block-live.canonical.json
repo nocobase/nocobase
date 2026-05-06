@@ -27,6 +27,11 @@
           "dataSourceKey": "main",
           "collectionName": "pets"
         }
+      },
+      "calendarSettings": {
+        "eventPopupSettings": {
+          "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+        }
       }
     },
     "subModels": {
@@ -43,6 +48,17 @@
           }
         },
         {
+          "alias": "node.RefreshActionModel1",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Refresh\")}}"
+              }
+            }
+          }
+        },
+        {
           "alias": "action.addNew1",
           "use": "AddNewActionModel",
           "stepParams": {
@@ -50,17 +66,6 @@
               "general": {
                 "title": "{{t(\"Add new\")}}",
                 "type": "primary"
-              }
-            }
-          }
-        },
-        {
-          "alias": "node.RefreshActionModel1",
-          "use": "RefreshActionModel",
-          "stepParams": {
-            "buttonSettings": {
-              "general": {
-                "title": "{{t(\"Refresh\")}}"
               }
             }
           }
@@ -77,7 +82,8 @@
                 "size": "medium",
                 "pageModelClass": "ChildPageModel",
                 "collectionName": "pets",
-                "dataSourceKey": "main"
+                "dataSourceKey": "main",
+                "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
               }
             }
           }

@@ -18,6 +18,7 @@ nb db <command>
 
 | Perintah | Penjelasan |
 | --- | --- |
+| [`nb db check`](./check.md) | Memeriksa apakah koneksi database dapat dijangkau. |
 | [`nb db ps`](./ps.md) | Melihat status runtime database bawaan |
 | [`nb db start`](./start.md) | Memulai container database bawaan |
 | [`nb db stop`](./stop.md) | Menghentikan container database bawaan |
@@ -26,6 +27,8 @@ nb db <command>
 ## Contoh
 
 ```bash
+nb db check --env app1
+nb db check --db-dialect postgres --db-host 127.0.0.1 --db-port 5432 --db-database nocobase --db-user nocobase --db-password secret
 nb db ps
 nb db ps --env app1
 nb db start --env app1

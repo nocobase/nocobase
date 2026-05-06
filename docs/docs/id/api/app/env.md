@@ -190,14 +190,6 @@ Opsi yang tersedia:
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-## LOGGER_BASE_PATH
-
-Path penyimpanan log berbasis file, defaultnya `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ## LOGGER_LEVEL
 
 Level output log, lingkungan pengembangan defaultnya `debug`, lingkungan produksi defaultnya `info`. Opsi yang tersedia:

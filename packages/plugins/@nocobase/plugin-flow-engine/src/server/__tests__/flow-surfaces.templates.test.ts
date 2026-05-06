@@ -638,6 +638,14 @@ describe('flowSurfaces templates', () => {
     expect(getPopupGridItems(copiedPopupPageSurface.tree).some((item: any) => item.uid === copiedPopupBlock.uid)).toBe(
       true,
     );
+    const copiedPopupTemplate = await saveTemplate(rootAgent, {
+      target: { uid: copiedAction.uid },
+      name: 'Employee copied popup details',
+      description: 'Reusable popup template saved from a detached popup template copy.',
+      saveMode: 'duplicate',
+    });
+    expect(copiedPopupTemplate.type).toBe('popup');
+    await expectTemplateUsage(rootAgent, template.uid, 4);
 
     const configurableAction = getData(
       await rootAgent.resource('flowSurfaces').addAction({

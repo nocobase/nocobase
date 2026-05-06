@@ -14,7 +14,7 @@ export const getLoggerLevel = () =>
   process.env.LOGGER_LEVEL || (process.env.APP_ENV === 'development' ? 'debug' : 'info');
 
 export const getLoggerFilePath = (...paths: string[]): string => {
-  return path.resolve(process.env.LOGGER_BASE_PATH || storagePathJoin('logs'), ...paths);
+  return path.resolve(storagePathJoin('logs'), ...paths);
 };
 
 export const getLoggerTransport = (): ('console' | 'file' | 'dailyRotateFile')[] =>

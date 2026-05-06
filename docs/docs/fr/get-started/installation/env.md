@@ -247,14 +247,6 @@ Options :
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Chemin de stockage des logs basés sur des fichiers. La valeur par défaut est `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Niveau de sortie des logs. La valeur par défaut est `debug` en environnement de développement et `info` en production. Options :

@@ -1,109 +1,95 @@
 ---
 title: "Gestion des publications"
-description: "Le Skill de gestion des publications permet d'effectuer des opérations de publication auditables entre plusieurs environnements."
-keywords: "construction par IA, gestion des publications, publication multi-environnements, sauvegarde et restauration, migration"
+description: "Le Skill de gestion des publications permet d'effectuer des opérations de publication auditables entre plusieurs environnements, avec restauration de sauvegarde et migration."
+keywords: "construction par IA,gestion des publications,publication multi-environnements,restauration de sauvegarde,migration"
 ---
 
 # Gestion des publications
 
 :::tip Prérequis
 
-- Avant de lire cette page, assurez-vous d'avoir installé le NocoBase CLI et terminé l'initialisation conformément au [Démarrage rapide de la construction par IA](./index.md).
-- Vous devez disposer d'une licence Pro ou supérieure [Édition commerciale NocoBase](https://www.nocobase.com/cn/commercial).
-- Assurez-vous que les plugins de gestion des sauvegardes et de gestion des migrations sont activés et mis à jour vers la dernière version.
+- Avant de lire cette page, installez NocoBase CLI et terminez l'initialisation en suivant le [Démarrage rapide de la construction par IA](./index.md)
+- Une licence de l'édition Professional ou supérieure est nécessaire. Voir [NocoBase Édition commerciale](https://www.nocobase.com/cn/commercial)
+- Activez les plugins « Gestion des sauvegardes » et « Gestion des migrations », puis mettez-les à jour vers la dernière version
 
 :::
 
-:::warning Attention
-Le CLI lié à la gestion des publications est encore en cours de développement, son utilisation n'est pas encore prise en charge.
-:::
 ## Introduction
 
-Le Skill de gestion des publications permet d'effectuer des opérations de publication entre plusieurs environnements — avec deux modes de publication : sauvegarde/restauration et migration.
+Le Skill de gestion des publications permet d'effectuer des opérations de publication entre plusieurs environnements NocoBase. Il prend en charge deux méthodes : la restauration de sauvegarde et la migration.
 
+Si vous voulez simplement écraser complètement un environnement avec un autre, la restauration de sauvegarde suffit généralement. Si vous devez contrôler par règles les contenus synchronisés, par exemple synchroniser uniquement la structure sans les données métier, la migration est plus adaptée.
 
 ## Périmètre fonctionnel
 
-- Sauvegarde et restauration mono-environnement : restauration complète des données locales à partir d'un paquet de sauvegarde.
-- Sauvegarde et restauration inter-environnements : restauration complète des données de l'environnement cible à partir d'un paquet de sauvegarde.
-- Migration inter-environnements : mise à jour différentielle des données de l'environnement cible à partir d'un nouveau paquet de migration.
+- Restauration de sauvegarde dans un seul environnement : restaure l'environnement actuel avec un paquet de sauvegarde existant
+- Restauration immédiate dans un seul environnement : crée d'abord une sauvegarde de l'environnement actuel, puis restaure l'environnement actuel avec cette sauvegarde
+- Restauration de sauvegarde entre environnements : restaure le paquet de sauvegarde de l'environnement source dans l'environnement cible
+- Migration entre environnements : met à jour l'environnement cible de façon différentielle avec un paquet de migration
 
 ## Exemples de prompts
 
-### Scénario A : Sauvegarde et restauration mono-environnement
-:::tip Prérequis
-
-L'environnement actuel doit disposer d'un paquet de sauvegarde, ou bien sauvegardez puis restaurez
-
-:::
-
-Mode prompt
-```
-Restaure à partir de <file-name>
-```
-Mode ligne de commande
-```
-// Voir les paquets de sauvegarde disponibles ; s'il n'y en a pas, exécutez nb backup <file-name>
-nb backup list 
-nb restore <file-name> 
-```
-![Sauvegarde et restauration](https://static-docs.nocobase.com/20260417150854.png)
-
-### Scénario B : Sauvegarde et restauration inter-environnements
+### Scénario A : restauration dans un seul environnement avec fichier spécifié
 
 :::tip Prérequis
 
-Vous devez préparer deux environnements, par exemple un environnement local dev et un environnement distant test, ou installer deux environnements en local.
+Un fichier de sauvegarde portant le même nom doit déjà exister dans l'environnement actuel.
 
 :::
 
-Mode prompt
+```text
+Restaurer avec la sauvegarde <file-name.nbdata>
 ```
-Restaure dev sur test
-```
-Mode ligne de commande
-```
-// Voir les paquets de sauvegarde disponibles ; s'il n'y en a pas, exécutez nb backup <file-name> --env dev
-nb backup list --env dev
-// Restaurer en utilisant le paquet de sauvegarde
-nb restore <file-name> --env test
-```
-![Sauvegarde et restauration](https://static-docs.nocobase.com/20260417150854.png)
 
-### Scénario C : Migration inter-environnements
+Le Skill utilise le fichier de sauvegarde portant le même nom déjà présent sur le serveur de l'environnement actuel pour effectuer la restauration.
+
+### Scénario B : restauration dans un seul environnement sans spécifier de fichier
+
+```text
+Sauvegarder et restaurer l'environnement actuel
+```
+
+Le Skill crée d'abord une sauvegarde de l'environnement actuel, puis restaure l'environnement actuel avec cette sauvegarde.
+
+### Scénario C : restauration de sauvegarde entre environnements
 
 :::tip Prérequis
 
-Comme dans le scénario B, vous devez préparer deux environnements, par exemple un environnement local dev et un environnement distant test, ou installer deux environnements en local.
+Préparez deux environnements, par exemple un environnement dev local et un environnement test distant, ou deux environnements locaux. Vous pouvez spécifier un fichier de sauvegarde précis ou ne pas en spécifier.
 
 :::
 
-Mode prompt
+```text
+Restaurer dev vers test
 ```
-Migre dev vers test
+
+Le Skill crée un paquet de sauvegarde dans l'environnement dev, puis restaure ce paquet dans l'environnement test.
+
+### Scénario D : migration entre environnements
+
+:::tip Prérequis
+
+Comme pour le scénario C, préparez deux environnements. Vous pouvez spécifier un fichier de migration précis ou ne pas en spécifier.
+
+:::
+
+```text
+Migrer dev vers test
 ```
-Mode ligne de commande
-```
-// Créer une nouvelle règle de migration, ce qui produira un nouveau ruleId, ou exécutez nb migration rule list --env dev pour obtenir un ruleId existant
-nb migration rule add --env dev 
-// Générer un paquet de migration à partir du ruleId
-nb migration generate <ruleId> --env dev 
-// Exécuter la migration en utilisant le paquet de migration
-nb migration run <file-name> --env test
-```
-![Publication par migration](https://static-docs.nocobase.com/20260417151022.png)
+
+Le Skill crée un paquet de migration dans l'environnement dev, puis utilise ce paquet pour mettre à jour l'environnement test.
 
 ## Questions fréquentes
 
-**Sauvegarde/restauration ou migration : laquelle choisir ?**
+**Faut-il choisir la restauration de sauvegarde ou la migration ?**
 
-Si vous disposez déjà d'un paquet de sauvegarde utilisable, choisissez la sauvegarde et restauration. Si vous devez contrôler par stratégie quelles données sont synchronisées (par exemple ne synchroniser que la structure et pas les données), choisissez la migration.
+Par défaut, la restauration de sauvegarde suffit, surtout si vous disposez déjà d'un paquet de sauvegarde utilisable ou si vous voulez que l'environnement cible soit entièrement écrasé par l'état de l'environnement source. Utilisez la migration uniquement lorsque vous devez contrôler le périmètre de synchronisation par règles, par exemple synchroniser uniquement la structure sans les données.
 
-**Pourquoi le plugin de migration est absent ?**
+**Que signifie l'absence du plugin de migration ?**
 
-Le plugin de gestion des migrations nécessite une licence Pro ou supérieure, voir [Édition commerciale NocoBase](https://www.nocobase.com/cn/commercial).
+Le plugin de gestion des migrations nécessite une licence de l'édition Professional ou supérieure. Voir [NocoBase Édition commerciale](https://www.nocobase.com/cn/commercial) pour plus de détails.
 
 ## Liens connexes
 
-- [Vue d'ensemble de la construction par IA](./index.md) — vue d'ensemble et installation de tous les Skills de construction par IA
-- [Gestion des environnements](./env-bootstrap) — vérification d'environnement, installation, déploiement et diagnostic
+- [Vue d'ensemble de la construction par IA](./index.md) — vue d'ensemble et méthode d'installation de tous les Skills de construction par IA
+- [Gestion des environnements](./env-bootstrap) — vérification de l'environnement, installation, déploiement et diagnostic des problèmes
