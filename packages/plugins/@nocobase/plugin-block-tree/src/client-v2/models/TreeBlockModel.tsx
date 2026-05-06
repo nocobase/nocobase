@@ -17,7 +17,7 @@ import {
   CollectionBlockModel,
   isTitleField,
   RecordActionGroupModel,
-} from '@nocobase/client';
+} from '@nocobase/client-v2';
 import {
   AddSubModelButton,
   buildSubModelItem,
@@ -35,7 +35,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
-import { TreeBlockView } from './components/TreeBlockView';
+import { TreeBlockView } from '../components/TreeBlockView';
 import { tExpr } from '../locale';
 import { treeConnectDataBlocks } from './treeConnectDataBlocks';
 

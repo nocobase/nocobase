@@ -10,7 +10,7 @@
 import { DisplayItemModel, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { AddChildActionModel, PopupActionModel } from '@nocobase/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TreeBlockModel } from '../TreeBlockModel';
+import { TreeBlockModel } from '../models/TreeBlockModel';
 
 describe('TreeBlockModel', () => {
   afterEach(() => {

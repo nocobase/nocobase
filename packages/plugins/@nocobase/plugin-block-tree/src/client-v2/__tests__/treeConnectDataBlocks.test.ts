@@ -9,7 +9,11 @@
 
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { pruneDisconnectedTreeTargets, syncTreeConnectConfig, treeConnectDataBlocks } from '../treeConnectDataBlocks';
+import {
+  pruneDisconnectedTreeTargets,
+  syncTreeConnectConfig,
+  treeConnectDataBlocks,
+} from '../models/treeConnectDataBlocks';
 
 describe('treeConnectDataBlocks', () => {
   const createEmitter = () => {

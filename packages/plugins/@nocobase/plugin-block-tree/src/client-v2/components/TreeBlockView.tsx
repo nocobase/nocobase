@@ -20,8 +20,8 @@ import {
 import type { ForkFlowModel, PropertyMetaFactory } from '@nocobase/flow-engine';
 import { Checkbox, DatePicker, Input, InputNumber, Radio, Select, Space, Switch } from 'antd';
 import React, { useCallback, useMemo } from 'react';
-import { Tree, TreeProps } from '../../component';
-import type { TreeBlockModel } from '../TreeBlockModel';
+import { Tree, TreeProps } from './Tree';
+import type { TreeBlockModel } from '../models/TreeBlockModel';
 
 const SEARCH_FILTER_GROUP = '__tree_search__';
 
