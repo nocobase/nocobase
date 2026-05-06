@@ -98,7 +98,7 @@ function createMetaBaseProperties(field: CollectionField) {
 }
 
 export function createCollectionContextMeta(
-  collectionOrFactory: Collection | (() => Collection | null),
+  collectionOrFactory: Collection | (() => Collection | null | undefined),
   title?: string,
   includeNonFilterable?: boolean,
 ): PropertyMetaFactory {

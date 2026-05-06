@@ -7,13 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { render, renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { getApp } from '@nocobase/test/web';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { CurrentUserProvider, useCurrentUserContext } from '../CurrentUserProvider';
 
 describe('CurrentUserProvider', () => {
+  const createDeferred = () => {
+    let resolveDeferred = () => {};
+    const promise = new Promise<void>((resolve) => {
+      resolveDeferred = resolve;
+    });
+    return { promise, resolve: resolveDeferred };
+  };
+
   const renderCurrentUserApp = async (options: {
     initialEntries: string[];
     apis: Record<string, any>;
@@ -193,6 +202,51 @@ describe('CurrentUserProvider', () => {
       expect(screen.getByText('Admin path: /admin/page2')).toBeInTheDocument();
     });
     expect(authCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it('should keep protected admin route loading until accessible routes are initialized', async () => {
+    const authCheck = vi.fn(() => [200, { data: { id: 1 } }]);
+    const accessibleRoutes = createDeferred();
+    const loadAccessibleRoutes = vi.fn(async () => {
+      await accessibleRoutes.promise;
+      return [200, { data: [{ id: 1, schemaUid: 'page-1' }] }];
+    });
+
+    const AdminRoute = () => <div>Admin route</div>;
+
+    const { App } = getApp({
+      providers: [CurrentUserProvider],
+      appOptions: {
+        router: {
+          type: 'memory',
+          initialEntries: ['/admin/page-1'],
+          routes: {
+            admin: {
+              path: '/admin/*',
+              Component: AdminRoute,
+            },
+          },
+        },
+      },
+      apis: {
+        '/auth:check': authCheck,
+        '/desktopRoutes:listAccessible': loadAccessibleRoutes,
+      },
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(authCheck).toHaveBeenCalledTimes(1);
+      expect(loadAccessibleRoutes).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByText('Admin route')).not.toBeInTheDocument();
+
+    accessibleRoutes.resolve();
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin route')).toBeInTheDocument();
+    });
   });
 
   it('should expose non-auth errors instead of keeping loading', async () => {

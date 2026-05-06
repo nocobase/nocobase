@@ -127,6 +127,7 @@ export const CurrentUserProvider = (props) => {
           resolveOnServer: true,
           meta: userMeta,
         });
+        await runtimeFlowEngine.context.routeRepository?.ensureAccessibleLoaded?.();
         setRedirectingToSignin(false);
         return res?.data;
       } catch (error: any) {
