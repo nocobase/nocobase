@@ -149,3 +149,26 @@ jobs:
           git checkout next
           git merge -X ours main --no-edit
           git push origin next --tags --atomic
+  feishu-notify:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs:
+      - get-plugins
+      - pre-merge-main-into-next
+      - update-version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: main
+      - name: Set current date
+        run: echo "CURRENT_DATE=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+      - name: Send Feishu notification
+        shell: bash
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          TITLE: "NocoBase ${{ github.workflow }} 失败通知"
+          STATUS: failure
+          CONTENT: "**触发者：**${{ github.actor }}\n**时间：**${{ env.CURRENT_DATE }}\n**状态：**❌ 构建失败"
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/feishu-notify.sh
