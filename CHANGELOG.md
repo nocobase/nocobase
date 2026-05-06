@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.49](https://github.com/nocobase/nocobase/compare/v2.0.48...v2.0.49) - 2026-05-06
+
+### 🚀 Improvements
+
+- **[undefined]** - ([#9349](https://github.com/nocobase/nocobase/pull/9349)) by @Molunerfinn
+
+### 🐛 Bug Fixes
+
+- **[Data source: Main]** Prevent crash when fields is undefined during collection loading ([#9174](https://github.com/nocobase/nocobase/pull/9174)) by @saraTabbane
+
+- **[UI templates]** Fixed an issue where the popup template list failed to correctly load available templates. ([#9332](https://github.com/nocobase/nocobase/pull/9332)) by @gchust
+
+- **[AI employees]** Fix the issue of occasional errors when AI employee use the DeepSeek v4 model ([#9348](https://github.com/nocobase/nocobase/pull/9348)) by @cgyrock
+
+- **[File manager]** Improved preview file download error handling ([#9103](https://github.com/nocobase/nocobase/pull/9103)) by @gaston98765
+
+- **[Workflow: Approval]** Fix the issue where filter and other query parameters now work in API of listing available approval workflows by @mytharcher
+
 ## [v2.0.48](https://github.com/nocobase/nocobase/compare/v2.0.47...v2.0.48) - 2026-05-04
 
 ### 🐛 Bug Fixes
