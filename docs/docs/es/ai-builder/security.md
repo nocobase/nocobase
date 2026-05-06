@@ -91,12 +91,12 @@ nb env auth local
 
 `nb env auth` iniciará el flujo de inicio de sesión en el navegador. Tras completarlo correctamente, la CLI guardará la información de autenticación en la configuración del entorno actual y, a continuación, podrá seguir permitiendo que el AI Agent llame a `nb api`.
 
-Con la implementación predeterminada actual:
+La validez de los tokens de acceso y de actualización de OAuth sigue la configuración de la [política de Token](/security/token-policy/) del sistema.
 
-- El token de acceso de OAuth tiene una validez de **10 minutos**.
-- El token de actualización de OAuth tiene una validez de **30 días**.
+- El token de acceso de OAuth tiene la misma validez que el Token del sistema, con un valor predeterminado de **1 día**.
+- El token de actualización de OAuth tiene la misma validez que la sesión del sistema, con un valor predeterminado de **7 días**.
 
-Cuando el token de acceso esté próximo a caducar, la CLI utilizará preferentemente el token de actualización para renovar la sesión automáticamente; si el token de actualización ha caducado, no está disponible o el servidor no devuelve uno, será necesario volver a ejecutar `nb env auth`.
+Cuando el token de acceso esté próximo a caducar, la CLI utilizará preferentemente el token de actualización para renovar la sesión automáticamente; si el token de actualización ha caducado, no está disponible o el servidor no devuelve uno, será necesario volver a ejecutar `nb env auth`. Si modifica la política de Token, debe reiniciar el sistema para que surta efecto en el servicio OAuth.
 
 La característica de OAuth es que las solicitudes se ejecutan, por lo general, en el contexto del usuario actualmente conectado y de su rol, por lo que los registros de auditoría pueden asociarse más fácilmente al operador real. Este método es más adecuado para operaciones que requieren participación humana y confirmación de identidad.
 
