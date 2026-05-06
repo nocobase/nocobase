@@ -86,6 +86,10 @@ function hasPossibleRunJSContextUsage(value: string) {
   );
 }
 
+function stripTemplateExpressions(value: string) {
+  return value.replace(/\{\{[\s\S]*?\}\}/g, '');
+}
+
 function collectRunJSStringUsages(
   value: any,
   formValuesPaths: Set<string>,
@@ -96,8 +100,9 @@ function collectRunJSStringUsages(
   if (value == null) return;
 
   if (typeof value === 'string') {
-    if (hasPossibleRunJSContextUsage(value)) {
-      addUsage(extractUsedVariablePathsFromRunJS(value), formValuesPaths, itemPaths, wildcard);
+    const runJSCandidate = stripTemplateExpressions(value);
+    if (hasPossibleRunJSContextUsage(runJSCandidate)) {
+      addUsage(extractUsedVariablePathsFromRunJS(runJSCandidate), formValuesPaths, itemPaths, wildcard);
     }
     return;
   }

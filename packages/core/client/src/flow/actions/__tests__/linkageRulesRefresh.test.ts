@@ -10,6 +10,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { linkageRulesRefresh } from '../linkageRulesRefresh';
 
+async function waitForMockCall(mock: { mock: { calls: unknown[] } }, count: number) {
+  for (let i = 0; i < 10; i++) {
+    await Promise.resolve();
+    if (mock.mock.calls.length >= count) {
+      return;
+    }
+  }
+}
+
 describe('linkageRulesRefresh action', () => {
   it('skips master model when mounted forks can handle flow in runtime mode', async () => {
     const handler = vi.fn(async () => {});
@@ -196,7 +205,7 @@ describe('linkageRulesRefresh action', () => {
       flowKey: 'buttonSettings',
     });
 
-    await Promise.resolve();
+    await waitForMockCall(handler, 1);
     expect(handler).toHaveBeenCalledTimes(1);
 
     resolveFirst!();
@@ -245,7 +254,7 @@ describe('linkageRulesRefresh action', () => {
       flowKey: 'buttonSettings',
     });
 
-    await Promise.resolve();
+    await waitForMockCall(handler, 1);
     expect(handler).toHaveBeenCalledTimes(1);
 
     resolveFirst!();

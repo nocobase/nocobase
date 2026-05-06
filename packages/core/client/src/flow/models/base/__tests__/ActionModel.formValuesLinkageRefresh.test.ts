@@ -11,6 +11,11 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { ActionModel } from '../ActionModel';
 
+vi.mock('../../../components/ConditionBuilder', () => ({
+  ConditionBuilder: () => null,
+  commonConditionHandler: vi.fn(),
+}));
+
 describe('ActionModel formValues-driven linkage refresh', () => {
   afterEach(() => {
     vi.useRealTimers();
