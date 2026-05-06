@@ -435,6 +435,7 @@ export const useChatMessageActions = () => {
       };
 
       try {
+        // eslint-disable-next-line no-constant-condition
         while (true) {
           const { done, value } = await reader.read();
           if (done || error) {
@@ -896,19 +897,22 @@ export const useChatMessageActions = () => {
     [api],
   );
 
-  const startEditingMessage = useCallback((msg: any) => {
-    const currentMessages = messages;
-    const index = currentMessages.findIndex((m) => m.key === msg.messageId);
-    setIsEditingMessage(true);
-    setEditingMessageId(msg.messageId);
-    setMessages(currentMessages.slice(0, index));
-    if (msg.attachments) {
-      setAttachments(msg.attachments);
-    }
-    if (msg.workContext) {
-      setContextItems(msg.workContext);
-    }
-  }, [messages, setAttachments, setContextItems, setEditingMessageId, setIsEditingMessage, setMessages]);
+  const startEditingMessage = useCallback(
+    (msg: any) => {
+      const currentMessages = messages;
+      const index = currentMessages.findIndex((m) => m.key === msg.messageId);
+      setIsEditingMessage(true);
+      setEditingMessageId(msg.messageId);
+      setMessages(currentMessages.slice(0, index));
+      if (msg.attachments) {
+        setAttachments(msg.attachments);
+      }
+      if (msg.workContext) {
+        setContextItems(msg.workContext);
+      }
+    },
+    [messages, setAttachments, setContextItems, setEditingMessageId, setIsEditingMessage, setMessages],
+  );
 
   const finishEditingMessage = useCallback(() => {
     setIsEditingMessage(false);

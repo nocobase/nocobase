@@ -8,6 +8,8 @@
  */
 
 import { ToolsOptions, lazy } from '@nocobase/client';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 import { FlowContext } from '@nocobase/flow-engine';
 import { applyPatch } from 'diff';
