@@ -57,11 +57,12 @@ export const Messages: React.FC = () => {
   const roles = useChatBoxStore.use.roles();
 
   const messages = chat.use.messages();
+  const messagesLoading = chat.use.messagesLoading();
   const responseLoading = chat.use.responseLoading();
 
   const updateTools = useChatToolsStore.use.updateTools();
 
-  const { messagesService, lastMessageRef, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
+  const { loadMessages, lastMessageRef, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
   const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const firstMessageIndex = renderedMessages.findIndex(
@@ -129,7 +130,7 @@ export const Messages: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
-    if (!currentConversation || !currentEmployee || messagesService.loading || responseLoading) {
+    if (!currentConversation || !currentEmployee || messagesLoading || responseLoading) {
       return;
     }
 
@@ -156,8 +157,7 @@ export const Messages: React.FC = () => {
   }, [
     currentConversation,
     currentEmployee,
-    messagesService.loading,
-    renderedMessages,
+    messagesLoading,
     responseLoading,
     getConversationLLMActiveState,
     resumeStream,
@@ -259,13 +259,13 @@ export const Messages: React.FC = () => {
       const { sessionId, status } = e.detail;
       if (currentConversation && currentConversation === sessionId) {
         if (status !== 'processing') {
-          messagesService.run(sessionId);
+          loadMessages(sessionId);
           setResponseLoading(false);
           updateReadonly(sessionId).catch(console.log);
         }
       }
     },
-    [messagesService, updateReadonly, setResponseLoading, currentConversation],
+    [loadMessages, updateReadonly, setResponseLoading, currentConversation],
   );
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
@@ -284,7 +284,7 @@ export const Messages: React.FC = () => {
         position: 'relative',
       }}
     >
-      {messagesService.loading && (
+      {messagesLoading && (
         <Spin
           style={{
             display: 'block',
@@ -316,7 +316,7 @@ export const Messages: React.FC = () => {
 
 const BackgroundWorkingHint: React.FC = () => {
   const t = useT();
-  const { messagesService, getConversationLLMActiveState } = useChatMessageActions();
+  const { loadMessages, getConversationLLMActiveState } = useChatMessageActions();
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const chat = useChat(currentConversation);
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
@@ -326,9 +326,9 @@ const BackgroundWorkingHint: React.FC = () => {
 
   const refreshMessages = useCallback(() => {
     if (currentConversation) {
-      messagesService.run(currentConversation);
+      loadMessages(currentConversation);
     }
-  }, [messagesService, currentConversation]);
+  }, [loadMessages, currentConversation]);
 
   const doStateCheck = useCallback(async () => {
     if (currentConversation) {

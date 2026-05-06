@@ -51,7 +51,7 @@ export const Conversations: React.FC = memo(() => {
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
 
-  const { messagesService } = useChatMessageActions();
+  const { loadMessages } = useChatMessageActions();
 
   const { clear } = useChatBoxActions();
 
@@ -75,7 +75,7 @@ export const Conversations: React.FC = memo(() => {
       } else {
         setModel(null);
       }
-      messagesService.run(sessionId);
+      loadMessages(sessionId);
       if (!expanded) {
         setShowConversations(false);
       }
@@ -88,7 +88,7 @@ export const Conversations: React.FC = memo(() => {
       chat,
       clear,
       setModel,
-      messagesService,
+      loadMessages,
       expanded,
       setShowConversations,
     ],

@@ -60,7 +60,7 @@ export const Form = (props: any) => {
 
   const responseLoading = chat.use.responseLoading();
 
-  // const { resendMessages, messagesService, updateMessage } = useChatMessageActions();
+  // const { resendMessages, loadMessages, updateMessage } = useChatMessageActions();
   const { children, node, message } = props;
   const { uid: formUid, datasource: dataSource, collection } = node.properties;
   const fieldSchema = null;

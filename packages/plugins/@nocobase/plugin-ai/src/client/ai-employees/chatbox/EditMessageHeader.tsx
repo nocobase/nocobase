@@ -28,7 +28,7 @@ export const EditMessageHeader: React.FC = () => {
 
   const setMessages = chat.setMessages;
 
-  const { messagesService, finishEditingMessage } = useChatMessageActions();
+  const { loadMessages, finishEditingMessage } = useChatMessageActions();
 
   return (
     <Alert
@@ -46,7 +46,7 @@ export const EditMessageHeader: React.FC = () => {
         finishEditingMessage();
         setSenderValue('');
         setMessages([]);
-        messagesService.run(currentConversation);
+        loadMessages(currentConversation);
       }}
     />
   );

@@ -20,11 +20,18 @@ import {
 const selectSessionState = (state: ReturnType<typeof useChatMessagesStore.getState>, sessionId?: string) =>
   state.sessions[getChatSessionKey(sessionId)] ?? CHAT_EMPTY_SESSION_STATE;
 
+type MessagesMeta = ChatSessionState['messagesMeta'];
+
 const createChatFacade = (sessionId?: string) => {
   const sessionKey = getChatSessionKey(sessionId);
   const actions = {
     setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) =>
       useChatMessagesStore.getState().setSessionMessages(sessionKey, messages),
+    setMessagesLoading: (loading: boolean) =>
+      useChatMessagesStore.getState().setSessionMessagesLoading(sessionKey, loading),
+    setMessagesError: (error: any) => useChatMessagesStore.getState().setSessionMessagesError(sessionKey, error),
+    setMessagesMeta: (meta: MessagesMeta | ((prev: MessagesMeta) => MessagesMeta)) =>
+      useChatMessagesStore.getState().setSessionMessagesMeta(sessionKey, meta),
     setAttachments: (attachments: Attachment[] | ((prev: Attachment[]) => Attachment[])) =>
       useChatMessagesStore.getState().setSessionAttachments(sessionKey, attachments),
     setContextItems: (items: ContextItem[] | ((prev: ContextItem[]) => ContextItem[])) =>
@@ -76,6 +83,15 @@ const createChatFacade = (sessionId?: string) => {
     use: {
       messages: function useMessages() {
         return useChatMessagesStore((state) => selectSessionState(state, sessionKey).messages);
+      },
+      messagesLoading: function useMessagesLoading() {
+        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).messagesLoading);
+      },
+      messagesError: function useMessagesError() {
+        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).messagesError);
+      },
+      messagesMeta: function useMessagesMeta() {
+        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).messagesMeta);
       },
       attachments: function useAttachments() {
         return useChatMessagesStore((state) => selectSessionState(state, sessionKey).attachments);

@@ -19,6 +19,12 @@ export const getChatSessionKey = (sessionId?: string) => sessionId || CHAT_DEFAU
 
 export type ChatSessionState = {
   messages: Message[];
+  messagesLoading: boolean;
+  messagesError?: any;
+  messagesMeta: {
+    cursor?: string;
+    hasMore?: boolean;
+  };
   attachments: Attachment[];
   contextItems: ContextItem[];
   systemMessage: string;
@@ -30,6 +36,9 @@ export type ChatSessionState = {
 
 export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
   messages: [],
+  messagesLoading: false,
+  messagesError: null,
+  messagesMeta: {},
   attachments: [],
   contextItems: [],
   systemMessage: '',
@@ -55,6 +64,7 @@ const createInitialSessionState = (): ChatSessionState => ({
 const cloneSessionState = (session: ChatSessionState): ChatSessionState => ({
   ...session,
   messages: [...session.messages],
+  messagesMeta: { ...session.messagesMeta },
   attachments: [...session.attachments],
   contextItems: [...session.contextItems],
 });
@@ -86,6 +96,14 @@ export interface ChatMessagesActions {
   resetSessionState: (sessionId?: string, patch?: Partial<ChatSessionState>) => void;
   migrateSessionState: (fromSessionId: string | undefined, toSessionId: string) => void;
   setSessionMessages: (sessionId: string | undefined, messages: SessionStateUpdater<Message[]>) => void;
+  setSessionMessagesLoading: (sessionId: string | undefined, loading: boolean) => void;
+  setSessionMessagesError: (sessionId: string | undefined, error: any) => void;
+  setSessionMessagesMeta: (
+    sessionId: string | undefined,
+    meta:
+      | ChatSessionState['messagesMeta']
+      | ((prev: ChatSessionState['messagesMeta']) => ChatSessionState['messagesMeta']),
+  ) => void;
   setSessionAttachments: (sessionId: string | undefined, attachments: SessionStateUpdater<Attachment[]>) => void;
   setSessionContextItems: (sessionId: string | undefined, items: SessionStateUpdater<ContextItem[]>) => void;
   setSessionSystemMessage: (sessionId: string | undefined, msg: string | ((prev: string) => string)) => void;
@@ -164,6 +182,30 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => {
         updateSessionState(state, sessionId, (session) => ({
           ...session,
           messages: typeof messages === 'function' ? messages(session.messages) : messages,
+        })),
+      ),
+
+    setSessionMessagesLoading: (sessionId, loading) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messagesLoading: loading,
+        })),
+      ),
+
+    setSessionMessagesError: (sessionId, error) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messagesError: error,
+        })),
+      ),
+
+    setSessionMessagesMeta: (sessionId, meta) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messagesMeta: typeof meta === 'function' ? meta(session.messagesMeta) : meta,
         })),
       ),
 

@@ -8,10 +8,9 @@
  */
 
 import { useChat } from '../hooks/useChat';
-import { useCallback, useEffect, useRef } from 'react';
-import { useAPIClient, useApp, usePlugin, useRequest } from '@nocobase/client';
+import { useCallback } from 'react';
+import { useAPIClient, useApp } from '@nocobase/client';
 import { AIEmployee, Message, ResendOptions, SendOptions } from '../../types';
-import PluginAIClient from '../../..';
 import { uid } from '@formily/shared';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
@@ -28,11 +27,18 @@ import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
 const STREAM_UPDATE_INTERVAL = 50;
 
+type MessagesResponse = {
+  data: Message[];
+  meta: {
+    cursor?: string;
+    hasMore?: boolean;
+  };
+};
+
 export const useChatMessageActions = () => {
   const app = useApp();
   const t = useT();
   const api = useAPIClient();
-  const plugin = usePlugin('ai') as PluginAIClient;
   const aiConfigRepository = useAIConfigRepository();
 
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
@@ -94,69 +100,69 @@ export const useChatMessageActions = () => {
     [app, getSessionChat],
   );
 
-  const messagesService = useRequest<{
-    data: Message[];
-    meta: {
-      cursor?: string;
-      hasMore?: boolean;
-    };
-  }>(
-    (sessionId, cursor?: string) =>
-      api
-        .resource('aiConversations')
-        .getMessages({
+  const loadMessages = useCallback(
+    async (sessionId?: string, cursor?: string) => {
+      if (!sessionId) {
+        return;
+      }
+      const sessionChat = getSessionChat(sessionId);
+      sessionChat.setMessagesLoading(true);
+      sessionChat.setMessagesError(null);
+      try {
+        const res = await api.resource('aiConversations').getMessages({
           sessionId,
           cursor,
           paginate: false,
-        })
-        .then((res) => {
-          const sessionChat = getSessionChat(sessionId);
-          const data = res?.data;
-          if (!data?.data) {
-            return;
-          }
-          const newMessages = [...data.data].reverse();
+        });
+        const data = res?.data as MessagesResponse | undefined;
+        if (!data?.data) {
+          sessionChat.setMessagesMeta({});
+          return;
+        }
+        const newMessages = [...data.data].reverse();
 
-          // [AI_DEBUG] backend tool results
-          for (const msg of newMessages) {
-            const toolCalls = msg.content?.tool_calls;
-            if (toolCalls?.length) {
-              for (const tc of toolCalls) {
-                if (tc.willInterrupt) {
-                  updateToolCallInvokeStatus(msg.content.messageId, tc.id, tc.invokeStatus);
-                }
-                if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
-                  const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
-                  aiDebugLogger.log(sessionId, 'tool_result', {
-                    toolCallId: tc.id,
-                    toolName: tc.name,
-                    args: tc.args,
-                    status: tc.status,
-                    invokeStatus: tc.invokeStatus,
-                    auto: tc.auto,
-                    execution: 'backend',
-                    contentPreview: contentStr?.slice(0, 500),
-                  });
-                }
+        // [AI_DEBUG] backend tool results
+        for (const msg of newMessages) {
+          const toolCalls = msg.content?.tool_calls;
+          if (toolCalls?.length) {
+            for (const tc of toolCalls) {
+              if (tc.willInterrupt) {
+                updateToolCallInvokeStatus(msg.content.messageId, tc.id, tc.invokeStatus);
+              }
+              if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
+                const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
+                aiDebugLogger.log(sessionId, 'tool_result', {
+                  toolCallId: tc.id,
+                  toolName: tc.name,
+                  args: tc.args,
+                  status: tc.status,
+                  invokeStatus: tc.invokeStatus,
+                  auto: tc.auto,
+                  execution: 'backend',
+                  contentPreview: contentStr?.slice(0, 500),
+                });
               }
             }
           }
+        }
 
-          sessionChat.setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            const result = cursor ? [...newMessages, ...prev] : newMessages;
-            if (last?.role === 'error') {
-              result.push(last);
-            }
-            return result;
-          });
-        }),
-    {
-      manual: true,
+        sessionChat.setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          const result = cursor ? [...newMessages, ...prev] : newMessages;
+          if (last?.role === 'error') {
+            result.push(last);
+          }
+          return result;
+        });
+        sessionChat.setMessagesMeta(data.meta || {});
+      } catch (error) {
+        sessionChat.setMessagesError(error);
+      } finally {
+        sessionChat.setMessagesLoading(false);
+      }
     },
+    [api, getSessionChat, updateToolCallInvokeStatus],
   );
-  const messagesServiceRef = useRef<any>();
-  messagesServiceRef.current = messagesService;
 
   const getConversationLLMActiveState = useCallback(
     async (sessionId: string): Promise<string | undefined> => {
@@ -530,9 +536,9 @@ export const useChatMessageActions = () => {
         }));
       }
 
-      await messagesServiceRef.current.runAsync(sessionId);
+      await loadMessages(sessionId);
     },
-    [getSessionChat, t, updateToolCallInvokeStatus],
+    [getSessionChat, loadMessages, t, updateToolCallInvokeStatus],
   );
 
   const sendMessages = async ({
@@ -812,9 +818,9 @@ export const useChatMessageActions = () => {
     });
     // sleep(500)
     await new Promise((resolve) => setTimeout(resolve, 500));
-    messagesServiceRef.current.run(currentConversation);
+    loadMessages(currentConversation);
     setResponseLoading(false);
-  }, [abortController, api, currentConversation, setAbortController, setResponseLoading]);
+  }, [abortController, api, currentConversation, loadMessages, setAbortController, setResponseLoading]);
 
   const resumeToolCall = useCallback(
     async ({
@@ -874,17 +880,16 @@ export const useChatMessageActions = () => {
   );
 
   const loadMoreMessages = useCallback(async () => {
-    const messagesService = messagesServiceRef.current;
-    if (messagesService.loading || !messagesService.data?.meta?.hasMore) {
+    const sessionChat = getSessionChat(currentConversation);
+    if (sessionChat.messagesLoading || !sessionChat.messagesMeta?.hasMore) {
       return;
     }
-    await messagesService.runAsync(currentConversation, messagesService.data?.meta?.cursor);
-  }, [currentConversation]);
+    await loadMessages(currentConversation, sessionChat.messagesMeta?.cursor);
+  }, [currentConversation, getSessionChat, loadMessages]);
   const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
 
   const updateToolArgs = useCallback(
     async ({ sessionId, messageId, tool }) => {
-      const messagesService = messagesServiceRef.current;
       await api.resource('aiConversations').updateToolArgs({
         values: {
           sessionId,
@@ -892,9 +897,9 @@ export const useChatMessageActions = () => {
           tool,
         },
       });
-      messagesService.run(sessionId);
+      loadMessages(sessionId);
     },
-    [api],
+    [api, loadMessages],
   );
 
   const startEditingMessage = useCallback(
@@ -923,7 +928,8 @@ export const useChatMessageActions = () => {
 
   return {
     syncContextAttachments,
-    messagesService,
+    loadMessages,
+    loadMoreMessages,
     sendMessages,
     resendMessages,
     resumeStream,
