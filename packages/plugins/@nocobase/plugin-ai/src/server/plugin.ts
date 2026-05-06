@@ -39,6 +39,7 @@ import aiMcpClients from './resource/aiMcpClients';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { xaiProviderOptions } from './llm-providers/xai';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
@@ -126,6 +127,8 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
   }
 
   registerTools() {
