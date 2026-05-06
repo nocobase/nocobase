@@ -105,7 +105,7 @@ describe('flowSurfaces formal block fixtures', () => {
       switch (entry.key) {
         case 'table': {
           expect(tree.stepParams?.resourceSettings?.init?.collectionName).toBe('pets');
-          expect(getActionUses(tree)).toEqual(['AddNewActionModel', 'RefreshActionModel', 'BulkDeleteActionModel']);
+          expect(getActionUses(tree)).toEqual(['RefreshActionModel', 'BulkDeleteActionModel', 'AddNewActionModel']);
           expect(getTableFieldPaths(tree)).toEqual([
             'name',
             'species',
@@ -132,7 +132,7 @@ describe('flowSurfaces formal block fixtures', () => {
           expect(tree.props?.defaultView).toBe('month');
           expect(tree.props?.enableQuickCreateEvent).toBe(true);
           expect(tree.props?.weekStart).toBe(1);
-          expect(getActionUses(tree)).toEqual(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']);
+          expect(getActionUses(tree)).toEqual(['FilterActionModel', 'RefreshActionModel', 'AddNewActionModel']);
           expect(getCalendarPopupHostUses(tree)).toEqual({
             quickCreateAction: 'CalendarQuickCreateActionModel',
             eventViewAction: 'CalendarEventViewActionModel',
@@ -151,6 +151,7 @@ describe('flowSurfaces formal block fixtures', () => {
               pageModelClass: 'ChildPageModel',
               dataSourceKey: 'main',
               collectionName: 'pets',
+              filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
             },
           });
           break;

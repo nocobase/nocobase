@@ -1,6 +1,6 @@
 ---
 title: "Release Management"
-description: "The Release Management Skill performs release operations across multiple environments."
+description: "The Release Management Skill performs auditable release operations across multiple environments, supporting backup restore and migration."
 keywords: "AI Builder,release management,cross-environment release,backup restore,migration"
 ---
 
@@ -8,100 +8,86 @@ keywords: "AI Builder,release management,cross-environment release,backup restor
 
 :::tip Prerequisites
 
-- Before reading this page, make sure you have installed the NocoBase CLI and completed initialization as described in [AI Builder Quick Start](./index.md).
-- Requires Professional edition or above authorization from [NocoBase Commercial Edition](https://www.nocobase.com/en/commercial).
-- Make sure the Backup Management and Migration Management plugins are activated and upgraded to the latest version.
+- Before reading this page, install the NocoBase CLI and complete initialization as described in [AI Builder Quick Start](./index.md)
+- Requires a Professional edition or above license. See [NocoBase Commercial Edition](https://www.nocobase.com/en/commercial)
+- Enable the Backup Management and Migration Management plugins, and upgrade them to the latest version
 
 :::
 
-:::warning Note
-The Release Management CLI is still under active development and is not yet available for use.
-:::
 ## Introduction
 
-The Release Management Skill performs release operations across multiple environments — supporting both backup & restore and migration release methods.
+The Release Management Skill performs release operations between multiple NocoBase environments. It supports two approaches: backup restore and migration.
 
+If you only want to fully overwrite one environment with another, backup restore is usually enough. If you need to control what gets synchronized by rules, such as syncing only the structure without business data, migration is more suitable.
 
 ## Capabilities
 
-- Single-environment backup & restore: Use a backup package to fully restore data on the local machine.
-- Cross-environment backup & restore: Use a backup package to fully restore data on the target environment.
-- Cross-environment migration: Use a new migration package to differentially update data on the target environment.
+- Single-environment backup restore: restore the current environment using an existing backup package
+- Single-environment instant backup restore: create a backup of the current environment first, then restore the current environment with it
+- Cross-environment backup restore: restore a backup package from the source environment to the target environment
+- Cross-environment migration: update the target environment incrementally with a migration package
 
 ## Prompt Examples
 
-### Scenario A: Single-environment backup & restore
-:::tip Prerequisites
-
-The current environment needs to have a backup package, or you need to create a backup first and then restore.
-
-:::
-
-Prompt mode
-```
-Restore using <file-name> backup
-```
-CLI mode
-```
-// Check which backup packages are available; if none, run nb backup <file-name>
-nb backup list
-nb restore <file-name>
-```
-![Backup restore](https://static-docs.nocobase.com/20260417150854.png)
-
-### Scenario B: Cross-environment backup & restore
+### Scenario A: Single-environment backup restore with a specified file
 
 :::tip Prerequisites
 
-You need two environments, such as a local dev environment and a remote test environment, or two locally installed environments.
+A backup file with the same name must already exist in the current environment.
 
 :::
 
-Prompt mode
+```text
+Restore using <file-name.nbdata> backup
 ```
+
+The Skill uses the backup file with the same name that already exists on the current environment server for restore.
+
+### Scenario B: Single-environment backup restore without specifying a file
+
+```text
+Back up and restore the current environment
+```
+
+The Skill first creates a backup of the current environment, then restores the current environment with that backup.
+
+### Scenario C: Cross-environment backup restore
+
+:::tip Prerequisites
+
+Prepare two environments, such as a local dev environment and a remote test environment, or two local environments. You can specify a backup file or leave it unspecified.
+
+:::
+
+```text
 Restore dev to test
 ```
-CLI mode
-```
-// Check which backup packages are available; if none, run nb backup <file-name> --env dev
-nb backup list --env dev
-// Use the backup package to restore
-nb restore <file-name> --env test
-```
-![Backup restore](https://static-docs.nocobase.com/20260417150854.png)
 
-### Scenario C: Cross-environment migration
+The Skill creates a backup package in the dev environment, then restores that backup package to the test environment.
+
+### Scenario D: Cross-environment migration
 
 :::tip Prerequisites
 
-Similar to Scenario B, you need two environments, such as a local dev environment and a remote test environment, or two locally installed environments.
+Similar to Scenario C, prepare two environments. You can specify a migration file or leave it unspecified.
 
 :::
 
-Prompt mode
-```
+```text
 Migrate dev to test
 ```
-CLI mode
-```
-// Create a migration rule, which produces a new ruleId, or use nb migration rule list --env dev to get a historical ruleId
-nb migration rule add --env dev
-// Use the ruleId to generate a migration package
-nb migration generate <ruleId> --env dev
-// Use the migration package to migrate
-nb migration run <file-name> --env test
-```
-![Migration release](https://static-docs.nocobase.com/20260417151022.png)
+
+The Skill creates a migration package in the dev environment, then uses that migration package to update the test environment.
 
 ## FAQ
 
-**Should I choose backup & restore or migration?**
+**Should I choose backup restore or migration?**
 
-If you already have a usable backup package, choose backup & restore. If you need to control which data gets synced by strategy (e.g., syncing only the structure without data), choose migration.
+Backup restore is the default choice, especially if you already have a usable backup package or want the target environment to be fully overwritten with the source environment state. Use migration only when you need to control the synchronization scope by rules, such as syncing only the structure without data.
 
-**What does "migration plugin not found" mean?**
+**What does it mean if the migration plugin is missing?**
 
-The migration management plugin requires the Professional edition or above. See [NocoBase Commercial Edition](https://www.nocobase.com/en/commercial) for details.
+The Migration Management plugin requires a Professional edition or above license. See [NocoBase Commercial Edition](https://www.nocobase.com/en/commercial) for details.
 
 ## Related Links
 

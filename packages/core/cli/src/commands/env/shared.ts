@@ -196,7 +196,11 @@ export async function dbStatus(runtime: ManagedAppRuntime): Promise<RuntimeStatu
   }
 
   const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
-  const containerName = buildDockerDbContainerName(runtime.envName, dbDialect, runtime.workspaceName);
+  const containerName = buildDockerDbContainerName(
+    runtime.envName,
+    dbDialect,
+    runtime.dockerContainerPrefix || runtime.workspaceName,
+  );
   return await dockerStatus(containerName);
 }
 

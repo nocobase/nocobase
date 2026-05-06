@@ -90,6 +90,10 @@ export class CollectionRepository extends Repository {
 
         const fields = nameMap[instanceName].get('fields');
 
+        if (!Array.isArray(fields)) {
+          return [];
+        }
+
         return fields
           .filter((field) => field['type'] === 'belongsTo' || field['type'] === 'belongsToMany')
           .map((field) => field.get('name'));
@@ -121,6 +125,10 @@ export class CollectionRepository extends Repository {
 
       const skipField = (() => {
         const fields = nameMap[viewCollectionName].get('fields');
+
+        if (!Array.isArray(fields)) {
+          return [];
+        }
 
         return fields
           .filter((field) => {

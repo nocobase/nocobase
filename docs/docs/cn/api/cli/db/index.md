@@ -18,6 +18,7 @@ nb db <command>
 
 | 命令 | 说明 |
 | --- | --- |
+| [`nb db check`](./check.md) | 检查数据库连接是否可达 |
 | [`nb db ps`](./ps.md) | 查看内置数据库运行状态 |
 | [`nb db start`](./start.md) | 启动内置数据库容器 |
 | [`nb db stop`](./stop.md) | 停止内置数据库容器 |
@@ -26,6 +27,8 @@ nb db <command>
 ## 示例
 
 ```bash
+nb db check --env app1
+nb db check --db-dialect postgres --db-host 127.0.0.1 --db-port 5432 --db-database nocobase --db-user nocobase --db-password secret
 nb db ps
 nb db ps --env app1
 nb db start --env app1

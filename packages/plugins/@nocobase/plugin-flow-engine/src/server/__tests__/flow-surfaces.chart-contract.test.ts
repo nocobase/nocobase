@@ -78,6 +78,96 @@ describe('flowSurfaces chart contract helpers', () => {
     expect(node.stepParams?.cardSettings).toBeUndefined();
   });
 
+  it('should canonicalize calendar popup props into stepParams when the block tree is created', () => {
+    const node = buildBlockTree({
+      type: 'calendar',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+      props: {
+        quickCreatePopupSettings: {
+          mode: 'dialog',
+          size: 'large',
+          tryTemplate: true,
+        },
+        eventPopupSettings: {
+          mode: 'drawer',
+          size: 'small',
+        },
+      },
+    });
+
+    expect(node.stepParams?.calendarSettings?.quickCreatePopupSettings).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      tryTemplate: true,
+    });
+    expect(node.stepParams?.calendarSettings?.eventPopupSettings).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+    });
+    expect(node.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    expect(node.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).not.toHaveProperty('tryTemplate');
+  });
+
+  it('should canonicalize kanban popup props into block and item stepParams when the block tree is created', () => {
+    const node = buildBlockTree({
+      type: 'kanban',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+      props: {
+        popupMode: 'dialog',
+        popupSize: 'large',
+        popupTemplateUid: 'quick-create-template',
+        popupTargetUid: 'quick-create-popup',
+        cardOpenMode: 'drawer',
+        cardPopupSize: 'small',
+        cardPopupTemplateUid: 'card-template',
+        cardPopupTargetUid: 'card-popup',
+      },
+    });
+
+    expect(node.props).not.toHaveProperty('popupMode');
+    expect(node.props).not.toHaveProperty('popupSize');
+    expect(node.props).not.toHaveProperty('popupTemplateUid');
+    expect(node.props).not.toHaveProperty('popupTargetUid');
+    expect(node.props).not.toHaveProperty('quickCreatePopupSettings');
+    expect(node.props).not.toHaveProperty('cardPopupTemplateUid');
+    expect(node.stepParams?.kanbanSettings?.popup).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      popupTemplateUid: 'quick-create-template',
+      uid: 'quick-create-popup',
+    });
+    expect(node.stepParams?.cardSettings || {}).not.toHaveProperty('popup');
+    expect(node.subModels?.item?.stepParams?.cardSettings?.popup).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+      popupTemplateUid: 'card-template',
+      uid: 'card-popup',
+    });
+    expect(node.subModels?.quickCreateAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      popupTemplateUid: 'quick-create-template',
+      uid: 'quick-create-popup',
+    });
+    expect(node.subModels?.cardViewAction?.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'drawer',
+      size: 'small',
+      popupTemplateUid: 'card-template',
+      uid: 'card-popup',
+    });
+  });
+
   it('should collect chart uids from a removed subtree before deleting flowSql bindings', async () => {
     const destroy = vi.fn();
     const service = new FlowSurfacesService({

@@ -247,14 +247,6 @@ DB_LOGGING=on
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Путь для хранения файловых логов. Значение по умолчанию `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Уровень вывода логов. Значение по умолчанию в среде разработки `debug`, в производственной среде `info`. Доступные варианты:

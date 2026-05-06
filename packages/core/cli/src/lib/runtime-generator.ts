@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createHash } from 'node:crypto';
 import { loadBuildConfig } from './build-config.js';
 import type { GeneratedOperation, GeneratedParameter } from './generated-command.js';
@@ -76,12 +85,71 @@ function toGeneratedParameter(parameter: any, usedFlagNames: Set<string>): Gener
     required: parameter.required,
     description: parameter.description,
     type: inferParameterType(parameter.schema),
+    format: parameter.schema?.format,
     isArray: parameter.schema?.type === 'array',
+    isFile: parameter.schema?.type === 'string' && parameter.schema?.format === 'binary',
   };
 }
 
 function getJsonRequestSchema(requestBody: any) {
   return requestBody?.content?.['application/json']?.schema;
+}
+
+function getMultipartRequestSchema(requestBody: any) {
+  return requestBody?.content?.['multipart/form-data']?.schema;
+}
+
+function getRequestContentType(requestBody: any): 'application/json' | 'multipart/form-data' | undefined {
+  if (!requestBody || '$ref' in requestBody) {
+    return undefined;
+  }
+
+  if (requestBody.content?.['multipart/form-data']) {
+    return 'multipart/form-data';
+  }
+
+  if (requestBody.content?.['application/json']) {
+    return 'application/json';
+  }
+
+  return undefined;
+}
+
+function getRequestSchema(requestBody: any) {
+  return getMultipartRequestSchema(requestBody) ?? getJsonRequestSchema(requestBody);
+}
+
+function isBinarySchema(schema: any): boolean {
+  if (!schema || typeof schema !== 'object') {
+    return false;
+  }
+
+  if (schema.type === 'string' && schema.format === 'binary') {
+    return true;
+  }
+
+  return [...(schema.oneOf ?? []), ...(schema.anyOf ?? []), ...(schema.allOf ?? [])].some(isBinarySchema);
+}
+
+function getResponseType(operation: any): 'json' | 'binary' | undefined {
+  for (const response of Object.values<any>(operation.responses ?? {})) {
+    const content = response?.content ?? {};
+    const mediaTypes = Object.keys(content);
+    const hasJson = mediaTypes.some((mediaType) => mediaType.includes('json'));
+    if (hasJson) {
+      return 'json';
+    }
+
+    const hasBinary = mediaTypes.some((mediaType) => {
+      const schema = content[mediaType]?.schema;
+      return mediaType === 'application/octet-stream' || mediaType.includes('zip') || isBinarySchema(schema);
+    });
+    if (hasBinary) {
+      return 'binary';
+    }
+  }
+
+  return undefined;
 }
 
 function normalizeCompositeSchema(schema: any): any {
@@ -176,7 +244,7 @@ function describeSchemaShape(schema: any, options: { depth?: number; maxDepth?: 
 }
 
 function extractBodyParameters(requestBody: any, usedFlagNames: Set<string>) {
-  const schema = getJsonRequestSchema(requestBody);
+  const schema = getRequestSchema(requestBody);
   const properties = normalizeCompositeSchema(schema)?.properties;
   const required = new Set<string>(normalizeCompositeSchema(schema)?.required ?? []);
 
@@ -187,7 +255,9 @@ function extractBodyParameters(requestBody: any, usedFlagNames: Set<string>) {
     required: required.has(name),
     description: propertySchema.description,
     type: inferParameterType(propertySchema),
+    format: propertySchema.format,
     isArray: propertySchema.type === 'array',
+    isFile: propertySchema.type === 'string' && propertySchema.format === 'binary',
     jsonEncoded: propertySchema.type === 'object' || propertySchema.type === 'array',
     jsonShape: describeSchemaShape(propertySchema),
   }));
@@ -221,6 +291,10 @@ function resolveOperationText(operation: { summary?: string; description?: strin
 function formatFlagExample(parameter: GeneratedParameter) {
   if (parameter.type === 'boolean') {
     return `--${parameter.flagName}`;
+  }
+
+  if (parameter.isFile) {
+    return `--${parameter.flagName} <path>`;
   }
 
   if (parameter.type === 'object' || parameter.jsonEncoded) {
@@ -269,18 +343,19 @@ function buildSampleBody(parameters: GeneratedParameter[]) {
   );
 }
 
-export function buildExamples(commandId: string, operation: { parameters: GeneratedParameter[]; hasBody?: boolean }) {
+export function buildExamples(commandId: string, operation: { parameters: GeneratedParameter[]; hasBody?: boolean; requestContentType?: string; responseType?: string }) {
   const requiredParameters = operation.parameters.filter((parameter) => parameter.required);
   const requiredFlags = requiredParameters.map(formatFlagExample);
   const requiredNonBodyFlags = requiredParameters.filter((parameter) => parameter.in !== 'body').map(formatFlagExample);
-  const examples = [`nb api ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}`];
+  const outputFlag = operation.responseType === 'binary' ? ' --output <path>' : '';
+  const examples = [`nb api ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}${outputFlag}`];
   const firstOptional = operation.parameters.find((parameter) => !parameter.required);
 
   if (firstOptional) {
-    examples.push(`${examples[0]} ${formatFlagExample(firstOptional)}`);
+    examples.push(`${examples[0]} ${formatFlagExample(firstOptional)}`.trim());
   }
 
-  if (operation.hasBody) {
+  if (operation.hasBody && operation.requestContentType !== 'multipart/form-data') {
     const prefix = `nb api ${commandId}${requiredNonBodyFlags.length ? ` ${requiredNonBodyFlags.join(' ')}` : ''}`;
     examples.push(`${prefix} --body '${buildSampleBody(operation.parameters)}'`);
   }
@@ -298,6 +373,8 @@ function buildDescription(operation: {
   tags?: string[];
   description?: string;
   hasBody?: boolean;
+  requestContentType?: string;
+  responseType?: string;
   parameters: GeneratedParameter[];
 }) {
   const sections: string[] = [];
@@ -329,11 +406,19 @@ function buildDescription(operation: {
 
   if (operation.hasBody) {
     const bodyFlags = operation.parameters.filter((parameter) => parameter.in === 'body').map((parameter) => `--${parameter.flagName}`);
-    sections.push(
-      bodyFlags.length
-        ? `Request body: use body field flags (${bodyFlags.join(', ')}) or pass raw JSON via \`--body\` / \`--body-file\`.`
-        : 'Request body: JSON via `--body` or `--body-file`.',
-    );
+    if (operation.requestContentType === 'multipart/form-data') {
+      sections.push(bodyFlags.length ? `Request body: multipart form fields (${bodyFlags.join(', ')}).` : 'Request body: multipart form data.');
+    } else {
+      sections.push(
+        bodyFlags.length
+          ? `Request body: use body field flags (${bodyFlags.join(', ')}) or pass raw JSON via \`--body\` / \`--body-file\`.`
+          : 'Request body: JSON via `--body` or `--body-file`.',
+      );
+    }
+  }
+
+  if (operation.responseType === 'binary') {
+    sections.push('Response body: binary download written to `--output`.');
   }
 
   return sections.join('\n\n');
@@ -475,6 +560,8 @@ export async function generateRuntime(document: OpenApiDocument, configFile: str
     const bodyParameters = extractBodyParameters(operation.requestBody, usedFlagNames);
     const allParameters = [...parameters, ...bodyParameters];
     const hasBody = Boolean(operation.requestBody && !('$ref' in operation.requestBody));
+    const requestContentType = getRequestContentType(operation.requestBody);
+    const responseType = getResponseType(operation);
     const moduleDisplayName = moduleConfig.name ?? moduleKey;
     const moduleDescription = moduleConfig.description;
     const resourceDisplayName = resourceConfig?.name ?? resourceKey;
@@ -485,9 +572,11 @@ export async function generateRuntime(document: OpenApiDocument, configFile: str
     });
     const resourceSegments = toResourceSegments(pathTemplate);
     const mappedResourceSegments =
-      resourceSegments.length && resourceConfig?.name
-        ? [toKebabCase(resourceConfig.name), ...resourceSegments.slice(1)]
-        : resourceSegments;
+      resourceSegments.length && resourceConfig?.segments?.length
+        ? [...resourceConfig.segments.map(toKebabCase), ...resourceSegments.slice(1)]
+        : resourceSegments.length && resourceConfig?.name
+          ? [toKebabCase(resourceConfig.name), ...resourceSegments.slice(1)]
+          : resourceSegments;
     const segments = [
       ...(resourceConfig?.topLevel ? [] : [toKebabCase(moduleDisplayName)]),
       ...mappedResourceSegments,
@@ -517,15 +606,21 @@ export async function generateRuntime(document: OpenApiDocument, configFile: str
         tags: operation.tags,
         description: operationText.description,
         hasBody,
+        requestContentType,
+        responseType,
         parameters: allParameters,
       }),
       examples: buildExamples(segments.join(' '), {
         parameters: allParameters,
         hasBody,
+        requestContentType,
+        responseType,
       }),
       parameters: allParameters,
       hasBody,
       bodyRequired: operation.requestBody && !('$ref' in operation.requestBody) ? operation.requestBody.required : undefined,
+      requestContentType,
+      responseType,
     });
   }
 

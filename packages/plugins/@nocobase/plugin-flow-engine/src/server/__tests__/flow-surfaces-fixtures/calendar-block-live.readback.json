@@ -31,6 +31,11 @@
           "dataSourceKey": "main",
           "collectionName": "pets"
         }
+      },
+      "calendarSettings": {
+        "eventPopupSettings": {
+          "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+        }
       }
     },
     "parentId": "calendarfixturegrid",
@@ -56,8 +61,8 @@
           }
         },
         {
-          "uid": "fcal9b1ock1-addNewAction",
-          "use": "AddNewActionModel",
+          "uid": "fcal9b1ock1-refreshAction",
+          "use": "RefreshActionModel",
           "parentId": "fcal9b1ock1",
           "subKey": "actions",
           "subType": "array",
@@ -65,15 +70,14 @@
           "stepParams": {
             "buttonSettings": {
               "general": {
-                "title": "{{t(\"Add new\")}}",
-                "type": "primary"
+                "title": "{{t(\"Refresh\")}}"
               }
             }
           }
         },
         {
-          "uid": "fcal9b1ock1-refreshAction",
-          "use": "RefreshActionModel",
+          "uid": "fcal9b1ock1-addNewAction",
+          "use": "AddNewActionModel",
           "parentId": "fcal9b1ock1",
           "subKey": "actions",
           "subType": "array",
@@ -81,7 +85,8 @@
           "stepParams": {
             "buttonSettings": {
               "general": {
-                "title": "{{t(\"Refresh\")}}"
+                "title": "{{t(\"Add new\")}}",
+                "type": "primary"
               }
             }
           }
@@ -103,7 +108,8 @@
               "pageModelClass": "ChildPageModel",
               "uid": "fcal9b1ock1-eventViewAction",
               "collectionName": "pets",
-              "dataSourceKey": "main"
+              "dataSourceKey": "main",
+              "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
             }
           }
         }
@@ -156,6 +162,11 @@
           "init": {
             "dataSourceKey": "main",
             "collectionName": "pets"
+          }
+        },
+        "calendarSettings": {
+          "eventPopupSettings": {
+            "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
           }
         }
       }

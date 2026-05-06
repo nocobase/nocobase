@@ -8,7 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import type { Env } from '../../lib/auth-store.js';
+import { upsertEnv, type Env } from '../../lib/auth-store.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -18,11 +18,11 @@ import {
   type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
-import { commandOutput, commandSucceeds, run } from '../../lib/run-npm.js';
-import { failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
+import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
+import { commandSucceeds, run } from '../../lib/run-npm.js';
+import { announceTargetEnv, failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
 
 const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
-const DEFAULT_DOWNLOAD_VERSION = 'alpha';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
@@ -32,11 +32,14 @@ type UpgradeParsedFlags = {
   env?: string;
   verbose: boolean;
   'skip-code-update': boolean;
+  version?: string;
 };
 
 type DockerUpgradePlan = {
   containerName: string;
   networkName: string;
+  dockerRegistry: string;
+  downloadVersion: string;
   imageRef: string;
   appPort?: string;
   storagePath: string;
@@ -49,6 +52,11 @@ type DockerUpgradePlan = {
   dbUser: string;
   dbPassword: string;
   args: string[];
+};
+
+type ResolvedUpgradeVersion = {
+  downloadVersion?: string;
+  persistDownloadVersion?: string;
 };
 
 function trimValue(value: unknown): string {
@@ -138,30 +146,6 @@ function formatDockerStartFailure(envName: string, message: string): string {
     'Check that the saved Docker image, container settings, and database connection are still valid, then try again.',
     `Details: ${message}`,
   ].join('\n');
-}
-
-function parseDockerImageRef(imageRef: string): { dockerRegistry: string; version: string } {
-  const cleaned = trimValue(imageRef).replace(/@.+$/, '');
-  if (!cleaned) {
-    return {
-      dockerRegistry: DEFAULT_DOCKER_REGISTRY,
-      version: DEFAULT_DOWNLOAD_VERSION,
-    };
-  }
-
-  const lastSlash = cleaned.lastIndexOf('/');
-  const lastColon = cleaned.lastIndexOf(':');
-  if (lastColon > lastSlash) {
-    return {
-      dockerRegistry: cleaned.slice(0, lastColon),
-      version: cleaned.slice(lastColon + 1) || DEFAULT_DOWNLOAD_VERSION,
-    };
-  }
-
-  return {
-    dockerRegistry: cleaned,
-    version: 'latest',
-  };
 }
 
 function normalizeDockerPlatform(value: unknown): string | undefined {
@@ -293,58 +277,16 @@ async function ensureDockerNetwork(name: string): Promise<void> {
   });
 }
 
-async function inspectDockerContainerEnv(name: string): Promise<Record<string, string>> {
-  const output = await commandOutput('docker', [
-    'inspect',
-    '--format',
-    '{{range .Config.Env}}{{println .}}{{end}}',
-    name,
-  ], {
-    errorName: 'docker inspect',
-  });
-
-  const env: Record<string, string> = {};
-  for (const line of output.split(/\r?\n/)) {
-    const index = line.indexOf('=');
-    if (index <= 0) {
-      continue;
-    }
-    env[line.slice(0, index)] = line.slice(index + 1);
-  }
-  return env;
-}
-
-async function inspectDockerContainerImage(name: string): Promise<string> {
-  return await commandOutput('docker', [
-    'inspect',
-    '--format',
-    '{{.Config.Image}}',
-    name,
-  ], {
-    errorName: 'docker inspect',
-  });
-}
-
-async function inspectDockerStoragePath(name: string): Promise<string> {
-  return await commandOutput('docker', [
-    'inspect',
-    '--format',
-    `{{range .Mounts}}{{if eq .Destination "${DOCKER_APP_STORAGE_DESTINATION}"}}{{println .Source}}{{end}}{{end}}`,
-    name,
-  ], {
-    errorName: 'docker inspect',
-  });
-}
-
 export default class AppUpgrade extends Command {
   static override hidden = false;
   static override description =
-    'Upgrade the selected NocoBase app. Local npm/git installs refresh the saved source and restart with quickstart; Docker installs refresh the saved image and recreate the app container.';
+    'Upgrade the selected NocoBase app. Local npm/git installs refresh the saved source and restart with quickstart; Docker installs refresh the saved image and recreate the app container. Use --version to upgrade to a specific saved source version or image tag.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
     '<%= config.bin %> <%= command.id %> --env local -s',
+    '<%= config.bin %> <%= command.id %> --env local --version beta',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
     '<%= config.bin %> <%= command.id %> --env local-docker -s',
   ];
@@ -359,25 +301,68 @@ export default class AppUpgrade extends Command {
       description: 'Restart with the saved local code or Docker image without downloading updates first',
       required: false,
     }),
+    version: Flags.string({
+      description:
+        'Override the saved downloadVersion for this upgrade. When the upgrade succeeds, the new version is saved back to the env config.',
+      required: false,
+    }),
     verbose: Flags.boolean({
       description: 'Show raw output from the underlying local or Docker commands',
       default: false,
     }),
   };
 
-  private static buildLocalDownloadArgv(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string[] {
+  private static resolveUpgradeVersion(
+    runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+    flags: UpgradeParsedFlags,
+  ): ResolvedUpgradeVersion {
+    const requestedVersion = trimValue(flags.version);
+    if (requestedVersion && flags['skip-code-update']) {
+      throw new Error(
+        '`--version` and `--skip-code-update` cannot be used together. Use `--version` to download a specific upgrade target, or `--skip-code-update` to restart the saved code/image as-is.',
+      );
+    }
+
+    if (runtime.kind === 'local' && runtime.source === 'local') {
+      if (requestedVersion) {
+        throw new Error(
+          [
+            `Env "${runtime.envName}" is managed from an existing local app path.`,
+            'This source does not support `nb app upgrade --version` because the CLI does not manage that code checkout.',
+            'Update the local app path yourself, then run `nb app upgrade` to restart it.',
+          ].join('\n'),
+        );
+      }
+      return {};
+    }
+
+    const savedVersion = readEnvValue(runtime.env, 'downloadVersion');
+    const downloadVersion = requestedVersion || savedVersion;
+    if (!downloadVersion) {
+      throw new Error(
+        [
+          `Env "${runtime.envName}" does not have a saved \`downloadVersion\`.`,
+          'This env cannot be upgraded until a source version is explicit.',
+          'Re-run `nb init` or `nb env add` for this env, or pass `--version` to `nb app upgrade`.',
+        ].join('\n'),
+      );
+    }
+
+    return {
+      downloadVersion,
+      persistDownloadVersion: requestedVersion || undefined,
+    };
+  }
+
+  private static buildLocalDownloadArgv(
+    runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+    downloadVersion: string,
+  ): string[] {
     const argv = ['-y', '--no-intro', '--source', runtime.source, '--replace'];
-    const version = readEnvValue(runtime.env, 'downloadVersion');
-    const outputDir = readEnvValue(runtime.env, 'appRootPath');
     const gitUrl = readEnvValue(runtime.env, 'gitUrl');
     const npmRegistry = readEnvValue(runtime.env, 'npmRegistry');
 
-    if (version) {
-      argv.push('--version', version);
-    }
-    if (outputDir) {
-      argv.push('--output-dir', outputDir);
-    }
+    argv.push('--version', downloadVersion, '--output-dir', runtime.projectRoot);
     if (gitUrl) {
       argv.push('--git-url', gitUrl);
     }
@@ -397,6 +382,28 @@ export default class AppUpgrade extends Command {
     return argv;
   }
 
+  private static buildDockerDownloadArgv(
+    runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
+    plan: DockerUpgradePlan,
+  ): string[] {
+    const argv = [
+      '-y',
+      '--no-intro',
+      '--source',
+      'docker',
+      '--replace',
+      '--docker-registry',
+      plan.dockerRegistry,
+      '--version',
+      plan.downloadVersion,
+    ];
+    const dockerPlatform = normalizeDockerPlatform(runtime.env.config.dockerPlatform);
+    if (dockerPlatform) {
+      argv.push('--docker-platform', dockerPlatform);
+    }
+    return argv;
+  }
+
   private static buildLocalStartArgv(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string[] {
     const argv = ['start', '--quickstart'];
     const appPort =
@@ -410,52 +417,32 @@ export default class AppUpgrade extends Command {
     return argv;
   }
 
-  private static async buildDockerUpgradePlan(
+  private static buildDockerUpgradePlan(
     runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-  ): Promise<DockerUpgradePlan> {
-    const containerExists = await dockerContainerExists(runtime.containerName);
-    let inspectedEnv: Record<string, string> | undefined;
-
-    const readContainerEnv = async (): Promise<Record<string, string>> => {
-      if (!containerExists) {
-        return {};
-      }
-      if (!inspectedEnv) {
-        inspectedEnv = await inspectDockerContainerEnv(runtime.containerName);
-      }
-      return inspectedEnv;
-    };
-
-    let dockerRegistry = readEnvValue(runtime.env, 'dockerRegistry');
-    let version = readEnvValue(runtime.env, 'downloadVersion');
-    if ((!dockerRegistry || !version) && containerExists) {
-      const imageRef = await inspectDockerContainerImage(runtime.containerName);
-      const parsed = parseDockerImageRef(imageRef);
-      dockerRegistry ||= parsed.dockerRegistry;
-      version ||= parsed.version;
-    }
-
-    const envVars = await readContainerEnv();
+    downloadVersion: string,
+  ): DockerUpgradePlan {
+    const dockerRegistry = readEnvValue(runtime.env, 'dockerRegistry') || DEFAULT_DOCKER_REGISTRY;
 
     const appPort =
       runtime.env.appPort === undefined || runtime.env.appPort === null
         ? ''
         : trimValue(runtime.env.appPort);
-    let storagePath = readEnvValue(runtime.env, 'storagePath');
-    if (!storagePath && containerExists) {
-      storagePath = trimValue(await inspectDockerStoragePath(runtime.containerName));
-    }
-
-    const appKey = readEnvValue(runtime.env, 'appKey') || trimValue(envVars.APP_KEY);
-    const timeZone = readEnvValue(runtime.env, 'timezone') || trimValue(envVars.TZ);
-    const dbDialect = readEnvValue(runtime.env, 'dbDialect') || trimValue(envVars.DB_DIALECT);
-    const dbHost = readEnvValue(runtime.env, 'dbHost') || trimValue(envVars.DB_HOST);
-    const dbPort = readEnvValue(runtime.env, 'dbPort') || trimValue(envVars.DB_PORT);
-    const dbDatabase = readEnvValue(runtime.env, 'dbDatabase') || trimValue(envVars.DB_DATABASE);
-    const dbUser = readEnvValue(runtime.env, 'dbUser') || trimValue(envVars.DB_USER);
-    const dbPassword = readEnvValue(runtime.env, 'dbPassword') || trimValue(envVars.DB_PASSWORD);
+    const storagePath = readEnvValue(runtime.env, 'storagePath');
+    const appKey = readEnvValue(runtime.env, 'appKey');
+    const timeZone = readEnvValue(runtime.env, 'timezone');
+    const builtinDbConnection = runtime.env.config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
+    const dbDialect = builtinDbConnection?.dbDialect || readEnvValue(runtime.env, 'dbDialect');
+    const dbHost = builtinDbConnection?.dbHost || readEnvValue(runtime.env, 'dbHost');
+    const dbPort = builtinDbConnection?.dbPort || readEnvValue(runtime.env, 'dbPort');
+    const dbDatabase = readEnvValue(runtime.env, 'dbDatabase');
+    const dbUser = readEnvValue(runtime.env, 'dbUser');
+    const dbPassword = readEnvValue(runtime.env, 'dbPassword');
+    const networkName = trimValue(runtime.dockerNetworkName || runtime.workspaceName);
 
     const missing: string[] = [];
+    if (!networkName) {
+      missing.push('docker.network');
+    }
     if (!storagePath) {
       missing.push('storagePath');
     }
@@ -490,9 +477,7 @@ export default class AppUpgrade extends Command {
       );
     }
 
-    const resolvedRegistry = dockerRegistry || DEFAULT_DOCKER_REGISTRY;
-    const resolvedVersion = version || DEFAULT_DOWNLOAD_VERSION;
-    const imageRef = `${resolvedRegistry}:${resolvedVersion}`;
+    const imageRef = `${dockerRegistry}:${downloadVersion}`;
     const args = [
       'run',
       '-d',
@@ -501,7 +486,7 @@ export default class AppUpgrade extends Command {
       '--restart',
       'always',
       '--network',
-      runtime.workspaceName,
+      networkName,
     ];
 
     if (appPort) {
@@ -532,7 +517,9 @@ export default class AppUpgrade extends Command {
 
     return {
       containerName: runtime.containerName,
-      networkName: runtime.workspaceName,
+      networkName,
+      dockerRegistry,
+      downloadVersion,
       imageRef,
       appPort: appPort || undefined,
       storagePath,
@@ -551,9 +538,10 @@ export default class AppUpgrade extends Command {
   private static async upgradeLocal(
     runCommand: (id: string, argv?: string[]) => Promise<unknown>,
     runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+    downloadVersion: string | undefined,
     flags: UpgradeParsedFlags,
     commandStdio: 'inherit' | 'ignore',
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     const displayUrl = formatDisplayUrl(resolveApiBaseUrl(runtime), trimValue(runtime.env.appPort));
 
     startTask(`Stopping NocoBase for "${runtime.envName}" before upgrade...`);
@@ -573,7 +561,7 @@ export default class AppUpgrade extends Command {
     if (!flags['skip-code-update'] && (runtime.source === 'npm' || runtime.source === 'git')) {
       startTask(`Refreshing NocoBase files for "${runtime.envName}" from the saved ${runtime.source} source...`);
       try {
-        await runCommand('source:download', AppUpgrade.buildLocalDownloadArgv(runtime));
+        await runCommand('source:download', AppUpgrade.buildLocalDownloadArgv(runtime, downloadVersion!));
         succeedTask(`NocoBase files are up to date for "${runtime.envName}".`);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -611,32 +599,24 @@ export default class AppUpgrade extends Command {
       envName: runtime.envName,
       apiBaseUrl: resolveApiBaseUrl(runtime),
     });
-
-    succeedTask(
-      `NocoBase has been upgraded for "${runtime.envName}"${displayUrl ? ` at ${displayUrl}` : ''}.`,
-    );
+    return displayUrl;
   }
 
   private static async upgradeDocker(
     runCommand: (id: string, argv?: string[]) => Promise<unknown>,
     runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
+    downloadVersion: string,
     flags: UpgradeParsedFlags,
     commandStdio: 'inherit' | 'ignore',
-  ): Promise<void> {
-    const plan = await AppUpgrade.buildDockerUpgradePlan(runtime);
+  ): Promise<string | undefined> {
     const apiBaseUrl = resolveApiBaseUrl(runtime);
-    const displayUrl = formatDisplayUrl(apiBaseUrl, plan.appPort);
     const containerExists = await dockerContainerExists(runtime.containerName);
 
     if (!flags['skip-code-update']) {
-      const argv = ['-y', '--no-intro', '--source', 'docker', '--replace', '--docker-registry', parseDockerImageRef(plan.imageRef).dockerRegistry, '--version', parseDockerImageRef(plan.imageRef).version];
-      const dockerPlatform = normalizeDockerPlatform(runtime.env.config.dockerPlatform);
-      if (dockerPlatform) {
-        argv.push('--docker-platform', dockerPlatform);
-      }
+      const plan = AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
       startTask(`Refreshing the Docker image for "${runtime.envName}"...`);
       try {
-        await runCommand('source:download', argv);
+        await runCommand('source:download', AppUpgrade.buildDockerDownloadArgv(runtime, plan));
         succeedTask(`Docker image is ready for "${runtime.envName}".`);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -684,6 +664,8 @@ export default class AppUpgrade extends Command {
         throw new Error(formatDockerStartFailure(runtime.envName, message));
       }
     } else {
+      const plan = AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
+      const displayUrl = formatDisplayUrl(apiBaseUrl, plan.appPort);
       startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
       try {
         if (containerExists) {
@@ -703,6 +685,13 @@ export default class AppUpgrade extends Command {
         failTask(`Failed to recreate the Docker app for "${runtime.envName}".`);
         throw new Error(formatDockerStartFailure(runtime.envName, message));
       }
+
+      await waitForAppHealthCheck({
+        envName: runtime.envName,
+        apiBaseUrl,
+        containerName: runtime.containerName,
+      });
+      return displayUrl;
     }
 
     await waitForAppHealthCheck({
@@ -710,10 +699,25 @@ export default class AppUpgrade extends Command {
       apiBaseUrl,
       containerName: runtime.containerName,
     });
+    return formatDisplayUrl(apiBaseUrl, trimValue(runtime.env.appPort));
+  }
 
-    succeedTask(
-      `NocoBase has been upgraded for "${runtime.envName}"${displayUrl ? ` at ${displayUrl}` : ''}.`,
-    );
+  private static async persistDownloadVersion(
+    runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+    downloadVersion: string,
+  ): Promise<void> {
+    const { name: _name, ...envConfig } = runtime.env.config;
+    try {
+      await upsertEnv(runtime.envName, {
+        ...envConfig,
+        downloadVersion,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `NocoBase was upgraded for "${runtime.envName}", but the CLI could not save \`downloadVersion=${downloadVersion}\`. Details: ${message}`,
+      );
+    }
   }
 
   public async run(): Promise<void> {
@@ -748,13 +752,29 @@ export default class AppUpgrade extends Command {
       );
     }
 
+    announceTargetEnv(runtime.envName);
+
     try {
+      const resolvedVersion = AppUpgrade.resolveUpgradeVersion(runtime, parsed);
       const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
-      if (runtime.kind === 'docker') {
-        await AppUpgrade.upgradeDocker(runCommand, runtime, parsed, commandStdio);
-      } else {
-        await AppUpgrade.upgradeLocal(runCommand, runtime, parsed, commandStdio);
+      const displayUrl =
+        runtime.kind === 'docker'
+          ? await AppUpgrade.upgradeDocker(
+              runCommand,
+              runtime,
+              resolvedVersion.downloadVersion!,
+              parsed,
+              commandStdio,
+            )
+          : await AppUpgrade.upgradeLocal(runCommand, runtime, resolvedVersion.downloadVersion, parsed, commandStdio);
+
+      if (resolvedVersion.persistDownloadVersion) {
+        await AppUpgrade.persistDownloadVersion(runtime, resolvedVersion.persistDownloadVersion);
       }
+
+      succeedTask(
+        `NocoBase has been upgraded for "${runtime.envName}"${displayUrl ? ` at ${displayUrl}` : ''}.`,
+      );
     } catch (error: unknown) {
       this.error(error instanceof Error ? error.message : String(error));
     }

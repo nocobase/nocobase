@@ -246,14 +246,6 @@ Die Methode zur Protokollausgabe. Mehrere Werte werden durch Kommas getrennt. De
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Der Speicherpfad für dateibasierte Protokolle. Der Standardwert ist `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Die Protokoll-Ausgabestufe. Der Standardwert in der Entwicklungsumgebung ist `debug`, in der Produktionsumgebung `info`. Optionen:

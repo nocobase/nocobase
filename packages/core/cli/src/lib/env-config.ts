@@ -100,6 +100,14 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
     envConfig.builtinDbImage = undefined;
   }
 
+  if (input.builtinDb === true) {
+    delete envConfig.dbHost;
+    const source = trimConfigValue(input.source);
+    if (source === 'docker') {
+      delete envConfig.dbPort;
+    }
+  }
+
   const authType = trimConfigValue(input.authType);
   const accessToken = trimConfigValue(input.accessToken);
   if (authType === 'token' && accessToken) {

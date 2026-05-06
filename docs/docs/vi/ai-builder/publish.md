@@ -1,109 +1,95 @@
 ---
 title: "Quản lý phát hành"
-description: "Skill quản lý phát hành dùng để thực hiện các thao tác phát hành có thể kiểm toán giữa nhiều môi trường."
-keywords: "AI Builder,Quản lý phát hành,Phát hành đa môi trường,Sao lưu khôi phục,Di chuyển"
+description: "Skill quản lý phát hành dùng để thực hiện các thao tác phát hành có thể kiểm toán giữa nhiều môi trường, hỗ trợ khôi phục từ bản sao lưu và di chuyển."
+keywords: "AI Builder,Quản lý phát hành,Phát hành đa môi trường,Khôi phục sao lưu,Di chuyển"
 ---
 
 # Quản lý phát hành
 
 :::tip Điều kiện tiên quyết
 
-- Trước khi đọc trang này, vui lòng đảm bảo bạn đã cài đặt NocoBase CLI và hoàn thành khởi tạo theo [Bắt đầu nhanh với AI Builder](./index.md).
-- Phải có giấy phép từ phiên bản Professional trở lên [NocoBase Commercial](https://www.nocobase.com/cn/commercial).
-- Đảm bảo đã kích hoạt cả hai Plugin Quản lý sao lưu và Quản lý di chuyển, đồng thời nâng cấp lên phiên bản mới nhất.
+- Trước khi đọc trang này, hãy cài đặt NocoBase CLI và hoàn tất khởi tạo theo [Bắt đầu nhanh AI Builder](./index.md)
+- Cần có giấy phép bản Professional trở lên. Xem [NocoBase Commercial Edition](https://www.nocobase.com/cn/commercial)
+- Bật hai plugin "Quản lý sao lưu" và "Quản lý di chuyển", rồi nâng cấp chúng lên phiên bản mới nhất
 
 :::
 
-:::warning Lưu ý
-CLI liên quan đến quản lý phát hành vẫn đang được phát triển liên tục, hiện chưa hỗ trợ sử dụng.
-:::
 ## Giới thiệu
 
-Skill quản lý phát hành dùng để thực hiện các thao tác phát hành giữa nhiều môi trường — hỗ trợ hai phương thức phát hành: sao lưu khôi phục và di chuyển.
+Skill quản lý phát hành dùng để thực hiện các thao tác phát hành giữa nhiều môi trường NocoBase. Skill này hỗ trợ hai cách: khôi phục từ bản sao lưu và di chuyển.
 
+Nếu bạn chỉ muốn ghi đè hoàn toàn một môi trường bằng một môi trường khác, thông thường khôi phục từ bản sao lưu là đủ. Nếu bạn cần kiểm soát theo quy tắc nội dung nào được đồng bộ, ví dụ chỉ đồng bộ cấu trúc mà không đồng bộ dữ liệu nghiệp vụ, di chuyển sẽ phù hợp hơn.
 
 ## Phạm vi năng lực
 
-- Sao lưu khôi phục đơn môi trường: dùng gói sao lưu để khôi phục toàn bộ dữ liệu của máy này.
-- Sao lưu khôi phục đa môi trường: dùng gói sao lưu để khôi phục toàn bộ dữ liệu của môi trường đích.
-- Di chuyển đa môi trường: dùng gói di chuyển mới tạo để cập nhật chênh lệch dữ liệu môi trường đích.
+- Khôi phục sao lưu trong một môi trường: dùng gói sao lưu đã có để khôi phục môi trường hiện tại
+- Khôi phục sao lưu tức thời trong một môi trường: tạo bản sao lưu của môi trường hiện tại trước, rồi dùng bản sao lưu đó để khôi phục môi trường hiện tại
+- Khôi phục sao lưu đa môi trường: khôi phục gói sao lưu của môi trường nguồn vào môi trường đích
+- Di chuyển đa môi trường: dùng gói di chuyển để cập nhật khác biệt cho môi trường đích
 
 ## Ví dụ câu lệnh
 
-### Tình huống A: Sao lưu khôi phục đơn môi trường
-:::tip Điều kiện tiên quyết
-
-Môi trường hiện tại cần có một gói sao lưu hoặc sao lưu trước rồi khôi phục
-
-:::
-
-Chế độ câu lệnh
-```
-Sử dụng <file-name> để sao lưu khôi phục
-```
-Chế độ dòng lệnh
-```
-// Xem các gói sao lưu khả dụng, nếu chưa có gói sao lưu, chạy nb backup <file-name>
-nb backup list
-nb restore <file-name>
-```
-![Sao lưu khôi phục](https://static-docs.nocobase.com/20260417150854.png)
-
-### Tình huống B: Sao lưu khôi phục đa môi trường
+### Tình huống A: khôi phục sao lưu trong một môi trường với tệp được chỉ định
 
 :::tip Điều kiện tiên quyết
 
-Cần chuẩn bị hai môi trường, ví dụ một môi trường dev cục bộ và một môi trường test từ xa, hoặc cài đặt hai môi trường ở cục bộ.
+Trong môi trường hiện tại cần có sẵn tệp sao lưu cùng tên.
 
 :::
 
-Chế độ câu lệnh
+```text
+Khôi phục bằng bản sao lưu <file-name.nbdata>
 ```
+
+Skill sẽ dùng tệp sao lưu cùng tên đã có trên máy chủ của môi trường hiện tại để khôi phục.
+
+### Tình huống B: khôi phục sao lưu trong một môi trường mà không chỉ định tệp
+
+```text
+Sao lưu và khôi phục môi trường hiện tại
+```
+
+Skill sẽ tạo bản sao lưu của môi trường hiện tại trước, rồi dùng bản sao lưu đó để khôi phục môi trường hiện tại.
+
+### Tình huống C: khôi phục sao lưu đa môi trường
+
+:::tip Điều kiện tiên quyết
+
+Chuẩn bị hai môi trường, ví dụ môi trường dev trên máy cục bộ và môi trường test từ xa, hoặc hai môi trường cục bộ. Bạn có thể chỉ định tệp sao lưu cụ thể hoặc không chỉ định.
+
+:::
+
+```text
 Khôi phục dev sang test
 ```
-Chế độ dòng lệnh
-```
-// Xem các gói sao lưu khả dụng, nếu chưa có gói sao lưu, chạy nb backup <file-name> --env dev
-nb backup list --env dev
-// Dùng gói sao lưu để khôi phục
-nb restore <file-name> --env test
-```
-![Sao lưu khôi phục](https://static-docs.nocobase.com/20260417150854.png)
 
-### Tình huống C: Di chuyển đa môi trường
+Skill sẽ tạo gói sao lưu trong môi trường dev, rồi khôi phục gói sao lưu đó vào môi trường test.
+
+### Tình huống D: di chuyển đa môi trường
 
 :::tip Điều kiện tiên quyết
 
-Tương tự như tình huống B, cần chuẩn bị hai môi trường, ví dụ một môi trường dev cục bộ và một môi trường test từ xa, hoặc cài đặt hai môi trường ở cục bộ.
+Tương tự tình huống C, hãy chuẩn bị hai môi trường. Bạn có thể chỉ định tệp di chuyển cụ thể hoặc không chỉ định.
 
 :::
 
-Chế độ câu lệnh
-```
+```text
 Di chuyển dev sang test
 ```
-Chế độ dòng lệnh
-```
-// Tạo quy tắc di chuyển mới, sẽ sinh ra một ruleId mới hoặc dùng nb migration rule list --env dev để lấy ruleId lịch sử
-nb migration rule add --env dev
-// Dùng ruleId để sinh gói di chuyển
-nb migration generate <ruleId> --env dev
-// Dùng gói di chuyển để di chuyển
-nb migration run <file-name> --env test
-```
-![Phát hành di chuyển](https://static-docs.nocobase.com/20260417151022.png)
+
+Skill sẽ tạo gói di chuyển trong môi trường dev, rồi dùng gói di chuyển đó để cập nhật môi trường test.
 
 ## Câu hỏi thường gặp
 
-**Sao lưu khôi phục và di chuyển nên chọn cái nào?**
+**Nên chọn khôi phục sao lưu hay di chuyển?**
 
-Nếu bạn đã có gói sao lưu sẵn dùng được, chọn sao lưu khôi phục. Nếu cần kiểm soát theo chiến lược việc dữ liệu nào được đồng bộ qua (ví dụ chỉ đồng bộ cấu trúc không đồng bộ dữ liệu), hãy chọn di chuyển.
+Mặc định dùng khôi phục sao lưu là đủ, đặc biệt khi bạn đã có gói sao lưu dùng được hoặc muốn môi trường đích được ghi đè hoàn toàn bằng trạng thái của môi trường nguồn. Chỉ dùng di chuyển khi bạn cần kiểm soát phạm vi đồng bộ theo quy tắc, ví dụ chỉ đồng bộ cấu trúc mà không đồng bộ dữ liệu.
 
-**Không có Plugin di chuyển là vấn đề gì?**
+**Không có plugin di chuyển nghĩa là gì?**
 
-Plugin Quản lý di chuyển yêu cầu phiên bản Professional trở lên, xem chi tiết tại [NocoBase Commercial](https://www.nocobase.com/cn/commercial).
+Plugin Quản lý di chuyển yêu cầu giấy phép bản Professional trở lên. Xem [NocoBase Commercial Edition](https://www.nocobase.com/cn/commercial) để biết chi tiết.
 
 ## Liên kết liên quan
 
-- [Tổng quan về AI Builder](./index.md) — Tổng quan và cách cài đặt tất cả Skills của AI Builder
-- [Quản lý môi trường](./env-bootstrap) — Kiểm tra môi trường, cài đặt triển khai và chẩn đoán sự cố
+- [Tổng quan AI Builder](./index.md) — tổng quan và cách cài đặt tất cả AI Builder Skills
+- [Quản lý môi trường](./env-bootstrap) — kiểm tra môi trường, cài đặt, triển khai và chẩn đoán sự cố

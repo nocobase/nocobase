@@ -190,14 +190,6 @@ Mögliche Werte:
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-## LOGGER_BASE_PATH
-
-Pfad für dateibasierte Log-Speicherung, Standardwert: `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ## LOGGER_LEVEL
 
 Log-Level der Ausgabe. Standardwert in der Entwicklungsumgebung: `debug`. Standardwert in der Produktionsumgebung: `info`. Mögliche Werte:

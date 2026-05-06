@@ -1,104 +1,177 @@
-[English](./README.md) | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md) | Français
+[English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md) | Français | [Español](./README.es.md) | [Português](./README.pt.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
 
-https://github.com/user-attachments/assets/4d11a87b-00e2-48f3-9bf7-389d21072d13
+https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </p>
-## Table des matières
 
-- [Qu'est-ce que NocoBase ?](#quest-ce-que-nocobase-)
+## Sommaire
+
+- [Qu'est-ce que NocoBase](#quest-ce-que-nocobase)
 - [Notes de version](#notes-de-version)
-- [Fonctionnalités distinctives](#fonctionnalités-distinctives)
+- [Points distinctifs](#points-distinctifs)
+- [Connexion d'un agent IA](#connexion-dun-agent-ia)
 - [Installation](#installation)
-- [Comment fonctionne NocoBase](#comment-fonctionne-nocobase)
 
-## Qu'est-ce que NocoBase ?
+## Qu'est-ce que NocoBase
 
-NocoBase est la plateforme no-code propulsée par l’IA la plus extensible.  
-Contrôle total. Extensibilité infinie. Collaboration avec l’IA.  
-Permettez à votre équipe de s’adapter rapidement et de réduire drastiquement les coûts.  
-Pas d’années de développement. Pas de millions gaspillés.  
-Déployez NocoBase en quelques minutes — et gardez le contrôle sur tout.
+NocoBase est une plateforme open source de développement AI + no-code conçue pour créer rapidement des systèmes métiers. Au lieu de demander à l'IA de générer tout le code depuis zéro, NocoBase fournit une infrastructure éprouvée en production et une interface no-code WYSIWYG, afin que l'IA et les humains collaborent efficacement tout en garantissant à la fois vitesse de développement et fiabilité du système.
 
 Site officiel :  
-https://www.nocobase.com/
+https://www.nocobase.com/fr
 
 Démo en ligne :  
 https://demo.nocobase.com/new
 
 Documentation :  
-https://docs.nocobase.com/
+https://docs.nocobase.com/fr/
 
 Forum :  
 https://forum.nocobase.com/
 
-Cas d’usage :  
-https://www.nocobase.com/en/blog/tags/customer-stories
+Retours d'expérience :  
+https://www.nocobase.com/fr/blog/tags/customer-stories
 
 ## Notes de version
 
-Notre [blog](https://www.nocobase.com/en/blog/timeline) est régulièrement mis à jour avec les notes de version et propose un récapitulatif hebdomadaire.
+Les [notes de version](https://www.nocobase.com/fr/blog/timeline) sont publiées régulièrement sur le blog.
 
-## Fonctionnalités distinctives
+## Points distinctifs
 
-### 1. Piloté par le modèle de données, et non par les formulaires/tableaux
+### 1. Collaboratif : l'IA et les équipes construisent ensemble
 
-Au lieu d’être limité par les formulaires ou les tableaux, NocoBase adopte une approche pilotée par le modèle de données, en séparant la structure des données de l’interface utilisateur afin d’ouvrir des possibilités illimitées.
+Les agents de code disposent d'une CLI et de skills, tandis que les équipes ont une interface no-code WYSIWYG, afin que tous collaborent efficacement.
 
-- L’interface utilisateur et la structure des données sont totalement découplées
-- Plusieurs blocs et actions peuvent être créés pour la même table ou le même enregistrement, en quantité et sous n’importe quelle forme
-- Prend en charge la base de données principale, les bases de données externes et les API tierces comme sources de données
+#### Développez avec les agents de code IA que vous connaissez déjà
 
-![model](https://static-docs.nocobase.com/model.png)
+Avec les principaux agents de code, vous passez du déploiement à un système opérationnel en quelques minutes.
 
-### 2. Des employés IA intégrés à vos systèmes métier
+- Compatible avec Claude Code, Cursor, Codex, OpenCode, TRAE et d'autres agents majeurs
+- Les agents peuvent gérer setup, développement, migration et mise en production
 
-Contrairement aux démonstrations IA autonomes, NocoBase vous permet d’intégrer les capacités de l’IA de manière fluide dans vos interfaces, vos workflows et votre contexte de données, afin de rendre l’IA réellement utile dans des scénarios métier concrets.
+![coding-agent](https://static-docs.nocobase.com/coding-agent.png)
 
-- Définissez des employés IA pour des rôles tels que traducteur, analyste, chercheur ou assistant
-- Collaboration fluide entre l’IA et l’humain dans les interfaces et les workflows
-- Garantit un usage de l’IA sécurisé, transparent et personnalisable selon les besoins de votre entreprise
+#### Construisez manuellement dans une interface no-code WYSIWYG
 
-![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+Les équipes peuvent construire et modifier visuellement dans une interface WYSIWYG, même sans IA.
 
-### 3. Ce que vous voyez est ce que vous obtenez, avec une prise en main extrêmement simple
-
-Tout en permettant de développer des systèmes métier complexes, NocoBase conserve une expérience simple et intuitive.
-
-- Basculement en un clic entre le mode utilisation et le mode configuration
-- Les pages servent de canevas pour organiser les blocs et les actions, à la manière de Notion
-- Le mode configuration est conçu pour les utilisateurs ordinaires, pas seulement pour les programmeurs
+- Basculez en un clic entre le mode d'usage et le mode configuration
+- Le modèle de données, les pages, les workflows et les permissions se relisent et se configurent visuellement
+- Pensé pour les utilisateurs métier, pas seulement pour les développeurs
 
 ![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
 
-### 4. Tout est un plugin, conçu pour l’extension
+#### Combinez librement développement par IA et construction manuelle
 
-Ajouter davantage de fonctionnalités no-code ne couvrira jamais tous les cas métier. NocoBase est conçu pour être étendu grâce à son architecture à micro-noyau basée sur les plugins.
+Répartissez le travail selon vos besoins : les équipes affinent ce que l'IA construit, et l'IA reprend ce que les équipes configurent.
 
-- Toutes les fonctionnalités sont des plugins, à l’image de WordPress
-- Les plugins sont prêts à être utilisés dès leur installation
-- Les pages, blocs, actions, API et sources de données peuvent tous être étendus via des plugins personnalisés
+- L'IA peut créer rapidement le modèle de données, les pages et les workflows
+- Les équipes peuvent ajuster rapidement l'interface et les interactions
+- Collaborez au bon niveau, et itérez en continu
+
+![ai-no-coding](https://static-docs.nocobase.com/ai-no-coding.png)
+
+### 2. Intelligent : l'IA agit aussi dans le métier
+
+NocoBase intègre des collaborateurs IA pour que l'IA agisse directement dans le système.
+
+#### Des collaborateurs IA intégrés aux processus métier
+
+Les collaborateurs IA récupèrent le contexte métier automatiquement et exécutent directement les tâches dans le système.
+
+- Front-office : aide à l'analyse, aux réponses intelligentes et au remplissage de formulaires
+- Back-office : traitement automatique des documents, des risques et de la distribution des tâches
+- Intégrés aux workflows, les collaborateurs IA participent à la décision et à l'exécution
+
+![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+
+#### Des interfaces ouvertes pour se connecter à l'écosystème des agents
+
+MCP, HTTP API, CLI et un riche système de skills permettent aux agents externes de se connecter en toute sécurité.
+
+- Des plateformes comme OpenClaw, Hermes, Dify, Coze ou n8n se connectent via des protocoles standard
+- L'intégration avec Telegram, WhatsApp, Slack ou Gmail permet de consulter des données, déclencher des actions et exécuter des processus métier
+- Un modèle d'interface unique garde agents internes et externes dans les mêmes limites
+
+![agents](https://static-docs.nocobase.com/f-agents-logos.jpeg)
+
+#### Des permissions fines pour garder le contrôle
+
+Toutes les actions de l'IA suivent les mêmes permissions fines que celles des utilisateurs humains.
+
+- Chaque collaborateur IA a son propre rôle, avec des permissions jusqu'au niveau du champ
+- Les journaux d'audit rendent chaque changement de donnée et chaque déclenchement de workflow traçables
+- Les administrateurs peuvent ajuster les permissions IA à tout moment pour garder des limites claires
+
+![permission](https://static-docs.nocobase.com/f-permission.png)
+
+### 3. Fiable : une infrastructure prête pour le métier
+
+Le modèle de données, le contrôle des permissions et l'orchestration des workflows sont complexes et ne laissent pas de place à l'erreur.  
+NocoBase les fournit comme une infrastructure intégrée, rigoureusement testée et largement éprouvée en production.
+
+#### Une infrastructure complète, sans repartir de zéro à chaque fois
+
+Des dizaines de modules intégrés couvrent les besoins métier les plus fréquents.
+
+- Modélisation des données, permissions, workflows et journaux d'audit fonctionnent immédiatement
+- Éprouvé en production, au lieu d'être régénéré comme du code opaque à chaque projet
+- Des garde-fous intégrés maintiennent les sorties de l'IA dans l'architecture du système
+
+![core](https://static-docs.nocobase.com/f-core.png)
+
+#### Une approche pilotée par le modèle de données, qui découple données et interface
+
+Les données métier restent dans des structures relationnelles standard, séparées de l'interface.
+
+- La base principale, les bases externes et les API tierces peuvent servir de sources de données
+- L'IA et les humains travaillent sur le même modèle de données, pour des résultats transparents
+- Vos données restent toujours dans votre propre base, sans verrouillage par la plateforme
+
+![model](https://static-docs.nocobase.com/model.png)
+
+#### Une architecture par plugins pour faire évoluer le système durablement
+
+Avec une conception en micro-noyau, chaque fonction est un plugin et le système peut évoluer sans perdre le contrôle.
+
+- Les nouvelles fonctions s'ajoutent via des plugins composables et des conventions communes
+- Combinez plugins maison et officiels selon vos besoins métier
+- La même architecture s'applique aux plugins générés par l'IA comme à ceux développés à la main
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
 
+## Connexion d'un agent IA
+
+Le plus simple est d'installer NocoBase CLI, d'initialiser l'environnement, puis de lancer ou relancer votre session d'agent IA dans ce répertoire.
+
+- NocoBase CLI sert à installer, connecter et gérer les applications NocoBase
+- Lors de l'initialisation, la CLI installe automatiquement les NocoBase Skills pour que l'agent comprenne modèles de données, pages, workflows, permissions et plugins
+- Une fois l'initialisation terminée, l'agent IA peut travailler directement tant que son espace de travail pointe vers ce répertoire
+
+```bash
+npm install -g @nocobase/cli@beta
+mkdir my-nocobase && cd my-nocobase
+nb init --ui
+cd my-nocobase && codex
+```
+
+En savoir plus :  
+https://docs.nocobase.com/fr/ai/quick-start
+
 ## Installation
 
-NocoBase prend en charge trois méthodes d’installation :
+NocoBase prend en charge trois méthodes d'installation :
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Installation avec Docker (👍 Recommandée)</a>
+- <a target="_blank" href="https://docs.nocobase.com/fr/welcome/getting-started/installation/docker-compose">Installer avec Docker (recommandé)</a>
 
-  Convient aux scénarios no-code, sans code à écrire. Lors d’une mise à niveau, il suffit de télécharger la dernière image et de redémarrer.
+  Idéal pour les scénarios no-code et ne nécessite pas d'écrire du code. Pour mettre à niveau, récupérez la dernière image puis redémarrez.
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">Installation depuis l’outil CLI create-nocobase-app</a>
+- <a target="_blank" href="https://docs.nocobase.com/fr/welcome/getting-started/installation/create-nocobase-app">Installer avec create-nocobase-app</a>
 
-  Le code métier du projet est complètement indépendant et prend en charge le développement low-code.
+  Le code métier de votre projet reste entièrement indépendant et convient bien au low-code.
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Installation depuis le code source Git</a>
+- <a target="_blank" href="https://docs.nocobase.com/fr/welcome/getting-started/installation/git-clone">Installer depuis le code source Git</a>
 
-  Si vous souhaitez tester la toute dernière version non publiée, ou participer à la contribution, faire des modifications et déboguer directement dans le code source, cette méthode est recommandée. Elle requiert un bon niveau de compétences en développement. Si le code a été mis à jour, vous pouvez simplement récupérer les derniers changements avec `git pull`.
-
-## Comment fonctionne NocoBase
-
-https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf
+  Si vous voulez essayer la toute dernière version non publiée, ou contribuer en modifiant et déboguant directement le code source, cette méthode est recommandée. Elle demande un niveau de développement plus avancé, et vous pourrez récupérer les mises à jour via Git lorsque le code évolue.

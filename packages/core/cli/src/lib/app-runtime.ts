@@ -10,7 +10,13 @@
 import path from 'node:path';
 import { resolveEnvKind, type Env } from './auth-store.js';
 import { getEnv, loadAuthConfig } from './auth-store.js';
+import {
+  DEFAULT_DOCKER_CONTAINER_PREFIX,
+  DEFAULT_DOCKER_NETWORK,
+  getEffectiveCliConfigValue,
+} from './cli-config.js';
 import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from './run-npm.js';
+import { buildRuntimeEnvVars } from './runtime-env-vars.js';
 
 const DOCKER_APP_WORKDIR = '/app/nocobase';
 
@@ -21,6 +27,8 @@ export type ManagedAppRuntime =
       envName: string;
       source: 'npm' | 'git' | 'local';
       projectRoot: string;
+      dockerNetworkName?: string;
+      dockerContainerPrefix?: string;
       workspaceName?: string;
     }
   | {
@@ -28,6 +36,8 @@ export type ManagedAppRuntime =
       env: Env;
       envName: string;
       source: 'docker';
+      dockerNetworkName: string;
+      dockerContainerPrefix: string;
       containerName: string;
       workspaceName: string;
     }
@@ -59,19 +69,31 @@ export function defaultWorkspaceName(cwd = process.cwd()): string {
   return sanitizeDockerResourceName(`nb-${path.basename(cwd)}`);
 }
 
-export function buildDockerAppContainerName(envName: string, workspaceName?: string): string {
-  const workspace = workspaceName?.trim() || defaultWorkspaceName();
-  return sanitizeDockerResourceName(`${workspace}-${envName}-app`);
+export function defaultDockerContainerPrefix(cwd = process.cwd()): string {
+  const configured = String(DEFAULT_DOCKER_CONTAINER_PREFIX ?? '').trim();
+  if (configured) {
+    return sanitizeDockerResourceName(configured);
+  }
+  return defaultWorkspaceName(cwd);
+}
+
+export function defaultDockerNetworkName(): string {
+  return sanitizeDockerResourceName(DEFAULT_DOCKER_NETWORK);
+}
+
+export function buildDockerAppContainerName(envName: string, containerPrefix?: string): string {
+  const prefix = containerPrefix?.trim() || defaultDockerContainerPrefix();
+  return sanitizeDockerResourceName(`${prefix}-${envName}-app`);
 }
 
 export function buildDockerDbContainerName(
   envName: string,
   dbDialect: string,
-  workspaceName?: string,
+  containerPrefix?: string,
 ): string {
-  const workspace = workspaceName?.trim() || defaultWorkspaceName();
+  const prefix = containerPrefix?.trim() || defaultDockerContainerPrefix();
   const dialect = dbDialect.trim() || 'postgres';
-  return sanitizeDockerResourceName(`${workspace}-${envName}-${dialect}`);
+  return sanitizeDockerResourceName(`${prefix}-${envName}-${dialect}`);
 }
 
 function normalizeEnvSource(env: Env): ManagedAppRuntime['source'] {
@@ -97,7 +119,12 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
 
   const resolvedName = env.name || envName?.trim() || config.currentEnv || 'default';
   const source = normalizeEnvSource(env);
-  const workspaceName = config.name?.trim() || defaultWorkspaceName();
+  const dockerNetworkName = sanitizeDockerResourceName(
+    getEffectiveCliConfigValue(config, 'docker.network') || defaultDockerNetworkName(),
+  );
+  const dockerContainerPrefix = sanitizeDockerResourceName(
+    getEffectiveCliConfigValue(config, 'docker.container-prefix') || defaultDockerContainerPrefix(),
+  );
   const kind = env.kind ?? resolveEnvKind(env.config);
 
   if (kind === 'docker') {
@@ -106,8 +133,10 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
       env,
       envName: resolvedName,
       source: 'docker',
-      workspaceName,
-      containerName: buildDockerAppContainerName(resolvedName, workspaceName),
+      dockerNetworkName,
+      dockerContainerPrefix,
+      workspaceName: dockerNetworkName,
+      containerName: buildDockerAppContainerName(resolvedName, dockerContainerPrefix),
     };
   }
 
@@ -118,7 +147,9 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
       envName: resolvedName,
       source: source === 'git' ? 'git' : source === 'npm' ? 'npm' : 'local',
       projectRoot: env.appRootPath,
-      workspaceName,
+      dockerNetworkName,
+      dockerContainerPrefix,
+      workspaceName: dockerNetworkName,
     };
   }
 
@@ -156,9 +187,10 @@ export async function runLocalNocoBaseCommand(
   args: string[],
   options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
 ): Promise<void> {
+  const envVars = await buildRuntimeEnvVars(runtime);
   await runNocoBaseCommand(args, {
     cwd: runtime.projectRoot,
-    env: runtime.env.envVars,
+    env: envVars,
     stdio: options?.stdio,
   });
 }

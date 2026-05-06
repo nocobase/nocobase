@@ -1,109 +1,95 @@
 ---
 title: "Gestión de publicación"
-description: "El Skill de gestión de publicación sirve para realizar operaciones de publicación auditable entre varios entornos."
-keywords: "Constructor de IA, gestión de publicación, publicación entre entornos, copia de seguridad y restauración, migración"
+description: "El Skill de gestión de publicación sirve para realizar operaciones de publicación auditables entre varios entornos, con restauración de copias de seguridad y migración."
+keywords: "Constructor de IA,gestión de publicación,publicación entre entornos,restauración de copias de seguridad,migración"
 ---
 
 # Gestión de publicación
 
 :::tip Requisitos previos
 
-- Antes de leer esta página, asegúrese de haber instalado el NocoBase CLI y de haber completado la inicialización siguiendo la guía de [Inicio rápido del Constructor de IA](./index.md).
-- Es necesario disponer de una licencia de la edición Profesional o superior de [NocoBase Edición Comercial](https://www.nocobase.com/cn/commercial).
-- Asegúrese de haber activado los plugins de gestión de copias de seguridad y de gestión de migración y de haberlos actualizado a la última versión.
+- Antes de leer esta página, instala NocoBase CLI y completa la inicialización siguiendo [Inicio rápido del Constructor de IA](./index.md)
+- Se necesita una licencia de la edición Profesional o superior. Consulta [NocoBase Edición Comercial](https://www.nocobase.com/cn/commercial)
+- Activa los plugins «Gestión de copias de seguridad» y «Gestión de migraciones», y actualízalos a la última versión
 
 :::
 
-:::warning Atención
-La CLI relacionada con la gestión de publicación está aún en desarrollo y, por el momento, no se admite su uso.
-:::
 ## Introducción
 
-El Skill de gestión de publicación sirve para ejecutar operaciones de publicación entre varios entornos; admite dos modos de publicación: copia de seguridad y restauración, y migración.
+El Skill de gestión de publicación sirve para realizar operaciones de publicación entre varios entornos de NocoBase. Admite dos formas: restauración de copias de seguridad y migración.
 
+Si solo quieres sobrescribir por completo un entorno con otro, normalmente basta con la restauración de copias de seguridad. Si necesitas controlar mediante reglas qué contenido se sincroniza, por ejemplo, sincronizar solo la estructura y no los datos de negocio, la migración es más adecuada.
 
 ## Capacidades
 
-- Restauración con copia de seguridad en un solo entorno: restaura totalmente los datos locales utilizando un paquete de copia de seguridad.
-- Restauración con copia de seguridad entre entornos: restaura totalmente los datos del entorno de destino utilizando un paquete de copia de seguridad.
-- Migración entre entornos: utiliza un paquete de migración recién creado para actualizar de forma diferencial los datos del entorno de destino.
+- Restauración de copia de seguridad en un solo entorno: restaura el entorno actual con un paquete de copia de seguridad existente
+- Restauración inmediata en un solo entorno: primero crea una copia de seguridad del entorno actual y luego restaura el entorno actual con esa copia
+- Restauración de copia de seguridad entre entornos: restaura el paquete de copia de seguridad del entorno origen en el entorno destino
+- Migración entre entornos: actualiza el entorno destino de forma diferencial con un paquete de migración
 
 ## Ejemplos de prompts
 
-### Caso A: restauración con copia de seguridad en un solo entorno
-:::tip Requisitos previos
-
-El entorno actual debe disponer de un paquete de copia de seguridad, o bien debe realizar primero la copia y después la restauración.
-
-:::
-
-Modo prompt
-```
-Restaura usando <file-name>
-```
-Modo línea de comandos
-```
-// Consulta los paquetes de copia de seguridad disponibles; si no hay ninguno, ejecuta nb backup <file-name>
-nb backup list 
-nb restore <file-name> 
-```
-![Restauración con copia de seguridad](https://static-docs.nocobase.com/20260417150854.png)
-
-### Caso B: restauración con copia de seguridad entre entornos
+### Caso A: restauración en un solo entorno con archivo especificado
 
 :::tip Requisitos previos
 
-Es necesario disponer de dos entornos, por ejemplo, un entorno dev local y un entorno test remoto, o bien dos entornos instalados localmente.
+En el entorno actual debe existir un archivo de copia de seguridad con el mismo nombre.
 
 :::
 
-Modo prompt
+```text
+Restaurar usando la copia de seguridad <file-name.nbdata>
 ```
-Restaura dev en test
-```
-Modo línea de comandos
-```
-// Consulta los paquetes de copia de seguridad disponibles; si no hay ninguno, ejecuta nb backup <file-name> --env dev
-nb backup list --env dev
-// Restaura usando el paquete de copia de seguridad
-nb restore <file-name> --env test
-```
-![Restauración con copia de seguridad](https://static-docs.nocobase.com/20260417150854.png)
 
-### Caso C: migración entre entornos
+El Skill usa el archivo de copia de seguridad con el mismo nombre que ya existe en el servidor del entorno actual para realizar la restauración.
+
+### Caso B: restauración en un solo entorno sin especificar archivo
+
+```text
+Realizar copia de seguridad y restauración del entorno actual
+```
+
+El Skill primero crea una copia de seguridad del entorno actual y luego restaura el entorno actual con esa copia.
+
+### Caso C: restauración de copia de seguridad entre entornos
 
 :::tip Requisitos previos
 
-De forma similar al caso B, es necesario disponer de dos entornos, por ejemplo, un entorno dev local y un entorno test remoto, o bien dos entornos instalados localmente.
+Prepara dos entornos, por ejemplo, un entorno dev local y un entorno test remoto, o dos entornos locales. Puedes especificar un archivo de copia de seguridad concreto o no especificarlo.
 
 :::
 
-Modo prompt
+```text
+Restaurar dev en test
 ```
-Migra dev a test
+
+El Skill crea un paquete de copia de seguridad en el entorno dev y luego restaura ese paquete en el entorno test.
+
+### Caso D: migración entre entornos
+
+:::tip Requisitos previos
+
+Igual que en el caso C, prepara dos entornos. Puedes especificar un archivo de migración concreto o no especificarlo.
+
+:::
+
+```text
+Migrar dev a test
 ```
-Modo línea de comandos
-```
-// Crea una nueva regla de migración, que generará un nuevo ruleId; o bien, con nb migration rule list --env dev, obtén un ruleId histórico
-nb migration rule add --env dev 
-// Genera el paquete de migración con el ruleId
-nb migration generate <ruleId> --env dev 
-// Realiza la migración con el paquete generado
-nb migration run <file-name> --env test
-```
-![Publicación por migración](https://static-docs.nocobase.com/20260417151022.png)
+
+El Skill crea un paquete de migración en el entorno dev y luego usa ese paquete para actualizar el entorno test.
 
 ## Preguntas frecuentes
 
-**¿Qué debo elegir, copia de seguridad o migración?**
+**¿Debo elegir restauración de copia de seguridad o migración?**
 
-Si ya dispone de un paquete de copia de seguridad utilizable, elija la restauración con copia de seguridad. Si necesita controlar mediante una política qué datos se sincronizan (por ejemplo, sincronizar solo la estructura sin los datos), elija la migración.
+La opción predeterminada es la restauración de copia de seguridad, sobre todo si ya tienes un paquete de copia de seguridad utilizable o quieres que el entorno destino quede completamente sobrescrito con el estado del entorno origen. Usa la migración solo cuando necesites controlar el alcance de la sincronización mediante reglas, por ejemplo, sincronizar solo la estructura y no los datos.
 
-**¿A qué se debe que no aparezca el plugin de migración?**
+**¿Qué significa que falte el plugin de migración?**
 
-El plugin de gestión de migración requiere la edición Profesional o superior; consulte [NocoBase Edición Comercial](https://www.nocobase.com/cn/commercial).
+El plugin de gestión de migraciones requiere una licencia de la edición Profesional o superior. Consulta [NocoBase Edición Comercial](https://www.nocobase.com/cn/commercial) para más detalles.
 
 ## Enlaces relacionados
 
-- [Visión general del Constructor de IA](./index.md): resumen de todos los Skills del Constructor de IA y formas de instalación
-- [Gestión de entornos](./env-bootstrap): comprobación del entorno, instalación, despliegue y diagnóstico de fallos
+- [Visión general del Constructor de IA](./index.md) — resumen de todos los Skills del Constructor de IA y formas de instalación
+- [Gestión de entornos](./env-bootstrap) — comprobación del entorno, instalación, despliegue y diagnóstico de fallos

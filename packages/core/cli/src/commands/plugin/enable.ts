@@ -14,6 +14,7 @@ import {
   runDockerNocoBaseCommand,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
+import { announceTargetEnv } from '../../lib/ui.js';
 
 export default class PluginEnable extends Command {
   static override hidden = false;
@@ -54,6 +55,8 @@ export default class PluginEnable extends Command {
     if (!runtime) {
       this.error(formatMissingManagedAppEnvMessage(flags.env));
     }
+
+    announceTargetEnv(runtime.envName);
 
     if (runtime.kind === 'local') {
       try {

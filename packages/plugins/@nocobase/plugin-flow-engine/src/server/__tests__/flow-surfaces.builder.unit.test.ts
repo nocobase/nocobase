@@ -98,6 +98,31 @@ describe('flowSurfaces builder translation defaults', () => {
 });
 
 describe('flowSurfaces builder action style defaults', () => {
+  it('should keep collection add new and refresh default titles visible', () => {
+    const addNewAction = buildActionTree({ use: 'AddNewActionModel' });
+    const refreshAction = buildActionTree({ use: 'RefreshActionModel' });
+
+    expect(addNewAction.props).toMatchObject({
+      title: '{{t("Add new")}}',
+      icon: 'PlusOutlined',
+      type: 'primary',
+    });
+    expect(addNewAction.stepParams?.buttonSettings?.general).toMatchObject({
+      title: '{{t("Add new")}}',
+      icon: 'PlusOutlined',
+      type: 'primary',
+    });
+
+    expect(refreshAction.props).toMatchObject({
+      title: '{{t("Refresh")}}',
+      icon: 'ReloadOutlined',
+    });
+    expect(refreshAction.stepParams?.buttonSettings?.general).toMatchObject({
+      title: '{{t("Refresh")}}',
+      icon: 'ReloadOutlined',
+    });
+  });
+
   it('should align record action button defaults with their container initializers', () => {
     const tableEditAction = buildActionTree({
       use: 'EditActionModel',

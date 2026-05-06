@@ -215,6 +215,88 @@
         }
       }
     },
+    "backup": {
+      "name": "backup",
+      "description": "Create, inspect, download, remove, and restore NocoBase backups.",
+      "include": true,
+      "resources": {
+        "includes": ["backup"],
+        "excludes": [],
+        "overrides": {
+          "backup": {
+            "name": "backup",
+            "description": "Manage backup and restore files.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "backup:list",
+                "backup:create",
+                "backup:status",
+                "backup:download",
+                "backup:remove",
+                "backup:restore",
+                "backup:restoreUpload",
+                "backup:restoreStatus"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "migration": {
+      "name": "migration",
+      "description": "Create, check, execute, and inspect migration packages.",
+      "include": true,
+      "resources": {
+        "includes": ["migration", "migrationLog", "migrationRule", "migrationRules"],
+        "excludes": [],
+        "overrides": {
+          "migration": {
+            "name": "migration",
+            "description": "Manage migration files and executions.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "migration:list",
+                "migration:get",
+                "migration:create",
+                "migration:download",
+                "migration:remove",
+                "migration:check",
+                "migration:execute"
+              ]
+            }
+          },
+          "migrationRule": {
+            "name": "migration rules",
+            "segments": ["migration", "rules"],
+            "description": "Create migration rules with global user/system policies.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["migrationRule:create"]
+            }
+          },
+          "migrationRules": {
+            "name": "migration rules",
+            "segments": ["migration", "rules"],
+            "description": "List and inspect migration rules.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["migrationRules:list", "migrationRules:get"]
+            }
+          },
+          "migrationLog": {
+            "name": "migration logs",
+            "segments": ["migration", "logs"],
+            "description": "List, inspect, and download migration logs.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["migrationLog:list", "migrationLog:get", "migrationLog:download"]
+            }
+          }
+        }
+      }
+    },
     "system-settings": {
       "name": "system-settings",
       "description": "Adjust system title, logo, language, and other global settings.",

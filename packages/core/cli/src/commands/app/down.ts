@@ -126,20 +126,29 @@ function builtinDbContainerName(runtime: Extract<ManagedAppRuntime, { kind: 'loc
   }
 
   const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
-  const workspaceName = runtime.workspaceName;
-  return buildDockerDbContainerName(runtime.envName, dbDialect, workspaceName);
+  return buildDockerDbContainerName(
+    runtime.envName,
+    dbDialect,
+    runtime.dockerContainerPrefix || runtime.workspaceName,
+  );
 }
 
 function managedDockerNetworkName(runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>): string | undefined {
-  return runtime.workspaceName?.trim() || undefined;
+  return runtime.dockerNetworkName?.trim() || runtime.workspaceName?.trim() || undefined;
 }
 
-async function confirmDownAll(envName: string, yes: boolean): Promise<boolean> {
+async function confirmDownAll(envName: string, yes: boolean, options?: { explicitEnv?: boolean }): Promise<boolean> {
   if (yes) {
     return true;
   }
 
+  const usedCurrentEnv = options?.explicitEnv === false;
   if (!isInteractiveTerminal()) {
+    if (usedCurrentEnv) {
+      throw new Error(
+        `\`nb app down --all\` is using the current env "${envName}". Re-run with --env ${envName} --yes to delete everything for that env in non-interactive mode.`,
+      );
+    }
     throw new Error(
       `\`nb app down --all\` needs confirmation. Re-run with --yes to delete everything for "${envName}" in non-interactive mode.`,
     );
@@ -147,7 +156,9 @@ async function confirmDownAll(envName: string, yes: boolean): Promise<boolean> {
 
   const answer = await p.confirm({
     message:
-      `Delete everything for "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`,
+      usedCurrentEnv
+        ? `Delete everything for current env "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`
+        : `Delete everything for "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`,
     active: 'yes',
     inactive: 'no',
     initialValue: false,
@@ -202,6 +213,7 @@ export default class AppDown extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppDown);
     const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnv = Boolean(requestedEnv);
     const removeData = Boolean(flags.all);
     const removeEnvConfig = Boolean(flags.all);
 
@@ -233,7 +245,7 @@ export default class AppDown extends Command {
     if (flags.all) {
       let confirmed = false;
       try {
-        confirmed = await confirmDownAll(runtime.envName, flags.yes);
+        confirmed = await confirmDownAll(runtime.envName, flags.yes, { explicitEnv });
       } catch (error: unknown) {
         this.error(error instanceof Error ? error.message : String(error));
       }

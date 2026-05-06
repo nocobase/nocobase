@@ -91,12 +91,12 @@ nb env auth local
 
 `nb env auth` akan memulai alur login browser. Setelah berhasil, CLI akan menyimpan informasi autentikasi ke konfigurasi lingkungan saat ini, kemudian dapat melanjutkan membuat AI Agent memanggil `nb api`.
 
-Pada implementasi default saat ini:
+Masa berlaku access Token OAuth dan refresh Token OAuth mengikuti konfigurasi [kebijakan Token](/security/token-policy/) sistem.
 
-- Validitas access Token OAuth adalah **10 menit**
-- Validitas refresh Token OAuth adalah **30 hari**
+- Masa berlaku access Token OAuth sama dengan masa berlaku Token sistem, dengan nilai default **1 hari**
+- Masa berlaku refresh Token OAuth sama dengan masa berlaku sesi sistem, dengan nilai default **7 hari**
 
-CLI akan, saat access Token mendekati kedaluwarsa, memprioritaskan menggunakan refresh Token untuk me-refresh sesi secara otomatis; jika refresh Token sudah kedaluwarsa, tidak tersedia, atau server tidak mengembalikan refresh Token, perlu menjalankan `nb env auth` ulang.
+CLI akan, saat access Token mendekati kedaluwarsa, memprioritaskan menggunakan refresh Token untuk me-refresh sesi secara otomatis; jika refresh Token sudah kedaluwarsa, tidak tersedia, atau server tidak mengembalikan refresh Token, perlu menjalankan `nb env auth` ulang. Jika kebijakan Token diubah, sistem perlu di-restart agar perubahan berlaku pada layanan OAuth.
 
 Karakteristik OAuth adalah request biasanya dijalankan dengan konteks Pengguna login saat ini dan role-nya, catatan audit juga lebih mudah dikorespondensikan ke pelaku operasi aktual. Cara ini lebih cocok untuk operasi yang melibatkan partisipasi manusia dan memerlukan konfirmasi identitas.
 

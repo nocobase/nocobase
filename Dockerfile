@@ -1,8 +1,9 @@
-FROM node:22-bookworm as app-builder
+FROM node:22-bookworm AS app-builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
+ARG INSTALL_NB_CLI=0
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
@@ -32,11 +33,52 @@ RUN yarn config set registry $VERDACCIO_URL && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
 
-FROM scratch as app-artifact
-COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
+RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
+    LICENSE_KIT_RANGE=$(npm view @nocobase/cli dependencies.@nocobase/license-kit --registry $VERDACCIO_URL) && \
+    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE#\'} && \
+    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE%\'} && \
+    LICENSE_KIT_VERSION=$(npm view "@nocobase/license-kit@${LICENSE_KIT_RANGE}" version --registry https://registry.npmjs.org/) && \
+    mkdir -p /tmp/nb-cli && \
+    printf '%s\n' \
+      '{' \
+      '  "private": true,' \
+      '  "dependencies": {' \
+      '    "@nocobase/cli": "latest"' \
+      '  },' \
+      '  "resolutions": {' \
+      "    \"@nocobase/license-kit\": \"https://registry.npmjs.org/@nocobase/license-kit/-/license-kit-${LICENSE_KIT_VERSION}.tgz\"" \
+      '  }' \
+      '}' > /tmp/nb-cli/package.json; \
+  fi
 
-FROM node:22-bookworm-slim as runtime
+RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
+    cd /tmp/nb-cli && \
+    yarn install --production --registry $VERDACCIO_URL && \
+    mkdir -p /opt/nb/bin && \
+    cp -a /tmp/nb-cli/node_modules /opt/nb/ && \
+    ln -sf /opt/nb/node_modules/.bin/nb /opt/nb/bin/nb && \
+    NB_SKIP_STARTUP_UPDATE=1 /opt/nb/bin/nb --version && \
+    tar -zcf /nb.tar.gz -C /opt nb; \
+  else \
+    mkdir -p /tmp/empty-nb-artifact && \
+    tar -zcf /nb.tar.gz -C /tmp/empty-nb-artifact .; \
+  fi
+
+FROM scratch AS app-artifact
+COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
+COPY --from=app-builder /nb.tar.gz /nb.tar.gz
+
+FROM node:22-bookworm-slim AS nb-unpack
+COPY nb.tar.gz /tmp/nb.tar.gz
+RUN mkdir -p /opt/nb && \
+  tar -zxf /tmp/nb.tar.gz -C /opt && \
+  rm -f /tmp/nb.tar.gz
+
+FROM node:22-bookworm-slim AS runtime
 ARG COMMIT_HASH
+ARG INSTALL_NB_CLI=0
+
+ENV PATH="/opt/nb/bin:${PATH}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -60,6 +102,11 @@ RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY nocobase.tar.gz /app/nocobase.tar.gz
 COPY dist.tar.gz /app/nocobase-docs.tar.gz
+COPY --from=nb-unpack /opt/nb /opt/nb
+
+RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
+    NB_SKIP_STARTUP_UPDATE=1 nb --version; \
+  fi
 
 WORKDIR /app/nocobase
 

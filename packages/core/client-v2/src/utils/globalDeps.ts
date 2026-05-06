@@ -15,6 +15,7 @@ import * as formilyReactive from '@formily/reactive';
 import * as formilyShared from '@formily/shared';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
 import * as nocobaseFlowEngine from '@nocobase/flow-engine';
+import * as ahooks from 'ahooks';
 import * as antd from 'antd';
 import * as i18next from 'i18next';
 import React from 'react';
@@ -61,4 +62,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('@nocobase/client-v2', () => nocobaseClientV2);
   requirejs.define('@nocobase/client-v2/client-v2', () => nocobaseClientV2);
   requirejs.define('@nocobase/flow-engine', () => nocobaseFlowEngine);
+
+  // utils
+  requirejs.define('ahooks', () => ahooks);
 }

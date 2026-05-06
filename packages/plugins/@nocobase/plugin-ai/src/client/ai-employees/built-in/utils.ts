@@ -9,8 +9,6 @@
 
 import { AIEmployee } from '../types';
 
-const BUILDER_AI_USERNAMES = ['nathan', 'orin', 'dara'];
-
 export const isBuiltIn = (aiEmployee: AIEmployee) => {
   return aiEmployee?.builtIn && aiEmployee?.deprecated !== true;
 };
@@ -28,7 +26,7 @@ export const isLeader = (aiEmployee: AIEmployee) => {
 };
 
 export const isHide = (aiEmployee: AIEmployee) => {
-  return isBuiltIn(aiEmployee) && BUILDER_AI_USERNAMES.includes(aiEmployee.username);
+  return aiEmployee?.deprecated === true || aiEmployee?.category === 'developer';
 };
 
 export const isSupportLanguage = (language: string) => {

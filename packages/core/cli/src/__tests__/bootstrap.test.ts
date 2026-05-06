@@ -31,6 +31,11 @@ test('shouldSkipRuntimeBootstrap still loads runtime for non-builtin commands', 
   expect(shouldSkipRuntimeBootstrap(['api', 'users', 'list'])).toBe(false);
 });
 
+test('shouldSkipRuntimeBootstrap does not treat -V as a version or verbose shortcut', () => {
+  expect(shouldSkipRuntimeBootstrap(['-V'])).toBe(false);
+  expect(shouldSkipRuntimeBootstrap(['users', 'list', '-V'])).toBe(false);
+});
+
 test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', () => {
   const message = formatSwaggerSchemaError(
     {
