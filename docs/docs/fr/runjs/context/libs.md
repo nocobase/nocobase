@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/libs).
-:::
-
 # ctx.libs
 
 `ctx.libs` est l'espace de noms unifié pour les bibliothèques intégrées dans RunJS, contenant des bibliothèques couramment utilisées telles que React, Ant Design, dayjs et lodash. **Aucun `import` ou chargement asynchrone n'est requis** ; elles peuvent être utilisées directement via `ctx.libs.xxx`.

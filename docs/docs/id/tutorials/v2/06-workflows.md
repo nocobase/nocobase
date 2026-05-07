@@ -34,7 +34,7 @@ NocoBase menyediakan beberapa tipe trigger, dipilih saat membuat Workflow:
 |-------|------|---------|
 | [**Event Tabel Data**](/workflow/triggers/collection) | Trigger saat data ditambah, diupdate, atau dihapus | Notifikasi tiket baru, mencatat perubahan status |
 | [**Scheduled Task**](/workflow/triggers/schedule) | Trigger berdasarkan ekspresi Cron atau waktu tetap | Membuat laporan harian setiap hari, membersihkan data kedaluwarsa secara berkala |
-| [**Event Setelah Action**](/workflow/triggers/action) | Trigger setelah pengguna mengeksekusi action di antarmuka | Kirim notifikasi setelah submit form, mencatat log operasi |
+| [**Event Setelah Action**](../../workflow/triggers/post-action.md) | Trigger setelah pengguna mengeksekusi action di antarmuka | Kirim notifikasi setelah submit form, mencatat log operasi |
 | **Approval** | Memulai alur approval, mendukung approval multi-level | Approval cuti, approval pembelian |
 | **Action Kustom** | Terhubung ke tombol kustom, klik untuk trigger | Arsip satu klik, operasi batch |
 | **Event Sebelum Action** | Mencegat operasi pengguna, eksekusi sinkron lalu izinkan | Validasi sebelum submit, auto-fill field |

@@ -175,4 +175,4 @@ Bản ghi hoạt động cũng sẽ xuất hiện trong chế độ xem lịch c
 - [Hướng dẫn CRM](./index.md)
 - [Quản lý Lead](./guide-leads) — Sau khi Lead chuyển đổi sẽ tự động tạo Khách hàng và Người liên hệ
 - [Quản lý Cơ hội](./guide-opportunities) — Cơ hội liên kết với Khách hàng
-- [AI Employee](./guide-ai)
+- [AI Employee](../../../ai-employees/index.md)

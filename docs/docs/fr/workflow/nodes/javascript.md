@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/workflow/nodes/javascript).
-:::
-
 # Script JavaScript
 
 ## Introduction

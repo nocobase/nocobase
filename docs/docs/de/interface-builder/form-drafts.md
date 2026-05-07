@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-form-drafts"
 ---
 
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/form-drafts).
-:::
-
 # Formular-Entwürfe
 
 Wenn Formular-Entwürfe aktiviert sind, werden die eingegebenen Inhalte automatisch lokal gespeichert. Selbst wenn das Formular versehentlich geschlossen oder die Seite aktualisiert wird, gehen die ausgefüllten Daten nicht verloren.

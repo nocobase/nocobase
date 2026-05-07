@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/on).
-:::
-
 # ctx.on()
 
 Abonnieren Sie Kontext-Ereignisse (wie Änderungen von Feldwerten, Eigenschaftsänderungen, Ressourcen-Aktualisierungen usw.) in RunJS. Ereignisse werden basierend auf ihrem Typ auf benutzerdefinierte DOM-Ereignisse an `ctx.element` oder interne Ereignisbus-Ereignisse von `ctx.resource` abgebildet.

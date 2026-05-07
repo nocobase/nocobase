@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/import-modules).
-:::
-
 # Module importieren
 
 In RunJS können Sie zwei Arten von Modulen verwenden: **Integrierte Module** (direkter Zugriff über `ctx.libs` ohne Import) und **Externe Module** (Laden bei Bedarf über `ctx.importAsync()` oder `ctx.requireAsync()`).

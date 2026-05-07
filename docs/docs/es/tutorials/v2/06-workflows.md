@@ -34,7 +34,7 @@ NocoBase ofrece varios tipos de disparadores que se eligen al crear el Workflow:
 |------------|-------------|------------------|
 | [**Evento de tabla de datos**](/workflow/triggers/collection) | Se dispara al añadir, actualizar o eliminar datos | Notificación de nuevo ticket, registro de cambios de estado |
 | [**Tarea programada**](/workflow/triggers/schedule) | Se dispara según expresión Cron o tiempo fijo | Generar informes diarios, limpieza periódica de datos |
-| [**Evento posterior a una acción**](/workflow/triggers/action) | Se dispara después de que el usuario realiza una operación en la interfaz | Enviar notificación al enviar formulario, registrar log de operación |
+| [**Evento posterior a una acción**](../../workflow/triggers/post-action.md) | Se dispara después de que el usuario realiza una operación en la interfaz | Enviar notificación al enviar formulario, registrar log de operación |
 | **Aprobación** | Inicia un flujo de aprobación, admite múltiples niveles | Aprobaciones de vacaciones, de compras |
 | **Acción personalizada** | Vinculado a un botón personalizado, se dispara al hacer clic | Archivado con un solo clic, operaciones por lotes |
 | **Evento previo a una acción** | Intercepta la operación, se ejecuta de forma síncrona y luego deja pasar | Validar antes de enviar, autocompletar Field |

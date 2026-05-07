@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/configuration/admin-configuration).
-:::
-
 # KI-Mitarbeiter · Konfigurationshandbuch für Administratoren
 
 > Dieses Dokument hilft Ihnen dabei, schnell zu verstehen, wie Sie KI-Mitarbeiter konfigurieren und verwalten, und führt Sie Schritt für Schritt durch den gesamten Prozess, vom Modell-Service bis zum Arbeitseinsatz.
@@ -105,7 +101,7 @@ In der Erstellungsphase des Mitarbeiters werden hauptsächlich Rollen- und Fähi
 
 Fähigkeiten bestimmen, was ein Mitarbeiter „tun kann“.
 
-> 💡 Detaillierte Anweisungen finden Sie unter: [Fähigkeiten](/ai-employees/features/tool)
+> 💡 Detaillierte Anweisungen finden Sie unter: [Fähigkeiten](../features/tools.md)
 
 | Typ | Fähigkeitsbereich | Beispiel | Risikostufe |
 | ---- | ------- | --------- | ------ |

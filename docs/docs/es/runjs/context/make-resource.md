@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/make-resource).
-:::
-
 # ctx.makeResource()
 
 **Crea** y devuelve una nueva instancia de resource **sin** escribir ni modificar `ctx.resource`. Es adecuado para escenarios que requieren múltiples recursos independientes o un uso temporal.

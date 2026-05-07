@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/get-var).
-:::
-
 # ctx.getVar()
 
 Lit de manière **asynchrone** les valeurs des variables du contexte d'exécution actuel. La résolution des variables est cohérente avec `{{ctx.xxx}}` dans le SQL et les modèles, provenant généralement de l'utilisateur actuel, de l'enregistrement actuel, des paramètres de vue, du contexte de la fenêtre contextuelle (popup), etc.

@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-workflow-request-interceptor/index).
-:::
-
 # Flujo de trabajo: Evento previo a la acción

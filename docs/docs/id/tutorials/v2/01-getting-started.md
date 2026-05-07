@@ -19,7 +19,7 @@ Dibandingkan dengan tool no-code lainnya, NocoBase memiliki beberapa konsep inti
 
 - **Model Data Driven**: Definisikan [Data Source](/data-sources) dan struktur data terlebih dahulu, kemudian gunakan [Block](/interface-builder/blocks) untuk menampilkan data, akhirnya gunakan [Action](/interface-builder/actions) untuk memproses data — antarmuka dan data benar-benar terpisah
 - **WYSIWYG**: Halaman adalah kanvas, klik tempat yang ingin diubah, intuitif seperti membangun halaman Notion
-- **Semuanya adalah Plugin**: Semua fitur adalah [Plugin](/development/plugin), seperti WordPress, instalasi sesuai kebutuhan, ekstensi yang fleksibel
+- **Semuanya adalah Plugin**: Semua fitur adalah [Plugin](../../plugins/index.mdx), seperti WordPress, instalasi sesuai kebutuhan, ekstensi yang fleksibel
 - **AI Terintegrasi dengan Bisnis**: [AI Employee](/ai-employees/quick-start) bawaan dapat mengeksekusi tugas analisis, terjemahan, input, dan benar-benar terintegrasi dengan workflow Anda
 - **Open Source + Deployment Privat**: Kode inti sepenuhnya open source, data sepenuhnya berada di server Anda sendiri
 

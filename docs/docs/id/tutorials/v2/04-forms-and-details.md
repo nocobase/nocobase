@@ -1,6 +1,6 @@
 # Bab 4: Form dan Detail — Input, Tampilan, Selesai dalam Satu Langkah
 
-Pada bab sebelumnya kita telah membangun daftar tiket dan menginput data uji menggunakan form sederhana. Pada bab ini kita akan **menyempurnakan pengalaman form** — mengoptimalkan layout field [Block form](/interface-builder/blocks/data-blocks/form), menambahkan [Block detail](/interface-builder/blocks/data-blocks/details), mengonfigurasi [aturan linkage](/interface-builder/linkage-rules), dan dapat menggunakan [riwayat perubahan](https://docs.nocobase.com/cn/record-history/) untuk melacak setiap modifikasi tiket.
+Pada bab sebelumnya kita telah membangun daftar tiket dan menginput data uji menggunakan form sederhana. Pada bab ini kita akan **menyempurnakan pengalaman form** — mengoptimalkan layout field [Block form](/interface-builder/blocks/data-blocks/form), menambahkan [Block detail](/interface-builder/blocks/data-blocks/details), mengonfigurasi [aturan linkage](../../interface-builder/linkage-rule.md), dan dapat menggunakan [riwayat perubahan](https://docs.nocobase.com/cn/record-history/) untuk melacak setiap modifikasi tiket.
 
 :::tip
 Fitur "[Riwayat](https://docs.nocobase.com/cn/record-history/)" pada bagian 4.4 termasuk dalam [versi profesional](https://www.nocobase.com/cn/commercial), melewati bagian ini tidak akan mempengaruhi pembelajaran bab selanjutnya.
@@ -15,7 +15,7 @@ Pada bab sebelumnya kita dengan cepat membuat form tambah baru yang berfungsi, s
 1. Pastikan berada dalam mode UI Editor (switch di pojok kanan atas dalam keadaan aktif).
 2. Masuk ke halaman "Daftar Tiket", klik **"[Action](/interface-builder/actions) (Actions)"** di bagian atas Block tabel.
 3. Centang tombol Action **"Tambah"**.
-4. Akan muncul tombol "Tambah" di atas tabel, klik akan membuka [popup](/interface-builder/actions/pop-up).
+4. Akan muncul tombol "Tambah" di atas tabel, klik akan membuka [popup](../../interface-builder/actions/types/pop-up.md).
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
@@ -283,4 +283,4 @@ Dari "bisa dilihat" hingga "bisa diisi" lalu "bisa dilacak" — sistem tiket kit
 
 - [Block Form](/interface-builder/blocks/data-blocks/form) — Konfigurasi detail Block form
 - [Block Detail](/interface-builder/blocks/data-blocks/details) — Konfigurasi Block detail
-- [Aturan Linkage](/interface-builder/linkage-rules) — Penjelasan aturan linkage field
+- [Aturan Linkage](../../interface-builder/linkage-rule.md) — Penjelasan aturan linkage field

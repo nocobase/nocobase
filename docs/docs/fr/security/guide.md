@@ -4,10 +4,6 @@ description: "Guide de sécurité NocoBase : authentification, stratégie de Tok
 keywords: "Sécurité NocoBase,authentification,stratégie de Token,contrôle d'accès,chiffrement,restriction IP,politique de mot de passe,journal d'audit,NocoBase"
 ---
 
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Guide de sécurité NocoBase
 
 NocoBase accorde une grande importance à la sécurité des données et de l'application, depuis la conception fonctionnelle jusqu'à la mise en œuvre. La plateforme intègre l'authentification des utilisateurs, le contrôle d'accès, le chiffrement des données et de nombreuses autres fonctions de sécurité, tout en permettant de configurer les politiques de sécurité avec souplesse selon vos besoins. Qu'il s'agisse de protéger les données des utilisateurs, de gérer les droits d'accès ou d'isoler les environnements de développement et de production, NocoBase fournit des outils et solutions pratiques. Ce guide a pour but de vous accompagner dans une utilisation sécurisée de NocoBase, afin de protéger vos données, vos applications et vos environnements tout en exploitant efficacement les fonctionnalités du système.

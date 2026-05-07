@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/integration/fdw/enable-federated).
-:::
-
 # Como habilitar o mecanismo federated no MySQL
 
 O banco de dados MySQL não habilita o módulo federated por padrão. Você precisa modificar a configuração `my.cnf`. Se você estiver usando a versão Docker, pode lidar com a extensão através de volumes:

@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-form-drafts"
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/form-drafts).
-:::
-
 # Brouillons de formulaire
 
 Lorsque les brouillons de formulaire sont activés, le contenu en cours de saisie est automatiquement enregistré localement. Même si vous fermez le formulaire par inadvertance ou si vous actualisez la page, les données saisies ne seront pas perdues.

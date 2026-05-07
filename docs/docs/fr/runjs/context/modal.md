@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/modal).
-:::
-
 # ctx.modal
 
 Une API de raccourci basée sur Ant Design Modal, utilisée pour ouvrir activement des boîtes modales (invites d'information, fenêtres de confirmation, etc.) dans RunJS. Elle est implémentée par `ctx.viewer` / le système de vue.

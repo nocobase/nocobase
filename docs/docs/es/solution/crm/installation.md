@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/solution/crm/installation).
-:::
-
 # Cómo instalar
 
 > La versión actual adopta la forma de **copia de seguridad y restauración** para su despliegue. En versiones posteriores, es posible que cambiemos a la forma de **migración incremental**, para facilitar la integración de la solución en sus sistemas existentes.

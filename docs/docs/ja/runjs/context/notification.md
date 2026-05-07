@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/notification)をご参照ください。
-:::
-
 # ctx.notification
 
 Ant Design Notification に基づいたグローバル通知 API です。ページの**右上**に通知パネルを表示するために使用されます。`ctx.message` と比較して、通知にはタイトルと説明を含めることができ、長時間表示させたい場合やユーザーの注意を引く必要がある内容に適しています。

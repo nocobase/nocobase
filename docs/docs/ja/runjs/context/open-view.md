@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/open-view)をご参照ください。
-:::
-
 # ctx.openView()
 
 プログラムによって指定されたビュー（ドロワー、ポップアップ、埋め込みページなど）を開きます。`FlowModelContext` から提供され、`JSBlock`、テーブルセル、イベントフローなどのシナリオで、設定済みの `ChildPage` または `PopupAction` ビューを開くために使用されます。

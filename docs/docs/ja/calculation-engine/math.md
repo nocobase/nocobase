@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/calculation-engine/math)をご参照ください。
-:::
-
 # Mathjs
 
 [Math.js](https://mathjs.org/) は、JavaScript および Node.js 用の多機能な数学ライブラリです。

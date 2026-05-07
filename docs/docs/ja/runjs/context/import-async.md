@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/import-async)をご参照ください。
-:::
-
 # ctx.importAsync()
 
 URL を指定して **ESM モジュール** または **CSS** を動的に読み込みます。RunJS の各シーンで利用可能です。サードパーティの ESM ライブラリが必要な場合は `ctx.importAsync()` を、UMD/AMD ライブラリの場合は `ctx.requireAsync()` を使用します。`.css` のアドレスを渡すと、スタイルが読み込まれ、ページに注入されます。

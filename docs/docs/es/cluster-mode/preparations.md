@@ -5,10 +5,6 @@ description: "Preparación del despliegue en clúster: licencias de plugins come
 keywords: "preparación clúster,licencia comercial,Redis,RabbitMQ,almacenamiento compartido,balanceo de carga,Nginx,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Prerrequisitos
 
 Antes de implementar una aplicación en clúster, debe completar los siguientes preparativos.

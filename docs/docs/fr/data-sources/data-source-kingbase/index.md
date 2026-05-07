@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/data-sources/data-source-kingbase/index).
-:::
-
 # Source de données - KingbaseES
 
 ## Introduction

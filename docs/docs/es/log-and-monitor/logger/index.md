@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-logger"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 
 # Registros

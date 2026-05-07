@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 1
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-data-source-external-mssql/index).
-:::
-
 # Source de données : SQL Server externe

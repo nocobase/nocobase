@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/solution/ticket-system/index).
-:::
-
 # Introducción a la solución de tickets
 
 > **Nota**: Esta es una versión preliminar. Las funciones aún se están perfeccionando y estamos trabajando continuamente en mejoras. ¡Sus comentarios son bienvenidos!

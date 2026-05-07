@@ -5,10 +5,6 @@ description: "Operaciones en clúster: orden de arranque inicial, actualización
 keywords: "operaciones clúster,actualización,mantenimiento en app,gestión de plugins,copia de seguridad,actualización continua,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Procedimientos de Mantenimiento
 
 ## Primer Inicio de la Aplicación

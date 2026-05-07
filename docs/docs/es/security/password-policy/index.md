@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-password-policy'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 
 # Política de Contraseñas

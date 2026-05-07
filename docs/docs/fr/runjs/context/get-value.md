@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/get-value).
-:::
-
 # ctx.getValue()
 
 Dans les scénarios de champs modifiables tels que JSField et JSItem, utilisez cette méthode pour obtenir la valeur la plus récente du champ actuel. Associée à `ctx.setValue(v)`, elle permet une liaison bidirectionnelle avec le formulaire.

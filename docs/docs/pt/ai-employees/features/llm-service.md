@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/ai-employees/features/llm-service).
-:::
-
 # Configurar serviço de LLM
 
 Antes de usar os Funcionários de IA (AI Employees), você precisa configurar os serviços de LLM disponíveis.

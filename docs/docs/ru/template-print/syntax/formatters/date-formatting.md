@@ -1,7 +1,3 @@
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/template-print/syntax/formatters/date-formatting).
-:::
-
 ### 日期格式化
 
 #### 1. :formatD(patternOut, patternIn)

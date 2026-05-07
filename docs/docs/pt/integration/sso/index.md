@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Integração de Single Sign-On (SSO)
 
 O NocoBase oferece soluções completas de Single Sign-On (SSO), também conhecido como Login Único, que suportam diversos protocolos de autenticação populares para uma integração perfeita com os sistemas de identidade corporativos existentes.
@@ -16,25 +12,25 @@ O NocoBase suporta os seguintes protocolos e métodos de autenticação através
 
 ### Protocolos SSO Empresariais
 
-- **[SAML 2.0](/auth-verification/auth-saml/)**: Um padrão aberto baseado em XML, amplamente utilizado para autenticação de identidade em nível empresarial. Ideal para cenários que exigem integração com Provedores de Identidade (IdP) corporativos.
+- **[SAML 2.0](../../auth-verification/auth-saml/index.md)**: Um padrão aberto baseado em XML, amplamente utilizado para autenticação de identidade em nível empresarial. Ideal para cenários que exigem integração com Provedores de Identidade (IdP) corporativos.
 
-- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/)**: Uma camada de autenticação moderna construída sobre o OAuth 2.0, que oferece mecanismos de autenticação e autorização. Suporta integração com os principais provedores de identidade (como Google, Azure AD, etc.).
+- **[OIDC (OpenID Connect)](../../auth-verification/auth-oidc/index.md)**: Uma camada de autenticação moderna construída sobre o OAuth 2.0, que oferece mecanismos de autenticação e autorização. Suporta integração com os principais provedores de identidade (como Google, Azure AD, etc.).
 
-- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/)**: Protocolo SSO desenvolvido pela Universidade de Yale, amplamente adotado em instituições de ensino superior e educacionais.
+- **[CAS (Central Authentication Service)](../../auth-verification/auth-cas/index.md)**: Protocolo SSO desenvolvido pela Universidade de Yale, amplamente adotado em instituições de ensino superior e educacionais.
 
-- **[LDAP](/auth-verification/auth-ldap/)**: Protocolo de Acesso a Diretório Leve, utilizado para acessar e manter serviços de informações de diretório distribuídos. Adequado para cenários que exigem integração com Active Directory ou outros servidores LDAP.
+- **[LDAP](../../auth-verification/auth-ldap/index.md)**: Protocolo de Acesso a Diretório Leve, utilizado para acessar e manter serviços de informações de diretório distribuídos. Adequado para cenários que exigem integração com Active Directory ou outros servidores LDAP.
 
 ### Autenticação de Plataformas de Terceiros
 
-- **[WeCom (WeChat Work)](/auth-verification/auth-wecom/)**: Suporta login por QR code do WeCom e autenticação contínua (seamless) dentro do aplicativo.
+- **[WeCom (WeChat Work)](../../auth-verification/auth-wecom/index.md)**: Suporta login por QR code do WeCom e autenticação contínua (seamless) dentro do aplicativo.
 
-- **[DingTalk](/auth-verification/auth-dingtalk/)**: Suporta login por QR code do DingTalk e autenticação contínua (seamless) dentro do aplicativo.
+- **[DingTalk](../../auth-verification/auth-dingtalk/index.md)**: Suporta login por QR code do DingTalk e autenticação contínua (seamless) dentro do aplicativo.
 
 ### Outros Métodos de Autenticação
 
-- **[Verificação por SMS](/auth-verification/auth-sms/)**: Autenticação por código de verificação baseada em SMS de celular.
+- **[Verificação por SMS](../../auth-verification/auth-sms/index.md)**: Autenticação por código de verificação baseada em SMS de celular.
 
-- **[Nome de Usuário/Senha](/auth-verification/auth/)**: O método de autenticação básico integrado ao NocoBase.
+- **[Nome de Usuário/Senha](../../auth-verification/auth/index.md)**: O método de autenticação básico integrado ao NocoBase.
 
 ## Etapas de Integração
 
@@ -134,6 +130,6 @@ O NocoBase suporta a configuração de múltiplos métodos de autenticação sim
 
 ## Recursos Relacionados
 
-- [Documentação de Autenticação](/auth-verification/auth/)
-- [Autenticação por Chaves de API](/integration/api-keys/)
-- [Gerenciamento de Usuários e Permissões](/plugins/@nocobase/plugin-users/)
+- [Documentação de Autenticação](../../auth-verification/auth/index.md)
+- [Autenticação por Chaves de API](../api-keys/index.md)
+- [Gerenciamento de Usuários e Permissões](../../plugins/@nocobase/plugin-users/index.md)

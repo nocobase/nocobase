@@ -70,7 +70,7 @@ Untuk informasi lebih lanjut, lihat [Aturan Linkage](/interface-builder/linkage-
 
 ### Template Field
 
-Template Field digunakan untuk menggunakan kembali konfigurasi area Field di Block Detail. Detail di [Template Field](/interface-builder/fields/field-template).
+Template Field digunakan untuk menggunakan kembali konfigurasi area Field di Block Detail. Detail di [Template Field](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

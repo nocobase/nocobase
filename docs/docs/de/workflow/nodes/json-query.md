@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-json-query'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # JSON Berechnung
 

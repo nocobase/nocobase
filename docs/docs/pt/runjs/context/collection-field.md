@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/collection-field).
-:::
-
 # ctx.collectionField
 
 A instância do campo da coleção (`CollectionField`) associada ao contexto de execução atual do RunJS, usada para acessar metadados do campo, tipos, regras de validação e informações de associação. Existe apenas quando o campo está vinculado a uma definição de coleção; campos personalizados/virtuais podem ser `null`.

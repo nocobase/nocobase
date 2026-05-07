@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-block-workbench"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Bloque: Panel de Control
 
 ## Introducción
