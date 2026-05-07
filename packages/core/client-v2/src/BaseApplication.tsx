@@ -139,6 +139,7 @@ export abstract class BaseApplication<
   public systemSettings!: SystemSettingsSource;
   maintained = false;
   maintaining = false;
+  loading = false;
   error: any = null;
 
   model: ApplicationModel;
@@ -210,6 +211,7 @@ export abstract class BaseApplication<
     define(this, {
       maintained: observable.ref,
       maintaining: observable.ref,
+      loading: observable.ref,
       error: observable.ref,
     });
   }
@@ -592,7 +594,7 @@ export class ApplicationModel extends FlowModel {
     if (this.app.error) {
       return this.renderError();
     }
-    if ('loading' in this.app && (this.app as any).loading) {
+    if (this.app.loading) {
       return this.app.renderComponent('AppSpin');
     }
     return this.renderContent();

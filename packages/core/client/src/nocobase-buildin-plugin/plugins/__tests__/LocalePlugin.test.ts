@@ -41,7 +41,6 @@ describe('LocalePlugin', () => {
       },
     };
     const plugin = new LocalePlugin({ name: 'builtin-locale' } as any, app as any);
-    vi.stubGlobal('window', {} as Window & typeof globalThis);
 
     await expect(plugin.afterAdd()).resolves.toBeUndefined();
 
@@ -71,7 +70,6 @@ describe('LocalePlugin', () => {
       },
     };
     const plugin = new LocalePlugin({ name: 'builtin-locale' } as any, app as any);
-    vi.stubGlobal('window', {} as Window & typeof globalThis);
 
     await expect(plugin.afterAdd()).rejects.toBe(error);
   });

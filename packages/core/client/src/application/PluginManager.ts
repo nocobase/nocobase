@@ -21,30 +21,12 @@ export type PluginClass<Opts = any> = BasePluginClass<Opts, Application>;
 export type PluginType<Opts = any> = BasePluginType<Opts, Application>;
 
 export class PluginManager extends BasePluginManager<Application> {
-  private static readonly REMOTE_PLUGIN_RETRY_LIMIT = 100;
-  private static readonly REMOTE_PLUGIN_RETRY_DELAY = 200;
-
   protected getRemotePluginsRequestUrl() {
     return 'pm:listEnabled';
   }
 
   protected async initRemotePlugins() {
-    let res;
-    for (let attempt = 0; attempt < PluginManager.REMOTE_PLUGIN_RETRY_LIMIT; attempt++) {
-      try {
-        res = await this.app.apiClient.request({ url: this.getRemotePluginsRequestUrl() });
-        break;
-      } catch (error) {
-        const isMaintaining = !!error?.response?.data?.error?.maintaining;
-        const isLastAttempt = attempt === PluginManager.REMOTE_PLUGIN_RETRY_LIMIT - 1;
-        if (!isMaintaining || isLastAttempt) {
-          throw error;
-        }
-        await new Promise((resolve) => setTimeout(resolve, PluginManager.REMOTE_PLUGIN_RETRY_DELAY));
-      }
-    }
-
-    const pluginList: PluginData[] = res?.data?.data || [];
+    const pluginList: PluginData[] = await this.requestRemotePluginList();
     const plugins = await getPlugins({
       requirejs: this.app.requirejs,
       pluginData: pluginList,
