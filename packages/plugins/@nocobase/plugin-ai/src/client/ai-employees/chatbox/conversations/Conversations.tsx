@@ -109,14 +109,30 @@ export const Conversations: React.FC = memo(() => {
         setCurrentEmployee(undefined);
       }
       const sessionChat = chat.for(sessionId);
-      sessionChat.setMessages([]);
-      clear(undefined, sessionId);
+      const sessionState = sessionChat.getState();
+      const shouldReuseLocalSession = hasActiveStream(sessionId) && sessionState.messages.length > 0;
+      if (shouldReuseLocalSession) {
+        clear(
+          {
+            systemMessage: false,
+            attachments: false,
+            contextItems: false,
+            skillSettings: false,
+          },
+          sessionId,
+        );
+      } else {
+        sessionChat.setMessages([]);
+        clear(undefined, sessionId);
+      }
       if (model) {
         setModel(model);
       } else {
         setModel(null);
       }
-      resumeAfterLoad(sessionId, aiEmployee).catch(console.error);
+      if (!shouldReuseLocalSession) {
+        resumeAfterLoad(sessionId, aiEmployee).catch(console.error);
+      }
       if (!expanded) {
         setShowConversations(false);
       }
@@ -128,6 +144,7 @@ export const Conversations: React.FC = memo(() => {
       aiEmployeesMap,
       chat,
       clear,
+      hasActiveStream,
       setModel,
       resumeAfterLoad,
       expanded,
