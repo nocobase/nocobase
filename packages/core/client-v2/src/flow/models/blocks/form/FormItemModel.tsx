@@ -411,7 +411,7 @@ FormItemModel.registerFlow({
       },
       defaultParams: (ctx: any) => {
         const titleField =
-          ctx.model.props.titleField || ctx.model.context.collectionField.targetCollectionTitleFieldName;
+          ctx.model.props.titleField || ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;
         return {
           titleField: titleField,
         };

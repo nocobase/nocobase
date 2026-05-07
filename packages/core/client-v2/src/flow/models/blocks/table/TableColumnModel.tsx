@@ -538,7 +538,7 @@ TableColumnModel.registerFlow({
         ctx.model.setProps(targetCollectionField.getComponentProps());
       },
       defaultParams: (ctx: any) => {
-        const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+        const titleField = ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;
         return {
           label: getSavedAssociationTitleField(ctx.model) || titleField,
         };
