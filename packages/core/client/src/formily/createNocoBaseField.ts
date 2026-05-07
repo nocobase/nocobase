@@ -10,10 +10,15 @@
 import { IFieldProps } from '@formily/core';
 import { JSXComponent, Schema } from '@formily/react';
 import { toArr } from '@formily/shared';
+import { observable } from '@formily/reactive';
 import _ from 'lodash';
 
 export function createNocoBaseField<Decorator extends JSXComponent, Component extends JSXComponent>(props: any) {
   return new NocoBaseField(props);
+}
+
+export function setLightweightFormValue(values: any, path: any, value: any) {
+  _.set(values, path as any, value);
 }
 
 /**
@@ -28,6 +33,8 @@ class NocoBaseField<
   props: IFieldProps<Decorator, Component, TextType, ValueType> & {
     schema: Schema;
     compile: (source: any) => any;
+    form?: any;
+    record?: any;
   };
   initialized: boolean;
   loading: boolean;
@@ -119,7 +126,20 @@ class NocoBaseField<
     this.componentType = this.props.schema?.['x-component'];
 
     this.path = {};
-    this.form = {};
+    const externalForm = this.props.form;
+    if (externalForm) {
+      this.form = externalForm;
+    } else {
+      const record = this.props.record || {};
+      const reactiveValues = observable(record);
+      this.form = {
+        values: reactiveValues,
+        getFieldsValue: () => this.form.values,
+        setFieldValue: (path, val) => {
+          setLightweightFormValue(this.form.values, path, val);
+        },
+      };
+    }
     this.address = {
       concat: _.noop,
     };

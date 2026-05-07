@@ -140,6 +140,7 @@ const TableCellRender: FC<{
         propsRecursion
         filterProperties={filterProperties}
         isUseFormilyField={false}
+        record={record}
       />
     </span>
   );

@@ -24,21 +24,11 @@ import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';
 import { coerceForToOneField } from '../../../internal/utils/associationValueCoercion';
 import { buildDynamicNamePath } from './dynamicNamePath';
-
-const interfacesOfUnsupportedDefaultValue = [
-  'o2o',
-  'oho',
-  'obo',
-  'o2m',
-  'attachment',
-  'expression',
-  'point',
-  'lineString',
-  'circle',
-  'polygon',
-  'sequence',
-  'formula',
-];
+import {
+  hasOwnInitialValueConfig,
+  interfacesOfUnsupportedDefaultValue,
+  resolveCollectionFieldInitialValue,
+} from './defaultValue';
 
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
   static defineChildren(ctx: FlowModelContext) {
@@ -120,6 +110,10 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
                 get: () => this.context.currentObject,
               });
             }
+            fork.context.defineProperty('fieldPathArray', {
+              get: () => this.context.fieldPathArray,
+              cache: false,
+            });
             const itemOptions = this.context.getPropertyOptions('item');
             if (this.context.item) {
               const { value: _value, ...rest } = (itemOptions || {}) as any;
@@ -296,9 +290,18 @@ FormItemModel.registerFlow({
       async handler(ctx) {
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
-        ctx.model.setProps({
+        const nextProps: Record<string, any> = {
           name: fullName,
-        });
+        };
+
+        if (!hasOwnInitialValueConfig(ctx.model)) {
+          const initialValue = resolveCollectionFieldInitialValue(ctx.model.collectionField);
+          if (typeof initialValue !== 'undefined') {
+            nextProps.initialValue = initialValue;
+          }
+        }
+
+        ctx.model.setProps(nextProps);
       },
     },
 

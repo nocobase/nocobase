@@ -268,6 +268,10 @@ const ArrayNester = ({
                   get: () => fieldIndex,
                   cache: false,
                 });
+                currentFork.context.defineProperty('fieldPathArray', {
+                  get: () => model?.parent?.context?.fieldPathArray ?? [],
+                  cache: false,
+                });
 
                 const getRowItem = createItemChainGetter({
                   valueAccessor: () => currentFork.context.form.getFieldValue([name, fieldName]),

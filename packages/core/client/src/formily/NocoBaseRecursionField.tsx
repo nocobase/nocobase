@@ -31,6 +31,7 @@ import { useCollection } from '../data-source/collection/CollectionProvider';
 import { SchemaComponentOnChangeContext } from '../schema-component/core/SchemaComponent';
 import { EMPTY_OBJECT } from '../variables';
 import { NocoBaseField } from './NocoBaseField';
+import { setLightweightFormValue } from './createNocoBaseField';
 
 interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
   /**
@@ -49,6 +50,11 @@ interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {
    */
   isUseFormilyField?: boolean;
   parentSchema?: Schema;
+  /**
+   * The full record object (row data), used to construct reactive form for formula fields
+   * in table-v2 cell rendering context.
+   */
+  record?: any;
 }
 
 const CollectionFieldUISchemaContext = React.createContext<CollectionFieldOptions>({});
@@ -170,6 +176,7 @@ const propertiesToReactElement = ({
   propsRecursion,
   values,
   isUseFormilyField,
+  record,
 }: {
   schema: Schema;
   field: any;
@@ -179,6 +186,7 @@ const propertiesToReactElement = ({
   propsRecursion?: any;
   values?: Record<string, any>;
   isUseFormilyField?: boolean;
+  record?: any;
 }) => {
   const properties = Schema.getOrderProperties(schema);
   if (!properties.length) return null;
@@ -210,6 +218,7 @@ const propertiesToReactElement = ({
               basePath={base}
               values={_.get(values, name)}
               isUseFormilyField={isUseFormilyField}
+              record={record}
             />
           ) : (
             <NocoBaseRecursionField
@@ -218,6 +227,7 @@ const propertiesToReactElement = ({
               basePath={base}
               values={_.get(values, name)}
               isUseFormilyField={isUseFormilyField}
+              record={record}
             />
           );
 
@@ -268,6 +278,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     isUseFormilyField = true,
     uiSchema,
     parentSchema,
+    record: recordProp,
   } = props;
   const basePath = useBasePath(props);
   const newFieldSchemaRef = useRef(null);
@@ -332,6 +343,7 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
       propsRecursion,
       values,
       isUseFormilyField,
+      record: recordProp ?? values,
     });
   };
 
@@ -358,7 +370,27 @@ export const NocoBaseRecursionField: ReactFC<INocoBaseRecursionFieldProps> = Rea
     return isUseFormilyField ? (
       <Field {...fieldProps} name={name} basePath={basePath} />
     ) : (
-      <NocoBaseField name={name} value={values} initialValue={values} basePath={basePath} schema={mergedFieldSchema} />
+      (() => {
+        const record = recordProp ?? values;
+        const form = {
+          values: record,
+          getFieldsValue: () => form.values,
+          setFieldValue: (path, val) => {
+            setLightweightFormValue(form.values, path, val);
+          },
+        };
+        return (
+          <NocoBaseField
+            name={name}
+            value={values}
+            initialValue={values}
+            form={form}
+            record={record}
+            basePath={basePath}
+            schema={mergedFieldSchema}
+          />
+        ) as any;
+      })()
     );
   };
 
