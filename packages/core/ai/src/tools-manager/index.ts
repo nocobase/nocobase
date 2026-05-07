@@ -105,4 +105,12 @@ export function defineTools(options: ToolsOptions) {
   return options;
 }
 
+export const SYSTEM_TOOLS = {
+  WEB_SEARCH: 'subAgentWebSearch',
+  KNOWLEDGE_BASE: 'knowledge-base-retrieve',
+  WORK_FLOW_TASK_OUTPUT: 'aiEmployeeWorkflowTaskOutput',
+};
+
+export const listSystemTools = () => Object.values(SYSTEM_TOOLS);
+
 export * from './types';

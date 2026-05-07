@@ -28,7 +28,7 @@ import {
   toolInteractionMiddleware,
   workflowHistoryMiddleware,
 } from './middleware';
-import { SkillsEntry, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
+import { listSystemTools, SkillsEntry, SYSTEM_TOOLS, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
@@ -1334,17 +1334,17 @@ If information is missing, clearly state it in the summary.</Important>`;
   private async getAIEmployeeTools() {
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
     if (this.webSearch === true) {
-      const subAgentWebSearch = await this.toolsManager.getTools('subAgentWebSearch');
+      const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH);
       tools.push(subAgentWebSearch);
     }
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
-    const employeeTools = this.employee.skillSettings?.tools ?? [];
-    employeeTools.push(...this.tools);
+    const settingsTools = this.employee.skillSettings?.tools ?? [];
+    const employeeTools = [...settingsTools, ...this.tools];
     if (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.employee.toJSON() as AIEmployeeType)) {
-      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools('knowledge-base-retrieve');
+      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE);
       if (knowledgeBaseRetrieveTool) {
-        employeeTools.push({ name: 'knowledge-base-retrieve' });
+        employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
       }
     }
     for (const toolSetting of employeeTools) {
@@ -1357,15 +1357,19 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
       tools.push(tool);
     }
+    const systemTools = listSystemTools();
     if (!this.skillSettings) {
       return tools;
     } else if (!this.skillSettings.toolsVersion) {
       const toolFilter = this.skillSettings.tools ?? [];
-      return tools.filter((t) => toolFilter.length === 0 || toolFilter.includes(t.definition.name));
+      return tools.filter(
+        (t) =>
+          toolFilter.length === 0 || systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name),
+      );
     } else {
       const toolFilter = this.skillSettings.tools;
       if (_.isArray(toolFilter)) {
-        return tools.filter((t) => toolFilter.includes(t.definition.name));
+        return tools.filter((t) => systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name));
       } else {
         return tools;
       }
