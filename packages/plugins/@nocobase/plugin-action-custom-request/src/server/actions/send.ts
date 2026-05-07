@@ -96,6 +96,18 @@ export const getParsedValue = (value, variables) => {
   return template(variables);
 };
 
+const getRequestBaseURL = (ctx: Context) => {
+  if (ctx.protocol && ctx.host) {
+    return `${ctx.protocol}://${ctx.host}`;
+  }
+
+  if (ctx.href) {
+    return new URL(ctx.href).origin;
+  }
+
+  return undefined;
+};
+
 export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
   const resourceName = ctx.action.resourceName;
   const { filterByTk, values = {} } = ctx.action.params;
@@ -205,7 +217,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   applyVarsToVariables(variables, vars);
 
   const axiosRequestConfig = {
-    baseURL: ctx.origin,
+    baseURL: getRequestBaseURL(ctx),
     ...options,
     // safeRequest checks this url value (before baseURL combination) so that
     // relative paths pointing to the same server are not subject to the whitelist.
