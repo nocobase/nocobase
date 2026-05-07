@@ -7,21 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ActionSceneEnum,
-  CollectionActionGroupModel,
-  FormActionGroupModel,
-  RecordActionGroupModel,
-  ActionModel,
-  PopupSubTableFormActionGroupModel,
-} from '@nocobase/client';
+import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { NAMESPACE } from '../locale';
+import { NAMESPACE } from '../shared/locale';
 import { CUSTOM_REQUEST_ACTION_NAME } from './customRequestFlowAction';
 
 export class CustomRequestActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;
+
   defaultProps: ButtonProps = {
     title: tExpr('Custom request', { ns: NAMESPACE }),
   };
@@ -54,18 +48,15 @@ CustomRequestActionModel.registerFlow({
   },
 });
 
-CollectionActionGroupModel.registerActionModels({
-  CustomRequestActionModel,
-});
-
-RecordActionGroupModel.registerActionModels({
-  CustomRequestActionModel,
-});
-
-FormActionGroupModel.registerActionModels({
-  CustomRequestActionModel,
-});
-
-PopupSubTableFormActionGroupModel.registerActionModels({
-  CustomRequestActionModel,
-});
+export function registerCustomRequestActionGroups(flowEngine: any) {
+  [
+    'CollectionActionGroupModel',
+    'RecordActionGroupModel',
+    'FormActionGroupModel',
+    'PopupSubTableFormActionGroupModel',
+  ].forEach((modelName) => {
+    flowEngine.getModelClass(modelName)?.registerActionModels?.({
+      CustomRequestActionModel,
+    });
+  });
+}

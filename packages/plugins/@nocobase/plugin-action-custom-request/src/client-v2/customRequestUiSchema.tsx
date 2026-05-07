@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSelect, TextAreaWithContextSelector } from '@nocobase/client';
+import { TextAreaWithContextSelector } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
 import { InputNumber } from 'antd';
-import { generateNTemplate } from '../locale';
-import { FlowJsonWithContextSelector } from './components/FlowJsonWithContextSelector';
+import { generateNTemplate } from './locale';
 import { RequestKeyField } from './components/RequestKeyField';
 import { RolesSelect } from './components/RolesSelect';
 
@@ -108,6 +107,7 @@ export const customRequestUiSchema = {
               'x-component': TextAreaWithContextSelector,
               'x-component-props': {
                 rows: 1,
+                maxRows: 4,
               },
             },
             remove: {
@@ -173,6 +173,7 @@ export const customRequestUiSchema = {
               'x-component': TextAreaWithContextSelector,
               'x-component-props': {
                 rows: 1,
+                maxRows: 4,
               },
             },
             remove: {
@@ -196,11 +197,10 @@ export const customRequestUiSchema = {
     type: 'string',
     title: generateNTemplate('Body'),
     'x-decorator': 'FormItem',
-    'x-component': FlowJsonWithContextSelector,
+    'x-component': TextAreaWithContextSelector,
     'x-component-props': {
-      autoSize: {
-        minRows: 10,
-      },
+      rows: 10,
+      maxRows: 20,
       placeholder: generateNTemplate('Input request data'),
     },
     description: generateNTemplate('Only support standard JSON data'),

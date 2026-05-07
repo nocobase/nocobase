@@ -7,20 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { i18n } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
-import { NAMESPACE } from '../../shared/locale';
+import { useTranslation as useT } from 'react-i18next';
+import { NAMESPACE } from '../shared/locale';
+
+export { NAMESPACE };
 
 export function lang(key: string) {
-  return i18n.t(key, { ns: NAMESPACE });
+  const runtimeI18n = (globalThis as any)?.window?.__nocobase_i18n__;
+  return runtimeI18n?.t?.(key, { ns: NAMESPACE }) ?? key;
 }
 
 export function generateNTemplate(key: string) {
   return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
 }
 
-export function useBulkUpdateTranslation() {
-  return useTranslation(NAMESPACE, {
+export function useTranslation() {
+  return useT(NAMESPACE, {
     nsMode: 'fallback',
   });
 }

@@ -8,15 +8,15 @@
  */
 
 import { ActionScene, defineAction, tExpr } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../locale';
-import { executeCustomRequest } from './utils';
-import { CustomRequestStepParams } from './customRequestFlowActionTypes';
+import { NAMESPACE } from '../shared/locale';
+import { CustomRequestStepParams } from '../shared/customRequestFlowActionTypes';
 import {
   DEFAULT_CUSTOM_REQUEST_SETTINGS,
+  executeCustomRequest,
   extractVariablePaths,
   makeRequestKey,
   saveCustomRequestConfig,
-} from './utils';
+} from '../shared/customRequestUtils';
 import { customRequestUiSchema } from './customRequestUiSchema';
 
 const buildSanitizedParams = (key: string, params: CustomRequestStepParams): CustomRequestStepParams => {

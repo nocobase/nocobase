@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const NAMESPACE = 'action-bulk-edit';
 
 export function lang(key: string) {
-  return i18n.t(key, { ns: NAMESPACE });
+  const runtimeI18n = (globalThis as any)?.window?.__nocobase_i18n__;
+  return runtimeI18n?.t?.(key, { ns: NAMESPACE }) ?? key;
 }
 
 export function generateNTemplate(key: string) {

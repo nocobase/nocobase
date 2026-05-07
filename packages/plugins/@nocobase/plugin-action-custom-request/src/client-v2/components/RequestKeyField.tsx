@@ -11,7 +11,11 @@ import { useForm } from '@formily/react';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import React from 'react';
-import { loadCustomRequestRecord, makeRequestKey, toCustomRequestConfigurationInitialValues } from '../utils';
+import {
+  loadCustomRequestRecord,
+  makeRequestKey,
+  toCustomRequestConfigurationInitialValues,
+} from '../../shared/customRequestUtils';
 
 const requestConfigInFlight = new Map<string, Promise<any>>();
 
@@ -62,7 +66,7 @@ export const RequestKeyField = (props: { value?: string; onChange?: (value: stri
         });
         loadedKeyRef.current = value;
       } catch (error) {
-        // ignore - this key may not have existing config yet
+        console.log(error);
       }
     })();
 

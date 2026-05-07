@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './CustomRequestActionModel';
+export const NAMESPACE = 'action-custom-request';
