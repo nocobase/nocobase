@@ -1,4 +1,5 @@
 name: Release
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Manual release {0}', inputs.ref) || github.event.head_commit.message || format('Release {0}', github.ref_name) }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.ref_name }}
