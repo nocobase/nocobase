@@ -1,12 +1,4 @@
-
-
-import {
-  Application,
-  CSSVariableProvider,
-  Plugin,
-  SchemaInitializer,
-  useSchemaInitializerRender,
-} from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
 import React from 'react';
 
 const myInitializer = new SchemaInitializer({

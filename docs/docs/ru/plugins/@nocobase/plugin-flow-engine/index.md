@@ -1,5 +1,5 @@
 ---
-displayName: "Flow engine"
+displayName: "Фронтенд FlowEngine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flow engine
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-flow-engine/index).
+:::
+
+# Фронтенд FlowEngine

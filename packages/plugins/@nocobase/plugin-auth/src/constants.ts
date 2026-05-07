@@ -12,3 +12,8 @@ export const tokenPolicyCacheKey = 'auth:' + tokenPolicyRecordKey;
 export const tokenPolicyCollectionName = 'tokenControlConfig';
 export const issuedTokensCollectionName = 'issuedTokens';
 export const RENEWED_JTI_CACHE_MS = 10000;
+export const defaultTokenPolicyConfig = {
+  tokenExpirationTime: '1d',
+  sessionExpirationTime: '7d',
+  expiredTokenRenewLimit: '1d',
+};

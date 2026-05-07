@@ -1,7 +1,6 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/get-started/installation/docker).
 :::
-
 
 # Installation de NocoBase avec Docker
 
@@ -30,7 +29,7 @@ Choisissez une version de NocoBase ([Comparaison des versions](../quickstart.md)
 
 - **Choisir une image** : `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - Pour les environnements de production, nous vous recommandons de fixer une version spécifique pour éviter les mises à jour automatiques involontaires. [Voir toutes les versions](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Image Alibaba Cloud : `nocobase/nocobase:latest-full`
+
   - Image Docker Hub : `nocobase/nocobase:latest-full`
   - L'**image full** inclut les clients PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 nécessaires aux plugins de gestion des sauvegardes et des migrations, ainsi que LibreOffice pour l'impression de modèles (PDF).
   - Si vous souhaitez créer votre propre image, vous pouvez consulter les [Dockerfile officiels (version allégée)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) et [Dockerfile-full (version complète)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).

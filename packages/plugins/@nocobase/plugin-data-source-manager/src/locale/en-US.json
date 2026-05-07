@@ -57,8 +57,10 @@
   "ai.tools.intentRouter.about": "Route intents to appropriate workflow",
   "ai.tools.searchFieldMetadata.title": "Search field metadata",
   "ai.tools.searchFieldMetadata.about": "Search fields in data models by keyword (english first). Returns either search results or a suggested query.",
-  "ai.tools.dataSourceQuery.title": "Data source query",
-  "ai.tools.dataSourceQuery.about": "Use dataSource, collectionName, and collection fields to query data from the database",
+  "ai.tools.dataSourceQuery.title": "Get records",
+  "ai.tools.dataSourceQuery.about": "Use dataSource, collectionName, fields, filters, and sorting to get records",
+  "ai.tools.dataQuery.title": "Query data",
+  "ai.tools.dataQuery.about": "Run aggregate repository queries with measures, dimensions, orders, filter, and having",
   "ai.tools.dataSourceCounting.title": "Data source records counting",
   "ai.tools.dataSourceCounting.about": "Use dataSource, collectionName, and collection fields to query data from the database, get total count of records",
   "ai.tools.dataQuery.args.datasource": "Data source key",
@@ -67,5 +69,11 @@
   "ai.tools.dataQuery.args.appends": "Related collection to be queried",
   "ai.tools.dataQuery.args.sort": "Sort field names. By default, they are in ascending order. A minus sign before the field name indicates descending order",
   "ai.tools.dataQuery.args.offset": "Offset of records to be queried",
-  "ai.tools.dataQuery.args.limit": "Maximum number of records to be queried"
+  "ai.tools.dataQuery.args.limit": "Maximum number of records to be queried",
+  "ai.skills.dataQuery.title": "Data query",
+  "ai.skills.dataQuery.about": "Use tools to inspect metadata, query records, and run aggregate analysis on specified data sources",
+  "ai.skills.dataModeling.title": "Data modeling",
+  "ai.skills.dataModeling.about": "helps translate business scenarios into normalized database schemas with table declarations and relationship diagrams.",
+  "ai.skills.dataMetadata.title": "Data metadata",
+  "ai.skills.dataMetadata.about": "helps get collection metadata (data model, like database table definition, RESTful API definition), like collection definition, field metadata"
 }

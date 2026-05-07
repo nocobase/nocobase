@@ -4,7 +4,7 @@
 
 # Роутер
 
-Клиент NocoBase предоставляет гибкий менеджер маршрутизации, который позволяет расширять страницы и страницы настроек плагинов с помощью `router.add()` и `pluginSettingsRouter.add()`.
+Клиент NocoBase предоставляет гибкий менеджер маршрутизации, который позволяет расширять страницы и страницы настроек плагинов с помощью `router.add()` и `pluginSettingsManager`.
 
 ## Зарегистрированные маршруты страниц по умолчанию
 
@@ -16,15 +16,20 @@
 
 ## Расширение обычных страниц
 
-Добавляйте маршруты обычных страниц с помощью `router.add()`.
+Добавляйте обычные маршруты страниц с помощью `router.add()`. Для компонентов страниц используйте `componentLoader`, чтобы модуль страницы загружался только при фактическом переходе на маршрут.
+
+Файлы страниц должны использовать `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Динамический импорт: модуль страницы загружается только при переходе на этот маршрут
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,52 +74,58 @@ this.router.add('root.user', {
 });
 ```
 
+Если страница тяжёлая или не нужна при первом рендере, отдавайте предпочтение `componentLoader`; `element` по-прежнему подходит для layout-маршрутов или очень лёгких inline-страниц.
+
 ## Расширение страниц настроек плагинов
 
-Добавляйте страницы настроек плагинов с помощью `pluginSettingsRouter.add()`.
+Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
 
 ```tsx
-import { Plugin } from '@nocobase/client';
-import React from 'react';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const HelloSettingPage = () => <div>Hello Setting page</div>;
-
-export class HelloPlugin extends Plugin {
+export class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('hello', {
-      title: 'Hello', // Заголовок страницы настроек
-      icon: 'ApiOutlined', // Иконка меню страницы настроек
-      Component: HelloSettingPage,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('Hello Settings'),
+      icon: 'ApiOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('Hello Settings'),
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
 ```
 
-Пример многоуровневой маршрутизации
+To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const pluginName = 'hello';
-
-class HelloPlugin extends Plugin {
+class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // Маршрут верхнего уровня
-    this.pluginSettingsRouter.add(pluginName, {
-      title: 'HelloWorld',
-      icon: '',
-      Component: Outlet,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('HelloWorld'),
+      icon: 'ApiOutlined',
     });
 
-    // Дочерние маршруты
-    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
-      title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('General'),
+      componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
-      title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'advanced',
+      title: this.t('Advanced'),
+      componentLoader: () => import('./settings/AdvancedPage'),
     });
   }
 }

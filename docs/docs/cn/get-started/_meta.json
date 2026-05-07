@@ -11,7 +11,8 @@
   },
   {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "安装方式和版本对比"
   },
   {
     "type": "custom-link",

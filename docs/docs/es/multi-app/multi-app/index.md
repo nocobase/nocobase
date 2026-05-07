@@ -2,65 +2,69 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/multi-app/multi-app/index).
+:::
+
 # Gestión multiaplicación
 
-## Resumen
+## Resumen de funciones
 
-La gestión multiaplicación es una solución unificada de NocoBase para crear y administrar múltiples instancias de aplicaciones NocoBase **físicamente aisladas** en uno o varios entornos de ejecución. Con **AppSupervisor**, puedes administrar varias aplicaciones desde una sola entrada.
+La gestión multiaplicación es la solución de gestión de aplicaciones unificada proporcionada por NocoBase para crear y gestionar múltiples instancias de aplicaciones NocoBase físicamente aisladas en uno o más entornos de ejecución. A través del regulador de aplicaciones (AppSupervisor), usted puede crear y mantener múltiples aplicaciones desde un punto de entrada unificado para satisfacer las necesidades de diferentes negocios y etapas de escala.
 
 ## Aplicación única
 
-En etapas tempranas, la mayoría de equipos comienzan con una sola aplicación.
+En las etapas iniciales de un proyecto, la mayoría de los usuarios comienzan con una sola aplicación.
 
-En este modo, solo se despliega una instancia de NocoBase. Toda la lógica de negocio, los datos y los usuarios viven en la misma aplicación. El despliegue es simple y el costo de configuración es bajo.
+En este modo, el sistema solo necesita desplegar una instancia de NocoBase, y todas las funciones de negocio, datos y usuarios se ejecutan en la misma aplicación. El despliegue es sencillo y el costo de configuración es bajo, lo que lo hace ideal para la validación de prototipos, proyectos pequeños o herramientas internas.
 
-A medida que el negocio crece, aparecen límites naturales:
+Sin embargo, a medida que el negocio se vuelve más complejo, una sola aplicación enfrenta algunas limitaciones naturales:
 
-- Se acumulan funciones y el sistema se vuelve pesado
-- Es difícil aislar dominios de negocio
-- El costo de escalado y mantenimiento aumenta
+- Las funciones se acumulan continuamente, haciendo que el sistema se vuelva pesado.
+- Es difícil aislar diferentes negocios entre sí.
+- El costo de expansión y mantenimiento de la aplicación sigue aumentando.
 
-En ese punto, suele ser necesario dividir el negocio en múltiples aplicaciones.
+En este punto, los usuarios desearán dividir los diferentes negocios en múltiples aplicaciones para mejorar la mantenibilidad y escalabilidad del sistema.
 
-## Multiaplicación en memoria compartida
+## Multiaplicación de memoria compartida
 
-Si necesitas separar dominios de negocio sin introducir una arquitectura compleja de despliegue y operación, puedes usar el modo de memoria compartida.
+Cuando usted desee dividir el negocio pero no quiera introducir una arquitectura de despliegue y operación compleja, puede actualizar al modo de multiaplicación de memoria compartida.
 
-En este modo, varias aplicaciones se ejecutan dentro de una sola instancia de NocoBase. Cada aplicación es independiente, puede conectarse a su propia base de datos y puede crearse/iniciarse/detenerse por separado. Sin embargo, comparten el mismo proceso y espacio de memoria.
+En este modo, se pueden ejecutar simultáneamente múltiples aplicaciones en una sola instancia de NocoBase. Cada aplicación es independiente, puede conectarse a una base de datos independiente y puede crearse, iniciarse y detenerse por separado, pero comparten el mismo proceso y espacio de memoria; usted solo necesita mantener una instancia de NocoBase.
 
 ![](https://static-docs.nocobase.com/202512231055907.png)
 
-Ventajas principales:
+Este enfoque aporta mejoras significativas:
 
-- División del negocio por aplicación
-- Funciones y configuración más claras entre aplicaciones
-- Menor consumo de recursos que enfoques multi-proceso o multi-contenedor
+- El negocio se puede dividir por la dimensión de la aplicación.
+- Las funciones y configuraciones entre aplicaciones son más claras.
+- En comparación con las soluciones de múltiples procesos o múltiples contenedores, el consumo de recursos es menor.
 
-Como todas las aplicaciones comparten proceso, también comparten CPU y memoria. Una falla o alta carga en una aplicación puede impactar a las demás.
+Sin embargo, debido a que todas las aplicaciones se ejecutan en el mismo proceso, comparten recursos como la CPU y la memoria. Una anomalía o una carga elevada en una sola aplicación puede afectar la estabilidad de otras aplicaciones.
 
-Cuando aumenta el número de aplicaciones o se exige más aislamiento y estabilidad, se debe evolucionar la arquitectura.
+Cuando el número de aplicaciones sigue aumentando, o cuando se plantean mayores requisitos de aislamiento y estabilidad, es necesario actualizar aún más la arquitectura.
 
-## Despliegue híbrido multi-entorno
+## Despliegue híbrido multientorno
 
-Cuando crecen la escala y la complejidad del negocio, el modo de memoria compartida enfrenta retos de recursos, estabilidad y seguridad. En esa fase, puede adoptarse un **despliegue híbrido multi-entorno**.
+Cuando la escala y la complejidad del negocio alcanzan un cierto nivel y el número de aplicaciones necesita expandirse a gran escala, el modo de multiaplicación de memoria compartida enfrentará desafíos como la competencia por los recursos, la estabilidad y la seguridad. En la etapa de escalamiento, usted puede considerar adoptar un método de despliegue híbrido multientorno para soportar escenarios de negocio más complejos.
 
-La idea central es introducir una **aplicación de entrada**: una instancia de NocoBase funciona como plano de control unificado, mientras varias instancias de NocoBase funcionan como entornos de ejecución que alojan las aplicaciones de negocio.
+El núcleo de esta arquitectura es la introducción de una aplicación de entrada, es decir, desplegar un NocoBase como centro de gestión unificado, mientras se despliegan múltiples NocoBase como entornos de ejecución de aplicaciones para ejecutar realmente las aplicaciones de negocio.
 
-La aplicación de entrada se encarga de:
+La aplicación de entrada es responsable de:
 
-- Crear, configurar y gestionar el ciclo de vida de las aplicaciones
-- Distribuir comandos de gestión y agregar estados
+- La creación, configuración y gestión del ciclo de vida de las aplicaciones.
+- El envío de comandos de gestión y el resumen de estados.
 
-Los entornos de ejecución se encargan de:
+El entorno de la aplicación de instancia es responsable de:
 
-- Alojar y ejecutar aplicaciones de negocio
+- Alojar y ejecutar realmente las aplicaciones de negocio a través del modo de multiaplicación de memoria compartida.
 
-Desde la perspectiva del usuario, todo sigue gestionándose desde una sola entrada. Internamente:
+Para el usuario, todavía se pueden crear y gestionar múltiples aplicaciones a través de una sola entrada, pero internamente:
 
-- Distintas aplicaciones pueden correr en diferentes nodos o clústeres
-- Cada aplicación puede tener su propia base de datos y middleware
-- Las aplicaciones de alta carga pueden aislarse o escalarse de forma independiente
+- Diferentes aplicaciones pueden ejecutarse en diferentes nodos o clústeres.
+- Cada aplicación puede utilizar bases de datos y middleware independientes.
+- Se pueden ampliar o aislar las aplicaciones de alta carga según sea necesario.
 
 ![](https://static-docs.nocobase.com/202512231215186.png)
 
-Este modelo es adecuado para plataformas SaaS, gran cantidad de entornos demo y escenarios multi-tenant.
+Este método es adecuado para plataformas SaaS, una gran cantidad de entornos de demostración o escenarios multi-inquilino, mejorando la estabilidad y la capacidad de mantenimiento del sistema al tiempo que garantiza la flexibilidad.

@@ -1,38 +1,38 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/fields/specific/js-item).
 :::
 
-# Item JS
+# JS Item
 
 ## Introdução
 
-O Item JS é usado para "itens personalizados" (não vinculados a um campo) em um formulário. Você pode usar JavaScript/JSX para renderizar qualquer conteúdo (como dicas, estatísticas, pré-visualizações, botões, etc.) e interagir com o formulário e o contexto do registro. É ideal para cenários como pré-visualizações em tempo real, dicas instrutivas e pequenos componentes interativos.
+O JS Item é usado para "itens personalizados" em formulários (não vinculados a campos). Você pode usar JavaScript/JSX para renderizar qualquer conteúdo (dicas, estatísticas, pré-visualizações, botões, etc.) e interagir com o formulário e o contexto do registro, sendo adequado para cenários como pré-visualizações em tempo real, dicas de instrução, pequenos componentes interativos, etc.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
 ## API de Contexto em Tempo de Execução (Uso Comum)
 
-- `ctx.element`: O contêiner DOM (ElementProxy) do item atual, que suporta `innerHTML`, `querySelector`, `addEventListener`, etc.
-- `ctx.form`: A instância do formulário AntD, permitindo operações como `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, etc.
-- `ctx.blockModel`: O modelo do bloco de formulário ao qual pertence, que pode escutar `formValuesChange` para implementar a vinculação.
-- `ctx.record` / `ctx.collection`: O registro atual e os metadados da **coleção** (disponíveis em alguns cenários).
-- `ctx.requireAsync(url)`: Carrega assincronamente uma biblioteca AMD/UMD por URL.
-- `ctx.importAsync(url)`: Importa dinamicamente um módulo ESM por URL.
-- `ctx.openView(viewUid, options)`: Abre uma visualização configurada (gaveta/diálogo/página).
-- `ctx.message` / `ctx.notification`: Mensagem e notificação global.
-- `ctx.t()` / `ctx.i18n.t()`: Internacionalização.
-- `ctx.onRefReady(ctx.ref, cb)`: Renderiza depois que o contêiner estiver pronto.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Bibliotecas integradas como React, ReactDOM, Ant Design, ícones do Ant Design e dayjs, usadas para renderização JSX e utilitários de data/hora. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` são mantidos para compatibilidade.)
-- `ctx.render(vnode)`: Renderiza um elemento React/HTML/DOM para o contêiner padrão `ctx.element`. Múltiplas renderizações reutilizarão o Root e sobrescreverão o conteúdo existente do contêiner.
+- `ctx.element`: O contêiner DOM (ElementProxy) do item atual, suportando `innerHTML`, `querySelector`, `addEventListener`, etc.;
+- `ctx.form`: Instância do AntD Form, permitindo `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, etc.;
+- `ctx.blockModel`: Modelo do bloco de formulário onde está inserido, podendo ouvir `formValuesChange` para implementar vinculação;
+- `ctx.record` / `ctx.collection`: Registro atual e metadados da **coleção** (disponível em alguns cenários);
+- `ctx.requireAsync(url)`: Carrega assincronamente uma biblioteca AMD/UMD via URL;
+- `ctx.importAsync(url)`: Importa dinamicamente um módulo ESM via URL;
+- `ctx.openView(viewUid, options)`: Abre uma visualização configurada (gaveta/diálogo/página);
+- `ctx.message` / `ctx.notification`: Mensagens e notificações globais;
+- `ctx.t()` / `ctx.i18n.t()`: Internacionalização;
+- `ctx.onRefReady(ctx.ref, cb)`: Renderiza após o contêiner estar pronto;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Bibliotecas integradas como React / ReactDOM / Ant Design / Ícones do Ant Design / dayjs / lodash / math.js / formula.js, usadas para renderização JSX, processamento de tempo, manipulação de dados e operações matemáticas. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` ainda são mantidos para compatibilidade.)
+- `ctx.render(vnode)`: Renderiza elementos React/HTML/DOM no contêiner padrão `ctx.element`; múltiplas renderizações reutilizarão o Root e sobrescreverão o conteúdo existente do contêiner.
 
 ## Editor e Snippets
 
-- `Snippets`: Abre uma lista de snippets de código integrados, permitindo que você pesquise e os insira na posição atual do cursor com um clique.
-- `Run`: Executa o código atual diretamente e exibe os logs de execução no painel `Logs` na parte inferior. Suporta `console.log/info/warn/error` e destaque de erros.
+- `Snippets`: Abre a lista de trechos de código integrados, permitindo pesquisar e inserir com um clique na posição atual do cursor.
+- `Run`: Executa o código atual diretamente e exibe os logs de execução no painel `Logs` na parte inferior; suporta `console.log/info/warn/error` e localização de erros com destaque.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Pode ser usado com o Funcionário AI para gerar/modificar scripts: [Funcionário AI · Nathan: Engenheiro Frontend](/ai-employees/built-in/ai-coding)
+- Pode ser combinado com o Funcionário AI para gerar/modificar scripts: [Funcionário AI · Nathan: Engenheiro Frontend](/ai-employees/features/built-in-employee)
 
 ## Uso Comum (Exemplos Simplificados)
 
@@ -80,12 +80,12 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 
 ## Observações
 
-- É recomendado usar uma CDN confiável para carregar bibliotecas externas e ter um plano de contingência para cenários de falha (por exemplo, `if (!lib) return;`).
-- É recomendado priorizar o uso de `class` ou `[name=...]` para seletores e evitar o uso de `id`s fixos para prevenir `id`s duplicados em múltiplos blocos/pop-ups.
-- Limpeza de eventos: Mudanças frequentes nos valores do formulário podem disparar múltiplas renderizações. Antes de vincular um evento, ele deve ser limpo ou deduplicado (por exemplo, `remove` antes de `add`, usar `{ once: true }`, ou um atributo `dataset` para evitar duplicatas).
+- Para o carregamento de bibliotecas externas, recomenda-se o uso de CDNs confiáveis e a implementação de tratamentos para falhas (ex: `if (!lib) return;`).
+- Recomenda-se priorizar o uso de `class` ou `[name=...]` para seletores, evitando o uso de `id` fixo para prevenir duplicidade de `id` em múltiplos blocos ou janelas pop-up.
+- Limpeza de eventos: Mudanças frequentes nos valores do formulário dispararão múltiplas renderizações; antes de vincular eventos, deve-se realizar a limpeza ou evitar duplicatas (ex: usar `remove` antes de `add`, ou `{ once: true }`, ou marcar com `dataset` para evitar repetição).
 
 ## Documentação Relacionada
 
 - [Variáveis e Contexto](/interface-builder/variables)
 - [Regras de Vinculação](/interface-builder/linkage-rule)
-- [Visualizações e Pop-ups](/interface-builder/actions/types/view)
+- [Visualizações e Janelas Pop-up](/interface-builder/actions/types/view)

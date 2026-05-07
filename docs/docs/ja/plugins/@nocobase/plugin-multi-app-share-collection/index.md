@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "マルチアプリコレクション共有"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-multi-app-share-collection/index)をご参照ください。
+:::
 
-> Note: This plugin is deprecated.
+# マルチアプリコレクション共有
+
+> 注意：本プラグインは廃止されました（deprecated）。

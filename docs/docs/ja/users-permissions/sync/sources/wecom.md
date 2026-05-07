@@ -16,7 +16,7 @@ pkg: "@nocobase/plugin-wecom"
 
 まず、WeChat Work管理コンソールでカスタムアプリケーションを作成し、**企業ID**、**AgentId**、**Secret**を取得します。
 
-詳細は[ユーザー認証 - WeChat Work](/auth-verification/auth-wecom/)を参照してください。
+詳細は[ユーザー認証 - WeChat Work](/auth-verification/auth-wecom/index.md)を参照してください。
 
 ## NocoBaseに同期データソースを追加する
 

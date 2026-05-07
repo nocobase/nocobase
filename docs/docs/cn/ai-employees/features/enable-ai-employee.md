@@ -1,8 +1,8 @@
 ---
-pkg: "@nocobase/plugin-ai"
-title: "启用 AI 员工"
-description: "在 AI employees 管理页通过 Enabled 开关启用/禁用 AI 员工，启用后员工会出现在右下角快捷入口或特定场景入口。"
-keywords: "启用 AI 员工,AI employees,NocoBase"
+pkg: '@nocobase/plugin-ai'
+title: '启用 AI 员工'
+description: '在 AI employees 管理页通过 Enabled 开关启用/禁用 AI 员工，启用后员工会出现在右下角快捷入口或特定场景入口。'
+keywords: '启用 AI 员工,AI employees,NocoBase'
 ---
 
 # 启用 AI 员工

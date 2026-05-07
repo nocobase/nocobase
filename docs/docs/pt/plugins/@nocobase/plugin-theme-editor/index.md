@@ -1,12 +1,16 @@
 ---
-displayName: "Theme editor"
+displayName: "Editor de temas"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
+  Personalize cores, tamanhos da UI, etc., e salve o resultado como um tema para alternar entre vários temas.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Theme editor
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-theme-editor/index).
+:::
+
+# Editor de temas

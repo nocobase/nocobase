@@ -1,0 +1,407 @@
+---
+title: "安装与升级迁移指南：使用 NocoBase CLI"
+description: "从旧版 Docker、create-nocobase-app、Git 源码安装升级方式迁移到新的 NocoBase CLI 工作流。"
+keywords: "NocoBase CLI,安装迁移,升级迁移,nb init,nb app upgrade,Docker,create-nocobase-app,Git 源码"
+---
+
+# 安装与升级迁移指南：使用 NocoBase CLI
+
+:::danger
+CLI 的安装和应用维护能力仍在开发中，目前更适合本地开发、测试环境和 AI Agent 接入场景，不建议直接用于生产环境的安装、升级和运行维护。
+:::
+
+新版 NocoBase CLI (`nb`) 将安装、连接、启动、停止、查看日志、升级和清理等操作统一到一套命令中。相比旧文档中按 Docker、create-nocobase-app、Git 源码分别维护的流程，CLI 更适合本地开发、测试环境维护，以及 AI Agent 接入和协作。
+
+本文适用于以下场景：
+
+- 你正在按旧文档安装或升级 NocoBase，希望切换到新的 CLI 方式。
+- 你已经有一个旧方式部署的 NocoBase，希望让 CLI 管理或连接它。
+- 你需要给 AI Agent 准备一个可连接、可维护的 NocoBase 环境。
+
+## 旧方式与新方式的区别
+
+旧方式按安装来源拆分文档，每种来源都需要分别执行下载、配置、安装、启动和升级命令。
+
+**旧安装文档**
+
+- [Docker 安装](/get-started/installation/docker)
+- [create-nocobase-app 安装](/get-started/installation/create-nocobase-app)
+- [Git 源码安装](/get-started/installation/git)
+
+**旧升级文档**
+
+- [Docker 安装的升级](/get-started/upgrading/docker)
+- [create-nocobase-app 安装的升级](/get-started/upgrading/create-nocobase-app)
+- [Git 源码安装的升级](/get-started/upgrading/git)
+
+新方式以 `nb init` 为入口，用一个 CLI env 记录应用来源、运行目录、存储目录、数据库和 API 连接信息。后续无论是 Docker、npm 还是 Git 来源，都尽量使用同一套 `nb app`、`nb source`、`nb db` 命令维护。
+
+| 场景 | 旧方式 | 新 CLI 方式 |
+| --- | --- | --- |
+| 安装入口 | `docker compose`、`create-nocobase-app`、`git clone` | `nb init` 或 `nb init --ui` |
+| 应用运行管理 | 切换目录、修改 compose、执行 yarn/pm2 命令 | `nb app start/stop/restart/logs/down` |
+| 升级 | 每种安装方式一套命令 | `nb app upgrade -e <env>` |
+| 开发模式 | `yarn dev` | `nb source dev -e <env>` |
+| 数据库状态 | 手动查看容器或数据库服务 | `nb db ps -e <env>` |
+| 查看环境状态和详情 | 手动记录路径、端口和访问地址 | `nb env list`、`nb env info <env>` |
+| 已有应用接入 | 旧安装文档未统一覆盖 | `nb init --ui` 或 `nb init --api-base-url` |
+
+## 安装 CLI
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version
+```
+
+安装后可以查看帮助：
+
+```bash
+nb --help
+nb init --help
+```
+
+## 使用新的方式安装 NocoBase
+
+### 推荐：使用可视化向导
+
+```bash
+nb init --ui
+```
+
+向导会引导你选择：
+
+- 创建新应用或连接已有应用
+- 安装来源：Docker、npm、Git
+- NocoBase 版本
+- 使用内置数据库或外部数据库
+- 管理员账号和密码
+
+### 使用终端交互式向导
+
+```bash
+nb init
+```
+
+### 使用非交互式命令
+
+默认安装方式为 Docker，并使用内置 PostgreSQL 数据库：
+
+```bash
+nb init --yes --env app1
+```
+
+使用 Docker 安装指定版本：
+
+```bash
+nb init --yes --env app1 --source docker --version beta
+```
+
+使用 npm 安装：
+
+```bash
+nb init --yes --env app1 --source npm --version beta --app-port 13080
+```
+
+使用 Git 源码安装：
+
+```bash
+nb init --yes --env app1 --source git --version beta
+```
+
+使用 Git 源码并指定内置数据库类型：
+
+```bash
+nb init --yes --env app1 --source git --version beta --db-dialect mysql
+```
+
+连接已有 NocoBase 应用：
+
+```bash
+# 默认使用 OAuth 认证
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# 使用 token 认证
+nb init --yes --env app1 \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+:::tip
+`--env` 是 CLI 中的环境名称，后续启动、升级、查看日志等命令都可以通过 `-e app1` 指定目标应用。
+:::
+
+## 使用新的方式升级
+
+旧方式中 Docker、create-nocobase-app、Git 源码的升级命令不同；新 CLI 统一为：
+
+```bash
+nb app upgrade -e app1
+```
+
+如果只想使用当前已经下载的源码或镜像执行升级流程，不拉取新的代码或镜像：
+
+```bash
+nb app upgrade -e app1 --skip-code-update
+```
+
+或使用简写：
+
+```bash
+nb app upgrade -e app1 -s
+```
+
+## 常用维护命令
+
+| 操作 | 命令 |
+| --- | --- |
+| 启动应用 | `nb app start -e app1` |
+| 停止应用 | `nb app stop -e app1` |
+| 重启应用 | `nb app restart -e app1` |
+| 查看日志 | `nb app logs -e app1` |
+| 查看 env 和 API 认证状态 | `nb env list` |
+| 查看 env 详情 | `nb env info app1` |
+| 查看内置数据库状态 | `nb db ps -e app1` |
+| 升级应用 | `nb app upgrade -e app1` |
+| 停止并清理运行资源 | `nb app down -e app1` |
+
+`nb app down` 默认会停止应用，并移除 CLI 管理的运行容器和本地应用文件，但会保留 storage 数据和 env 配置。删除全部内容时必须显式确认：
+
+```bash
+nb app down -e app1 --all --yes
+```
+
+:::warning
+`--all --yes` 会删除该 env 的 storage 数据和 CLI env 配置。请只在确认已经备份且不再需要该环境时使用。
+:::
+
+## 日常开发命令
+
+`nb source` 用于管理本地源码工程，主要适用于 npm 和 Git source env。
+
+| 操作 | 命令 |
+| --- | --- |
+| 开发模式运行应用 | `nb source dev -e app1` |
+| 构建源码 | `nb source build --cwd /your/workspace/app1/source` |
+| 运行测试 | `nb source test --cwd /your/workspace/app1/source` |
+| 下载或刷新源码/镜像 | `nb source download --source git --version beta` |
+
+:::tip
+Docker env 通常通过 `nb app start`、`nb app logs` 和 `nb app upgrade` 管理，不使用 `nb source dev`。
+:::
+
+## NB_CLI_ROOT 与目录结构
+
+CLI 会在 `NB_CLI_ROOT` 对应的目录下保存全局配置和本地应用文件。
+
+默认情况下，`NB_CLI_ROOT` 是当前用户的主目录，也就是 Node.js `os.homedir()` 返回的路径。例如 macOS 上通常是 `/Users/<user>`。因此，如果不做额外配置，`nb init --yes --env app1` 生成的文件通常会在：
+
+```text
+~
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+你也可以显式指定 `NB_CLI_ROOT`：
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+```
+
+设置后，配置文件和默认的应用目录都会放在该目录下：
+
+```text
+/your/workspace
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+其中：
+
+- `.nocobase/config.json` 保存 env、当前环境、API 地址、源码路径、storage 路径、数据库配置等信息。
+- `<envName>/source` 是 CLI 管理的源码或应用目录。
+- `<envName>/storage` 是 CLI 管理的应用存储目录。
+
+:::warning
+同一个应用初始化后，请保持使用同一个 `NB_CLI_ROOT`。如果后续换了 `NB_CLI_ROOT`，CLI 会去新的目录下查找 `.nocobase/config.json`，并且相对路径形式的 `appRootPath`、`storagePath` 也会按新的目录解析，可能导致找不到应用或读写到错误目录。
+:::
+
+CLI 目前只使用全局配置 scope。如果需要调整配置和本地应用文件的保存位置，请设置 `NB_CLI_ROOT`。
+
+查看和定位应用时，优先使用 `nb env list` 和 `nb env info`：
+
+```bash
+# 查看已配置 env 及 API 认证状态
+nb env list
+
+# 查看某个 env 的详细信息
+nb env info app1
+```
+
+`nb env list` 面向快速总览，其中 `App Status` 是通过已保存的 Token/OAuth 凭证访问应用 API 后得到的认证状态，不再展示数据库状态。需要查看内置数据库运行状态时，请使用：
+
+```bash
+nb db ps -e app1
+```
+
+只有在需要切换默认 env 时，再使用：
+
+```bash
+nb env use app1
+```
+
+## 从旧方式迁移到 CLI
+
+迁移有两种策略：**连接已有应用**，或 **把本地应用目录纳入 CLI 管理**。如果你的旧应用已经稳定运行，推荐先使用“连接已有应用”，风险最低。
+
+### 方式一：连接已有应用
+
+适用于已经通过 Docker、create-nocobase-app、Git 源码或服务器部署运行的 NocoBase。
+
+```bash
+# 默认使用 OAuth 认证
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# 使用 token 认证
+nb init --yes --env "app$RANDOM" \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+这种方式只保存 API 连接，CLI 不会接管旧应用的启动、停止、升级、源码目录或 storage 目录。适合让 AI Agent 或 CLI API 命令连接已有应用。
+
+如果需要刷新认证：
+
+```bash
+nb env auth app1
+```
+
+### 方式二：新建 CLI env 后迁移文件
+
+适用于希望后续用 `nb app` 和 `nb source` 管理本地应用的场景。
+
+迁移前请先完成：
+
+1. 停止旧应用。
+2. 备份旧数据库。
+3. 备份旧 `storage` 目录。
+4. 记录旧应用的关键环境变量，例如 `APP_KEY`、`TZ`、`DB_*`、`DB_UNDERSCORED`。
+
+#### 旧 Docker 安装迁移
+
+旧 Docker 方式通常把应用数据放在项目目录的 `storage` 中：
+
+```text
+/old-docker-project
+├── docker-compose.yml
+└── storage
+```
+
+建议先确定新的 `NB_CLI_ROOT`，然后用 CLI 创建一个新的 Docker env。下面示例假设 `NB_CLI_ROOT` 是 `/your/workspace`。
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app2 --source docker --version beta
+nb app stop -e app2
+```
+
+新 env 默认会使用以下目录：
+
+```text
+/your/workspace
+└── app2
+    ├── source
+    └── storage
+```
+
+然后将旧 `storage` 复制到 `/your/workspace/app2/storage`，并确保数据库连接和 `APP_KEY` 等配置与旧环境一致。
+
+复制完成并确认数据库配置后，再启动应用：
+
+```bash
+nb app start -e app2
+nb app logs -e app2
+```
+
+#### 旧 create-nocobase-app 或 Git 源码安装迁移
+
+旧 npm/Git 方式通常是源码、`.env` 和 `storage` 放在同一个项目目录中：
+
+```text
+/old-nocobase
+├── .env
+├── package.json
+├── packages
+└── storage
+```
+
+建议先确定新的 `NB_CLI_ROOT`，然后创建新的 npm 或 Git env。下面示例假设 `NB_CLI_ROOT` 是 `/your/workspace`。
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app3 --source git --version beta
+nb app stop -e app3
+```
+
+然后按需迁移：
+
+- 将旧项目中的自定义插件源码迁移到 `/your/workspace/app3/source` 对应目录。
+- 将旧项目中的 `storage` 复制到 `/your/workspace/app3/storage`。
+- 将旧 `.env` 中的关键配置同步到 CLI env 配置或初始化参数中。
+- 使用原数据库时，请在初始化时关闭内置数据库并填写旧数据库连接信息。
+
+使用外部数据库初始化的示例：
+
+```bash
+nb init --yes --env app3 --source git --version beta \
+  --no-builtin-db \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
+```
+
+迁移完成后启动并查看日志：
+
+```bash
+nb app start -e app3
+nb app logs -e app3
+```
+
+:::warning
+不要在没有备份的情况下直接覆盖 `source`、`storage` 或连接生产数据库执行升级。正式迁移前建议先在测试环境完整演练一次。
+:::
+
+## 旧命令迁移速查
+
+| 旧命令 | 新 CLI 命令 |
+| --- | --- |
+| `docker compose up -d app` | `nb app start -e app1` |
+| `docker compose stop app` | `nb app stop -e app1` |
+| `docker compose logs -f app` | `nb app logs -e app1` |
+| `docker compose pull app && docker compose up -d app` | `nb app upgrade -e app1` |
+| `yarn create nocobase-app my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `npx create-nocobase-app@beta my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `git clone ... -b next --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version beta` |
+| `git clone ... -b develop --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version alpha` |
+| `yarn dev` | `nb source dev -e app1` |
+| `yarn nocobase upgrade` | `nb app upgrade -e app1` |
+| `yarn nocobase upgrade --skip-code-update` | `nb app upgrade -e app1 -s` |
+| 手动记录多个应用地址 | `nb env list`、`nb env info app1` |
+| 手动连接已有应用 | `nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api` |
+
+## 相关链接
+
+- [AI Agent 接入指南](/ai/quick-start)
+- [NocoBase CLI 命令参考](/api/cli)
+- [安装方式和版本对比](/get-started/quickstart)
+- [安装与升级插件](/get-started/install-upgrade-plugins)

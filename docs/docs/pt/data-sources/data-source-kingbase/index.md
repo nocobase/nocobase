@@ -1,33 +1,33 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/data-sources/data-source-kingbase/index).
 :::
 
-
-# Fonte de Dados - KingbaseES
+# Fonte de dados - KingbaseES (人大金仓)
 
 ## Introdução
 
-Você pode usar o banco de dados KingbaseES como uma **fonte de dados**, seja como o banco de dados principal ou como um banco de dados externo.
+Use o banco de dados KingbaseES (人大金仓) como fonte de dados, podendo ser utilizado como banco de dados principal ou como banco de dados externo.
 
 :::warning
-Atualmente, apenas bancos de dados KingbaseES que operam no modo pg são suportados.
+Atualmente, apenas o banco de dados KingbaseES (人大金仓) operando no modo pg é suportado.
 :::
 
 ## Instalação
 
-### Usando como Banco de Dados Principal
+### Como banco de dados principal
 
-Para o processo de instalação, consulte a documentação de instalação. A principal diferença estará nas variáveis de ambiente.
+O processo de instalação refere-se à documentação de instalação, a diferença reside principalmente nas variáveis de ambiente.
 
-#### Variáveis de Ambiente
+#### Variáveis de ambiente
 
-Edite o arquivo .env para adicionar ou modificar as seguintes configurações de variáveis de ambiente:
+Modifique o arquivo .env para adicionar ou modificar as seguintes configurações de variáveis de ambiente relacionadas:
 
 ```bash
-# Ajuste os parâmetros do banco de dados conforme necessário
+# Ajuste os parâmetros de DB de acordo com a situação real
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -36,7 +36,7 @@ DB_USER=nocobase
 DB_PASSWORD=nocobase
 ```
 
-#### Instalação via Docker
+#### Instalação Docker
 
 ```yml
 networks:
@@ -93,7 +93,7 @@ services:
     command: ["/usr/sbin/init"]
 ```
 
-#### Instalação Usando create-nocobase-app
+#### Instalação usando create-nocobase-app
 
 ```bash
 yarn create nocobase-app my-nocobase-app -d kingbase \
@@ -105,9 +105,9 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e TZ=Asia/Shanghai
 ```
 
-### Usando como Banco de Dados Externo
+### Como banco de dados externo
 
-Execute o comando de instalação ou atualização:
+Execute o comando de instalação ou atualização
 
 ```bash
 yarn nocobase install
@@ -115,11 +115,11 @@ yarn nocobase install
 yarn nocobase upgrade
 ```
 
-Ative o Plugin
+Ativar o plugin
 
 ![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
 
-## Guia de Uso
+## Manual de uso
 
-- Banco de Dados Principal: Consulte a [Fonte de dados principal](/data-sources/data-source-main/)
-- Banco de Dados Externo: Veja [Fonte de Dados / Banco de Dados Externo](/data-sources/data-source-manager/external-database)
+- Banco de dados principal: consulte Fonte de dados principal
+- Banco de dados externo: consulte [Fonte de dados / Banco de dados externo](/data-sources/data-source-manager/external-database)

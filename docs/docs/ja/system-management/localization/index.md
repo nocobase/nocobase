@@ -1,5 +1,5 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/system-management/localization/index)をご参照ください。
 :::
 
 # ローカライゼーション管理
@@ -38,6 +38,18 @@
 
 :::info{title=ヒント}
 異なるモジュールで同じ原文エントリーが存在する場合がありますが、それぞれ個別に翻訳する必要があります。
+:::
+
+### エントリーの自動作成
+
+ページの編集時、各ブロックのカスタムテキストは自動的に対応するエントリーを作成し、現在の言語の翻訳内容を同期して生成します。
+
+![](https://static-docs.nocobase.com/Localization-02-12-2026_08_39_AM.png)
+
+![](https://static-docs.nocobase.com/Localization-NocoBase-02-12-2026_08_39_AM.png)
+
+:::info{title=ヒント}
+コード内でテキストを定義する場合は、手動で ns（namespace）を指定する必要があります。例：`${ctx.i18n.t('My custom js block', { ns: 'lm-flow-engine' })}`
 :::
 
 ### 翻訳内容の編集

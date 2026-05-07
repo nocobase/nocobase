@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Registry } from '@nocobase/utils';
+import { Registry, storagePathJoin } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
@@ -155,7 +155,7 @@ export class AuthManager {
     if (process.env.UNSAFE_USE_DEFAULT_JWT_SECRET === 'true') {
       return process.env.APP_KEY;
     }
-    const jwtSecretPath = path.resolve(process.cwd(), 'storage', 'apps', 'main', 'jwt_secret.dat');
+    const jwtSecretPath = storagePathJoin('apps', 'main', 'jwt_secret.dat');
     const jwtSecretExists = fs.existsSync(jwtSecretPath);
     if (jwtSecretExists) {
       const key = fs.readFileSync(jwtSecretPath);

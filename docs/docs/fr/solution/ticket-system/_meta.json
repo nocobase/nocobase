@@ -2,12 +2,12 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Présentation de la solution"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "Conception détaillée"
   },
   {
     "type": "file",
@@ -16,7 +16,12 @@
   },
   {
     "type": "file",
+    "name": "changelog",
+    "label": "Journal des modifications"
+  },
+  {
+    "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Plus de contenu"
   }
 ]

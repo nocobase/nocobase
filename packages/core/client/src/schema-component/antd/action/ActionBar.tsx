@@ -12,11 +12,12 @@ import { useFieldSchema } from '@formily/react';
 import { Space, SpaceProps } from 'antd';
 import React, { CSSProperties, FC, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { useSchemaInitializerRender } from '../../../application';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { DndContext } from '../../common';
-import { useDesignable, useProps } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
+import { useProps } from '../../hooks/useProps';
 
 export interface ActionBarProps {
   layout?: 'one-column' | 'two-columns';

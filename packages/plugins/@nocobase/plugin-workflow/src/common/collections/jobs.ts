@@ -56,5 +56,12 @@ export default {
       type: 'json',
       name: 'meta',
     },
+    /**
+     * @experimental
+     */
+    {
+      type: 'text',
+      name: 'log',
+    },
   ],
 };

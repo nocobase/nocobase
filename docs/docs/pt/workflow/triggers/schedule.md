@@ -74,6 +74,6 @@ Crie um **fluxo de trabalho** baseado em tarefa agendada. Na configuração do a
 
 Em seguida, configure outros nós de acordo com a lógica do processo para atualizar o status do pedido com o ID dos dados acionados e um status de "não pago" para cancelado:
 
-![Tarefa Agendada_Configuração do Acionador_Modo de Campo de Tempo da Coleção_Nó de Atualização](https://static-docs.nocobase.com/491dde9df7741fb24a4e7baa1de6eb29.png)
+![Tarefa Agendada_Configuração do Acionador_Modo de Campo de Tempo da Coleção_Nó de Atualização](https://static-docs.nocobase.com/491dde9df8f773f5b14a4fd8ceac9d3e.png)
 
 Ao contrário do modo de tempo personalizado, não há necessidade de calcular o horário de 30 minutos atrás aqui, porque o contexto dos dados acionados já contém a linha de dados que atende à condição de tempo, então você pode atualizar diretamente o status do pedido correspondente.

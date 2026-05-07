@@ -1,5 +1,14 @@
-const { resolve } = require('path');
+const path = require('path');
+const { resolve } = path;
 const fs = require('fs-extra');
+
+function resolvePluginStoragePath() {
+  if (process.env.PLUGIN_STORAGE_PATH) {
+    const p = process.env.PLUGIN_STORAGE_PATH;
+    return path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+  }
+  return path.join(process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage'), 'plugins');
+}
 
 /**
  * Recursively get plugin names from a directory
@@ -136,7 +145,7 @@ async function createPluginSymLink(pluginName, sourcePath, nodeModulesPath, plug
  * @returns {Promise<void>}
  */
 async function createStoragePluginSymLink(pluginName) {
-  const storagePluginsPath = resolve(process.cwd(), 'storage/plugins');
+  const storagePluginsPath = resolvePluginStoragePath();
   const nodeModulesPath = process.env.NODE_MODULES_PATH;
   await createPluginSymLink(pluginName, storagePluginsPath, nodeModulesPath, 'storage');
 }
@@ -146,7 +155,7 @@ async function createStoragePluginSymLink(pluginName) {
  * @returns {Promise<void>}
  */
 async function createStoragePluginsSymlink() {
-  const storagePluginsPath = resolve(process.cwd(), 'storage/plugins');
+  const storagePluginsPath = resolvePluginStoragePath();
   if (!(await fs.pathExists(storagePluginsPath))) {
     return;
   }
@@ -178,6 +187,7 @@ async function createDevPluginsSymlink() {
   await Promise.all(pluginNames.map((pluginName) => createDevPluginSymLink(pluginName)));
 }
 
+exports.resolvePluginStoragePath = resolvePluginStoragePath;
 exports.createStoragePluginSymLink = createStoragePluginSymLink;
 exports.createStoragePluginsSymlink = createStoragePluginsSymlink;
 exports.createDevPluginSymLink = createDevPluginSymLink;

@@ -1,74 +1,74 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/fields/specific/js-field).
 :::
 
-# Campo JS
+# JS Field
 
 ## Introducción
 
-El Campo JS se utiliza para renderizar contenido personalizado con JavaScript en la posición de un campo. Es comúnmente empleado en bloques de detalles, elementos de solo lectura en formularios o como "Otros elementos personalizados" en columnas de tablas. Es ideal para mostrar información personalizada, combinar datos derivados, renderizar insignias de estado, texto enriquecido o gráficos.
+JS Field se utiliza para renderizar contenido personalizado con JavaScript en la posición de un campo, comúnmente en bloques de detalles, elementos de solo lectura en formularios o como "Otros elementos personalizados" en columnas de tablas. Es adecuado para realizar presentaciones personalizadas, combinaciones de información derivada, insignias de estado, texto enriquecido o renderizado de gráficos, entre otros.
 
 ![jsfield-readonly-add-20251029](https://static-docs.nocobase.com/jsfield-readonly-add-20251029.png)
 
 ## Tipos
 
-- De solo lectura: Se utiliza para mostrar contenido no editable, leyendo `ctx.value` para renderizar la salida.
-- Editable: Se emplea para interacciones de entrada personalizadas. Proporciona `ctx.getValue()`/`ctx.setValue(v)` y un evento de contenedor `js-field:value-change` para facilitar la sincronización bidireccional con los valores del formulario.
+- Tipo solo lectura: Se utiliza para visualización no editable, lee `ctx.value` para renderizar la salida.
+- Tipo editable: Se utiliza para interacciones de entrada personalizadas, proporciona `ctx.getValue()`/`ctx.setValue(v)` y el evento de contenedor `js-field:value-change`, facilitando la sincronización bidireccional con los valores del formulario.
 
-## Casos de Uso
+## Escenarios de uso
 
-- De solo lectura
-  - Bloque de detalles: Para mostrar contenido de solo lectura como resultados de cálculos, insignias de estado, fragmentos de texto enriquecido, gráficos, etc.
-  - Bloque de tabla: Se utiliza como "Otras columnas personalizadas > Campo JS" para mostrar contenido de solo lectura (si necesita una columna no vinculada a un campo, por favor, use Columna JS).
+- Tipo solo lectura
+  - Bloque de detalles: Muestra contenido de solo lectura como resultados de cálculos, insignias de estado, fragmentos de texto enriquecido, gráficos, etc.;
+  - Bloque de tabla: Se utiliza como "Otras columnas personalizadas > JS Field" para visualización de solo lectura (si necesita una columna que no esté vinculada a un campo, utilice JS Column);
 
-- Editable
-  - Bloque de formulario (CreateForm/EditForm): Para controles de entrada personalizados o entradas compuestas, que se validan y envían junto con el formulario.
-  - Ideal para escenarios como: componentes de entrada de librerías externas, editores de texto enriquecido/código, componentes dinámicos complejos, etc.
+- Tipo editable
+  - Bloque de formulario (CreateForm/EditForm): Se utiliza para controles de entrada personalizados o entradas compuestas, junto con la validación y el envío del formulario;
+  - Escenarios adecuados: Componentes de entrada de librerías externas, editores de texto enriquecido/código, componentes dinámicos complejos, etc.;
 
-## API de Contexto en Tiempo de Ejecución
+## API de contexto en tiempo de ejecución
 
-El código en tiempo de ejecución del Campo JS puede utilizar directamente las siguientes capacidades de contexto:
+El código en tiempo de ejecución de JS Field puede utilizar directamente las siguientes capacidades de contexto:
 
-- `ctx.element`: El contenedor DOM del campo (ElementProxy), compatible con `innerHTML`, `querySelector`, `addEventListener`, etc.
-- `ctx.value`: El valor actual del campo (solo lectura).
-- `ctx.record`: El objeto de registro actual (solo lectura).
-- `ctx.collection`: Metadatos de la colección a la que pertenece el campo (solo lectura).
-- `ctx.requireAsync(url)`: Carga asíncronamente una librería AMD/UMD por URL.
-- `ctx.importAsync(url)`: Importa dinámicamente un módulo ESM por URL.
-- `ctx.openView(options)`: Abre una vista configurada (ventana emergente/cajón lateral/página).
-- `ctx.i18n.t()` / `ctx.t()`: Internacionalización.
-- `ctx.onRefReady(ctx.ref, cb)`: Renderiza después de que el contenedor esté listo.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Librerías integradas como React, ReactDOM, Ant Design, iconos de Ant Design y dayjs, utilizadas para la renderización JSX y utilidades de fecha y hora. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` se mantienen por compatibilidad.)
-- `ctx.render(vnode)`: Renderiza un elemento React, una cadena HTML o un nodo DOM en el contenedor predeterminado `ctx.element`. La renderización repetida reutilizará el Root y sobrescribirá el contenido existente del contenedor.
+- `ctx.element`: Contenedor DOM del campo (ElementProxy), admite `innerHTML`, `querySelector`, `addEventListener`, etc.;
+- `ctx.value`: Valor actual del campo (solo lectura);
+- `ctx.record`: Objeto de registro actual (solo lectura);
+- `ctx.collection`: Metainformación de la colección a la que pertenece el campo (solo lectura);
+- `ctx.requireAsync(url)`: Carga asíncronamente librerías AMD/UMD por URL;
+- `ctx.importAsync(url)`: Importa dinámicamente módulos ESM por URL;
+- `ctx.openView(options)`: Abre una vista configurada (ventana emergente/cajón/página);
+- `ctx.i18n.t()` / `ctx.t()`: Internacionalización;
+- `ctx.onRefReady(ctx.ref, cb)`: Renderiza después de que el contenedor esté listo;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Librerías comunes integradas como React / ReactDOM / Ant Design / Iconos de Ant Design / dayjs / lodash / math.js / formula.js, utilizadas para renderizado JSX, procesamiento de tiempo, manipulación de datos y operaciones matemáticas. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` aún se conservan por compatibilidad).
+- `ctx.render(vnode)`: Renderiza elementos React, cadenas HTML o nodos DOM en el contenedor predeterminado `ctx.element`; las renderizaciones repetidas reutilizarán el Root y sobrescribirán el contenido existente del contenedor.
 
-Específico para el tipo Editable (JSEditableField):
+Específico para el tipo editable (JSEditableField):
 
-- `ctx.getValue()`: Obtiene el valor actual del formulario (prioriza el estado del formulario, luego recurre a las propiedades del campo).
-- `ctx.setValue(v)`: Establece el valor del formulario y las propiedades del campo, manteniendo la sincronización bidireccional.
-- Evento del contenedor `js-field:value-change`: Se activa cuando un valor externo cambia, facilitando que el script actualice la visualización de la entrada.
+- `ctx.getValue()`: Obtiene el valor actual del formulario (prioriza el estado del formulario, luego recurre a las props del campo).
+- `ctx.setValue(v)`: Establece el valor del formulario y las props del campo, manteniendo la sincronización bidireccional.
+- Evento de contenedor `js-field:value-change`: Se activa cuando cambia el valor externo, facilitando que el script actualice la visualización de la entrada.
 
-## Editor y Fragmentos de Código
+## Editor y fragmentos
 
-El editor de scripts del Campo JS es compatible con el resaltado de sintaxis, sugerencias de errores y fragmentos de código (Snippets) integrados.
+El editor de scripts de JS Field admite resaltado de sintaxis, sugerencias de errores y fragmentos de código integrados (Snippets).
 
-- `Snippets`: Abre una lista de fragmentos de código predefinidos, que se pueden buscar e insertar en la posición actual del cursor con un solo clic.
-- `Run`: Ejecuta directamente el código actual. El registro de ejecución se muestra en el panel `Logs` inferior, compatible con `console.log/info/warn/error` y resaltado de errores para una fácil localización.
+- `Snippets`: Abre la lista de fragmentos de código integrados, puede buscar e insertar en la posición actual del cursor con un clic.
+- `Run`: Ejecuta directamente el código actual, la salida del registro de ejecución se muestra en el panel inferior `Logs`, admite `console.log/info/warn/error` y localización de errores con resaltado.
 
 ![jsfield-readonly-toolbars-20251029](https://static-docs.nocobase.com/jsfield-readonly-toolbars-20251029.png)
 
-También puede generar código con el Empleado de IA:
+Puede combinarse con el empleado de IA para generar código:
 
-- [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/built-in/ai-coding)
+- [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/features/built-in-employee)
 
-## Usos Comunes
+## Usos comunes
 
-### 1) Renderizado Básico (Lectura del Valor del Campo)
+### 1) Renderizado básico (lectura del valor del campo)
 
 ```js
 ctx.render(<span className="nb-js-field">{String(ctx.value ?? '')}</span>);
 ```
 
-### 2) Uso de JSX para Renderizar un Componente React
+### 2) Uso de JSX para renderizar componentes React
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -79,7 +79,7 @@ ctx.render(
 );
 ```
 
-### 3) Carga de Librerías de Terceros (AMD/UMD o ESM)
+### 3) Carga de librerías de terceros (AMD/UMD o ESM)
 
 ```js
 // AMD/UMD
@@ -91,10 +91,10 @@ const { default: he } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/he/+
 ctx.render(<span>{he.encode(String(ctx.value ?? ''))}</span>);
 ```
 
-### 4) Clic para Abrir una Ventana Emergente/Cajón Lateral (openView)
+### 4) Clic para abrir ventana emergente/cajón (openView)
 
 ```js
-ctx.element.innerHTML = `<a class="open-detail">Ver Detalles</a>`;
+ctx.element.innerHTML = `<a class="open-detail">Ver detalles</a>`;
 const a = ctx.element.querySelector('.open-detail');
 const tk = ctx.collection?.getFilterByTK?.(ctx.record);
 a?.addEventListener('click', async () => {
@@ -108,10 +108,10 @@ a?.addEventListener('click', async () => {
 });
 ```
 
-### 5) Entrada Editable (JSEditableFieldModel)
+### 5) Entrada editable (JSEditableFieldModel)
 
 ```js
-// Renderiza una entrada simple usando JSX y sincroniza el valor del formulario
+// Renderiza una entrada simple con JSX y sincroniza el valor del formulario
 function InputView() {
   return (
     <input
@@ -123,7 +123,7 @@ function InputView() {
   );
 }
 
-// Sincroniza la entrada cuando el valor externo cambia (opcional)
+// Sincroniza con la entrada cuando cambia el valor externo (opcional)
 ctx.element.addEventListener('js-field:value-change', (ev) => {
   const el = ctx.element.querySelector('.nb-js-editable');
   if (el) el.value = ev.detail ?? '';
@@ -134,6 +134,6 @@ ctx.render(<InputView />);
 
 ## Notas
 
-- Se recomienda utilizar un CDN de confianza para cargar librerías externas y prever un mecanismo de respaldo para escenarios de fallo (por ejemplo, `if (!lib) return;`).
-- Para los selectores, se aconseja priorizar el uso de `class` o `[name=...]`, y evitar el uso de `id` fijos para prevenir duplicidades en múltiples bloques o ventanas emergentes.
-- Limpieza de eventos: Un campo puede renderizarse varias veces debido a cambios en los datos o a la conmutación de vistas. Antes de vincular un evento, debe limpiarlo o eliminar duplicados para evitar activaciones repetidas. Puede "primero eliminar y luego añadir".
+- Se recomienda utilizar un CDN confiable para la carga de librerías externas y preparar un plan de respaldo para escenarios de falla (por ejemplo, `if (!lib) return;`).
+- Se sugiere priorizar el uso de `class` o `[name=...]` para los selectores, evite usar `id` fijos para prevenir la duplicidad de `id` en múltiples bloques o ventanas emergentes.
+- Limpieza de eventos: El campo puede renderizarse varias veces debido a cambios en los datos o cambios de vista; antes de vincular eventos, debe limpiarlos o eliminar duplicados para evitar activaciones repetidas. Puede "eliminar primero y luego añadir".

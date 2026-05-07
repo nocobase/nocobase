@@ -8,6 +8,7 @@
  */
 
 import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
+import { render as rtlRender } from '@testing-library/react';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
@@ -28,6 +29,16 @@ describe('Application', () => {
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
   const initialProvidersLength = 10;
+  it('should support constructing without options', () => {
+    let app: Application | undefined;
+
+    expect(() => {
+      app = new Application();
+    }).not.toThrow();
+    expect(app).toBeDefined();
+    expect(app?.apiClient).toBeDefined();
+  });
+
   it('basic', () => {
     const options = { router };
     const app = new Application(options);
@@ -332,11 +343,8 @@ describe('Application', () => {
       app.addProviders([HelloProvider]);
 
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
-      });
       await waitFor(() => {
         expect(screen.getByText('HomeComponent')).toBeInTheDocument();
       });
@@ -355,18 +363,14 @@ describe('Application', () => {
       };
 
       const Root = app.getRootComponent();
-      render(
+      rtlRender(
         <Root>
           <Demo />
         </Root>,
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('test')).toBeInTheDocument();
+        expect(screen.getByText('404')).toBeInTheDocument();
       });
     });
 
@@ -412,24 +416,21 @@ describe('Application', () => {
       app.pm.add(DemoPlugin, { name: 'demo' });
 
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
 
       await sleep(10);
-      expect(screen.getByText('App Error')).toBeInTheDocument();
+      expect(screen.getByText('App error')).toBeInTheDocument();
     });
 
     it('replace Component', async () => {
       const AppSpin = () => <div>AppSpin</div>;
-      const AppMain = () => <div>AppMain</div>;
       const app = new Application({
         router,
-        components: { AppSpin, AppMain },
+        components: { AppSpin },
       });
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
       expect(screen.getByText('AppSpin')).toBeInTheDocument();
-      await sleep(10);
-      expect(screen.getByText('AppMain')).toBeInTheDocument();
     });
 
     it('render component error', async () => {
@@ -453,7 +454,7 @@ describe('Application', () => {
       console.error = fn;
 
       const Root = app.getRootComponent();
-      render(<Root />);
+      rtlRender(<Root />);
       await sleep(10);
       expect(fn).toBeCalled();
 

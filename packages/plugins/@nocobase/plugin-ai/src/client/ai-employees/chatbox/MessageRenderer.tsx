@@ -151,9 +151,10 @@ export const AIMessage: React.FC<{
   const toolsLoading = aiConfigRepository.aiToolsLoading;
   const tools = aiConfigRepository.aiTools;
   const toolsMap = useMemo(() => toToolsMap(tools || []), [tools]);
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   useEffect(() => {
-    aiConfigRepository.getAITools();
-  }, [aiConfigRepository]);
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
   const hasCustomRenderer = !!provider?.components?.MessageRenderer;
@@ -173,8 +174,7 @@ export const AIMessage: React.FC<{
   };
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const readonly = useChatBoxStore.use.readonly();
 
   const { resendMessages } = useChatMessageActions();
   const usageMetadata = msg.metadata?.usage_metadata;
@@ -186,24 +186,26 @@ export const AIMessage: React.FC<{
   const messageActions =
     msg.type !== 'greeting' ? (
       <Space>
-        <Button
-          color="default"
-          variant="text"
-          size="small"
-          style={footerButtonStyle}
-          icon={
-            <ReloadOutlined
-              style={footerIconStyle}
-              onClick={() =>
-                resendMessages({
-                  sessionId: currentConversation,
-                  messageId: msg.messageId,
-                  aiEmployee: currentEmployee,
-                })
-              }
-            />
-          }
-        />
+        {msg.from === 'main-agent' && readonly !== true && (
+          <Button
+            color="default"
+            variant="text"
+            size="small"
+            style={footerButtonStyle}
+            icon={
+              <ReloadOutlined
+                style={footerIconStyle}
+                onClick={() =>
+                  resendMessages({
+                    sessionId: currentConversation,
+                    messageId: msg.messageId,
+                    aiEmployee: currentEmployee,
+                  })
+                }
+              />
+            }
+          />
+        )}
         {typeof msg.content === 'string' && msg.content && (
           <Button
             color="default"
@@ -286,6 +288,8 @@ export const UserMessage: React.FC<{
     ...item,
   }));
 
+  const readonly = useChatBoxStore.use.readonly();
+
   return (
     <MessageWrapper
       ref={msg.ref}
@@ -296,22 +300,24 @@ export const UserMessage: React.FC<{
       `)}
       footer={
         <Space>
-          <Button
-            color="default"
-            variant="text"
-            size="small"
-            style={footerButtonStyle}
-            icon={
-              <EditOutlined
-                style={footerIconStyle}
-                onClick={() => {
-                  startEditingMessage(msg);
-                  setSenderValue(msg.content);
-                  senderRef.current?.focus();
-                }}
-              />
-            }
-          />
+          {msg.from === 'main-agent' && readonly !== true && (
+            <Button
+              color="default"
+              variant="text"
+              size="small"
+              style={footerButtonStyle}
+              icon={
+                <EditOutlined
+                  style={footerIconStyle}
+                  onClick={() => {
+                    startEditingMessage(msg);
+                    setSenderValue(msg.content);
+                    senderRef.current?.focus();
+                  }}
+                />
+              }
+            />
+          )}
           {typeof msg.content === 'string' && msg.content && (
             <Button
               color="default"

@@ -10,7 +10,39 @@
 import { Context, utils } from '@nocobase/actions';
 import { MultipleRelationRepository, Op, Repository } from '@nocobase/database';
 import WorkflowPlugin from '..';
-import type { WorkflowModel } from '../types';
+import type { FlowNodeModel, WorkflowModel } from '../types';
+
+export class NodeValidationError extends Error {
+  status = 400;
+  errors: Record<string, string>;
+
+  constructor(errors: Record<string, string>) {
+    super('Node validation failed');
+    this.name = 'NodeValidationError';
+    this.errors = errors;
+  }
+}
+
+function validateNode(context: Context, workflow: WorkflowModel | null, values: FlowNodeModel) {
+  const { type, config } = values;
+  if (!type) {
+    context.throw(400, 'Node type is required');
+  }
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+  const instruction = workflowPlugin.instructions.get(type);
+  if (!instruction) {
+    context.throw(400, `Node type "${type}" is not registered`);
+  }
+  if (workflow && typeof instruction.isAvailable === 'function' && !instruction.isAvailable(workflow, values)) {
+    context.throw(400, `Node type "${type}" is not available in the current workflow`);
+  }
+  if (config && typeof instruction.validateConfig === 'function') {
+    const errors = instruction.validateConfig(config);
+    if (errors) {
+      throw new NodeValidationError(errors);
+    }
+  }
+}
 
 export async function create(context: Context, next) {
   const { db } = context;
@@ -28,6 +60,8 @@ export async function create(context: Context, next) {
     if (workflow.versionStats.executed > 0) {
       context.throw(400, 'Node could not be created in executed workflow');
     }
+
+    validateNode(context, workflow, values);
 
     const NODES_LIMIT = process.env.WORKFLOW_NODES_LIMIT ? parseInt(process.env.WORKFLOW_NODES_LIMIT, 10) : null;
     if (NODES_LIMIT) {
@@ -669,16 +703,21 @@ export async function update(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, values, whitelist, blacklist, filter, updateAssociationValues } = context.action.params;
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+
   context.body = await db.sequelize.transaction(async (transaction) => {
     // TODO(optimize): duplicated instance query
-    const { workflow } = await repository.findOne({
+    const instance = await repository.findOne({
       filterByTk,
       appends: ['workflow.versionStats.executed'],
       transaction,
     });
-    if (workflow.versionStats.executed > 0) {
+    if (instance.workflow.versionStats.executed > 0) {
       context.throw(400, 'Nodes in executed workflow could not be reconfigured');
     }
+
+    const merged = Object.assign({}, instance.get(), values);
+    validateNode(context, null, merged);
 
     return repository.update({
       filterByTk,
@@ -700,12 +739,12 @@ export async function test(context: Context, next) {
   const { type, config = {} } = values;
   const plugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
   const instruction = plugin.instructions.get(type);
-  if (!instruction) {
-    context.throw(400, `instruction "${type}" not registered`);
-  }
   if (typeof instruction.test !== 'function') {
     context.throw(400, `test method of instruction "${type}" not implemented`);
   }
+
+  validateNode(context, null, values);
+
   try {
     context.body = await instruction.test(config);
   } catch (error) {

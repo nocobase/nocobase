@@ -2,65 +2,69 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/multi-app/multi-app/index).
+:::
+
 # Gestion multi-applications
 
-## Présentation
+## Aperçu des fonctionnalités
 
-La gestion multi-applications est une solution unifiée fournie par NocoBase. Elle permet de créer et gérer plusieurs instances NocoBase **physiquement isolées** sur un ou plusieurs environnements d'exécution. Avec **AppSupervisor**, les utilisateurs administrent plusieurs applications depuis une entrée unique.
+La gestion multi-applications est une solution de gestion d'applications unifiée fournie par NocoBase, utilisée pour créer et gérer plusieurs instances d'applications NocoBase physiquement isolées dans un ou plusieurs environnements d'exécution. Grâce au gestionnaire d'applications (AppSupervisor), vous pouvez créer et maintenir plusieurs applications à partir d'un point d'entrée unique, répondant ainsi aux besoins de différentes activités et de différentes étapes de croissance.
 
 ## Application unique
 
-Au début d'un projet, la plupart des équipes commencent avec une seule application.
+Au début d'un projet, la plupart des utilisateurs commencent par une application unique.
 
-Dans ce mode, une seule instance NocoBase est déployée. Toute la logique métier, les données et les utilisateurs y sont centralisés. Le déploiement est simple et le coût de configuration faible.
+Dans ce mode, le système n'a besoin de déployer qu'une seule instance NocoBase, où toutes les fonctionnalités métier, les données et les utilisateurs s'exécutent dans la même application. Le déploiement est simple, les coûts de configuration sont faibles, ce qui est idéal pour la validation de prototypes, les petits projets ou les outils internes.
 
-Avec la croissance, ce modèle atteint ses limites :
+Cependant, à mesure que les activités se complexifient, une application unique est confrontée à certaines limites naturelles :
 
-- Accumulation de fonctionnalités et complexité croissante
-- Isolation difficile entre domaines métier
-- Coûts de maintenance et d'extension en hausse
+- Les fonctionnalités s'accumulent continuellement, rendant le système lourd.
+- Il est difficile d'isoler les différentes activités entre elles.
+- Les coûts d'extension et de maintenance de l'application ne cessent d'augmenter.
 
-Il devient alors préférable de répartir les domaines métier dans plusieurs applications.
+À ce stade, vous souhaiterez diviser les différentes activités en plusieurs applications afin d'améliorer la maintenabilité et l'extensibilité du système.
 
 ## Multi-application en mémoire partagée
 
-Si vous souhaitez séparer les domaines métier sans introduire une architecture d'exploitation complexe, vous pouvez utiliser le mode multi-application en mémoire partagée.
+Lorsque vous souhaitez diviser vos activités sans pour autant introduire une architecture de déploiement et d'exploitation complexe, vous pouvez passer au mode multi-application en mémoire partagée.
 
-Dans ce mode, plusieurs applications tournent dans une seule instance NocoBase. Chaque application est indépendante, peut avoir sa propre base de données, et être créée, démarrée ou arrêtée séparément. En revanche, elles partagent le même processus et la même mémoire.
+Dans ce mode, plusieurs applications peuvent s'exécuter simultanément dans une seule instance NocoBase. Chaque application est indépendante, peut se connecter à une base de données indépendante, et peut être créée, démarrée et arrêtée individuellement, mais elles partagent le même processus et le même espace mémoire. Vous n'avez toujours qu'une seule instance NocoBase à maintenir.
 
 ![](https://static-docs.nocobase.com/202512231055907.png)
 
-Avantages :
+Cette approche apporte des améliorations notables :
 
-- Découpage métier par application
-- Configuration et fonctionnalités mieux structurées
-- Moins de ressources qu'une architecture multi-processus ou multi-conteneurs
+- Les activités peuvent être divisées selon la dimension de l'application.
+- Les fonctionnalités et les configurations entre les applications sont plus claires.
+- Par rapport aux solutions multi-processus ou multi-conteneurs, l'occupation des ressources est plus faible.
 
-Comme tout tourne dans un même processus, CPU et mémoire sont partagés. Une surcharge ou panne d'une application peut affecter les autres.
+Cependant, comme toutes les applications s'exécutent dans le même processus, elles partagent les ressources telles que le CPU et la mémoire. Une anomalie ou une charge élevée dans une seule application peut affecter la stabilité des autres applications.
 
-Quand le nombre d'applications augmente ou que les exigences d'isolation/stabilité montent, il faut faire évoluer l'architecture.
+Lorsque le nombre d'applications continue d'augmenter, ou que des exigences plus élevées en matière d'isolation et de stabilité sont posées, il est nécessaire de faire évoluer davantage l'architecture.
 
 ## Déploiement hybride multi-environnement
 
-À grande échelle, le mode mémoire partagée rencontre des défis de contention des ressources, stabilité et sécurité. Le **déploiement hybride multi-environnement** permet d'aller plus loin.
+Lorsque l'échelle et la complexité des activités atteignent un certain niveau et que le nombre d'applications doit être étendu à grande échelle, le mode multi-application en mémoire partagée sera confronté à des défis tels que la concurrence pour les ressources, la stabilité et la sécurité. Lors de la phase de mise à l'échelle, vous pouvez envisager d'adopter un déploiement hybride multi-environnement pour soutenir des scénarios métier plus complexes.
 
-Le principe : introduire une **application d'entrée** (plan de contrôle) et déployer plusieurs instances NocoBase comme environnements d'exécution qui hébergent réellement les applications métier.
+Le cœur de cette architecture est l'introduction d'une application d'entrée, c'est-à-dire le déploiement d'un NocoBase comme centre de gestion unifié, tout en déployant plusieurs NocoBase comme environnements d'exécution d'applications pour faire fonctionner réellement les applications métier.
 
-Responsabilités de l'application d'entrée :
+L'application d'entrée est responsable de :
 
-- Création, configuration et cycle de vie des applications
-- Distribution des commandes de gestion et agrégation des états
+- La création, la configuration et la gestion du cycle de vie des applications.
+- La transmission des commandes de gestion et la synthèse des états.
 
-Responsabilités des environnements d'exécution :
+L'environnement d'application d'instance est responsable de :
 
-- Héberger et exécuter les applications métier
+- Porter et exécuter réellement les applications métier via le mode multi-application en mémoire partagée.
 
-Côté utilisateur, la création et la gestion restent centralisées. En interne :
+Pour l'utilisateur, plusieurs applications peuvent toujours être créées et gérées via une seule entrée, mais en interne :
 
-- Les applications peuvent s'exécuter sur des nœuds/cluster différents
-- Chaque application peut utiliser sa propre base et son middleware
-- Les applications à forte charge peuvent être isolées ou scalées indépendamment
+- Différentes applications peuvent s'exécuter sur différents nœuds ou clusters.
+- Chaque application peut utiliser des bases de données et des middlewares indépendants.
+- Les applications à forte charge peuvent être étendues ou isolées à la demande.
 
 ![](https://static-docs.nocobase.com/202512231215186.png)
 
-Ce modèle convient aux plateformes SaaS, à de nombreux environnements de démonstration et aux scénarios multi-tenant.
+Cette approche convient aux plateformes SaaS, aux nombreux environnements de démonstration ou aux scénarios multi-locataires, améliorant la stabilité et la maintenabilité du système tout en garantissant la flexibilité.

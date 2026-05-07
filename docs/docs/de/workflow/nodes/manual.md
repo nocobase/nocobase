@@ -61,7 +61,7 @@ Datenblöcke können Trigger-Daten oder die Verarbeitungsergebnisse beliebiger K
 
 Knoten-Datenblöcke funktionieren ähnlich; Sie können das Datenergebnis eines vorgelagerten Knotens als Detailanzeige auswählen. Zum Beispiel kann das Ergebnis eines vorgelagerten Berechnungs-Knotens als Kontextreferenzinformation für die Aufgabe des Bearbeiters dienen:
 
-![Manueller Knoten_Knotenkonfiguration_Oberflächenkonfiguration_Datenblock_Knotendaten](https://static-docs.nocobase.com/a583e26e508e9544b310a72c2d0a404c.png)
+![Manueller Knoten_Knotenkonfiguration_Oberflächenkonfiguration_Datenblock_Knotendaten](https://static-docs.nocobase.com/a583e26e508e954b47e5ddff80d998c4.png)
 
 :::info{title=Hinweis}
 Da sich der Workflow während der Oberflächenkonfiguration in einem nicht ausgeführten Zustand befindet, werden in den Datenblöcken keine spezifischen Daten angezeigt. Die relevanten Daten für eine bestimmte Workflow-Instanz sind erst im Aufgaben-Pop-up sichtbar, nachdem der Workflow ausgelöst und ausgeführt wurde.
@@ -85,7 +85,7 @@ Die Schaltflächen zum Absenden des Formulars können in drei Typen konfiguriert
 - Absenden und Workflow beenden
 - Nur Formularwerte speichern
 
-![Manueller Knoten_Knotenkonfiguration_Oberflächenkonfiguration_Formularschaltflächen](https://static-docs.nocobase.com/6b45995b14112e85a821dff6f6e3189a.png)
+![Manueller Knoten_Knotenkonfiguration_Oberflächenkonfiguration_Formularschaltflächen](https://static-docs.nocobase.com/6b45995b14152e85a821dff6f6e3189a.png)
 
 Die drei Schaltflächen repräsentieren drei Knotenstatus im Workflow-Prozess. Nach dem Absenden ändert sich der Status des Knotens entweder zu „Abgeschlossen“, „Abgelehnt“ oder verbleibt im Status „Wartend“. Ein Formular muss mindestens eine der ersten beiden Optionen konfiguriert haben, um den weiteren Verlauf des gesamten Workflows zu bestimmen.
 
@@ -109,7 +109,7 @@ Sie können aus den Blöcken auf einer Seite „Workflow-Aufgaben“ auswählen,
 
 Beispiel für einen Aufgabenlisten-Block:
 
-![Manueller Knoten_Aufgabenliste](https://static-docs.nocobase.com/cfefb0d6b220f34.png)
+![Manueller Knoten_Aufgabenliste](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Aufgabendetails
 

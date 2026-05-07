@@ -14,7 +14,7 @@ Am unteren Rand der Anmeldeseite:
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-Position 1 können Sie über die Option `Logo` in den [Systemeinstellungen](/system-management/system-settings/) konfigurieren. Die Positionen 2 und 3 lassen sich mit diesem `Plugin` anpassen.
+Position 1 können Sie über die Option `Logo` in den [Systemeinstellungen](/system-management/system-settings/index.md) konfigurieren. Die Positionen 2 und 3 lassen sich mit diesem `Plugin` anpassen.
 
 ## Anleitung zur Verwendung
 

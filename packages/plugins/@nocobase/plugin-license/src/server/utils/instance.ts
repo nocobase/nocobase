@@ -9,10 +9,11 @@
 
 import fs from 'fs';
 import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import { exec } from 'child_process';
 
 export async function getInstanceId() {
-  const dir = path.resolve(process.cwd(), 'storage/.license');
+  const dir = storagePathJoin('.license');
   const filePath = path.resolve(dir, 'instance-id');
   await createInstanceId(true);
   const id = fs.readFileSync(filePath, 'utf-8');
@@ -32,7 +33,7 @@ export async function createInstanceId(force = false) {
 }
 
 export async function isLicenseKeyExists() {
-  const dir = path.resolve(process.cwd(), 'storage/.license');
+  const dir = storagePathJoin('.license');
   const filePath = path.resolve(dir, 'license-key');
   return fs.existsSync(filePath);
 }

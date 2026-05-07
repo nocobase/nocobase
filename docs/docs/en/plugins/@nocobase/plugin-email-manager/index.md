@@ -1,5 +1,5 @@
 ---
-displayName: "Email manager"
+displayName: "Email Manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
@@ -12,4 +12,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Email manager
+# Email Manager

@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createContext } from 'react';
-
-export const PinnedPluginListContext = createContext({ items: {} });
-PinnedPluginListContext.displayName = 'PinnedPluginListContext';
+export {
+  getPinnedPluginListKeys,
+  PinnedPluginListContext,
+  type PinnedPluginListContextValue,
+  type PinnedPluginListItem,
+  type PinnedPluginListItems,
+} from '@nocobase/client-v2';

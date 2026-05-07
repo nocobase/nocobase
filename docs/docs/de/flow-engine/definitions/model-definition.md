@@ -4,7 +4,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 # ModelDefinition
 
-Die ModelDefinition definiert die Erstellungsoptionen für ein Flussmodell, das über die Methode `FlowEngine.createModel()` instanziiert wird. Sie enthält die grundlegende Konfiguration, Eigenschaften, Submodelle und weitere Informationen des Modells.
+Die ModelDefinition definiert die Erstellungsoptionen für ein Flussmodell, das über die Methode `FlowEngine.createModelAsync()` instanziiert wird. Sie enthält die grundlegende Konfiguration, Eigenschaften, Submodelle und weitere Informationen des Modells.
 
 ## Typdefinition
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Eine Modellinstanz erstellen
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // Verwendung einer dynamischen Referenz
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Registrieren Sie die Modellklasse
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Dynamischer Import: Das Modellmodul wird erst geladen, wenn dieses Modell zum ersten Mal wirklich benötigt wird
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Erstellen Sie eine Modellinstanz
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

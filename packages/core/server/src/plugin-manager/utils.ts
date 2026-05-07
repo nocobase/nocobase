@@ -9,7 +9,7 @@
 
 /* istanbul ignore next -- @preserve */
 
-import { importModule, isURL, requireResolve } from '@nocobase/utils';
+import { importModule, isURL, requireResolve, resolvePluginStoragePath } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
@@ -21,18 +21,13 @@ import os from 'os';
 import path from 'path';
 import semver from 'semver';
 import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
-import {
-  APP_NAME,
-  DEFAULT_PLUGIN_PATH,
-  DEFAULT_PLUGIN_STORAGE_PATH,
-  EXTERNAL,
-  importRegex,
-  pluginPrefix,
-  requireRegex,
-} from './constants';
+import { APP_NAME, DEFAULT_PLUGIN_PATH, EXTERNAL, importRegex, pluginPrefix, requireRegex } from './constants';
 import deps from './deps';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
+import Application from '../application';
+import { findBuiltInPlugins, findLocalPlugins } from './findPackageNames';
+import PluginManager from './plugin-manager';
 
 /**
  * get temp dir
@@ -45,11 +40,6 @@ export async function getTempDir() {
   return path.join(temporaryDirectory, APP_NAME);
 }
 
-export function getPluginStoragePath() {
-  const pluginStoragePath = process.env.PLUGIN_STORAGE_PATH || DEFAULT_PLUGIN_STORAGE_PATH;
-  return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
-}
-
 export function getLocalPluginPackagesPathArr(): string[] {
   const pluginPackagesPathArr = process.env.PLUGIN_PATH || DEFAULT_PLUGIN_PATH;
   return pluginPackagesPathArr.split(',').map((pluginPackagesPath) => {
@@ -59,7 +49,7 @@ export function getLocalPluginPackagesPathArr(): string[] {
 }
 
 export function getStoragePluginDir(packageName: string) {
-  const pluginStoragePath = getPluginStoragePath();
+  const pluginStoragePath = resolvePluginStoragePath();
   return path.join(pluginStoragePath, packageName);
 }
 
@@ -600,4 +590,34 @@ export async function getPluginBasePath(packageName: string) {
     // skip
   }
   return path.dirname(path.dirname(file));
+}
+
+export async function pmListSummary(app: Application) {
+  const plugins1 = await findBuiltInPlugins();
+  const plugins2 = await findLocalPlugins();
+  let enabledPlugins = [];
+  try {
+    enabledPlugins = (
+      await app.pm.repository.find({
+        filter: {
+          enabled: true,
+        },
+      })
+    ).map((item) => item.packageName);
+  } catch (error) {
+    // ignore error
+  }
+  const items = await Promise.all(
+    [...plugins1, ...plugins2].map(async (name) => {
+      const item = await PluginManager.parseName(name);
+      const json = await PluginManager.getPackageJson(item.packageName);
+      return {
+        displayName: json.displayName || name,
+        packageName: item.packageName,
+        enabled: enabledPlugins.includes(item.packageName),
+        description: json.description,
+      };
+    }),
+  );
+  return items;
 }

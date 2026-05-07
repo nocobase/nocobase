@@ -9,7 +9,7 @@
 
 import { useCollectionRecordData } from '../../../../../data-source/collection-record/CollectionRecordProvider';
 import { useSatisfiedActionValues } from '../../../../../schema-settings/LinkageRules/useActionValues';
-import { useFormBlockContext } from '../../../../../block-provider';
+import { useFormBlockContext } from '../../../../../block-provider/FormBlockProvider';
 import { useSubFormValue } from '../../../../../schema-component/antd/association-field/hooks';
 import { useFlag } from '../../../../../flag-provider/hooks/useFlag';
 

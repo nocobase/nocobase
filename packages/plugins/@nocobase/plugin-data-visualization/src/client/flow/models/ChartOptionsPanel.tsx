@@ -16,7 +16,7 @@ import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
 import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 import { configStore } from './config-store';
 import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { useCompile, useDataSourceManager } from '@nocobase/client';
+import { useCompile } from '@nocobase/client';
 import { getFieldOptions } from './QueryBuilder.service';
 
 const flattenFieldTitleMap = (options: any[] = [], prefix: string[] = [], map = new Map<string, string>()) => {
@@ -55,7 +55,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   const form = useForm();
   // 从 flow ctx 和 configStore 计算 columns
   const ctx = useFlowSettingsContext<any>();
-  const dm = useDataSourceManager();
+  const dm = ctx?.model?.context?.dataSourceManager;
   const compile = useCompile();
   const uid = ctx?.model?.uid;
   const previewData = configStore.results[uid]?.result || [];

@@ -16,6 +16,7 @@ interface ChatConversationsState {
   conversations: Conversation[];
   keyword: string;
   webSearch: boolean;
+  conversationSegmented: string;
 }
 
 interface ChatConversationsActions {
@@ -23,6 +24,7 @@ interface ChatConversationsActions {
   setKeyword: (keyword: string) => void;
   setConversations: (conversations: Conversation[] | ((prev: Conversation[]) => Conversation[])) => void;
   setWebSearch: (webSearch: boolean) => void;
+  setConversationSegmented: (conversationSegmented: string) => void;
 }
 
 const store = create<ChatConversationsState & ChatConversationsActions>((set) => ({
@@ -30,6 +32,7 @@ const store = create<ChatConversationsState & ChatConversationsActions>((set) =>
   conversations: [],
   keyword: '',
   webSearch: false,
+  conversationSegmented: 'conversations',
 
   setCurrentConversation: (id) => set({ currentConversation: id }),
   setKeyword: (keyword) => set({ keyword }),
@@ -38,6 +41,7 @@ const store = create<ChatConversationsState & ChatConversationsActions>((set) =>
       conversations: typeof conversations === 'function' ? conversations(state.conversations) : conversations,
     })),
   setWebSearch: (webSearch) => set({ webSearch }),
+  setConversationSegmented: (conversationSegmented) => set({ conversationSegmented }),
 }));
 
 export const useChatConversationsStore = createSelectors(store);

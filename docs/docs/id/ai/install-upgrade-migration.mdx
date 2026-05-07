@@ -1,0 +1,407 @@
+---
+title: "Panduan Instalasi dan Migrasi Upgrade: Menggunakan NocoBase CLI"
+description: "Migrasi dari metode instalasi dan upgrade Docker, create-nocobase-app, kode sumber Git lama ke alur kerja NocoBase CLI baru."
+keywords: "NocoBase CLI,Migrasi Instalasi,Migrasi Upgrade,nb init,nb app upgrade,Docker,create-nocobase-app,Kode Sumber Git"
+---
+
+# Panduan Instalasi dan Migrasi Upgrade: Menggunakan NocoBase CLI
+
+:::danger
+Kemampuan instalasi dan pemeliharaan aplikasi CLI masih dalam pengembangan, saat ini lebih cocok untuk pengembangan lokal, lingkungan testing, dan skenario integrasi AI Agent, tidak disarankan langsung digunakan untuk instalasi, upgrade, dan pemeliharaan operasional di lingkungan production.
+:::
+
+NocoBase CLI versi baru (`nb`) menyatukan operasi instalasi, koneksi, memulai, menghentikan, melihat log, upgrade, dan pembersihan ke dalam satu set perintah. Dibandingkan dengan dokumentasi lama yang dipelihara secara terpisah berdasarkan Docker, create-nocobase-app, dan kode sumber Git, CLI lebih cocok untuk pengembangan lokal, pemeliharaan lingkungan testing, serta integrasi dan kolaborasi AI Agent.
+
+Artikel ini berlaku untuk skenario berikut:
+
+- Anda sedang memasang atau mengupgrade NocoBase berdasarkan dokumentasi lama, dan ingin beralih ke metode CLI baru.
+- Anda sudah memiliki NocoBase yang dideploy dengan cara lama, dan ingin CLI mengelola atau menghubungkannya.
+- Anda perlu menyiapkan lingkungan NocoBase yang dapat dihubungkan dan dipelihara untuk AI Agent.
+
+## Perbedaan Antara Cara Lama dan Cara Baru
+
+Cara lama memisahkan dokumentasi berdasarkan sumber instalasi, setiap sumber memerlukan eksekusi perintah download, konfigurasi, instalasi, memulai, dan upgrade secara terpisah.
+
+**Dokumentasi Instalasi Lama**
+
+- [Instalasi Docker](/get-started/installation/docker)
+- [Instalasi create-nocobase-app](/get-started/installation/create-nocobase-app)
+- [Instalasi Kode Sumber Git](/get-started/installation/git)
+
+**Dokumentasi Upgrade Lama**
+
+- [Upgrade Instalasi Docker](/get-started/upgrading/docker)
+- [Upgrade Instalasi create-nocobase-app](/get-started/upgrading/create-nocobase-app)
+- [Upgrade Instalasi Kode Sumber Git](/get-started/upgrading/git)
+
+Cara baru menggunakan `nb init` sebagai entry point, mencatat sumber aplikasi, direktori run, direktori storage, database, dan informasi koneksi API dengan satu env CLI. Selanjutnya, baik sumber Docker, npm, maupun Git, sebisa mungkin menggunakan satu set perintah `nb app`, `nb source`, `nb db` yang sama untuk pemeliharaan.
+
+| Skenario | Cara Lama | Cara CLI Baru |
+| --- | --- | --- |
+| Entry point instalasi | `docker compose`, `create-nocobase-app`, `git clone` | `nb init` atau `nb init --ui` |
+| Manajemen run aplikasi | Pindah direktori, modifikasi compose, jalankan perintah yarn/pm2 | `nb app start/stop/restart/logs/down` |
+| Upgrade | Satu set perintah untuk setiap metode instalasi | `nb app upgrade -e <env>` |
+| Mode pengembangan | `yarn dev` | `nb source dev -e <env>` |
+| Status database | Periksa container atau layanan database secara manual | `nb db ps -e <env>` |
+| Lihat status dan detail lingkungan | Catat path, port, dan alamat akses secara manual | `nb env list`, `nb env info <env>` |
+| Integrasi aplikasi yang sudah ada | Dokumentasi instalasi lama tidak menyatukan cakupan | `nb init --ui` atau `nb init --api-base-url` |
+
+## Memasang CLI
+
+```bash
+npm install -g @nocobase/cli@beta
+nb --version
+```
+
+Setelah instalasi, Anda dapat melihat bantuan:
+
+```bash
+nb --help
+nb init --help
+```
+
+## Memasang NocoBase dengan Cara Baru
+
+### Disarankan: Menggunakan Wizard Visual
+
+```bash
+nb init --ui
+```
+
+Wizard akan memandu Anda untuk memilih:
+
+- Buat aplikasi baru atau hubungkan aplikasi yang sudah ada
+- Sumber instalasi: Docker, npm, Git
+- Versi NocoBase
+- Gunakan database bawaan atau database eksternal
+- Akun dan password administrator
+
+### Menggunakan Wizard Interaktif Terminal
+
+```bash
+nb init
+```
+
+### Menggunakan Perintah Non-interaktif
+
+Metode instalasi default adalah Docker, dan menggunakan database PostgreSQL bawaan:
+
+```bash
+nb init --yes --env app1
+```
+
+Pasang versi tertentu menggunakan Docker:
+
+```bash
+nb init --yes --env app1 --source docker --version beta
+```
+
+Pasang menggunakan npm:
+
+```bash
+nb init --yes --env app1 --source npm --version beta --app-port 13080
+```
+
+Pasang menggunakan kode sumber Git:
+
+```bash
+nb init --yes --env app1 --source git --version beta
+```
+
+Gunakan kode sumber Git dan tentukan tipe database bawaan:
+
+```bash
+nb init --yes --env app1 --source git --version beta --db-dialect mysql
+```
+
+Hubungkan aplikasi NocoBase yang sudah ada:
+
+```bash
+# Default menggunakan autentikasi OAuth
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# Menggunakan autentikasi Token
+nb init --yes --env app1 \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+:::tip
+`--env` adalah nama lingkungan di CLI, perintah memulai, upgrade, melihat log, dan lainnya selanjutnya dapat menentukan aplikasi target melalui `-e app1`.
+:::
+
+## Upgrade dengan Cara Baru
+
+Pada cara lama, perintah upgrade Docker, create-nocobase-app, dan kode sumber Git berbeda; CLI baru menyatukannya menjadi:
+
+```bash
+nb app upgrade -e app1
+```
+
+Jika hanya ingin menjalankan proses upgrade dengan kode sumber atau image yang sudah diunduh, tanpa menarik kode atau image baru:
+
+```bash
+nb app upgrade -e app1 --skip-code-update
+```
+
+Atau gunakan singkatan:
+
+```bash
+nb app upgrade -e app1 -s
+```
+
+## Perintah Pemeliharaan Umum
+
+| Operasi | Perintah |
+| --- | --- |
+| Memulai aplikasi | `nb app start -e app1` |
+| Menghentikan aplikasi | `nb app stop -e app1` |
+| Restart aplikasi | `nb app restart -e app1` |
+| Lihat log | `nb app logs -e app1` |
+| Lihat env dan status autentikasi API | `nb env list` |
+| Lihat detail env | `nb env info app1` |
+| Lihat status database bawaan | `nb db ps -e app1` |
+| Upgrade aplikasi | `nb app upgrade -e app1` |
+| Hentikan dan bersihkan resource run | `nb app down -e app1` |
+
+`nb app down` secara default akan menghentikan aplikasi, dan menghapus container run yang dikelola CLI dan file aplikasi lokal, namun akan mempertahankan data storage dan konfigurasi env. Saat menghapus seluruh konten harus dikonfirmasi secara eksplisit:
+
+```bash
+nb app down -e app1 --all --yes
+```
+
+:::warning
+`--all --yes` akan menghapus data storage dan konfigurasi env CLI dari env tersebut. Harap hanya gunakan setelah memastikan telah dibackup dan lingkungan tersebut tidak diperlukan lagi.
+:::
+
+## Perintah Pengembangan Harian
+
+`nb source` digunakan untuk mengelola proyek kode sumber lokal, terutama berlaku untuk env source npm dan Git.
+
+| Operasi | Perintah |
+| --- | --- |
+| Jalankan aplikasi dalam mode pengembangan | `nb source dev -e app1` |
+| Build kode sumber | `nb source build --cwd /your/workspace/app1/source` |
+| Jalankan test | `nb source test --cwd /your/workspace/app1/source` |
+| Unduh atau refresh kode sumber/image | `nb source download --source git --version beta` |
+
+:::tip
+Env Docker biasanya dikelola melalui `nb app start`, `nb app logs`, dan `nb app upgrade`, tidak menggunakan `nb source dev`.
+:::
+
+## NB_CLI_ROOT dan Struktur Direktori
+
+CLI akan menyimpan konfigurasi global dan file aplikasi lokal di direktori yang sesuai dengan `NB_CLI_ROOT`.
+
+Secara default, `NB_CLI_ROOT` adalah direktori home pengguna saat ini, yaitu path yang dikembalikan oleh Node.js `os.homedir()`. Misalnya di macOS biasanya `/Users/<user>`. Oleh karena itu, jika tidak melakukan konfigurasi tambahan, file yang dihasilkan oleh `nb init --yes --env app1` biasanya berada di:
+
+```text
+~
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+Anda juga dapat secara eksplisit menentukan `NB_CLI_ROOT`:
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+```
+
+Setelah diatur, file konfigurasi dan direktori aplikasi default akan ditempatkan di direktori tersebut:
+
+```text
+/your/workspace
+├── .nocobase
+│   └── config.json
+└── app1
+    ├── source
+    └── storage
+```
+
+Di mana:
+
+- `.nocobase/config.json` menyimpan informasi env, lingkungan saat ini, alamat API, path kode sumber, path storage, konfigurasi database, dan lainnya.
+- `<envName>/source` adalah direktori kode sumber atau aplikasi yang dikelola CLI.
+- `<envName>/storage` adalah direktori storage aplikasi yang dikelola CLI.
+
+:::warning
+Setelah aplikasi yang sama diinisialisasi, harap pertahankan menggunakan `NB_CLI_ROOT` yang sama. Jika `NB_CLI_ROOT` diubah selanjutnya, CLI akan mencari `.nocobase/config.json` di direktori baru, dan `appRootPath`, `storagePath` dalam bentuk path relatif juga akan diparsing berdasarkan direktori baru, yang dapat menyebabkan aplikasi tidak ditemukan atau membaca/menulis ke direktori yang salah.
+:::
+
+CLI saat ini hanya menggunakan scope konfigurasi global. Jika perlu menyesuaikan lokasi penyimpanan konfigurasi dan file aplikasi lokal, harap atur `NB_CLI_ROOT`.
+
+Saat melihat dan menemukan aplikasi, prioritaskan penggunaan `nb env list` dan `nb env info`:
+
+```bash
+# Lihat env yang dikonfigurasi dan status autentikasi API
+nb env list
+
+# Lihat informasi detail dari env tertentu
+nb env info app1
+```
+
+`nb env list` ditujukan untuk gambaran umum cepat, di mana `App Status` adalah status autentikasi yang diperoleh setelah mengakses API aplikasi melalui Token/kredensial OAuth yang disimpan, dan tidak lagi menampilkan status database. Saat perlu melihat status run database bawaan, harap gunakan:
+
+```bash
+nb db ps -e app1
+```
+
+Hanya saat perlu mengganti env default, baru gunakan:
+
+```bash
+nb env use app1
+```
+
+## Migrasi dari Cara Lama ke CLI
+
+Migrasi memiliki dua strategi: **menghubungkan aplikasi yang sudah ada**, atau **memasukkan direktori aplikasi lokal ke dalam manajemen CLI**. Jika aplikasi lama Anda sudah berjalan stabil, disarankan menggunakan "menghubungkan aplikasi yang sudah ada" terlebih dahulu, risikonya paling rendah.
+
+### Cara Pertama: Menghubungkan Aplikasi yang Sudah Ada
+
+Berlaku untuk NocoBase yang sudah dideploy melalui Docker, create-nocobase-app, kode sumber Git, atau di server.
+
+```bash
+# Default menggunakan autentikasi OAuth
+nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api
+
+# Menggunakan autentikasi Token
+nb init --yes --env "app$RANDOM" \
+  --api-base-url=http://next.v2.test.nocobase.com/nocobase/api \
+  --auth-type=token \
+  --access-token=<token>
+```
+
+Cara ini hanya menyimpan koneksi API, CLI tidak akan mengambil alih memulai, menghentikan, upgrade, direktori kode sumber, atau direktori storage dari aplikasi lama. Cocok untuk membuat AI Agent atau perintah API CLI menghubungkan aplikasi yang sudah ada.
+
+Jika perlu me-refresh autentikasi:
+
+```bash
+nb env auth app1
+```
+
+### Cara Kedua: Buat Env CLI Baru Lalu Migrasi File
+
+Berlaku untuk skenario yang ingin selanjutnya mengelola aplikasi lokal dengan `nb app` dan `nb source`.
+
+Sebelum migrasi, harap selesaikan terlebih dahulu:
+
+1. Hentikan aplikasi lama.
+2. Backup database lama.
+3. Backup direktori `storage` lama.
+4. Catat variabel lingkungan kunci dari aplikasi lama, seperti `APP_KEY`, `TZ`, `DB_*`, `DB_UNDERSCORED`.
+
+#### Migrasi Instalasi Docker Lama
+
+Cara Docker lama biasanya menempatkan data aplikasi di `storage` dalam direktori proyek:
+
+```text
+/old-docker-project
+├── docker-compose.yml
+└── storage
+```
+
+Disarankan menentukan `NB_CLI_ROOT` baru terlebih dahulu, lalu gunakan CLI untuk membuat env Docker baru. Contoh di bawah ini mengasumsikan `NB_CLI_ROOT` adalah `/your/workspace`.
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app2 --source docker --version beta
+nb app stop -e app2
+```
+
+Env baru secara default akan menggunakan direktori berikut:
+
+```text
+/your/workspace
+└── app2
+    ├── source
+    └── storage
+```
+
+Kemudian salin `storage` lama ke `/your/workspace/app2/storage`, dan pastikan koneksi database dan konfigurasi seperti `APP_KEY` konsisten dengan lingkungan lama.
+
+Setelah penyalinan selesai dan konfigurasi database dikonfirmasi, baru jalankan aplikasi:
+
+```bash
+nb app start -e app2
+nb app logs -e app2
+```
+
+#### Migrasi Instalasi create-nocobase-app atau Kode Sumber Git Lama
+
+Cara npm/Git lama biasanya menempatkan kode sumber, `.env`, dan `storage` di direktori proyek yang sama:
+
+```text
+/old-nocobase
+├── .env
+├── package.json
+├── packages
+└── storage
+```
+
+Disarankan menentukan `NB_CLI_ROOT` baru terlebih dahulu, lalu buat env npm atau Git baru. Contoh di bawah ini mengasumsikan `NB_CLI_ROOT` adalah `/your/workspace`.
+
+```bash
+export NB_CLI_ROOT=/your/workspace
+nb init --yes --env app3 --source git --version beta
+nb app stop -e app3
+```
+
+Kemudian migrasikan sesuai kebutuhan:
+
+- Migrasikan kode sumber Plugin kustom dari proyek lama ke direktori yang sesuai di `/your/workspace/app3/source`.
+- Salin `storage` dari proyek lama ke `/your/workspace/app3/storage`.
+- Sinkronkan konfigurasi kunci dari `.env` lama ke konfigurasi env CLI atau parameter inisialisasi.
+- Saat menggunakan database asli, harap matikan database bawaan dan isi informasi koneksi database lama saat inisialisasi.
+
+Contoh inisialisasi menggunakan database eksternal:
+
+```bash
+nb init --yes --env app3 --source git --version beta \
+  --no-builtin-db \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
+```
+
+Setelah migrasi selesai, jalankan dan lihat log:
+
+```bash
+nb app start -e app3
+nb app logs -e app3
+```
+
+:::warning
+Jangan langsung menimpa `source`, `storage`, atau menghubungkan database production untuk menjalankan upgrade tanpa backup. Sebelum migrasi resmi disarankan melakukan latihan lengkap di lingkungan testing terlebih dahulu.
+:::
+
+## Tabel Cepat Migrasi Perintah Lama
+
+| Perintah Lama | Perintah CLI Baru |
+| --- | --- |
+| `docker compose up -d app` | `nb app start -e app1` |
+| `docker compose stop app` | `nb app stop -e app1` |
+| `docker compose logs -f app` | `nb app logs -e app1` |
+| `docker compose pull app && docker compose up -d app` | `nb app upgrade -e app1` |
+| `yarn create nocobase-app my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `npx create-nocobase-app@beta my-nocobase-app ...` | `nb init --yes --env app1 --source npm --version beta` |
+| `git clone ... -b next --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version beta` |
+| `git clone ... -b develop --depth=1 my-nocobase` | `nb init --yes --env app1 --source git --version alpha` |
+| `yarn dev` | `nb source dev -e app1` |
+| `yarn nocobase upgrade` | `nb app upgrade -e app1` |
+| `yarn nocobase upgrade --skip-code-update` | `nb app upgrade -e app1 -s` |
+| Catat beberapa alamat aplikasi secara manual | `nb env list`, `nb env info app1` |
+| Hubungkan aplikasi yang sudah ada secara manual | `nb init --yes --env app1 --api-base-url=http://next.v2.test.nocobase.com/nocobase/api` |
+
+## Tautan Terkait
+
+- [Panduan Integrasi AI Agent](/ai/quick-start)
+- [Referensi Perintah NocoBase CLI](/api/cli)
+- [Perbandingan Metode Instalasi dan Versi](/get-started/quickstart)
+- [Instalasi dan Upgrade Plugin](/get-started/install-upgrade-plugins)

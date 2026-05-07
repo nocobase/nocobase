@@ -246,14 +246,6 @@ Método de saída de log. Múltiplos valores são separados por `,`. O padrão �
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Caminho de armazenamento dos logs baseados em arquivo. O valor padrão é `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Nível de saída do log. O padrão é `debug` em ambiente de desenvolvimento e `info` em produção. Opções:

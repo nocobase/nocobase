@@ -794,6 +794,81 @@ describe('workflow > instructions > request', () => {
     });
   });
 
+  describe('validation', () => {
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should accept when url is not provided', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: {} },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should reject when method is invalid', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', method: 'INVALID' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should reject when contentType is invalid', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', contentType: 'invalid' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid config', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', method: 'POST' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with url only', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept url with variable syntax', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: '{{$variable.url}}' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept url with variable embedded in template string', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://{{$env.HOST}}/api/data' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept plain invalid url string at config time', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'not-a-valid-url' } },
+      });
+      expect(status).toBe(200);
+    });
+  });
+
   describe('SSRF protection via SERVER_REQUEST_WHITELIST', () => {
     const ENV_KEY = 'SERVER_REQUEST_WHITELIST';
     let savedEnv: string | undefined;

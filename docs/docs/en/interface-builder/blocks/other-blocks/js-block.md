@@ -109,5 +109,5 @@ ctx.render(`<pre style="padding:12px;background:#f5f5f5;border-radius:6px;">${JS
 ## Related Documents
 
 - [Variables and Context](/interface-builder/variables)
-- [Linkage Rules](/interface-builder/linkage-rule)
+- [Linkage Rule](/interface-builder/linkage-rule)
 - [Views and Popups](/interface-builder/actions/types/view)

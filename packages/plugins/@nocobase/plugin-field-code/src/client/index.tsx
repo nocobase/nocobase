@@ -13,6 +13,8 @@ import { ISchema, Plugin, SchemaSettings, useColumnSchema, useDesignable } from 
 import { CodeFieldInterface } from './interface';
 import { NAMESPACE } from '../common/constants';
 import { lang } from './lang';
+import { CodeFieldModel } from './models/CodeFieldModel';
+import { DisplayCodeFieldModel } from './models/DisplayCodeFieldModel';
 
 const CodeEditor = lazy(() => import('./CodeEditor'));
 
@@ -114,6 +116,10 @@ export class PluginFieldCodeClient extends Plugin {
 
     this.app.dataSourceManager.addFieldInterfaces([CodeFieldInterface]);
     this.app.schemaSettingsManager.add(codeComponentSettings);
+    this.flowEngine.registerModels({
+      CodeFieldModel,
+      DisplayCodeFieldModel,
+    });
   }
 }
 

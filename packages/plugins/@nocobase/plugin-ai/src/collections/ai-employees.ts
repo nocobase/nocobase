@@ -42,7 +42,8 @@ export default {
     },
     {
       name: 'defaultPrompt',
-      type: 'virtual',
+      type: 'text',
+      interface: 'textarea',
     },
     {
       name: 'greeting',
@@ -105,6 +106,12 @@ export default {
       type: 'string',
       allowNull: false,
       defaultValue: 'business', // business, developer
+    },
+    {
+      name: 'deprecated',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: false,
     },
   ],
 };

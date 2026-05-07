@@ -10,32 +10,65 @@
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { formatters, debugLog } from '../utils';
 
+function isDatabaseDataSource(dataSource: any) {
+  return dataSource?.key === DEFAULT_DATA_SOURCE_KEY || dataSource?.options?.isDBInstance || dataSource?.isDBInstance;
+}
+
+function getFieldInterface(dm: any, field: any) {
+  return field?.getInterfaceOptions?.() || dm?.collectionFieldInterfaceManager?.getFieldInterface?.(field?.interface);
+}
+
+function getFieldFilterable(dm: any, field: any) {
+  if (field?.filterable === false) {
+    return false;
+  }
+  return field?.filterable || getFieldInterface(dm, field)?.filterable;
+}
+
+function getFieldTitle(field: any) {
+  return field?.uiSchema?.title ?? field?.options?.uiSchema?.title ?? field?.title ?? field?.name;
+}
+
+function getTargetFields(dm: any, dataSourceKey: string, field: any) {
+  try {
+    return (
+      field?.getFields?.() ||
+      field?.targetCollection?.getFields?.() ||
+      dm.getCollection?.(dataSourceKey, field.target)?.getFields?.() ||
+      []
+    );
+  } catch {
+    return [];
+  }
+}
+
 // 纯函数：构建字段树
 export function getFieldOptions(dm: any, compile: (v: any) => string, collectionPath?: string[]) {
   const [dataSourceKey, collectionName] = collectionPath || [];
-  const ds = dm.getDataSource(dataSourceKey || DEFAULT_DATA_SOURCE_KEY);
-  const cm = ds?.collectionManager;
-  const fim = dm.collectionFieldInterfaceManager;
+  if (!dm || !collectionName) return [];
 
-  if (!cm || !fim || !collectionName) return [];
+  const dsKey = dataSourceKey || DEFAULT_DATA_SOURCE_KEY;
+  const collection = dm.getCollection?.(dsKey, collectionName);
 
-  const collectionFields = cm.getCollectionFields(collectionName) || [];
+  if (!collection) return [];
+
+  const collectionFields = collection.getFields?.() || [];
 
   const toOption = (field: any, depth: number, prefix?: string) => {
     if (!field?.interface) return undefined;
-    const iface = fim.getFieldInterface(field.interface);
-    if (!iface?.filterable) return undefined;
+    const filterable = getFieldFilterable(dm, field);
+    if (!filterable) return undefined;
 
     const value = prefix ? `${prefix}.${field.name}` : field.name;
     const opt: any = {
       name: field.name,
-      title: compile(field?.uiSchema?.title ?? field.name),
+      title: compile(getFieldTitle(field)),
       key: value,
       value: field.name,
     };
 
     if (depth < 1) {
-      const children = iface.filterable?.children || [];
+      const children = filterable?.children || [];
       if (children.length) {
         opt.children = children.map((c: any) => ({
           ...c,
@@ -44,8 +77,8 @@ export function getFieldOptions(dm: any, compile: (v: any) => string, collection
           value: c.name,
         }));
       }
-      if (iface.filterable?.nested && field.target) {
-        const targetFields = cm.getCollectionFields(field.target) || [];
+      if (filterable?.nested && field.target) {
+        const targetFields = getTargetFields(dm, dsKey, field);
         const nested = targetFields.map((tf: any) => toOption(tf, depth + 1, field.name)).filter(Boolean);
         opt.children = [...(opt.children || []), ...nested];
       }
@@ -124,20 +157,22 @@ export function getFormatterOptionsByField(dm: any, collectionPath: string[] | u
   if (!alias) return [];
 
   const [dataSourceKey, collectionName] = collectionPath || [];
-  const ds = dm.getDataSource(dataSourceKey || DEFAULT_DATA_SOURCE_KEY);
-  const cm = ds?.collectionManager;
-  if (!cm || !collectionName) return [];
+  if (!dm || !collectionName) return [];
+
+  const dsKey = dataSourceKey || DEFAULT_DATA_SOURCE_KEY;
+  const collection = dm.getCollection?.(dsKey, collectionName);
+  if (!collection) return [];
 
   const parts = alias.split('.');
   const [first, second] = parts;
 
-  const rootFields = cm.getCollectionFields(collectionName) || [];
+  const rootFields = collection.getFields?.() || [];
   const root = rootFields.find((f: any) => f.name === first);
   if (!root) return [];
 
   const iface =
     second && root.target
-      ? (cm.getCollectionFields(root.target) || []).find((f: any) => f.name === second)?.interface
+      ? getTargetFields(dm, dsKey, root).find((f: any) => f.name === second)?.interface
       : root.interface;
 
   switch (iface) {
@@ -159,9 +194,16 @@ export function getFormatterOptionsByField(dm: any, collectionPath: string[] | u
 
 // 新增：纯函数，构建“数据源/集合”选项（保持原有签名）
 export function getCollectionOptions(dm: any, compile: (v: any) => string) {
-  const allCollections = dm.getAllCollections();
-  return allCollections
-    .filter(({ key, isDBInstance }: any) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
+  if (!dm) return [];
+
+  const dataSources = dm.getDataSources?.() || [];
+  return dataSources
+    .filter(isDatabaseDataSource)
+    .map((dataSource: any) => ({
+      key: dataSource.key,
+      displayName: dataSource.displayName,
+      collections: dataSource.getCollections?.() || [],
+    }))
     .map(({ key, displayName, collections }: any) => ({
       value: key,
       label: compile(displayName),

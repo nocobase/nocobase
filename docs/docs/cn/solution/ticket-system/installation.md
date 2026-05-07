@@ -15,8 +15,8 @@ keywords: "工单安装,备份还原,备份管理器,SQL 导入,PostgreSQL,NocoB
 - 您已经有了一个基础的 NocoBase 运行环境。关于主系统的安装，请参考更详细的[官方安装文档](https://docs-cn.nocobase.com/welcome/getting-started/installation)。
 - NocoBase 版本 **2.0.0-beta.5 及以上**
 - 您已经下载了工单系统的相应文件：
-  - **备份文件**：[nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - 适用于方法一
-  - **SQL文件**：[nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - 适用于方法二
+  - **备份文件**：[nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - 适用于方法一
+  - **SQL文件**：[nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - 适用于方法二
 
 **重要说明**：
 - 本方案基于 **PostgreSQL 16** 数据库制作，请确保您的环境使用 PostgreSQL 16。
@@ -134,3 +134,7 @@ docker pull nocobase/nocobase:beta-full
 | **推荐场景**   | 企业用户，且环境可控、一致，需要完整功能                     | 缺少部分插件，追求高兼容、灵活性，非专业/企业版用户，可接受文件功能缺失                                |
 
 希望本教程能帮助您顺利部署工单系统。如果您在操作过程中遇到任何问题，欢迎随时与我们联系！
+
+---
+
+*Last updated: 2026-03-24*

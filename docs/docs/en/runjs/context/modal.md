@@ -1,18 +1,18 @@
 # ctx.modal
 
-Shortcut API built on Ant Design Modal for opening modals (info, confirm, etc.) from RunJS. Implemented by `ctx.viewer` / the view system.
+A shortcut API based on Ant Design Modal, used to actively open modal boxes (information prompts, confirmation pop-ups, etc.) in RunJS. It is implemented by `ctx.viewer` / the view system.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / JSField** | Show result, error, or confirmation after user action |
-| **Event flow / action events** | Confirm before submit; use `ctx.exit()` when user cancels |
-| **Linkage** | Show modal when validation fails |
+|------|------|
+| **JSBlock / JSField** | Display operation results, error prompts, or secondary confirmations after user interaction. |
+| **Workflow / Action Events** | Pop-up confirmation before submission; terminate subsequent steps via `ctx.exit()` if the user cancels. |
+| **Linkage Rules** | Pop-up prompts for the user when validation fails. |
 
-> Note: `ctx.modal` is available in RunJS when a view context exists (e.g. JSBlock on a page, event flow); in backend or no-UI contexts it may be absent—use optional chaining: `ctx.modal?.confirm?.()`.
+> Note: `ctx.modal` is available in RunJS environments with a view context (such as JSBlocks within a page, workflows, etc.); it may not exist in the backend or non-UI contexts. It is recommended to use optional chaining (`ctx.modal?.confirm?.()`) when calling it.
 
-## Type
+## Type Definition
 
 ```ts
 modal: {
@@ -20,89 +20,89 @@ modal: {
   success: (config: ModalConfig) => Promise<void>;
   error: (config: ModalConfig) => Promise<void>;
   warning: (config: ModalConfig) => Promise<void>;
-  confirm: (config: ModalConfig) => Promise<boolean>;  // true = OK, false = Cancel
+  confirm: (config: ModalConfig) => Promise<boolean>;  // Returns true if the user clicks OK, false if they cancel
 };
 ```
 
-`ModalConfig` matches Ant Design Modal static method config.
+`ModalConfig` is consistent with the configuration of Ant Design `Modal` static methods.
 
 ## Common Methods
 
-| Method | Returns | Description |
-|--------|--------|-------------|
-| `info(config)` | `Promise<void>` | Info modal |
-| `success(config)` | `Promise<void>` | Success modal |
-| `error(config)` | `Promise<void>` | Error modal |
-| `warning(config)` | `Promise<void>` | Warning modal |
-| `confirm(config)` | `Promise<boolean>` | Confirm; OK → `true`, Cancel → `false` |
+| Method | Return Value | Description |
+|------|--------|------|
+| `info(config)` | `Promise<void>` | Information prompt modal |
+| `success(config)` | `Promise<void>` | Success prompt modal |
+| `error(config)` | `Promise<void>` | Error prompt modal |
+| `warning(config)` | `Promise<void>` | Warning prompt modal |
+| `confirm(config)` | `Promise<boolean>` | Confirmation modal; returns `true` if the user clicks OK, and `false` if they cancel |
 
-## Config
+## Configuration Parameters
 
-Same as Ant Design `Modal`; common fields:
+Consistent with Ant Design `Modal`, common fields include:
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+|------|------|------|
 | `title` | `ReactNode` | Title |
 | `content` | `ReactNode` | Content |
 | `okText` | `string` | OK button text |
-| `cancelText` | `string` | Cancel button text (`confirm` only) |
-| `onOk` | `() => void \| Promise<void>` | On OK click |
-| `onCancel` | `() => void` | On Cancel click |
+| `cancelText` | `string` | Cancel button text (only for `confirm`) |
+| `onOk` | `() => void \| Promise<void>` | Executed when clicking OK |
+| `onCancel` | `() => void` | Executed when clicking Cancel |
 
-## Relation to ctx.message, ctx.openView
+## Relationship with ctx.message and ctx.openView
 
-| Use | Recommended |
-|-----|-------------|
-| **Short auto-dismiss** | `ctx.message` |
-| **Info/success/error/warning modal** | `ctx.modal.info` / `success` / `error` / `warning` |
-| **Confirm (user choice)** | `ctx.modal.confirm`; use `ctx.exit()` to control flow |
-| **Complex form, list, etc.** | `ctx.openView` for custom view (page/drawer/dialog) |
+| Purpose | Recommended Usage |
+|------|----------|
+| **Lightweight temporary prompt** | `ctx.message`, disappears automatically |
+| **Info/Success/Error/Warning modal** | `ctx.modal.info` / `success` / `error` / `warning` |
+| **Secondary confirmation (requires user choice)** | `ctx.modal.confirm`, used with `ctx.exit()` to control the flow |
+| **Complex interactions like forms or lists** | `ctx.openView` to open a custom view (page/drawer/modal) |
 
 ## Examples
 
-### Simple info
+### Simple Information Modal
 
 ```ts
 ctx.modal.info({
-  title: 'Notice',
+  title: 'Prompt',
   content: 'Operation completed',
 });
 ```
 
-### Confirm and control flow
+### Confirmation Modal and Flow Control
 
 ```ts
 const confirmed = await ctx.modal.confirm({
-  title: 'Confirm delete',
-  content: 'Delete this record?',
-  okText: 'OK',
+  title: 'Confirm Delete',
+  content: 'Are you sure you want to delete this record?',
+  okText: 'Confirm',
   cancelText: 'Cancel',
 });
 if (!confirmed) {
-  ctx.exit();
+  ctx.exit();  // Terminate subsequent steps if the user cancels
   return;
 }
 await ctx.runAction('destroy', { filterByTk: ctx.record?.id });
 ```
 
-### Confirm with onOk
+### Confirmation Modal with onOk
 
 ```ts
 await ctx.modal.confirm({
-  title: 'Confirm submit',
-  content: 'Cannot be changed after submit. Continue?',
+  title: 'Confirm Submission',
+  content: 'Changes cannot be modified after submission. Do you want to continue?',
   async onOk() {
     await ctx.form.submit();
   },
 });
 ```
 
-### Error
+### Error Prompt
 
 ```ts
 try {
   await someOperation();
-  ctx.modal.success({ title: 'Success', content: 'Done' });
+  ctx.modal.success({ title: 'Success', content: 'Operation completed' });
 } catch (e) {
   ctx.modal.error({ title: 'Error', content: e.message });
 }
@@ -110,6 +110,6 @@ try {
 
 ## Related
 
-- [ctx.message](./message.md): short auto-dismiss messages
-- [ctx.exit()](./exit.md): when user cancels confirm, use `if (!confirmed) ctx.exit()`
-- [ctx.openView()](./open-view.md): open custom view for complex flows
+- [ctx.message](./message.md): Lightweight temporary prompt, disappears automatically
+- [ctx.exit()](./exit.md): Commonly used as `if (!confirmed) ctx.exit()` to terminate the flow when a user cancels confirmation
+- [ctx.openView()](./open-view.md): Opens a custom view, suitable for complex interactions

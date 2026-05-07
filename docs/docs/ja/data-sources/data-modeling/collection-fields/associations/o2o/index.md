@@ -32,7 +32,7 @@ ER関係
 
 フィールド設定
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349482da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## パラメータ説明
 

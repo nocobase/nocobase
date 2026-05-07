@@ -9,12 +9,13 @@
 
 import { z } from 'zod';
 import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import fs from 'fs-extra';
 import fg from 'fast-glob';
 import { Index as FlexSearchIndex } from 'flexsearch';
 import { ToolsOptions } from '@nocobase/ai';
 
-const DEFAULT_DOCS_DIR = path.resolve(process.cwd(), 'storage/ai/docs');
+const DEFAULT_DOCS_DIR = storagePathJoin('ai', 'docs');
 
 type DocsIndexMeta = {
   key: string;
@@ -232,7 +233,7 @@ export async function readDocEntry(docPath: string): Promise<DocEntryResult> {
 export function createDocsSearchTool(): ToolsOptions {
   const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
   return {
-    scope: 'GENERAL',
+    scope: 'SPECIFIED',
     defaultPermission: 'ALLOW',
     introduction: {
       title: '{{t("Search documentation")}}',
@@ -301,7 +302,7 @@ Return matching document paths only. ${docsModulesDescription}`,
 
 export function createReadDocEntryTool(): ToolsOptions {
   return {
-    scope: 'GENERAL',
+    scope: 'SPECIFIED',
     defaultPermission: 'ALLOW',
     introduction: {
       title: '{{t("Read documentation file")}}',

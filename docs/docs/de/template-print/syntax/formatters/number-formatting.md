@@ -1,5 +1,5 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/template-print/syntax/formatters/number-formatting).
 :::
 
 ### Zahlenformatierung
@@ -7,14 +7,13 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 #### 1. :formatN(precision)
 
 ##### Syntaxbeschreibung
-Formatiert eine Zahl gemäß den Lokalisierungseinstellungen.
+Formatieren Sie eine Zahl gemäß den Lokalisierungseinstellungen.  
 Parameter:
-- `precision`: Die Anzahl der Dezimalstellen.
-  Bei ODS-/XLSX-Formaten wird die Anzahl der angezeigten Dezimalstellen vom Texteditor bestimmt; bei anderen Formaten ist dieser Parameter maßgeblich.
+- precision: Anzahl der Dezimalstellen  
+  Für ODS/XLSX-Formate wird die Anzahl der angezeigten Dezimalstellen vom Texteditor bestimmt; andere Formate hängen von diesem Parameter ab.
 
 ##### Beispiel
 ```
-// Beispielumgebung: API-Optionen { "lang": "en-us" }
 '10':formatN()         // Ausgabe "10.000"
 '1000.456':formatN()   // Ausgabe "1,000.456"
 ```
@@ -22,10 +21,11 @@ Parameter:
 ##### Ergebnis
 Die Zahl wird entsprechend der angegebenen Präzision und dem Lokalisierungsformat ausgegeben.
 
+
 #### 2. :round(precision)
 
 ##### Syntaxbeschreibung
-Rundet die Zahl auf die angegebene Anzahl von Dezimalstellen.
+Führen Sie eine Rundung der Zahl durch, wobei der Parameter die Anzahl der Dezimalstellen angibt.
 
 ##### Beispiel
 ```
@@ -34,14 +34,15 @@ Rundet die Zahl auf die angegebene Anzahl von Dezimalstellen.
 ```
 
 ##### Ergebnis
-Das Ergebnis ist die auf die angegebene Präzision gerundete Zahl.
+Die Ausgabe ist der gerundete Wert.
+
 
 #### 3. :add(value)
 
 ##### Syntaxbeschreibung
-Addiert den angegebenen Wert zur aktuellen Zahl.
+Addieren Sie die aktuelle Zahl mit dem angegebenen Wert.  
 Parameter:
-- `value`: Der hinzuzufügende Wert.
+- value: Summand
 
 ##### Beispiel
 ```
@@ -50,14 +51,15 @@ Parameter:
 ```
 
 ##### Ergebnis
-Das Ergebnis ist die Summe der aktuellen Zahl und des angegebenen Wertes.
+Die Ausgabe ist der addierte Wert.
+
 
 #### 4. :sub(value)
 
 ##### Syntaxbeschreibung
-Subtrahiert den angegebenen Wert von der aktuellen Zahl.
+Subtrahieren Sie den angegebenen Wert von der aktuellen Zahl.  
 Parameter:
-- `value`: Der zu subtrahierende Wert.
+- value: Subtrahend
 
 ##### Beispiel
 ```
@@ -66,14 +68,15 @@ Parameter:
 ```
 
 ##### Ergebnis
-Das Ergebnis ist die aktuelle Zahl minus dem angegebenen Wert.
+Die Ausgabe ist der subtrahierte Wert.
+
 
 #### 5. :mul(value)
 
 ##### Syntaxbeschreibung
-Multipliziert die aktuelle Zahl mit dem angegebenen Wert.
+Multiplizieren Sie die aktuelle Zahl mit dem angegebenen Wert.  
 Parameter:
-- `value`: Der Multiplikator.
+- value: Multiplikator
 
 ##### Beispiel
 ```
@@ -82,14 +85,15 @@ Parameter:
 ```
 
 ##### Ergebnis
-Das Ergebnis ist das Produkt der aktuellen Zahl und des angegebenen Wertes.
+Die Ausgabe ist der multiplizierte Wert.
+
 
 #### 6. :div(value)
 
 ##### Syntaxbeschreibung
-Dividiert die aktuelle Zahl durch den angegebenen Wert.
+Dividieren Sie die aktuelle Zahl durch den angegebenen Wert.  
 Parameter:
-- `value`: Der Divisor.
+- value: Divisor
 
 ##### Beispiel
 ```
@@ -98,14 +102,15 @@ Parameter:
 ```
 
 ##### Ergebnis
-Das Ergebnis ist der Quotient der Division.
+Die Ausgabe ist der dividierte Wert.
+
 
 #### 7. :mod(value)
 
 ##### Syntaxbeschreibung
-Berechnet den Modulo (Rest) der aktuellen Zahl geteilt durch den angegebenen Wert.
+Berechnen Sie den Modulo (Restwert) der aktuellen Zahl gegenüber dem angegebenen Wert.  
 Parameter:
-- `value`: Der Modulo-Divisor.
+- value: Modul
 
 ##### Beispiel
 ```
@@ -114,12 +119,13 @@ Parameter:
 ```
 
 ##### Ergebnis
-Das Ergebnis ist der Rest der Modulo-Operation.
+Die Ausgabe ist das Ergebnis der Modulo-Operation.
+
 
 #### 8. :abs
 
 ##### Syntaxbeschreibung
-Gibt den absoluten Wert der Zahl zurück.
+Geben Sie den absoluten Wert der Zahl zurück.
 
 ##### Beispiel
 ```
@@ -130,12 +136,13 @@ Gibt den absoluten Wert der Zahl zurück.
 ```
 
 ##### Ergebnis
-Das Ergebnis ist der absolute Wert der Eingabezahl.
+Die Ausgabe ist der absolute Wert.
+
 
 #### 9. :ceil
 
 ##### Syntaxbeschreibung
-Rundet die Zahl auf die nächste ganze Zahl auf, d.h. es wird die kleinste ganze Zahl zurückgegeben, die größer oder gleich der aktuellen Zahl ist.
+Runden Sie auf, d. h. geben Sie die kleinste Ganzzahl zurück, die größer oder gleich der aktuellen Zahl ist.
 
 ##### Beispiel
 ```
@@ -145,12 +152,13 @@ Rundet die Zahl auf die nächste ganze Zahl auf, d.h. es wird die kleinste ganze
 ```
 
 ##### Ergebnis
-Das Ergebnis ist die aufgerundete ganze Zahl.
+Die Ausgabe ist die gerundete Ganzzahl.
+
 
 #### 10. :floor
 
 ##### Syntaxbeschreibung
-Rundet die Zahl auf die nächste ganze Zahl ab, d.h. es wird die größte ganze Zahl zurückgegeben, die kleiner oder gleich der aktuellen Zahl ist.
+Runden Sie ab, d. h. geben Sie die größte Ganzzahl zurück, die kleiner oder gleich der aktuellen Zahl ist.
 
 ##### Beispiel
 ```
@@ -160,36 +168,40 @@ Rundet die Zahl auf die nächste ganze Zahl ab, d.h. es wird die größte ganze 
 ```
 
 ##### Ergebnis
-Das Ergebnis ist die abgerundete ganze Zahl.
+Die Ausgabe ist die gerundete Ganzzahl.
+
 
 #### 11. :int
 
 ##### Syntaxbeschreibung
-Konvertiert die Zahl in eine ganze Zahl (nicht zur Verwendung empfohlen).
+Konvertieren Sie die Zahl in eine Ganzzahl (nicht zur Verwendung empfohlen).
 
 ##### Beispiel und Ergebnis
 Abhängig vom spezifischen Konvertierungsfall.
+
 
 #### 12. :toEN
 
 ##### Syntaxbeschreibung
-Konvertiert die Zahl in das englische Format (mit `.` als Dezimaltrennzeichen). Nicht zur Verwendung empfohlen.
+Konvertieren Sie die Zahl in das englische Format (Dezimalpunkt ist '.'), nicht zur Verwendung empfohlen.
 
 ##### Beispiel und Ergebnis
 Abhängig vom spezifischen Konvertierungsfall.
+
 
 #### 13. :toFixed
 
 ##### Syntaxbeschreibung
-Konvertiert die Zahl in einen String, wobei nur die angegebene Anzahl von Dezimalstellen beibehalten wird. Nicht zur Verwendung empfohlen.
+Konvertieren Sie die Zahl in eine Zeichenfolge und behalten Sie nur die angegebene Anzahl an Dezimalstellen bei, nicht zur Verwendung empfohlen.
 
 ##### Beispiel und Ergebnis
 Abhängig vom spezifischen Konvertierungsfall.
 
+
 #### 14. :toFR
 
 ##### Syntaxbeschreibung
-Konvertiert die Zahl in das französische Format (mit `,` als Dezimaltrennzeichen). Nicht zur Verwendung empfohlen.
+Konvertieren Sie die Zahl in das französische Format (Dezimalpunkt ist ','), nicht zur Verwendung empfohlen.
 
 ##### Beispiel und Ergebnis
 Abhängig vom spezifischen Konvertierungsfall.

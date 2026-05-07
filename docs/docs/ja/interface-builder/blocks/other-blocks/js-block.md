@@ -1,5 +1,5 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/blocks/other-blocks/js-block)をご参照ください。
 :::
 
 # JS Block ブロック
@@ -38,7 +38,7 @@ JS Blockのスクリプトエディターは、構文ハイライト、エラー
 
 さらに、エディターの右上からAI従業員「フロントエンドエンジニア・Nathan」を直接呼び出すことができます。Nathanは現在のコンテキストに基づいてスクリプトの作成や修正をサポートしてくれます。ワンクリックで「Apply to editor」を適用し、実行して効果を確認できます。詳細は以下をご覧ください。
 
-- [AI 従業員・Nathan：フロントエンドエンジニア](/ai-employees/built-in/ai-coding)
+- [AI 従業員 · Nathan：フロントエンドエンジニア](/ai-employees/features/built-in-employee)
 
 ## 実行環境とセキュリティ
 

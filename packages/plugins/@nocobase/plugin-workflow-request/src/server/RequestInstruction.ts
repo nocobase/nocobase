@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
@@ -94,9 +95,32 @@ function getContentTypeTransformer(mimeType: string, app: Application) {
   }
 }
 
+function createInvalidUrlError(cause?: unknown) {
+  if (cause instanceof TypeError && typeof (cause as any).code !== 'undefined') {
+    return cause;
+  }
+
+  const error = new TypeError('Invalid URL') as TypeError & { code?: string };
+  error.code = 'ERR_INVALID_URL';
+  return error;
+}
+
+function validateUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw createInvalidUrlError();
+    }
+  } catch (error) {
+    throw createInvalidUrlError(error);
+  }
+}
+
 async function request(config: RequestInstructionConfig, app: Application) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
+
+  validateUrl(url);
   const headers = (config.headers ?? []).reduce((result, header) => {
     const name = trim(header.name);
     if (name.toLowerCase() === 'content-type') {
@@ -160,6 +184,15 @@ function responseFailure(error) {
   return result;
 }
 
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+const CONTENT_TYPES = [
+  'application/json',
+  'application/x-www-form-urlencoded',
+  'multipart/form-data',
+  'application/xml',
+  'text/plain',
+];
+
 function logFailureDebug(logger, error) {
   if (!error?.isAxiosError) {
     return;
@@ -178,6 +211,28 @@ function logFailureDebug(logger, error) {
 }
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    url: Joi.string(),
+    method: Joi.string().valid(...METHODS),
+    contentType: Joi.string().valid(...CONTENT_TYPES),
+    headers: Joi.array().items(
+      Joi.object({
+        name: Joi.string(),
+        value: Joi.string(),
+      }),
+    ),
+    params: Joi.array().items(
+      Joi.object({
+        name: Joi.string(),
+        value: Joi.string(),
+      }),
+    ),
+    data: Joi.alternatives().try(Joi.object(), Joi.array(), Joi.string()),
+    timeout: Joi.number().integer().positive().default(5000),
+    ignoreFail: Joi.boolean().default(false),
+    onlyData: Joi.boolean().default(false),
+  });
+
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 

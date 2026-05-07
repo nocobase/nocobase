@@ -9,7 +9,7 @@
 
 import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { importModule, isURL } from '@nocobase/utils';
+import { importModule, isURL, storagePathJoin } from '@nocobase/utils';
 import execa from 'execa';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -62,7 +62,31 @@ export interface InstallOptions {
 export class AddPresetError extends Error {}
 
 export class PluginManager {
-  static checkAndGetCompatible = checkAndGetCompatible;
+  private static compatibleCache = new Map<string, Awaited<ReturnType<typeof checkAndGetCompatible>>>();
+  private static compatiblePending = new Map<string, Promise<Awaited<ReturnType<typeof checkAndGetCompatible>>>>();
+
+  static async checkAndGetCompatible(packageName: string) {
+    if (this.compatibleCache.has(packageName)) {
+      return this.compatibleCache.get(packageName);
+    }
+
+    const pending = this.compatiblePending.get(packageName);
+    if (pending) {
+      return pending;
+    }
+
+    const task = checkAndGetCompatible(packageName)
+      .then((compatible) => {
+        this.compatibleCache.set(packageName, compatible);
+        return compatible;
+      })
+      .finally(() => {
+        this.compatiblePending.delete(packageName);
+      });
+
+    this.compatiblePending.set(packageName, task);
+    return task;
+  }
 
   /**
    * @internal
@@ -104,6 +128,7 @@ export class PluginManager {
     this._repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
     this.app.acl.allow('pm', 'listEnabled', 'public');
+    this.app.acl.allow('pm', 'listEnabledV2', 'public');
     this.app.acl.registerSnippet({
       name: 'pm',
       actions: ['pm:*'],
@@ -299,7 +324,7 @@ export class PluginManager {
       if (options?.forceRecreate) {
         await fs.rm(pluginDir, { recursive: true, force: true });
       }
-      const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
+      const { PluginGenerator } = require('@nocobase/cli-v1/src/plugin-generator');
       const generator = new PluginGenerator({
         cwd: process.cwd(),
         args: {},
@@ -807,7 +832,7 @@ export class PluginManager {
       if (process.env.VITEST) {
         return;
       }
-      const file = resolve(process.cwd(), 'storage/.upgrading');
+      const file = storagePathJoin('.upgrading');
       this.app.log.debug('pending upgrade');
       await fs.writeFile(file, 'upgrading');
     };
@@ -915,7 +940,7 @@ export class PluginManager {
         });
         return;
       }
-      const file = resolve(process.cwd(), 'storage/app-upgrading');
+      const file = storagePathJoin('app-upgrading');
       await fs.writeFile(file, '', 'utf-8');
       // await this.app.upgrade();
       await tsxRerunning();

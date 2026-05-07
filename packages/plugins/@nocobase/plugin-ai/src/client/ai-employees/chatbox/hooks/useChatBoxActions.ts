@@ -8,7 +8,7 @@
  */
 
 import { useCallback } from 'react';
-import { AIEmployee, Message, SendOptions, TriggerTaskOptions } from '../../types';
+import { AIEmployee, ClearOptions, Message, SendOptions, TriggerTaskOptions } from '../../types';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessagesStore } from '../stores/chat-messages';
@@ -19,6 +19,7 @@ import { parseTask } from '../utils';
 import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
+import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { useAPIClient } from '@nocobase/client';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
@@ -30,6 +31,8 @@ export const useChatBoxActions = () => {
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const setReadonly = useChatBoxStore.use.setReadonly();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const setTaskVariables = useChatBoxStore.use.setTaskVariables();
   const roles = useChatBoxStore.use.roles();
@@ -52,20 +55,50 @@ export const useChatBoxActions = () => {
   const setOpenToolModal = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
+  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
   const { conversationsService } = useChatConversationActions();
   const { sendMessages, syncContextAttachments } = useChatMessageActions();
 
-  const clear = () => {
-    setSenderValue('');
-    setSystemMessage('');
-    setAttachments([]);
-    setContextItems([]);
-    setTaskVariables({});
-    setOpenToolModal(false);
-    setActiveTool(null);
-    setActiveMessageId('');
-    setSkillSettings(undefined);
+  const clear = (options?: ClearOptions) => {
+    const {
+      sender,
+      systemMessage,
+      attachments,
+      contextItems,
+      taskVariables,
+      toolModal,
+      activeTool,
+      activeMessageId,
+      skillSettings,
+    } = options ?? {};
+    if (sender !== false) {
+      setSenderValue('');
+    }
+    if (systemMessage !== false) {
+      setSystemMessage('');
+    }
+    if (attachments !== false) {
+      setAttachments([]);
+    }
+    if (contextItems !== false) {
+      setContextItems([]);
+    }
+    if (taskVariables !== false) {
+      setTaskVariables({});
+    }
+    if (toolModal !== false) {
+      setOpenToolModal(false);
+    }
+    if (activeTool !== false) {
+      setActiveTool(null);
+    }
+    if (activeMessageId !== false) {
+      setActiveMessageId('');
+    }
+    if (skillSettings !== false) {
+      setSkillSettings(undefined);
+    }
   };
 
   const send = (options: SendOptions) => {
@@ -132,16 +165,18 @@ export const useChatBoxActions = () => {
       },
     };
     setCurrentConversation(undefined);
+    setCurrentWorkflowTask(undefined);
     clear();
     setMessages([greetingMsg]);
     senderRef.current?.focus();
-  }, [currentEmployee]);
+  }, [currentEmployee, setCurrentWorkflowTask]);
 
   const switchAIEmployee = useCallback(
-    (aiEmployee: AIEmployee) => {
+    (aiEmployee: AIEmployee, options?: { clear?: ClearOptions }) => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
-      clear();
+      setCurrentWorkflowTask(undefined);
+      clear(options?.clear);
       setModel(null);
       if (aiEmployee) {
         const greetingMsg = {
@@ -158,7 +193,7 @@ export const useChatBoxActions = () => {
         setMessages([]);
       }
     },
-    [currentConversation],
+    [currentConversation, setCurrentWorkflowTask],
   );
 
   const triggerTask = useCallback(
@@ -166,11 +201,14 @@ export const useChatBoxActions = () => {
       clear();
       const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
+      setReadonly(false);
+      setResponseLoading(false);
       if (!open) {
         setOpen(true);
       }
       if (currentConversation) {
         setCurrentConversation(undefined);
+        setCurrentWorkflowTask(undefined);
         setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
@@ -250,7 +288,15 @@ export const useChatBoxActions = () => {
       });
       setMessages(msgs);
     },
-    [open, currentConversation, ensureModel, aiConfigRepository, resolveTaskModel, setWebSearch],
+    [
+      open,
+      currentConversation,
+      ensureModel,
+      aiConfigRepository,
+      resolveTaskModel,
+      setCurrentWorkflowTask,
+      setWebSearch,
+    ],
   );
 
   return {

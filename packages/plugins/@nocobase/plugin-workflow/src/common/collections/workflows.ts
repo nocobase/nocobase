@@ -15,6 +15,10 @@ export default {
   name: 'workflows',
   shared: true,
   repository: 'WorkflowRepository',
+  createdBy: true,
+  updatedBy: true,
+  createdAt: true,
+  updatedAt: true,
   fields: [
     {
       name: 'id',
@@ -223,6 +227,24 @@ export default {
           mode: 'Tag',
         },
         'x-read-pretty': true,
+      },
+    },
+    {
+      type: 'belongsTo',
+      name: 'createdBy',
+      target: 'users',
+      foreignKey: 'createdById',
+      interface: 'm2o',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Created by")}}`,
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            label: 'nickname',
+            value: 'id',
+          },
+        },
       },
     },
   ],

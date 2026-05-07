@@ -15,6 +15,7 @@ import { jsonrepair } from 'jsonrepair';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { observer } from '@nocobase/flow-engine';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 export const ToolCard: React.FC<{
   messageId: string;
@@ -59,9 +60,10 @@ export const ToolCard: React.FC<{
     }
   }
 
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   useEffect(() => {
-    aiConfigRepository.getAITools();
-  }, [aiConfigRepository]);
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
 
   useEffect(() => {
     if (!messageId) {

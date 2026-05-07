@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Séparation des services"
+description: "Répartir les services longs (workflow, tâches asynchrones) sur des nœuds dédiés en mode cluster avec WORKER_MODE ; nœuds de requête vs nœuds de tâches et mise à l'échelle horizontale."
+keywords: "séparation des services,WORKER_MODE,workflow asynchrone,async-task,mise à l'échelle horizontale,nœud de requête,nœud de tâche,NocoBase"
+---
+
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::

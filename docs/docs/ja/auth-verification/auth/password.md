@@ -24,7 +24,7 @@ pkg: '@nocobase/plugin-auth'
 
 新規登録が許可されていない場合、ログインページにアカウント作成のリンクは表示されません。
 
-![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a3745121.png)
+![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a93745121.png)
 
 新規登録が許可されていない場合、登録ページにアクセスすることはできません。
 

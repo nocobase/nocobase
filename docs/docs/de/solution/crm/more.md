@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Weitere Inhalte
 
-Content coming soon...
+> Die aktuelle CRM-Lösung dient nur zur Vorschau. Zukünftige Versionen werden auf Basis von NocoBase 2.0 vollständig neu entwickelt. Zu diesem Zeitpunkt wird eine vollständigere Dokumentation bereitgestellt.
+
+Inhalte folgen in Kürze...

@@ -1,42 +1,41 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/get-started/installation/docker).
 :::
 
-
-# Instalação do Docker
+# Instalação via Docker
 
 :::tip Pré-requisitos
 
-- Você já tem o [Docker](https://docs.docker.com/get-docker/) e o Docker Compose instalados.
-- Certifique-se de que o serviço Docker esteja em execução.
+- [Docker](https://docs.docker.com/get-docker/) e Docker Compose instalados
+- Certifique-se de que o serviço Docker esteja em execução
 
 :::
 
-## 1. Crie o arquivo docker-compose.yml
+## 1. Criar o docker-compose.yml
 
 ```bash
-# Crie uma pasta chamada my-project (ou outro nome de sua preferência) para armazenar os arquivos de sistema gerados pelo NocoBase.
+# Crie uma pasta chamada my-project (pode ser outro nome) para armazenar os arquivos de sistema gerados pelo NocoBase
 mkdir my-project && cd my-project
 
-# Crie um arquivo docker-compose.yml vazio.
+# Crie um arquivo docker-compose.yml vazio
 vi docker-compose.yml
 ```
 
-## 2. Configure o docker-compose.yml
+## 2. Configurar o docker-compose.yml
 
-Escolha uma versão do NocoBase ([Comparativo de Versões](../quickstart.md)) e o tipo de banco de dados, depois copie a configuração correspondente para o seu arquivo docker-compose.yml.
+Escolha a versão do NocoBase ([Comparação de Versões](../quickstart.md)) e o tipo de banco de dados, então copie a configuração correspondente para o docker-compose.yml.
 
 :::tip Notas de Configuração
 
 - **Escolha uma imagem**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  - Para ambientes de produção, é recomendado fixar uma versão numérica específica para evitar atualizações automáticas não intencionais. [Ver todas as versões](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Imagem do Alibaba Cloud: `nocobase/nocobase:latest-full`
+  - Para ambientes de produção, recomenda-se fixar uma versão numérica específica para evitar atualizações automáticas indesejadas. [Ver todas as versões](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Imagem do Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
   - Imagem do Docker Hub: `nocobase/nocobase:latest-full`
-  - A **imagem full** inclui o cliente PostgreSQL 16/17, cliente MySQL 8.0, cliente Oracle 19.25 (necessários para os plugins de gerenciamento de backup e migração), além do LibreOffice (necessário para impressão de modelos em PDF).
-  - Se precisar criar sua própria imagem, você pode consultar os [Dockerfiles oficiais (versão slim)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) e [Dockerfile-full (versão completa)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).
-- **Modifique `APP_KEY`**: Por favor, substitua `your-secret-key` por uma string aleatória. Ela é usada para criptografar informações sensíveis, como tokens de usuário.
-- **Use um banco de dados existente**: Se você já tem um serviço de banco de dados, altere `DB_HOST` para o endereço do seu servidor de banco de dados e remova ou comente a configuração do serviço de banco de dados (por exemplo, os serviços `postgres`, `mysql` ou `mariadb`).
-- **Mapeamento de portas**: Por padrão, a porta 80 do contêiner é mapeada para a porta 13000 do host. Você pode modificá-la conforme sua necessidade.
+  - A **imagem full** contém os clientes PostgreSQL 16/17, MySQL 8.0 e Oracle 19.25 necessários para os plugins de gerenciamento de backup e migração, bem como o LibreOffice necessário para a impressão de modelos (PDF)
+  - Se você precisar criar sua própria imagem, pode consultar o [Dockerfile (versão slim)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) e o [Dockerfile-full (versão completa)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) oficiais
+- **Modificar `APP_KEY`**: Substitua `your-secret-key` por uma string aleatória, usada para criptografar informações sensíveis, como tokens de usuário
+- **Usar um banco de dados existente**: Se você já tiver um serviço de banco de dados, altere o `DB_HOST` para o endereço do servidor de banco de dados e exclua ou comente a configuração do serviço de banco de dados (como os serviços `postgres`, `mysql`, `mariadb`)
+- **Mapeamento de portas**: Por padrão, a porta 80 do contêiner é mapeada para a porta 13000 do host, podendo ser modificada conforme necessário
 
 :::
 
@@ -54,7 +53,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -62,12 +61,12 @@ services:
       - postgres
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=postgres
       # Porta do banco de dados
       - DB_PORT=5432
@@ -77,8 +76,8 @@ services:
       - DB_USER=nocobase
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
 
     volumes:
       - ./storage:/app/nocobase/storage
@@ -86,9 +85,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o postgres.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -112,7 +111,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -120,12 +119,12 @@ services:
       - mysql
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=mysql
       # Porta do banco de dados
       - DB_PORT=3306
@@ -135,19 +134,19 @@ services:
       - DB_USER=root
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Se os nomes das tabelas e campos devem ser convertidos para o estilo snake_case.
+      # Se os nomes das tabelas e campos do banco de dados devem ser convertidos para o estilo snake case
       - DB_UNDERSCORED=true
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o mysql.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -171,7 +170,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -179,12 +178,12 @@ services:
       - mariadb
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=mariadb
       # Porta do banco de dados
       - DB_PORT=3306
@@ -194,19 +193,19 @@ services:
       - DB_USER=root
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Se os nomes das tabelas e campos devem ser convertidos para o estilo snake_case.
+      # Se os nomes das tabelas e campos do banco de dados devem ser convertidos para o estilo snake case
       - DB_UNDERSCORED=true
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o mariadb.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -236,7 +235,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -244,12 +243,12 @@ services:
       - postgres
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=postgres
       # Porta do banco de dados
       - DB_PORT=5432
@@ -259,8 +258,8 @@ services:
       - DB_USER=nocobase
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
 
     volumes:
       - ./storage:/app/nocobase/storage
@@ -268,9 +267,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o postgres.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -294,7 +293,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -302,12 +301,12 @@ services:
       - mysql
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=mysql
       # Porta do banco de dados
       - DB_PORT=3306
@@ -317,19 +316,19 @@ services:
       - DB_USER=root
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Se os nomes das tabelas e campos devem ser convertidos para o estilo snake_case.
+      # Se os nomes das tabelas e campos do banco de dados devem ser convertidos para o estilo snake case
       - DB_UNDERSCORED=true
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o mysql.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -353,7 +352,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -361,12 +360,12 @@ services:
       - mariadb
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=mariadb
       # Porta do banco de dados
       - DB_PORT=3306
@@ -376,19 +375,19 @@ services:
       - DB_USER=root
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Se os nomes das tabelas e campos devem ser convertidos para o estilo snake_case.
+      # Se os nomes das tabelas e campos do banco de dados devem ser convertidos para o estilo snake case
       - DB_UNDERSCORED=true
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o mariadb.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -418,7 +417,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -426,12 +425,12 @@ services:
       - postgres
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=postgres
       # Porta do banco de dados
       - DB_PORT=5432
@@ -441,8 +440,8 @@ services:
       - DB_USER=nocobase
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
 
     volumes:
       - ./storage:/app/nocobase/storage
@@ -450,9 +449,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o postgres.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -476,7 +475,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -484,12 +483,12 @@ services:
       - mysql
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=mysql
       # Porta do banco de dados
       - DB_PORT=3306
@@ -499,19 +498,19 @@ services:
       - DB_USER=root
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Se os nomes das tabelas e campos devem ser convertidos para o estilo snake_case.
+      # Se os nomes das tabelas e campos do banco de dados devem ser convertidos para o estilo snake case
       - DB_UNDERSCORED=true
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o mysql.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -535,7 +534,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -543,12 +542,12 @@ services:
       - mariadb
     environment:
       # Chave da aplicação, usada para gerar tokens de usuário, etc.
-      # Se a APP_KEY for alterada, os tokens antigos se tornarão inválidos.
-      # Pode ser qualquer string aleatória, e certifique-se de que não seja vazada.
+      # Se a APP_KEY for alterada, os tokens antigos também se tornarão inválidos
+      # Pode ser qualquer string aleatória, certifique-se de não vazá-la
       - APP_KEY=your-secret-key
       # Tipo de banco de dados, suporta postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente.
+      # Host do banco de dados, pode ser substituído pelo IP de um servidor de banco de dados existente
       - DB_HOST=mariadb
       # Porta do banco de dados
       - DB_PORT=3306
@@ -558,19 +557,19 @@ services:
       - DB_USER=root
       # Senha do banco de dados
       - DB_PASSWORD=nocobase
-      # Se os nomes das tabelas e campos devem ser convertidos para o estilo snake_case.
+      # Se os nomes das tabelas e campos do banco de dados devem ser convertidos para o estilo snake case
       - DB_UNDERSCORED=true
-      # Fuso horário, por favor, altere para o seu fuso horário local, por exemplo, America/Sao_Paulo
-      - TZ=Etc/UTC
+      # Fuso horário
+      - TZ=America/Sao_Paulo
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Se você usar um serviço de banco de dados existente, pode optar por não iniciar o mariadb.
+  # Se você usar um serviço de banco de dados existente, não é necessário iniciar o mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -590,17 +589,16 @@ services:
 
 </Tabs>
 
-
-## 3. Instale e Inicie o NocoBase
+## 3. Instalar e iniciar o NocoBase
 
 ```bash
-# Puxe a imagem mais recente
+# Baixar as imagens mais recentes
 docker compose pull
 
-# Execute em segundo plano (a instalação será executada automaticamente na primeira vez)
+# Executar em segundo plano (a instalação será executada automaticamente na primeira execução)
 docker compose up -d
 
-# Visualize os logs de instalação e execução
+# Ver os logs de instalação e execução
 docker compose logs -f app
 
 app-postgres-app-1  | nginx started
@@ -615,12 +613,12 @@ app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
-## 4. Faça login no NocoBase
+## 4. Fazer login no NocoBase
 
-Abra [http://localhost:13000](http://localhost:13000) no seu navegador. O usuário e a senha iniciais são `admin@nocobase.com` e `admin123`.
+Use o navegador para abrir [http://localhost:13000](http://localhost:13000). A conta e a senha iniciais são `admin@nocobase.com` e `admin123`.
 
 :::warning Aviso de Segurança da Conta
 
-Após fazer login pela primeira vez, por favor, altere a senha padrão imediatamente para garantir a segurança do sistema.
+Após o primeiro login, altere a senha padrão imediatamente para garantir a segurança do sistema.
 
 :::

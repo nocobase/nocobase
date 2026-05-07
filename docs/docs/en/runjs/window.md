@@ -1,6 +1,6 @@
 # window
 
-The following are available on `window`:
+The following properties can be accessed directly via `window`:
 
 * `setTimeout` / `clearTimeout`
 * `setInterval` / `clearInterval`
@@ -9,11 +9,11 @@ The following are available on `window`:
 * `Date`
 * `FormData`
 * `addEventListener`
-* `open` (only `http:`, `https:`, or `about:blank` allowed)
-* `location` (read-only, safe navigation)
+* `open` (Only `http:`, `https:`, or `about:blank` are allowed)
+* `location` (Read-only, supports secure navigation)
 * `navigator`
 
-Only basic, safe DOM query and creation are supported:
+Only basic and secure DOM query and creation capabilities are supported:
 
 * `createElement(tagName)`
 * `querySelector(selectors)`

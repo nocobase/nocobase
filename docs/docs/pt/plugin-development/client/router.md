@@ -4,7 +4,7 @@ Esta documentação foi traduzida automaticamente por IA.
 
 # Roteador
 
-O cliente NocoBase oferece um gerenciador de roteamento flexível que permite estender páginas e páginas de configuração de **plugins** usando `router.add()` e `pluginSettingsRouter.add()`.
+O cliente NocoBase oferece um gerenciador de roteamento flexível que permite estender páginas e páginas de configuração de **plugins** usando `router.add()` e `pluginSettingsManager`.
 
 ## Rotas de Página Padrão Registradas
 
@@ -16,15 +16,20 @@ O cliente NocoBase oferece um gerenciador de roteamento flexível que permite es
 
 ## Extensão de Páginas Comuns
 
-Adicione rotas para páginas comuns usando `router.add()`.
+Adicione rotas de páginas comuns usando `router.add()`. Para componentes de página, use `componentLoader` para registro sob demanda, de modo que o módulo da página só seja carregado quando a rota for realmente acessada.
+
+Os arquivos de página devem usar `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Importação dinâmica: o módulo da página só é carregado quando esta rota é realmente acessada
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,52 +74,58 @@ this.router.add('root.user', {
 });
 ```
 
+Se a página for pesada ou não for necessária na renderização inicial, dê preferência a `componentLoader`; `element` continua adequado para rotas de layout ou páginas inline muito leves.
+
 ## Extensão de Páginas de Configuração de Plugins
 
-Adicione páginas de configuração de **plugins** usando `pluginSettingsRouter.add()`.
+Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
 
 ```tsx
-import { Plugin } from '@nocobase/client';
-import React from 'react';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const HelloSettingPage = () => <div>Hello Setting page</div>;
-
-export class HelloPlugin extends Plugin {
+export class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    this.pluginSettingsRouter.add('hello', {
-      title: 'Hello', // Título da página de configuração
-      icon: 'ApiOutlined', // Ícone do menu da página de configuração
-      Component: HelloSettingPage,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('Hello Settings'),
+      icon: 'ApiOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('Hello Settings'),
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
 ```
 
-Exemplo de roteamento multinível
+To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+import { Plugin, Application } from '@nocobase/client-v2';
 
-const pluginName = 'hello';
-
-class HelloPlugin extends Plugin {
+class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // Rota de nível superior
-    this.pluginSettingsRouter.add(pluginName, {
-      title: 'HelloWorld',
-      icon: '',
-      Component: Outlet,
+    this.pluginSettingsManager.addMenuItem({
+      key: 'hello',
+      title: this.t('HelloWorld'),
+      icon: 'ApiOutlined',
     });
 
-    // Rotas filhas
-    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
-      title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'index',
+      title: this.t('General'),
+      componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
-      title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'hello',
+      key: 'advanced',
+      title: this.t('Advanced'),
+      componentLoader: () => import('./settings/AdvancedPage'),
     });
   }
 }

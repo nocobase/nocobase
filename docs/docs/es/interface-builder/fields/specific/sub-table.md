@@ -1,8 +1,8 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/fields/specific/sub-table).
 :::
 
-# Subtabla
+# Subtabla (edición en línea)
 
 ## Introducción
 
@@ -18,7 +18,7 @@ En la subtabla, los diferentes tipos de campos muestran distintos componentes de
 
 Campos de relación en la subtabla.
 
-Pedidos (Uno a Muchos) > Productos del Pedido (Uno a Uno) > Oportunidad
+Pedidos (One-to-Many (O2M)) > Order Products (One-to-One (O2O)) > Opportunity
 
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
@@ -28,7 +28,7 @@ El componente predeterminado para un campo de relación es el desplegable (compa
 
 ## Opciones de Configuración del Campo
 
-### Permitir seleccionar datos existentes (desactivado por defecto)
+### Permitir seleccionar datos existentes (activado por defecto)
 
 Permite seleccionar y asociar datos ya existentes.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)

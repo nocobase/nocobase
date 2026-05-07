@@ -20,7 +20,6 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { uid } from '@formily/shared';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
-import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import {
   useCollectionParentRecordData,
@@ -35,6 +34,7 @@ import { VariablePopupRecordProvider } from '../../../modules/variable/variables
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
 import { useProps } from '../../hooks/useProps';
 import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePopupUtils } from '../page/pagePopupUtils';

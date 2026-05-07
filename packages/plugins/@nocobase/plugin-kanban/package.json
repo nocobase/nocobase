@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-kanban",
-  "version": "2.0.49",
+  "version": "2.1.0-beta.25",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-kanban",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-kanban",
@@ -13,6 +13,8 @@
   "description.zh-CN": "提供看板区块。",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/plugin-ai": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

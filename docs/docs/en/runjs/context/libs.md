@@ -1,39 +1,39 @@
 # ctx.libs
 
-`ctx.libs` is the unified namespace for RunJS built-in libraries (React, Ant Design, dayjs, lodash, etc.). **No `import` or async loading**; use `ctx.libs.xxx` directly.
+`ctx.libs` is the unified namespace for built-in libraries in RunJS, containing commonly used libraries such as React, Ant Design, dayjs, and lodash. **No `import` or asynchronous loading is required**; they can be used directly via `ctx.libs.xxx`.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / JSField / JSItem / JSColumn** | React + Ant Design for UI, dayjs for dates, lodash for data |
-| **Formulas / calculations** | formula or math for Excel-like formulas and math expressions |
-| **Event flow / linkage** | lodash, dayjs, formula, etc. in logic-only code |
+|------|------|
+| **JSBlock / JSField / JSItem / JSColumn** | Use React + Ant Design to render UI, dayjs for date handling, and lodash for data processing. |
+| **Formula / Calculation** | Use formula or math for Excel-like formulas and mathematical expression operations. |
+| **Workflow / Linkage Rules** | Call utility libraries like lodash, dayjs, and formula in pure logic scenarios. |
 
-## Built-in libraries
+## Built-in Libraries Overview
 
-| Property | Description | Docs |
-|----------|-------------|------|
-| `ctx.libs.React` | React core for JSX and Hooks | [React](https://react.dev/) |
-| `ctx.libs.ReactDOM` | ReactDOM (e.g. `createRoot`) | [React DOM](https://react.dev/reference/react-dom) |
-| `ctx.libs.antd` | Ant Design (Button, Card, Table, Form, Input, Modal, etc.) | [Ant Design](https://ant.design/components/overview/) |
-| `ctx.libs.antdIcons` | Ant Design icons (PlusOutlined, UserOutlined, etc.) | [@ant-design/icons](https://ant.design/components/icon/) |
-| `ctx.libs.dayjs` | Date/time utilities | [dayjs](https://day.js.org/) |
-| `ctx.libs.lodash` | Utilities (get, set, debounce, etc.) | [Lodash](https://lodash.com/docs/) |
-| `ctx.libs.formula` | Excel-like formulas (SUM, AVERAGE, IF, etc.) | [Formula.js](https://formulajs.info/functions/) |
-| `ctx.libs.math` | Math expressions and evaluation | [Math.js](https://mathjs.org/docs/) |
+| Property | Description | Documentation |
+|------|------|------|
+| `ctx.libs.React` | React core, used for JSX and Hooks | [React](https://react.dev/) |
+| `ctx.libs.ReactDOM` | ReactDOM client API (including `createRoot`), used with React for rendering | [React DOM](https://react.dev/reference/react-dom) |
+| `ctx.libs.antd` | Ant Design component library (Button, Card, Table, Form, Input, Modal, etc.) | [Ant Design](https://ant.design/components/overview/) |
+| `ctx.libs.antdIcons` | Ant Design icon library (e.g., PlusOutlined, UserOutlined) | [@ant-design/icons](https://ant.design/components/icon/) |
+| `ctx.libs.dayjs` | Date and time utility library | [dayjs](https://day.js.org/) |
+| `ctx.libs.lodash` | Utility library (get, set, debounce, etc.) | [Lodash](https://lodash.com/docs/) |
+| `ctx.libs.formula` | Excel-like formula function library (SUM, AVERAGE, IF, etc.) | [Formula.js](https://formulajs.info/functions/) |
+| `ctx.libs.math` | Mathematical expression and calculation library | [Math.js](https://mathjs.org/docs/) |
 
-## Top-level aliases
+## Top-level Aliases
 
-For backward compatibility, some libs are also on `ctx`: `ctx.React`, `ctx.ReactDOM`, `ctx.antd`, `ctx.dayjs`. **Prefer `ctx.libs.xxx`** for consistency and docs.
+For compatibility with legacy code, some libraries are also exposed at the top level: `ctx.React`, `ctx.ReactDOM`, `ctx.antd`, and `ctx.dayjs`. **It is recommended to consistently use `ctx.libs.xxx`** for easier maintenance and documentation searching.
 
-## Lazy loading
+## Lazy Loading
 
-`lodash`, `formula`, `math` are **lazy-loaded**: the first access to `ctx.libs.lodash` triggers a dynamic import, then the result is cached. `React`, `antd`, `dayjs`, `antdIcons` are preloaded in context.
+`lodash`, `formula`, and `math` use **lazy loading**: a dynamic import is triggered only when `ctx.libs.lodash` is accessed for the first time, and the cache is reused thereafter. `React`, `antd`, `dayjs`, and `antdIcons` are pre-configured by the context and are available immediately.
 
 ## Examples
 
-### React and Ant Design
+### Rendering with React and Ant Design
 
 ```tsx
 const { Button, Card } = ctx.libs.antd;
@@ -45,7 +45,7 @@ ctx.render(
 );
 ```
 
-### Hooks
+### Using Hooks
 
 ```tsx
 const { React } = ctx.libs;
@@ -59,7 +59,7 @@ const App = () => {
 ctx.render(<App />);
 ```
 
-### Icons
+### Using Icons
 
 ```tsx
 const { Button } = ctx.libs.antd;
@@ -68,7 +68,7 @@ const { UserOutlined, HeartOutlined } = ctx.libs.antdIcons;
 ctx.render(<Button icon={<UserOutlined />}>User</Button>);
 ```
 
-### dayjs
+### Date Processing with dayjs
 
 ```ts
 const now = ctx.libs.dayjs();
@@ -76,14 +76,14 @@ const formatted = now.format('YYYY-MM-DD HH:mm:ss');
 ctx.message.info(formatted);
 ```
 
-### lodash
+### Utility Functions with lodash
 
 ```ts
 const user = { profile: { name: 'Alice' } };
 const name = ctx.libs.lodash.get(user, 'profile.name', 'Unknown');
 ```
 
-### formula
+### Formula Calculations
 
 ```ts
 const values = [1, 2, 3, 4];
@@ -91,7 +91,7 @@ const sum = ctx.libs.formula.SUM(values);
 const avg = ctx.libs.formula.AVERAGE(values);
 ```
 
-### math
+### Mathematical Expressions with math.js
 
 ```ts
 const result = ctx.libs.math.evaluate('2 + 3 * 4');
@@ -100,10 +100,10 @@ const result = ctx.libs.math.evaluate('2 + 3 * 4');
 
 ## Notes
 
-- **Mixing with ctx.importAsync**: If you load external React via `ctx.importAsync('react@19')`, JSX uses that instance; **do not** mix with `ctx.libs.antd`. Load antd for that React version (e.g. `ctx.importAsync('antd@5.x')`, `ctx.importAsync('@ant-design/icons@5.x')`).
-- **Multiple React instances**: "Invalid hook call" or null hook dispatcher usually means multiple React instances. Before using `ctx.libs.React` or Hooks, run `await ctx.importAsync('react@version')` so the same React as the page is used.
+- **Mixing with ctx.importAsync**: If an external React is loaded via `ctx.importAsync('react@19')`, JSX will use that instance. In this case, **do not** mix it with `ctx.libs.antd`. Ant Design must be loaded to match that React version (e.g., `ctx.importAsync('antd@5.x')`, `ctx.importAsync('@ant-design/icons@5.x')`).
+- **Multiple React Instances**: If "Invalid hook call" occurs or the hook dispatcher is null, it is usually caused by multiple React instances. Before reading `ctx.libs.React` or calling Hooks, execute `await ctx.importAsync('react@version')` first to ensure the same React instance is shared with the page.
 
 ## Related
 
-- [ctx.importAsync()](./import-async.md): load external ESM (e.g. specific React, Vue)
-- [ctx.render()](./render.md): render into container
+- [ctx.importAsync()](./import-async.md) - Load external ESM modules on demand (e.g., specific versions of React, Vue)
+- [ctx.render()](./render.md) - Render content to a container

@@ -12,7 +12,7 @@
 
 После настройки приложения скопируйте **URL-адрес SSO**, **Идентификатор сущности** и **Сертификат**.
 
-![](https://static-docs.nocobase.com/aafd20a74730e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/aafd20a794730e85411c0c8f368637e0.png)
 
 ## Добавление нового аутентификатора в NocoBase
 

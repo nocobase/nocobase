@@ -7,16 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { screen, userEvent, waitFor } from '@nocobase/test/client';
+import { act, screen, userEvent, waitFor } from '@nocobase/test/client';
 
 import { createApp } from '../../fixures/createApp';
 import { SchemaInitializerItemType } from '@nocobase/client';
 
 export async function createAndHover(items: SchemaInitializerItemType[], appOptions: any = {}) {
   await createApp({ items }, appOptions);
-  await userEvent.hover(screen.getByText('Test'));
+  const user = userEvent.setup();
 
-  await waitFor(async () => {
-    expect(screen.queryByRole('tooltip')).toBeInTheDocument();
+  await act(async () => {
+    await user.hover(screen.getByRole('button'));
+  });
+
+  await waitFor(() => {
+    expect(document.body.querySelector('.ant-popover-content')).toBeInTheDocument();
   });
 }

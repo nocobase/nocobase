@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as _ from 'lodash';
+import _ from 'lodash';
 import type { Collection } from '../../data-source';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModelMeta, ModelConstructor } from '../../types';

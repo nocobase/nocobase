@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Many to many (array)"
+displayName: "コレクションフィールド：多対多 (配列)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
+  ターゲットコレクションのユニークキーを配列内に保存することで、多対多関係を構築することをサポートします。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Many to many (array)
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-field-m2m-array/index)をご参照ください。
+:::
+
+# コレクションフィールド：多対多 (配列)

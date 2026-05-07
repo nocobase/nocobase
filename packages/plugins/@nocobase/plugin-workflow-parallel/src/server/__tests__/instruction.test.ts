@@ -682,4 +682,38 @@ describe('workflow > instructions > parallel', () => {
       expect(jobs.length).toEqual(5);
     });
   });
+
+  describe('validation', () => {
+    let agent;
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      agent = (app as any).agent();
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should reject when mode is invalid', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'parallel', config: { mode: 'invalid' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid mode', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'parallel', config: { mode: 'all' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with empty config', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'parallel', config: {} },
+      });
+      expect(status).toBe(200);
+    });
+  });
 });

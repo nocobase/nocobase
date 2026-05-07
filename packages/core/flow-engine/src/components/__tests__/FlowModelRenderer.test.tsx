@@ -90,10 +90,20 @@ describe('FlowModelRenderer', () => {
 
   test('should clear stale beforeRender state after unmount when reusing the same model', async () => {
     const statefulEngine = new FlowEngine();
+    const onMountSpy = vi.fn();
+    const onUnmountSpy = vi.fn();
 
     class StatefulModel extends FlowModel {
       render(): any {
         return <div>Stateful Content</div>;
+      }
+
+      protected onMount(): void {
+        onMountSpy();
+      }
+
+      protected onUnmount(): void {
+        onUnmountSpy();
       }
     }
 
@@ -107,8 +117,14 @@ describe('FlowModelRenderer', () => {
     await waitFor(() => {
       expect(executorSpy).toHaveBeenCalledTimes(1);
     });
+    await waitFor(() => {
+      expect(onMountSpy).toHaveBeenCalledTimes(1);
+    });
 
     firstRender.unmount();
+    await waitFor(() => {
+      expect(onUnmountSpy).toHaveBeenCalledTimes(1);
+    });
 
     executorSpy.mockClear();
     statefulModel.setStepParams('anyFlow', 'anyStep', { x: 1 });
@@ -119,6 +135,9 @@ describe('FlowModelRenderer', () => {
     await waitFor(() => {
       expect(executorSpy).toHaveBeenCalledTimes(1);
     });
+    await waitFor(() => {
+      expect(onMountSpy).toHaveBeenCalledTimes(2);
+    });
     const [target, eventName, inputArgs, options] = executorSpy.mock.calls[0];
     expect(target).toBe(statefulModel);
     expect(eventName).toBe('beforeRender');
@@ -126,5 +145,8 @@ describe('FlowModelRenderer', () => {
     expect(options).toMatchObject({ useCache: true });
 
     secondRender.unmount();
+    await waitFor(() => {
+      expect(onUnmountSpy).toHaveBeenCalledTimes(2);
+    });
   });
 });

@@ -8,6 +8,7 @@
  */
 
 import fg from 'fast-glob';
+import { resolvePluginStoragePath } from '@nocobase/utils';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import path from 'path';
@@ -46,12 +47,13 @@ const excludes = [
 ];
 
 export async function findPackageNames() {
+  const pluginStoragePath = resolvePluginStoragePath();
   const patterns = [
     './packages/plugins/*/package.json',
     './packages/plugins/*/*/package.json',
     './packages/pro-plugins/*/*/package.json',
-    './storage/plugins/*/package.json',
-    './storage/plugins/*/*/package.json',
+    path.join(pluginStoragePath, '*/package.json'),
+    path.join(pluginStoragePath, '*/*/package.json'),
   ];
   try {
     const packageJsonPaths = await fg(patterns, {

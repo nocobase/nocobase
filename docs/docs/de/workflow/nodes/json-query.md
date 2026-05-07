@@ -38,7 +38,7 @@ Der JSON Berechnung-Knoten unterstützt verschiedene Syntaxen durch unterschiedl
 
 Die Datenquelle kann das Ergebnis eines vorhergehenden Knotens oder ein Datenobjekt im Workflow-Kontext sein. Dabei handelt es sich typischerweise um ein Datenobjekt ohne integrierte Struktur, wie zum Beispiel das Ergebnis eines SQL-Knotens oder eines HTTP-Anfrage-Knotens.
 
-![Datenquelle](https://static-docs.nocobase.com/f5a79e20693b3d30b3a994a576aa282d.png)
+![Datenquelle](https://static-docs.nocobase.com/f5a97e20693b3d30b3a994a576aa282d.png)
 
 :::info{title=Hinweis}
 Normalerweise sind die Datenobjekte von Sammlung-bezogenen Knoten durch die Sammlung-Konfigurationsinformationen strukturiert und müssen in der Regel nicht durch den JSON Berechnung-Knoten geparst werden.

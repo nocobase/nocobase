@@ -12,7 +12,7 @@ ER図:
 
 フィールド設定:
 
-![alt text](https://static-docs.nocobase.com/3b4484ebb97d82f832f3dbf752bd84c9.png)
+![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
 ## パラメータの説明
 

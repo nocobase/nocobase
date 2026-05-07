@@ -12,6 +12,6 @@ Sind mehrere Sprachen aktiviert, können Benutzer im „Persönlichen Zentrum“
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-Sollten in der aktuell verwendeten Sprachumgebung Übersetzungen fehlen, können Sie diese mit dem Plugin „[Lokalisierungsverwaltung](/system-management/localization/)“ hinzufügen oder bearbeiten.
+Sollten in der aktuell verwendeten Sprachumgebung Übersetzungen fehlen, können Sie diese mit dem Plugin „[Lokalisierungsverwaltung](/system-management/localization/index.md)“ hinzufügen oder bearbeiten.
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

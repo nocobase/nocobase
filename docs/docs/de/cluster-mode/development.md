@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Plugin-Entwicklung im Cluster-Modus"
+description: "Plugin-Entwicklung im Cluster-Modus: Cache, SyncMessageManager, PubSubManager, Queue und verteilte Sperren; Zustandskonsistenz, Aufgabenplanung und Race Conditions."
+keywords: "Cluster Plugin-Entwicklung,Cache,SyncMessageManager,PubSubManager,Queue,verteilte Sperre,WORKER_MODE,NocoBase"
+---
+
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::

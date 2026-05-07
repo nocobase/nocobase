@@ -1,0 +1,13 @@
+[
+  {
+    "type": "dir",
+    "name": "v2",
+    "label": "V2 教程（IT 工单系统）"
+  },
+  {
+    "type": "dir",
+    "name": "v1",
+    "label": "V1 教程（旧版）",
+    "collapsed": true
+  }
+]

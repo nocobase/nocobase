@@ -14,12 +14,13 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { createContext, FC, useCallback, useContext, useMemo } from 'react';
 import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import { Collection, useCollectionRecord } from '../../../data-source';
+import { Collection } from '../../../data-source/collection/Collection';
+import { useCollectionRecord } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
 import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
-import { useDesignable } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
 import { AssociationFieldMode } from './AssociationFieldModeProvider';
 import { AssociationFieldContext } from './context';
 

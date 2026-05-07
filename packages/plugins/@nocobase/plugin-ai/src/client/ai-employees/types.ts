@@ -27,7 +27,8 @@ export type AIEmployee = {
     prompt?: string;
   };
   skillSettings?: {
-    skills?: { name: string }[];
+    tools?: { name: string; autoCall?: boolean }[];
+    skills?: string[];
   };
   builtIn?: boolean;
   webSearch?: boolean;
@@ -37,6 +38,9 @@ export type AIEmployee = {
 };
 
 export type SkillSettings = {
+  toolsVersion?: number;
+  skillsVersion?: number;
+  tools?: string[];
   skills?: string[];
 };
 
@@ -69,6 +73,7 @@ export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
+  createdAt?: string | Date;
   content: {
     content: any;
     ref?: React.MutableRefObject<any>;
@@ -92,12 +97,31 @@ export type Message = Omit<BubbleProps, 'content'> & {
       url: string;
     }[];
     reasoning?: { status: string; content: string };
+    subAgentConversations?: {
+      sessionId: string;
+      toolCallId?: string;
+      status?: 'pending' | 'completed';
+      messages: Message[];
+    }[];
+    from?: 'main-agent' | 'sub-agent';
   };
 };
 export type Action = {
   icon?: React.ReactNode;
   content: string;
   onClick: (content: string) => void;
+};
+
+export type ClearOptions = {
+  sender?: boolean;
+  systemMessage?: boolean;
+  attachments?: boolean;
+  contextItems?: boolean;
+  taskVariables?: boolean;
+  toolModal?: boolean;
+  activeTool?: boolean;
+  activeMessageId?: boolean;
+  skillSettings?: boolean;
 };
 
 export type SendOptions = {
@@ -137,9 +161,7 @@ export type Task = {
   title?: string;
   message: TaskMessage;
   autoSend?: boolean;
-  skillSettings?: {
-    skills?: string[];
-  };
+  skillSettings?: SkillSettings;
   webSearch?: boolean;
   model?: {
     llmService: string;

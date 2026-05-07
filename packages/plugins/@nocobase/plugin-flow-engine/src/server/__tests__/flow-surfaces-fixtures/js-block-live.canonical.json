@@ -1,0 +1,25 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "JSBlockModel"
+  },
+  "tree": {
+    "alias": "block.jsBlock1",
+    "use": "JSBlockModel",
+    "stepParams": {
+      "jsSettings": {
+        "runJs": {
+          "version": "v2",
+          "code": "// Welcome to the JS block\nctx.render(`\n  <div style=\"padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;\">\n    <h2 style=\"color: #1890ff; margin: 0 0 12px 0; font-size: 24px; font-weight: 600;\">JS Block</h2>\n    <p style=\"color: #666; margin: 0;\">Replace this code with your custom JavaScript to build an interactive block.</p>\n  </div>\n`);"
+        }
+      }
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Blocks",
+    "icon": null,
+    "options": null
+  }
+}

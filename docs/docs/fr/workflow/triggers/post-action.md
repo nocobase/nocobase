@@ -178,7 +178,7 @@ Si l'événement est configuré en mode global, vous n'avez pas besoin d'utilise
 
 Comme illustré ci-dessous :
 
-![Ordre d'exécution de l'action](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Ordre d'exécution de l'action](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Différence avec l'événement de collection
 

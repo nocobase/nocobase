@@ -30,6 +30,12 @@ export default defineCollection({
       type: 'string',
     },
     {
+      name: 'from',
+      type: 'string',
+      defaultValue: 'main-agent',
+      allowNull: false,
+    },
+    {
       name: 'user',
       type: 'belongsTo',
       target: 'users',
@@ -58,6 +64,16 @@ export default defineCollection({
     {
       name: 'options',
       type: 'jsonb',
+    },
+    {
+      name: 'llmActiveState',
+      type: 'string', // idle,streaming,invoking,
+      defaultValue: 'idle',
+    },
+    {
+      name: 'category',
+      type: 'string', // chat, task
+      defaultValue: 'chat',
     },
   ],
 });

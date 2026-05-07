@@ -18,7 +18,7 @@ pkg: '@nocobase/plugin-departments'
 
 Второй способ — добавить отделы к соответствующей роли в разделе управления ролями.
 
-![](https://static-docs.nocobase.com/f2a7bec8937cf2f179ce868a92b98416d.png)
+![](https://static-docs.nocobase.com/f2a7bec937cf2f179ce868a92b98416d.png)
 
 Отделы, которым уже назначена эта роль, недоступны для выбора.
 

@@ -1,12 +1,16 @@
 ---
-displayName: "License settings"
+displayName: "Paramètres de licence"
 packageName: '@nocobase/plugin-license'
 description: |
-  Instance ID and license key settings
+  Paramètres de l'ID d'instance et de la clé de licence
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# License settings
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-license/index).
+:::
+
+# Paramètres de licence

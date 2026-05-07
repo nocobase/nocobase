@@ -1,0 +1,626 @@
+---
+title: "Cài đặt Docker"
+description: "Bắt đầu nhanh với NocoBase: Cài đặt Docker"
+keywords: "docker, NocoBase"
+---
+
+# Cài đặt Docker
+
+:::tip Điều kiện tiên quyết
+
+- Đã cài [Docker](https://docs.docker.com/get-docker/) và Docker Compose
+- Đảm bảo dịch vụ Docker đang chạy
+
+:::
+
+## 1. Tạo mới docker-compose.yml
+
+```bash
+# Tạo một thư mục tên my-project (có thể đặt tên khác) để chứa các tệp hệ thống do NocoBase tạo ra
+mkdir my-project && cd my-project
+
+# Tạo một tệp docker-compose.yml trống
+vi docker-compose.yml
+```
+
+## 2. Cấu hình docker-compose.yml
+
+Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)) và loại database, sao chép cấu hình tương ứng vào docker-compose.yml.
+
+:::tip Hướng dẫn cấu hình
+
+- **Chọn image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Môi trường sản xuất khuyến nghị cố định phiên bản số cụ thể, tránh việc tự động nâng cấp ngoài ý muốn. [Xem tất cả phiên bản](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Image Aliyun: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Image Docker Hub: `nocobase/nocobase:latest-full`
+  - **Image full** bao gồm PostgreSQL 16/17 client, MySQL 8.0 client, Oracle 19.25 client cần cho Plugin quản lý backup và migration, cùng LibreOffice cần cho in template (PDF)
+  - Nếu cần tự build image, có thể tham khảo [Dockerfile (bản tinh gọn)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) và [Dockerfile-full (bản đầy đủ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) chính thức
+- **Sửa `APP_KEY`**: Vui lòng thay `your-secret-key` bằng chuỗi ngẫu nhiên, dùng để mã hóa Token người dùng và các thông tin nhạy cảm khác
+- **Sử dụng database có sẵn**: Nếu đã có dịch vụ database, vui lòng sửa `DB_HOST` thành địa chỉ server database và xóa hoặc comment các cấu hình dịch vụ database (như `postgres`, `mysql`, `mariadb`)
+- **Mapping port**: Mặc định ánh xạ port 80 của container đến port 13000 của host, có thể sửa theo nhu cầu
+
+:::
+
+<Tabs>
+
+<Tab label="Phiên bản Latest">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=postgres
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=postgres
+      # Database port
+      - DB_PORT=5432
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=nocobase
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Múi giờ
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động postgres
+  postgres:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mysql
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=mysql
+      # Database port
+      - DB_PORT=3306
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=root
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Có chuyển đổi tên bảng và tên trường database sang snake case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động mysql
+  mysql:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mariadb
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=mariadb
+      # Database port
+      - DB_PORT=3306
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=root
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Có chuyển đổi tên bảng và tên trường database sang snake case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động mariadb
+  mariadb:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Phiên bản Beta">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=postgres
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=postgres
+      # Database port
+      - DB_PORT=5432
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=nocobase
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Múi giờ
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động postgres
+  postgres:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mysql
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=mysql
+      # Database port
+      - DB_PORT=3306
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=root
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Có chuyển đổi tên bảng và tên trường database sang snake case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động mysql
+  mysql:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mariadb
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=mariadb
+      # Database port
+      - DB_PORT=3306
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=root
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Có chuyển đổi tên bảng và tên trường database sang snake case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động mariadb
+  mariadb:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Phiên bản Alpha">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - postgres
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=postgres
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=postgres
+      # Database port
+      - DB_PORT=5432
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=nocobase
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Múi giờ
+      - TZ=Asia/Shanghai
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động postgres
+  postgres:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mysql
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mysql
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=mysql
+      # Database port
+      - DB_PORT=3306
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=root
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Có chuyển đổi tên bảng và tên trường database sang snake case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động mysql
+  mysql:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      # Khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v.
+      # Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu
+      # Có thể là chuỗi ngẫu nhiên bất kỳ, đảm bảo không tiết lộ ra ngoài
+      - APP_KEY=your-secret-key
+      # Loại database, hỗ trợ postgres, mysql, mariadb
+      - DB_DIALECT=mariadb
+      # Host database, có thể thay bằng IP server database có sẵn
+      - DB_HOST=mariadb
+      # Database port
+      - DB_PORT=3306
+      # Tên database
+      - DB_DATABASE=nocobase
+      # User database
+      - DB_USER=root
+      # Mật khẩu database
+      - DB_PASSWORD=nocobase
+      # Có chuyển đổi tên bảng và tên trường database sang snake case không
+      - DB_UNDERSCORED=true
+      # Múi giờ
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - '13000:80'
+    # init: true
+
+  # Nếu dùng dịch vụ database có sẵn, có thể không khởi động mariadb
+  mariadb:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    volumes:
+      - ./storage/db/mariadb:/var/lib/mysql
+    networks:
+      - nocobase
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+## 3. Cài đặt và khởi động NocoBase
+
+```bash
+# Pull image mới nhất
+docker compose pull
+
+# Chạy ở chế độ nền (lần chạy đầu tiên sẽ tự động cài đặt)
+docker compose up -d
+
+# Xem log cài đặt và vận hành
+docker compose logs -f app
+
+app-postgres-app-1  | nginx started
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ cross-env DOTENV_CONFIG_PATH=.env node -r dotenv/config packages/app/server/lib/index.js install -s
+app-postgres-app-1  | Done in 2.72s.
+app-postgres-app-1  | yarn run v1.22.15
+app-postgres-app-1  | $ pm2-runtime start --node-args="-r dotenv/config" packages/app/server/lib/index.js -- start
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: Launching in no daemon mode
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] starting in -fork mode-
+app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
+app-postgres-app-1  | NocoBase server running at: http://localhost:13000/
+```
+
+## 4. Đăng nhập NocoBase
+
+Mở trình duyệt và truy cập [http://localhost:13000](http://localhost:13000), tài khoản và mật khẩu khởi tạo là `admin@nocobase.com` và `admin123`.
+
+:::warning Lưu ý bảo mật tài khoản
+
+Sau khi đăng nhập lần đầu, vui lòng đổi mật khẩu mặc định ngay để đảm bảo an toàn hệ thống.
+
+:::

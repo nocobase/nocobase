@@ -14,7 +14,7 @@ Esta documentación ha sido traducida automáticamente por IA.
 
 Acceda a la interfaz de configuración y complete la URL de redireccionamiento autorizada. La URL de redireccionamiento se puede obtener al añadir un autenticador en NocoBase; normalmente es `http(s)://host:port/api/oidc:redirect`. Consulte la sección [Manual de usuario - Configuración](../index.md#configuración).
 
-![](https://static-docs.nocobase.com/24078bf52ec66a16334894cb3d9d126.png)
+![](https://static-docs.nocobase.com/24078bf52ec966a16334894cb3d9d126.png)
 
 ## Añadir un nuevo autenticador en NocoBase
 

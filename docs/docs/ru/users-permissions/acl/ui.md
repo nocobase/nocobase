@@ -20,7 +20,7 @@ pkg: '@nocobase/plugin-acl'
 
 Конфигурация индивидуальных разрешений для коллекции "Заказы":
 
-![](https://static-docs.nocobase.com/a88c47001c160bf402a4a2c1.png)
+![](https://static-docs.nocobase.com/a88caba1cad47001c1610bf402a4a2c1.png)
 
 В UI это проявляется в том, что все блоки коллекции "Заказы" не отображаются.
 
@@ -36,7 +36,7 @@ pkg: '@nocobase/plugin-acl'
 
 В UI в блоке коллекции "Заказы" отображаются только те поля, для которых настроены разрешения. Системные поля (Id, CreatedAt, LastUpdatedAt) сохраняют разрешения на просмотр даже без специальной настройки.
 
-![](https://static-docs.nocobase.com/40cc517efe701147fd2e799e79dcc.png)
+![](https://static-docs.nocobase.com/40cc49b517efe701147fd2e799e79dcc.png)
 
 - **Редактирование**: Определяет, можно ли редактировать и сохранять (обновлять) поля.
 
@@ -153,7 +153,7 @@ pkg: '@nocobase/plugin-acl'
 
 Как показано, для коллекции "Клиенты" настроены индивидуальные разрешения для полей (поле "Имя клиента" невидимо и нередактируемо).
 
-![](https://static-docs.nocobase.com/e7b8752cbc4e28640f027f36d0413c.png)
+![](https://static-docs.nocobase.com/e7b875521cbc4e28640f027f36d0413c.png)
 
 Полный пример процесса настройки:
 

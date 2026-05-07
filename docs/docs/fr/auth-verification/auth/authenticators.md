@@ -17,7 +17,7 @@ Lors de l'installation du plugin d'authentification utilisateur, le système ini
 
 ## Activer les authentificateurs
 
-![](https://static-docs.nocobase.com/7f1bf8f8ca5de67ffc68eff0a65848f5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 Seuls les types d'authentification activés s'afficheront sur la page de connexion.
 
@@ -29,4 +29,4 @@ Seuls les types d'authentification activés s'afficheront sur la page de connexi
 
 En ajoutant différents types d'authentificateurs, vous pouvez activer les méthodes d'authentification correspondantes dans le système.
 
-En plus des types d'authentification fournis par les plugins existants, les développeurs peuvent également étendre les types d'authentification utilisateur. Pour plus de détails, consultez le [Guide du développeur](./dev/).
+En plus des types d'authentification fournis par les plugins existants, les développeurs peuvent également étendre les types d'authentification utilisateur. Pour plus de détails, consultez le [Guide du développeur](./dev/index.md).

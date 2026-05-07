@@ -243,14 +243,6 @@ Options:
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-File-based log storage path, default is `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Output log level. Default is `debug` in development and `info` in production. Options:

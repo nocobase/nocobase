@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Localization Management plugin is used to manage and implement NocoBase's localization resources. It can translate system menus, data tables, fields, and all plugins to adapt to the language and culture of specific regions.
+The Localization Management plugin is used to manage and implement NocoBase's localization resources. It can translate system menus, collections, fields, and all plugins to adapt to the language and culture of specific regions.
 
 ## Installation
 
@@ -44,7 +44,7 @@ When editing a page, custom text within each block will automatically generate t
 
 ![](https://static-docs.nocobase.com/Localization-NocoBase-02-12-2026_08_39_AM.png)
 
-:::info{title=提示}
+:::info{title=Note}
 When defining text in code, you need to manually specify the ns (namespace), for example:
 `${ctx.i18n.t('My custom js block', { ns: 'lm-flow-engine' })}`
 :::
@@ -77,4 +77,3 @@ Synchronize the entries.
 Translate and publish.
 
 <img src="https://static-docs.nocobase.com/202404202143135.png"/>
-

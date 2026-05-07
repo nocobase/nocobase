@@ -16,25 +16,25 @@ NocoBaseは、プラグインを通じて以下の認証プロトコルと方式
 
 ### エンタープライズSSOプロトコル
 
-- **[SAML 2.0](/auth-verification/auth-saml/)**: XMLベースのオープン標準で、企業レベルのID認証に広く利用されています。企業のIDプロバイダー（IdP）との連携が必要なシナリオに適しています。
+- **[SAML 2.0](/auth-verification/auth-saml/index.md)**: XMLベースのオープン標準で、企業レベルのID認証に広く利用されています。企業のIDプロバイダー（IdP）との連携が必要なシナリオに適しています。
 
-- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/)**: OAuth 2.0をベースとしたID認証レイヤーで、最新の認証および認可メカニズムを提供します。主要なIDプロバイダー（Google、Azure ADなど）との連携をサポートしています。
+- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/index.md)**: OAuth 2.0をベースとしたID認証レイヤーで、最新の認証および認可メカニズムを提供します。主要なIDプロバイダー（Google、Azure ADなど）との連携をサポートしています。
 
-- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/)**: イェール大学が開発したシングルサインオンプロトコルで、大学や教育機関で広く利用されています。
+- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/index.md)**: イェール大学が開発したシングルサインオンプロトコルで、大学や教育機関で広く利用されています。
 
-- **[LDAP](/auth-verification/auth-ldap/)**: 分散型ディレクトリ情報サービスへのアクセスと維持に使用される軽量ディレクトリアクセスプロトコルです。Active Directoryやその他のLDAPサーバーとの連携が必要なシナリオに適しています。
+- **[LDAP](/auth-verification/auth-ldap/index.md)**: 分散型ディレクトリ情報サービスへのアクセスと維持に使用される軽量ディレクトリアクセスプロトコルです。Active Directoryやその他のLDAPサーバーとの連携が必要なシナリオに適しています。
 
 ### サードパーティプラットフォーム認証
 
-- **[WeCom（企業WeChat）](/auth-verification/auth-wecom/)**: WeCom（企業WeChat）のQRコードログインと、WeComアプリ内でのシームレスな認証に対応しています。
+- **[WeCom（企業WeChat）](/auth-verification/auth-wecom/index.md)**: WeCom（企業WeChat）のQRコードログインと、WeComアプリ内でのシームレスな認証に対応しています。
 
-- **[DingTalk](/auth-verification/auth-dingtalk/)**: DingTalkのQRコードログインと、DingTalkアプリ内でのシームレスな認証に対応しています。
+- **[DingTalk](/auth-verification/auth-dingtalk/index.md)**: DingTalkのQRコードログインと、DingTalkアプリ内でのシームレスな認証に対応しています。
 
 ### その他の認証方式
 
-- **[SMS認証コード](/auth-verification/auth-sms/)**: 携帯電話のSMSを利用した認証コードログイン方式です。
+- **[SMS認証コード](/auth-verification/auth-sms/index.md)**: 携帯電話のSMSを利用した認証コードログイン方式です。
 
-- **[ユーザー名/パスワード](/auth-verification/auth/)**: NocoBaseに組み込まれている基本的な認証方式です。
+- **[ユーザー名/パスワード](/auth-verification/auth/index.md)**: NocoBaseに組み込まれている基本的な認証方式です。
 
 ## 連携ステップ
 
@@ -134,6 +134,6 @@ NocoBaseは複数の認証方式を同時に設定することをサポートし
 
 ## 関連リソース
 
-- [ユーザー認証ドキュメント](/auth-verification/auth/)
-- [APIキー認証](/integration/api-keys/)
-- [ユーザーと権限の管理](/plugins/@nocobase/plugin-users/)
+- [ユーザー認証ドキュメント](/auth-verification/auth/index.md)
+- [APIキー認証](/integration/api-keys/index.md)
+- [ユーザーと権限の管理](/plugins/@nocobase/plugin-users/index.md)

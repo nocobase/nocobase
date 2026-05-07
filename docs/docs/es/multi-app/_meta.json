@@ -5,8 +5,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Resumen",
-        "link": "/multi-app/multi-app"
+        "label": "Visión general",
+        "link": "/multi-app/multi-app/"
       },
       {
         "type": "custom-link",
@@ -22,7 +22,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Multi-space",
-    "link": "/multi-app/multi-space"
+    "label": "Multiespacio",
+    "link": "/multi-app/multi-space/"
   }
 ]
