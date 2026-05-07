@@ -161,4 +161,46 @@ describe('linkageRulesRefresh action', () => {
     expect(ctx.resolveJsonTemplate).toHaveBeenCalled();
     expect(handler).toHaveBeenCalledWith(ctx, { value: ['x'] });
   });
+
+  it('passes raw params to useRawParams linkage actions', async () => {
+    const handler = vi.fn(async () => {});
+    const rawParams = {
+      value: [
+        {
+          key: 'r1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageRunjs',
+              params: {
+                value: {
+                  script: 'return ctx.formValues.amount',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const model: any = {
+      isFork: false,
+      forks: new Set(),
+      getFlow: vi.fn(() => ({})),
+      getStepParams: vi.fn(() => rawParams),
+    };
+    const ctx: any = {
+      model,
+      resolveJsonTemplate: vi.fn(async () => ({ value: ['resolved'] })),
+      getAction: vi.fn(() => ({ useRawParams: true, handler })),
+    };
+
+    await linkageRulesRefresh.handler(ctx, {
+      actionName: 'actionLinkageRules',
+      flowKey: 'buttonSettings',
+    });
+
+    expect(ctx.resolveJsonTemplate).not.toHaveBeenCalled();
+    expect(handler).toHaveBeenCalledWith(ctx, rawParams);
+  });
 });
