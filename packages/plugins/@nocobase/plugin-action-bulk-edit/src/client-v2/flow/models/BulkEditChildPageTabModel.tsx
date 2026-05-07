@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChildPageTabModel, BlockGridModel, SkeletonFallback } from '@nocobase/client';
+import { ChildPageTabModel, BlockGridModel, SkeletonFallback } from '@nocobase/client-v2';
 
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
-import { BlockSceneEnum } from '@nocobase/client';
+import { BlockSceneEnum } from '@nocobase/client-v2';
 
 function PageTabChildrenRenderer({ ctx, options }) {
   const { data, loading } = useRequest(

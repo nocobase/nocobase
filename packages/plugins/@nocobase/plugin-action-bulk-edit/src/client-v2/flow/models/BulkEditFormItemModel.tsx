@@ -8,10 +8,9 @@
  */
 
 import React from 'react';
-import { FormItemModel, FieldModel } from '@nocobase/client';
+import { FormItemModel, FieldModel } from '@nocobase/client-v2';
 import _ from 'lodash';
-
-import { BulkEditFieldV2 } from '../component/BulkEditFieldV2';
+import { BulkEditFieldV2 } from '../../component/BulkEditFieldV2';
 import { tExpr, FieldModelRenderer, FormItem } from '@nocobase/flow-engine';
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {

@@ -6,8 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import type { FormBlockModel } from '@nocobase/client';
-import { lang } from '../locale';
+import type { FormBlockModel } from '@nocobase/client-v2';
+import { lang } from './locale';
 
 export async function submitHandler(ctx, params) {
   const blockModel = ctx.blockModel as FormBlockModel;

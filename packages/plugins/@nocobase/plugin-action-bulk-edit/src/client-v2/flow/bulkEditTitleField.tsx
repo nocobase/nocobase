@@ -8,7 +8,7 @@
  */
 
 import { defineAction, DisplayItemModel } from '@nocobase/flow-engine';
-import { titleField } from '@nocobase/client';
+import { titleField } from '@nocobase/client-v2';
 
 // 重新实现 RecordSelectFieldModel 中 titleField 的 bulkEditTitleField 版本
 export const bulkEditTitleField = defineAction({

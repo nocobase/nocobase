@@ -14,7 +14,7 @@
  * - 支持同步父项模式（pattern）
  * - 重建后触发 beforeRender（useCache: false）
  */
-import { FieldModel } from '@nocobase/client';
+import { FieldModel } from '@nocobase/client-v2';
 import { FlowEngine, FlowModel, StepParams } from '@nocobase/flow-engine';
 
 type FieldBindingParams = {

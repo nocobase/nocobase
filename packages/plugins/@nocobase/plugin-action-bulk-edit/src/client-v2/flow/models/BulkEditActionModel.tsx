@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionSceneEnum, PopupActionModel } from '@nocobase/client';
+import { ActionSceneEnum, PopupActionModel } from '@nocobase/client-v2';
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { NAMESPACE, lang } from '../locale';
-import { createTagPageOptions } from './utils';
+import { NAMESPACE, lang } from '../../locale';
+import { createTagPageOptions } from '../utils';
 
 const SETTINGS_FLOW_KEY = 'bulkEditSettings';
 

@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FieldModelRenderer, FieldModel, RecordSelectFieldModel, titleField } from '@nocobase/client';
+import { FieldModel, RecordSelectFieldModel, titleField } from '@nocobase/client-v2';
+import { ParamObject, StepParams, FieldModelRenderer } from '@nocobase/flow-engine';
 import { Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { css } from '@emotion/css';
 import _ from 'lodash';
-import { BulkEditFormItemValueType } from './types';
-import { lang } from '../locale';
-import { ParamObject, StepParams } from '@nocobase/flow-engine';
+import { BulkEditFormItemValueType } from '../../types';
+import { lang } from '../../locale';
 import { BulkEditFormItemModel } from './BulkEditFormItemModel';
 
 function toFormFieldValue(value: any) {

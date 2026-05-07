@@ -8,9 +8,9 @@
  */
 
 import { defineAction, tExpr } from '@nocobase/flow-engine';
-import { DetailsItemModel } from '@nocobase/client';
-import type { FieldModel } from '@nocobase/client';
-import { getFieldBindingUse, rebuildFieldSubModel } from './rebuildFieldSubModel';
+import { DetailsItemModel } from '@nocobase/client-v2';
+import type { FieldModel } from '@nocobase/client-v2';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../rebuildFieldSubModel';
 
 const bulkEditExcludedBindingModels = new Set([
   'SubFormFieldModel',

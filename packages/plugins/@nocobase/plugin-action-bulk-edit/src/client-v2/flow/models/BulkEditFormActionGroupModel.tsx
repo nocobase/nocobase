@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionGroupModel } from '@nocobase/client';
+import { ActionGroupModel } from '@nocobase/client-v2';
 import { BulkEditFormSubmitActionModel } from './BulkEditFormSubmitActionModel';
 
 export class BulkEditFormActionGroupModel extends ActionGroupModel {}

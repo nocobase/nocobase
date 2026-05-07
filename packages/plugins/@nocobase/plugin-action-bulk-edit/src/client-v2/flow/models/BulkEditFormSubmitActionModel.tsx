@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormSubmitActionModel } from '@nocobase/client';
+import { FormSubmitActionModel } from '@nocobase/client-v2';
 import { ButtonProps } from 'antd';
 import { tExpr } from '@nocobase/flow-engine';
-import { submitHandler } from './submitHandler';
+import { submitHandler } from '../../submitHandler';
 import { BulkEditFormModel } from './BulkEditFormModel';
-import { lang } from '../locale';
+import { lang } from '../../locale';
 
 export class BulkEditFormSubmitActionModel extends FormSubmitActionModel {
   defaultProps: ButtonProps & { withScheduleSend?: boolean } = {

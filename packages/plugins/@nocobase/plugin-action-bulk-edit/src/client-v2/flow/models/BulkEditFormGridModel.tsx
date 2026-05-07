@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormGridModel } from '@nocobase/client';
+import { FormGridModel } from '@nocobase/client-v2';
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
-import { tExpr } from '@nocobase/flow-engine';
 
 export class BulkEditFormGridModel extends FormGridModel {
   // 显示字段的设置项

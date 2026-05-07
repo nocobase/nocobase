@@ -8,7 +8,7 @@
  */
 import { buildSubModelItems, DefaultStructure, tExpr } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { DataBlockModel, BlockModel } from '@nocobase/client';
+import { DataBlockModel, BlockModel } from '@nocobase/client-v2';
 
 export class BulkEditDataBlockModel<T = DefaultStructure> extends DataBlockModel<T> {}
 
