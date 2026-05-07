@@ -52,6 +52,7 @@ import {
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
+import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -2081,6 +2082,7 @@ export const blockLinkageRules = defineAction({
   },
   useRawParams: true,
   handler: async (ctx, params) => {
+    ensureFormValueDrivenLinkageRefresh(ctx, params, 'blockLinkageRules');
     const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
     return commonLinkageRulesHandler(ctx, resolved);
   },
@@ -2107,6 +2109,7 @@ export const actionLinkageRules = defineAction({
   },
   useRawParams: true,
   handler: async (ctx, params) => {
+    ensureFormValueDrivenLinkageRefresh(ctx, params, 'actionLinkageRules');
     const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
     return commonLinkageRulesHandler(ctx, resolved);
   },
