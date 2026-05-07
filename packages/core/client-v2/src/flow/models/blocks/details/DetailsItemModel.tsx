@@ -379,6 +379,9 @@ DetailsItemModel.registerFlow({
   steps: {
     aclCheckRefresh: {
       use: 'aclCheckRefresh',
+      defaultParams: {
+        strategy: 'formItem',
+      },
     },
   },
 });
