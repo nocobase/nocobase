@@ -177,6 +177,7 @@ export const useChatMessageActions = () => {
   const processStreamResponse = useCallback(
     async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
       const sessionChat = getSessionChat(sessionId);
+      sessionChat.setBackgroundWorking(false);
       const reader = stream.getReader();
       const decoder = new TextDecoder();
       let result = '';
@@ -283,6 +284,12 @@ export const useChatMessageActions = () => {
       const processStreamEnd = (data: any) => {
         if (data.type === 'stream_end') {
           console.debug('stream_end', data.from, data.sessionId);
+        }
+      };
+
+      const processResumeStreamUnavailable = (data: any) => {
+        if (data.type === 'chunks_cache_missing') {
+          sessionChat.setBackgroundWorking(true);
         }
       };
 
@@ -458,7 +465,9 @@ export const useChatMessageActions = () => {
             try {
               const data = JSON.parse(line.replace(/^data: /, ''));
               processError(data);
+              processResumeStreamUnavailable(data);
               if (data.from === 'main-agent') {
+                sessionChat.setBackgroundWorking(false);
                 if (sessionId !== data.sessionId) {
                   console.warn('invalid session id, ignore chunks', data);
                   continue;
@@ -476,6 +485,7 @@ export const useChatMessageActions = () => {
                   sessionId,
                 });
               } else if (data.from === 'sub-agent') {
+                sessionChat.setBackgroundWorking(false);
                 const subAgentMessageStore = {
                   addMessage: (msg: Message) => {
                     msg.role = data.username;
@@ -560,6 +570,7 @@ export const useChatMessageActions = () => {
     const draftSessionId = sessionId;
     let targetSessionId = sessionId;
     let sessionChat = getSessionChat(targetSessionId);
+    sessionChat.setBackgroundWorking(false);
 
     // Read model from store at call time to avoid stale closure
     const model = inputModel ?? useChatBoxStore.getState().model;
@@ -698,6 +709,7 @@ export const useChatMessageActions = () => {
     const sessionChat = getSessionChat(sessionId);
     const index = sessionChat.messages.findIndex((msg) => msg.key === messageId);
     sessionChat.setWebSearching(null);
+    sessionChat.setBackgroundWorking(false);
     sessionChat.setResponseLoading(true);
     sessionChat.setMessages((prev) => [
       ...prev.slice(0, index),
@@ -761,6 +773,7 @@ export const useChatMessageActions = () => {
       const sessionChat = getSessionChat(sessionId);
       const last = sessionChat.messages[sessionChat.messages.length - 1];
 
+      sessionChat.setBackgroundWorking(false);
       sessionChat.setResponseLoading(true);
       if (!last?.loading || last.role !== aiEmployee.username) {
         sessionChat.addMessage({
@@ -838,6 +851,7 @@ export const useChatMessageActions = () => {
     }) => {
       const sessionChat = getSessionChat(sessionId);
       sessionChat.setWebSearching(null);
+      sessionChat.setBackgroundWorking(false);
       sessionChat.setResponseLoading(true);
       // Read model from store at call time to avoid stale closure.
       // If not ready yet, resolve it through shared model rules.

@@ -40,6 +40,8 @@ const createChatFacade = (sessionId?: string) => {
       useChatMessagesStore.getState().setSessionSystemMessage(sessionKey, msg),
     setResponseLoading: (loading: boolean) =>
       useChatMessagesStore.getState().setSessionResponseLoading(sessionKey, loading),
+    setBackgroundWorking: (backgroundWorking: boolean) =>
+      useChatMessagesStore.getState().setSessionBackgroundWorking(sessionKey, backgroundWorking),
     addMessage: (msg: Message) => useChatMessagesStore.getState().addSessionMessage(sessionKey, msg),
     addMessages: (msgs: Message[]) => useChatMessagesStore.getState().addSessionMessages(sessionKey, msgs),
     updateLastMessage: (updater: (msg: Message) => Message) =>
@@ -104,6 +106,9 @@ const createChatFacade = (sessionId?: string) => {
       },
       responseLoading: function useResponseLoading() {
         return useChatMessagesStore((state) => selectSessionState(state, sessionKey).responseLoading);
+      },
+      backgroundWorking: function useBackgroundWorking() {
+        return useChatMessagesStore((state) => selectSessionState(state, sessionKey).backgroundWorking);
       },
       abortController: function useAbortController() {
         return useChatMessagesStore((state) => selectSessionState(state, sessionKey).abortController);

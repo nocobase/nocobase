@@ -285,33 +285,28 @@ const BackgroundWorkingHint: React.FC = () => {
   const chat = useChat(currentConversation);
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
   const messages = chat.use.messages();
-  const [show, setShow] = useState(false);
-  const messageCount = useRef(0);
-
-  const refreshMessages = useCallback(() => {
-    if (currentConversation) {
-      loadMessages(currentConversation);
-    }
-  }, [loadMessages, currentConversation]);
+  const backgroundWorking = chat.use.backgroundWorking();
+  const setBackgroundWorking = chat.setBackgroundWorking;
 
   const doStateCheck = useCallback(async () => {
     if (currentConversation) {
       const llmActiveState = await getConversationLLMActiveState(currentConversation);
-      if (llmActiveState === 'invoking') {
-        setShow(true);
-      } else {
-        setShow(false);
-      }
+      setBackgroundWorking(llmActiveState !== 'idle');
     }
-  }, [currentConversation, getConversationLLMActiveState]);
+  }, [currentConversation, getConversationLLMActiveState, setBackgroundWorking]);
+
+  const refreshMessages = useCallback(async () => {
+    if (currentConversation) {
+      await loadMessages(currentConversation);
+      await doStateCheck();
+    }
+  }, [doStateCheck, loadMessages, currentConversation]);
 
   useEffect(() => {
-    const messagesLength = messages.length;
-    if (messagesLength !== messageCount.current) {
-      messageCount.current = messagesLength;
+    if (currentConversation) {
       doStateCheck().catch(console.error);
     }
-  }, [messages, doStateCheck]);
+  }, [currentConversation, messages.length, doStateCheck]);
 
   if (!currentConversation) {
     return null;
@@ -331,7 +326,7 @@ const BackgroundWorkingHint: React.FC = () => {
   );
 
   return (
-    show && (
+    backgroundWorking && (
       <Bubble
         placement="start"
         variant="borderless"

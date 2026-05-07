@@ -416,8 +416,21 @@ export default {
           return;
         }
 
+        let hasChunks = false;
         for await (const chunk of plugin.llmStreamCachedManager.getCached(sessionId).stream()) {
+          hasChunks = true;
           ctx.res.write(chunk);
+        }
+
+        if (!hasChunks) {
+          const currentConversation = await plugin.aiConversationsManager.getConversation({
+            sessionId,
+            userId,
+          });
+          const llmActiveState = currentConversation?.llmActiveState;
+          if (llmActiveState && llmActiveState !== 'idle') {
+            ctx.res.write(`data: ${JSON.stringify({ type: 'chunks_cache_missing', body: { llmActiveState } })}\n\n`);
+          }
         }
       } catch (err) {
         ctx.log.error(err);

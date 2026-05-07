@@ -32,6 +32,7 @@ export type ChatSessionState = {
   abortController?: AbortController;
   skillSettings?: SkillSettings;
   webSearching?: WebSearching;
+  backgroundWorking?: boolean;
 };
 
 export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
@@ -46,6 +47,7 @@ export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
   abortController: null,
   skillSettings: null,
   webSearching: null,
+  backgroundWorking: false,
 };
 
 type ChatMessagesState = {
@@ -108,6 +110,7 @@ export interface ChatMessagesActions {
   setSessionContextItems: (sessionId: string | undefined, items: SessionStateUpdater<ContextItem[]>) => void;
   setSessionSystemMessage: (sessionId: string | undefined, msg: string | ((prev: string) => string)) => void;
   setSessionResponseLoading: (sessionId: string | undefined, loading: boolean) => void;
+  setSessionBackgroundWorking: (sessionId: string | undefined, backgroundWorking: boolean) => void;
   addSessionMessage: (sessionId: string | undefined, msg: Message) => void;
   addSessionMessages: (sessionId: string | undefined, msgs: Message[]) => void;
   updateSessionLastMessage: (sessionId: string | undefined, updater: (msg: Message) => Message) => void;
@@ -238,6 +241,14 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => {
         updateSessionState(state, sessionId, (session) => ({
           ...session,
           responseLoading: loading,
+        })),
+      ),
+
+    setSessionBackgroundWorking: (sessionId, backgroundWorking) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          backgroundWorking,
         })),
       ),
 
