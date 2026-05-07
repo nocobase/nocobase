@@ -11,9 +11,14 @@ import { Collection, DisplayItemModel, FlowModel, FlowModelContext } from '@noco
 
 export class AssociationFieldGroupModel extends FlowModel {
   static itemModelName = 'DetailsItemModel';
+  static maxAssociationDepth?: number;
   static defineChildren(ctx: FlowModelContext) {
     const itemModel = this.itemModelName;
-    const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
+    const maxAssociationDepth =
+      typeof this.maxAssociationDepth === 'number' && this.maxAssociationDepth > 0
+        ? this.maxAssociationDepth
+        : Number.POSITIVE_INFINITY;
+    const displayAssociationFields = (targetCollection: Collection, fieldPath = '', associationDepth = 1) => {
       return targetCollection
         .getToOneAssociationFields()
         .map((field) => {
@@ -28,7 +33,7 @@ export class AssociationFieldGroupModel extends FlowModel {
             key: `${fPath}-assocationField`,
             label: field.title,
             children: () => {
-              return [
+              const groups = [
                 {
                   key: `${fPath}-children-collectionField`,
                   // @ts-ignore
@@ -77,13 +82,20 @@ export class AssociationFieldGroupModel extends FlowModel {
                     })
                     .filter(Boolean),
                 },
-                {
+              ];
+
+              if (associationDepth < maxAssociationDepth) {
+                groups.push({
                   key: `${fPath}-children-associationField`,
                   label: 'Display association fields',
                   type: 'group',
-                  children: (displayAssociationFields(field.targetCollection, fPath) || []).filter(Boolean),
-                },
-              ];
+                  children: (
+                    displayAssociationFields(field.targetCollection, fPath, associationDepth + 1) || []
+                  ).filter(Boolean),
+                });
+              }
+
+              return groups;
             },
           };
         })

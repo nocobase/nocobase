@@ -11,6 +11,7 @@ import { AssociationFieldGroupModel } from '../../base';
 
 export class TableAssociationFieldGroupModel extends AssociationFieldGroupModel {
   static itemModelName = 'TableColumnModel';
+  static maxAssociationDepth = 2;
 }
 
 TableAssociationFieldGroupModel.define({
