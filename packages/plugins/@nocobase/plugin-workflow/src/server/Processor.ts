@@ -15,7 +15,7 @@ import { parse } from '@nocobase/utils';
 import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
-import { IJob, Runner } from './instructions';
+import { IJob, InstructionResult, Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel, WorkflowModel } from './types';
 import { isWorkflowTimeoutError, WorkflowTimeoutError } from './timeout-errors';
 
@@ -70,7 +70,7 @@ export default class Processor {
   timeoutGuard: NodeJS.Timeout | null = null;
 
   constructor(
-    public execution: ExecutionModel & { workflow: WorkflowModel },
+    public execution: ExecutionModel,
     public options: ProcessorOptions,
   ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
@@ -186,7 +186,13 @@ export default class Processor {
     await this.prepare();
     if (this.nodes.length) {
       const head = this.nodes.find((item) => !item.upstream);
-      await this.run(head, { result: execution.context });
+      if (!head) {
+        this.logger.warn(`head node not found for workflow (${execution.workflowId}), could not be started`, {
+          workflowId: execution.workflowId,
+        });
+        return this.exit(JOB_STATUS.ERROR);
+      }
+      await this.run(head);
     } else {
       await this.exit(JOB_STATUS.RESOLVED);
     }
@@ -202,12 +208,12 @@ export default class Processor {
     }
     this.options.plugin.timeoutManager.bindProcessor(this);
     await this.prepare();
-    const node = this.nodesMap.get(job.nodeId);
+    const node: FlowNodeModel = this.nodesMap.get(job.nodeId) as FlowNodeModel;
     await this.recall(node, job);
   }
 
   private async exec(instruction: Runner, node: FlowNodeModel, prevJob?: JobModel): Promise<any> {
-    let job: JobModel;
+    let job: InstructionResult;
     await this.options.plugin.timeoutManager.throwIfExpired(this.execution);
     try {
       // call instruction to get result and status
@@ -237,8 +243,8 @@ export default class Processor {
           result:
             err instanceof Error
               ? {
-                  message: err.message,
                   ...err,
+                  message: err.message,
                 }
               : err,
           status: JOB_STATUS.ERROR,
