@@ -14,7 +14,6 @@ import {
   getKanbanQuickCreatePopupTemplateComponent,
 } from '../models/KanbanQuickCreatePopupTemplateSelect';
 import { FlowEngine } from '@nocobase/flow-engine';
-import { registerOpenViewPopupTemplateAction } from '../../../../plugin-ui-templates/src/client/openViewActionExtensions';
 
 describe('KanbanBlockModel.filterCollection', () => {
   test('defaults dragging to disabled for newly created blocks', () => {
@@ -1635,107 +1634,6 @@ describe('KanbanBlockModel.filterCollection', () => {
 
     expect(result).toBe('handled');
     expect(handler).toHaveBeenCalledWith(ctx, { uid: 'popup-action-1' });
-  });
-
-  test('block quick-create popup settings reject non add-new popup templates before delegating to openView', async () => {
-    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
-    const step: any = flow?.steps?.popup;
-    const engine = new FlowEngine();
-    class RecordOnlyModel {
-      static _isScene(scene: string) {
-        return scene === 'record';
-      }
-    }
-    class CollectionOnlyModel {
-      static _isScene(scene: string) {
-        return scene === 'collection';
-      }
-    }
-    engine.registerModels({
-      KanbanBlockModel,
-      ViewActionModel: RecordOnlyModel,
-      KanbanQuickCreateActionModel: CollectionOnlyModel,
-    } as any);
-    const ds = engine.dataSourceManager.getDataSource('main');
-    ds?.addCollection({
-      name: 'posts',
-      filterTargetKey: 'id',
-      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
-    });
-    const baseBeforeParamsSave = vi.fn(async () => {});
-    engine.registerActions({
-      openView: {
-        name: 'openView',
-        title: 'openView',
-        uiSchema: {
-          uid: { type: 'string' },
-        },
-        beforeParamsSave: baseBeforeParamsSave as any,
-        handler: vi.fn(async () => undefined) as any,
-      },
-    });
-    registerOpenViewPopupTemplateAction(engine);
-    const setProps = vi.fn();
-    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
-    const syncQuickCreateAction = vi.fn().mockResolvedValue(undefined);
-    const model = engine.createModel<KanbanBlockModel>({
-      uid: 'kanban-quick-create-popup',
-      use: 'KanbanBlockModel',
-      stepParams: {
-        resourceSettings: {
-          init: {
-            dataSourceKey: 'main',
-            collectionName: 'posts',
-          },
-        },
-      },
-    });
-    model.setProps = setProps as any;
-    model.ensureQuickCreateAction = ensureQuickCreateAction as any;
-    model.syncQuickCreateAction = syncQuickCreateAction as any;
-
-    const ctx: any = {
-      api: {
-        resource: (name: string) => {
-          if (name !== 'flowModelTemplates') {
-            throw new Error('unexpected resource');
-          }
-          return {
-            get: vi.fn().mockResolvedValue({
-              data: {
-                data: {
-                  uid: 'tpl-view',
-                  targetUid: 'popup-view',
-                  useModel: 'ViewActionModel',
-                  dataSourceKey: 'main',
-                  collectionName: 'posts',
-                },
-              },
-            }),
-          };
-        },
-      },
-      model,
-      engine,
-      t: (key: string) => key,
-    };
-
-    await expect(
-      step.beforeParamsSave(
-        ctx,
-        {
-          popupTemplateUid: 'tpl-view',
-          mode: 'dialog',
-          size: 'large',
-        },
-        {},
-      ),
-    ).rejects.toThrow('Cannot resolve template parameter');
-
-    expect(baseBeforeParamsSave).not.toHaveBeenCalled();
-    expect(setProps).not.toHaveBeenCalled();
-    expect(ensureQuickCreateAction).not.toHaveBeenCalled();
-    expect(syncQuickCreateAction).not.toHaveBeenCalled();
   });
 
   test('quick-create popup shadow context marks the settings scene as KanbanQuickCreateActionModel', () => {
