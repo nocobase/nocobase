@@ -14,6 +14,7 @@ import { AIEmployee } from '../../../ai-employees/ai-employee';
 import { AIEmployeeInstructionConfig } from './types';
 import { Files } from './files';
 import { isValidFilter } from '@nocobase/utils';
+import { SYSTEM_TOOLS } from '@nocobase/ai';
 
 export class AIEmployeeInstruction extends Instruction {
   async run(node: FlowNodeModel, input: any, processor: Processor) {
@@ -28,7 +29,7 @@ export class AIEmployeeInstruction extends Instruction {
       files,
     }: AIEmployeeInstructionConfig = processor.getParsedValue(node.config, node.id);
 
-    const toolName = 'aiEmployeeWorkflowTaskOutput';
+    const toolName = SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT;
     const workflowSystemPrompt = `
 You are operating inside a workflow.
 Your job is to complete the workflow task and return the final outcome to the workflow, not to reply freely as a normal assistant.
@@ -160,8 +161,8 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
                     role: 'user',
                     content: {
                       type: 'text',
-                      content: `You failed to call the required tool "aiEmployeeWorkflowTaskOutput" in your previous response.
-Call "aiEmployeeWorkflowTaskOutput" now to submit the workflow outcome.
+                      content: `You failed to call the required tool "${SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT}" in your previous response.
+Call "${SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT}" now to submit the workflow outcome.
 Do not send another normal assistant response without invoking it.
                   `,
                     },
