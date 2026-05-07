@@ -11,7 +11,7 @@ import Joi from 'joi';
 import { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob, JobModel } from '@nocobase/plugin-workflow';
 import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { Readable } from 'stream';
@@ -95,7 +95,6 @@ function getContentTypeTransformer(mimeType: string, app: Application) {
   }
 }
 
-<<<<<<< HEAD
 function createInvalidUrlError(cause?: unknown) {
   if (cause instanceof TypeError && typeof (cause as any).code !== 'undefined') {
     return cause;
@@ -106,7 +105,10 @@ function createInvalidUrlError(cause?: unknown) {
   return error;
 }
 
-function validateUrl(url: string) {
+function validateUrl(url?: string) {
+  if (!url) {
+    throw createInvalidUrlError();
+  }
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
@@ -117,23 +119,21 @@ function validateUrl(url: string) {
   }
 }
 
-async function request(config: RequestInstructionConfig, app: Application) {
-=======
 async function request(config: RequestInstructionConfig, app: Application, signal?: AbortSignal) {
->>>>>>> c692ee03cd (feat(plugin-workflow): add timeout option for workflows)
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
 
   validateUrl(url);
-  const headers = (config.headers ?? []).reduce((result, header) => {
+  const headers: Record<string, string> = (config.headers ?? []).reduce((result, header) => {
     const name = trim(header.name);
     if (name.toLowerCase() === 'content-type') {
       return result;
     }
     return Object.assign(result, { [name]: trim(header.value) });
   }, {});
-  const params = (config.params ?? []).reduce(
-    (result, param) => Object.assign(result, { [param.name]: trim(param.value) }),
+  const params: Record<string, any> = (config.params ?? []).reduce(
+    (result: Record<string, any>, param: { name: string; value: string }) =>
+      Object.assign(result, { [param.name]: trim(param.value) }),
     {},
   );
 
@@ -238,7 +238,7 @@ export default class extends Instruction {
     onlyData: Joi.boolean().default(false),
   });
 
-  async run(node: FlowNodeModel, prevJob, processor: Processor, options?: { signal?: AbortSignal }) {
+  async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor, options?: { signal?: AbortSignal }) {
     const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 
     const { workflow } = processor.execution;
@@ -276,7 +276,7 @@ export default class extends Instruction {
       processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
       jobDone.status = JOB_STATUS.RESOLVED;
       jobDone.result = responseSuccess(response, config.onlyData);
-    } catch (error) {
+    } catch (error: any) {
       if (error.isAxiosError) {
         if (error.response) {
           processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
@@ -307,7 +307,7 @@ export default class extends Instruction {
     }
   }
 
-  async resume(node: FlowNodeModel, job, processor: Processor) {
+  async resume(node: FlowNodeModel, job: JobModel, processor: Processor) {
     const { ignoreFail } = node.config as RequestInstructionConfig;
     if (ignoreFail) {
       job.set('status', JOB_STATUS.RESOLVED);

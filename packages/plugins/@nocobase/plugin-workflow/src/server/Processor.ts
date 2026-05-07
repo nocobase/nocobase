@@ -15,8 +15,8 @@ import { parse } from '@nocobase/utils';
 import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
-import { Runner } from './instructions';
-import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
+import { IJob, Runner } from './instructions';
+import type { ExecutionModel, FlowNodeModel, JobModel, WorkflowModel } from './types';
 import { isWorkflowTimeoutError, WorkflowTimeoutError } from './timeout-errors';
 
 export interface ProcessorOptions extends Transactionable {
@@ -41,12 +41,12 @@ export default class Processor {
   /**
    * @experimental
    */
-  transaction: Transaction;
+  transaction?: Transaction | null = null;
 
   /**
    * @experimental
    */
-  mainTransaction: Transaction;
+  mainTransaction?: Transaction | null = null;
 
   /**
    * @experimental
@@ -70,7 +70,7 @@ export default class Processor {
   timeoutGuard: NodeJS.Timeout | null = null;
 
   constructor(
-    public execution: ExecutionModel,
+    public execution: ExecutionModel & { workflow: WorkflowModel },
     public options: ProcessorOptions,
   ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
@@ -206,8 +206,8 @@ export default class Processor {
     await this.recall(node, job);
   }
 
-  private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
-    let job;
+  private async exec(instruction: Runner, node: FlowNodeModel, prevJob?: JobModel): Promise<any> {
+    let job: JobModel;
     await this.options.plugin.timeoutManager.throwIfExpired(this.execution);
     try {
       // call instruction to get result and status
@@ -219,7 +219,7 @@ export default class Processor {
       if (!job) {
         return this.exit(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       if (isWorkflowTimeoutError(err)) {
         job = {
           result: {
@@ -280,7 +280,7 @@ export default class Processor {
     return this.end(node, savedJob);
   }
 
-  public async run(node, input?) {
+  public async run(node: FlowNodeModel, input?: JobModel) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (!instruction) {
@@ -297,7 +297,7 @@ export default class Processor {
   }
 
   // parent node should take over the control
-  public async end(node, job: JobModel) {
+  public async end(node: FlowNodeModel, job: JobModel) {
     this.logger.debug(`branch ended at node (${node.id})`);
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
@@ -314,7 +314,7 @@ export default class Processor {
     return this.exit(job.status);
   }
 
-  private async recall(node, job) {
+  private async recall(node: FlowNodeModel, job: JobModel) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (!instruction) {
@@ -388,7 +388,8 @@ export default class Processor {
       this.jobsToSave.clear();
     }
     if (typeof s === 'number') {
-      const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
+      const status =
+        (<typeof Processor>this.constructor).StatusMap[s as keyof typeof Processor.StatusMap] ?? Math.sign(s);
       if (this.execution.status !== EXECUTION_STATUS.ABORTED) {
         await this.execution.update({ status }, { transaction: this.mainTransaction });
       }
@@ -406,10 +407,10 @@ export default class Processor {
   /**
    * @experimental
    */
-  saveJob(payload: JobModel | Record<string, any>): JobModel {
+  saveJob(payload: JobModel | IJob): JobModel {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
-    const { model } = database.getCollection('jobs');
-    let job;
+    const model = database.getModel('jobs');
+    let job: JobModel;
     if (payload instanceof model) {
       job = payload;
       job.set('updatedAt', new Date());
@@ -425,9 +426,9 @@ export default class Processor {
         {
           isNewRecord: true,
         },
-      );
+      ) as JobModel;
     }
-    this.jobsToSave.set(job.id, job);
+    this.jobsToSave.set(job.id.toString(), job);
 
     this.lastSavedJob = job;
     this.jobsMapByNodeKey[job.nodeKey] = job;
@@ -471,7 +472,7 @@ export default class Processor {
    * @experimental
    * find the node start current branch
    */
-  findBranchParentNode(node: FlowNodeModel): FlowNodeModel | null {
+  findBranchParentNode(node?: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
       if (n.branchIndex !== null) {
         return n.upstream;
@@ -516,7 +517,7 @@ export default class Processor {
    * @experimental
    */
   public getScope(sourceNodeId?: number | string, includeSelfScope = false) {
-    const node = this.nodesMap.get(sourceNodeId);
+    const node: FlowNodeModel | undefined = sourceNodeId ? this.nodesMap.get(sourceNodeId) : undefined;
     const systemFns = {};
     const scope = {
       execution: this.execution,
@@ -526,7 +527,7 @@ export default class Processor {
       set(systemFns, name, fn.bind(scope));
     }
 
-    const $scopes = {};
+    const $scopes: Record<string, any> = {};
     for (let n = includeSelfScope ? node : this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
       if (typeof instruction?.getScope === 'function') {
@@ -552,13 +553,13 @@ export default class Processor {
    * @experimental
    */
   public getParsedValue(
-    value,
+    value: any,
     sourceNodeId?: number | string,
     { additionalScope = {}, includeSelfScope = false } = {},
   ) {
     const template = parse(value);
     const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
-    template.parameters.forEach(({ key }) => {
+    template.parameters.forEach(({ key }: { key: string }) => {
       appendArrayColumn(scope, key);
     });
     return template(scope);

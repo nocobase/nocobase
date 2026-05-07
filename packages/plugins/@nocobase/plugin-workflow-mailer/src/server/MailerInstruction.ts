@@ -11,7 +11,15 @@ import Joi from 'joi';
 import { promisify } from 'util';
 import nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { FlowNodeModel, IJob, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import {
+  FlowNodeModel,
+  IJob,
+  Instruction,
+  InstructionResult,
+  JOB_STATUS,
+  JobModel,
+  Processor,
+} from '@nocobase/plugin-workflow';
 import get from 'lodash/get';
 
 interface Provider {
@@ -23,6 +31,20 @@ interface Provider {
     pass: string;
   };
 }
+
+interface MailerInstructionConfig {
+  provider: Provider;
+  from: string;
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  contentType: 'html' | 'text';
+  html?: string;
+  text?: string;
+  ignoreFail?: boolean;
+}
+
 export default class MailerInstruction extends Instruction {
   configSchema = Joi.object({
     provider: Joi.object({
@@ -89,7 +111,12 @@ export default class MailerInstruction extends Instruction {
     return MailerInstruction.transporterMap.get(key)!;
   }
 
-  async run(node: FlowNodeModel, prevJob, processor: Processor, options?: { signal?: AbortSignal }) {
+  async run(
+    node: FlowNodeModel,
+    prevJob: JobModel,
+    processor: Processor,
+    options?: { signal?: AbortSignal },
+  ): Promise<InstructionResult> {
     const {
       provider,
       contentType,
@@ -100,8 +127,8 @@ export default class MailerInstruction extends Instruction {
       html,
       text,
       ignoreFail,
-      ...options
-    } = processor.getParsedValue(node.config, node.id);
+      ...others
+    }: MailerInstructionConfig = processor.getParsedValue(node.config, node.id);
 
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
@@ -111,7 +138,7 @@ export default class MailerInstruction extends Instruction {
     const send = promisify(transporter.sendMail.bind(transporter));
 
     const payload = {
-      ...options,
+      ...others,
       ...(contentType === 'html' ? { html } : { text }),
       subject: subject?.trim(),
       to: to
@@ -125,13 +152,13 @@ export default class MailerInstruction extends Instruction {
             .flat()
             .map((item) => item?.trim())
             .filter(Boolean)
-        : null,
+        : [],
       bcc: bcc
         ? bcc
             .flat()
             .map((item) => item?.trim())
             .filter(Boolean)
-        : null,
+        : [],
     };
 
     if (sync) {
@@ -141,7 +168,7 @@ export default class MailerInstruction extends Instruction {
           status: JOB_STATUS.RESOLVED,
           result,
         };
-      } catch (error) {
+      } catch (error: any) {
         return {
           status: ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
           result: error,
@@ -165,7 +192,7 @@ export default class MailerInstruction extends Instruction {
       processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
       jobDone.status = JOB_STATUS.RESOLVED;
       jobDone.result = response;
-    } catch (error) {
+    } catch (error: any) {
       processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
 
       jobDone.status = JOB_STATUS.FAILED;
@@ -189,7 +216,7 @@ export default class MailerInstruction extends Instruction {
     }
   }
 
-  async resume(node: FlowNodeModel, job, processor: Processor) {
+  async resume(node: FlowNodeModel, job: JobModel, processor: Processor) {
     const { ignoreFail } = node.config;
     if (ignoreFail) {
       job.set('status', JOB_STATUS.RESOLVED);
