@@ -32,10 +32,6 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
   protected pluginInstances: Map<PluginClass<any, TApp>, Plugin<any, TApp>> = new Map();
   protected pluginsAliases: Record<string, Plugin<any, TApp>> = {};
   private initPlugins: Promise<void>;
-  private static readonly REMOTE_PLUGIN_RETRY_LIMIT = 12;
-  private static readonly REMOTE_PLUGIN_RETRY_INITIAL_DELAY = 200;
-  private static readonly REMOTE_PLUGIN_RETRY_MAX_DELAY = 2000;
-  private static readonly REMOTE_PLUGIN_RETRY_AFTER_MAX_DELAY = 5000;
 
   constructor(
     protected _plugins: PluginType<any, TApp>[] | undefined,
@@ -57,43 +53,6 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
     }
   }
 
-  private static getHeader(headers: any, name: string) {
-    if (!headers) {
-      return;
-    }
-    if (typeof headers.get === 'function') {
-      return headers.get(name);
-    }
-    return headers[name] ?? headers[name.toLowerCase()];
-  }
-
-  private static getRetryAfterDelay(error: any) {
-    const retryAfter = PluginManager.getHeader(error?.response?.headers, 'retry-after');
-    if (!retryAfter) {
-      return;
-    }
-    const value = String(retryAfter).trim();
-    const seconds = Number(value);
-    if (Number.isFinite(seconds)) {
-      return Math.min(Math.max(0, seconds * 1000), PluginManager.REMOTE_PLUGIN_RETRY_AFTER_MAX_DELAY);
-    }
-    const timestamp = Date.parse(value);
-    if (Number.isFinite(timestamp)) {
-      return Math.min(Math.max(0, timestamp - Date.now()), PluginManager.REMOTE_PLUGIN_RETRY_AFTER_MAX_DELAY);
-    }
-  }
-
-  private static getRetryDelay(error: any, attempt: number) {
-    const retryAfterDelay = PluginManager.getRetryAfterDelay(error);
-    if (retryAfterDelay !== undefined) {
-      return retryAfterDelay;
-    }
-    return Math.min(
-      PluginManager.REMOTE_PLUGIN_RETRY_INITIAL_DELAY * 2 ** attempt,
-      PluginManager.REMOTE_PLUGIN_RETRY_MAX_DELAY,
-    );
-  }
-
   protected getRemotePluginsRequestUrl() {
     return 'pm:listEnabledV2';
   }
@@ -106,27 +65,9 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
     }
   }
 
-  protected async requestRemotePluginList(): Promise<PluginData[]> {
-    let res;
-    for (let attempt = 0; attempt < PluginManager.REMOTE_PLUGIN_RETRY_LIMIT; attempt++) {
-      try {
-        res = await this.app.apiClient.request({ url: this.getRemotePluginsRequestUrl() });
-        break;
-      } catch (error) {
-        const isMaintaining = !!error?.response?.data?.error?.maintaining;
-        const isLastAttempt = attempt === PluginManager.REMOTE_PLUGIN_RETRY_LIMIT - 1;
-        if (!isMaintaining || isLastAttempt) {
-          throw error;
-        }
-        await new Promise((resolve) => setTimeout(resolve, PluginManager.getRetryDelay(error, attempt)));
-      }
-    }
-
-    return res?.data?.data || [];
-  }
-
   protected async initRemotePlugins() {
-    const pluginList = await this.requestRemotePluginList();
+    const res = await this.app.apiClient.request({ url: this.getRemotePluginsRequestUrl() });
+    const pluginList: PluginData[] = res?.data?.data || [];
     const plugins = await getPlugins({
       requirejs: this.app.requirejs,
       pluginData: pluginList,

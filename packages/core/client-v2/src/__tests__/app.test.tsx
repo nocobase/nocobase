@@ -97,6 +97,38 @@ describe('app', () => {
     expect(screen.getByText('Not Found2')).toBeInTheDocument();
   });
 
+  it('should keep route content hidden while app is loading', async () => {
+    const loadDone = vi.fn();
+
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: () => <div>Hello Route</div> });
+        loadDone();
+      }
+    }
+
+    const app = createMockClient({
+      plugins: [PluginHelloClient],
+      components: { AppSpin: () => <div>Loading</div> },
+    });
+    app.loading = true;
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => expect(loadDone).toHaveBeenCalled());
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(screen.queryByText('Hello Route')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sorry, the page you visited does not exist.')).not.toBeInTheDocument();
+
+    act(() => {
+      app.loading = false;
+    });
+
+    await waitFor(() => expect(screen.getByText('Hello Route')).toBeInTheDocument());
+    expect(screen.queryByText('Loading')).not.toBeInTheDocument();
+  });
+
   it('should support app provider functionality', async () => {
     class PluginHelloClient extends Plugin {
       async load() {
