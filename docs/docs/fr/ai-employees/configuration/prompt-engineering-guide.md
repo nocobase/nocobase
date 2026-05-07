@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Agent IA · Guide d'ingénierie des prompts
 
 > De « comment écrire » à « bien écrire », ce guide vous enseigne comment rédiger des prompts de haute qualité de manière simple, stable et réutilisable.

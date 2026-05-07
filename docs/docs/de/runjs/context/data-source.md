@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/data-source).
-:::
-
 # ctx.dataSource
 
 Die an den aktuellen RunJS-Ausführungskontext gebundene `Datenquelle`-Instanz (`DataSource`), die verwendet wird, um auf Sammlungen, Feld-Metadaten zuzugreifen und Sammlungs-Konfigurationen **innerhalb der aktuellen Datenquelle** zu verwalten. Sie entspricht normalerweise der für die aktuelle Seite oder den aktuellen Block ausgewählten Datenquelle (z. B. die Hauptdatenbank `main`).

@@ -5,10 +5,6 @@ description: "Audit-Log: zeichnet Benutzeraktivitäten und den Verlauf von Resso
 keywords: "Audit-Log,Operation Audit,Resource Action,Operation Tracing,Compliance Audit,Aufzeichnung von Benutzeraktivitäten,NocoBase"
 ---
 
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Audit-Log
 
 ## Einführung

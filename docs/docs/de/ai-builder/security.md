@@ -91,7 +91,7 @@ nb env auth local
 
 `nb env auth` startet den Browser-Anmeldevorgang. Nach Erfolg speichert die CLI die Authentifizierungsinformationen in der aktuellen Umgebungskonfiguration, und der AI Agent kann anschließend weiterhin `nb api` aufrufen.
 
-Die Gültigkeitsdauer von OAuth-Access-Tokens und OAuth-Refresh-Tokens folgt der systemweiten Konfiguration der [Token-Richtlinie](/security/token-policy/).
+Die Gültigkeitsdauer von OAuth-Access-Tokens und OAuth-Refresh-Tokens folgt der systemweiten Konfiguration der [Token-Richtlinie](../security/token-policy/index.md).
 
 - Die Gültigkeitsdauer von OAuth-Access-Tokens entspricht der Gültigkeitsdauer der System-Tokens; der Standardwert ist **1 Tag**
 - Die Gültigkeitsdauer von OAuth-Refresh-Tokens entspricht der Gültigkeitsdauer der Systemsitzung; der Standardwert ist **7 Tage**

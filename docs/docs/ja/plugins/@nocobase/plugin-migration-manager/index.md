@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-migration-manager/index)をご参照ください。
-:::
-
 # 移行管理

@@ -19,7 +19,7 @@ Comparado con otras herramientas no-code, NocoBase tiene varios principios clave
 
 - **Orientado al modelo de datos**: primero defina la [fuente de datos](/data-sources) y la estructura de datos, luego use [Block](/interface-builder/blocks) para mostrar los datos, y finalmente use [Action](/interface-builder/actions) para procesarlos — la interfaz y los datos están totalmente desacoplados
 - **WYSIWYG**: la página es el lienzo, donde se hace clic se modifica, tan intuitivo como construir una página de Notion
-- **Todo es un Plugin**: todas las funciones son [Plugin](/development/plugin), similar a WordPress, instalación bajo demanda y extensión flexible
+- **Todo es un Plugin**: todas las funciones son [Plugin](../../plugins/index.mdx), similar a WordPress, instalación bajo demanda y extensión flexible
 - **IA integrada en el negocio**: incluye [Empleados de IA](/ai-employees/quick-start) integrados que pueden ejecutar análisis, traducción, captura de datos y otras tareas, integrándose realmente en su flujo de trabajo
 - **Código abierto + despliegue privado**: el código central es totalmente abierto y los datos residen completamente en sus propios servidores
 

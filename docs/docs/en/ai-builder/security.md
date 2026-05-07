@@ -91,7 +91,7 @@ nb env auth local
 
 `nb env auth` launches the browser login flow. After success, the CLI saves the authentication information to the current environment configuration, and you can then continue having the AI Agent call `nb api`.
 
-The validity periods of OAuth access tokens and refresh tokens follow the system [Token policy](/security/token-policy/) configuration.
+The validity periods of OAuth access tokens and refresh tokens follow the system [Token policy](../security/token-policy/index.md) configuration.
 
 - OAuth access tokens have the same validity period as system Tokens, with a default of **1 day**
 - OAuth refresh tokens have the same validity period as system sessions, with a default of **7 days**

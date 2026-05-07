@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-action-bulk-edit"
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/actions/types/bulk-edit)をご参照ください。
-:::
-
 # 一括編集
 
 ## 概要

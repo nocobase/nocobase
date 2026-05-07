@@ -212,4 +212,4 @@ Tras conocer la visión general del sistema y los paneles, pasemos al proceso de
 
 - [Guía de uso del CRM](./index.md)
 - [Gestión de Leads](./guide-leads)
-- [Empleados de IA](./guide-ai)
+- [Empleados de IA](../../../ai-employees/index.md)

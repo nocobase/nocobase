@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/data-source-manager).
-:::
-
 # ctx.dataSourceManager
 
 Der Datenquellen-Manager (`DataSourceManager`-Instanz) wird verwendet, um mehrere Datenquellen zu verwalten und darauf zuzugreifen (z. B. die Hauptdatenbank `main`, die Protokoll-Datenbank `logging` usw.). Er kommt zum Einsatz, wenn mehrere Datenquellen vorhanden sind oder ein Zugriff auf Metadaten über verschiedene Datenquellen hinweg erforderlich ist.

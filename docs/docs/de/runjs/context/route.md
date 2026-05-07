@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/route).
-:::
-
 # ctx.route
 
 Die aktuellen Informationen zur Routenübereinstimmung entsprechen dem `route`-Konzept in React Router. Sie werden verwendet, um die aktuell übereinstimmende Routenkonfiguration, Parameter usw. abzurufen. In der Regel wird dies zusammen mit `ctx.router` und `ctx.location` verwendet.

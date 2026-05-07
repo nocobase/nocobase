@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Desenvolvimento de Extensões
 
 ## Estendendo Tipos de Arquivo no Frontend

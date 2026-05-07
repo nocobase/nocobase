@@ -1,6 +1,6 @@
 # Kapitel 4: Formulare und Detailansichten — Erfassen und Anzeigen in einem Schritt
 
-Im vorherigen Kapitel haben wir die Ticket-Liste aufgebaut und über ein einfaches Formular Testdaten eingegeben. In diesem Kapitel **verbessern wir das Formular-Erlebnis**: Wir optimieren die Feldanordnung des [Formular-Blocks](/interface-builder/blocks/data-blocks/form), fügen einen [Detail-Block](/interface-builder/blocks/data-blocks/details) hinzu, konfigurieren [Linkage Rules](/interface-builder/linkage-rules) und nutzen die [Änderungshistorie](https://docs.nocobase.com/cn/record-history/), um jede Änderung an einem Ticket nachvollziehen zu können.
+Im vorherigen Kapitel haben wir die Ticket-Liste aufgebaut und über ein einfaches Formular Testdaten eingegeben. In diesem Kapitel **verbessern wir das Formular-Erlebnis**: Wir optimieren die Feldanordnung des [Formular-Blocks](/interface-builder/blocks/data-blocks/form), fügen einen [Detail-Block](/interface-builder/blocks/data-blocks/details) hinzu, konfigurieren [Linkage Rules](../../interface-builder/linkage-rule.md) und nutzen die [Änderungshistorie](https://docs.nocobase.com/cn/record-history/), um jede Änderung an einem Ticket nachvollziehen zu können.
 
 :::tip
 Die in Abschnitt 4.4 vorgestellte Funktion „[Änderungshistorie](https://docs.nocobase.com/cn/record-history/)" ist Teil der [Pro-Edition](https://www.nocobase.com/cn/commercial). Sie können diesen Abschnitt überspringen, ohne den weiteren Verlauf zu beeinträchtigen.
@@ -15,7 +15,7 @@ Im vorherigen Kapitel haben wir schnell ein funktionstüchtiges Anlageformular e
 1. Stellen Sie sicher, dass Sie sich im UI-Editor-Modus befinden (Schalter oben rechts aktiv).
 2. Öffnen Sie die Seite „Ticket-Liste" und klicken Sie oberhalb des Tabellen-Blocks auf **„[Action](/interface-builder/actions) (Actions)"**.
 3. Aktivieren Sie den Action-Button **„Add"**.
-4. Oberhalb der Tabelle erscheint nun ein „Add"-Button. Ein Klick darauf öffnet ein [Pop-up](/interface-builder/actions/pop-up).
+4. Oberhalb der Tabelle erscheint nun ein „Add"-Button. Ein Klick darauf öffnet ein [Pop-up](../../interface-builder/actions/types/pop-up.md).
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
@@ -283,4 +283,4 @@ Vom „Sehen" über „Eingeben" bis zum „Nachverfolgen" — unser Ticket-Syst
 
 - [Formular-Block](/interface-builder/blocks/data-blocks/form) — Detaillierte Konfiguration des Formular-Blocks
 - [Detail-Block](/interface-builder/blocks/data-blocks/details) — Konfiguration des Detail-Blocks
-- [Linkage Rules](/interface-builder/linkage-rules) — Erläuterung der Field-Verknüpfungsregeln
+- [Linkage Rules](../../interface-builder/linkage-rule.md) — Erläuterung der Field-Verknüpfungsregeln

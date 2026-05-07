@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/get-started/system-requirements).
-:::
-
 # Requisitos del sistema
 
 Los requisitos del sistema descritos en este documento se aplican únicamente al **servicio de la aplicación NocoBase en sí**, y cubren los recursos de cómputo y memoria requeridos por los procesos de la aplicación. **No incluyen los servicios de terceros dependientes**, que incluyen, entre otros:

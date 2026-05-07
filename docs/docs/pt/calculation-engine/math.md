@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/calculation-engine/math).
-:::
-
 # Mathjs
 
 [Math.js](https://mathjs.org/) é uma biblioteca de matemática rica em recursos para JavaScript e Node.js.

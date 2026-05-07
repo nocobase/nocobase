@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/filter-manager).
-:::
-
 # ctx.filterManager
 
 O Gerenciador de Conexão de Filtro é usado para gerenciar as associações de filtragem entre formulários de filtro (`FilterForm`) e blocos de dados (tabelas, listas, gráficos, etc.). Ele é fornecido pelo `BlockGridModel` e está disponível apenas dentro do seu contexto (ex: blocos de formulário de filtro, blocos de dados).

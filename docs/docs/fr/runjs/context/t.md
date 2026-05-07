@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/t).
-:::
-
 # ctx.t()
 
 Une fonction de raccourci i18n utilisée dans RunJS pour traduire du texte en fonction des paramètres de langue du contexte actuel. Elle est adaptée à l'internationalisation des textes intégrés tels que les boutons, les titres et les messages d'alerte.

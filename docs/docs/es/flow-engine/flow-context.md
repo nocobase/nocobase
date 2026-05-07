@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/flow-engine/flow-context).
-:::
-
 # Información general del sistema de contexto
 
 El sistema de contexto del motor de flujo de NocoBase se divide en tres capas, que corresponden a diferentes ámbitos. El uso adecuado permite lograr un intercambio y aislamiento flexible de servicios, configuraciones y datos, mejorando la mantenibilidad y escalabilidad del negocio.

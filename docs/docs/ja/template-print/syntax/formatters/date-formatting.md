@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/template-print/syntax/formatters/date-formatting)をご参照ください。
-:::
-
 ### 日付フォーマット
 
 #### 1. :formatD(patternOut, patternIn)

@@ -121,10 +121,6 @@ spec:
     app: nocobase
   type: ClusterIP
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 # O Deployment da aplicação, que pode implantar múltiplos contêineres da aplicação.
 apiVersion: apps/v1

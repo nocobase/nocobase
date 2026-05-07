@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/flow-engine/flow-context).
-:::
-
 # Aperçu du système de contexte
 
 Le système de contexte du moteur de flux de travail de NocoBase est divisé en trois couches, correspondant à des portées différentes. Une utilisation raisonnable permet de réaliser un partage et une isolation flexibles des services, des configurations et des données, améliorant ainsi la maintenabilité et l'extensibilité de vos activités.

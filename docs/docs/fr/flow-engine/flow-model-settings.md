@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # FlowModel : Flux et configuration
 
 FlowModel offre une approche basée sur le « flux » pour implémenter la logique de configuration des composants, rendant le comportement et la configuration des composants plus extensibles et visuels.

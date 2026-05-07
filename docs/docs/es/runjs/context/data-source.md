@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/data-source).
-:::
-
 # ctx.dataSource
 
 La instancia de la fuente de datos (`DataSource`) vinculada al contexto de ejecución actual de RunJS, utilizada para acceder a colecciones, metadatos de campos y gestionar la configuración de colecciones **dentro de la fuente de datos actual**. Generalmente corresponde a la fuente de datos seleccionada para la página o bloque actual (por ejemplo, la base de datos principal `main`).

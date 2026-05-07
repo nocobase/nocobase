@@ -5,10 +5,6 @@ description: "Modo clúster de NocoBase: despliegue multiinstancia, balanceo de 
 keywords: "modo clúster,multiinstancia,balanceo de carga,almacenamiento compartido,Redis,Kubernetes,bloqueos distribuidos,cola de mensajes,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Modo de Clúster
 
 ## Introducción

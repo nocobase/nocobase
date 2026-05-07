@@ -212,4 +212,4 @@ Nachdem Sie nun einen Überblick über das System und die Dashboards haben, geht
 
 - [CRM-Bedienungsanleitung](./index.md)
 - [Lead-Verwaltung](./guide-leads)
-- [AI Employees](./guide-ai)
+- [AI Employees](../../../ai-employees/index.md)

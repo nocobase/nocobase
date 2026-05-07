@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Benutzerauthentifizierung
 
 Das Benutzerauthentifizierungsmodul von NocoBase besteht hauptsächlich aus zwei Teilen:

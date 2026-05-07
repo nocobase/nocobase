@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/log-and-monitor/logger/overview).
-:::
-
 # Journaux du serveur, journaux d'audit et historique des enregistrements
 
 ## Journaux du serveur

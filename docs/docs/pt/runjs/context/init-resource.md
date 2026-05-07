@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/init-resource).
-:::
-
 # ctx.initResource()
 
 **Inicializa** o recurso (resource) para o contexto atual. Se `ctx.resource` ainda não existir, ele cria um do tipo especificado e o vincula ao contexto; se já existir, ele é usado diretamente. Depois disso, ele pode ser acessado via `ctx.resource`.

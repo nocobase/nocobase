@@ -175,4 +175,4 @@ Las actividades también aparecen en la vista de calendario del panel Overview.
 - [Guía de uso del CRM](./index.md)
 - [Gestión de Leads](./guide-leads) — los Clientes y contactos se crean automáticamente tras la conversión del Lead
 - [Gestión de Oportunidades](./guide-opportunities) — Oportunidades asociadas al Cliente
-- [Empleados de IA](./guide-ai)
+- [Empleados de IA](../../../ai-employees/index.md)

@@ -91,7 +91,7 @@ nb env auth local
 
 Команда `nb env auth` запускает процесс входа в браузере. После успешного входа CLI сохраняет данные аутентификации в текущее окружение, и AI Agent может продолжать вызывать `nb api`.
 
-Срок действия access token и refresh token OAuth следует системной настройке [политики Token](/security/token-policy/).
+Срок действия access token и refresh token OAuth следует системной настройке [политики Token](../security/token-policy/index.md).
 
 - Срок действия access token OAuth совпадает со сроком действия системного Token; значение по умолчанию — **1 день**
 - Срок действия refresh token OAuth совпадает со сроком действия системной сессии; значение по умолчанию — **7 дней**

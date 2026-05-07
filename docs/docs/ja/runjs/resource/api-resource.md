@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/resource/api-resource)をご参照ください。
-:::
-
 # APIResource
 
 URLに基づいてリクエストを発行する**汎用 API リソース**です。あらゆる HTTP インターフェースに適しています。`FlowResource` 基底クラスを継承し、リクエスト設定と `refresh()` を拡張しています。[MultiRecordResource](./multi-record-resource.md) や [SingleRecordResource](./single-record-resource.md) とは異なり、APIResource はリソース名に依存せず、URL で直接リクエストを行うため、カスタムインターフェースやサードパーティ API などのシナリオに適しています。

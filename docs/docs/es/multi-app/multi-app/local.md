@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/multi-app/multi-app/local).
-:::
-
 # Modo de memoria compartida
 
 ## Introducción

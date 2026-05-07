@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/integration/fdw/enable-federated).
-:::
-
 # Comment activer le moteur Federated dans MySQL
 
 Le moteur `federated` n'est pas activé par défaut dans la base de données MySQL. Vous devez modifier la configuration `my.cnf`. Si vous utilisez la version Docker, vous pouvez gérer l'extension via les volumes :

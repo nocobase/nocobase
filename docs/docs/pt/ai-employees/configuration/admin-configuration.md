@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/ai-employees/configuration/admin-configuration).
-:::
-
 # Funcionário IA · Guia de Configuração do Administrador
 
 > Este documento ajuda você a entender rapidamente como configurar e gerenciar funcionários IA, guiando você passo a passo por todo o processo, desde o serviço de modelo até a entrada em serviço das tarefas.
@@ -105,7 +101,7 @@ A fase de criação do funcionário conclui principalmente a configuração de p
 
 As habilidades determinam o que o funcionário "pode fazer".
 
-> 💡 Para instruções detalhadas, consulte: [Habilidades](/ai-employees/features/tool)
+> 💡 Para instruções detalhadas, consulte: [Habilidades](../features/tools.md)
 
 | Tipo | Escopo de Capacidade | Exemplo | Nível de Risco |
 | ---- | ------- | --------- | ------ |
@@ -309,7 +305,7 @@ Para tornar seu funcionário IA mais poderoso, continue lendo os seguintes docum
 
 **Recursos Avançados:**
 
-* [Habilidades](/ai-employees/features/tool) - Entenda profundamente a configuração e o uso de diversos tipos de habilidades
+* [Habilidades](../features/tools.md) - Entenda profundamente a configuração e o uso de diversos tipos de habilidades
 * [Tarefas](/ai-employees/features/task) - Técnicas avançadas de configuração de tarefas
 * [Selecionar Bloco](/ai-employees/features/pick-block) - Como designar blocos de dados para funcionários IA
 * Fonte de dados - Consulte o documento de configuração de fonte de dados do plugin correspondente

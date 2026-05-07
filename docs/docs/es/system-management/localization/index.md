@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/system-management/localization/index).
-:::
-
 # Gestión de Localización
 
 ## Introducción

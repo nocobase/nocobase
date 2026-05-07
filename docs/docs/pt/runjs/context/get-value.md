@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/get-value).
-:::
-
 # ctx.getValue()
 
 Em cenários de campos editáveis, como JSField e JSItem, use isso para obter o valor mais recente do campo atual. Combinado com `ctx.setValue(v)`, ele permite a vinculação bidirecional (two-way binding) com o formulário.

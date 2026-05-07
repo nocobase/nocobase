@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/ai-employees/features/web-search).
-:::
-
 # Pesquisa na Web
 
 A Pesquisa na Web é usada para complementar o conhecimento do modelo com informações atualizadas além dos dados de treinamento.

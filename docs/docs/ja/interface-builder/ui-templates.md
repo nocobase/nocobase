@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ui-templates"
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/ui-templates)をご参照ください。
-:::
-
 # UI テンプレート
 
 ## 導入

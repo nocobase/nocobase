@@ -4,10 +4,6 @@ description: "Desarrollo del Server Plugin de NocoBase: clase Plugin, app, db, r
 keywords: "Server Plugin,clase Plugin,app,db,ACL,Migration,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Visión general
 
 Los Server Plugins de NocoBase pueden hacer muchas cosas: definir tablas de datos, escribir interfaces personalizadas, gestionar permisos, escuchar eventos, registrar tareas programadas e incluso extender comandos de la CLI. Todas estas capacidades se organizan a través de una clase Plugin unificada.

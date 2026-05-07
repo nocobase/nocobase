@@ -5,10 +5,6 @@ description: "K8s／K3s 上での NocoBase クラスター：ConfigMap、Deploym
 keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,クラスターデプロイ,NocoBase"
 ---
 
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 # Kubernetes デプロイ
 

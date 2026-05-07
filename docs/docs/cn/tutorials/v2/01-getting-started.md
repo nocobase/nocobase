@@ -19,7 +19,7 @@
 
 - **数据模型驱动**：先定义[数据源](/data-sources)和数据结构，再用[区块](/interface-builder/blocks)展示数据，最后用[操作](/interface-builder/actions)处理数据——界面与数据彻底解耦
 - **所见即所得**：页面就是画布，点哪改哪，像搭 Notion 页面一样直观
-- **一切皆插件**：所有功能都是[插件](/development/plugin)，类似 WordPress，按需安装、灵活扩展
+- **一切皆插件**：所有功能都是[插件](../../plugins/index.mdx)，类似 WordPress，按需安装、灵活扩展
 - **AI 融入业务**：内置 [AI 员工](/ai-employees/quick-start)，可以执行分析、翻译、录入等任务，真正融入你的工作流
 - **开源 + 私有部署**：核心代码完全开源，数据完全在你自己的服务器上
 

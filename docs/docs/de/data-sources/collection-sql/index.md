@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-collection-sql"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # SQL-Sammlung

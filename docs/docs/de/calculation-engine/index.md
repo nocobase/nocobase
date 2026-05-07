@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/calculation-engine/index).
-:::
-
 # Übersicht der Berechnungs-Engines
 
 In NocoBase spielen Berechnungs-Engines eine entscheidende Rolle in Formelfeldern, Verknüpfungsregeln und Workflows und bieten den Benutzern vielseitige Berechnungswerkzeuge.

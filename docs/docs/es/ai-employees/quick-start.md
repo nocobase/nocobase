@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/quick-start).
-:::
-
 # Inicio rápido
 
 Vamos a completar la configuración mínima viable de un empleado de IA en 5 minutos.

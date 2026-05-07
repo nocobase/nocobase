@@ -178,7 +178,7 @@ So stehen neue Tickets immer oben.
 Reine Listen reichen nicht - wir möchten Tickets ansehen und bearbeiten.
 
 1. Über der Aktionsspalte auf das zweite „+" klicken.
-2. Aktionen aktivieren: **Anzeigen**, **[Bearbeiten](/interface-builder/actions/edit)**, **[Löschen](/interface-builder/actions/delete)**.
+2. Aktionen aktivieren: **Anzeigen**, **[Bearbeiten](../../interface-builder/actions/types/edit.md)**, **[Löschen](../../interface-builder/actions/types/delete.md)**.
 3. Pro Zeile erscheinen die Buttons „Anzeigen", „Bearbeiten" und „Löschen".
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

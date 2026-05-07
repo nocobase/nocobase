@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/view).
-:::
-
 # ctx.view
 
 O controlador da visualização (view) atualmente ativa (janela modal, gaveta, popover, área incorporada, etc.), usado para acessar informações e operações em nível de visualização. Fornecido pelo `FlowViewContext`, ele está disponível apenas dentro do conteúdo de visualizações abertas via `ctx.viewer` ou `ctx.openView`.

@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-workflow-approval'
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/workflow/nodes/approval)をご参照ください。
-:::
-
 # 承認
 
 ## 紹介

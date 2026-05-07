@@ -9,8 +9,4 @@ defaultEnabled: true
 editionLevel: 0
 ---
 
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-workflow-json-query/index).
-:::
-
 # Workflow: JSON-вычисления
