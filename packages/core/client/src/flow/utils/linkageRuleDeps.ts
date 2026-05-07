@@ -48,6 +48,9 @@ function addUsage(
   if (!usage || typeof usage !== 'object') return;
 
   const addPaths = (varName: 'formValues' | 'item', rawPaths: unknown) => {
+    if (!Object.prototype.hasOwnProperty.call(usage, varName)) {
+      return;
+    }
     const paths = Array.isArray(rawPaths) ? rawPaths : [];
     const normalizedPaths = paths.length ? paths : [''];
 
