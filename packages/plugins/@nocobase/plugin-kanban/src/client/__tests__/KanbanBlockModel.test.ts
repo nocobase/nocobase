@@ -1618,6 +1618,25 @@ describe('KanbanBlockModel.filterCollection', () => {
     );
   });
 
+  test('kanban model delegates openView handler to the global action', async () => {
+    const handler = vi.fn().mockResolvedValue('handled');
+    const ctx = {
+      engine: {
+        getAction: vi.fn().mockReturnValue({
+          name: 'openView',
+          handler,
+        }),
+      },
+    };
+
+    const result = await (KanbanBlockModel as any).actionRegistry.getAction('openView')?.handler?.(ctx, {
+      uid: 'popup-action-1',
+    });
+
+    expect(result).toBe('handled');
+    expect(handler).toHaveBeenCalledWith(ctx, { uid: 'popup-action-1' });
+  });
+
   test('block quick-create popup settings reject non add-new popup templates before delegating to openView', async () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.popup;

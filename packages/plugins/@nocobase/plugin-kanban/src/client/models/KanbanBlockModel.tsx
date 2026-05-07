@@ -262,6 +262,20 @@ const getKanbanBaseOpenViewAction = (ctx: any): ActionDefinition | undefined => 
   return ctx?.engine?.getAction?.('openView');
 };
 
+const resolveKanbanBaseOpenViewDefaultParams = async (ctx: any) => {
+  const defaultParams = getKanbanBaseOpenViewAction(ctx)?.defaultParams;
+  return typeof defaultParams === 'function' ? await defaultParams(ctx) : defaultParams;
+};
+
+const resolveKanbanBaseOpenViewHidden = async (ctx: any) => {
+  const hideInSettings = getKanbanBaseOpenViewAction(ctx)?.hideInSettings;
+  return typeof hideInSettings === 'function' ? await hideInSettings(ctx) : hideInSettings;
+};
+
+const runKanbanBaseOpenViewHandler = async (ctx: any, params: any) => {
+  return await getKanbanBaseOpenViewAction(ctx)?.handler?.(ctx, params);
+};
+
 const resolveKanbanQuickCreateOpenViewUiSchema = async (ctx: any) => {
   const actionSchema = getKanbanBaseOpenViewAction(ctx)?.uiSchema;
   const resolvedActionSchema =
@@ -1076,6 +1090,10 @@ export class KanbanBlockModel extends CollectionBlockModel<{
 
 KanbanBlockModel.registerAction({
   name: 'openView',
+  title: tExpr('Edit popup'),
+  defaultParams: resolveKanbanBaseOpenViewDefaultParams,
+  hideInSettings: resolveKanbanBaseOpenViewHidden,
+  handler: runKanbanBaseOpenViewHandler,
   async uiSchema(ctx: FlowSettingsContext) {
     return resolveKanbanQuickCreateOpenViewUiSchema(ctx);
   },
