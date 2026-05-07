@@ -212,4 +212,4 @@ Sau khi hiểu toàn cảnh hệ thống và Dashboard, tiếp theo đi vào quy
 
 - [Hướng dẫn sử dụng CRM](./index.md)
 - [Quản lý Lead](./guide-leads)
-- [AI Employee](./guide-ai)
+- [AI Employee](../../../ai-employees/index.md)

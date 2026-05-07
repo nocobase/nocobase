@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-data-source-external-clickhouse/index).
-:::
-
 # Source de données : ClickHouse externe

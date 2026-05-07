@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/features/enable-ai-employee).
-:::
-
 # Activer les employés IA
 
 NocoBase propose plusieurs employés IA intégrés pour différents scénarios.

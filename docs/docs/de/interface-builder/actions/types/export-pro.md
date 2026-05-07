@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-action-export-pro"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Export Pro
 

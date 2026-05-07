@@ -5,10 +5,6 @@ description: "Desenvolvimento de plugins em modo cluster: Cache, SyncMessageMana
 keywords: "desenvolvimento plugins cluster,Cache,SyncMessageManager,PubSubManager,fila,bloqueio distribuído,WORKER_MODE,NocoBase"
 ---
 
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Desenvolvimento de **Plugins**
 
 ## Contexto

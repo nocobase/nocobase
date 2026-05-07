@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/calculation-engine/index).
-:::
-
 # Motores de Cálculo
 
 No NocoBase, os motores de cálculo são fundamentais para os campos de fórmula, regras de ligação e fluxos de trabalho, fornecendo aos usuários ferramentas computacionais versáteis.

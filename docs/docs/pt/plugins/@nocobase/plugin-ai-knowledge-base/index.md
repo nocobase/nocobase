@@ -11,8 +11,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-ai-knowledge-base/index).
-:::
-
 # AI: Base de conhecimento

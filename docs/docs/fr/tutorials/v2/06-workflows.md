@@ -34,7 +34,7 @@ NocoBase propose plusieurs triggers, à choisir lors de la création d'un workfl
 |-------|------|---------|
 | [**Collection event**](/workflow/triggers/collection) | Déclenché à la création, mise à jour ou suppression de données | Notification de nouveau ticket, journal de changement de statut |
 | [**Schedule**](/workflow/triggers/schedule) | Déclenché par une expression Cron ou une heure fixe | Rapport quotidien, nettoyage périodique |
-| [**Post-action event**](/workflow/triggers/action) | Déclenché après une action utilisateur dans l'interface | Notification après soumission, journalisation |
+| [**Post-action event**](../../workflow/triggers/post-action.md) | Déclenché après une action utilisateur dans l'interface | Notification après soumission, journalisation |
 | **Approval** | Lance un processus d'approbation, multi-niveaux | Demande de congé, validation d'achat |
 | **Custom action** | Lié à un bouton personnalisé, déclenché au clic | Archivage en un clic, opérations groupées |
 | **Pre-action event** | Intercepte une action utilisateur, exécute en synchrone, puis libère | Validation avant soumission, complétion automatique |

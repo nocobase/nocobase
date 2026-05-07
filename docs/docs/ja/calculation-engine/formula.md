@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/calculation-engine/formula)をご参照ください。
-:::
-
 # Formula.js
 
 [Formula.js](http://formulajs.info/) は、Excel 互換の関数を豊富に提供しています。

@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/calculation-engine/formula).
-:::
-
 # Formula.js
 
 [Formula.js](http://formulajs.info/) bietet eine große Sammlung an Excel-kompatiblen Funktionen.

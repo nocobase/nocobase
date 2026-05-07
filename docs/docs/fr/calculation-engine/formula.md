@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/calculation-engine/formula).
-:::
-
 # Formula.js
 
 [Formula.js](http://formulajs.info/) fournit une vaste collection de fonctions compatibles avec Excel.

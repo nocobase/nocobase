@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/data-sources/data-modeling/collection-fields/advanced/snowflake-id)をご参照ください。
-:::
-
 # Snowflake ID (53ビット)
 
 ## はじめに

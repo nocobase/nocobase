@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/off).
-:::
-
 # ctx.off()
 
 Entfernt Ereignis-Listener, die über `ctx.on(eventName, handler)` registriert wurden. Es wird häufig in Verbindung mit [ctx.on](./on.md) verwendet, um Abonnements zum richtigen Zeitpunkt zu kündigen und so Speicherlecks oder mehrfache Auslösungen zu vermeiden.

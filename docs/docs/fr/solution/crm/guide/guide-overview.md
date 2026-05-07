@@ -212,4 +212,4 @@ Maintenant que vous avez compris la vue d'ensemble du système et les tableaux d
 
 - [Guide d'utilisation du CRM](./index.md)
 - [Gestion des Lead](./guide-leads)
-- [Employés IA](./guide-ai)
+- [Employés IA](../../../ai-employees/index.md)

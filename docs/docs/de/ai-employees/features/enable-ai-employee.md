@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/features/enable-ai-employee).
-:::
-
 # AI-Mitarbeiter aktivieren
 
 NocoBase bietet mehrere integrierte AI-Mitarbeiter für verschiedene Szenarien an.

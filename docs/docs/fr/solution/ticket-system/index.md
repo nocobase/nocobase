@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/solution/ticket-system/index).
-:::
-
 # Présentation de la solution de tickets
 
 > **Note** : Il s'agit d'une version préliminaire (early preview). Les fonctionnalités sont encore en cours d'amélioration et nous travaillons continuellement à leur perfectionnement. Vos commentaires sont les bienvenus !

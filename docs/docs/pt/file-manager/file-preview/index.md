@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/file-manager/file-preview/index).
-:::
-
 # Visualização de Arquivos
 
 Em interfaces que contêm campos de arquivo (incluindo campos de anexo), você pode visualizar os arquivos clicando na miniatura ou no ícone do arquivo. A função de visualização integrada suporta vários tipos de arquivos, incluindo imagens, PDFs e a maioria dos tipos de arquivos suportados nativamente pelos navegadores.

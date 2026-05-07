@@ -107,7 +107,7 @@ Một số điểm chính:
 
 - **`renderComponent()`** — Render UI của block, đọc nội dung HTML qua `this.props.html`
 - **`define()`** — Đặt tên hiển thị của block trong menu "Thêm Block". `tExpr()` được dùng để dịch trễ, vì `define()` được thực thi khi module được load — lúc đó i18n chưa được khởi tạo
-- **`registerFlow()`** — Thêm bảng cấu hình. `uiSchema` dùng JSON Schema để định nghĩa form (cú pháp xem [UI Schema](../../../../flow-engine/ui-schema)), `handler` ghi giá trị người dùng nhập vào `ctx.model.props`, sau đó `renderComponent()` có thể đọc được
+- **`registerFlow()`** — Thêm bảng cấu hình. `uiSchema` dùng JSON Schema để định nghĩa form (cú pháp xem [UI Schema](../../../flow-engine/ui-schema.md)), `handler` ghi giá trị người dùng nhập vào `ctx.model.props`, sau đó `renderComponent()` có thể đọc được
 
 ## Bước 3: Thêm file đa ngôn ngữ
 
@@ -194,7 +194,7 @@ Các khả năng được sử dụng trong ví dụ này:
 - [Viết Plugin đầu tiên](../../write-your-first-plugin) — Tạo khung plugin từ đầu
 - [Tổng quan FlowEngine](../flow-engine/index.md) — Cách dùng cơ bản của FlowModel và registerFlow
 - [FlowEngine → Mở rộng Block](../flow-engine/block) — BlockModel, DataBlockModel, CollectionBlockModel
-- [UI Schema](../../../../flow-engine/ui-schema) — Tham chiếu cú pháp uiSchema
+- [UI Schema](../../../flow-engine/ui-schema.md) — Tham chiếu cú pháp uiSchema
 - [Component vs FlowModel](../component-vs-flow-model) — Khi nào nên dùng FlowModel
 - [Plugin](../plugin) — Entry point và lifecycle load() của plugin
 - [i18n](../component/i18n) — Cách viết file dịch và cách dùng tExpr

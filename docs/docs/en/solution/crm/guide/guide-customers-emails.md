@@ -175,4 +175,4 @@ Activity records also appear in the calendar view on the Overview dashboard.
 - [CRM User Guide](./index.md)
 - [Lead Management](./guide-leads) — Leads automatically create customers and contacts upon conversion
 - [Opportunity Management](./guide-opportunities) — Opportunities linked to customers
-- [AI Employees](./guide-ai)
+- [AI Employees](../../../ai-employees/index.md)

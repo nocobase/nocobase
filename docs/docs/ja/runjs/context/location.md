@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/location)をご参照ください。
-:::
-
 # ctx.location
 
 現在のルートの位置情報です。React Router の `location` オブジェクトと等価です。通常、`ctx.router` や `ctx.route` と組み合わせて使用し、現在のパス、クエリ文字列、ハッシュ、およびルート経由で渡された `state` を読み取るために使用されます。

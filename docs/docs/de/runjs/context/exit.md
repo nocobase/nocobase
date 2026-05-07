@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/exit).
-:::
-
 # ctx.exit()
 
 Beendet die Ausführung des aktuellen Ereignisflusses; nachfolgende Schritte werden nicht ausgeführt. Dies wird häufig verwendet, wenn Geschäftsbedingungen nicht erfüllt sind, der Benutzer den Vorgang abbricht oder ein nicht behebbarer Fehler auftritt.

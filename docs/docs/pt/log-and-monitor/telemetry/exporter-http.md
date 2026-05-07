@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-telemetry'
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/log-and-monitor/telemetry/exporter-http).
-:::
-
 # Exportador de Telemetria: HTTP
 
 ## Variáveis de Ambiente

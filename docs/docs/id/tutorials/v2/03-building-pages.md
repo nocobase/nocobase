@@ -178,7 +178,7 @@ Dengan demikian, tiket yang baru dikirim selalu di paling atas, lebih nyaman unt
 Hanya melihat list saja tidak cukup, kita juga perlu bisa klik untuk melihat detail tiket dan mengedit tiket.
 
 1. Pada bagian atas kolom Action, klik tombol "+" kedua.
-2. Klik Action: **Lihat**, **[Edit](/interface-builder/actions/edit)**, **[Hapus](/interface-builder/actions/delete)**.
+2. Klik Action: **Lihat**, **[Edit](../../interface-builder/actions/types/edit.md)**, **[Hapus](../../interface-builder/actions/types/delete.md)**.
 3. Setiap baris kolom Action data akan muncul tombol "Lihat", "Edit", dan "Hapus".
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

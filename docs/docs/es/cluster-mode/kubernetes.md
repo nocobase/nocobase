@@ -5,10 +5,6 @@ description: "Despliegue de un clúster NocoBase en K8s o K3s: ConfigMap, Deploy
 keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,despliegue clúster,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Despliegue en Kubernetes
 

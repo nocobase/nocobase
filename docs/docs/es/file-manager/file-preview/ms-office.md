@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-file-previewer-office'
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/file-manager/file-preview/ms-office).
-:::
-
 # Vista previa de archivos de Office <Badge>v1.8.11+</Badge>
 
 El plugin Office File Preview se utiliza para previsualizar archivos en formato Office en las aplicaciones de NocoBase, como Word, Excel y PowerPoint.  

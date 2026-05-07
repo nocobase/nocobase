@@ -10,10 +10,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-charts/index).
-:::
-
 # Graphiques (obsolète)
 
 > Remarque : Ce plugin est obsolète (deprecated).

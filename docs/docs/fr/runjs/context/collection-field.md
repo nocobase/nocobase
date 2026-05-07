@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/collection-field).
-:::
-
 # ctx.collectionField
 
 L'instance `CollectionField` associée au contexte d'exécution RunJS actuel, utilisée pour accéder aux métadonnées du champ, à son type, aux règles de validation et aux informations d'association. Elle n'existe que lorsque le champ est lié à une définition de collection ; les champs personnalisés ou virtuels peuvent être `null`.

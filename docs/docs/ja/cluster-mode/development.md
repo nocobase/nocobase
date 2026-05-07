@@ -5,10 +5,6 @@ description: "クラスターモードでのプラグイン開発：Cache、Sync
 keywords: "クラスタープラグイン開発,Cache,SyncMessageManager,PubSubManager,キュー,分散ロック,WORKER_MODE,NocoBase"
 ---
 
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # プラグイン開発
 
 ## 背景にある課題

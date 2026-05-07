@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/jsx).
-:::
-
 # JSX
 
 RunJS prend en charge la syntaxe JSX, ce qui vous permet d'écrire du code de la même manière que des composants React. Le JSX est automatiquement compilé avant l'exécution.

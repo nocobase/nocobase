@@ -175,4 +175,4 @@ Os registros de atividades também aparecem na visualização de calendário do 
 - [Guia de operação do CRM](./index.md)
 - [Gestão de Leads](./guide-leads) — após a conversão do Lead, Cliente e contato são criados automaticamente
 - [Gestão de Oportunidades](./guide-opportunities) — Oportunidades vinculadas ao Cliente
-- [Funcionários de AI](./guide-ai)
+- [Funcionários de AI](../../../ai-employees/index.md)

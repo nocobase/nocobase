@@ -5,10 +5,6 @@ description: "Preparação para implantação em cluster: licenças de plugins c
 keywords: "preparação cluster,licença comercial,Redis,RabbitMQ,armazenamento compartilhado,balanceamento de carga,Nginx,NocoBase"
 ---
 
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Preparação
 
 Antes de implantar um aplicativo em cluster, você precisa concluir as seguintes preparações.

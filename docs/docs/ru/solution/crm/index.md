@@ -1,7 +1,3 @@
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/solution/crm/index).
-:::
-
 # NocoBase CRM 2.0 Solution
 
 > A modular sales management system built on the NocoBase low-code platform, with AI employee assistance

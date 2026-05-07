@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-action-template-print/index).
-:::
-
 # Impresión de plantillas

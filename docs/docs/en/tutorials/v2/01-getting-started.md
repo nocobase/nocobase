@@ -19,7 +19,7 @@ Compared to other no-code tools, NocoBase has a few core principles:
 
 - **Data model driven**: Define your data structure first, then use [blocks](/interface-builder/blocks) to display data, then [actions](/interface-builder/actions) to process it — UI and data are fully decoupled
 - **WYSIWYG**: Pages are your canvas. Click anywhere to edit, as intuitive as building a Notion page
-- **Everything is a plugin**: All features are [plugins](/development/plugin), similar to WordPress — install what you need
+- **Everything is a plugin**: All features are [plugins](../../plugins/index.mdx), similar to WordPress — install what you need
 - **AI built into your workflow**: Built-in [AI employees](/ai-employees/quick-start) that can perform analysis, translation, data entry, and more
 - **Open source + self-hosted**: Core code is fully open source, all data stays on your own server
 

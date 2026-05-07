@@ -58,7 +58,3 @@ features:
         link: /file-manager/development
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/development/index).
-:::
-

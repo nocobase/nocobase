@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/get-started/translations).
-:::
-
 # Contribuição de tradução
 
 O idioma padrão do NocoBase é o inglês. Atualmente, o aplicativo principal suporta inglês, italiano, holandês, chinês simplificado e japonês. Convidamos você sinceramente a contribuir com traduções para outros idiomas, permitindo que usuários de todo o mundo desfrutem de uma experiência NocoBase ainda mais conveniente.

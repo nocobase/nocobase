@@ -175,4 +175,4 @@ Aktivitäten erscheinen auch in der Kalenderansicht des Overview-Dashboards.
 - [CRM-Bedienungsanleitung](./index.md)
 - [Lead-Verwaltung](./guide-leads) — Nach der Konvertierung von Leads werden Kunden und Kontakte automatisch erstellt
 - [Verwaltung von Verkaufschancen](./guide-opportunities) — Mit dem Kunden verknüpfte Verkaufschancen
-- [AI Employees](./guide-ai)
+- [AI Employees](../../../ai-employees/index.md)

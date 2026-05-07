@@ -91,7 +91,7 @@ nb env auth local
 
 `nb env auth` inicia o fluxo de login pelo navegador. Após o sucesso, o CLI salva as informações de autenticação na configuração do ambiente atual e o AI Agent pode continuar a chamar `nb api`.
 
-A validade dos access tokens e refresh tokens OAuth segue a configuração da [política de Token](/security/token-policy/) do sistema.
+A validade dos access tokens e refresh tokens OAuth segue a configuração da [política de Token](../security/token-policy/index.md) do sistema.
 
 - O access token OAuth tem a mesma validade do Token do sistema, com padrão de **1 dia**.
 - O refresh token OAuth tem a mesma validade da sessão do sistema, com padrão de **7 dias**.
