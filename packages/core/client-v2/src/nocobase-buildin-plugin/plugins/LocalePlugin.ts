@@ -19,7 +19,6 @@ import { loadConstrueLocale } from './loadConstrueLocale';
  */
 export class LocalePlugin extends Plugin {
   async afterAdd() {
-    this.app.use(App, { component: false });
     const api = this.app.apiClient;
     const locale = api.auth.locale;
 
@@ -36,6 +35,7 @@ export class LocalePlugin extends Plugin {
       const data = res?.data?.data || {};
 
       this.engine.context.defineProperty('locales', { value: data });
+      this.app.use(App, { component: false });
 
       if (data.lang) {
         api.auth.setLocale(data.lang);
@@ -55,13 +55,6 @@ export class LocalePlugin extends Plugin {
 
       window['cronLocale'] = data.cron;
     } catch (error) {
-      const maintainingError = error?.response?.data?.error;
-      if (maintainingError?.maintaining) {
-        // 子应用启动中的 maintaining 错误不应中断整个前端初始化，否则会掉进应用级 404 路由。
-        this.app.setMaintainingError(maintainingError);
-        this.engine.context.defineProperty('locales', { value: {} });
-        return;
-      }
       throw error;
     }
   }

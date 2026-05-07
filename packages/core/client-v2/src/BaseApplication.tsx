@@ -15,7 +15,6 @@ import {
   FlowEngineProvider,
   FlowModel,
   FlowModelRenderer,
-  observer,
 } from '@nocobase/flow-engine';
 import { APIClient, getSubAppName } from '@nocobase/sdk';
 import type { i18n as i18next } from 'i18next';
@@ -140,7 +139,6 @@ export abstract class BaseApplication<
   public systemSettings!: SystemSettingsSource;
   maintained = false;
   maintaining = false;
-  loading = false;
   error: any = null;
 
   model: ApplicationModel;
@@ -212,7 +210,6 @@ export abstract class BaseApplication<
     define(this, {
       maintained: observable.ref,
       maintaining: observable.ref,
-      loading: observable.ref,
       error: observable.ref,
     });
   }
@@ -397,11 +394,6 @@ export abstract class BaseApplication<
     }
   }
 
-  setMaintainingError(error: any) {
-    this.setMaintaining(true);
-    this.error = error;
-  }
-
   getOptions() {
     return this.options;
   }
@@ -517,27 +509,14 @@ export abstract class BaseApplication<
     });
   }
 
-  protected renderRootState(spinProps?: Record<string, any>) {
-    if (this.maintaining) {
-      if (!this.maintained) {
-        return this.renderComponent('AppMaintaining', { app: this, error: this.error });
-      }
-      return this.renderComponent('AppMaintainingDialog', { app: this, error: this.error });
-    }
-    if (this.error) {
-      return this.renderComponent('AppError', { app: this, error: this.error });
-    }
-    return this.renderComponent('AppSpin', spinProps);
-  }
-
   protected getRootFallback() {
-    return this.renderRootState();
+    return this.renderComponent('AppSpin');
   }
 
   getRootComponent() {
     const model = this.model;
     const flowEngine = this.flowEngine;
-    const RootFallback = observer(() => this.getRootFallback(), { displayName: 'RootFallback' });
+    const getRootFallback = () => this.getRootFallback();
     const Root: FC<{ children?: React.ReactNode }> = ({ children }) => {
       useLayoutEffect(() => {
         model.setProps({ children });
@@ -545,7 +524,7 @@ export abstract class BaseApplication<
 
       return (
         <FlowEngineProvider engine={flowEngine}>
-          <FlowModelRenderer fallback={<RootFallback />} model={model} />
+          <FlowModelRenderer fallback={getRootFallback()} model={model} />
         </FlowEngineProvider>
       );
     };
@@ -612,9 +591,6 @@ export class ApplicationModel extends FlowModel {
     }
     if (this.app.error) {
       return this.renderError();
-    }
-    if (this.app.loading) {
-      return this.app.renderComponent('AppSpin');
     }
     return this.renderContent();
   }

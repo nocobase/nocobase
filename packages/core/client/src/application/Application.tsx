@@ -229,7 +229,7 @@ export class Application extends BaseApplication<
   }
 
   protected getRootFallback() {
-    return this.renderRootState({ app: this });
+    return this.renderComponent('AppSpin', { app: this });
   }
 
   getCollectionManager(dataSource?: string) {
