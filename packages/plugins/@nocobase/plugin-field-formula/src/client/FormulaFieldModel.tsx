@@ -10,14 +10,8 @@
 import { toJS } from '@formily/reactive';
 import { EditableItemModel, DisplayItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Form } from 'antd';
-import {
-  Checkbox,
-  DatePicker,
-  FieldModel,
-  InputNumber,
-  Input as InputString,
-  resolveDynamicNamePath,
-} from '@nocobase/client';
+import { Checkbox, DatePicker, FieldModel, InputNumber, Input as InputString } from '@nocobase/client';
+import { resolveDynamicNamePath } from '@nocobase/client-v2';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import _ from 'lodash';
