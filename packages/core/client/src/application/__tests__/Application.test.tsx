@@ -370,8 +370,9 @@ describe('Application', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('404')).toBeInTheDocument();
+        expect(document.querySelector('.ant-app')).toBeInTheDocument();
       });
+      expect(screen.queryByText('404')).not.toBeInTheDocument();
     });
 
     it('mount', async () => {

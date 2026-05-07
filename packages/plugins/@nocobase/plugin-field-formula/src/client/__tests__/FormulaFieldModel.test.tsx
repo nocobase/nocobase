@@ -62,12 +62,22 @@ vi.mock('@nocobase/evaluators/client', () => ({
   },
 }));
 
-vi.mock('@nocobase/flow-engine', () => {
-  const bindModelToInterface = vi.fn();
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  class MockDisplayItemModel extends actual.DisplayItemModel {
+    static bindModelToInterface = vi.fn();
+  }
+  class MockEditableItemModel extends actual.EditableItemModel {
+    static bindModelToInterface = vi.fn();
+  }
+  class MockFilterableItemModel extends actual.FilterableItemModel {
+    static bindModelToInterface = vi.fn();
+  }
   return {
-    DisplayItemModel: { bindModelToInterface },
-    EditableItemModel: { bindModelToInterface },
-    FilterableItemModel: { bindModelToInterface },
+    ...actual,
+    DisplayItemModel: MockDisplayItemModel,
+    EditableItemModel: MockEditableItemModel,
+    FilterableItemModel: MockFilterableItemModel,
     tExpr: (value: string) => value,
   };
 });
