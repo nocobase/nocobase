@@ -9,6 +9,8 @@
 
 import { defineGlobalDeps } from '../utils/globalDeps';
 
+vi.mock('../index', () => ({}));
+
 describe('client-v2 defineGlobalDeps', () => {
   it('should register shared AMD dependencies for remote plugins', () => {
     const define = vi.fn();
