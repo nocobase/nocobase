@@ -87,7 +87,10 @@ describe('workflow > Processor', () => {
 
     it('workflow with single simple node', async () => {
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -108,7 +111,10 @@ describe('workflow > Processor', () => {
     it('workflow with multiple simple nodes', async () => {
       const n1 = await workflow.createNode({
         title: 'echo 1',
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const n2 = await workflow.createNode({

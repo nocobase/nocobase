@@ -469,12 +469,12 @@ export default class Dispatcher {
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
     const logger = this.plugin.getLogger(execution.workflowId);
+    const mainTransaction = await this.plugin.useDataSourceTransaction('main', options.transaction);
     if (!execution.dispatched) {
-      const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction);
-      await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction });
+      await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction: mainTransaction });
       logger.info(`execution (${execution.id}) from pending list updated to started`);
     }
-    await this.plugin.timeoutManager.ensureStarted(execution, { transaction: options.transaction as any });
+    await this.plugin.timeoutManager.ensureStarted(execution, { transaction: mainTransaction as any });
     const processor = this.plugin.createProcessor(execution, options);
 
     logger.info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);

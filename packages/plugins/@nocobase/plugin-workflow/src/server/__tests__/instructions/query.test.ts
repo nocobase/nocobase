@@ -131,7 +131,10 @@ describe('workflow > instructions > query', () => {
 
     it('params.filter: value from job of node', async () => {
       const n1 = await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
       const n2 = await workflow.createNode({
         type: 'query',

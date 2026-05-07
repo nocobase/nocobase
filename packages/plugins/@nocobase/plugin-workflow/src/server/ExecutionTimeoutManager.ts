@@ -36,10 +36,11 @@ export default class ExecutionTimeoutManager {
       return execution;
     }
 
+    const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction);
+
     if (!execution.workflow) {
       execution.workflow =
-        this.plugin.enabledCache.get(execution.workflowId) ||
-        (await execution.getWorkflow({ transaction: options.transaction }));
+        this.plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
     }
 
     const timeout = this.getTimeout(execution);
@@ -67,12 +68,12 @@ export default class ExecutionTimeoutManager {
           id: execution.id,
           startedAt: null,
         },
-        transaction: options.transaction,
+        transaction,
       },
     );
 
     if (affected || !execution.startedAt) {
-      await execution.reload({ transaction: options.transaction });
+      await execution.reload({ transaction });
     }
     return execution;
   }
