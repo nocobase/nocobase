@@ -32,5 +32,5 @@ export type AIEmployeeInstructionConfig = {
 export type AIEmployeeInstructionFiles = {
   type: 'file_id' | 'file_url';
   collection?: string;
-  value: string;
+  value: string | string[];
 };
