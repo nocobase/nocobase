@@ -10,15 +10,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { linkageRulesRefresh } from '../linkageRulesRefresh';
 
-async function waitForMockCall(mock: { mock: { calls: unknown[] } }, count: number) {
-  for (let i = 0; i < 10; i++) {
-    await Promise.resolve();
-    if (mock.mock.calls.length >= count) {
-      return;
-    }
-  }
-}
-
 describe('linkageRulesRefresh action', () => {
   it('skips master model when mounted forks can handle flow in runtime mode', async () => {
     const handler = vi.fn(async () => {});
@@ -171,99 +162,45 @@ describe('linkageRulesRefresh action', () => {
     expect(handler).toHaveBeenCalledWith(ctx, { value: ['x'] });
   });
 
-  it('reruns after an inflight refresh receives another request', async () => {
-    let resolveFirst: () => void;
-    const firstRun = new Promise<void>((resolve) => {
-      resolveFirst = resolve;
-    });
-    const handler = vi.fn(async () => {
-      if (handler.mock.calls.length === 1) {
-        await firstRun;
-      }
-    });
+  it('passes raw params to useRawParams linkage actions', async () => {
+    const handler = vi.fn(async () => {});
+    const rawParams = {
+      value: [
+        {
+          key: 'r1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageRunjs',
+              params: {
+                value: {
+                  script: 'return ctx.formValues.amount',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
     const model: any = {
-      isFork: true,
+      isFork: false,
       forks: new Set(),
       getFlow: vi.fn(() => ({})),
-      getStepParams: vi
-        .fn()
-        .mockReturnValueOnce({ value: ['first'] })
-        .mockReturnValueOnce({ value: ['second'] }),
+      getStepParams: vi.fn(() => rawParams),
     };
     const ctx: any = {
       model,
-      resolveJsonTemplate: vi.fn(async (p: any) => p),
-      getAction: vi.fn(() => ({ handler })),
+      resolveJsonTemplate: vi.fn(async () => ({ value: ['resolved'] })),
+      getAction: vi.fn(() => ({ useRawParams: true, handler })),
     };
 
-    const first = linkageRulesRefresh.handler(ctx, {
-      actionName: 'actionLinkageRules',
-      flowKey: 'buttonSettings',
-    });
-    const second = linkageRulesRefresh.handler(ctx, {
+    await linkageRulesRefresh.handler(ctx, {
       actionName: 'actionLinkageRules',
       flowKey: 'buttonSettings',
     });
 
-    await waitForMockCall(handler, 1);
-    expect(handler).toHaveBeenCalledTimes(1);
-
-    resolveFirst!();
-    await Promise.all([first, second]);
-
-    expect(handler).toHaveBeenCalledTimes(2);
-    expect(handler.mock.calls[0]?.[1]).toEqual({ value: ['first'] });
-    expect(handler.mock.calls[1]?.[1]).toEqual({ value: ['second'] });
-  });
-
-  it('uses the latest context for an inflight pending rerun', async () => {
-    let resolveFirst: () => void;
-    const firstRun = new Promise<void>((resolve) => {
-      resolveFirst = resolve;
-    });
-    const handler = vi.fn(async () => {
-      if (handler.mock.calls.length === 1) {
-        await firstRun;
-      }
-    });
-    const model: any = {
-      isFork: true,
-      forks: new Set(),
-      getFlow: vi.fn(() => ({})),
-      getStepParams: vi.fn(() => ({ value: [] })),
-    };
-    const ctx1: any = {
-      model,
-      marker: 'first',
-      resolveJsonTemplate: vi.fn(async (p: any) => ({ ...p, marker: 'first' })),
-      getAction: vi.fn(() => ({ handler })),
-    };
-    const ctx2: any = {
-      model,
-      marker: 'second',
-      resolveJsonTemplate: vi.fn(async (p: any) => ({ ...p, marker: 'second' })),
-      getAction: vi.fn(() => ({ handler })),
-    };
-
-    const first = linkageRulesRefresh.handler(ctx1, {
-      actionName: 'actionLinkageRules',
-      flowKey: 'buttonSettings',
-    });
-    const second = linkageRulesRefresh.handler(ctx2, {
-      actionName: 'actionLinkageRules',
-      flowKey: 'buttonSettings',
-    });
-
-    await waitForMockCall(handler, 1);
-    expect(handler).toHaveBeenCalledTimes(1);
-
-    resolveFirst!();
-    await Promise.all([first, second]);
-
-    expect(handler).toHaveBeenCalledTimes(2);
-    expect(handler.mock.calls[0]?.[0]).toBe(ctx1);
-    expect(handler.mock.calls[0]?.[1]).toEqual({ value: [], marker: 'first' });
-    expect(handler.mock.calls[1]?.[0]).toBe(ctx2);
-    expect(handler.mock.calls[1]?.[1]).toEqual({ value: [], marker: 'second' });
+    expect(ctx.resolveJsonTemplate).not.toHaveBeenCalled();
+    expect(handler).toHaveBeenCalledWith(ctx, rawParams);
   });
 });

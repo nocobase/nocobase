@@ -16,7 +16,6 @@ import React, { useMemo } from 'react';
 import { Icon } from '../../../icon/Icon';
 import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
-import { collectLinkageRuleDeps, linkageRuleDepsShouldRefresh } from '../../utils/linkageRuleDeps';
 
 export function ActionWithoutPermission(props) {
   const { t } = useTranslation();
@@ -55,13 +54,6 @@ export const ActionSceneEnum = {
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   declare props: ButtonProps & { tooltip?: string };
   declare scene: ActionSceneType;
-  private formValuesChangeLinkageBinding?: {
-    blockModel: any;
-    listener: (payload: any) => void;
-    destroyListener?: (payload: any) => void;
-  };
-  private formValuesChangeLinkageTimer?: ReturnType<typeof setTimeout>;
-  private formValuesChangeLinkagePayload?: any;
 
   defaultProps: ButtonProps & { tooltip?: string } = {
     type: 'default',
@@ -96,108 +88,6 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
       },
       cache: false,
     });
-  }
-
-  protected onMount(): void {
-    super.onMount();
-    this.bindFormValuesChangeLinkageRefresh();
-  }
-
-  protected onUnmount(): void {
-    const keepHiddenMasterActionRefreshable = this.hidden && !this.forbidden && !(this as any).isFork;
-    if (keepHiddenMasterActionRefreshable) {
-      this.clearPendingFormValuesChangeLinkageRefresh();
-    } else {
-      this.unbindFormValuesChangeLinkageRefresh();
-    }
-    super.onUnmount();
-  }
-
-  private bindFormValuesChangeLinkageRefresh() {
-    const blockModel = (this.context as any)?.blockModel;
-    const emitter = blockModel?.emitter;
-    if (!emitter || typeof emitter.on !== 'function' || typeof emitter.off !== 'function') {
-      return;
-    }
-
-    if (this.formValuesChangeLinkageBinding?.blockModel === blockModel) {
-      return;
-    }
-
-    this.unbindFormValuesChangeLinkageRefresh();
-
-    const listener = (payload: any) => {
-      this.handleFormValuesChangeForLinkageRefresh(payload);
-    };
-    emitter.on('formValuesChange', listener);
-
-    const engineEmitter = this.flowEngine?.emitter;
-    const destroyListener =
-      engineEmitter && typeof engineEmitter.on === 'function'
-        ? (payload: any) => {
-            if (payload?.uid === this.uid || payload?.model === this) {
-              this.unbindFormValuesChangeLinkageRefresh();
-            }
-          }
-        : undefined;
-    if (destroyListener) {
-      engineEmitter?.on?.('model:destroyed', destroyListener);
-    }
-
-    this.formValuesChangeLinkageBinding = {
-      blockModel,
-      listener,
-      destroyListener,
-    };
-  }
-
-  private unbindFormValuesChangeLinkageRefresh() {
-    this.clearPendingFormValuesChangeLinkageRefresh();
-
-    const binding = this.formValuesChangeLinkageBinding;
-    if (!binding) return;
-
-    binding.blockModel?.emitter?.off?.('formValuesChange', binding.listener);
-    if (binding.destroyListener) {
-      this.flowEngine?.emitter?.off?.('model:destroyed', binding.destroyListener);
-    }
-    this.formValuesChangeLinkageBinding = undefined;
-  }
-
-  private clearPendingFormValuesChangeLinkageRefresh() {
-    clearTimeout(this.formValuesChangeLinkageTimer);
-    this.formValuesChangeLinkageTimer = undefined;
-    this.formValuesChangeLinkagePayload = undefined;
-  }
-
-  private handleFormValuesChangeForLinkageRefresh(payload: any) {
-    try {
-      const raw = this.getStepParams?.('buttonSettings', 'linkageRules');
-      const deps = collectLinkageRuleDeps({ value: [], ...(raw || {}) });
-      if (!linkageRuleDepsShouldRefresh(deps, payload, this.context)) {
-        return;
-      }
-      this.scheduleFormValuesChangeLinkageRefresh(payload);
-    } catch (error) {
-      console.warn('[ActionModel] Failed to schedule formValues-driven linkage refresh', error);
-    }
-  }
-
-  private scheduleFormValuesChangeLinkageRefresh(payload: any) {
-    this.formValuesChangeLinkagePayload = payload;
-    clearTimeout(this.formValuesChangeLinkageTimer);
-
-    this.formValuesChangeLinkageTimer = setTimeout(() => {
-      this.formValuesChangeLinkageTimer = undefined;
-      const latestPayload = this.formValuesChangeLinkagePayload;
-      this.formValuesChangeLinkagePayload = undefined;
-
-      void this.dispatchEvent('formValuesChange', latestPayload, { sequential: true, useCache: false }).catch(
-        (error) => {
-          console.warn('[ActionModel] Failed to refresh linkage rules after formValuesChange', error);
-        },
-      );
-    }, 50);
   }
 
   getInputArgs() {
@@ -370,21 +260,6 @@ ActionModel.registerFlow({
   steps: {
     aclCheck: {
       use: 'aclCheck',
-    },
-  },
-});
-
-ActionModel.registerFlow({
-  key: 'formValuesChangeLinkageRefresh',
-  on: 'formValuesChange',
-  steps: {
-    linkageRulesRefresh: {
-      use: 'linkageRulesRefresh',
-      defaultParams: {
-        actionName: 'actionLinkageRules',
-        flowKey: 'buttonSettings',
-        stepKey: 'linkageRules',
-      },
     },
   },
 });
