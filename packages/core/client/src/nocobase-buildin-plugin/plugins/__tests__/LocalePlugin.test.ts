@@ -34,6 +34,7 @@ describe('LocalePlugin', () => {
         changeLanguage: vi.fn(),
         addResources: vi.fn(),
       },
+      setMaintainingError: vi.fn(),
       flowEngine: {
         context: {
           defineProperty,
@@ -46,6 +47,10 @@ describe('LocalePlugin', () => {
 
     expect(app.apiClient.request).toHaveBeenCalledTimes(1);
     expect(app.use).toHaveBeenCalledTimes(1);
+    expect(app.setMaintainingError).toHaveBeenCalledWith({
+      code: 'APP_NOT_FOUND',
+      maintaining: true,
+    });
     expect(defineProperty).toHaveBeenCalledWith('locales', { value: {} });
   });
 
@@ -63,6 +68,7 @@ describe('LocalePlugin', () => {
         changeLanguage: vi.fn(),
         addResources: vi.fn(),
       },
+      setMaintainingError: vi.fn(),
       flowEngine: {
         context: {
           defineProperty: vi.fn(),

@@ -8,7 +8,7 @@
  */
 
 import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
-import { render as rtlRender } from '@testing-library/react';
+import { act, render as rtlRender } from '@testing-library/react';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
@@ -431,6 +431,40 @@ describe('Application', () => {
       const Root = app.getRootComponent();
       rtlRender(<Root />);
       expect(screen.getByText('AppSpin')).toBeInTheDocument();
+    });
+
+    it('render maintaining state while root flow is loading', async () => {
+      let resolveLoad!: () => void;
+      const pendingLoad = new Promise<void>((resolve) => {
+        resolveLoad = resolve;
+      });
+
+      class DemoPlugin extends Plugin {
+        async load() {
+          this.app.setMaintaining(true);
+          this.app.error = {
+            code: 'APP_COMMANDING',
+            command: { name: 'start' },
+            message: 'plugins loaded',
+          };
+          await pendingLoad;
+        }
+      }
+
+      const app = new Application({
+        router,
+        plugins: [[DemoPlugin, { name: 'demo' }]],
+      });
+      const Root = app.getRootComponent();
+      rtlRender(<Root />);
+
+      expect(await screen.findByText('App starting')).toBeInTheDocument();
+      expect(screen.getByText('plugins loaded')).toBeInTheDocument();
+
+      await act(async () => {
+        resolveLoad();
+        await pendingLoad;
+      });
     });
 
     it('render component error', async () => {

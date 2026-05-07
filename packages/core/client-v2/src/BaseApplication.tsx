@@ -15,6 +15,7 @@ import {
   FlowEngineProvider,
   FlowModel,
   FlowModelRenderer,
+  observer,
 } from '@nocobase/flow-engine';
 import { APIClient, getSubAppName } from '@nocobase/sdk';
 import type { i18n as i18next } from 'i18next';
@@ -396,6 +397,11 @@ export abstract class BaseApplication<
     }
   }
 
+  setMaintainingError(error: any) {
+    this.setMaintaining(true);
+    this.error = error;
+  }
+
   getOptions() {
     return this.options;
   }
@@ -511,14 +517,27 @@ export abstract class BaseApplication<
     });
   }
 
+  protected renderRootState(spinProps?: Record<string, any>) {
+    if (this.maintaining) {
+      if (!this.maintained) {
+        return this.renderComponent('AppMaintaining', { app: this, error: this.error });
+      }
+      return this.renderComponent('AppMaintainingDialog', { app: this, error: this.error });
+    }
+    if (this.error) {
+      return this.renderComponent('AppError', { app: this, error: this.error });
+    }
+    return this.renderComponent('AppSpin', spinProps);
+  }
+
   protected getRootFallback() {
-    return this.renderComponent('AppSpin');
+    return this.renderRootState();
   }
 
   getRootComponent() {
     const model = this.model;
     const flowEngine = this.flowEngine;
-    const getRootFallback = () => this.getRootFallback();
+    const RootFallback = observer(() => this.getRootFallback(), { displayName: 'RootFallback' });
     const Root: FC<{ children?: React.ReactNode }> = ({ children }) => {
       useLayoutEffect(() => {
         model.setProps({ children });
@@ -526,7 +545,7 @@ export abstract class BaseApplication<
 
       return (
         <FlowEngineProvider engine={flowEngine}>
-          <FlowModelRenderer fallback={getRootFallback()} model={model} />
+          <FlowModelRenderer fallback={<RootFallback />} model={model} />
         </FlowEngineProvider>
       );
     };

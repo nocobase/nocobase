@@ -113,13 +113,21 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
         res = await this.app.apiClient.request({ url: this.getRemotePluginsRequestUrl() });
         break;
       } catch (error) {
-        const isMaintaining = !!error?.response?.data?.error?.maintaining;
+        const maintainingError = error?.response?.data?.error;
+        const isMaintaining = !!maintainingError?.maintaining;
         const isLastAttempt = attempt === PluginManager.REMOTE_PLUGIN_RETRY_LIMIT - 1;
         if (!isMaintaining || isLastAttempt) {
           throw error;
         }
+        this.app.setMaintainingError(maintainingError);
         await new Promise((resolve) => setTimeout(resolve, PluginManager.getRetryDelay(error, attempt)));
       }
+    }
+
+    if (res && this.app.error?.maintaining) {
+      this.app.setMaintaining(false);
+      this.app.maintained = true;
+      this.app.error = null;
     }
 
     return res?.data?.data || [];
