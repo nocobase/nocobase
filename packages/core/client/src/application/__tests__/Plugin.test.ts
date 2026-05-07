@@ -70,6 +70,8 @@ describe('PluginManager', () => {
 
   it('remote plugins', async () => {
     const mock = new MockAdapter(axios);
+    const mockDefine: any = vi.fn();
+    window.define = mockDefine;
     mock.onGet('pm:listEnabled').reply(200, {
       data: [
         {
@@ -123,6 +125,32 @@ describe('PluginManager', () => {
 
     expect(remoteFn).toBeCalledTimes(1);
     expect(demo1Mock).toBeCalledTimes(1);
+    expect(mockDefine).toHaveBeenCalledWith('@nocobase/demo/client', expect.any(Array), expect.any(Function));
+    expect(mockDefine).toHaveBeenCalledWith('@nocobase/demo2/client', expect.any(Array), expect.any(Function));
+    expect(mockDefine).not.toHaveBeenCalledWith('@nocobase/demo/client-v2', expect.any(Array), expect.any(Function));
+  });
+
+  it('should retry remote plugins request when maintaining error is returned', async () => {
+    const mock = new MockAdapter(axios);
+    mock
+      .onGet('pm:listEnabled')
+      .replyOnce(503, {
+        error: {
+          code: 'APP_PREPARING',
+          maintaining: true,
+          message: 'application demo is preparing',
+        },
+      })
+      .onGet('pm:listEnabled')
+      .reply(200, {
+        data: [],
+      });
+
+    const app = new Application({
+      loadRemotePlugins: true,
+    });
+
+    await expect(app.load()).resolves.toBeUndefined();
   });
 
   it('Load other plugins through plugins', async () => {

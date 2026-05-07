@@ -33,6 +33,26 @@ describe('PluginManager', () => {
     expect(app.apiMock.history.get.some((request) => request.url === 'pm:listEnabled')).toBe(false);
   });
 
+  it('should retry remote plugins request when maintaining error is returned', async () => {
+    const app = createMockClient({
+      loadRemotePlugins: true,
+    });
+    app.apiMock
+      .onGet('pm:listEnabledV2')
+      .replyOnce(503, {
+        error: {
+          code: 'APP_PREPARING',
+          maintaining: true,
+          message: 'application demo is preparing',
+        },
+      })
+      .onGet('pm:listEnabledV2')
+      .reply(200, { data: [] });
+
+    await expect(app.load()).resolves.toBeUndefined();
+    expect(app.apiMock.history.get.filter((request) => request.url === 'pm:listEnabledV2')).toHaveLength(2);
+  });
+
   it('should define client-v2 module ids for dev plugins', async () => {
     class DemoPlugin extends Plugin {}
 
