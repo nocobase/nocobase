@@ -861,7 +861,7 @@ export const flowSurfaceExamples = {
       title: 'Run item diagnostics',
       type: 'default',
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
+      code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item diagnostics complete")}>Run item diagnostics</Button>;\n}\n\nctx.render(<JsItemAction />);',
     },
   },
   configureJsField: {
@@ -1350,7 +1350,7 @@ export const flowSurfaceExamples = {
       title: 'Run item JS',
       type: 'default',
       version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("item")\');',
+      code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item JS complete")}>Run item JS</Button>;\n}\n\nctx.render(<JsItemAction />);',
     },
   },
   addRecordAction: {

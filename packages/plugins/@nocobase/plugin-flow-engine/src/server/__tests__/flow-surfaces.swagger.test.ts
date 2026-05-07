@@ -1090,7 +1090,7 @@ describe('flowSurfaces swagger', () => {
     expect(configureRequest.examples.actionSettings.value.changes.assignValues.status).toBe('active');
     expect(configureRequest.examples.jsBlockSettings.value.changes.code).toContain('Users hero');
     expect(configureRequest.examples.jsActionSettings.value.changes.version).toBe('1.0.1');
-    expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('item diagnostics');
+    expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('ctx.render');
     expect(configureRequest.examples.jsFieldSettings.value.changes.code).toContain('toUpperCase');
     expect(configureRequest.examples.jsColumnSettings.value.changes.fixed).toBe('left');
     expect(configureRequest.examples.jsItemSettings.value.changes.showLabel).toBe(true);
@@ -1280,7 +1280,7 @@ describe('flowSurfaces swagger', () => {
     expect(addActionRequest.examples.js.value.settings.version).toBe('1.0.0');
     expect(addActionRequest.examples.js.value.settings.code).not.toContain('return await ctx.runjs');
     expect(addActionRequest.examples.jsItem.value.type).toBe('jsItem');
-    expect(addActionRequest.examples.jsItem.value.settings.code).toContain('await ctx.runjs');
+    expect(addActionRequest.examples.jsItem.value.settings.code).toContain('ctx.render');
     expect(addActionRequest.examples.autoPopupTemplate.value.popup.tryTemplate).toBe(true);
     expect(addActionRequest.examples.savePopupTemplate.value.popup.saveAsTemplate.name).toBe('employee-popup-template');
     expect(schemas.FlowSurfaceAddActionRequest.properties.scope).toBeUndefined();
@@ -1349,7 +1349,17 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddRecordActionItem.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddRecordActionItem.properties.flowRegistry).toBeUndefined();
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.type.enum).toEqual(
-      expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild', 'popup', 'js']),
+      expect.arrayContaining([
+        'view',
+        'edit',
+        'delete',
+        'updateRecord',
+        'duplicate',
+        'addChild',
+        'popup',
+        'js',
+        'jsItem',
+      ]),
     );
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.type.enum).not.toEqual(
       expect.arrayContaining(['submit', 'reset', 'filter', 'bulkDelete']),

@@ -7046,7 +7046,7 @@ describe('flowSurfaces resource', () => {
         changes: {
           title: 'Run item diagnostics',
           version: '1.0.1',
-          code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
+          code: 'ctx.render(null);',
         },
       },
     });
@@ -7116,10 +7116,11 @@ describe('flowSurfaces resource', () => {
       version: '1.0.1',
       code: 'await ctx.runjs(\'console.log("diagnostics")\');',
     });
-    expect(jsItemActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
+    expect(jsItemActionReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
+      code: 'ctx.render(null);',
     });
+    expect(jsItemActionReadback.tree.stepParams?.clickSettings?.runJs).toBeUndefined();
     expect(jsColumnReadback.tree.props).toMatchObject({
       title: 'JS column',
       width: 280,

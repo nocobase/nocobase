@@ -650,13 +650,13 @@ describe('flowSurfaces kanban contract', () => {
       }),
     );
     expect(catalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['filter', 'addNew', 'popup', 'refresh', 'js']),
+      expect.arrayContaining(['filter', 'addNew', 'popup', 'refresh', 'js', 'jsItem']),
     );
     expect(catalog.actions.find((item: any) => item.key === 'link')).toBeUndefined();
     expect(catalog.actions.find((item: any) => item.key === 'triggerWorkflow')).toBeUndefined();
     expect(catalog.recordActions || []).toEqual([]);
 
-    for (const type of ['popup', 'js']) {
+    for (const type of ['popup', 'js', 'jsItem']) {
       const actionRes = await rootAgent.resource('flowSurfaces').addAction({
         values: {
           target: {
@@ -707,6 +707,7 @@ describe('flowSurfaces kanban contract', () => {
         'PopupCollectionActionModel',
         'RefreshActionModel',
         'JSCollectionActionModel',
+        'JSItemActionModel',
       ]),
     );
   });
@@ -1278,7 +1279,7 @@ describe('flowSurfaces kanban contract', () => {
                 type: 'kanban',
                 collection: collectionName,
                 fields: ['title'],
-                actions: ['popup', 'js'],
+                actions: ['popup', 'js', 'jsItem'],
                 settings: {
                   groupField: 'status',
                   quickCreateEnabled: true,
@@ -1377,6 +1378,7 @@ describe('flowSurfaces kanban contract', () => {
         'PopupCollectionActionModel',
         'RefreshActionModel',
         'JSCollectionActionModel',
+        'JSItemActionModel',
       ]),
     );
     expect(readKanbanFieldPaths(kanbanBlock)).toEqual(['title']);

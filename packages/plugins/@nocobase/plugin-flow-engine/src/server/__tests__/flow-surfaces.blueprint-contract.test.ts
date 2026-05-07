@@ -1998,6 +1998,128 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(await findPopupTemplateByName(targetViewName)).toBeUndefined();
   });
 
+  it('should persist prepared default fieldGroups relation titleField in generated action popups', async () => {
+    const unique = Date.now();
+    const sourceCollection = `bp_prepared_defaults_src_${unique}`;
+    const targetCollection = `bp_prepared_defaults_target_${unique}`;
+    const addPopupName = `Create prepared source ${unique}`;
+    const viewPopupName = `Inspect prepared source ${unique}`;
+
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: 'Prepared defaults target',
+        titleField: 'id',
+        filterTargetKey: 'id',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: 'Prepared defaults source',
+        titleField: 'title',
+        filterTargetKey: 'title',
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'note', type: 'text', interface: 'textarea' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'target',
+        type: 'belongsTo',
+        target: targetCollection,
+        foreignKey: 'targetId',
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [sourceCollection]: ['title', 'note', 'targetId'],
+      [targetCollection]: ['name', 'code'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Prepared defaults runtime ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            [sourceCollection]: {
+              fieldGroups: [
+                {
+                  key: 'main',
+                  title: 'Main',
+                  fields: ['title', { field: 'target', titleField: 'name' }],
+                },
+              ],
+              popups: {
+                addNew: {
+                  name: addPopupName,
+                  description: 'Create one prepared source record.',
+                },
+                view: {
+                  name: viewPopupName,
+                  description: 'View one prepared source record.',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'sourceTable',
+                type: 'table',
+                collection: sourceCollection,
+                fields: ['title', 'target'],
+                actions: ['addNew'],
+                recordActions: ['view'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const addNewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'AddNewActionModel')[0];
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+
+    expect(addNewAction?.uid).toBeTruthy();
+    expect(viewAction?.uid).toBeTruthy();
+
+    const addNewPopup = await readPrimaryPopupBlockFromAction(addNewAction.uid);
+    const addNewTargetField = collectDescendantNodes(
+      addNewPopup.popupBlock,
+      (item) => item?.use === 'FormItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'target',
+    )[0];
+    expect(addNewTargetField?.props?.titleField).toBe('name');
+    expect(addNewTargetField?.stepParams?.editItemSettings?.titleField?.label).toBe('name');
+    expect(addNewTargetField?.subModels?.field?.props?.titleField).toBe('name');
+
+    const viewPopup = await readPrimaryPopupBlockFromAction(viewAction.uid);
+    const viewTargetField = collectDescendantNodes(
+      viewPopup.popupBlock,
+      (item) => item?.use === 'DetailsItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'target',
+    )[0];
+    expect(viewTargetField?.props?.titleField).toBe('name');
+    expect(viewTargetField?.stepParams?.detailItemSettings?.fieldNames?.label).toBe('name');
+    expect(viewTargetField?.subModels?.field?.props?.titleField).toBe('name');
+  });
+
   it('should use source association popup names for generated associated-record action popups', async () => {
     const unique = Date.now();
     const roleAddName = `User role add ${unique}`;
@@ -3908,6 +4030,111 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'ViewActionModel',
       'EditActionModel',
     ]);
+  });
+
+  it('should applyBlueprint create jsItem block and record actions on public hosts', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `JS item action blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                actions: [
+                  {
+                    type: 'jsItem',
+                    title: 'Table tools',
+                    settings: {
+                      version: '1.0.0',
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    type: 'jsItem',
+                    title: 'Row tools',
+                    settings: {
+                      version: '1.0.1',
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'employeesList',
+                type: 'list',
+                collection: 'employees',
+                fields: ['nickname'],
+                actions: [
+                  {
+                    type: 'jsItem',
+                    settings: {
+                      version: '1.0.2',
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
+                recordActions: ['jsItem'],
+              },
+              {
+                key: 'employeesCards',
+                type: 'gridCard',
+                collection: 'employees',
+                fields: ['nickname'],
+                actions: ['jsItem'],
+                recordActions: ['jsItem'],
+              },
+              {
+                key: 'eventsCalendar',
+                type: 'calendar',
+                collection: 'calendar_events',
+                actions: ['jsItem'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const listBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ListBlockModel')[0];
+    const gridCardBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'GridCardBlockModel')[0];
+    const calendarBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CalendarBlockModel')[0];
+
+    expect(readNodeActionUses(tableBlock)).toContain('JSItemActionModel');
+    expect(readTableRecordActionUses(tableBlock)).toContain('JSItemActionModel');
+    expect(readNodeActionUses(listBlock)).toContain('JSItemActionModel');
+    expect(readCardItemRecordActionUses(listBlock)).toContain('JSItemActionModel');
+    expect(readNodeActionUses(gridCardBlock)).toContain('JSItemActionModel');
+    expect(readCardItemRecordActionUses(gridCardBlock)).toContain('JSItemActionModel');
+    expect(readNodeActionUses(calendarBlock)).toContain('JSItemActionModel');
+
+    const tableCollectionJsItem = _.castArray(tableBlock?.subModels?.actions || []).find(
+      (item: any) => item?.use === 'JSItemActionModel',
+    );
+    const tableRecordJsItem = readTableRecordActions(tableBlock).find((item: any) => item?.use === 'JSItemActionModel');
+    expect(tableCollectionJsItem?.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.0',
+      code: 'ctx.render(null);',
+    });
+    expect(tableRecordJsItem?.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: 'ctx.render(null);',
+    });
   });
 
   it('should applyBlueprint update actions with assignValues settings and mirror assignedValues', async () => {

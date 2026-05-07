@@ -97,6 +97,7 @@ const NON_RECORD_ACTION_TYPE_ENUM = [...BASE_NON_RECORD_ACTION_TYPE_ENUM, ...APP
 const RECORD_ACTION_TYPE_ENUM = [
   'popup',
   'js',
+  'jsItem',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',

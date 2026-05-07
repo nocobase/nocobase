@@ -248,7 +248,7 @@ function assertApplyBlueprintCalendarMainContent(block: Record<string, any>, con
   }
   if (Object.prototype.hasOwnProperty.call(block, 'recordActions')) {
     throwBadRequest(
-      `${context}.recordActions is not supported on calendar main blocks; configure event actions inside the event-view popup host instead`,
+      `${context}.recordActions is not supported on calendar main blocks; use actions[] for calendar block actions or configure event actions inside the event-view popup host instead`,
     );
   }
 }
@@ -261,7 +261,9 @@ function assertApplyBlueprintKanbanMainContent(block: Record<string, any>, conte
     throwBadRequest(`${context}.fieldGroups is not supported on kanban main blocks; use fields instead`);
   }
   if (Object.prototype.hasOwnProperty.call(block, 'recordActions')) {
-    throwBadRequest(`${context}.recordActions is not supported on kanban main blocks in v1`);
+    throwBadRequest(
+      `${context}.recordActions is not supported on kanban main blocks in v1; use actions[] for kanban block actions`,
+    );
   }
 }
 
@@ -1169,11 +1171,38 @@ function compileAction(
   popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   defaults?: FlowSurfaceApplyBlueprintDefaults,
   getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+  options: {
+    avoidKeys?: Set<string>;
+    generatedConflictPrefix?: string;
+  } = {},
 ) {
+  const buildActionKey = (localKey: string, isExplicit: boolean, keyContext: string) => {
+    const key = normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, localKey), keyContext);
+    const avoidKeys = options.avoidKeys;
+    if (!avoidKeys?.has(key)) {
+      return key;
+    }
+    if (isExplicit) {
+      throwBadRequest(`${keyContext} '${key}' duplicates an action key in the same block`);
+    }
+    const prefix = options.generatedConflictPrefix
+      ? normalizeFlowSurfaceComposeKey(options.generatedConflictPrefix, keyContext)
+      : undefined;
+    const baseLocalKey = prefix ? `${prefix}_${localKey}` : localKey;
+    let candidate = normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, baseLocalKey), keyContext);
+    let suffix = 2;
+    while (avoidKeys.has(candidate)) {
+      candidate = normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, `${baseLocalKey}_${suffix}`), keyContext);
+      suffix += 1;
+    }
+    return candidate;
+  };
+
   if (typeof input === 'string') {
     const type = assertNonEmptyString(input, `${context}[${index}]`);
+    const localKey = normalizeBlueprintLocalKey(undefined, `${type}_${index + 1}`, `${context}[${index}]`);
     return {
-      key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, `${type}_${index + 1}`), `${context}[${index}]`),
+      key: buildActionKey(localKey, false, `${context}[${index}]`),
       type,
       ...(APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES.has(type)
         ? { popup: attachDefaultActionPopupMetadata(undefined, type, popupDefaultsMetadata) }
@@ -1185,8 +1214,9 @@ function compileAction(
   }
   assertOnlyAllowedKeys(input, `${context}[${index}]`, APPLY_BLUEPRINT_ACTION_ALLOWED_KEYS);
   const type = assertNonEmptyString(input.type, `${context}[${index}].type`);
+  const hasExplicitKey = readOptionalString(input.key);
   const localKey = normalizeBlueprintLocalKey(input.key, `${type}_${index + 1}`, `${context}[${index}].key`);
-  const key = normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, localKey), `${context}[${index}]`);
+  const key = buildActionKey(localKey, !!hasExplicitKey, `${context}[${index}].key`);
   let settings = resolveAssetSettings(input.settings, input, assets, `${context}[${index}]`);
   if (readOptionalString(input.title) && _.isUndefined(settings.title)) {
     settings.title = readOptionalString(input.title);
@@ -1432,6 +1462,7 @@ function compileBlocks(
         getCollection,
       ),
     );
+    const explicitActionKeys = new Set(explicitActions.map((action) => action.key).filter(Boolean));
     const explicitRecordActions = recordActions.map((action, actionIndex) =>
       compileAction(
         action,
@@ -1442,6 +1473,10 @@ function compileBlocks(
         popupDefaultsMetadata,
         defaults,
         getCollection,
+        {
+          avoidKeys: explicitActionKeys,
+          generatedConflictPrefix: 'record',
+        },
       ),
     );
     const shouldInjectAddChild =

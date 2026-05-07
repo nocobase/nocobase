@@ -564,10 +564,10 @@ const JS_ACTION_USES = new Set([
   'JSCollectionActionModel',
   'JSRecordActionModel',
   'JSFormActionModel',
-  'JSItemActionModel',
   'FilterFormJSActionModel',
   'JSActionModel',
 ]);
+const JS_ITEM_ACTION_USES = new Set(['JSItemActionModel']);
 const POPUP_ACTION_USES = new Set([
   'AddNewActionModel',
   'ViewActionModel',
@@ -16231,15 +16231,20 @@ export class FlowSurfacesService {
       });
     }
     if (hasDefinedValue(changes, ['code', 'version'])) {
-      if (!JS_ACTION_USES.has(use)) {
+      if (!JS_ACTION_USES.has(use) && !JS_ITEM_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support code/version`);
       }
-      stepParams.clickSettings = {
+      const runJsSettings = {
         runJs: buildDefinedPayload({
           code: changes.code,
           version: changes.version,
         }),
       };
+      if (JS_ITEM_ACTION_USES.has(use)) {
+        stepParams.jsSettings = runJsSettings;
+      } else {
+        stepParams.clickSettings = runJsSettings;
+      }
     }
 
     const props = buildDefinedPayload({

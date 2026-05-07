@@ -949,6 +949,26 @@ describe('flowSurfaces catalog + compose contract', () => {
         collectionName: 'employees',
       },
     });
+    const list = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'list',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const gridCard = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'gridCard',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
     const filterForm = await addBlockData(rootAgent, {
       target: {
         uid: page.tabSchemaUid,
@@ -969,6 +989,16 @@ describe('flowSurfaces catalog + compose contract', () => {
         collectionName: 'calendar_events',
       },
     });
+    const kanban = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'kanban',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'kanban_tasks',
+      },
+    });
     const tree = await addBlockData(rootAgent, {
       target: {
         uid: page.tabSchemaUid,
@@ -986,7 +1016,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           target: {
             uid: table.uid,
           },
-          expand: ['item.configureOptions'],
+          expand: ['item.configureOptions', 'item.contracts'],
         },
       }),
     );
@@ -1006,6 +1036,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         'link',
         'upload',
         'js',
+        'jsItem',
         'composeEmail',
         'templatePrint',
         'triggerWorkflow',
@@ -1038,12 +1069,25 @@ describe('flowSurfaces catalog + compose contract', () => {
         'delete',
         'updateRecord',
         'js',
+        'jsItem',
         'templatePrint',
         'triggerWorkflow',
       ]),
     );
     expect(tableCatalog.recordActions.find((item: any) => item.key === 'addChild')).toBeUndefined();
     expect(tableCatalog.recordActions.length).toBeGreaterThan(0);
+    expect(
+      tableCatalog.actions.find((item: any) => item.key === 'jsItem')?.settingsContract?.stepParams?.groups,
+    ).toEqual(expect.objectContaining({ buttonSettings: expect.any(Object), jsSettings: expect.any(Object) }));
+    expect(
+      tableCatalog.actions.find((item: any) => item.key === 'jsItem')?.settingsContract?.stepParams?.groups,
+    ).not.toHaveProperty('clickSettings');
+    expect(
+      tableCatalog.recordActions.find((item: any) => item.key === 'jsItem')?.settingsContract?.stepParams?.groups,
+    ).toEqual(expect.objectContaining({ buttonSettings: expect.any(Object), jsSettings: expect.any(Object) }));
+    expect(
+      tableCatalog.recordActions.find((item: any) => item.key === 'jsItem')?.settingsContract?.stepParams?.groups,
+    ).not.toHaveProperty('clickSettings');
     expect(tableCatalog.actions.find((item: any) => item.key === 'addNew')?.configureOptions).toMatchObject({
       title: {
         type: 'string',
@@ -1090,6 +1134,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         'popup',
         'refresh',
         'js',
+        'jsItem',
         'triggerWorkflow',
       ]),
     );
@@ -1158,6 +1203,52 @@ describe('flowSurfaces catalog + compose contract', () => {
       calendarCatalog.actions.find((item: any) => item.key === 'turnPages')?.configureOptions?.title,
     ).toBeUndefined();
 
+    const listCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: list.uid,
+          },
+        },
+      }),
+    );
+    expect(listCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['filter', 'addNew', 'popup', 'refresh', 'js', 'jsItem', 'triggerWorkflow']),
+    );
+    expect(listCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js', 'jsItem', 'triggerWorkflow']),
+    );
+
+    const gridCardCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: gridCard.uid,
+          },
+        },
+      }),
+    );
+    expect(gridCardCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['filter', 'addNew', 'popup', 'refresh', 'js', 'jsItem', 'triggerWorkflow']),
+    );
+    expect(gridCardCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js', 'jsItem', 'triggerWorkflow']),
+    );
+
+    const kanbanCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: kanban.uid,
+          },
+        },
+      }),
+    );
+    expect(kanbanCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['filter', 'addNew', 'popup', 'refresh', 'js', 'jsItem']),
+    );
+    expect(kanbanCatalog.recordActions || []).toEqual([]);
+
     const treeCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
@@ -1202,7 +1293,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       }),
     );
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['submit', 'js', 'triggerWorkflow']),
+      expect.arrayContaining(['submit', 'js', 'jsItem', 'triggerWorkflow']),
     );
 
     const detailsCatalog = getData(
@@ -1223,6 +1314,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         'delete',
         'updateRecord',
         'js',
+        'jsItem',
         'templatePrint',
         'triggerWorkflow',
       ]),
@@ -1240,6 +1332,241 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['submit', 'reset', 'collapse', 'js']),
     );
+    expect(filterFormCatalog.actions.map((item: any) => item.key)).not.toContain('jsItem');
+  });
+
+  it('should create jsItem actions in public collection record and form action slots', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'JS item action create page',
+      tabTitle: 'JS item action create tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+    const createForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'createForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+    const filterForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'filterForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: '',
+      },
+    });
+    const actionPanel = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'actionPanel',
+    });
+
+    const collectionAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'jsItem',
+          settings: {
+            title: 'Table tools',
+            version: '1.0.0',
+            code: 'ctx.render(null);',
+          },
+        },
+      }),
+    );
+    expect((await getSurface(rootAgent, { uid: collectionAction.uid })).tree).toMatchObject({
+      use: 'JSItemActionModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            version: '1.0.0',
+            code: 'ctx.render(null);',
+          },
+        },
+      },
+    });
+
+    const recordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'jsItem',
+          settings: {
+            title: 'Row tools',
+            version: '1.0.1',
+            code: 'ctx.render(null);',
+          },
+        },
+      }),
+    );
+    expect((await getSurface(rootAgent, { uid: recordAction.uid })).tree).toMatchObject({
+      use: 'JSItemActionModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            version: '1.0.1',
+            code: 'ctx.render(null);',
+          },
+        },
+      },
+    });
+
+    const formAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: createForm.uid,
+          },
+          type: 'jsItem',
+        },
+      }),
+    );
+    const formActionReadback = await getSurface(rootAgent, { uid: formAction.uid });
+    expect(formActionReadback.tree.use).toBe('JSItemActionModel');
+    expect(formActionReadback.tree.stepParams?.jsSettings?.runJs?.code).toContain('ctx.render');
+    expect(formActionReadback.tree.stepParams?.clickSettings?.runJs).toBeUndefined();
+
+    for (const target of [
+      { uid: filterForm.uid, use: 'FilterFormBlockModel' },
+      { uid: actionPanel.uid, use: 'ActionPanelBlockModel' },
+    ]) {
+      const invalidRes = await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: target.uid,
+          },
+          type: 'jsItem',
+        },
+      });
+      expect(invalidRes.status).toBe(400);
+      expect(readErrorMessage(invalidRes)).toContain(
+        `flowSurfaces addAction 'jsItem' is not allowed under '${target.use}'`,
+      );
+    }
+  });
+
+  it('should compose jsItem actions and recordActions into public action slots', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose JS item actions page',
+      tabTitle: 'Compose JS item actions tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            actions: [
+              {
+                type: 'jsItem',
+                settings: {
+                  title: 'Table tools',
+                  version: '1.0.0',
+                  code: 'ctx.render(null);',
+                },
+              },
+            ],
+            recordActions: [
+              {
+                type: 'jsItem',
+                settings: {
+                  title: 'Row tools',
+                  version: '1.0.1',
+                  code: 'ctx.render(null);',
+                },
+              },
+            ],
+          },
+          {
+            key: 'employeeForm',
+            type: 'createForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            actions: [
+              {
+                type: 'jsItem',
+                settings: {
+                  title: 'Form tools',
+                  version: '1.0.2',
+                  code: 'ctx.render(null);',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const composed = getData(composeRes);
+    const tableBlock = getComposeBlock(composed, 'employeesTable');
+    const formBlock = getComposeBlock(composed, 'employeeForm');
+    expect(tableBlock.actions.map((item: any) => item.type)).toEqual([
+      'filter',
+      'refresh',
+      'bulkDelete',
+      'addNew',
+      'jsItem',
+    ]);
+    expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['jsItem']);
+    expect(formBlock.actions.map((item: any) => item.type)).toEqual(['submit', 'jsItem']);
+
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
+    const tableCollectionJsItem = _.castArray(tableReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'JSItemActionModel',
+    );
+    const tableActionsColumn = _.castArray(tableReadback.tree.subModels?.columns || []).find(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    );
+    const tableRecordJsItem = _.castArray(tableActionsColumn?.subModels?.actions || []).find(
+      (item: any) => item?.use === 'JSItemActionModel',
+    );
+    expect(tableCollectionJsItem?.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.0',
+      code: 'ctx.render(null);',
+    });
+    expect(tableRecordJsItem?.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: 'ctx.render(null);',
+    });
+
+    const formReadback = await getSurface(rootAgent, { uid: formBlock.uid });
+    const formJsItem = _.castArray(formReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'JSItemActionModel',
+    );
+    expect(formJsItem?.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.2',
+      code: 'ctx.render(null);',
+    });
   });
 
   it('should create configure and validate flow-model calendar blocks', async () => {

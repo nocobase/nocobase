@@ -2444,6 +2444,30 @@ JS_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   clickSettings: RUN_JS_SETTINGS_GROUP,
 });
 
+const JS_ITEM_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'jsSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    jsSettings: {
+      stepKeys: ['runJs'],
+    },
+  },
+});
+JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  jsSettings: RUN_JS_SETTINGS_GROUP,
+});
+
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['labelWidth', 'labelWrap'],
@@ -2675,7 +2699,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['JSRecordActionModel', JS_ACTION_CONTRACT],
   ['JSFormActionModel', JS_ACTION_CONTRACT],
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
-  ['JSItemActionModel', JS_ACTION_CONTRACT],
+  ['JSItemActionModel', JS_ITEM_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
   ['ApplyFormSubmitModel', APPROVAL_ACTION_CONTRACT],
   ['ApplyFormSaveDraftModel', APPROVAL_ACTION_CONTRACT],
@@ -3452,6 +3476,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     createSupported: true,
   },
   {
+    publicKey: 'jsItem',
+    label: 'JS item',
+    scope: 'block',
+    scene: 'collection',
+    use: 'JSItemActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
     publicKey: 'composeEmail',
     label: 'Compose email',
     scope: 'block',
@@ -3567,6 +3601,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'JSRecordActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'jsItem',
+    label: 'JS item',
+    scope: 'record',
+    scene: 'record',
+    use: 'JSItemActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
