@@ -125,6 +125,29 @@ describe('PluginManager', () => {
     expect(demo1Mock).toBeCalledTimes(1);
   });
 
+  it('should retry remote plugins request when maintaining error is returned', async () => {
+    const mock = new MockAdapter(axios);
+    mock
+      .onGet('pm:listEnabled')
+      .replyOnce(503, {
+        error: {
+          code: 'APP_PREPARING',
+          maintaining: true,
+          message: 'application demo is preparing',
+        },
+      })
+      .onGet('pm:listEnabled')
+      .reply(200, {
+        data: [],
+      });
+
+    const app = new Application({
+      loadRemotePlugins: true,
+    });
+
+    await expect(app.load()).resolves.toBeUndefined();
+  });
+
   it('Load other plugins through plugins', async () => {
     const fn2 = vitest.fn();
     const config = { a: 1 };

@@ -8,7 +8,7 @@
  */
 
 import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
@@ -62,6 +62,35 @@ export const CurrentUserProvider = (props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const runtimeFlowEngine = app?.flowEngine || flowEngine;
+  const [authCheckRedirecting, setAuthCheckRedirecting] = useState(false);
+  const signInPath = '/signin';
+  const isSignInRoute = location.pathname === signInPath || location.pathname.startsWith(`${signInPath}/`);
+  const signInTarget = '/signin?redirect=' + location.pathname + location.search;
+  const hasSigninRoute = !!app.router.get?.('auth.signin') || !!app.router.get?.('signin');
+
+  useEffect(() => {
+    if (!authCheckRedirecting || isSignInRoute) {
+      return;
+    }
+
+    if (hasSigninRoute) {
+      navigate(signInTarget, { replace: true });
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      if (!app.router.get?.('auth.signin')) {
+        return;
+      }
+      window.clearInterval(timer);
+      navigate(signInTarget, { replace: true });
+    }, 100);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [app, authCheckRedirecting, hasSigninRoute, isSignInRoute, navigate, signInTarget]);
+
   const result = useRequest<any>(() =>
     api
       .request({
@@ -71,7 +100,8 @@ export const CurrentUserProvider = (props) => {
       })
       .then((res) => {
         if (res?.data?.data?.id == null) {
-          navigate('/signin?redirect=' + location.pathname + location.search);
+          setAuthCheckRedirecting(true);
+          return undefined;
         }
         const userMeta = createCollectionContextMeta(
           () => runtimeFlowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
@@ -85,12 +115,22 @@ export const CurrentUserProvider = (props) => {
           meta: userMeta,
         });
         return res?.data;
+      })
+      .catch((error) => {
+        const status = error?.response?.status ?? error?.status;
+        if (status === 401) {
+          if (!isSignInRoute) {
+            setAuthCheckRedirecting(true);
+          }
+          return undefined;
+        }
+        throw error;
       }),
   );
 
   const { render } = useAppSpin();
 
-  if (result.loading) {
+  if (result.loading || (authCheckRedirecting && !isSignInRoute)) {
     return render();
   }
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;

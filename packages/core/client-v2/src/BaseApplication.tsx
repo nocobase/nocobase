@@ -592,6 +592,9 @@ export class ApplicationModel extends FlowModel {
     if (this.app.error) {
       return this.renderError();
     }
+    if ('loading' in this.app && (this.app as any).loading) {
+      return this.app.renderComponent('AppSpin');
+    }
     return this.renderContent();
   }
 

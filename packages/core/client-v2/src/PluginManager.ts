@@ -32,6 +32,8 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
   protected pluginInstances: Map<PluginClass<any, TApp>, Plugin<any, TApp>> = new Map();
   protected pluginsAliases: Record<string, Plugin<any, TApp>> = {};
   private initPlugins: Promise<void>;
+  private static readonly REMOTE_PLUGIN_RETRY_LIMIT = 100;
+  private static readonly REMOTE_PLUGIN_RETRY_DELAY = 200;
 
   constructor(
     protected _plugins: PluginType<any, TApp>[] | undefined,
@@ -66,16 +68,34 @@ export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<a
   }
 
   protected async initRemotePlugins() {
-    const res = await this.app.apiClient.request({ url: this.getRemotePluginsRequestUrl() });
-    const pluginList: PluginData[] = res?.data?.data || [];
-    const plugins = await getPlugins({
-      requirejs: this.app.requirejs,
-      pluginData: pluginList,
-      devDynamicImport: this.app.devDynamicImport,
-    });
-    for await (const [name, pluginClass] of plugins) {
-      const info = pluginList.find((item) => item.name === name);
-      await this.add(pluginClass as any, info);
+    try {
+      let res;
+      for (let attempt = 0; attempt < PluginManager.REMOTE_PLUGIN_RETRY_LIMIT; attempt++) {
+        try {
+          res = await this.app.apiClient.request({ url: this.getRemotePluginsRequestUrl() });
+          break;
+        } catch (error) {
+          const isMaintaining = !!error?.response?.data?.error?.maintaining;
+          const isLastAttempt = attempt === PluginManager.REMOTE_PLUGIN_RETRY_LIMIT - 1;
+          if (!isMaintaining || isLastAttempt) {
+            throw error;
+          }
+          await new Promise((resolve) => setTimeout(resolve, PluginManager.REMOTE_PLUGIN_RETRY_DELAY));
+        }
+      }
+
+      const pluginList: PluginData[] = res?.data?.data || [];
+      const plugins = await getPlugins({
+        requirejs: this.app.requirejs,
+        pluginData: pluginList,
+        devDynamicImport: this.app.devDynamicImport,
+      });
+      for await (const [name, pluginClass] of plugins) {
+        const info = pluginList.find((item) => item.name === name);
+        await this.add(pluginClass as any, info);
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
