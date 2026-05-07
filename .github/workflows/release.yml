@@ -362,14 +362,40 @@ jobs:
         if: ${{ needs.prepare-release.outputs.skip_publish_pkg != 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' && steps.pro-plugin-scopes.outputs.count != '0' }}
         shell: bash
         run: |
+          set -euo pipefail
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
+
+          publish_or_skip() {
+            local package_dir="$1"
+            local registry="$2"
+            local package_name="$3"
+            local log_file
+            log_file=$(mktemp)
+
+            if npm publish "$package_dir" --registry "$registry" $NPM_TAG_ARG >"$log_file" 2>&1; then
+              cat "$log_file"
+              rm -f "$log_file"
+              return 0
+            fi
+
+            cat "$log_file"
+            if grep -q "E409" "$log_file" || grep -q "already present" "$log_file"; then
+              echo "Skip publishing $package_name to $registry because this version already exists."
+              rm -f "$log_file"
+              return 0
+            fi
+
+            rm -f "$log_file"
+            return 1
+          }
+
           while IFS= read -r package_json; do
             [[ -n "$package_json" ]] || continue
             package_dir=$(dirname "$package_json")
             package_name=$(jq -r '.name' "$package_json")
             echo "Publishing $package_name to pkg.nocobase.com"
-            npm publish "$package_dir" --registry https://pkg.nocobase.com $NPM_TAG_ARG
+            publish_or_skip "$package_dir" "https://pkg.nocobase.com" "$package_name"
           done <<'EOF'
           ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
           EOF
@@ -377,15 +403,41 @@ jobs:
         if: ${{ needs.prepare-release.outputs.skip_publish_pkg_src != 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' && steps.pro-plugin-scopes.outputs.count != '0' }}
         shell: bash
         run: |
+          set -euo pipefail
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
+
+          publish_or_skip() {
+            local package_dir="$1"
+            local registry="$2"
+            local package_name="$3"
+            local log_file
+            log_file=$(mktemp)
+
+            if npm publish "$package_dir" --registry "$registry" $NPM_TAG_ARG >"$log_file" 2>&1; then
+              cat "$log_file"
+              rm -f "$log_file"
+              return 0
+            fi
+
+            cat "$log_file"
+            if grep -q "E409" "$log_file" || grep -q "already present" "$log_file"; then
+              echo "Skip publishing $package_name to $registry because this version already exists."
+              rm -f "$log_file"
+              return 0
+            fi
+
+            rm -f "$log_file"
+            return 1
+          }
+
           while IFS= read -r package_json; do
             [[ -n "$package_json" ]] || continue
             package_dir=$(dirname "$package_json")
             package_name=$(jq -r '.name' "$package_json")
             echo "Publishing $package_name to pkg-src.nocobase.com"
-            npm publish "$package_dir" --registry https://pkg-src.nocobase.com $NPM_TAG_ARG
+            publish_or_skip "$package_dir" "https://pkg-src.nocobase.com" "$package_name"
           done <<'EOF'
           ${{ steps.pro-plugin-scopes.outputs.package_jsons }}
           EOF
