@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth-sms'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Autenticación por SMS
 

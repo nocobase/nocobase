@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/get-model)をご参照ください。
-:::
-
 # ctx.getModel()
 
 モデルの `uid` に基づいて、現在のエンジンまたはビュー履歴（View Stack）内のモデルインスタンス（BlockModel、PageModel、ActionModel など）を取得します。これは RunJS において、ブロック、ページ、またはポップアップを跨いで他のモデルにアクセスするために使用されます。

@@ -34,7 +34,7 @@ O NocoBase oferece vários tipos de trigger, escolha ao criar o workflow:
 |-------|------|---------|
 | [**Evento de tabela**](/workflow/triggers/collection) | Disparado ao adicionar, atualizar ou excluir dados | Notificação de novo ticket, registro de mudança de status |
 | [**Tarefa agendada**](/workflow/triggers/schedule) | Disparado por expressão Cron ou horário fixo | Geração de relatório diário, limpeza periódica de dados expirados |
-| [**Evento pós-ação**](/workflow/triggers/action) | Disparado após o usuário executar uma ação na interface | Notificação após envio de formulário, registro de log de operação |
+| [**Evento pós-ação**](../../workflow/triggers/post-action.md) | Disparado após o usuário executar uma ação na interface | Notificação após envio de formulário, registro de log de operação |
 | **Aprovação** | Inicia processo de aprovação, suporta multinível | Aprovação de licença, aprovação de compra |
 | **Ação personalizada** | Vinculado a um botão personalizado, dispara ao clicar | Arquivamento com um clique, operações em lote |
 | **Evento pré-ação** | Intercepta a operação do usuário, executa síncrono antes de liberar | Validação antes de submeter, autocompletar campos |

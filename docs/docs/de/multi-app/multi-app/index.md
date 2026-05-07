@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/multi-app/multi-app/index).
-:::
-
 # Multi-App-Verwaltung
 
 ## Funktionsübersicht

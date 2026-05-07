@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/solution/ticket-system/design).
-:::
-
 # Design Detalhado da Solução de Chamados
 
 > **Versão**: v2.0-beta

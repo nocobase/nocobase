@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/route).
-:::
-
 # ctx.route
 
 Informações de correspondência da rota atual, correspondendo ao conceito de `route` do React Router. É usado para obter a configuração da rota correspondente atual, parâmetros e muito mais. Geralmente é usado em conjunto com `ctx.router` e `ctx.location`.

@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/get-model).
-:::
-
 # ctx.getModel()
 
 Obtém uma instância de modelo (como `BlockModel`, `PageModel`, `ActionModel`, etc.) do motor atual ou da pilha de visualização com base no `uid` do modelo. Isso é usado no RunJS para acessar outros modelos entre blocos, páginas ou popups.

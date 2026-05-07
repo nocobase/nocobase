@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/t).
-:::
-
 # ctx.t()
 
 Eine i18n-Kurzfunktion in RunJS zur Übersetzung von Texten basierend auf den Spracheinstellungen des aktuellen Kontexts. Sie eignet sich für die Internationalisierung von Inline-Texten wie Schaltflächen, Titeln und Hinweisen.

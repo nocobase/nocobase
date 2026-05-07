@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/features/pick-block).
-:::
-
 # Kontext hinzufügen - Block
 
 Wenn Sie mit einem AI-Mitarbeiter chatten, können Sie neben dem Senden von Dateien auch Kontextinformationen der Anwendung an den AI-Mitarbeiter senden. Dies ermöglicht es dem AI-Mitarbeiter, auf Basis des Anwendungskontexts zu antworten.

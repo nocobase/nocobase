@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/features/task).
-:::
-
 # Tâches de raccourci
 
 Pour permettre aux employés IA de commencer à travailler plus efficacement, nous pouvons lier des employés IA à des blocs de scénario et prédéfinir plusieurs tâches courantes.

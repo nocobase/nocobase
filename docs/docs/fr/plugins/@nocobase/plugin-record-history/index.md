@@ -11,8 +11,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-record-history/index).
-:::
-
 # Historique des enregistrements

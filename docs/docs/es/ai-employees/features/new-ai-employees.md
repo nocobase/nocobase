@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/features/new-ai-employees).
-:::
-
 # Nuevo empleado de IA
 
 Si los empleados de IA integrados no satisfacen sus necesidades, puede crear y personalizar su propio empleado de IA.

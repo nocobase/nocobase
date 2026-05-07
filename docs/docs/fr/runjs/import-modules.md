@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/import-modules).
-:::
-
 # Importation de modules
 
 Dans RunJS, vous pouvez utiliser deux types de modules : les **modules intégrés** (utilisés directement via `ctx.libs`, sans `import`) et les **modules externes** (chargés à la demande via `ctx.importAsync()` ou `ctx.requireAsync()`).

@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-backups/index)をご参照ください。
-:::
-
 # バックアップマネージャー

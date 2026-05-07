@@ -10,10 +10,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-snapshot-field/index).
-:::
-
 # Campo de coleção: Snapshot de relacionamento
 
 > Nota: Este plugin está descontinuado (deprecated).

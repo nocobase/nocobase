@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
 
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/data-sources/data-source-kingbase/index).
-:::
-
 # Источник данных - KingbaseES
 
 ## Введение
@@ -121,5 +117,5 @@ yarn nocobase upgrade
 
 ## Руководство пользователя
 
-- Основная база данных: См. [Основной источник данных](/data-sources/data-source-main/)
+- Основная база данных: См. [Основной источник данных](../data-source-main/index.md)
 - Внешняя база данных: См. [Источник данных / Внешняя база данных](/data-sources/data-source-manager/external-database)

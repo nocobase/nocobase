@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # RelationRepository
 
 `RelationRepository` は、関連タイプのための `Repository` オブジェクトです。`RelationRepository` を使うと、関連をロードすることなく、関連データに対して操作を実行できます。`RelationRepository` をベースとして、各関連タイプに対応する派生実装が用意されています。具体的には以下の通りです。

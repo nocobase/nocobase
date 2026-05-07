@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/features/built-in-employee).
-:::
-
 # Employés IA intégrés
 
 NocoBase est préinstallé avec plusieurs employés IA conçus pour des scénarios spécifiques.

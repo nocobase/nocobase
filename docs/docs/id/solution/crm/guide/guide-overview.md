@@ -212,4 +212,4 @@ Setelah memahami gambaran umum sistem dan dashboard, selanjutnya masuk ke alur b
 
 - [Panduan Penggunaan CRM](./index.md)
 - [Manajemen Lead](./guide-leads)
-- [AI Employee](./guide-ai)
+- [AI Employee](../../../ai-employees/index.md)

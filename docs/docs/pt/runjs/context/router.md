@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/router).
-:::
-
 # ctx.router
 
 Uma instância de roteador baseada no React Router, usada para navegação programática dentro do RunJS. Geralmente é utilizada em conjunto com `ctx.route` e `ctx.location`.

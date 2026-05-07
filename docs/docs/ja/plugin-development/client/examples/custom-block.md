@@ -107,7 +107,7 @@ SimpleBlockModel.registerFlow({
 
 - **`renderComponent()`** — ブロックの UI をレンダリングし、`this.props.html` から HTML コンテンツを読み取る
 - **`define()`** — 「ブロックの追加」メニューでの表示名を設定。`tExpr()` は遅延翻訳に使用（`define()` はモジュール読み込み時に実行され、その時点では i18n がまだ初期化されていないため）
-- **`registerFlow()`** — 設定パネルを追加。`uiSchema` で JSON Schema 形式のフォームを定義（構文は [UI Schema](../../../../flow-engine/ui-schema) を参照）、`handler` でユーザーが入力した値を `ctx.model.props` に設定し、`renderComponent()` から読み取れるようにする
+- **`registerFlow()`** — 設定パネルを追加。`uiSchema` で JSON Schema 形式のフォームを定義（構文は [UI Schema](../../../flow-engine/ui-schema.md) を参照）、`handler` でユーザーが入力した値を `ctx.model.props` に設定し、`renderComponent()` から読み取れるようにする
 
 ## ステップ3：多言語ファイルの追加
 
@@ -194,7 +194,7 @@ yarn pm enable @my-project/plugin-simple-block
 - [はじめてのプラグインを書く](../../write-your-first-plugin) — ゼロからプラグインスケルトンを作成
 - [FlowEngine 概要](../flow-engine/index.md) — FlowModel の基本的な使い方と registerFlow
 - [FlowEngine → ブロック拡張](../flow-engine/block) — BlockModel、DataBlockModel、CollectionBlockModel
-- [UI Schema](../../../../flow-engine/ui-schema) — uiSchema の構文リファレンス
+- [UI Schema](../../../flow-engine/ui-schema.md) — uiSchema の構文リファレンス
 - [Component vs FlowModel](../component-vs-flow-model) — いつ FlowModel を使うか
 - [Plugin プラグイン](../plugin) — プラグインエントリと load() ライフサイクル
 - [i18n 国際化](../component/i18n) — 翻訳ファイルの書き方と tExpr の使い方

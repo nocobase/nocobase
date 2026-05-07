@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/sql).
-:::
-
 # ctx.sql
 
 `ctx.sql` fournit des capacités d'exécution et de gestion SQL, couramment utilisées dans RunJS (comme JSBlock et les flux de travail) pour accéder directement à la base de données. Il prend en charge l'exécution SQL temporaire, l'exécution de modèles SQL enregistrés par ID, la liaison de paramètres (binding), les variables de modèle (`{{ctx.xxx}}`) et le contrôle du type de résultat.

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-users'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Benutzer
 

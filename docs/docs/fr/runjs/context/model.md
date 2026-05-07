@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/model).
-:::
-
 # ctx.model
 
 L'instance `FlowModel` où se trouve le contexte d'exécution RunJS actuel. Il s'agit du point d'entrée par défaut pour des scénarios tels que JSBlock, JSField et JSAction. Le type spécifique varie selon le contexte : il peut s'agir d'une sous-classe telle que `BlockModel`, `ActionModel` ou `JSEditableFieldModel`.

@@ -9,15 +9,18 @@
 
 import * as antdCssinjs from '@ant-design/cssinjs';
 import * as antdIcons from '@ant-design/icons';
+import * as emotionCss from '@emotion/css';
 import * as formilyCore from '@formily/core';
 import * as formilyReact from '@formily/react';
 import * as formilyReactive from '@formily/reactive';
 import * as formilyShared from '@formily/shared';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
+import { dayjs } from '@nocobase/utils/client';
 import * as nocobaseFlowEngine from '@nocobase/flow-engine';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
 import * as i18next from 'i18next';
+import lodash from 'lodash';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
@@ -65,4 +68,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
 
   // utils
   requirejs.define('ahooks', () => ahooks);
+  requirejs.define('dayjs', () => dayjs);
+  requirejs.define('lodash', () => lodash);
+  requirejs.define('@emotion/css', () => emotionCss);
 }

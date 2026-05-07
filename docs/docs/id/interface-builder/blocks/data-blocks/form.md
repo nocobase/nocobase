@@ -79,7 +79,7 @@ Block Form mendukung dua cara layout, diatur melalui atribut `layout`:
 
 ### Template Field
 
-Template Field digunakan untuk menggunakan kembali konfigurasi area Field di Block Form. Detail di [Template Field](/interface-builder/fields/field-template).
+Template Field digunakan untuk menggunakan kembali konfigurasi area Field di Block Form. Detail di [Template Field](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

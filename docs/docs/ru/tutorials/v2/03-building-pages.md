@@ -178,7 +178,7 @@
 Просто список — мало; хочется видеть детали и редактировать заявки.
 
 1. Над колонкой операций нажмите вторую «+».
-2. Включите операции: **View**, **[Edit](/interface-builder/actions/edit)**, **[Delete](/interface-builder/actions/delete)**.
+2. Включите операции: **View**, **[Edit](../../interface-builder/actions/types/edit.md)**, **[Delete](../../interface-builder/actions/types/delete.md)**.
 3. В каждой строке появятся кнопки «View», «Edit» и «Delete».
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

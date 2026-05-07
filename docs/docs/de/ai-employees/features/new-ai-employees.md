@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/features/new-ai-employees).
-:::
-
 # Neuen AI-Mitarbeiter erstellen
 
 Wenn die integrierten AI-Mitarbeiter Ihre Anforderungen nicht erfüllen, können Sie Ihren eigenen AI-Mitarbeiter erstellen und anpassen.

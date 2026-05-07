@@ -1,6 +1,6 @@
 # Capítulo 4: Formulários e Detalhes — Inserção e Exibição em Um Só Passo
 
-No capítulo anterior, montamos a lista de tickets e usamos um formulário simplificado para inserir dados de teste. Neste capítulo vamos **aperfeiçoar a experiência do formulário** — otimizar o layout dos campos do [bloco de formulário](/interface-builder/blocks/data-blocks/form), adicionar [bloco de detalhes](/interface-builder/blocks/data-blocks/details), configurar [regras de vinculação](/interface-builder/linkage-rules) e ainda usar o [histórico de mudanças](https://docs.nocobase.com/cn/record-history/) para acompanhar cada modificação em tickets.
+No capítulo anterior, montamos a lista de tickets e usamos um formulário simplificado para inserir dados de teste. Neste capítulo vamos **aperfeiçoar a experiência do formulário** — otimizar o layout dos campos do [bloco de formulário](/interface-builder/blocks/data-blocks/form), adicionar [bloco de detalhes](/interface-builder/blocks/data-blocks/details), configurar [regras de vinculação](../../interface-builder/linkage-rule.md) e ainda usar o [histórico de mudanças](https://docs.nocobase.com/cn/record-history/) para acompanhar cada modificação em tickets.
 
 :::tip
 A funcionalidade de «[Histórico de Registros](https://docs.nocobase.com/cn/record-history/)» da seção 4.4 deste capítulo está incluída na [Versão Profissional](https://www.nocobase.com/cn/commercial). Pular essa seção não afeta o aprendizado dos capítulos seguintes.
@@ -15,7 +15,7 @@ No capítulo anterior, criamos rapidamente um formulário funcional de novo tick
 1. Garanta que está no modo UI Editor (interruptor no canto superior direito ligado).
 2. Entre na página «Lista de Tickets» e clique em **«[Ações](/interface-builder/actions) (Actions)»** acima do bloco de tabela.
 3. Marque o botão de ação **«Adicionar»**.
-4. O botão «Adicionar» aparece acima da tabela; ao clicar, abre um [popup](/interface-builder/actions/pop-up).
+4. O botão «Adicionar» aparece acima da tabela; ao clicar, abre um [popup](../../interface-builder/actions/types/pop-up.md).
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
@@ -283,4 +283,4 @@ De «conseguir ver» para «conseguir preencher» e «conseguir consultar» — 
 
 - [Bloco de formulário](/interface-builder/blocks/data-blocks/form) — configuração detalhada do bloco de formulário
 - [Bloco de detalhes](/interface-builder/blocks/data-blocks/details) — configuração do bloco de detalhes
-- [Regras de vinculação](/interface-builder/linkage-rules) — explicação das regras de vinculação de campos
+- [Regras de vinculação](../../interface-builder/linkage-rule.md) — explicação das regras de vinculação de campos

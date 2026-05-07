@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/element).
-:::
-
 # ctx.element
 
 Una instancia de `ElementProxy` que apunta al contenedor DOM del sandbox, sirviendo como el objetivo de renderizado predeterminado para `ctx.render()`. Está disponible en escenarios donde existe un contenedor de renderizado, como `JSBlock`, `JSField`, `JSItem` y `JSColumn`.

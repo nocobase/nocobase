@@ -175,4 +175,4 @@ keywords: "顧客管理,連絡先,メール,ヘルススコア,顧客マージ,N
 - [CRM 操作ガイド](./index.md)
 - [リード管理](./guide-leads) — リードコンバージョン後に顧客と連絡先が自動作成されます
 - [商談管理](./guide-opportunities) — 顧客に関連する商談
-- [AI スタッフ](./guide-ai)
+- [AI スタッフ](../../../ai-employees/index.md)

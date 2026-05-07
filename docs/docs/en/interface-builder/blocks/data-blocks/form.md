@@ -73,7 +73,7 @@ The Form block supports two layout modes, which can be set via the `layout` attr
 
 ### Field Template
 
-Field templates are used to reuse field area configurations in Form blocks. For details, see [Field Template](/interface-builder/fields/field-template).
+Field templates are used to reuse field area configurations in Form blocks. For details, see [Field Template](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

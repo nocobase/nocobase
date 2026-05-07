@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/modal).
-:::
-
 # ctx.modal
 
 Eine auf Ant Design Modal basierende Shortcut-API, die verwendet wird, um in RunJS aktiv Modal-Fenster (Informationshinweise, Bestätigungs-Popups usw.) zu öffnen. Sie wird durch `ctx.viewer` / das Ansichtssystem implementiert.

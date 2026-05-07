@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/exit-all).
-:::
-
 # ctx.exitAll()
 
 Beendet den aktuellen Workflow und alle nachfolgenden Workflows, die in derselben Ereignis-Verteilung (Event Dispatch) ausgelöst wurden. Dies wird häufig verwendet, wenn aufgrund eines globalen Fehlers oder einer fehlgeschlagenen Berechtigungsprüfung alle Workflows unter dem aktuellen Ereignis sofort abgebrochen werden müssen.

@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-file-previewer-office'
 ---
 
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/file-manager/file-preview/ms-office).
-:::
-
 # Office-Dateivorschau <Badge>v1.8.11+</Badge>
 
 Das Plugin zur Office-Dateivorschau wird verwendet, um Dateien im Office-Format wie Word, Excel und PowerPoint in NocoBase-Anwendungen in der Vorschau anzuzeigen.  

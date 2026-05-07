@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/message).
-:::
-
 # ctx.message
 
 API global de mensagens do Ant Design, usada para exibir alertas leves e temporários no centro superior da página. As mensagens fecham automaticamente após um certo tempo ou podem ser fechadas manualmente pelo usuário.

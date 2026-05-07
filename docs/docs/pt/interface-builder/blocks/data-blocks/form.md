@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/blocks/data-blocks/form).
-:::
-
 # Bloco de formulário
 
 ## Introdução
@@ -77,7 +73,7 @@ O bloco de formulário suporta dois modos de layout, configurados através do at
 
 ### Template de campo
 
-Templates de campo são usados para reutilizar a configuração da área de campos no bloco de formulário. Veja detalhes em [Template de campo](/interface-builder/fields/field-template).
+Templates de campo são usados para reutilizar a configuração da área de campos no bloco de formulário. Veja detalhes em [Template de campo](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 
