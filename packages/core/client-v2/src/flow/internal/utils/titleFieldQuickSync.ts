@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DataSourceManager } from '@nocobase/flow-engine';
+import { DataSourceManager, getCollectionFieldInterface } from '@nocobase/flow-engine';
 import type { CollectionFieldOptions } from '../../../flow-compat';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../../flow-compat';
 
@@ -33,7 +33,7 @@ export function isTitleUsableField(
 ): boolean {
   const ifaceName = typeof field?.interface === 'string' ? field.interface : undefined;
   if (!dm || !ifaceName) return false;
-  return !!dm.collectionFieldInterfaceManager.getFieldInterface(ifaceName)?.titleUsable;
+  return !!getCollectionFieldInterface(ifaceName, dm)?.titleUsable;
 }
 
 function resolveDataSourceKey(targetCollection: CollectionLike | null | undefined): string {

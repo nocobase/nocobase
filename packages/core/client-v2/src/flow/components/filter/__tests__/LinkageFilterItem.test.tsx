@@ -110,6 +110,39 @@ describe('LinkageFilterItem', () => {
     expect(screen.queryByText('[object Object]')).toBeNull();
   });
 
+  it('uses scoped context dataSourceManager when app dataSourceManager has no field interface manager', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const { model, app } = createModel();
+    const getRuntimeFieldInterface = vi.fn((name: string) => ({
+      name,
+      filterable: {
+        operators: [{ value: '$eq', label: 'Equals', selected: true }],
+      },
+    }));
+    model.context.dataSourceManager.setCollectionFieldInterfaceManager({
+      getFieldInterface: getRuntimeFieldInterface,
+    });
+    (app as any).dataSourceManager = {};
+
+    (globalThis as any).__TEST_PATH__ = 'assignee';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'belongsTo',
+      uiSchema: { 'x-component': 'RecordPicker' },
+      paths: ['collection', 'assignee'],
+      name: 'assignee',
+      title: 'Assignee',
+      type: 'object',
+    };
+
+    render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$eq');
+      expect(getRuntimeFieldInterface).toHaveBeenCalledWith('belongsTo');
+    });
+  });
+
   it('renders operator schema component for multi-keyword constants', async () => {
     const value = observable({ path: '', operator: '', value: 'foo\nbar' }) as any;
     const { model, app } = createModel();

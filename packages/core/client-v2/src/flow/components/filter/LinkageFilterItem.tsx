@@ -20,6 +20,7 @@ import {
   parseValueToPath,
   FlowModel,
   observer,
+  getCollectionFieldInterface,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
@@ -227,11 +228,12 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   const operatorMetadataList: OperatorMeta[] = useMemo(() => {
     if (leftFieldMeta) {
-      const dataSourceManager = model.context.app.dataSourceManager;
       const fieldInterface = leftFieldMeta.interface
-        ? (dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+        ? (getCollectionFieldInterface(
             leftFieldMeta.interface,
-          ) as FieldInterfaceDef)
+            model.context.dataSourceManager,
+            model.context.app?.dataSourceManager,
+          ) as FieldInterfaceDef | undefined)
         : undefined;
       const schemaOperators = (leftFieldMeta as any)?.uiSchema?.['x-filter-operators'] as
         | Array<OperatorMeta & { visible?: (meta: MetaTreeNode) => boolean }>
@@ -392,7 +394,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     const base = Array.isArray(tree) ? tree : [];
     const merged = mergeExtraMetaTreeWithBase(base, extraMetaTree);
     const getFieldInterface = (name: string) =>
-      model.context.app?.dataSourceManager?.collectionFieldInterfaceManager?.getFieldInterface?.(name) as
+      getCollectionFieldInterface(name, model.context.dataSourceManager, model.context.app?.dataSourceManager) as
         | FieldInterfaceDef
         | undefined;
     return await enhanceMetaTreeWithFilterableChildren(merged, getFieldInterface);
