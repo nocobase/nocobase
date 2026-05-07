@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/filter-manager).
-:::
-
 # ctx.filterManager
 
 Der Filter-Verbindungs-Manager wird verwendet, um die Filterverknüpfungen zwischen Filterformularen (FilterForm) und Datenblöcken (Tabellen, Listen, Diagramme usw.) zu verwalten. Er wird vom `BlockGridModel` bereitgestellt und ist nur in dessen Kontext (z. B. Filterformular-Blöcke, Datenblöcke) verfügbar.

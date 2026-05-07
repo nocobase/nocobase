@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/get-started/system-requirements).
-:::
-
 # Configuration requise
 
 Les exigences système décrites dans ce document concernent uniquement le **service d'application NocoBase lui-même** et couvrent les ressources de calcul et de mémoire nécessaires aux processus de l'application. Elles **n'incluent pas les services tiers dépendants**, y compris, mais sans s'y limiter :

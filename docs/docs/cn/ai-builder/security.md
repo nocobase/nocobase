@@ -91,7 +91,7 @@ nb env auth local
 
 `nb env auth` 会启动浏览器登录流程。成功后，CLI 会把认证信息保存到当前环境配置中，之后就可以继续让 AI Agent 调用 `nb api`。
 
-OAuth 的访问令牌和刷新令牌有效期跟随系统的 [Token 策略](/security/token-policy/) 配置。
+OAuth 的访问令牌和刷新令牌有效期跟随系统的 [Token 策略](../security/token-policy/index.md) 配置。
 
 - OAuth 访问令牌有效期和系统 Token 有效期相同，默认值为 **1 天**
 - OAuth 刷新令牌有效期和系统会话有效期相同，默认值为 **7 天**

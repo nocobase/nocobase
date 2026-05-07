@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/require-async).
-:::
-
 # ctx.requireAsync()
 
 Charge de manière asynchrone des scripts **UMD/AMD** ou montés globalement via une URL, ainsi que du **CSS**. Cette méthode est adaptée aux scénarios RunJS nécessitant des bibliothèques UMD/AMD telles que ECharts, Chart.js, FullCalendar (version UMD) ou des plugins jQuery. Si une bibliothèque propose également une version ESM, privilégiez l'utilisation de [ctx.importAsync()](./import-async.md).

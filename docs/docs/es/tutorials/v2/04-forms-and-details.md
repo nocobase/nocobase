@@ -1,6 +1,6 @@
 # Capítulo 4: Formularios y detalles — captura, visualización, todo en uno
 
-En el capítulo anterior montamos la lista de tickets y, con un formulario sencillo, registramos datos de prueba. En este capítulo vamos a **mejorar la experiencia del formulario**: optimizar la disposición de Field del [bloque de formulario](/interface-builder/blocks/data-blocks/form), añadir el [bloque de detalles](/interface-builder/blocks/data-blocks/details), configurar [reglas de campo](/interface-builder/linkage-rules) y, además, usar el [historial de cambios](https://docs.nocobase.com/cn/record-history/) para hacer seguimiento de cada modificación de los tickets.
+En el capítulo anterior montamos la lista de tickets y, con un formulario sencillo, registramos datos de prueba. En este capítulo vamos a **mejorar la experiencia del formulario**: optimizar la disposición de Field del [bloque de formulario](/interface-builder/blocks/data-blocks/form), añadir el [bloque de detalles](/interface-builder/blocks/data-blocks/details), configurar [reglas de campo](../../interface-builder/linkage-rule.md) y, además, usar el [historial de cambios](https://docs.nocobase.com/cn/record-history/) para hacer seguimiento de cada modificación de los tickets.
 
 :::tip
 La función **«[Historial de registros](https://docs.nocobase.com/cn/record-history/)»** de la sección 4.4 está incluida en la [versión Profesional](https://www.nocobase.com/cn/commercial); saltarse esta sección no afecta al aprendizaje de los siguientes capítulos.
@@ -15,7 +15,7 @@ En el capítulo anterior creamos rápidamente un formulario de creación funcion
 1. Asegúrese de estar en modo UI Editor (interruptor de la esquina superior derecha activado).
 2. Entre en la página «Lista de tickets» y haga clic en **«[Acciones](/interface-builder/actions) (Actions)»** sobre el bloque de tabla.
 3. Marque el botón de acción **«Añadir»**.
-4. Aparecerá un botón «Añadir» sobre la tabla; al pulsarlo se abrirá un [popup](/interface-builder/actions/pop-up).
+4. Aparecerá un botón «Añadir» sobre la tabla; al pulsarlo se abrirá un [popup](../../interface-builder/actions/types/pop-up.md).
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
@@ -283,4 +283,4 @@ Desde "verlo" hasta "introducirlo" y "consultarlo": nuestro sistema de tickets y
 
 - [Bloque de formulario](/interface-builder/blocks/data-blocks/form) — Configuración detallada del bloque de formulario
 - [Bloque de detalles](/interface-builder/blocks/data-blocks/details) — Configuración del bloque de detalles
-- [Reglas de campo](/interface-builder/linkage-rules) — Descripción de las reglas de campo
+- [Reglas de campo](../../interface-builder/linkage-rule.md) — Descripción de las reglas de campo

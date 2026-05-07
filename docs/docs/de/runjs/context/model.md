@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/model).
-:::
-
 # ctx.model
 
 Die `FlowModel`-Instanz, in der sich der aktuelle RunJS-Ausführungskontext befindet. Sie dient als Standard-Einstiegspunkt für Szenarien wie JSBlock, JSField und JSAction. Der spezifische Typ variiert je nach Kontext: Es kann sich um eine Unterklasse wie `BlockModel`, `ActionModel` oder `JSEditableFieldModel` handeln.

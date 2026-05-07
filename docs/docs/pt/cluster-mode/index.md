@@ -5,10 +5,6 @@ description: "Modo cluster NocoBase: implantação multi-instância, balanceamen
 keywords: "modo cluster,multi-instância,balanceamento de carga,armazenamento compartilhado,Redis,Kubernetes,bloqueios distribuídos,fila de mensagens,NocoBase"
 ---
 
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Modo de Cluster
 
 ## Introdução

@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/block-model)をご参照ください。
-:::
-
 # ctx.blockModel
 
 現在の JS フィールド / JS ブロックが配置されている親ブロックモデル（BlockModel インスタンス）です。JSField、JSItem、JSColumn などのシナリオでは、`ctx.blockModel` は現在の JS ロジックを保持しているフォームブロックまたはテーブルブロックを指します。独立した JSBlock では、`null` になるか、`ctx.model` と同じになる場合があります。

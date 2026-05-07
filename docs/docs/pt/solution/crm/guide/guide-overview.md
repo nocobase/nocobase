@@ -212,4 +212,4 @@ Depois de conhecer a visão geral do sistema e os dashboards, é hora de entrar 
 
 - [Guia de operação do CRM](./index.md)
 - [Gestão de Leads](./guide-leads)
-- [Funcionários de AI](./guide-ai)
+- [Funcionários de AI](../../../ai-employees/index.md)

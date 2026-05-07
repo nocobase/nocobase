@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/route).
-:::
-
 # ctx.route
 
 Información de coincidencia de la ruta actual, correspondiente al concepto `route` de React Router. Se utiliza para obtener la configuración de la ruta coincidente actual, parámetros, etc. Generalmente se usa en conjunto con `ctx.router` y `ctx.location`.

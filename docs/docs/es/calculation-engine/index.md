@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/calculation-engine/index).
-:::
-
 # Motores de cálculo
 
 Los motores de cálculo desempeñan un papel fundamental en los campos de fórmula, las reglas de enlace y los flujos de trabajo, proporcionando herramientas de cálculo versátiles.

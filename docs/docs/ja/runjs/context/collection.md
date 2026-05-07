@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/collection)をご参照ください。
-:::
-
 # ctx.collection
 
 現在の RunJS 実行コンテキストに関連付けられたコレクション（Collection）インスタンスです。コレクションのメタデータ、フィールド定義、主キーなどの設定にアクセスするために使用されます。通常、`ctx.blockModel.collection` または `ctx.collectionField?.collection` から取得されます。

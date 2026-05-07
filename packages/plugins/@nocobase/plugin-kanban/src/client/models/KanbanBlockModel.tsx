@@ -11,9 +11,11 @@ import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel } from '@nocobase/client';
 import {
   AddSubModelButton,
+  type ActionDefinition,
   DndProvider,
   DragHandler,
   Droppable,
+  type FlowSettingsContext,
   FlowModelRenderer,
   FlowSettingsButton,
   MultiRecordResource,
@@ -30,6 +32,10 @@ import {
   normalizeKanbanPopupTemplateUid,
   resolveKanbanOpenViewDefaultParams,
 } from './popupSettings';
+import {
+  createKanbanQuickCreatePopupTemplateShadowCtx,
+  getKanbanQuickCreatePopupTemplateComponent,
+} from './KanbanQuickCreatePopupTemplateSelect';
 import {
   DEFAULT_KANBAN_COLUMN_WIDTH,
   DEFAULT_KANBAN_PAGE_SIZE,
@@ -250,6 +256,49 @@ const applyKanbanBlockPopupSettings = async (model: KanbanBlockModel, params: Re
 
   const action = await model.ensureQuickCreateAction();
   await model.syncQuickCreateAction(action);
+};
+
+const getKanbanBaseOpenViewAction = (ctx: any): ActionDefinition | undefined => {
+  return ctx?.engine?.getAction?.('openView');
+};
+
+const resolveKanbanBaseOpenViewDefaultParams = async (ctx: any) => {
+  const defaultParams = getKanbanBaseOpenViewAction(ctx)?.defaultParams;
+  return typeof defaultParams === 'function' ? await defaultParams(ctx) : defaultParams;
+};
+
+const resolveKanbanBaseOpenViewHidden = async (ctx: any) => {
+  const hideInSettings = getKanbanBaseOpenViewAction(ctx)?.hideInSettings;
+  return typeof hideInSettings === 'function' ? await hideInSettings(ctx) : hideInSettings;
+};
+
+const runKanbanBaseOpenViewHandler = async (ctx: any, params: any) => {
+  return await getKanbanBaseOpenViewAction(ctx)?.handler?.(ctx, params);
+};
+
+const resolveKanbanQuickCreateOpenViewUiSchema = async (ctx: any) => {
+  const actionSchema = getKanbanBaseOpenViewAction(ctx)?.uiSchema;
+  const resolvedActionSchema =
+    typeof actionSchema === 'function' ? (await actionSchema(ctx)) || {} : (actionSchema as any) || {};
+  const popupTemplateField = resolvedActionSchema?.popupTemplateUid;
+  const popupTemplateComponent = popupTemplateField?.['x-component'];
+
+  if (!popupTemplateField || !popupTemplateComponent) {
+    return resolvedActionSchema;
+  }
+
+  const wrappedComponent = getKanbanQuickCreatePopupTemplateComponent(popupTemplateComponent);
+  if (wrappedComponent === popupTemplateComponent) {
+    return resolvedActionSchema;
+  }
+
+  return {
+    ...resolvedActionSchema,
+    popupTemplateUid: {
+      ...popupTemplateField,
+      'x-component': wrappedComponent,
+    },
+  };
 };
 
 const applyKanbanDragSortingSettings = (model: KanbanBlockModel, params: Record<string, any>) => {
@@ -1038,6 +1087,21 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     return <KanbanBlockView model={this} />;
   }
 }
+
+KanbanBlockModel.registerAction({
+  name: 'openView',
+  title: tExpr('Edit popup'),
+  defaultParams: resolveKanbanBaseOpenViewDefaultParams,
+  hideInSettings: resolveKanbanBaseOpenViewHidden,
+  handler: runKanbanBaseOpenViewHandler,
+  async uiSchema(ctx: FlowSettingsContext) {
+    return resolveKanbanQuickCreateOpenViewUiSchema(ctx);
+  },
+  async beforeParamsSave(ctx: FlowSettingsContext, params: any, previousParams: any) {
+    const shadowCtx = createKanbanQuickCreatePopupTemplateShadowCtx(ctx);
+    await getKanbanBaseOpenViewAction(ctx)?.beforeParamsSave?.(shadowCtx, params, previousParams);
+  },
+});
 
 KanbanBlockModel.registerFlow({
   key: 'resourceSettings2',

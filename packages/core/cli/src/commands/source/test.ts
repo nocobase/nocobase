@@ -13,6 +13,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import Install from '../install.js';
 import { defaultWorkspaceName } from '../../lib/app-runtime.js';
+import { resolveCliLocale } from '../../lib/cli-locale.js';
 import { findAvailableTcpPort, validateAvailableTcpPort } from '../../lib/prompt-validators.js';
 import { commandSucceeds, resolveProjectCwd, run, runNocoBaseCommand } from '../../lib/run-npm.js';
 import { failTask, printInfo, setVerboseMode, startTask, succeedTask } from '../../lib/ui.js';
@@ -36,6 +37,12 @@ const DEFAULT_TEST_DB_IMAGES: Record<string, string> = {
   postgres: 'postgres:16',
   mysql: 'mysql:8',
   mariadb: 'mariadb:11',
+  kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
+};
+const DEFAULT_TEST_DB_IMAGES_ZH_CN: Record<string, string> = {
+  postgres: 'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
+  mysql: 'registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8',
+  mariadb: 'registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11',
   kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
 };
 const DEFAULT_TEST_DB_DISTRIBUTOR_PORT = '23450';
@@ -90,7 +97,11 @@ function defaultTestDbPort(dbDialect: string): string {
 }
 
 function defaultTestDbImage(dbDialect: string): string {
-  return DEFAULT_TEST_DB_IMAGES[dbDialect] ?? DEFAULT_TEST_DB_IMAGES.postgres;
+  const defaults =
+    resolveCliLocale(process.env.NB_LOCALE) === 'zh-CN'
+      ? DEFAULT_TEST_DB_IMAGES_ZH_CN
+      : DEFAULT_TEST_DB_IMAGES;
+  return defaults[dbDialect] ?? defaults.postgres;
 }
 
 function delay(ms: number): Promise<void> {

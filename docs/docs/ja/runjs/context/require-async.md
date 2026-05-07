@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/require-async)をご参照ください。
-:::
-
 # ctx.requireAsync()
 
 URL を指定して **UMD/AMD** またはグローバルにマウントされるスクリプトを非同期で読み込みます。**CSS** の読み込みも可能です。ECharts、Chart.js、FullCalendar（UMD 版）、jQuery プラグインなどの UMD/AMD ライブラリを RunJS で使用する場合に適しています。ライブラリが ESM バージョンも提供している場合は、[ctx.importAsync()](./import-async.md) を優先して使用してください。

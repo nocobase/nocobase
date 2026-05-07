@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/logger).
-:::
-
 # ctx.logger
 
 Encapsulamento de logs baseado no [pino](https://github.com/pinojs/pino), fornecendo logs JSON estruturados de alto desempenho. Recomenda-se o uso de `ctx.logger` em vez de `console` para facilitar a coleta e análise de logs.

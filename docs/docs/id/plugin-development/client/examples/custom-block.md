@@ -107,7 +107,7 @@ Beberapa poin penting:
 
 - **`renderComponent()`** — Merender UI Block, membaca konten HTML melalui `this.props.html`
 - **`define()`** — Mengatur nama tampilan Block di menu "Tambah Block". `tExpr()` digunakan untuk terjemahan tertunda, karena `define()` dieksekusi pada saat module loading di mana i18n belum diinisialisasi
-- **`registerFlow()`** — Menambahkan panel konfigurasi. `uiSchema` menggunakan JSON Schema untuk mendefinisikan form (referensi sintaks [UI Schema](../../../../flow-engine/ui-schema)), `handler` menulis nilai yang diisi user ke `ctx.model.props`, dan `renderComponent()` dapat membacanya
+- **`registerFlow()`** — Menambahkan panel konfigurasi. `uiSchema` menggunakan JSON Schema untuk mendefinisikan form (referensi sintaks [UI Schema](../../../flow-engine/ui-schema.md)), `handler` menulis nilai yang diisi user ke `ctx.model.props`, dan `renderComponent()` dapat membacanya
 
 ## Langkah 3: Menambahkan File Multibahasa
 
@@ -194,7 +194,7 @@ Kapabilitas yang digunakan dalam contoh ini:
 - [Menulis Plugin Pertama Anda](../../write-your-first-plugin) — Membuat skeleton plugin dari nol
 - [Ikhtisar FlowEngine](../flow-engine/index.md) — Penggunaan dasar FlowModel dan registerFlow
 - [FlowEngine → Ekstensi Block](../flow-engine/block) — BlockModel, DataBlockModel, CollectionBlockModel
-- [UI Schema](../../../../flow-engine/ui-schema) — Referensi sintaks uiSchema
+- [UI Schema](../../../flow-engine/ui-schema.md) — Referensi sintaks uiSchema
 - [Component vs FlowModel](../component-vs-flow-model) — Kapan menggunakan FlowModel
 - [Plugin](../plugin) — Entry point Plugin dan lifecycle load()
 - [i18n Internasionalisasi](../component/i18n) — Cara menulis file terjemahan dan penggunaan tExpr

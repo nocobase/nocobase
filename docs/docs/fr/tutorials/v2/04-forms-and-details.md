@@ -1,6 +1,6 @@
 # Chapitre 4 : Formulaires et détails — saisir, afficher, en un seul mouvement
 
-Au chapitre précédent, nous avons construit la liste des tickets et saisi quelques données de test grâce à un formulaire simple. Dans ce chapitre, nous **améliorons l'expérience du formulaire** — disposition des champs du [bloc de formulaire](/interface-builder/blocks/data-blocks/form), ajout d'un [bloc de détails](/interface-builder/blocks/data-blocks/details), configuration des [règles de liaison](/interface-builder/linkage-rules), et utilisation de l'[historique des modifications](https://docs.nocobase.com/cn/record-history/) pour suivre chaque modification d'un ticket.
+Au chapitre précédent, nous avons construit la liste des tickets et saisi quelques données de test grâce à un formulaire simple. Dans ce chapitre, nous **améliorons l'expérience du formulaire** — disposition des champs du [bloc de formulaire](/interface-builder/blocks/data-blocks/form), ajout d'un [bloc de détails](/interface-builder/blocks/data-blocks/details), configuration des [règles de liaison](../../interface-builder/linkage-rule.md), et utilisation de l'[historique des modifications](https://docs.nocobase.com/cn/record-history/) pour suivre chaque modification d'un ticket.
 
 :::tip
 La fonctionnalité « [Historique des modifications](https://docs.nocobase.com/cn/record-history/) » de la section 4.4 est incluse dans la [version Pro](https://www.nocobase.com/cn/commercial). Sauter cette section n'affecte pas la suite du tutoriel.
@@ -15,7 +15,7 @@ Au chapitre précédent, nous avons rapidement créé un formulaire fonctionnel.
 1. Assurez-vous d'être en mode UI Editor (interrupteur en haut à droite activé).
 2. Sur la page « Liste des tickets », cliquez sur **« [Actions](/interface-builder/actions) »** au-dessus du bloc de tableau.
 3. Cochez le bouton **« Add new »**.
-4. Un bouton « Add new » apparaît au-dessus du tableau ; au clic, une [pop-up](/interface-builder/actions/pop-up) s'ouvre.
+4. Un bouton « Add new » apparaît au-dessus du tableau ; au clic, une [pop-up](../../interface-builder/actions/types/pop-up.md) s'ouvre.
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
@@ -283,4 +283,4 @@ De « voir » à « saisir », puis à « retrouver » — notre système de tic
 
 - [Bloc de formulaire](/interface-builder/blocks/data-blocks/form) — configuration détaillée
 - [Bloc de détails](/interface-builder/blocks/data-blocks/details) — configuration du bloc de détails
-- [Linkage rules](/interface-builder/linkage-rules) — règles de liaison de champs
+- [Linkage rules](../../interface-builder/linkage-rule.md) — règles de liaison de champs

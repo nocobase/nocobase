@@ -178,7 +178,7 @@ Así, los tickets recién enviados quedarán siempre arriba, y será más cómod
 No basta con ver la lista; también necesitamos poder entrar a ver los detalles del ticket y editarlo.
 
 1. Sobre la columna de acciones, haga clic en el segundo signo "+".
-2. Haga clic en las acciones: **Ver**, **[Editar](/interface-builder/actions/edit)**, **[Eliminar](/interface-builder/actions/delete)**.
+2. Haga clic en las acciones: **Ver**, **[Editar](../../interface-builder/actions/types/edit.md)**, **[Eliminar](../../interface-builder/actions/types/delete.md)**.
 3. En cada fila aparecerán los botones «Ver», «Editar» y «Eliminar».
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

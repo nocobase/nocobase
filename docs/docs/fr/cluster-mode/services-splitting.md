@@ -5,10 +5,6 @@ description: "Répartir les services longs (workflow, tâches asynchrones) sur d
 keywords: "séparation des services,WORKER_MODE,workflow asynchrone,async-task,mise à l'échelle horizontale,nœud de requête,nœud de tâche,NocoBase"
 ---
 
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Séparation des services <Badge>v1.9.0+</Badge>
 
 ## Introduction

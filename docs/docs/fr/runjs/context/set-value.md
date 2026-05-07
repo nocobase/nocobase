@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/set-value).
-:::
-
 # ctx.setValue()
 
 Définit la valeur du champ actuel dans les scénarios de champs modifiables tels que JSField et JSItem. Combiné avec `ctx.getValue()`, il permet une liaison bidirectionnelle (two-way binding) avec le formulaire.

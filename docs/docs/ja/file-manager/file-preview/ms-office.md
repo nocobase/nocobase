@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-file-previewer-office'
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/file-manager/file-preview/ms-office)をご参照ください。
-:::
-
 # Office ファイルプレビュー <Badge>v1.8.11+</Badge>
 
 Office ファイルプレビュープラグインは、NocoBase アプリケーション内で Word、Excel、PowerPoint などの Office 形式のファイルをプレビューするために使用されます。  

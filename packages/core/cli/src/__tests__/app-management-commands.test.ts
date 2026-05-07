@@ -12,6 +12,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import { resolveCliHomeRoot } from '../lib/cli-home.js';
 
+const originalNbLocale = process.env.NB_LOCALE;
 const TEST_CWD = '/tmp/app2';
 const TEST_STORAGE_PATH = path.join(TEST_CWD, 'storage', 'test');
 const TEST_POSTGRES_DATA_DIR = path.resolve(TEST_STORAGE_PATH, 'db', 'postgres');
@@ -315,6 +316,11 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  if (originalNbLocale === undefined) {
+    delete process.env.NB_LOCALE;
+  } else {
+    process.env.NB_LOCALE = originalNbLocale;
+  }
   vi.resetAllMocks();
   vi.unstubAllGlobals();
 });
@@ -2165,6 +2171,33 @@ test('test recreates the built-in test database before running tests', async () 
     DB_TEST_DISTRIBUTOR_PORT: '23450',
     DB_TEST_PREFIX: 'test',
   });
+});
+
+test('test uses aliyun built-in database image when NB_LOCALE is zh-CN', async () => {
+  process.env.NB_LOCALE = 'zh-CN';
+
+  const { default: Test } = await import('../commands/source/test.js');
+  const command = createCommandHarness({
+    args: {
+      paths: [],
+    },
+    flags: {
+      cwd: '/tmp/app2',
+      watch: false,
+      run: false,
+      allowOnly: false,
+      bail: false,
+      coverage: false,
+      server: false,
+      client: false,
+      'db-clean': false,
+      verbose: false,
+    },
+  });
+
+  await Test.prototype.run.call(command);
+
+  expect(mocks.run.mock.calls[1]?.[1]).toContain('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
 });
 
 test('test injects DB_* and STORAGE_PATH into nocobase test', async () => {

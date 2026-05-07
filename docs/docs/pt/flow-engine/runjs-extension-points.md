@@ -2,10 +2,6 @@
 title: Pontos de Extensão do Plugin RunJS (Documentação ctx / Snippets / Mapeamento de Cena)
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/flow-engine/runjs-extension-points).
-:::
-
 # Pontos de Extensão do Plugin RunJS (Documentação ctx / Snippets / Mapeamento de Cena)
 
 Quando um plugin adiciona ou estende as capacidades do RunJS, recomenda-se registrar o "mapeamento de contexto / documentação do `ctx` / código de exemplo" por meio dos **pontos de extensão oficiais**. Isso garante que:

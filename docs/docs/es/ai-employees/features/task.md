@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/features/task).
-:::
-
 # Tareas de acceso rápido
 
 Para que los empleados de IA comiencen a trabajar de manera más eficiente, podemos vincular empleados de IA a bloques de escenario y preestablecer varias tareas comunes.

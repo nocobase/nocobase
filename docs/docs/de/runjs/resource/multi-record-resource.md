@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/resource/multi-record-resource).
-:::
-
 # MultiRecordResource
 
 Eine auf Datentabellen ausgerichtete Resource: Anfragen geben ein Array zurück und unterstützen Paginierung, Filterung, Sortierung sowie CRUD-Operationen. Sie eignet sich für Szenarien mit „mehreren Datensätzen“ wie Tabellen oder Listen. Im Gegensatz zur [APIResource](./api-resource.md) spezifiziert die MultiRecordResource den Ressourcennamen über `setResourceName()`, erstellt automatisch URLs wie `users:list` oder `users:create` und verfügt über integrierte Funktionen für Paginierung, Filterung und Zeilenauswahl.

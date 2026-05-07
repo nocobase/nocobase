@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/make-resource)をご参照ください。
-:::
-
 # ctx.makeResource()
 
 新しい resource インスタンスを**作成**して返します。`ctx.resource` への書き込みや変更は**行いません**。複数の独立した resource が必要な場合や、一時的な使用に適しています。

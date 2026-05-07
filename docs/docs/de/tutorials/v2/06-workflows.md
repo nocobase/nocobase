@@ -34,7 +34,7 @@ NocoBase bietet beim Erstellen eines Workflows mehrere Trigger-Typen zur Auswahl
 |-------|------|---------|
 | [**Collection-Ereignis**](/workflow/triggers/collection) | Löst beim Anlegen, Aktualisieren oder Löschen aus | Neue-Ticket-Benachrichtigung, Statusänderungs-Log |
 | [**Geplanter Task**](/workflow/triggers/schedule) | Löst per Cron-Ausdruck oder zu festen Zeiten aus | Tagesreport, regelmäßige Bereinigung abgelaufener Daten |
-| [**Nach-Aktion-Ereignis**](/workflow/triggers/action) | Löst aus, nachdem ein Benutzer eine Aktion ausgeführt hat | Benachrichtigung nach Formularabsendung, Aktionsprotokoll |
+| [**Nach-Aktion-Ereignis**](../../workflow/triggers/post-action.md) | Löst aus, nachdem ein Benutzer eine Aktion ausgeführt hat | Benachrichtigung nach Formularabsendung, Aktionsprotokoll |
 | **Genehmigung** | Startet einen Genehmigungsprozess, mehrstufig | Urlaubsantrag, Beschaffungsantrag |
 | **Eigene Aktion** | An einen Custom-Button gebunden, durch Klick ausgelöst | Ein-Klick-Archivierung, Massenoperationen |
 | **Vor-Aktion-Ereignis** | Fängt eine Benutzeraktion ab, führt synchron aus und gibt dann frei | Prüfungen vor dem Speichern, Auto-Vervollständigung |

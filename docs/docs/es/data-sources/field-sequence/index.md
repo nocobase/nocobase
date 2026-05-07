@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-sequence"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Codificación Automática
 

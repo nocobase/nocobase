@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/template-print/syntax/formatters/time-interval-formatting).
-:::
-
 ### Formatação de intervalo de tempo
 
 #### 1. :formatI(patternOut, patternIn)

@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/jsx).
-:::
-
 # JSX
 
 RunJS unterstützt die JSX-Syntax, sodass Sie Code wie React-Komponenten schreiben können. JSX wird vor der Ausführung automatisch kompiliert.

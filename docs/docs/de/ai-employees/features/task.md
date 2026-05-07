@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/features/task).
-:::
-
 # Schnellaufgaben
 
 Damit KI-Mitarbeiter ihre Arbeit effizienter aufnehmen können, lassen sich KI-Mitarbeiter an Szenario-Blöcke binden und mehrere häufig verwendete Aufgaben voreinstellen.

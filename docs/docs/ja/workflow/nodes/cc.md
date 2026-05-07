@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-workflow-cc'
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/workflow/nodes/cc)をご参照ください。
-:::
-
 # 抄送 <Badge>v1.8.2+</Badge>
 
 ## 介绍

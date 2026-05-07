@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/off).
-:::
-
 # ctx.off()
 
 Remove os ouvintes de eventos registrados via `ctx.on(eventName, handler)`. É frequentemente utilizado em conjunto com [ctx.on](./on.md) para cancelar a assinatura no momento apropriado, evitando vazamentos de memória ou gatilhos duplicados.

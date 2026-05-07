@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/t).
-:::
-
 # ctx.t()
 
 Uma função de atalho de i18n usada no RunJS para traduzir textos com base nas configurações de idioma do contexto atual. É adequada para a internacionalização de textos em linha, como botões, títulos e avisos.

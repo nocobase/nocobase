@@ -9,8 +9,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-field-m2m-array/index).
-:::
-
 # Поле Collection: Many-to-Many (M2M) (массив)

@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/collection-field).
-:::
-
 # ctx.collectionField
 
 Die Instanz des Datentabellenfeldes (`CollectionField`), die mit dem aktuellen RunJS-Ausführungskontext verknüpft ist. Sie wird verwendet, um auf Metadaten, Typen, Validierungsregeln und Verknüpfungsinformationen des Feldes zuzugreifen. Sie existiert nur, wenn das Feld an eine Definition einer **Sammlung** gebunden ist; benutzerdefinierte oder virtuelle Felder können `null` sein.

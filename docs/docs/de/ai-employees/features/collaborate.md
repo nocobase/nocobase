@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/features/collaborate).
-:::
-
 # Zusammenarbeit mit AI-Mitarbeitern
 
 Nachdem Sie AI-Mitarbeiter erstellt und aktiviert haben, können Sie auf den Seiten mit ihnen zusammenarbeiten.

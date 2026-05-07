@@ -4,10 +4,6 @@ pkg: '@nocobase/plugin-action-duplicate'
 
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/actions/types/duplicate)をご参照ください。
-:::
-
 # 複製
 
 ## 紹介

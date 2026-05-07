@@ -4,10 +4,6 @@ description: "Visión general del desarrollo de plugins de cliente de NocoBase: 
 keywords: "plugin de cliente,Plugin,Router,Component,Context,FlowEngine,FlowModel,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Visión general
 
 Los plugins de cliente de NocoBase pueden hacer muchas cosas: registrar nuevas páginas, escribir componentes personalizados, llamar a la API del backend, añadir Blocks y Fields, e incluso extender botones de Action. Todas estas capacidades se organizan a través de un punto de entrada de Plugin unificado.

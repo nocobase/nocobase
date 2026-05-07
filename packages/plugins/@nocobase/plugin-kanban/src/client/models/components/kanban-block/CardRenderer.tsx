@@ -164,7 +164,7 @@ export const DraggableKanbanCard = memo(
             className={css`
               margin-bottom: 12px;
               backface-visibility: hidden;
-              contain: layout paint;
+              contain: layout;
             `}
           >
             <LazyCardRenderer

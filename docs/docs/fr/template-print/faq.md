@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 ## Problèmes courants et solutions
 
 ### 1. Les colonnes et cellules vides des modèles Excel disparaissent lors du rendu

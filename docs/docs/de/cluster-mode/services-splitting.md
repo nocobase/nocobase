@@ -5,10 +5,6 @@ description: "Aufteilen zeitintensiver Dienste (Workflow, asynchrone Aufgaben) a
 keywords: "Dienstaufteilung,WORKER_MODE,asynchroner Workflow,async-task,horizontale Skalierung,Anfrageknoten,Aufgabenknoten,NocoBase"
 ---
 
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Dienstaufteilung <Badge>v1.9.0+</Badge>
 
 ## Einführung

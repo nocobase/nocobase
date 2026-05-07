@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/solution/ticket-system/installation).
-:::
-
 # Comment installer
 
 > La version actuelle utilise le format **sauvegarde et restauration** pour le déploiement. Dans les versions ultérieures, nous pourrions passer à un format de **migration incrémentielle** afin de faciliter l'intégration de la solution dans vos systèmes existants.

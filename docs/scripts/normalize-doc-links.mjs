@@ -1,12 +1,26 @@
 #!/usr/bin/env node
+/**
+ * 校对：_meta.json 侧边栏链接检查（与可选自动修复）
+ *
+ * 扫所有语言（或 --langs 过滤），检查 _meta.json 里的 link 字段是否可解析；
+ * 默认 dry-run，`--write` 应用修复；`--remove-unresolved-meta` 在 write
+ * 模式下删掉解析不到的叶子条目。
+ *
+ * Markdown 链接的死链交给 rspress 内置 checkDeadLinks（build 时强制）。
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const defaultDocsRoot = path.join(scriptDir, 'docs');
+// 脚本位于 docs/scripts/，docs 根目录是其上一级的 docs/。
+const defaultDocsRoot = path.join(scriptDir, '..', 'docs');
 const removeMarker = Symbol('remove');
+
+// 暂不维护的语言；显式 --langs ar 仍可强制检查（用于查现状）。
+// 与 docs/scripts/ 下其他对齐脚本保持一致。
+const SKIP_LANGS = new Set(['ar']);
 
 const options = parseArgs(process.argv.slice(2));
 
@@ -17,8 +31,6 @@ if (options.help) {
 
 const docsRoot = path.resolve(options.root || defaultDocsRoot);
 const languages = options.langs || listLanguageDirs(docsRoot);
-const scanDocs = options.scope !== 'meta';
-const scanMeta = options.scope !== 'docs';
 
 const results = [];
 for (const lang of languages) {
@@ -27,28 +39,19 @@ for (const lang of languages) {
     results.push({ lang, error: `missing language directory: ${langRoot}` });
     continue;
   }
-
-  const result = { lang };
-  if (scanDocs) {
-    result.docs = normalizeMarkdownLinks(langRoot, {
-      docsRoot,
-      languages,
-      write: options.write,
-    });
-  }
-  if (scanMeta) {
-    result.meta = normalizeMetaLinks(langRoot, {
+  results.push({
+    lang,
+    meta: normalizeMetaLinks(langRoot, {
       write: options.write,
       removeUnresolved: options.removeUnresolvedMeta,
-    });
-  }
-  results.push(result);
+    }),
+  });
 }
 
-printReport(results, { docsRoot, languages, options, scanDocs, scanMeta });
+printReport(results, { docsRoot, languages, options });
 
 if (results.some(hasFatalIssue)) {
-  console.error('\nDead links or fatal errors were found. Exit with code 1.');
+  console.error('\nDead sidebar links or fatal errors were found. Exit with code 1.');
   process.exit(1);
 }
 
@@ -58,7 +61,6 @@ function parseArgs(argv) {
     langs: null,
     removeUnresolvedMeta: false,
     root: null,
-    scope: 'all',
     write: false,
   };
 
@@ -70,10 +72,6 @@ function parseArgs(argv) {
       parsed.write = true;
     } else if (arg === '--remove-unresolved-meta') {
       parsed.removeUnresolvedMeta = true;
-    } else if (arg === '--docs-only') {
-      parsed.scope = 'docs';
-    } else if (arg === '--meta-only') {
-      parsed.scope = 'meta';
     } else if (arg === '--langs') {
       parsed.langs = readValue(argv, (index += 1), arg).split(',').map(s => s.trim()).filter(Boolean);
     } else if (arg.startsWith('--langs=')) {
@@ -97,86 +95,37 @@ function readValue(argv, index, arg) {
 }
 
 function printHelp() {
-  console.log(`Usage:
-  node docs/normalize-doc-links.mjs --langs fr
-  node docs/normalize-doc-links.mjs --langs fr --write --remove-unresolved-meta
+  console.log(`Usage (run from docs/):
+  node ./scripts/normalize-doc-links.mjs                              # dry-run, all langs
+  node ./scripts/normalize-doc-links.mjs --langs cn,fr                # filter languages
+  node ./scripts/normalize-doc-links.mjs --write                      # apply auto-fix
+  node ./scripts/normalize-doc-links.mjs --write --remove-unresolved-meta
 
 Options:
-  --langs <list>              Comma-separated language list, for example cn,en,ja,fr.
+  --langs <list>              Comma-separated language list, e.g. cn,fr.
   --root <path>               Docs root. Defaults to docs/docs relative to this script.
-  --docs-only                 Only scan Markdown/MDX links that start with ./, ../, or /.
-  --meta-only                 Only scan _meta.json links.
   --remove-unresolved-meta    Remove unresolved leaf entries from _meta.json in write mode.
   --write                     Apply changes. Default mode only reports.
+
+Notes:
+  - Only checks _meta.json sidebar links.
+  - Markdown link dead-link checking is enforced by rspress at build time
+    (via markdown.link.checkDeadLinks in rspress.config.ts).
+  - 'ar' is skipped by default (deferred maintenance). Pass --langs ar to force.
 `);
 }
 
 function listLanguageDirs(root) {
   return fs
     .readdirSync(root, { withFileTypes: true })
-    .filter(entry => entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'public')
+    .filter(entry =>
+      entry.isDirectory() &&
+      !entry.name.startsWith('.') &&
+      entry.name !== 'public' &&
+      !SKIP_LANGS.has(entry.name),
+    )
     .map(entry => entry.name)
     .sort();
-}
-
-function normalizeMarkdownLinks(langRoot, options) {
-  const files = walk(langRoot, file => /\.mdx?$/.test(file));
-  const changes = [];
-  const markdownLinkPattern = /(!?\[[^\]\n]*\]\()([^\)\s]+)(\))/g;
-
-  for (const file of files) {
-    const before = fs.readFileSync(file, 'utf8');
-    let changed = false;
-    const after = before.replace(markdownLinkPattern, (match, open, target, close, offset) => {
-      if (open.startsWith('!')) return match;
-
-      const replacement = normalizeMarkdownTarget(target, file, langRoot, options);
-      if (!replacement) return match;
-
-      changes.push({
-        file: relative(file),
-        line: lineOf(before, offset),
-        from: target,
-        reason: replacement.reason,
-        to: replacement.to,
-        type: replacement.type,
-      });
-
-      if (!replacement.to) return match;
-      changed = true;
-      return `${open}${replacement.to}${close}`;
-    });
-
-    if (changed && options.write) fs.writeFileSync(file, after, 'utf8');
-  }
-
-  return summarizeChanges(changes, ['addIndex', 'stripSlash', 'deadLink']);
-}
-
-function normalizeMarkdownTarget(target, file, langRoot, options) {
-  if (!isMarkdownInternal(target)) return null;
-  const { base, suffix } = splitSuffix(target);
-  if (!base) return null;
-
-  if (base.endsWith('/') && !base.endsWith('/index.md/')) {
-    const indexFile = base.startsWith('/')
-      ? path.normalize(path.join(langRoot, base.slice(1), 'index.md'))
-      : path.normalize(path.join(path.dirname(file), base, 'index.md'));
-
-    if (isInside(indexFile, langRoot) && fs.existsSync(indexFile)) {
-      return { type: 'addIndex', to: `${base}index.md${suffix}` };
-    }
-
-    const stripped = base.replace(/\/+$/, '');
-    if (resolveMarkdownTarget(stripped, file, langRoot, options)) {
-      return { type: 'stripSlash', to: `${stripped}${suffix}` };
-    }
-
-    return { type: 'deadLink', reason: 'missing index.md and stripped target does not exist' };
-  }
-
-  if (resolveMarkdownTarget(base, file, langRoot, options)) return null;
-  return { type: 'deadLink', reason: 'target does not exist' };
 }
 
 function normalizeMetaLinks(langRoot, options) {
@@ -312,6 +261,36 @@ function normalizeMetaTarget(target, file, langRoot) {
   return null;
 }
 
+function isMetaInternal(target) {
+  if (!target.startsWith('/') || target.startsWith('//')) return false;
+  return !/^[a-z][a-z0-9+.-]*:/i.test(target);
+}
+
+function splitSuffix(target) {
+  let cut = target.length;
+  for (const char of ['#', '?']) {
+    const index = target.indexOf(char);
+    if (index !== -1 && index < cut) cut = index;
+  }
+  return { base: target.slice(0, cut), suffix: target.slice(cut) };
+}
+
+function existsFile(absNoExt) {
+  for (const ext of ['.md', '.mdx']) {
+    const file = `${absNoExt}${ext}`;
+    if (fs.existsSync(file)) return file;
+  }
+  return null;
+}
+
+function existsIndex(absDir) {
+  for (const ext of ['.md', '.mdx']) {
+    const file = path.join(absDir, `index${ext}`);
+    if (fs.existsSync(file)) return file;
+  }
+  return null;
+}
+
 function summarizeChanges(changes, keys) {
   const summary = {};
   for (const key of keys) summary[key] = changes.filter(change => change.type === key).length;
@@ -320,15 +299,10 @@ function summarizeChanges(changes, keys) {
 
 function printReport(results, context) {
   const mode = context.options.write ? 'write' : 'dry run';
-  const scopes = [
-    context.scanDocs ? 'Markdown/MDX' : null,
-    context.scanMeta ? '_meta.json' : null,
-  ].filter(Boolean);
 
-  console.log(`Docs link normalization (${mode})`);
+  console.log(`Sidebar (_meta.json) link check (${mode})`);
   console.log(`Root: ${context.docsRoot}`);
   console.log(`Languages: ${context.languages.join(', ')}`);
-  console.log(`Scopes: ${scopes.join(', ')}`);
 
   for (const result of results) {
     console.log(`\n## ${result.lang}`);
@@ -336,7 +310,6 @@ function printReport(results, context) {
       console.log(`  ERROR: ${result.error}`);
       continue;
     }
-    if (result.docs) printSection('Markdown/MDX', result.docs);
     if (result.meta) printSection('_meta.json', result.meta);
   }
 }
@@ -366,30 +339,24 @@ function printSection(name, section) {
 
 function labelForType(type) {
   const labels = {
-    addIndex: 'Add index.md to trailing-slash Markdown links',
     ambiguous: 'Ambiguous route, review manually',
-    deadLink: 'Dead Markdown links',
     explicitIndex: 'Replace /index route with directory route',
     extraSlash: 'Remove extra trailing slash',
     missingSlash: 'Add trailing slash to directory routes',
     removedUnresolved: 'Remove dead sidebar entries',
-    stripSlash: 'Remove trailing slash from Markdown links without index.md',
     unresolved: 'Dead sidebar links',
   };
   return labels[type] || type;
 }
 
 function formatChange(change) {
-  const loc = change.line ? `${change.file}:${change.line}` : change.file;
   const target = change.to ? `${change.from} -> ${change.to}` : change.from;
-  return `${loc}: ${target}${change.reason ? ` (${change.reason})` : ''}`;
+  return `${change.file}: ${target}`;
 }
 
 function hasFatalIssue(result) {
   if (result.error) return true;
-  const docsDeadLinks = result.docs?.summary.deadLink || 0;
-  const metaDeadLinks = result.meta?.summary.unresolved || 0;
-  return docsDeadLinks > 0 || metaDeadLinks > 0;
+  return (result.meta?.summary.unresolved || 0) > 0;
 }
 
 function walk(dir, predicate, out = []) {
@@ -400,96 +367,6 @@ function walk(dir, predicate, out = []) {
     else if (predicate(full)) out.push(full);
   }
   return out;
-}
-
-function splitSuffix(target) {
-  let cut = target.length;
-  for (const char of ['#', '?']) {
-    const index = target.indexOf(char);
-    if (index !== -1 && index < cut) cut = index;
-  }
-  return { base: target.slice(0, cut), suffix: target.slice(cut) };
-}
-
-function isMarkdownInternal(target) {
-  if (!(target.startsWith('../') || target.startsWith('./') || target.startsWith('/'))) return false;
-  if (target.startsWith('//') || target.includes('://')) return false;
-  return true;
-}
-
-function isMetaInternal(target) {
-  if (!target.startsWith('/') || target.startsWith('//')) return false;
-  return !/^[a-z][a-z0-9+.-]*:/i.test(target);
-}
-
-function existsFile(absNoExt) {
-  for (const ext of ['.md', '.mdx']) {
-    const file = `${absNoExt}${ext}`;
-    if (fs.existsSync(file)) return file;
-  }
-  return null;
-}
-
-function existsIndex(absDir) {
-  for (const ext of ['.md', '.mdx']) {
-    const file = path.join(absDir, `index${ext}`);
-    if (fs.existsSync(file)) return file;
-  }
-  return null;
-}
-
-function resolveMarkdownTarget(base, file, langRoot, options) {
-  const targetPath = resolveMarkdownPath(base, file, langRoot, options);
-  const targetRoot = getTargetRoot(base, langRoot, options);
-
-  if (!isInside(targetPath, targetRoot)) return null;
-
-  if (base.endsWith('/')) return existsIndex(targetPath);
-
-  const ext = path.extname(targetPath);
-  if (ext === '.md' || ext === '.mdx') {
-    return resolveMarkdownFileRoute(targetPath.slice(0, -ext.length));
-  }
-  if (ext) return fs.existsSync(targetPath) ? targetPath : null;
-
-  return existsFile(targetPath) || existsIndex(targetPath);
-}
-
-function resolveMarkdownFileRoute(absNoExt) {
-  return (
-    existsFile(absNoExt) ||
-    existsIndex(absNoExt) ||
-    (path.basename(absNoExt) === 'index' ? existsFile(path.dirname(absNoExt)) : null)
-  );
-}
-
-function resolveMarkdownPath(base, file, langRoot, options) {
-  if (!base.startsWith('/')) return path.normalize(path.join(path.dirname(file), base));
-  const targetRoot = getTargetRoot(base, langRoot, options);
-  const langPrefix = getAbsoluteLangPrefix(base, options.languages);
-  const relativeTarget = langPrefix ? base.slice(1) : base.slice(1);
-  return path.normalize(path.join(targetRoot, langPrefix ? relativeTarget.slice(langPrefix.length + 1) : relativeTarget));
-}
-
-function getTargetRoot(base, langRoot, options) {
-  const langPrefix = getAbsoluteLangPrefix(base, options.languages);
-  if (!langPrefix) return langRoot;
-  return path.join(options.docsRoot, langPrefix);
-}
-
-function getAbsoluteLangPrefix(base, languages) {
-  if (!base.startsWith('/')) return null;
-  const firstSegment = base.split('/').filter(Boolean)[0];
-  return firstSegment && languages.includes(firstSegment) ? firstSegment : null;
-}
-
-function isInside(file, dir) {
-  const relativePath = path.relative(dir, file);
-  return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
-}
-
-function lineOf(text, offset) {
-  return text.slice(0, offset).split('\n').length;
 }
 
 function relative(file) {

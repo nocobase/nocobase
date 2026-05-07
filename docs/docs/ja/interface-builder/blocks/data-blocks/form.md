@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/blocks/data-blocks/form)をご参照ください。
-:::
-
 # フォームブロック
 
 ## はじめに
@@ -77,7 +73,7 @@
 
 ### フィールドテンプレート
 
-フィールドテンプレートは、フォームブロック内でフィールドエリアの設定を再利用するために使用されます。詳細は [フィールドテンプレート](/interface-builder/fields/field-template) を参照してください。
+フィールドテンプレートは、フォームブロック内でフィールドエリアの設定を再利用するために使用されます。詳細は [フィールドテンプレート](../../ui-templates.md) を参照してください。
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

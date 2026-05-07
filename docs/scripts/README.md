@@ -4,16 +4,17 @@ NocoBase 文档站维护 `cn / en / ja / es / pt / de / fr / ru / id / vi` 共 1
 
 ## 脚本一览
 
-| 脚本 | 检查内容 | 退出码 |
-|---|---|---|
-| `check-tree-alignment.mjs` | 各语言文件树是否对齐 cn | 不齐 = 1 |
-| `check-meta-alignment.mjs` | 各语言 `_meta.json` 侧边栏的 link/name 集合是否对齐 cn | 不齐 = 1 |
-| `check-nav-alignment.mjs` | 各语言 `_nav.json` 顶部导航条目数和 link 是否对齐 cn | 不齐 = 1 |
-| `check-home-alignment.mjs` | 各语言首页 `index.md` frontmatter 的 hero.actions / features / items 结构和 link 是否对齐 cn | 不齐 = 1 |
-| `check-bloated-files.mjs` | 翻译膨胀（巨型单行 / 超大文件，会让 rspress 编译卡死） | 有膨胀 = 1 |
-| `check-i18n-coverage.mjs` | **本 PR 内** cn `.md`/`.mdx` 改动是否同步到了其他 9 个语言（单向检查） | 有未同步 = 1 |
+| 脚本 | 检查内容 | 退出码 | 是否会改文件 |
+|---|---|---|---|
+| `check-tree-alignment.mjs` | 各语言文件树是否对齐 cn | 不齐 = 1 | 否 |
+| `check-meta-alignment.mjs` | 各语言 `_meta.json` 侧边栏的 link/name 集合是否对齐 cn | 不齐 = 1 | 否 |
+| `check-nav-alignment.mjs` | 各语言 `_nav.json` 顶部导航条目数和 link 是否对齐 cn | 不齐 = 1 | 否 |
+| `check-home-alignment.mjs` | 各语言首页 `index.md` frontmatter 的 hero.actions / features / items 结构和 link 是否对齐 cn | 不齐 = 1 | 否 |
+| `check-bloated-files.mjs` | 翻译膨胀（巨型单行 / 超大文件，会让 rspress 编译卡死） | 有膨胀 = 1 | 否 |
+| `check-i18n-coverage.mjs` | **本 PR 内** cn `.md`/`.mdx` 改动是否同步到了其他 9 个语言（单向检查） | 有未同步 = 1 | 否 |
+| `normalize-doc-links.mjs` | `_meta.json` 侧边栏 link 字段可解析；自动修 missingSlash / explicitIndex / extraSlash | 有未解析 = 1 | `--write` 时会改 `_meta.json` |
 
-六个脚本都用 cn 作基准，只读不写，不会改任何文件。前五个看「结构对不对齐」，最后一个看「内容修改有没有跟」。
+前六个脚本都用 cn 作基准，只读不写，看「结构对不对齐」或「内容修改有没有跟」。`normalize-doc-links.mjs` 不依赖 cn 基准，每个语言独立校对自己的 `_meta.json`，且 `--write` 会自动修可纠正项。Markdown 链接的死链交给 rspress 内置 `checkDeadLinks`（build 时强制），不在这套脚本里。
 
 ## 用法
 

@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/features/collaborate).
-:::
-
 # Collaborer avec les employés IA
 
 Après avoir créé et activé des employés IA, vous pouvez collaborer avec eux dans les pages.

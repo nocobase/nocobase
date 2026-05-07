@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/import-async).
-:::
-
 # ctx.importAsync()
 
 Lädt **ESM-Module** oder **CSS** dynamisch über eine URL, anwendbar in verschiedenen RunJS-Szenarien. Verwenden Sie `ctx.importAsync()`, wenn ESM-Bibliotheken von Drittanbietern erforderlich sind, und `ctx.requireAsync()` für UMD/AMD-Bibliotheken. Die Übergabe einer `.css`-Adresse lädt und injiziert die Stile in die Seite.

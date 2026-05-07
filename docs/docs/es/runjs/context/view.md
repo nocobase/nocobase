@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/view).
-:::
-
 # ctx.view
 
 El controlador de la vista activa actualmente (diálogo, cajón, capa emergente, área incrustada, etc.), utilizado para acceder a información y operaciones a nivel de vista. Proporcionado por `FlowViewContext`, solo está disponible dentro del contenido de la vista abierta a través de `ctx.viewer` o `ctx.openView`.
