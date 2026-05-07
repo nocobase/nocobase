@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/view).
-:::
-
 # ctx.view
 
 Le contrôleur de la vue actuellement active (fenêtre de dialogue, tiroir, popover, zone intégrée, etc.), utilisé pour accéder aux informations et aux opérations au niveau de la vue. Fourni par `FlowViewContext`, il est uniquement disponible dans le contenu des vues ouvertes via `ctx.viewer` ou `ctx.openView`.

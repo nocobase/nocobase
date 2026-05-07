@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/multi-app/multi-app/remote)をご参照ください。
-:::
-
 # 多環境モード
 
 ## 紹介

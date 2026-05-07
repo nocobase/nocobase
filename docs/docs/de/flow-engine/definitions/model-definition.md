@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # ModelDefinition
 
 Die ModelDefinition definiert die Erstellungsoptionen für ein Flussmodell, das über die Methode `FlowEngine.createModelAsync()` instanziiert wird. Sie enthält die grundlegende Konfiguration, Eigenschaften, Submodelle und weitere Informationen des Modells.

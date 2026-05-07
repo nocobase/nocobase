@@ -178,7 +178,7 @@ Ainsi, les nouveaux tickets restent toujours en haut, ce qui les rend plus facil
 Voir la liste ne suffit pas ; il faut pouvoir cliquer pour consulter le détail et éditer un ticket.
 
 1. Au-dessus de la colonne d'actions, cliquez sur le second « + ».
-2. Cliquez sur les actions : **View**, **[Edit](/interface-builder/actions/edit)**, **[Delete](/interface-builder/actions/delete)**.
+2. Cliquez sur les actions : **View**, **[Edit](../../interface-builder/actions/types/edit.md)**, **[Delete](../../interface-builder/actions/types/delete.md)**.
 3. Chaque ligne affiche désormais les boutons « View », « Edit » et « Delete » dans la colonne d'actions.
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

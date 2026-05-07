@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/render)をご参照ください。
-:::
-
 # ctx.render()
 
 React 要素、HTML 文字列、または DOM ノードを、指定されたコンテナにレンダリングします。`container` を指定しない場合は、デフォルトで `ctx.element` にレンダリングされ、アプリケーションの ConfigProvider やテーマなどのコンテキストを自動的に継承します。

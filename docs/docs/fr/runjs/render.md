@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/render).
-:::
-
 # Rendu dans le conteneur
 
 Utilisez `ctx.render()` pour effectuer le rendu du contenu dans le conteneur actuel (`ctx.element`). Il prend en charge les trois formes suivantes :

@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/resource).
-:::
-
 # ctx.resource
 
 La instancia de **FlowResource** en el contexto actual, utilizada para acceder y operar con datos. En la mayoría de los bloques (formularios, tablas, detalles, etc.) y escenarios de ventanas emergentes, el entorno de ejecución vincula previamente `ctx.resource`. En escenarios como JSBlock, donde no hay un recurso por defecto, primero debe llamar a [ctx.initResource()](./init-resource.md) para inicializarlo antes de usarlo a través de `ctx.resource`.

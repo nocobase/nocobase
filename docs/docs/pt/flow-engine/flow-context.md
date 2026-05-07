@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/flow-engine/flow-context).
-:::
-
 # Visão geral do sistema de contexto
 
 O sistema de contexto do mecanismo de fluxo (FlowEngine) do NocoBase é dividido em três camadas, correspondendo a diferentes escopos. O uso adequado permite o compartilhamento e isolamento flexível de serviços, configurações e dados, melhorando a manutenibilidade e a escalabilidade do negócio.

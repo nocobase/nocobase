@@ -91,7 +91,7 @@ nb env auth local
 
 `nb env auth` sẽ khởi động luồng đăng nhập trên trình duyệt. Sau khi thành công, CLI sẽ lưu thông tin xác thực vào cấu hình môi trường hiện tại, sau đó có thể tiếp tục cho AI Agent gọi `nb api`.
 
-Thời hạn của access token và refresh token OAuth tuân theo cấu hình [chính sách Token](/security/token-policy/) của hệ thống.
+Thời hạn của access token và refresh token OAuth tuân theo cấu hình [chính sách Token](../security/token-policy/index.md) của hệ thống.
 
 - Access token OAuth có cùng thời hạn với Token hệ thống, mặc định là **1 ngày**
 - Refresh token OAuth có cùng thời hạn với phiên hệ thống, mặc định là **7 ngày**

@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-queue-adapter-rabbitmq/index).
-:::
-
 # Adaptador de cola de mensajes RabbitMQ

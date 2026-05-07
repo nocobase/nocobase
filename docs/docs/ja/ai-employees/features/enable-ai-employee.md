@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/ai-employees/features/enable-ai-employee)をご参照ください。
-:::
-
 # AI従業員の有効化
 
 NocoBaseには、さまざまなシナリオに対応した複数のAI従業員がプリセットされています。

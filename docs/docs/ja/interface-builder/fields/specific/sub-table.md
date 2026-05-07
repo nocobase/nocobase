@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/fields/specific/sub-table)をご参照ください。
-:::
-
 # サブテーブル (行内編集)
 
 ## 紹介

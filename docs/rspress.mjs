@@ -29,10 +29,6 @@ if (!process.env.DOCS_LANG || argv.lang !== 'all') {
   process.env.DOCS_LANG = argv.lang || 'en';
 }
 
-if (!process.env.CHECK_DEAD_LINKS) {
-  process.env.CHECK_DEAD_LINKS = argv.checkDeadLinks ? 'true' : 'false';
-}
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

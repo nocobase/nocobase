@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/multi-app/multi-app/index).
-:::
-
 # Gestion multi-applications
 
 ## Aperçu des fonctionnalités

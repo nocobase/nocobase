@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/resource/multi-record-resource)をご参照ください。
-:::
-
 # MultiRecordResource
 
 データテーブル向けの Resource です。リクエストは配列を返し、ページネーション、フィルタリング、ソート、および CRUD 操作をサポートします。テーブルやリストなどの「複数レコード」のシナリオに適しています。[APIResource](./api-resource.md) とは異なり、MultiRecordResource は `setResourceName()` でリソース名を指定することで、`users:list` や `users:create` などの URL を自動的に構築し、ページネーション、フィルタリング、選択行の管理などの機能を内蔵しています。

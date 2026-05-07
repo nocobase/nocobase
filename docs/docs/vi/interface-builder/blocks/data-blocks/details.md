@@ -70,7 +70,7 @@ Tham khảo thêm [Quy tắc liên kết](/interface-builder/linkage-rule)
 
 ### Mẫu Field
 
-Mẫu Field được sử dụng để tái sử dụng cấu hình khu vực Field trong Block Chi tiết. Chi tiết xem [Mẫu Field](/interface-builder/fields/field-template).
+Mẫu Field được sử dụng để tái sử dụng cấu hình khu vực Field trong Block Chi tiết. Chi tiết xem [Mẫu Field](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

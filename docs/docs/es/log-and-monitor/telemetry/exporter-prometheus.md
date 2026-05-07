@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-telemetry-prometheus'
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/log-and-monitor/telemetry/exporter-prometheus).
-:::
-
 # Exportador de telemetría: Prometheus
 
 ## Configuración de variables de entorno

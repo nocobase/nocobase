@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/quick-start).
-:::
-
 # Démarrage rapide
 
 Configurons une configuration minimale utilisable d'employé AI en 5 minutes.

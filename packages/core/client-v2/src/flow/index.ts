@@ -104,5 +104,6 @@ export * from './admin-shell/AdminLayoutRouteCoordinator';
 export * from '../settings-center';
 export { openViewFlow } from './flows/openViewFlow';
 export { editMarkdownFlow } from './flows/editMarkdownFlow';
+export { resolveDynamicNamePath } from './models/blocks/form/value-runtime/path';
 
 export { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';

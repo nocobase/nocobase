@@ -1,7 +1,3 @@
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/data-sources/data-modeling/collection-fields/advanced/snowflake-id).
-:::
-
 # Snowflake ID (53 бита)
 
 ## Введение

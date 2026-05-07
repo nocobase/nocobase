@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/resource)をご参照ください。
-:::
-
 # ctx.resource
 
 現在のコンテキストにおける **FlowResource** インスタンスであり、データへのアクセスや操作に使用されます。ほとんどのブロック（フォーム、テーブル、詳細など）やポップアップのシナリオでは、実行環境によって `ctx.resource` があらかじめバインドされています。JSBlock など、デフォルトで resource が存在しないシナリオでは、まず [ctx.initResource()](./init-resource.md) を呼び出して初期化してから `ctx.resource` を使用する必要があります。

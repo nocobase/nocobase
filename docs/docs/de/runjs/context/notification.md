@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/notification).
-:::
-
 # ctx.notification
 
 Basierend auf der Ant Design Notification ist dies eine globale Benachrichtigungs-API, die verwendet wird, um Benachrichtigungs-Panels in der **oberen rechten Ecke** der Seite anzuzeigen. Im Vergleich zu `ctx.message` können Benachrichtigungen einen Titel und eine Beschreibung enthalten, wodurch sie sich für Inhalte eignen, die über einen längeren Zeitraum angezeigt werden sollen oder die Aufmerksamkeit der Benutzer erfordern.

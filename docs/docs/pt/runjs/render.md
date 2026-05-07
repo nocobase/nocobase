@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/render).
-:::
-
 # Renderização dentro do contêiner
 
 Use `ctx.render()` para renderizar conteúdo no contêiner atual (`ctx.element`). Ele suporta as três formas a seguir:

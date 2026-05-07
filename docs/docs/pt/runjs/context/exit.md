@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/exit).
-:::
-
 # ctx.exit()
 
 Encerra a execução do fluxo de eventos atual; as etapas subsequentes não serão executadas. É comumente usado quando as condições de negócio não são atendidas, o usuário cancela ou ocorre um erro irrecuperável.

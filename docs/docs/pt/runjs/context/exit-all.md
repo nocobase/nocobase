@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/exit-all).
-:::
-
 # ctx.exitAll()
 
 Encerra o fluxo de eventos atual e todos os fluxos de eventos subsequentes disparados no mesmo despacho de evento. É comumente usado quando todos os fluxos de eventos sob o evento atual precisam ser abortados imediatamente devido a um erro global ou falha na validação de permissão.

@@ -79,7 +79,7 @@ keywords: "表单区块,FormBlock,表单,添加编辑,字段布局,界面搭建,
 
 ### 字段模板
 
-字段模板用于在表单区块中复用字段区域的配置。详情见 [字段模板](/interface-builder/fields/field-template)。
+字段模板用于在表单区块中复用字段区域的配置。详情见 [字段模板](../../ui-templates.md)。
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

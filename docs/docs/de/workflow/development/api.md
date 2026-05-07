@@ -4,10 +4,6 @@ description: "API-Referenz für die Workflow-Erweiterung: Workflow Model, Ausfü
 keywords: "Workflow,API-Referenz,Workflow Model,Node Context,Trigger API,NocoBase"
 ---
 
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # API-Referenz
 
 ## Server

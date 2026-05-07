@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/file-manager/file-preview/index).
-:::
-
 # Vista previa de archivos
 
 En las interfaces que contienen campos de archivo (incluidos los campos de adjuntos), usted puede previsualizar los archivos haciendo clic en la miniatura o en el icono del archivo. La función de vista previa integrada admite varios tipos de archivos, incluyendo imágenes, PDF y la mayoría de los formatos compatibles de forma nativa por los navegadores.

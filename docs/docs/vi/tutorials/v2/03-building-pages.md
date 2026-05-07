@@ -178,7 +178,7 @@ Như vậy, ticket mới submit sẽ luôn xếp ở trên cùng, xử lý sẽ 
 Chỉ xem danh sách thôi chưa đủ, chúng ta còn cần có thể click vào xem chi tiết ticket, cũng như chỉnh sửa ticket.
 
 1. Phía trên cột Action, click số "+" thứ hai.
-2. Click các Action: **Xem**, **[Edit](/interface-builder/actions/edit)**, **[Xóa](/interface-builder/actions/delete)**.
+2. Click các Action: **Xem**, **[Edit](../../interface-builder/actions/types/edit.md)**, **[Xóa](../../interface-builder/actions/types/delete.md)**.
 3. Mỗi vị trí thanh Action của hàng dữ liệu sẽ xuất hiện các nút "Xem", "Edit" và "Xóa".
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/ai-employees/features/built-in-employee)をご参照ください。
-:::
-
 # 組み込み AI 従業員
 
 NocoBase には、特定のシナリオに特化した複数の AI 従業員がプリセットされています。

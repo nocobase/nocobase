@@ -5,10 +5,6 @@ description: "Mode cluster NocoBase : déploiement multi-instances, équilibrage
 keywords: "mode cluster,multi-instances,équilibrage de charge,stockage partagé,Redis,Kubernetes,verrous distribués,file de messages,NocoBase"
 ---
 
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Mode Cluster
 
 ## Introduction

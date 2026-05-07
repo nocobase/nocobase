@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/get-value).
-:::
-
 # ctx.getValue()
 
 In Szenarien mit bearbeitbaren Feldern wie JSField und JSItem wird diese Methode verwendet, um den aktuellen Wert des Feldes abzurufen. In Kombination mit `ctx.setValue(v)` ermöglicht sie eine bidirektionale Bindung (Two-Way Binding) mit dem Formular.

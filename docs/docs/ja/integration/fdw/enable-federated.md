@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/integration/fdw/enable-federated)をご参照ください。
-:::
-
 # MySQL で federated エンジンを有効にする方法
 
 MySQL データベースでは、デフォルトで federated モジュールが有効になっていません。有効にするには `my.cnf` 設定を変更する必要があります。Docker 版を使用している場合は、`volumes` を利用して設定を拡張できます。

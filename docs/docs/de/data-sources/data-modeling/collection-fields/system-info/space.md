@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Raum
 

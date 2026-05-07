@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/index).
-:::
-
 # Présentation de RunJS
 
 RunJS est l'environnement d'exécution JavaScript utilisé dans NocoBase pour des scénarios tels que les **blocs JS**, les **champs JS** et les **actions JS**. Le code s'exécute dans un bac à sable (sandbox) restreint, offrant un accès sécurisé à l'API `ctx` (contexte) et dispose des capacités suivantes :

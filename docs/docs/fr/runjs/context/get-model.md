@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/get-model).
-:::
-
 # ctx.getModel()
 
 Récupère une instance de modèle (telle que `BlockModel`, `PageModel`, `ActionModel`, etc.) à partir du moteur actuel ou de la pile de vues en fonction de l'identifiant `uid` du modèle. Ceci est utilisé dans RunJS pour accéder à d'autres modèles à travers les blocs, les pages ou les fenêtres contextuelles (popups).

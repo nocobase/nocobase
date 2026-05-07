@@ -178,7 +178,7 @@ Assim, os tickets recém-submetidos sempre aparecem no topo, mais fácil de trat
 Só ver a lista não basta — também precisamos poder clicar para ver detalhes do ticket e editar.
 
 1. Acima da coluna de ação, clique no segundo "+".
-2. Clique nas ações: **Visualizar**, **[Editar](/interface-builder/actions/edit)**, **[Excluir](/interface-builder/actions/delete)**.
+2. Clique nas ações: **Visualizar**, **[Editar](../../interface-builder/actions/types/edit.md)**, **[Excluir](../../interface-builder/actions/types/delete.md)**.
 3. Em cada linha de dados, na coluna de operações, vão aparecer os botões «Visualizar», «Editar» e «Excluir».
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

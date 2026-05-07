@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/get-var).
-:::
-
 # ctx.getVar()
 
 Liest Variablenwerte **asynchron** aus dem aktuellen Laufzeitkontext. Die Variablenauflösung entspricht `{{ctx.xxx}}` in SQL und Vorlagen und stammt normalerweise vom aktuellen Benutzer, dem aktuellen Datensatz, Ansichtsparametern, dem Popup-Kontext usw.

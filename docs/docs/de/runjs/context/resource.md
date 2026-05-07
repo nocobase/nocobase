@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/resource).
-:::
-
 # ctx.resource
 
 Die **FlowResource**-Instanz im aktuellen Kontext, die zum Zugriff auf und zur Bearbeitung von Daten verwendet wird. In den meisten Blöcken (Formulare, Tabellen, Details usw.) und Pop-up-Szenarien bindet die Laufzeitumgebung `ctx.resource` vorab. In Szenarien wie JSBlock, in denen standardmäßig keine Ressource vorhanden ist, müssen Sie zuerst [ctx.initResource()](./init-resource.md) aufrufen, um sie zu initialisieren, bevor Sie sie über `ctx.resource` verwenden können.
