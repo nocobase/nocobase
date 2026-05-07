@@ -9,7 +9,12 @@
 
 import { KanbanBlockModel } from '../models';
 import { KanbanCardItemModel } from '../models/KanbanCardItemModel';
+import {
+  createKanbanQuickCreatePopupTemplateShadowCtx,
+  getKanbanQuickCreatePopupTemplateComponent,
+} from '../models/KanbanQuickCreatePopupTemplateSelect';
 import { FlowEngine } from '@nocobase/flow-engine';
+import { registerOpenViewPopupTemplateAction } from '../../../../plugin-ui-templates/src/client/openViewActionExtensions';
 
 describe('KanbanBlockModel.filterCollection', () => {
   test('defaults dragging to disabled for newly created blocks', () => {
@@ -1570,6 +1575,163 @@ describe('KanbanBlockModel.filterCollection', () => {
     });
     expect(ensureQuickCreateAction).toHaveBeenCalledTimes(1);
     expect(syncQuickCreateAction).toHaveBeenCalledWith({ uid: 'quick-create-action' });
+  });
+
+  test('kanban model wraps openView popup template selector without changing the global action', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ KanbanBlockModel });
+    const OriginalPopupTemplateSelect = () => null;
+    engine.registerActions({
+      openView: {
+        name: 'openView',
+        uiSchema: {
+          mode: { type: 'string' },
+          popupTemplateUid: {
+            type: 'string',
+            'x-component': OriginalPopupTemplateSelect,
+          },
+        },
+        handler: vi.fn(),
+      },
+    });
+
+    const model = engine.createModel<KanbanBlockModel>({
+      uid: 'kanban-open-view-action',
+      use: 'KanbanBlockModel',
+    });
+
+    const schema = await model.getAction('openView')?.uiSchema?.(model.context as any);
+
+    expect(engine.getAction('openView')?.uiSchema).toMatchObject({
+      popupTemplateUid: {
+        'x-component': OriginalPopupTemplateSelect,
+      },
+    });
+    expect(schema).toMatchObject({
+      mode: { type: 'string' },
+      popupTemplateUid: {
+        type: 'string',
+      },
+    });
+    expect(schema?.popupTemplateUid?.['x-component']).toBe(
+      getKanbanQuickCreatePopupTemplateComponent(OriginalPopupTemplateSelect),
+    );
+  });
+
+  test('block quick-create popup settings reject non add-new popup templates before delegating to openView', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.popup;
+    const engine = new FlowEngine();
+    class RecordOnlyModel {
+      static _isScene(scene: string) {
+        return scene === 'record';
+      }
+    }
+    class CollectionOnlyModel {
+      static _isScene(scene: string) {
+        return scene === 'collection';
+      }
+    }
+    engine.registerModels({
+      KanbanBlockModel,
+      ViewActionModel: RecordOnlyModel,
+      KanbanQuickCreateActionModel: CollectionOnlyModel,
+    } as any);
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds?.addCollection({
+      name: 'posts',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+    const baseBeforeParamsSave = vi.fn(async () => {});
+    engine.registerActions({
+      openView: {
+        name: 'openView',
+        title: 'openView',
+        uiSchema: {
+          uid: { type: 'string' },
+        },
+        beforeParamsSave: baseBeforeParamsSave as any,
+        handler: vi.fn(async () => undefined) as any,
+      },
+    });
+    registerOpenViewPopupTemplateAction(engine);
+    const setProps = vi.fn();
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+    const syncQuickCreateAction = vi.fn().mockResolvedValue(undefined);
+    const model = engine.createModel<KanbanBlockModel>({
+      uid: 'kanban-quick-create-popup',
+      use: 'KanbanBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'posts',
+          },
+        },
+      },
+    });
+    model.setProps = setProps as any;
+    model.ensureQuickCreateAction = ensureQuickCreateAction as any;
+    model.syncQuickCreateAction = syncQuickCreateAction as any;
+
+    const ctx: any = {
+      api: {
+        resource: (name: string) => {
+          if (name !== 'flowModelTemplates') {
+            throw new Error('unexpected resource');
+          }
+          return {
+            get: vi.fn().mockResolvedValue({
+              data: {
+                data: {
+                  uid: 'tpl-view',
+                  targetUid: 'popup-view',
+                  useModel: 'ViewActionModel',
+                  dataSourceKey: 'main',
+                  collectionName: 'posts',
+                },
+              },
+            }),
+          };
+        },
+      },
+      model,
+      engine,
+      t: (key: string) => key,
+    };
+
+    await expect(
+      step.beforeParamsSave(
+        ctx,
+        {
+          popupTemplateUid: 'tpl-view',
+          mode: 'dialog',
+          size: 'large',
+        },
+        {},
+      ),
+    ).rejects.toThrow('Cannot resolve template parameter');
+
+    expect(baseBeforeParamsSave).not.toHaveBeenCalled();
+    expect(setProps).not.toHaveBeenCalled();
+    expect(ensureQuickCreateAction).not.toHaveBeenCalled();
+    expect(syncQuickCreateAction).not.toHaveBeenCalled();
+  });
+
+  test('quick-create popup shadow context marks the settings scene as KanbanQuickCreateActionModel', () => {
+    const originalCtx: any = {
+      model: {
+        use: 'KanbanBlockModel',
+      },
+    };
+
+    const shadowCtx = createKanbanQuickCreatePopupTemplateShadowCtx(originalCtx);
+
+    expect(shadowCtx).not.toBe(originalCtx);
+    expect(shadowCtx.model).not.toBe(originalCtx.model);
+    expect(shadowCtx.model.use).toBe('KanbanQuickCreateActionModel');
+    expect(originalCtx.model.use).toBe('KanbanBlockModel');
   });
 
   test('block popup settings do not default the popup target uid back to the kanban block itself', async () => {
