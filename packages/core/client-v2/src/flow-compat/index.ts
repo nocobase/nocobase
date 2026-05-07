@@ -11,7 +11,12 @@ export { Plugin } from '../Plugin';
 export { useApp } from '../hooks/useApp';
 export { usePlugin } from '../hooks/usePlugin';
 export { ColorPicker } from './ColorPicker';
-export { DEFAULT_DATA_SOURCE_KEY, isTitleField } from './data';
+export {
+  DEFAULT_DATA_SOURCE_KEY,
+  getFlowFieldInterfaceOptions,
+  hasFlowFieldInterfaceLookup,
+  isTitleField,
+} from './data';
 export { FieldValidation } from './FieldValidation';
 export { HighPerformanceSpin } from './HighPerformanceSpin';
 export { Icon, hasIcon, icons, registerIcon, registerIcons } from './Icon';

@@ -222,6 +222,17 @@ describe('FilterForm custom field record select', () => {
   it('hides association fields from value field options', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ HostModel, FilterFormCustomRecordSelectFieldModel });
+    engine.dataSourceManager.setCollectionFieldInterfaceManager({
+      getFieldInterface: vi.fn((name: string) => {
+        if (['input', 'number'].includes(name)) {
+          return { titleUsable: true, filterable: { operators: [] } };
+        }
+        if (name === 'm2m') {
+          return { filterable: { operators: [] } };
+        }
+        return undefined;
+      }),
+    });
 
     const ds = engine.dataSourceManager.getDataSource('main');
     ds?.addCollection({
@@ -241,6 +252,12 @@ describe('FilterForm custom field record select', () => {
           interface: 'input',
           title: 'Hidden text',
           filterable: false,
+        },
+        {
+          name: 'jsonPayload',
+          type: 'json',
+          interface: 'json',
+          title: 'JSON payload',
         },
         {
           name: 'roles',
@@ -298,6 +315,7 @@ describe('FilterForm custom field record select', () => {
       );
       expect(optionTexts).toContain('nickname');
       expect(optionTexts).not.toContain('Hidden text');
+      expect(optionTexts).not.toContain('JSON payload');
       expect(optionTexts).not.toContain('Roles relation');
     });
   });

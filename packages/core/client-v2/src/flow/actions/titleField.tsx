@@ -8,7 +8,7 @@
  */
 
 import { defineAction, DisplayItemModel, FlowModelContext, tExpr } from '@nocobase/flow-engine';
-import { isTitleField } from '../../flow-compat';
+import { getFlowFieldInterfaceOptions, isTitleField } from '../../flow-compat';
 
 const normalizeFilterTargetKey = (filterTargetKey: any) => {
   if (typeof filterTargetKey === 'string') {
@@ -37,10 +37,19 @@ export const titleField = defineAction({
   title: tExpr('Title field'),
   uiMode: (ctx) => {
     const targetCollection = ctx.collectionField.targetCollection;
-    const dataSourceManager = ctx.app.dataSourceManager;
+    const dataSourceManager = ctx.dataSourceManager || ctx.model?.context?.dataSourceManager;
+    const appDataSourceManager = ctx.app?.dataSourceManager;
     const targetFields = targetCollection?.getFields?.() ?? [];
     const options = targetFields
-      .filter((field) => isTitleField(dataSourceManager, field.options))
+      .filter((field) =>
+        isTitleField(
+          getFlowFieldInterfaceOptions(
+            field.options?.interface || field.interface,
+            dataSourceManager,
+            appDataSourceManager,
+          ),
+        ),
+      )
       .map((field) => ({
         value: field.name,
         label: field?.title,

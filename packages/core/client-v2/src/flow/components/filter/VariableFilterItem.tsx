@@ -9,7 +9,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Cascader, Checkbox, Input, InputNumber, Radio, Select, Space, Switch } from 'antd';
-import { lazy } from '../../../flow-compat';
+import { getFlowFieldInterfaceOptions, lazy } from '../../../flow-compat';
 import merge from 'lodash/merge';
 import type { ISchema } from '@formily/json-schema';
 import {
@@ -22,7 +22,6 @@ import {
   createEphemeralContext,
   createCollectionContextMeta,
   observer,
-  getCollectionFieldInterface,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
@@ -289,7 +288,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     };
     const getFieldInterface = useCallback(
       (interfaceName: string | undefined) =>
-        getCollectionFieldInterface(
+        getFlowFieldInterfaceOptions(
           interfaceName,
           model.context.dataSourceManager,
           model.context.app?.dataSourceManager,

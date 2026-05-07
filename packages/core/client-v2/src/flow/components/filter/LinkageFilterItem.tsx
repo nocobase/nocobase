@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { lazy } from '../../../flow-compat';
+import { getFlowFieldInterfaceOptions, lazy } from '../../../flow-compat';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
 import uniqBy from 'lodash/uniqBy';
@@ -20,7 +20,6 @@ import {
   parseValueToPath,
   FlowModel,
   observer,
-  getCollectionFieldInterface,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
@@ -229,7 +228,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
   const operatorMetadataList: OperatorMeta[] = useMemo(() => {
     if (leftFieldMeta) {
       const fieldInterface = leftFieldMeta.interface
-        ? (getCollectionFieldInterface(
+        ? (getFlowFieldInterfaceOptions(
             leftFieldMeta.interface,
             model.context.dataSourceManager,
             model.context.app?.dataSourceManager,
@@ -394,7 +393,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     const base = Array.isArray(tree) ? tree : [];
     const merged = mergeExtraMetaTreeWithBase(base, extraMetaTree);
     const getFieldInterface = (name: string) =>
-      getCollectionFieldInterface(name, model.context.dataSourceManager, model.context.app?.dataSourceManager) as
+      getFlowFieldInterfaceOptions(name, model.context.dataSourceManager, model.context.app?.dataSourceManager) as
         | FieldInterfaceDef
         | undefined;
     return await enhanceMetaTreeWithFilterableChildren(merged, getFieldInterface);
