@@ -163,9 +163,7 @@ describe('association action models', () => {
 
     expect(collection.getFilterByTK).toHaveBeenCalledWith(ctx.record);
     expect(resource.runAction).toHaveBeenCalledWith('remove', {
-      data: {
-        values: [12],
-      },
+      data: [12],
     });
     expect(resource.refresh).toHaveBeenCalled();
     expect(ctx.message.success).toHaveBeenCalledWith('Record disassociated successfully');
@@ -202,9 +200,7 @@ describe('association action models', () => {
     expect(collection.getFilterByTK).toHaveBeenCalledWith({ id: 11 });
     expect(collection.getFilterByTK).toHaveBeenCalledWith({ id: 12 });
     expect(resource.runAction).toHaveBeenCalledWith('add', {
-      data: {
-        values: [11, 12],
-      },
+      data: [11, 12],
     });
     expect(resource.refresh).toHaveBeenCalled();
     expect(ctx.message.success).toHaveBeenCalledWith('Record associated successfully');
@@ -247,9 +243,7 @@ describe('association action models', () => {
       expect.objectContaining({
         method: 'post',
         url: 'products/362872646860800/o2m_orders:add',
-        data: {
-          values: [11],
-        },
+        data: [11],
       }),
     );
   });
