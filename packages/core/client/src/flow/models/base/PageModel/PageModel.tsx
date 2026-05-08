@@ -48,6 +48,17 @@ export class PageModel extends FlowModel<PageModelStructure> {
   private unmounted = false;
   private documentTitleUpdateVersion = 0;
 
+  /**
+   * 根页面标签页开关以路由表为准，避免 flow model 里的旧配置覆盖路由管理设置。
+   */
+  private getEnableTabs(): boolean {
+    const routeEnableTabs = (this.context as any)?.currentRoute?.enableTabs;
+    if (this.props.routeId != null && typeof routeEnableTabs === 'boolean') {
+      return routeEnableTabs;
+    }
+    return !!this.props.enableTabs;
+  }
+
   private getActiveTabKey(): string | undefined {
     const viewParams = this.context.view?.navigation?.viewParams;
     if (viewParams) {
@@ -192,7 +203,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     };
 
     let nextTitle = '';
-    if (this.props.enableTabs) {
+    if (this.getEnableTabs()) {
       const activeTabKey = preferredActiveTabKey || this.getActiveTabKey();
       const activeTabModel = activeTabKey
         ? (this.flowEngine.getModel(activeTabKey) as BasePageTabModel | undefined)
@@ -355,13 +366,14 @@ export class PageModel extends FlowModel<PageModelStructure> {
       headerStyle.paddingBlock = token.paddingSM;
       headerStyle.paddingInline = token.paddingLG;
     }
-    if (this.props.enableTabs) {
+    const enableTabs = this.getEnableTabs();
+    if (enableTabs) {
       headerStyle.paddingBottom = 0;
     }
     return (
       <>
         {this.props.displayTitle && <PageHeader title={this.props.title} style={headerStyle} />}
-        {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
+        {enableTabs ? this.renderTabs() : this.renderFirstTab()}
       </>
     );
   }
