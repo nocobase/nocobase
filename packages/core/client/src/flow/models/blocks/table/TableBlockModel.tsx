@@ -561,6 +561,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           columns={this.columns.value}
           pagination={this.pagination()}
           highlightedRowKey={highlightedRowKey}
+          selectedRowKeysFromResource={this.resource
+            .getSelectedRows()
+            .map((row) => getRowKey(row, this.collection.filterTargetKey))}
           defaultExpandAllRows={this.props.defaultExpandAllRows}
           expandedRowKeys={this.props.expandedRowKeys}
           heightMode={heightMode}
@@ -579,6 +582,7 @@ const TableBlockContent = (props: {
   columns: any;
   pagination: any;
   highlightedRowKey: string;
+  selectedRowKeysFromResource: string[];
   defaultExpandAllRows?: boolean;
   expandedRowKeys?: any[];
   heightMode?: string;
@@ -592,6 +596,7 @@ const TableBlockContent = (props: {
     columns,
     pagination,
     highlightedRowKey,
+    selectedRowKeysFromResource,
     defaultExpandAllRows,
     expandedRowKeys,
     heightMode,
@@ -618,6 +623,7 @@ const TableBlockContent = (props: {
           columns={columns}
           pagination={pagination}
           highlightedRowKey={highlightedRowKey}
+          selectedRowKeysFromResource={selectedRowKeysFromResource}
           defaultExpandAllRows={defaultExpandAllRows}
           expandedRowKeys={expandedRowKeys}
           tableScroll={tableScroll}
@@ -827,6 +833,7 @@ const HighPerformanceTable = React.memo(
     columns: any;
     pagination: any;
     highlightedRowKey: string;
+    selectedRowKeysFromResource: string[];
     defaultExpandAllRows?: boolean;
     expandedRowKeys?: any[];
     tableScroll;
@@ -839,6 +846,7 @@ const HighPerformanceTable = React.memo(
       columns,
       pagination: _pagination,
       highlightedRowKey,
+      selectedRowKeysFromResource,
       defaultExpandAllRows,
       expandedRowKeys,
       tableScroll,
@@ -846,9 +854,17 @@ const HighPerformanceTable = React.memo(
     const dataSourceRef = useRef(dataSource);
     dataSourceRef.current = dataSource;
 
-    const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
-      model.resource.getSelectedRows().map((row) => getRowKey(row, model.collection.filterTargetKey)),
-    );
+    const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(selectedRowKeysFromResource || []);
+
+    useEffect(() => {
+      const nextSelectedRowKeys = selectedRowKeysFromResource || [];
+      setSelectedRowKeys((prev) => {
+        if (_.isEqual(prev, nextSelectedRowKeys)) {
+          return prev;
+        }
+        return nextSelectedRowKeys;
+      });
+    }, [selectedRowKeysFromResource]);
 
     const getRowKeyFunc = useCallback(
       (record) => {
