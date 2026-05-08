@@ -33,7 +33,7 @@ import {
   checkRequire,
   getExcludePackages,
   getIncludePackages,
-  getPackagesFromFiles,
+  getPluginBrowserSourcePackages,
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
@@ -630,8 +630,7 @@ export async function buildPluginClient(
     });
     clientFiles.push(...commercialFiles);
   }
-  const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
-  const sourcePackages = getPackagesFromFiles(clientFileSource);
+  const sourcePackages = getPluginBrowserSourcePackages(cwd, globExcludeFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
   checkRequire(clientFiles, log);
