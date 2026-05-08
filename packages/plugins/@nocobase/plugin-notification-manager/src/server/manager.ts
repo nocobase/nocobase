@@ -25,14 +25,14 @@ import { Transactionable } from '@nocobase/database';
 export class NotificationManager implements NotificationManager {
   private static readonly SLOW_SEND_THRESHOLD_MS = 500;
   private plugin: PluginNotificationManagerServer;
-  public channelTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
+  public channelTypes = new Registry<{ Channel: NotificationChannelConstructor; useQueue: boolean }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
 
-  registerType({ type, Channel }: RegisterServerTypeFnParams) {
-    this.channelTypes.register(type, { Channel });
+  registerType({ type, Channel, useQueue = true }: RegisterServerTypeFnParams) {
+    this.channelTypes.register(type, { Channel, useQueue });
   }
 
   createSendingRecord = async (options: WriteLogOptions & Transactionable) => {
@@ -54,6 +54,34 @@ export class NotificationManager implements NotificationManager {
       receivers: params.receivers,
       queued: true,
     };
+  }
+
+  private getDirectResult(
+    params: SendOptions,
+    result: {
+      status: 'success' | 'failure';
+      reason?: string;
+    },
+  ) {
+    return {
+      status: result.status,
+      reason: result.reason,
+      triggerFrom: params.triggerFrom,
+      channelName: params.channelName,
+      receivers: params.receivers,
+      queued: false,
+    };
+  }
+
+  private async shouldUseQueue(channelName: string) {
+    const channel = await this.findChannel(channelName);
+
+    if (!channel) {
+      return true;
+    }
+
+    const channelType = this.channelTypes.get(channel.notificationType);
+    return channelType?.useQueue ?? true;
   }
 
   private async enqueue(message: NotificationQueueMessage) {
@@ -84,6 +112,25 @@ export class NotificationManager implements NotificationManager {
   async send(params: SendOptions) {
     const queueMessage = this.toQueueMessage(params);
     const transaction = params.transaction;
+    const useQueue = await this.shouldUseQueue(params.channelName);
+
+    if (!useQueue) {
+      if (transaction?.afterCommit) {
+        transaction.afterCommit(() => {
+          void this.sendNow(queueMessage).catch((error) => {
+            this.plugin.logger.error('notification send failed after transaction committed', {
+              channelName: params.channelName,
+              triggerFrom: params.triggerFrom,
+              reason: error instanceof Error ? `${error.name}: ${error.message}` : JSON.stringify(error),
+            });
+          });
+        });
+        return this.getDirectResult(params, { status: 'success' });
+      }
+
+      const result = await this.sendNow(queueMessage);
+      return this.getDirectResult(params, result);
+    }
 
     if (transaction?.afterCommit) {
       transaction.afterCommit(() => {

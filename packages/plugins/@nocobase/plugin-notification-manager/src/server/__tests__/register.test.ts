@@ -228,7 +228,7 @@ describe('notification manager server', () => {
       message: { content: 'test' },
       triggerFrom: 'workflow',
     });
-    expect(getChannel).not.toHaveBeenCalled();
+    expect(getChannel).toHaveBeenCalledWith(testChannelData.name);
     expect(send).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
@@ -300,6 +300,162 @@ describe('notification manager server', () => {
         }),
       }),
     );
+  });
+
+  test('send should bypass queue when channel type disables queue mode', async () => {
+    const publish = vi.fn().mockResolvedValue(undefined);
+    const getChannel = vi.fn().mockResolvedValue({
+      name: testChannelData.name,
+      title: testChannelData.title,
+      notificationType: testChannelData.notificationType,
+      options: {},
+    });
+    const create = vi.fn().mockResolvedValue(undefined);
+    const send = vi.fn().mockResolvedValue({ status: 'success', message: { content: 'test' } });
+
+    notificationManager = new NotificationManager({
+      plugin: {
+        sendQueueChannel: 'notification-manager.send',
+        getChannel,
+        app: {
+          eventQueue: {
+            publish,
+          },
+          db: {
+            getRepository: vi.fn((name) => {
+              if (name === COLLECTION_NAME.logs) {
+                return { create };
+              }
+            }),
+          },
+          environment: {
+            renderJsonTemplate: (value) => value,
+          },
+        },
+        logger: {
+          debug: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+      },
+    });
+
+    notificationManager.registerType({
+      type: testChannelData.notificationType,
+      Channel: class {
+        async send(args) {
+          return await send(args);
+        }
+      } as any,
+      useQueue: false,
+    });
+
+    const result = await notificationManager.send({
+      channelName: testChannelData.name,
+      message: { content: 'test' },
+      triggerFrom: 'workflow',
+    });
+
+    expect(publish).not.toHaveBeenCalled();
+    expect(getChannel).toHaveBeenCalledWith(testChannelData.name);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: expect.objectContaining({
+          name: testChannelData.name,
+        }),
+        message: { content: 'test' },
+      }),
+    );
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        channelName: testChannelData.name,
+        triggerFrom: 'workflow',
+        queued: false,
+      }),
+    );
+  });
+
+  test('send should defer direct sending until after transaction committed when queue mode is disabled', async () => {
+    const publish = vi.fn().mockResolvedValue(undefined);
+    const getChannel = vi.fn().mockResolvedValue({
+      name: testChannelData.name,
+      title: testChannelData.title,
+      notificationType: testChannelData.notificationType,
+      options: {},
+    });
+    const create = vi.fn().mockResolvedValue(undefined);
+    const send = vi.fn().mockResolvedValue({ status: 'success', message: { content: 'test' } });
+    let afterCommitCallback;
+    const transaction = {
+      afterCommit: vi.fn((callback) => {
+        afterCommitCallback = callback;
+      }),
+    };
+
+    notificationManager = new NotificationManager({
+      plugin: {
+        sendQueueChannel: 'notification-manager.send',
+        getChannel,
+        app: {
+          eventQueue: {
+            publish,
+          },
+          db: {
+            getRepository: vi.fn((name) => {
+              if (name === COLLECTION_NAME.logs) {
+                return { create };
+              }
+            }),
+          },
+          environment: {
+            renderJsonTemplate: (value) => value,
+          },
+        },
+        logger: {
+          debug: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+      },
+    });
+
+    notificationManager.registerType({
+      type: testChannelData.notificationType,
+      Channel: class {
+        async send(args) {
+          return await send(args);
+        }
+      } as any,
+      useQueue: false,
+    });
+
+    const result = await notificationManager.send({
+      channelName: testChannelData.name,
+      message: { content: 'test' },
+      triggerFrom: 'workflow',
+      transaction: transaction as any,
+    });
+
+    expect(transaction.afterCommit).toHaveBeenCalledTimes(1);
+    expect(publish).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        channelName: testChannelData.name,
+        triggerFrom: 'workflow',
+        queued: false,
+      }),
+    );
+
+    await afterCommitCallback();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
   test('plugin sendNow should bypass queue and perform actual sending', async () => {
