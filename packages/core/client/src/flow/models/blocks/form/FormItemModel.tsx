@@ -22,6 +22,7 @@ import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';
+import { Tooltip } from 'antd';
 import { coerceForToOneField } from '../../../internal/utils/associationValueCoercion';
 import { buildDynamicNamePath } from './dynamicNamePath';
 
@@ -99,54 +100,63 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
 
   renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
-    // 行索引（来自数组子表单）
     const idx = this.context.fieldIndex;
     const fieldKey = this.context.fieldKey;
     const parentFieldPathArray = this.parent?.context.fieldPathArray || [];
+    const isHiddenReservedValuePreview =
+      !!this.context.flowSettingsEnabled && !!this.props.hidden && !this.hidden && !this.forbidden;
 
-    // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
-      idx != null
+      idx != null || isHiddenReservedValuePreview
         ? (() => {
-            const fork = fieldModel.createFork({}, `${fieldKey}`);
-            fork.context.defineProperty('fieldIndex', {
-              get: () => idx,
-            });
-            fork.context.defineProperty('fieldKey', {
-              get: () => fieldKey,
-            });
-            if (this.context.currentObject) {
-              fork.context.defineProperty('currentObject', {
-                get: () => this.context.currentObject,
+            const forkKey = isHiddenReservedValuePreview ? `${this.uid}:config-visible` : `${fieldKey}`;
+            const fork = fieldModel.createFork({}, forkKey);
+            if (idx != null) {
+              fork.context.defineProperty('fieldIndex', {
+                get: () => idx,
               });
+              fork.context.defineProperty('fieldKey', {
+                get: () => fieldKey,
+              });
+              if (this.context.currentObject) {
+                fork.context.defineProperty('currentObject', {
+                  get: () => this.context.currentObject,
+                });
+              }
+              const itemOptions = this.context.getPropertyOptions('item');
+              if (this.context.item) {
+                const { value: _value, ...rest } = (itemOptions || {}) as any;
+                fork.context.defineProperty('item', {
+                  ...rest,
+                  get: () => this.context.item,
+                  cache: false,
+                });
+              }
+              if (this.context.pattern) {
+                fork.context.defineProperty('pattern', {
+                  get: () => this.context.pattern,
+                });
+              }
             }
-            const itemOptions = this.context.getPropertyOptions('item');
-            if (this.context.item) {
-              const { value: _value, ...rest } = (itemOptions || {}) as any;
-              fork.context.defineProperty('item', {
-                ...rest,
-                get: () => this.context.item,
-                cache: false,
-              });
-            }
-            if (this.context.pattern) {
-              fork.context.defineProperty('pattern', {
-                get: () => this.context.pattern,
-              });
+            if (isHiddenReservedValuePreview) {
+              fork.setProps({ hidden: false });
             }
             return fork;
           })()
         : fieldModel;
     const mergedProps = this.context.pattern ? { ...this.props, pattern: this.context.pattern } : this.props;
-    const { initialValue, ...mergedPropsWithoutInitial } = mergedProps as any;
+    const { initialValue, hidden, ...mergedPropsWithoutInitial } = mergedProps as any;
+    const formItemProps = isHiddenReservedValuePreview
+      ? mergedPropsWithoutInitial
+      : { hidden, ...mergedPropsWithoutInitial };
     const fieldPath = buildDynamicNamePath(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
     const record = this.context.item?.value || this.context.record;
-    return (
+    const content = (
       <FormItem
-        {...mergedPropsWithoutInitial}
+        {...formItemProps}
         name={fieldPath}
         validateFirst={true}
         disabled={
@@ -158,6 +168,16 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
+
+    if (isHiddenReservedValuePreview) {
+      return (
+        <Tooltip title={this.context.t('The field is hidden and only visible when the UI Editor is active')}>
+          <div style={{ opacity: 0.3 }}>{content}</div>
+        </Tooltip>
+      );
+    }
+
+    return content;
   }
 }
 

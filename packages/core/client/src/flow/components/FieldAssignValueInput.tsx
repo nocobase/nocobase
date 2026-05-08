@@ -485,6 +485,7 @@ type AssignValueFieldSource = {
 const ASSIGN_VALUE_IGNORED_PROP_KEYS = new Set([
   'value',
   'defaultValue',
+  'hidden',
   'onChange',
   'onClick',
   'open',
