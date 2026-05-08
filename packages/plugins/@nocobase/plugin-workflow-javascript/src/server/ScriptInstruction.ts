@@ -23,11 +23,11 @@ export default class ScriptInstruction extends Instruction {
   /**
    * Returns the worker script path based on whether WORKFLOW_SCRIPT_MODULES is configured.
    * - WORKFLOW_SCRIPT_MODULES set: uses Node.js vm with require support (module whitelist)
-   * - WORKFLOW_SCRIPT_MODULES unset: uses isolated-vm for maximum security (no require, no Node.js APIs)
+   * - WORKFLOW_SCRIPT_MODULES unset: uses QuickJS (WASM) for maximum security (no require, no Node.js APIs)
    */
   static get workerScript() {
     const hasModules = process.env.WORKFLOW_SCRIPT_MODULES?.split(',').filter(Boolean).length > 0;
-    return path.join(__dirname, hasModules ? 'Vm.js' : 'IsolatedVm.js');
+    return path.join(__dirname, hasModules ? 'Vm.js' : 'QuickJs.js');
   }
 
   static async run(source, args, options: { logger: Logger; timeout?: number }) {
