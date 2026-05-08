@@ -444,6 +444,13 @@ describe('FormValueRuntime (form assign rules)', () => {
           expect(assigned).toMatch(/(?:Z|[+-]\d{2}:\d{2})$/);
         },
       },
+      {
+        name: 'input',
+        collectionField: { interface: 'input', type: 'string' },
+        assertValue: (assigned: any) => {
+          expect(assigned).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+        },
+      },
     ];
 
     for (const item of cases) {
@@ -501,6 +508,61 @@ describe('FormValueRuntime (form assign rules)', () => {
         item.assertValue(assigned);
       });
     }
+  });
+
+  it('does not normalize arbitrary ISO strings for non-date fields', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-iso-string-text-1',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    const isoValue = '2026-02-12T03:04:05.000Z';
+    runtime.syncAssignRules([
+      {
+        key: 'r-iso-text',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: isoValue,
+      },
+    ]);
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('collectionField', { value: { interface: 'input', type: 'string' } });
+
+    const fieldModel: any = {
+      uid: 'field-a-iso-string-text-1',
+      subModels: { field: {} },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'a' };
+        }
+        return undefined;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+    fieldModel.context = fieldCtx;
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+
+    await waitFor(() => {
+      expect(formStub.getFieldValue(['a'])).toBe(isoValue);
+    });
   });
 
   it('supports RunJSValue and updates on formValues dependency change', async () => {

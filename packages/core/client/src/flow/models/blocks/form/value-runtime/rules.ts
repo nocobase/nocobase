@@ -1194,13 +1194,19 @@ export class RuleEngine {
       if (!shouldContinue) return;
     }
 
+    const rawRuleValue = rule.getValue();
     const resolved = await this.resolveRuleValue(rule, state, seq, evalCtx, collector);
     if (resolved === SKIP_RULE_VALUE) return;
     if (seq !== state.runSeq) return;
 
     this.commitRuleDeps(rule, state, collector);
 
-    const normalizedResolved = this.normalizeResolvedValueForTarget(baseCtx, ensuredTargetNamePath, resolved);
+    const normalizedResolved = this.normalizeResolvedValueForTarget(
+      baseCtx,
+      ensuredTargetNamePath,
+      resolved,
+      rawRuleValue,
+    );
     const normalizedResolvedForTarget = this.normalizeResolvedValueForAssociationTarget(
       baseCtx,
       ensuredTargetNamePath,
@@ -1323,7 +1329,12 @@ export class RuleEngine {
     return fallback.isValid() ? fallback : null;
   }
 
-  private normalizeDateLikeValueByTargetField(targetField: any, value: any): any {
+  private isCurrentTimeVariableValue(rawValue: unknown): boolean {
+    if (typeof rawValue !== 'string') return false;
+    return /^\{\{\s*ctx\.date\.(?:preset\.)?now\s*\}\}$/.test(rawValue.trim());
+  }
+
+  private normalizeDateLikeValueByTargetField(targetField: any, value: any, isCurrentTimeVariable = false): any {
     const targetInterface = targetField?.interface;
     const targetType = targetField?.type;
     const normalizedInterface = String(targetInterface || '');
@@ -1351,22 +1362,31 @@ export class RuleEngine {
       return parsed.format('YYYY-MM-DD HH:mm:ss');
     }
 
+    if (isCurrentTimeVariable) {
+      return parsed.format('YYYY-MM-DD HH:mm:ss');
+    }
+
     return value;
   }
 
-  private normalizeResolvedValueForTarget(baseCtx: any, targetNamePath: NamePath, resolved: any): any {
+  private normalizeResolvedValueForTarget(baseCtx: any, targetNamePath: NamePath, resolved: any, rawValue?: any): any {
     const targetField =
       baseCtx?.model?.context?.collectionField || this.resolveCollectionFieldByNamePath(baseCtx, targetNamePath);
+    const isCurrentTimeVariable = this.isCurrentTimeVariableValue(rawValue);
 
     if (!targetField) {
+      if (isCurrentTimeVariable) {
+        const parsed = this.parseDateLikeValue(resolved);
+        return parsed?.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : resolved;
+      }
       return resolved;
     }
 
     if (Array.isArray(resolved)) {
-      return resolved.map((item) => this.normalizeDateLikeValueByTargetField(targetField, item));
+      return resolved.map((item) => this.normalizeDateLikeValueByTargetField(targetField, item, isCurrentTimeVariable));
     }
 
-    return this.normalizeDateLikeValueByTargetField(targetField, resolved);
+    return this.normalizeDateLikeValueByTargetField(targetField, resolved, isCurrentTimeVariable);
   }
 
   private isPrimitiveAssociationTargetValue(value: unknown): value is string | number | boolean {
