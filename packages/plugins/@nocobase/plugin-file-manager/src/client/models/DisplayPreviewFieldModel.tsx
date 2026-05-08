@@ -15,8 +15,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FilePreviewRenderer,
+  getDownloadFileName,
   getFallbackIcon,
-  getFileExt,
   getFileName,
   getPreviewThumbnailUrl,
   getPreviewFileUrl,
@@ -98,7 +98,7 @@ const FilePreview = ({
 
 const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
-  const { t } = useTranslation(); //  i18n added
+  const { t } = useTranslation();
   const [current, setCurrent] = React.useState(0);
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const list = React.useMemo(
@@ -132,16 +132,7 @@ const Preview = (props) => {
       if (!url) {
         return;
       }
-
-      let filename = getFileName(file, url);
-      const ext = getFileExt(file, url);
-
-      if (filename && ext && !filename.toLowerCase().endsWith(`.${ext}`)) {
-        filename = `${filename}.${ext}`;
-      }
-
-      const downloadName = `${Date.now()}_${filename || 'file'}`;
-
+      const downloadName = getDownloadFileName(file, url);
       let blobUrl: string | undefined;
       let link: HTMLAnchorElement | undefined;
 
@@ -158,13 +149,10 @@ const Preview = (props) => {
         link = document.createElement('a');
         link.href = blobUrl;
         link.download = downloadName;
-
         document.body.appendChild(link);
         link.click();
       } catch (error) {
         console.error('File download failed:', error);
-
-        // FIXED (i18n)
         message.error(t('file-manager:File download failed'));
       } finally {
         if (link) {
@@ -178,7 +166,7 @@ const Preview = (props) => {
         }
       }
     },
-    [current, list, t], // added t dependency
+    [current, list, t],
   );
   const onOpenAtIndex = React.useCallback((index: number) => {
     setCurrent(index);
