@@ -29,7 +29,9 @@ export abstract class Files {
           if (!repository) {
             throw new Error(`Attachment collection [${collection}] not existed`);
           }
-          const attachmentKeys = attachmentGroup[collection as string]?.map((it) => it.value);
+          const attachmentKeys = attachmentGroup[collection as string]?.flatMap((it) =>
+            _.isArray(it.value) ? it.value : [it.value],
+          );
           const attachmentModels = await repository.find({
             filter: {
               id: {
@@ -49,13 +51,14 @@ export abstract class Files {
     };
 
     const resolveUrls = async (files: AIEmployeeInstructionFiles[]) => {
-      const urls = files.filter((it) => it.type === 'file_url');
-      if (urls.length) {
+      const attachmentFiles = files.filter((it) => it.type === 'file_url');
+      if (attachmentFiles.length) {
+        const urls = attachmentFiles.flatMap(({ value }) => (_.isArray(value) ? value : [value]));
         const fileManager = plugin.pm.get('file-manager') as PluginFileManagerServer;
         const settings = await plugin.db.getRepository('aiSettings').findOne();
         const storageName = settings?.options?.storage;
         const attachments = await Promise.all(
-          urls.map(async ({ value: url }) => {
+          urls.map(async (url) => {
             const response = await axios.get(url, {
               responseType: 'arraybuffer',
             });

@@ -19,7 +19,19 @@ vi.mock('@nocobase/client', () => {
   const Editable = ({ value, onChange }: any) => (
     <input data-testid="formula-input" value={value ?? ''} onChange={(event) => onChange?.(event)} />
   );
-  const resolveDynamicNamePath = (path: string | Array<string | number>, fieldIndex?: unknown) => {
+  return {
+    Checkbox: Object.assign(Editable, { ReadPretty }),
+    DatePicker: Object.assign(Editable, { ReadPretty }),
+    FieldModel: class FieldModel {
+      static registerFlow = vi.fn();
+    },
+    Input: Object.assign(Editable, { ReadPretty }),
+    InputNumber: Object.assign(Editable, { ReadPretty }),
+  };
+});
+
+vi.mock('@nocobase/client-v2', () => ({
+  resolveDynamicNamePath: (path: string | Array<string | number>, fieldIndex?: unknown) => {
     const segs = Array.isArray(path) ? path : String(path).split('.').filter(Boolean);
     const entries = (Array.isArray(fieldIndex) ? fieldIndex : [])
       .map((item) => {
@@ -40,19 +52,8 @@ vi.mock('@nocobase/client', () => {
     }
 
     return resolved;
-  };
-
-  return {
-    Checkbox: Object.assign(Editable, { ReadPretty }),
-    DatePicker: Object.assign(Editable, { ReadPretty }),
-    FieldModel: class FieldModel {
-      static registerFlow = vi.fn();
-    },
-    Input: Object.assign(Editable, { ReadPretty }),
-    InputNumber: Object.assign(Editable, { ReadPretty }),
-    resolveDynamicNamePath,
-  };
-});
+  },
+}));
 
 vi.mock('@nocobase/evaluators/client', () => ({
   evaluators: {
@@ -62,12 +63,22 @@ vi.mock('@nocobase/evaluators/client', () => ({
   },
 }));
 
-vi.mock('@nocobase/flow-engine', () => {
-  const bindModelToInterface = vi.fn();
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  class MockDisplayItemModel extends actual.DisplayItemModel {
+    static bindModelToInterface = vi.fn();
+  }
+  class MockEditableItemModel extends actual.EditableItemModel {
+    static bindModelToInterface = vi.fn();
+  }
+  class MockFilterableItemModel extends actual.FilterableItemModel {
+    static bindModelToInterface = vi.fn();
+  }
   return {
-    DisplayItemModel: { bindModelToInterface },
-    EditableItemModel: { bindModelToInterface },
-    FilterableItemModel: { bindModelToInterface },
+    ...actual,
+    DisplayItemModel: MockDisplayItemModel,
+    EditableItemModel: MockEditableItemModel,
+    FilterableItemModel: MockFilterableItemModel,
     tExpr: (value: string) => value,
   };
 });
