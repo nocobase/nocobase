@@ -295,6 +295,29 @@ export class DataSourceManager {
   }
 }
 
+export type CollectionFieldInterfaceDataSourceManager = Pick<DataSourceManager, 'collectionFieldInterfaceManager'>;
+
+export function getCollectionFieldInterface(
+  interfaceName: string | undefined,
+  ...dataSourceManagers: Array<CollectionFieldInterfaceDataSourceManager | null | undefined>
+) {
+  if (!interfaceName) {
+    return undefined;
+  }
+
+  // TODO: Once legacy client is removed and all runtimes share the client-v2 flow-engine
+  // DataSourceManager, callers should only pass the flow-engine context DataSourceManager.
+  for (const dataSourceManager of dataSourceManagers) {
+    const collectionFieldInterfaceManager = dataSourceManager?.collectionFieldInterfaceManager;
+    const getFieldInterface = collectionFieldInterfaceManager?.getFieldInterface;
+    if (typeof getFieldInterface === 'function') {
+      return getFieldInterface.call(collectionFieldInterfaceManager, interfaceName);
+    }
+  }
+
+  return undefined;
+}
+
 export class DataSource {
   dataSourceManager: DataSourceManager;
   collectionManager: CollectionManager;
@@ -1135,8 +1158,13 @@ export class CollectionField {
   }
 
   getInterfaceOptions() {
-    const app = this.flowEngine.context.app;
-    return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
+    const ctx = this.flowEngine.context;
+    return getCollectionFieldInterface(
+      this.interface,
+      this.collection?.dataSource?.dataSourceManager,
+      ctx.dataSourceManager,
+      ctx.app?.dataSourceManager,
+    );
   }
 
   getFilterOperators() {
