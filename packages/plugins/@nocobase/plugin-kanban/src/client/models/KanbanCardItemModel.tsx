@@ -170,7 +170,7 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
 
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const token = this.context.themeToken || {};
-    const cardBodyPaddingBlock = token.paddingContentVertical ?? 12;
+    const cardBodyPaddingTop = token.paddingContentVertical ?? 12;
     const cardBodyPaddingInline = token.paddingContentHorizontal ?? 16;
     const cardFieldGap = token.marginSM ?? 4;
     const clickEnabled = this.props.enableCardClick !== false;
@@ -203,7 +203,7 @@ export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
 
           .ant-card-body {
             height: 100%;
-            padding: ${cardBodyPaddingBlock}px ${cardBodyPaddingInline}px;
+            padding: ${cardBodyPaddingTop}px ${cardBodyPaddingInline}px 0;
             display: flex;
             flex-direction: column;
             justify-content: space-between;

@@ -63,6 +63,7 @@ export const KanbanGroupingSelector = observer(
     }
 
     const resolvedModel = model || settingsContext?.model;
+    const token = resolvedModel?.context?.themeToken || {};
     const resolvedCollection = resolvedModel?.collection || collection || settingsContext?.collection;
 
     const translate = useCallback(
@@ -184,7 +185,7 @@ export const KanbanGroupingSelector = observer(
     const selectedValues = groupOptions.map((item) => item.value);
 
     return (
-      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      <Space direction="vertical" size={token.marginSM ?? 12} style={{ width: '100%' }}>
         {optionsError ? <Alert type="error" message={optionsError} showIcon /> : null}
         <Spin spinning={optionsLoading}>
           <Select
