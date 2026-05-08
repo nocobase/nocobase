@@ -382,31 +382,52 @@ describe('flowSurfaces block header contracts', () => {
   });
 
   it('should accept raw canonical blockHeight writes and clear stale fixed height for default modes', async () => {
-    const patch = vi.fn().mockResolvedValue(undefined);
+    const initialOptions = {
+      use: 'TableBlockModel',
+      props: {},
+      decoratorProps: {},
+      stepParams: {
+        cardSettings: {
+          titleDescription: {
+            title: 'Existing title',
+          },
+          blockHeight: {
+            heightMode: 'specifyValue',
+            height: 500,
+          },
+          linkageRules: [{ id: 'keep-linkage' }],
+        },
+      },
+    };
+    let persistedOptions = initialOptions;
+    const set = vi.fn((key, value) => {
+      if (key === 'options') {
+        persistedOptions = value;
+      }
+    });
+    const save = vi.fn().mockResolvedValue(undefined);
+    const model = {
+      get: vi.fn((key) => (key === 'options' ? persistedOptions : undefined)),
+      set,
+      save,
+    };
+    const findByPk = vi.fn().mockResolvedValue(model);
+    const clearXUidPathCache = vi.fn().mockResolvedValue(undefined);
+    const emitAfterSaveEvent = vi.fn().mockResolvedValue(undefined);
     const service = new FlowSurfacesService({
       db: {
         getCollection: () => ({
           repository: {
             findModelById: vi.fn().mockResolvedValue({
               uid: 'table-1',
-              use: 'TableBlockModel',
-              props: {},
-              decoratorProps: {},
-              stepParams: {
-                cardSettings: {
-                  titleDescription: {
-                    title: 'Existing title',
-                  },
-                  blockHeight: {
-                    heightMode: 'specifyValue',
-                    height: 500,
-                  },
-                  linkageRules: [{ id: 'keep-linkage' }],
-                },
-              },
+              ...initialOptions,
             }),
-            patch,
             findNodesById: vi.fn().mockResolvedValue([]),
+            model: {
+              findByPk,
+            },
+            clearXUidPathCache,
+            emitAfterSaveEvent,
           },
         }),
         getRepository: () => null,
@@ -427,23 +448,24 @@ describe('flowSurfaces block header contracts', () => {
       },
     });
 
-    expect(patch).toHaveBeenCalledWith(
-      {
-        uid: 'table-1',
-        stepParams: {
-          cardSettings: {
-            titleDescription: {
-              title: 'Existing title',
-            },
-            blockHeight: {
-              heightMode: 'defaultHeight',
-            },
-            linkageRules: [{ id: 'keep-linkage' }],
+    expect(findByPk).toHaveBeenCalledWith('table-1', { transaction: undefined });
+    expect(set).toHaveBeenCalledWith('options', {
+      ...initialOptions,
+      stepParams: {
+        cardSettings: {
+          titleDescription: {
+            title: 'Existing title',
           },
+          blockHeight: {
+            heightMode: 'defaultHeight',
+          },
+          linkageRules: [{ id: 'keep-linkage' }],
         },
       },
-      { transaction: undefined },
-    );
+    });
+    expect(save).toHaveBeenCalledWith({ transaction: undefined, hooks: false });
+    expect(clearXUidPathCache).toHaveBeenCalledWith('table-1', undefined);
+    expect(emitAfterSaveEvent).toHaveBeenCalledWith(model, { transaction: undefined });
   });
 
   it('should route configure to map and comments block handlers', async () => {
