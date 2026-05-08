@@ -15,6 +15,10 @@ export class FlowSurfaceRouteSync {
   constructor(
     private readonly db: any,
     private readonly repository: FlowModelRepository,
+    private readonly patchModel: (values: Record<string, any>, options?: { transaction?: any }) => Promise<any> = (
+      values,
+      options,
+    ) => repository.patch(values, options),
   ) {}
 
   async buildPageTree(pageRouteLike: any, transaction?: any) {
@@ -163,7 +167,7 @@ export class FlowSurfaceRouteSync {
           })
         : null);
     if (pageModel?.uid) {
-      await this.repository.patch(
+      await this.patchModel(
         {
           ...this.normalizePagePayload(current, nextPayload, routeValues),
           uid: pageModel.uid,
@@ -190,7 +194,7 @@ export class FlowSurfaceRouteSync {
     }
 
     const latestRoute = await this.hydrateRoute(target.tabRoute, transaction);
-    await this.repository.patch(
+    await this.patchModel(
       this.normalizeTabPayload(await this.buildTabAnchor(latestRoute, transaction), nextPayload, routeValues),
       { transaction },
     );
