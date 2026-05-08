@@ -7,9 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BindingOptions, defineAction, tExpr, DisplayItemModel } from '@nocobase/flow-engine';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
-import { rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
+
+type PatternAwareFieldModelMeta = {
+  preserveOnPatternChange?: boolean;
+};
+
+function shouldPreserveFieldModelOnPatternChange(ctx: any) {
+  const fieldModel = ctx.model.subModels.field;
+  const fieldUse = getFieldBindingUse(fieldModel) ?? fieldModel?.use;
+  const ModelClass = typeof fieldUse === 'string' ? ctx.engine.getModelClass(fieldUse) : fieldUse;
+
+  return ((ModelClass?.meta as PatternAwareFieldModelMeta | undefined)?.preserveOnPatternChange ?? false) === true;
+}
 
 export const pattern = defineAction({
   name: 'pattern',
@@ -56,6 +68,10 @@ export const pattern = defineAction({
     };
   },
   afterParamsSave: async (ctx: any, params, previousParams) => {
+    if (shouldPreserveFieldModelOnPatternChange(ctx)) {
+      return;
+    }
+
     const targetCollection = ctx.collectionField.targetCollection;
     const targetCollectionTitleField = targetCollection?.getField(
       ctx.model.subModels.field.props?.fieldNames?.label || ctx.model.props.titleField,

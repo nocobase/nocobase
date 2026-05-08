@@ -35,6 +35,10 @@ function JsEditableField() {
     ctx.setValue?.(v);
   };
 
+  if (ctx.readOnly) {
+    return <span>{String(value ?? '')}</span>;
+  }
+
   return (
     <Input
       {...ctx.model.props}
@@ -47,6 +51,25 @@ function JsEditableField() {
 // Mount to the field container
 ctx.render(<JsEditableField />);
 `;
+
+type PatternAwareModel = {
+  props?: { readOnly?: boolean; pattern?: string };
+  context?: { pattern?: string };
+  parent?: { props?: { pattern?: string } };
+};
+
+function getEffectivePattern(model?: PatternAwareModel) {
+  return model?.props?.pattern ?? model?.context?.pattern ?? model?.parent?.props?.pattern;
+}
+
+function isReadOnlyMode(model?: PatternAwareModel) {
+  return !!model?.props?.readOnly || getEffectivePattern(model) === 'readPretty';
+}
+
+function resolveScriptCode(codeParam?: string) {
+  const raw = codeParam ?? DEFAULT_CODE;
+  return typeof raw === 'string' ? raw.trim() : '';
+}
 
 const JSFormRuntime: React.FC<{
   model: JSEditableFieldModel;
@@ -66,26 +89,22 @@ const JSFormRuntime: React.FC<{
   // 统一获取&裁剪脚本代码，直接依赖具体 code 字符串，避免顶层 stepParams 引用未变化导致不更新
   const codeParam = model.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
   const scriptCode = useMemo(() => {
-    const raw = codeParam ?? DEFAULT_CODE;
-    return typeof raw === 'string' ? raw.trim() : '';
+    return resolveScriptCode(codeParam);
   }, [codeParam]);
 
   useEffect(() => {
-    if (!containerRef.current || !scriptCode) return;
+    if (readOnly || !containerRef.current || !scriptCode) return;
     const event = new CustomEvent('js-field:value-change', { detail: value });
     containerRef.current.dispatchEvent(event);
-  }, [value, scriptCode]);
+  }, [value, scriptCode, readOnly]);
 
-  // 无自定义 JS 时默认渲染 Input，保持可用性
+  if (readOnly) {
+    return <span>{String(value ?? '')}</span>;
+  }
+
   if (!scriptCode) {
     return (
-      <Input
-        value={value}
-        onChange={(e) => onChange?.(e.target.value)}
-        disabled={disabled}
-        readOnly={readOnly}
-        style={{ width: '100%' }}
-      />
+      <Input value={value} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} style={{ width: '100%' }} />
     );
   }
 
@@ -100,14 +119,31 @@ const JSFormRuntime: React.FC<{
  */
 export class JSEditableFieldModel extends FieldModel {
   private _mountedOnce = false;
+
+  useHooksBeforeRender() {
+    const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+    const scriptCode = resolveScriptCode(codeParam);
+    const value = this.props?.value;
+    const disabled = this.props?.disabled;
+    const effectiveReadOnly = isReadOnlyMode(this);
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      if (effectiveReadOnly || !scriptCode) return;
+      void this.applyFlow('jsSettings');
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scriptCode, value, disabled, effectiveReadOnly, this.props?.pattern]);
+  }
+
   render() {
+    const readOnly = isReadOnlyMode(this);
     return (
       <JSFormRuntime
         model={this as JSEditableFieldModel}
         value={this.props?.value}
         onChange={this.props?.onChange}
         disabled={this.props?.disabled}
-        readOnly={this.props?.readOnly}
+        readOnly={readOnly}
       />
     );
   }
@@ -128,9 +164,12 @@ export class JSEditableFieldModel extends FieldModel {
   }
 }
 
-JSEditableFieldModel.define({
+const jsEditableFieldModelMeta = {
   label: tExpr('JS field'),
-});
+  preserveOnPatternChange: true,
+};
+
+JSEditableFieldModel.define(jsEditableFieldModelMeta);
 
 JSEditableFieldModel.registerFlow({
   key: 'jsSettings',
@@ -173,7 +212,15 @@ JSEditableFieldModel.registerFlow({
         };
       },
       async handler(ctx, params) {
+        if (isReadOnlyMode(ctx.model)) {
+          return;
+        }
+
         const { code, version } = resolveRunJsParams(ctx, params);
+        if (!code?.trim()) {
+          return;
+        }
+
         ctx.onRefReady(ctx.ref, async (element) => {
           // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
           ctx.defineProperty('element', {
@@ -201,7 +248,10 @@ JSEditableFieldModel.registerFlow({
           });
           ctx.defineProperty('namePath', { get: () => ctx.model.props?.name, cache: false });
           ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
-          ctx.defineProperty('readOnly', { get: () => !!ctx.model.props?.readOnly, cache: false });
+          ctx.defineProperty('readOnly', {
+            get: () => isReadOnlyMode(ctx.model),
+            cache: false,
+          });
           const navigator = createSafeNavigator();
           await ctx.runjs(
             code,
