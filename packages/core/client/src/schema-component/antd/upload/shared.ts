@@ -43,6 +43,50 @@ export interface AttachmentFileType {
   Previewer?: React.ComponentType<PreviewerProps>;
 }
 
+const stripQueryAndHash = (value?: string) => value?.split('?')[0].split('#')[0] || '';
+
+const safeDecodeURIComponent = (value: string) => {
+  try {
+    return decodeURIComponent(value);
+  } catch (error) {
+    return value;
+  }
+};
+
+export const getNameFromUrl = (url?: string) => {
+  if (!url) {
+    return '';
+  }
+  const clean = stripQueryAndHash(url);
+  const index = clean.lastIndexOf('/');
+  return safeDecodeURIComponent(index === -1 ? clean : clean.slice(index + 1));
+};
+
+export const getExtname = (value?: string) => {
+  if (!value) {
+    return '';
+  }
+  const name = stripQueryAndHash(value);
+  const index = name.lastIndexOf('.');
+  return index === -1 ? '' : name.slice(index);
+};
+
+export const getTitleFromName = (value?: string) => {
+  if (!value) {
+    return '';
+  }
+  const extname = getExtname(value);
+  return extname ? value.slice(0, -extname.length) : value;
+};
+
+export const getFileDownloadName = (file: Partial<FileModel> & Record<string, any>) => {
+  const filename = file?.filename || getNameFromUrl(file?.url);
+  const extname = file?.extname || getExtname(filename || file?.name);
+  const title = file?.title || getTitleFromName(filename || file?.name);
+
+  return filename || `${title || 'file'}${extname}`;
+};
+
 export class AttachmentFileTypes {
   types: AttachmentFileType[] = [];
   add(type: AttachmentFileType) {
@@ -197,7 +241,7 @@ export function toValueItem(data) {
 
 export const toItem = (file) => {
   if (typeof file === 'string') {
-    return {
+    file = {
       url: file,
     };
   }
@@ -210,7 +254,9 @@ export const toItem = (file) => {
   const result = {
     ...file,
     id: file.id || file.uid,
-    title: file.title || file.name,
+    title: file.title || getTitleFromName(file.filename || file.name || getNameFromUrl(file.url)),
+    filename: file.filename || file.name || getNameFromUrl(file.url),
+    extname: file.extname || getExtname(file.filename || file.name || getNameFromUrl(file.url)),
   };
   if (file.url) {
     result.url =
