@@ -20,6 +20,10 @@ class MockStorer {
   async get(name: string) {
     return this.elements.get(name);
   }
+
+  async getDefault() {
+    return this.elements.values().next().value;
+  }
 }
 
 class BasicAuth extends Auth {

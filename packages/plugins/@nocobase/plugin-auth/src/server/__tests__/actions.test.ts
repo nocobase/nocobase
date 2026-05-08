@@ -9,6 +9,7 @@
 
 import Database, { Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
+import { presetAuthType } from '../../preset';
 
 describe('actions', () => {
   describe('authenticators', () => {
@@ -162,6 +163,31 @@ describe('actions', () => {
 
       res = await agent.get('/auth:check').set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic' });
       expect(res.body.data.id).toBeDefined();
+    });
+
+    it('should not fall back to another authenticator when the requested authenticator is disabled', async () => {
+      await db.getRepository('authenticators').create({
+        values: {
+          name: 'another-password',
+          authType: presetAuthType,
+          enabled: true,
+        },
+      });
+      await db.getRepository('authenticators').update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          enabled: false,
+        },
+      });
+
+      const res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({
+        account: process.env.INIT_ROOT_USERNAME,
+        password: process.env.INIT_ROOT_PASSWORD,
+      });
+      expect(res.statusCode).toEqual(401);
+      expect(res.error.text).toBe('Authenticator [basic] is not found.');
     });
 
     it('should disable sign up', async () => {

@@ -25,6 +25,7 @@ export interface Authenticator {
 
 export interface Storer {
   get: (name: string) => Promise<Authenticator>;
+  getDefault?: () => Promise<Authenticator>;
 }
 
 export type AuthManagerOptions = {
@@ -101,11 +102,14 @@ export class AuthManager {
    * @param name - The name of the authenticator.
    * @return authenticator instance.
    */
-  async get(name: string, ctx: Context) {
+  async get(name: string, ctx: Context, options?: { fallbackToDefault?: boolean }) {
     if (!this.storer) {
       throw new Error('AuthManager.storer is not set.');
     }
-    const authenticator = await this.storer.get(name);
+    let authenticator = await this.storer.get(name);
+    if (!authenticator && options?.fallbackToDefault && this.storer.getDefault) {
+      authenticator = await this.storer.getDefault();
+    }
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
@@ -124,14 +128,18 @@ export class AuthManager {
     const self = this;
 
     return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
-      const name = ctx.get(self.options.authKey) || self.options.default;
+      const headerName = ctx.get(self.options.authKey);
+      const name = headerName || self.options.default;
       let authenticator: Auth;
       try {
-        authenticator = await ctx.app.authManager.get(name, ctx);
+        authenticator = await ctx.app.authManager.get(name, ctx, { fallbackToDefault: !headerName });
         ctx.auth = authenticator;
       } catch (err) {
         ctx.auth = {} as Auth;
         ctx.logger.warn(err.message, { method: 'check', authenticator: name });
+        if (headerName) {
+          ctx.throw(401, err.message);
+        }
         return next();
       }
 

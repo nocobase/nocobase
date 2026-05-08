@@ -75,6 +75,15 @@ describe('storer', () => {
     expect(authenticator).toBeDefined();
   });
 
+  it('should not fall back when authenticator is not found by name', async () => {
+    expect(await storer.get('not-exists')).toBeUndefined();
+  });
+
+  it('should get default authenticator', async () => {
+    const authenticator = await storer.getDefault();
+    expect(authenticator).toMatchObject({ name: 'test1' });
+  });
+
   it('should delete from cache on afterDestory', async () => {
     expect(await storer.get('test1')).toBeDefined();
     await db.emitAsync('authenticators.afterDestroy', data[0]);
