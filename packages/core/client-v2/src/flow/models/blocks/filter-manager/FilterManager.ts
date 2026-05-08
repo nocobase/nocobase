@@ -10,6 +10,7 @@
 import { FilterGroup, FilterItem, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
+import { isArrayLikeField } from '../shared/filterOperators';
 import { getDefaultOperator, isFilterValueEmpty } from './utils';
 
 type FilterConfig = {
@@ -23,6 +24,13 @@ type FilterConfig = {
   operator?: string;
 };
 
+const ARRAY_FIELD_OPERATORS_TO_SCALAR_OPERATORS: Record<string, string> = {
+  $match: '$in',
+  $anyOf: '$in',
+  $notMatch: '$notIn',
+  $noneOf: '$notIn',
+};
+
 export type ConnectFieldsConfig = {
   targets: {
     /** 数据区块或者图表区块的 model uid */
@@ -31,6 +39,44 @@ export type ConnectFieldsConfig = {
     filterPaths: string[];
   }[];
 };
+
+function getTargetField(targetModel: any, fieldPath: string) {
+  const dataSourceManager = targetModel?.context?.dataSourceManager;
+  const collection = targetModel?.collection;
+  if (!dataSourceManager || !collection?.dataSourceKey || !collection?.name || !fieldPath) {
+    return;
+  }
+
+  let collectionName = collection.name;
+  const fieldNames = fieldPath.split('.').filter(Boolean);
+  for (let index = 0; index < fieldNames.length; index += 1) {
+    const field = dataSourceManager.getCollectionField?.(
+      `${collection.dataSourceKey}.${collectionName}.${fieldNames[index]}`,
+    );
+    if (!field || index === fieldNames.length - 1) {
+      return field;
+    }
+
+    collectionName = field.target || field.targetCollection?.name;
+    if (!collectionName) {
+      return;
+    }
+  }
+}
+
+function normalizeOperatorForTargetField(operator: string, targetModel: any, fieldPath: string) {
+  const scalarOperator = ARRAY_FIELD_OPERATORS_TO_SCALAR_OPERATORS[operator];
+  if (!scalarOperator) {
+    return operator;
+  }
+
+  const targetField = getTargetField(targetModel, fieldPath);
+  if (!targetField || isArrayLikeField(targetField)) {
+    return operator;
+  }
+
+  return scalarOperator;
+}
 
 export class FilterManager {
   private filterConfigs: FilterConfig[];
@@ -300,7 +346,11 @@ export class FilterManager {
       // 构建筛选条件
       const filterConditions = config.filterPaths.map((fieldPath) => ({
         path: fieldPath,
-        operator: config.operator || getDefaultOperator(filterModel),
+        operator: normalizeOperatorForTargetField(
+          config.operator || getDefaultOperator(filterModel),
+          targetModel,
+          fieldPath,
+        ),
         value: filterValue,
       }));
 
