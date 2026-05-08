@@ -323,7 +323,7 @@ export default class AppDown extends Command {
         startTask(`Removing saved CLI env config for "${runtime.envName}"...`);
         const result = await removeEnv(runtime.envName);
         succeedTask(
-          `Saved CLI env config removed for "${runtime.envName}"${result.currentEnv ? ` (current env: ${result.currentEnv})` : ''}.`,
+          `Saved CLI env config removed for "${runtime.envName}"${result.lastEnv ? ` (last env: ${result.lastEnv})` : ''}.`,
         );
       }
     } catch (error: unknown) {
