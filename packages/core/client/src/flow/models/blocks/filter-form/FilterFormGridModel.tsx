@@ -12,6 +12,7 @@ import {
   AddSubModelButton,
   DragOverlayConfig,
   FlowSettingsButton,
+  GridLayoutData,
   GridLayoutV2,
   normalizeGridLayout,
   observable,
