@@ -1301,14 +1301,15 @@ export class RuleEngine {
     if (!raw) return value;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return value;
 
-    const parsed = dayjs(raw, 'YYYY-MM-DD', true);
+    const parsed = dayjs(raw, 'YYYY-MM-DD', true) as dayjs.Dayjs;
     if (!parsed.isValid()) return value;
     return parsed.startOf('day').toISOString();
   }
 
   private parseDateLikeValue(value: unknown): dayjs.Dayjs | null {
     if (dayjs.isDayjs(value)) {
-      return value.isValid() ? value : null;
+      const parsed = value as dayjs.Dayjs;
+      return parsed.isValid() ? parsed : null;
     }
     if (value instanceof Date) {
       const parsed = dayjs(value);
