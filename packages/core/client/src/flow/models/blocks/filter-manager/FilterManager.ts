@@ -10,6 +10,7 @@
 import { FilterGroup, FilterItem, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
+import { isArrayLikeField } from '../shared/filterOperators';
 import { getDefaultOperator, isFilterValueEmpty } from './utils';
 
 type FilterConfig = {
@@ -38,12 +39,6 @@ export type ConnectFieldsConfig = {
     filterPaths: string[];
   }[];
 };
-
-function isArrayLikeField(field: any) {
-  return (
-    ['multipleSelect', 'checkboxGroup'].includes(field?.interface) || ['array', 'json', 'jsonb'].includes(field?.type)
-  );
-}
 
 function getTargetField(targetModel: any, fieldPath: string) {
   const dataSourceManager = targetModel?.context?.dataSourceManager;

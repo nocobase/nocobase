@@ -8,6 +8,7 @@
  */
 
 import * as operators from '../../../../collection-manager/interfaces/properties/operators';
+import { isArrayLikeField } from '../shared/filterOperators';
 
 type OperatorMeta = {
   label: string;
@@ -79,12 +80,6 @@ function getOperatorListByModel(fieldModel: string, fieldModelProps: Record<stri
   const value = MODEL_OPERATOR_MAP[fieldModel];
   if (!value) return [];
   return typeof value === 'function' ? value(fieldModelProps) || [] : value || [];
-}
-
-function isArrayLikeField(field: any) {
-  return (
-    ['multipleSelect', 'checkboxGroup'].includes(field?.interface) || ['array', 'json', 'jsonb'].includes(field?.type)
-  );
 }
 
 function getSourceField(flowEngine: any, source: string[] = [], fallbackDataSourceKey?: string) {
