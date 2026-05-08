@@ -70,10 +70,12 @@ import {
   getFlowSurfaceDefaultBlockActions,
   mergeFlowSurfaceDefaultBlockActions,
 } from './default-block-actions';
+import { countFlowSurfaceNonTemplateTitleCleanupDataBlocks } from './data-block-rules';
 import type { FlowSurfaceDefaultBlockActionDescriptor } from './default-block-actions';
 import {
   backfillFlowSurfaceDefaultFilterSetting,
   backfillFlowSurfaceFilterActionDefaultFilter,
+  isFlowSurfacePublicDataSurfaceBlockType,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from './public-data-surface-default-filter';
 import type { FlowSurfacePlanOnlyActionName } from './planning/action-specs';
@@ -83,6 +85,7 @@ import { persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode } from '
 import { validateFlowSurfacePayloadShape } from './payload-shape';
 import type { FlowSurfacePlanSurfaceContext } from './planning/types';
 import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
+import { assertFlowSurfaceAuthoringPayload } from './authoring-validation';
 import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { resolveRegisteredFieldBinding } from './field-binding-registry';
 import {
@@ -1086,6 +1089,24 @@ export class FlowSurfacesService {
         filter: {
           type: 'group',
           title: normalizedTitle,
+        },
+        transaction,
+      }),
+    );
+  }
+
+  private async findFlowPageRoutesByParentIdAndTitle(parentId: string | number, title: string, transaction?: any) {
+    const normalizedTitle = String(title || '').trim();
+    const normalizedParentId = String(parentId ?? '').trim();
+    if (!normalizedTitle || !normalizedParentId) {
+      return [];
+    }
+    return _.castArray(
+      await this.db.getRepository('desktopRoutes').find({
+        filter: {
+          type: 'flowPage',
+          title: normalizedTitle,
+          parentId: normalizedParentId,
         },
         transaction,
       }),
@@ -3624,12 +3645,54 @@ export class FlowSurfacesService {
     };
   }
 
+  private async resolveApplyBlueprintCreatePageIdentity(
+    document: FlowSurfaceApplyBlueprintDocument,
+    transaction?: any,
+  ): Promise<FlowSurfaceApplyBlueprintDocument> {
+    if (document.mode !== 'create') {
+      return document;
+    }
+
+    const groupRouteId = document.navigation?.group?.routeId;
+    const pageTitle = String(document.page?.title || document.navigation?.item?.title || '').trim();
+    if (_.isNil(groupRouteId) || groupRouteId === '' || !pageTitle) {
+      return document;
+    }
+
+    const matchedPages = await this.findFlowPageRoutesByParentIdAndTitle(groupRouteId, pageTitle, transaction);
+    if (!matchedPages.length) {
+      return document;
+    }
+    if (matchedPages.length > 1) {
+      throwBadRequest(
+        `flowSurfaces applyBlueprint navigation.group.routeId '${groupRouteId}' already has ${matchedPages.length} flow pages titled '${pageTitle}'; pass target.pageSchemaUid explicitly before applyBlueprint`,
+      );
+    }
+
+    const pageSchemaUid = String(this.readRouteField(matchedPages[0], 'schemaUid') || '').trim();
+    if (!pageSchemaUid) {
+      throwBadRequest(
+        `flowSurfaces applyBlueprint existing flow page '${pageTitle}' under navigation.group.routeId '${groupRouteId}' is missing schemaUid; pass target.pageSchemaUid explicitly before applyBlueprint`,
+      );
+    }
+
+    return {
+      ...document,
+      mode: 'replace',
+      target: {
+        pageSchemaUid,
+      },
+      navigation: undefined,
+    };
+  }
+
   private async prepareApplyBlueprintRequest(
     values: Record<string, any>,
     transaction?: any,
   ): Promise<FlowSurfaceApplyBlueprintProgram> {
     const initialDocument = prepareFlowSurfaceApplyBlueprintDocument(values);
-    const document = await this.resolveApplyBlueprintCreateNavigationGroup(initialDocument, transaction);
+    const groupResolvedDocument = await this.resolveApplyBlueprintCreateNavigationGroup(initialDocument, transaction);
+    const document = await this.resolveApplyBlueprintCreatePageIdentity(groupResolvedDocument, transaction);
     const replaceTarget =
       document.mode === 'replace' && document.target
         ? await this.resolveApplyBlueprintReplaceTargetInfo(document.target.pageSchemaUid, transaction)
@@ -3652,6 +3715,12 @@ export class FlowSurfacesService {
   }
 
   async applyBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
+    await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
+      transaction: options.transaction,
+      findMenuGroupRoutesByTitle: (title, transaction) => this.findMenuGroupRoutesByTitle(title, transaction),
+      getCollection: (dataSourceKey, collectionName) =>
+        this.getCollection(dataSourceKey || 'main', collectionName || ''),
+    });
     const prepared = await this.prepareApplyBlueprintRequest(values, options.transaction);
     const popupTemplateAliasSession = this.createPopupTemplateAliasSession();
     this.validateApplyBlueprintPopupTemplateAliases(prepared.document, popupTemplateAliasSession);
@@ -5406,6 +5475,11 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     } = {},
   ) {
+    await assertFlowSurfaceAuthoringPayload('compose', values, {
+      transaction: options.transaction,
+      getCollection: (dataSourceKey, collectionName) =>
+        this.getCollection(dataSourceKey || 'main', collectionName || ''),
+    });
     const popupTemplateAliasSession = options.popupTemplateAliasSession || this.createPopupTemplateAliasSession();
     const target = await this.prepareWriteTarget('compose', values?.target, values, options);
     const mode = this.assertComposeMode(values?.mode);
@@ -5485,6 +5559,7 @@ export class FlowSurfacesService {
             deferAutoLayout: true,
             enabledPackages,
             skipDefaultBlockActions: true,
+            skipAuthoringValidation: true,
           },
         );
       },
@@ -5568,6 +5643,18 @@ export class FlowSurfacesService {
 
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
+    const currentResourceInit = this.getDataBlockResourceInit(current);
+    await assertFlowSurfaceAuthoringPayload('configure', values, {
+      transaction: options.transaction,
+      hostBlockType: current?.use,
+      hostDataSourceKey: currentResourceInit?.dataSourceKey,
+      hostCollectionName: currentResourceInit?.collectionName,
+      getCollection: (dataSourceKey, collectionName) =>
+        this.getCollection(dataSourceKey || 'main', collectionName || ''),
+      currentNode: current,
+      findModelById: (uid, findOptions) => this.repository.findModelById(uid, findOptions),
+      findOwningBlockGrid: (uid, transaction) => this.findOwningBlockGrid(uid, transaction),
+    });
     changes = normalizeFlowSurfacePublicSortingAlias({
       context: 'flowSurfaces configure changes',
       use: current?.use,
@@ -6694,16 +6781,26 @@ export class FlowSurfacesService {
       deferAutoLayout?: boolean;
       enabledPackages?: ReadonlySet<string>;
       skipDefaultBlockActions?: boolean;
+      preserveSingleScopeDataBlockTitle?: boolean;
+      skipAuthoringValidation?: boolean;
     } = {},
   ) {
+    if (options.skipAuthoringValidation !== true) {
+      await assertFlowSurfaceAuthoringPayload('addBlock', values, {
+        transaction: options.transaction,
+        getCollection: (dataSourceKey, collectionName) =>
+          this.getCollection(dataSourceKey || 'main', collectionName || ''),
+      });
+    }
     const templateRef = _.isUndefined(values?.template)
       ? undefined
       : this.normalizeFlowTemplateReference('addBlock', values.template, {
           allowUsage: true,
           expectedType: 'block',
         });
+    const blockType = String(values?.type || '').trim();
     const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('addBlock', values.defaultFilter, {
-      blockType: String(values?.type || '').trim() || undefined,
+      blockType: blockType || undefined,
       template: templateRef,
     });
     const defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
@@ -6720,7 +6817,14 @@ export class FlowSurfacesService {
     }
     const target = await this.prepareWriteTarget('addBlock', values?.target, values, options);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
-    const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
+    let inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
+    inlineSettings = this.normalizeSingleScopeDataBlockTitleSettings({
+      blockType,
+      template: templateRef,
+      title: values.title,
+      settings: inlineSettings,
+      preserveTitle: options.preserveSingleScopeDataBlockTitle === true,
+    });
     const semanticResource = this.normalizeResourceInput(values.resource);
     const rawResourceInit = _.isUndefined(values.resourceInit)
       ? undefined
@@ -7342,13 +7446,13 @@ export class FlowSurfacesService {
       (isAssociationField(resolvedField.field) || !!normalizedFieldBinding.associationPathName) &&
       !this.peekInlineFieldSettingsOpenView(inlineSettings, boundFieldCapability.wrapperUse)
     ) {
+      const popupDefaultsMetadata = values[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
       inlinePopup = this.normalizeInlinePopup('addField', {
-        tryTemplate: true,
+        tryTemplate: popupDefaultsMetadata ? false : true,
         defaultType: 'view',
-        ...(values[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]
+        ...(popupDefaultsMetadata
           ? {
-              [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]:
-                values[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY],
+              [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: popupDefaultsMetadata,
             }
           : {}),
       });
@@ -7675,12 +7779,22 @@ export class FlowSurfacesService {
   }
 
   async addBlocks(values: Record<string, any>) {
+    await assertFlowSurfaceAuthoringPayload('addBlocks', values, {
+      getCollection: (dataSourceKey, collectionName) =>
+        this.getCollection(dataSourceKey || 'main', collectionName || ''),
+    });
+    const preserveSingleScopeDataBlockTitle =
+      countFlowSurfaceNonTemplateTitleCleanupDataBlocks(_.castArray(values?.blocks || [])) > 1;
     return this.runBatchCreate({
       actionName: 'addBlocks',
       values,
       itemField: 'blocks',
       resultField: 'blocks',
-      invoke: (itemValues, options) => this.addBlock(itemValues, options),
+      invoke: (itemValues, options) =>
+        this.addBlock(itemValues, {
+          ...options,
+          preserveSingleScopeDataBlockTitle,
+        }),
     });
   }
 
@@ -8013,6 +8127,38 @@ export class FlowSurfacesService {
     return settings;
   }
 
+  private normalizeSingleScopeDataBlockTitleSettings(input: {
+    blockType?: string;
+    template?: unknown;
+    title?: any;
+    settings?: Record<string, any>;
+    preserveTitle?: boolean;
+  }) {
+    const isNonTemplateDataBlock =
+      countFlowSurfaceNonTemplateTitleCleanupDataBlocks([{ type: input.blockType, template: input.template }]) > 0;
+    const shouldStripTitle = isNonTemplateDataBlock && input.preserveTitle !== true;
+    const hasSettingsTitle = Object.prototype.hasOwnProperty.call(input.settings || {}, 'title');
+    const title = typeof input.title === 'string' && input.title.trim() ? input.title.trim() : undefined;
+
+    if (shouldStripTitle) {
+      if (!hasSettingsTitle) {
+        return input.settings;
+      }
+      const nextSettings = _.cloneDeep(input.settings || {});
+      delete nextSettings.title;
+      return Object.keys(nextSettings).length ? nextSettings : undefined;
+    }
+
+    if (!title || hasSettingsTitle) {
+      return input.settings;
+    }
+
+    return {
+      ...(input.settings ? _.cloneDeep(input.settings) : {}),
+      title,
+    };
+  }
+
   private shouldEnableCreatedAtDefaultSorting(resourceInit?: Record<string, any>) {
     const collectionName = String(resourceInit?.collectionName || '').trim();
     if (!collectionName) {
@@ -8039,6 +8185,7 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} popup must be an object`);
     }
     const normalizedPopup = _.cloneDeep(popup);
+    const popupDefaultsMetadata = readFlowSurfaceApplyBlueprintPopupDefaultsMetadata(normalizedPopup);
     const tryTemplate = this.normalizeOptionalPopupTryTemplate(actionName, normalizedPopup.tryTemplate);
     const defaultType = this.normalizePopupDefaultType(actionName, normalizedPopup.defaultType);
     const saveAsTemplate = this.normalizePopupSaveAsTemplate(actionName, normalizedPopup.saveAsTemplate);
@@ -8059,6 +8206,9 @@ export class FlowSurfacesService {
       delete normalizedPopup.saveAsTemplate;
     } else {
       normalizedPopup.saveAsTemplate = saveAsTemplate;
+    }
+    if (popupDefaultsMetadata) {
+      normalizedPopup[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY] = _.cloneDeep(popupDefaultsMetadata);
     }
     return normalizedPopup;
   }
@@ -8277,7 +8427,9 @@ export class FlowSurfacesService {
       return popup;
     }
     const nextPopup = _.isPlainObject(popup) ? _.cloneDeep(popup) : {};
-    if (_.isUndefined(nextPopup.tryTemplate)) {
+    if (this.getApplyBlueprintPopupDefaultsMetadata(nextPopup)) {
+      nextPopup.tryTemplate = false;
+    } else if (_.isUndefined(nextPopup.tryTemplate)) {
       nextPopup.tryTemplate = true;
     }
     nextPopup[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY] = true;
@@ -9302,13 +9454,18 @@ export class FlowSurfacesService {
         );
         await this.autoSaveDefaultFieldPopupAsTemplate(result, popup, options);
       } else {
+        const popupBlocks = await this.materializeInlineRelationFieldPopupBlocks(
+          fieldHostUid,
+          popup.blocks || [],
+          options,
+        );
         await this.compose(
           {
             target: {
               uid: fieldHostUid,
             },
             mode: popup.mode || 'replace',
-            blocks: popup.blocks || [],
+            blocks: popupBlocks,
             layout: popup.layout,
           },
           options,
@@ -9427,6 +9584,64 @@ export class FlowSurfacesService {
       return false;
     }
     return popup.tryTemplate === true || !_.isUndefined(popup.defaultType) || Object.keys(popup).length === 0;
+  }
+
+  private isInlineFieldPopupBlockMissingResource(block: any) {
+    if (!_.isPlainObject(block) || !_.isUndefined(block.template)) {
+      return false;
+    }
+    if (!['details', 'editForm'].includes(String(block.type || '').trim())) {
+      return false;
+    }
+    return ['resource', 'resourceInit', 'collection', 'dataSourceKey', 'binding', 'associationField'].every(
+      (key) => !Object.prototype.hasOwnProperty.call(block, key),
+    );
+  }
+
+  private buildRelationFieldPopupCurrentRecordResource(popupProfile: FlowSurfacePopupBlockProfile) {
+    return buildDefinedPayload({
+      dataSourceKey: popupProfile.dataSourceKey || 'main',
+      collectionName: popupProfile.collectionName,
+      filterByTk: popupProfile.filterByTk || '{{ctx.view.inputArgs.filterByTk}}',
+      ...(popupProfile.hasAssociationContext
+        ? {
+            associationName: popupProfile.associationName,
+            sourceId: popupProfile.sourceId,
+          }
+        : {}),
+    });
+  }
+
+  private async materializeInlineRelationFieldPopupBlocks(
+    fieldHostUid: string | undefined,
+    blocks: any[],
+    options: { transaction?: any },
+  ) {
+    if (!fieldHostUid || !blocks.some((block) => this.isInlineFieldPopupBlockMissingResource(block))) {
+      return blocks;
+    }
+    const popupProfile = await this.resolvePopupBlockProfile(fieldHostUid, null, null, options.transaction).catch(
+      () => null,
+    );
+    if (
+      popupProfile?.popupKind !== 'associationPopup' ||
+      !popupProfile.collectionName ||
+      !popupProfile.hasCurrentRecord
+    ) {
+      return blocks;
+    }
+    const resource = this.buildRelationFieldPopupCurrentRecordResource(popupProfile);
+    if (!resource.collectionName) {
+      return blocks;
+    }
+    return blocks.map((block) =>
+      this.isInlineFieldPopupBlockMissingResource(block)
+        ? {
+            ...block,
+            resource: _.cloneDeep(resource),
+          }
+        : block,
+    );
   }
 
   private getApplyBlueprintPopupDefaultsMetadata(popup: Record<string, any> | undefined) {
@@ -13316,7 +13531,12 @@ export class FlowSurfacesService {
     );
   }
 
-  private normalizeComposeBlock(input: any, index: number, enabledPackages?: ReadonlySet<string>) {
+  private normalizeComposeBlock(
+    input: any,
+    index: number,
+    enabledPackages?: ReadonlySet<string>,
+    preserveSingleScopeDataBlockTitle = false,
+  ) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
     }
@@ -13499,7 +13719,14 @@ export class FlowSurfacesService {
       type,
       catalogItem: blockCatalogItem,
       resource: this.normalizeResourceInput(input.resource),
-      settings: _.isPlainObject(input.settings) ? input.settings : {},
+      settings:
+        this.normalizeSingleScopeDataBlockTitleSettings({
+          blockType: type,
+          template,
+          title: input.title,
+          settings: _.isPlainObject(input.settings) ? input.settings : undefined,
+          preserveTitle: preserveSingleScopeDataBlockTitle,
+        }) || {},
       fields,
       ...(fieldsLayout ? { fieldsLayout } : {}),
       actions: actionsWithDefaultFilter,
@@ -13509,8 +13736,10 @@ export class FlowSurfacesService {
   }
 
   private normalizeComposeBlocks(input: any, enabledPackages?: ReadonlySet<string>) {
-    const normalizedBlocks = _.castArray(input || []).map((item, index) =>
-      this.normalizeComposeBlock(item, index, enabledPackages),
+    const rawBlocks = _.castArray(input || []);
+    const preserveSingleScopeDataBlockTitle = countFlowSurfaceNonTemplateTitleCleanupDataBlocks(rawBlocks) > 1;
+    const normalizedBlocks = rawBlocks.map((item, index) =>
+      this.normalizeComposeBlock(item, index, enabledPackages, preserveSingleScopeDataBlockTitle),
     );
     assertFlowSurfaceComposeUniqueKeys(normalizedBlocks, 'flowSurfaces compose blocks');
     return normalizedBlocks;

@@ -202,6 +202,9 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   key?: string;
   type?: FlowSurfaceApplyBlueprintBlockType;
   title?: string;
+  description?: string;
+  height?: number;
+  heightMode?: string;
   collection?: string;
   dataSourceKey?: string;
   associationPathName?: string;

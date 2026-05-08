@@ -10,6 +10,13 @@
 import _ from 'lodash';
 import { throwBadRequest } from './errors';
 import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue } from './filter-group';
+import {
+  getCollectionFields,
+  getCollectionTitleFieldName,
+  getFieldInterface,
+  getFieldName,
+  isAssociationField,
+} from './service-helpers';
 
 export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES = new Set([
   'table',
@@ -19,9 +26,115 @@ export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES = new Set([
   'kanban',
 ]);
 export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPE_LABEL = 'table/list/gridCard/calendar/kanban';
+export const FLOW_SURFACE_DEFAULT_FILTER_MAX_CANDIDATE_FIELDS = 4;
+export const FLOW_SURFACE_DEFAULT_FILTER_MINIMUM_COVERAGE_FIELDS = 3;
+
+const FLOW_SURFACE_DEFAULT_FILTER_CANDIDATE_INTERFACES = new Set([
+  'input',
+  'email',
+  'url',
+  'phone',
+  'textarea',
+  'select',
+  'radioGroup',
+]);
+
+const FLOW_SURFACE_DEFAULT_FILTER_EXCLUDED_FIELD_NAMES = new Set([
+  'id',
+  'createdAt',
+  'updatedAt',
+  'deletedAt',
+  'createdBy',
+  'updatedBy',
+  'deletedBy',
+  'created_at',
+  'updated_at',
+  'deleted_at',
+  'created_by',
+  'updated_by',
+  'deleted_by',
+  'sort',
+]);
+
+const FLOW_SURFACE_DEFAULT_FILTER_PREFERRED_FIELD_NAMES = [
+  'name',
+  'title',
+  'nickname',
+  'username',
+  'email',
+  'status',
+  'phone',
+  'mobile',
+  'label',
+  'code',
+  'subject',
+  'category',
+  'scope',
+  'priority',
+  'description',
+];
 
 export function isFlowSurfacePublicDataSurfaceBlockType(blockType?: string) {
   return FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES.has(String(blockType || '').trim());
+}
+
+export function resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(
+  collection: any,
+  options: {
+    maxCandidates?: number;
+    minimumFields?: number;
+  } = {},
+) {
+  const minimumFields = normalizePositiveInteger(
+    options.minimumFields,
+    FLOW_SURFACE_DEFAULT_FILTER_MINIMUM_COVERAGE_FIELDS,
+  );
+  const candidateFieldNames = resolveFlowSurfaceDefaultFilterCandidateFieldNames(collection, options);
+  return candidateFieldNames.slice(0, Math.min(minimumFields, candidateFieldNames.length));
+}
+
+export function resolveFlowSurfaceDefaultFilterCandidateFieldNames(
+  collection: any,
+  options: {
+    maxCandidates?: number;
+  } = {},
+) {
+  const maxCandidates = normalizePositiveInteger(
+    options.maxCandidates,
+    FLOW_SURFACE_DEFAULT_FILTER_MAX_CANDIDATE_FIELDS,
+  );
+  if (!collection || maxCandidates === 0) {
+    return [];
+  }
+
+  const availableFields = getCollectionFields(collection).filter(isDefaultFilterCandidateBusinessField);
+  const fieldsByName = new Map<string, any>();
+  availableFields.forEach((field) => {
+    const fieldName = normalizeText(getFieldName(field));
+    if (fieldName && !fieldsByName.has(fieldName)) {
+      fieldsByName.set(fieldName, field);
+    }
+  });
+
+  const selectedFieldNames: string[] = [];
+  const seenFieldNames = new Set<string>();
+  const pushFieldByName = (value: any) => {
+    if (selectedFieldNames.length >= maxCandidates) {
+      return;
+    }
+    const fieldName = normalizeText(value);
+    if (!fieldName || seenFieldNames.has(fieldName) || !fieldsByName.has(fieldName)) {
+      return;
+    }
+    seenFieldNames.add(fieldName);
+    selectedFieldNames.push(fieldName);
+  };
+
+  pushFieldByName(getCollectionTitleFieldName(collection));
+  FLOW_SURFACE_DEFAULT_FILTER_PREFERRED_FIELD_NAMES.forEach(pushFieldByName);
+  availableFields.forEach((field) => pushFieldByName(getFieldName(field)));
+
+  return selectedFieldNames;
 }
 
 export function normalizeFlowSurfacePublicBlockDefaultFilter(
@@ -115,6 +228,9 @@ export function backfillFlowSurfaceFilterActionDefaultFilter<
     settings?: Record<string, any>;
   },
 >(actions: T[], defaultFilter: any): T[] {
+  // Only mirror a caller-supplied block defaultFilter into an existing filter action.
+  // Do not choose fields or synthesize a filter here; missing defaults are reported
+  // by authoring validation so UI Builder owns that decision.
   if (_.isUndefined(defaultFilter)) {
     return actions;
   }
@@ -131,4 +247,31 @@ export function backfillFlowSurfaceFilterActionDefaultFilter<
       settings,
     };
   });
+}
+
+function isDefaultFilterCandidateBusinessField(field: any) {
+  const fieldName = normalizeText(getFieldName(field));
+  const fieldInterface = normalizeText(getFieldInterface(field));
+  if (!fieldName || !fieldInterface) {
+    return false;
+  }
+  if (FLOW_SURFACE_DEFAULT_FILTER_EXCLUDED_FIELD_NAMES.has(fieldName)) {
+    return false;
+  }
+  if (!FLOW_SURFACE_DEFAULT_FILTER_CANDIDATE_INTERFACES.has(fieldInterface)) {
+    return false;
+  }
+  if (field?.hidden === true || field?.options?.hidden === true) {
+    return false;
+  }
+  return !isAssociationField(field);
+}
+
+function normalizeText(value: any) {
+  return typeof value === 'string' || typeof value === 'number' ? String(value).replace(/\s+/g, ' ').trim() : '';
+}
+
+function normalizePositiveInteger(value: any, fallback: number) {
+  const num = typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  return Math.max(0, Math.trunc(num));
 }

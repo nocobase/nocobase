@@ -15,6 +15,7 @@ import {
   type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
 } from './blueprint/defaults';
 import {
+  isFlowSurfaceAggregateError,
   isFlowSurfaceError,
   normalizeFlowSurfaceError,
   throwBadRequest,
@@ -678,6 +679,15 @@ export function rethrowInlineConfigurationError(error: any, prefix: string): nev
 }
 
 export function toFlowSurfaceBatchItemError(error: any) {
+  if (isFlowSurfaceAggregateError(error)) {
+    return {
+      code: error.code,
+      message: error.message,
+      status: error.status,
+      type: error.type,
+      errors: error.errors,
+    };
+  }
   const normalized = normalizeFlowSurfaceError(error);
   return {
     code: normalized.code,

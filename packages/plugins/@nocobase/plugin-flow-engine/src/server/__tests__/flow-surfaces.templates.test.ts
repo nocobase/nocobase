@@ -38,6 +38,32 @@ function buildSingleColumnLayout(itemUids: string[]) {
   };
 }
 
+function defaultFilterFor(fieldPaths: string[]) {
+  return {
+    logic: '$and',
+    items: fieldPaths.map((path) => ({
+      path,
+      operator: '$notEmpty',
+    })),
+  };
+}
+
+function employeeDefaultFilter() {
+  return defaultFilterFor(['nickname', 'status']);
+}
+
+function nameCodeDefaultFilter() {
+  return defaultFilterFor(['name', 'code']);
+}
+
+function nameLabelCodeDefaultFilter() {
+  return defaultFilterFor(['name', 'label', 'code']);
+}
+
+function departmentDefaultFilter() {
+  return defaultFilterFor(['title']);
+}
+
 describe('flowSurfaces templates', () => {
   let app: MockServer;
   let rootAgent: any;
@@ -1465,6 +1491,7 @@ describe('flowSurfaces templates', () => {
                 resource: {
                   binding: 'currentCollection',
                 },
+                defaultFilter: nameCodeDefaultFilter(),
                 fields: ['name', 'code'],
               },
             ],
@@ -1581,6 +1608,7 @@ describe('flowSurfaces templates', () => {
                 dataSourceKey: 'main',
                 collectionName: 'popup_try_template_batch_targets',
               },
+              defaultFilter: nameCodeDefaultFilter(),
               fields: ['name', 'code'],
               actions: [
                 {
@@ -1742,6 +1770,7 @@ describe('flowSurfaces templates', () => {
                 resource: {
                   binding: 'currentCollection',
                 },
+                defaultFilter: employeeDefaultFilter(),
                 fields: ['nickname', 'status'],
               },
             ],
@@ -1773,6 +1802,7 @@ describe('flowSurfaces templates', () => {
                     resource: {
                       binding: 'currentCollection',
                     },
+                    defaultFilter: employeeDefaultFilter(),
                     fields: ['nickname'],
                   },
                 ],
@@ -1900,6 +1930,7 @@ describe('flowSurfaces templates', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              defaultFilter: employeeDefaultFilter(),
               fields: ['nickname', 'status'],
               actions: [
                 {
@@ -1913,6 +1944,7 @@ describe('flowSurfaces templates', () => {
                         resource: {
                           binding: 'currentCollection',
                         },
+                        defaultFilter: employeeDefaultFilter(),
                         fields: ['nickname'],
                       },
                     ],
@@ -2139,6 +2171,7 @@ describe('flowSurfaces templates', () => {
                 resource: {
                   binding: 'currentCollection',
                 },
+                defaultFilter: nameLabelCodeDefaultFilter(),
                 fields: ['name'],
               },
             ],
@@ -2187,6 +2220,7 @@ describe('flowSurfaces templates', () => {
                 resource: {
                   binding: 'currentCollection',
                 },
+                defaultFilter: nameLabelCodeDefaultFilter(),
                 fields: ['name'],
               },
             ],
@@ -2464,6 +2498,7 @@ describe('flowSurfaces templates', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              defaultFilter: employeeDefaultFilter(),
               fields: ['nickname'],
               recordActions: [
                 {
@@ -2715,6 +2750,7 @@ describe('flowSurfaces templates', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
+            defaultFilter: employeeDefaultFilter(),
             fields: [
               {
                 key: 'fieldBeforeActionProducer',
@@ -2739,6 +2775,7 @@ describe('flowSurfaces templates', () => {
                       resource: {
                         binding: 'currentCollection',
                       },
+                      defaultFilter: employeeDefaultFilter(),
                       fields: ['nickname'],
                     },
                   ],
@@ -3221,6 +3258,7 @@ describe('flowSurfaces templates', () => {
               resource: {
                 binding: 'currentCollection',
               },
+              defaultFilter: employeeDefaultFilter(),
               fields: ['nickname'],
             },
           ],
@@ -3591,6 +3629,7 @@ describe('flowSurfaces templates', () => {
                   binding: 'currentCollection',
                   collectionName: 'employees',
                 },
+                defaultFilter: employeeDefaultFilter(),
                 fields: ['nickname', 'status'],
               },
             ],
@@ -4023,6 +4062,7 @@ describe('flowSurfaces templates', () => {
         binding: 'associatedRecords',
         associationField: 'department',
       },
+      defaultFilter: departmentDefaultFilter(),
     });
     const associationBlockTemplate = await saveTemplate(rootAgent, {
       target: { uid: associationBlock.uid },

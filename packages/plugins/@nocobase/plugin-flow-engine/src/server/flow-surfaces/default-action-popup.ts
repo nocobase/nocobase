@@ -330,7 +330,8 @@ function normalizeFlowSurfaceDefaultActionPopupFieldGroupField(
   if (!_.isPlainObject(field)) {
     return fieldPath;
   }
-  const titleField = String(field.titleField || '').trim();
+  const fieldSpec = field as Extract<FlowSurfaceDefaultActionPopupFieldGroupField, Record<string, any>>;
+  const titleField = String(fieldSpec.titleField || '').trim();
   return _.pickBy(
     {
       field: fieldPath,

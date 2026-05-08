@@ -14,7 +14,19 @@ export interface FlowSurfaceErrorItem {
   type: FlowSurfaceErrorType;
   code: string;
   status: number;
+  path?: string;
+  ruleId?: string;
+  details?: Record<string, any>;
 }
+
+export type FlowSurfaceErrorItemInput = Omit<FlowSurfaceErrorItem, 'type' | 'code' | 'status'> &
+  Partial<Pick<FlowSurfaceErrorItem, 'type' | 'code' | 'status'>>;
+
+export type FlowSurfaceErrorOptions = {
+  path?: string;
+  ruleId?: string;
+  details?: Record<string, any>;
+};
 
 export class FlowSurfaceError extends Error {
   constructor(
@@ -22,6 +34,7 @@ export class FlowSurfaceError extends Error {
     public readonly status: number,
     public readonly type: FlowSurfaceErrorType,
     public readonly code: string,
+    public readonly options: FlowSurfaceErrorOptions = {},
   ) {
     super(message);
     this.name = 'FlowSurfaceError';
@@ -35,8 +48,8 @@ export class FlowSurfaceError extends Error {
 }
 
 export class FlowSurfaceBadRequestError extends FlowSurfaceError {
-  constructor(message: string, code = 'FLOW_SURFACE_BAD_REQUEST') {
-    super(message, 400, 'bad_request', code);
+  constructor(message: string, code = 'FLOW_SURFACE_BAD_REQUEST', options: FlowSurfaceErrorOptions = {}) {
+    super(message, 400, 'bad_request', code, options);
     this.name = 'FlowSurfaceBadRequestError';
   }
 }
@@ -62,12 +75,33 @@ export class FlowSurfaceInternalError extends FlowSurfaceError {
   }
 }
 
+export class FlowSurfaceAggregateError extends FlowSurfaceError {
+  public readonly errors: FlowSurfaceErrorItem[];
+
+  constructor(errors: FlowSurfaceErrorItemInput[], message = 'flowSurfaces authoring validation failed') {
+    const normalizedErrors = errors.map((error) => normalizeFlowSurfaceErrorItemInput(error));
+    super(message, 400, 'bad_request', 'FLOW_SURFACE_AUTHORING_VALIDATION_FAILED');
+    this.name = 'FlowSurfaceAggregateError';
+    this.errors = normalizedErrors;
+  }
+
+  toResponseBody() {
+    return {
+      errors: this.errors,
+    };
+  }
+}
+
 export function isFlowSurfaceError(error: unknown): error is FlowSurfaceError {
   return error instanceof FlowSurfaceError;
 }
 
 export function isFlowSurfaceBadRequestError(error: unknown): error is FlowSurfaceBadRequestError {
   return error instanceof FlowSurfaceBadRequestError;
+}
+
+export function isFlowSurfaceAggregateError(error: unknown): error is FlowSurfaceAggregateError {
+  return error instanceof FlowSurfaceAggregateError;
 }
 
 export function isFlowSurfaceForbiddenError(error: unknown): error is FlowSurfaceForbiddenError {
@@ -83,12 +117,15 @@ export function isFlowSurfaceInternalError(error: unknown): error is FlowSurface
 }
 
 export function toFlowSurfaceErrorItem(error: FlowSurfaceError): FlowSurfaceErrorItem {
-  return {
+  return buildDefinedErrorItem({
     message: error.message,
     type: error.type,
     code: error.code,
     status: error.status,
-  };
+    path: error.options.path,
+    ruleId: error.options.ruleId,
+    details: error.options.details,
+  });
 }
 
 export function normalizeFlowSurfaceError(error: unknown): FlowSurfaceError {
@@ -104,6 +141,10 @@ export function throwBadRequest(message: string, code?: string): never {
   throw new FlowSurfaceBadRequestError(message, code);
 }
 
+export function throwAggregateBadRequest(errors: FlowSurfaceErrorItemInput[]): never {
+  throw new FlowSurfaceAggregateError(errors);
+}
+
 export function throwForbidden(message: string, code?: string): never {
   throw new FlowSurfaceForbiddenError(message, code);
 }
@@ -114,4 +155,35 @@ export function throwConflict(message: string, code?: string): never {
 
 export function throwInternalError(message: string, code?: string): never {
   throw new FlowSurfaceInternalError(message, code);
+}
+
+function buildDefinedErrorItem(input: FlowSurfaceErrorItem): FlowSurfaceErrorItem {
+  const output: FlowSurfaceErrorItem = {
+    message: input.message,
+    type: input.type,
+    code: input.code,
+    status: input.status,
+  };
+  if (typeof input.path !== 'undefined') {
+    output.path = input.path;
+  }
+  if (typeof input.ruleId !== 'undefined') {
+    output.ruleId = input.ruleId;
+  }
+  if (typeof input.details !== 'undefined') {
+    output.details = input.details;
+  }
+  return output;
+}
+
+function normalizeFlowSurfaceErrorItemInput(input: FlowSurfaceErrorItemInput): FlowSurfaceErrorItem {
+  return buildDefinedErrorItem({
+    message: input.message,
+    type: input.type || 'bad_request',
+    code: input.code || 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
+    status: input.status || 400,
+    path: input.path,
+    ruleId: input.ruleId,
+    details: input.details,
+  });
 }

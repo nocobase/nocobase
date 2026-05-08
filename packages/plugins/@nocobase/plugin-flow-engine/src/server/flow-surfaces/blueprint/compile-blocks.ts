@@ -16,6 +16,10 @@ import {
 } from '../default-block-actions';
 import type { FlowSurfaceDefaultBlockActionDescriptor } from '../default-block-actions';
 import {
+  countFlowSurfaceNonTemplateTitleCleanupDataBlocks,
+  isFlowSurfaceNonTemplateTitleCleanupDataBlock,
+} from '../data-block-rules';
+import {
   assertFlowSurfaceConcreteDefaultFilterItem,
   backfillFlowSurfaceFilterActionDefaultFilter,
   normalizeFlowSurfacePublicBlockDefaultFilter,
@@ -29,7 +33,7 @@ import {
 import type { FlowSurfaceApplyBlueprintPopupDefaultsMetadata } from './defaults';
 import { normalizeBlockHiddenPopupSettings } from '../hidden-popup-contract';
 import type { FlowSurfaceResourceBindingKey } from '../types';
-import { getCollectionFields, getFieldName } from '../service-helpers';
+import { getCollectionFields, getFieldName, getFieldType } from '../service-helpers';
 import type {
   FlowSurfaceApplyBlueprintCollectionResolver,
   FlowSurfaceApplyBlueprintActionSpec,
@@ -93,6 +97,9 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'key',
   'type',
   'title',
+  'description',
+  'height',
+  'heightMode',
   'collection',
   'dataSourceKey',
   'associationPathName',
@@ -811,9 +818,62 @@ function compileFieldGroups(
   return expanded;
 }
 
+function buildAutoFieldGroupFieldPathsFromCollection(collection: any) {
+  const fields = getCollectionFields(collection);
+  const associationForeignKeys = new Set(
+    fields
+      .filter((field) => getFieldType(field) === 'belongsTo')
+      .map((field) => String(field?.foreignKey || field?.options?.foreignKey || '').trim())
+      .filter(Boolean),
+  );
+  return fields
+    .filter((field) => {
+      const name = getFieldName(field);
+      if (!name || name === 'id') {
+        return false;
+      }
+      if (associationForeignKeys.has(name)) {
+        return false;
+      }
+      if (field?.hidden || field?.options?.hidden) {
+        return false;
+      }
+      if (typeof field?.isAssociationField === 'function' && field.isAssociationField()) {
+        return false;
+      }
+      const type = String(field?.type || field?.options?.type || '').trim();
+      return !['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'json', 'password'].includes(type);
+    })
+    .map((field) => getFieldName(field))
+    .filter((name): name is string => !!name);
+}
+
+function buildAutoFieldGroupsFromCollection(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+): FlowSurfaceApplyBlueprintFieldGroupSpec[] | undefined {
+  const blockType = readOptionalString(block.type);
+  if (!APPLY_BLUEPRINT_FIELD_GROUP_BLOCK_TYPES.has(blockType || '')) {
+    return undefined;
+  }
+  const collection = resolveBlueprintBlockCollection(block, getCollection);
+  const fields = buildAutoFieldGroupFieldPathsFromCollection(collection);
+  if (!fields.length) {
+    return undefined;
+  }
+  return [
+    {
+      key: 'main',
+      title: 'Main',
+      fields,
+    },
+  ];
+}
+
 function resolveBlockFieldInputs(
   block: FlowSurfaceApplyBlueprintBlockSpec,
   context: string,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
 ): Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec> {
   const hasFields = Object.prototype.hasOwnProperty.call(block, 'fields');
   const hasFieldGroups = Object.prototype.hasOwnProperty.call(block, 'fieldGroups');
@@ -821,6 +881,12 @@ function resolveBlockFieldInputs(
     throwBadRequest(`${context} cannot mix fields with fieldGroups`);
   }
   if (!hasFieldGroups) {
+    if (!hasFields) {
+      const autoFieldGroups = buildAutoFieldGroupsFromCollection(block, getCollection);
+      if (autoFieldGroups?.length) {
+        return compileFieldGroups(autoFieldGroups, `${context}.fieldGroups`);
+      }
+    }
     return readOptionalItems(block.fields, `${context}.fields`);
   }
 
@@ -1000,10 +1066,11 @@ function compilePopup(
   if (popupMode && popupMode !== 'replace' && popupMode !== 'append') {
     throwBadRequest(`${context}.mode must be 'replace' or 'append'`);
   }
+  const effectiveTryTemplate = _.isUndefined(popup.tryTemplate) ? true : tryTemplate;
   const compiledPopup = buildDefinedPayload({
     mode: popupMode || (popupBlocks.length || template || layout ? 'replace' : undefined),
     template,
-    ...(tryTemplate ? { tryTemplate: true } : {}),
+    ...(!_.isUndefined(effectiveTryTemplate) ? { tryTemplate: effectiveTryTemplate } : {}),
     ...(defaultType ? { defaultType } : {}),
     ...(saveAsTemplate ? { saveAsTemplate } : {}),
     blocks: compiledBlocks.blocks.length ? compiledBlocks.blocks : undefined,
@@ -1258,6 +1325,16 @@ function compileInjectedDefaultAction(
   });
 }
 
+function shouldStripSingleScopeApplyBlueprintDataBlockTitle(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  rawBlocks: FlowSurfaceApplyBlueprintBlockSpec[],
+) {
+  if (!isFlowSurfaceNonTemplateTitleCleanupDataBlock(block)) {
+    return false;
+  }
+  return countFlowSurfaceNonTemplateTitleCleanupDataBlocks(rawBlocks) === 1;
+}
+
 function isTreeCollection(collection?: any) {
   return collection?.template === 'tree' || collection?.options?.template === 'tree' || collection?.tree === true;
 }
@@ -1291,6 +1368,23 @@ function canInjectTreeTableAddChildDefault(
     return false;
   }
   return !!resolveTreeChildrenFieldName(collection);
+}
+
+function resolveBlueprintBlockCollection(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+) {
+  if (!getCollection) {
+    return null;
+  }
+  const resource = _.isPlainObject(block.resource) ? block.resource : undefined;
+  const dataSourceKey =
+    readOptionalString(block.dataSourceKey) || readOptionalString(resource?.dataSourceKey) || 'main';
+  const collectionName = readOptionalString(block.collection) || readOptionalString(resource?.collectionName);
+  if (!collectionName) {
+    return null;
+  }
+  return getCollection(dataSourceKey, collectionName);
 }
 
 function hasExplicitAddChildRecordAction(recordActions: any[]) {
@@ -1398,9 +1492,22 @@ function compileBlocks(
       throwBadRequest(`${blockContext} key '${localKey}' is missing after block key compilation`);
     }
     const blockType = readOptionalString(block.type);
+    const stripSingleScopeTitle = shouldStripSingleScopeApplyBlueprintDataBlockTitle(block, rawBlocks);
     let settings = resolveAssetSettings(block.settings, block, assets, blockContext);
-    if (readOptionalString(block.title) && _.isUndefined(settings.title)) {
+    if (!stripSingleScopeTitle && readOptionalString(block.title) && _.isUndefined(settings.title)) {
       settings.title = readOptionalString(block.title);
+    }
+    if (stripSingleScopeTitle && Object.prototype.hasOwnProperty.call(settings, 'title')) {
+      delete settings.title;
+    }
+    if (readOptionalString(block.description) && _.isUndefined(settings.description)) {
+      settings.description = readOptionalString(block.description);
+    }
+    if (!_.isUndefined(block.height) && _.isUndefined(settings.height)) {
+      settings.height = block.height;
+    }
+    if (!_.isUndefined(block.heightMode) && _.isUndefined(settings.heightMode)) {
+      settings.heightMode = block.heightMode;
     }
     settings = normalizeFlowSurfacePublicSortingAlias({
       context: `${blockContext}.settings`,
@@ -1423,7 +1530,7 @@ function compileBlocks(
         path: blockContext,
       });
     }
-    const fieldInputs = resolveBlockFieldInputs(block, blockContext);
+    const fieldInputs = resolveBlockFieldInputs(block, blockContext, getCollection);
     const fields = fieldInputs.map((field, fieldIndex) =>
       compileField(
         field,

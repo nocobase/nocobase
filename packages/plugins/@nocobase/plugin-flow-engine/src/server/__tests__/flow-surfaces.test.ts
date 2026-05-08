@@ -22,6 +22,17 @@ const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS = [
   ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
   'ui-templates',
 ] as const;
+const FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
+const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELD_BY_COLLECTION: Record<string, string> = {
+  users: 'username',
+  employees: 'nickname',
+  departments: 'title',
+  categories: 'title',
+  tasks: 'title',
+  calendar_events: 'title',
+  kanban_tasks: 'title',
+  roles: 'title',
+};
 
 describe('flowSurfaces resource', () => {
   let app: MockServer;
@@ -640,6 +651,7 @@ describe('flowSurfaces resource', () => {
           binding: 'associatedRecords',
           associationField: 'employee',
         },
+        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
       },
     });
     expect(semanticAdd.status).toBe(200);
@@ -654,6 +666,7 @@ describe('flowSurfaces resource', () => {
           binding: 'associatedRecords',
           associationField: 'employee',
         },
+        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
       },
     });
     expect(semanticListAdd.status).toBe(200);
@@ -783,6 +796,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'departments',
         },
+        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'departments' }),
       },
     });
     expect(otherRecordsBlock.status).toBe(200);
@@ -1153,6 +1167,9 @@ describe('flowSurfaces resource', () => {
             },
             type: blockCase.type,
             resourceInit: blockCase.resourceInit,
+            ...(FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES.has(blockCase.type)
+              ? { defaultFilter: buildFlowSurfaceTestDefaultFilter(blockCase.resourceInit) }
+              : {}),
           },
         }),
       );
@@ -1566,6 +1583,7 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
         },
       }),
     );
@@ -2093,15 +2111,15 @@ describe('flowSurfaces resource', () => {
     }
   });
 
-  it('should keep addBlock block-level empty defaultFilter groups compatible for low-level runtime', async () => {
+  it('should reject addBlock block-level empty defaultFilter groups before low-level runtime normalization', async () => {
     const page = await createPage(rootAgent, {
       title: 'Empty block default filter addBlock page',
       tabTitle: 'Empty block default filter addBlock tab',
     });
 
     for (const blockCase of [
-      { type: 'table', collectionName: 'users' },
-      { type: 'calendar', collectionName: 'calendar_events' },
+      { type: 'table', collectionName: 'users', defaultFilter: {} },
+      { type: 'calendar', collectionName: 'calendar_events', defaultFilter: null },
     ]) {
       const addBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -2113,25 +2131,11 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: blockCase.collectionName,
           },
-          defaultFilter: {},
+          defaultFilter: blockCase.defaultFilter,
         },
       });
-      expect(addBlockRes.status).toBe(200);
-      const blockUid = getData(addBlockRes).uid;
-      const readback = await getSurface(rootAgent, {
-        uid: blockUid,
-      });
-      const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
-        (item: any) => item?.use === 'FilterActionModel',
-      );
-      expect(filterAction?.props?.defaultFilterValue).toEqual({
-        logic: '$and',
-        items: [],
-      });
-      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
-        logic: '$and',
-        items: [],
-      });
+      expect(addBlockRes.status).toBe(400);
+      expectFlowSurfaceError(addBlockRes, 'defaultFilter-explicit-empty', '$.defaultFilter');
     }
   });
 
@@ -2414,7 +2418,7 @@ describe('flowSurfaces resource', () => {
     );
   });
 
-  it('should keep addBlocks block-level empty defaultFilter compatible for low-level runtime', async () => {
+  it('should reject addBlocks block-level empty defaultFilter before low-level runtime normalization', async () => {
     const page = await createPage(rootAgent, {
       title: 'Empty block default filter addBlocks page',
       tabTitle: 'Empty block default filter addBlocks tab',
@@ -2452,26 +2456,9 @@ describe('flowSurfaces resource', () => {
         ],
       },
     });
-    expect(addBlocksRes.status).toBe(200);
-    const addBlocksData = getData(addBlocksRes);
-    expect(addBlocksData.successCount).toBe(2);
-    expect(addBlocksData.errorCount).toBe(0);
-
-    for (const key of ['usersTable', 'eventsCalendar']) {
-      const blockUid = addBlocksData.blocks.find((item: any) => item.key === key)?.result?.uid;
-      const readback = await getSurface(rootAgent, { uid: blockUid });
-      const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
-        (item: any) => item?.use === 'FilterActionModel',
-      );
-      expect(filterAction?.props?.defaultFilterValue).toEqual({
-        logic: '$and',
-        items: [],
-      });
-      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
-        logic: '$and',
-        items: [],
-      });
-    }
+    expect(addBlocksRes.status).toBe(400);
+    expectFlowSurfaceError(addBlocksRes, 'defaultFilter-explicit-empty', '$.blocks[0].defaultFilter');
+    expectFlowSurfaceError(addBlocksRes, 'defaultFilter-explicit-empty', '$.blocks[1].defaultFilter');
   });
 
   it('should apply compose block-level defaultFilter and prefer explicit filter action settings', async () => {
@@ -2601,7 +2588,7 @@ describe('flowSurfaces resource', () => {
     );
   });
 
-  it('should keep compose block-level empty defaultFilter compatible for low-level runtime', async () => {
+  it('should reject compose block-level empty defaultFilter before low-level runtime normalization', async () => {
     const page = await createPage(rootAgent, {
       title: 'Empty block default filter compose page',
       tabTitle: 'Empty block default filter compose tab',
@@ -2635,24 +2622,9 @@ describe('flowSurfaces resource', () => {
         ],
       },
     });
-    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
-    const composeData = getData(composeRes);
-
-    for (const key of ['usersTable', 'taskBoard']) {
-      const blockUid = composeData.blocks.find((item: any) => item.key === key)?.uid;
-      const readback = await getSurface(rootAgent, { uid: blockUid });
-      const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
-        (item: any) => item?.use === 'FilterActionModel',
-      );
-      expect(filterAction?.props?.defaultFilterValue).toEqual({
-        logic: '$and',
-        items: [],
-      });
-      expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
-        logic: '$and',
-        items: [],
-      });
-    }
+    expect(composeRes.status).toBe(400);
+    expectFlowSurfaceError(composeRes, 'defaultFilter-explicit-empty', '$.blocks[0].defaultFilter');
+    expectFlowSurfaceError(composeRes, 'defaultFilter-explicit-empty', '$.blocks[1].defaultFilter');
   });
 
   it('should auto-inject submit for form blocks created through addBlocks', async () => {
@@ -2743,7 +2715,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(unsupportedBlockRes.status).toBe(200);
 
-    const noDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
+    const missingDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
           uid: page.tabSchemaUid,
@@ -2755,7 +2727,8 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(noDefaultFilterRes.status).toBe(200);
+    expect(missingDefaultFilterRes.status).toBe(400);
+    expectFlowSurfaceError(missingDefaultFilterRes, 'public-data-surface-default-filter-required', '$.defaultFilter');
 
     const invalidShapeRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -2819,7 +2792,11 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidDefaultFilterRes.status).toBe(400);
-    expect(readErrorMessage(invalidDefaultFilterRes)).toContain('filter must have logic and items properties');
+    expectFlowSurfaceError(
+      invalidDefaultFilterRes,
+      'defaultFilter-items-required',
+      '$.defaultActionSettings.filter.defaultFilter.items',
+    );
 
     const nestedFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -2867,7 +2844,12 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(emptyDefaultFilterRes.status).toBe(200);
+    expect(emptyDefaultFilterRes.status).toBe(400);
+    expectFlowSurfaceError(
+      emptyDefaultFilterRes,
+      'defaultFilter-explicit-empty',
+      '$.defaultActionSettings.filter.defaultFilter',
+    );
 
     const tabReadback = await getSurface(rootAgent, {
       uid: page.tabSchemaUid,
@@ -2907,13 +2889,12 @@ describe('flowSurfaces resource', () => {
         ],
       },
     });
-    expect(addBlocksInvalidFilterRes.status).toBe(200);
-    const addBlocksInvalidFilterData = getData(addBlocksInvalidFilterRes);
-    expect(addBlocksInvalidFilterData.successCount).toBe(1);
-    expect(addBlocksInvalidFilterData.errorCount).toBe(1);
-    expect(addBlocksInvalidFilterData.blocks[0].ok).toBe(false);
-    expect(addBlocksInvalidFilterData.blocks[0].error.message).toContain("logic must be '$and' or '$or'");
-    expect(addBlocksInvalidFilterData.blocks[1].ok).toBe(true);
+    expect(addBlocksInvalidFilterRes.status).toBe(400);
+    expectFlowSurfaceError(
+      addBlocksInvalidFilterRes,
+      'defaultFilter-invalid-logic',
+      '$.blocks[0].defaultActionSettings.filter.defaultFilter.logic',
+    );
   });
 
   it('should normalize and validate filter action filter settings payloads', async () => {
@@ -2938,23 +2919,8 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(configureEmptyDefaultFilter.status).toBe(200);
-
-    let filterReadback = await getSurface(rootAgent, {
-      uid: filterAction.uid,
-    });
-    expect(filterReadback.tree.props?.defaultFilterValue).toEqual({
-      logic: '$and',
-      items: [],
-    });
-    expect(filterReadback.tree.props?.filterValue).toEqual({
-      logic: '$and',
-      items: [],
-    });
-    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
-      logic: '$and',
-      items: [],
-    });
+    expect(configureEmptyDefaultFilter.status).toBe(400);
+    expectFlowSurfaceError(configureEmptyDefaultFilter, 'defaultFilter-explicit-empty', '$.changes.defaultFilter');
 
     const configureNullDefaultFilter = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -2966,23 +2932,8 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(configureNullDefaultFilter.status).toBe(200);
-
-    filterReadback = await getSurface(rootAgent, {
-      uid: filterAction.uid,
-    });
-    expect(filterReadback.tree.props?.defaultFilterValue).toEqual({
-      logic: '$and',
-      items: [],
-    });
-    expect(filterReadback.tree.props?.filterValue).toEqual({
-      logic: '$and',
-      items: [],
-    });
-    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual({
-      logic: '$and',
-      items: [],
-    });
+    expect(configureNullDefaultFilter.status).toBe(400);
+    expectFlowSurfaceError(configureNullDefaultFilter, 'defaultFilter-explicit-empty', '$.changes.defaultFilter');
 
     const invalidFilterableFieldNames = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -3035,9 +2986,8 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidDefaultFilter.status).toBe(400);
-    expect(readErrorMessage(invalidDefaultFilter)).toContain('props.defaultFilterValue');
-    expect(readErrorMessage(invalidDefaultFilter)).toContain('FilterGroup');
-    expect(readErrorMessage(invalidDefaultFilter)).toContain('logic and items');
+    expectFlowSurfaceError(invalidDefaultFilter, 'defaultFilter-logic-required', '$.changes.defaultFilter.logic');
+    expectFlowSurfaceError(invalidDefaultFilter, 'defaultFilter-items-required', '$.changes.defaultFilter.items');
   });
 
   it('should sync filter action updateSettings writes between props and stepParams', async () => {
@@ -3294,6 +3244,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
         settings: {
           title: 'Employees table',
           pageSize: 50,
@@ -3305,7 +3256,7 @@ describe('flowSurfaces resource', () => {
     const tableReadback = await getSurface(rootAgent, {
       uid: table.uid,
     });
-    expect(tableReadback.tree.stepParams?.cardSettings?.titleDescription?.title).toBe('Employees table');
+    expect(tableReadback.tree.stepParams?.cardSettings?.titleDescription?.title).toBeUndefined();
     expect(tableReadback.tree.stepParams?.tableSettings?.pageSize?.pageSize).toBe(50);
 
     const addFieldRes = await rootAgent.resource('flowSurfaces').addField({
@@ -5626,6 +5577,7 @@ describe('flowSurfaces resource', () => {
             binding: 'associatedRecords',
             associationField: 'tasks',
           },
+          defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
         },
       }),
     );
@@ -5641,6 +5593,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentCollection',
           },
+          defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
         },
       }),
     );
@@ -9640,6 +9593,7 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
           settings: {
             dataScope: {},
           },
@@ -9845,7 +9799,10 @@ describe('flowSurfaces resource', () => {
 
 function getData(response: any) {
   expect(response.status).toBe(200);
-  return response.body.data;
+  if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  return response.body;
 }
 
 function getComposeBlock(result: any, key: string) {
@@ -9856,6 +9813,17 @@ function getComposeBlock(result: any, key: string) {
 
 function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
+}
+
+function expectFlowSurfaceError(response: any, ruleId: string, path?: string) {
+  expect(_.castArray(response?.body?.errors || [])).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        ruleId,
+        ...(path ? { path } : {}),
+      }),
+    ]),
+  );
 }
 
 function isRetriableHelperError(error: any) {
@@ -9945,6 +9913,36 @@ function getRouteBackedTabs(readback: any) {
   return _.castArray(readback?.tree?.subModels?.tabs || []);
 }
 
+function hasOwnDefinedForTest(value: any, key: string) {
+  return !!value && Object.prototype.hasOwnProperty.call(value, key) && !_.isUndefined(value[key]);
+}
+
+function hasFlowSurfaceTestEffectiveDefaultFilter(values: Record<string, any>) {
+  if (hasOwnDefinedForTest(values, 'defaultFilter')) {
+    return true;
+  }
+  if (hasOwnDefinedForTest(values?.defaultActionSettings?.filter, 'defaultFilter')) {
+    return true;
+  }
+  return _.castArray(values?.actions || []).some((action: any) =>
+    hasOwnDefinedForTest(action?.settings, 'defaultFilter'),
+  );
+}
+
+function buildFlowSurfaceTestDefaultFilter(resourceInit?: Record<string, any>) {
+  const collectionName = String(resourceInit?.collectionName || '').trim();
+  const path = FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELD_BY_COLLECTION[collectionName] || 'title';
+  return {
+    logic: '$and',
+    items: [
+      {
+        path,
+        operator: '$notEmpty',
+      },
+    ],
+  };
+}
+
 async function addBlock(
   rootAgent: any,
   targetUid: string,
@@ -9953,6 +9951,12 @@ async function addBlock(
   extraValues: Record<string, any> = {},
 ) {
   const normalizedResourceInit = resourceInit && Object.keys(resourceInit).length ? resourceInit : undefined;
+  const defaultFilterForPublicDataBlock =
+    FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES.has(type) &&
+    _.isUndefined(extraValues.template) &&
+    !hasFlowSurfaceTestEffectiveDefaultFilter(extraValues)
+      ? buildFlowSurfaceTestDefaultFilter(normalizedResourceInit)
+      : undefined;
   let normalizedTargetUid = targetUid;
   const targetReadback = await getSurface(rootAgent, {
     uid: targetUid,
@@ -9969,6 +9973,9 @@ async function addBlock(
           },
           type,
           ...(normalizedResourceInit ? { resourceInit: normalizedResourceInit } : {}),
+          ...(!_.isUndefined(defaultFilterForPublicDataBlock)
+            ? { defaultFilter: defaultFilterForPublicDataBlock }
+            : {}),
           ...extraValues,
         },
       }),
