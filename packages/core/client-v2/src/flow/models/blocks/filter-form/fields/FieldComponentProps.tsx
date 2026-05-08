@@ -14,7 +14,11 @@ import { Input, Radio, Checkbox, Space, Button, Select } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { FilterableItemModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
-import { isTitleField } from '../../../../../flow-compat';
+import {
+  getFlowFieldInterfaceOptions,
+  hasFlowFieldInterfaceLookup,
+  isTitleFieldInterface,
+} from '../../../../../flow-compat';
 
 const RECORD_SELECT_DATA_SOURCE_KEY = 'recordSelectDataSourceKey';
 const RECORD_SELECT_COLLECTION_KEY = 'recordSelectTargetCollection';
@@ -36,7 +40,12 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   const resolvedFieldModel = fieldModel || propsValue?.fieldModel;
   const flowEngine = useFlowEngine();
   const ctx = useFlowContext();
-  const appDataSourceManager = ctx?.app?.dataSourceManager;
+  const dataSourceManager = ctx?.dataSourceManager || flowEngine?.dataSourceManager || ctx?.app?.dataSourceManager;
+  const hasFieldInterfaceLookup = hasFlowFieldInterfaceLookup(dataSourceManager);
+  const getFieldInterface = useCallback(
+    (interfaceName: string | undefined) => getFlowFieldInterfaceOptions(interfaceName, dataSourceManager),
+    [dataSourceManager],
+  );
 
   const getCurrentValue = () => field.value || {};
   const updateProps = (key: string, value: any) => {
@@ -165,15 +174,20 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   }, [activeDataSource, translateLabel]);
   const titleFieldOptions = useMemo(() => {
     if (!activeCollection?.getFields) return [];
-    const shouldKeep = (fieldItem: any) =>
-      appDataSourceManager ? isTitleField(appDataSourceManager, fieldItem.options) : true;
+    const shouldKeep = (fieldItem: any) => {
+      if (!hasFieldInterfaceLookup) {
+        return true;
+      }
+      const fieldOptions = fieldItem?.options || fieldItem;
+      return isTitleFieldInterface(getFieldInterface(fieldOptions?.interface));
+    };
     return (activeCollection.getFields() || [])
       .filter((fieldItem: any) => shouldKeep(fieldItem))
       .map((fieldItem: any) => ({
         label: translateLabel(fieldItem.options?.uiSchema?.title) || translateLabel(fieldItem.title) || fieldItem.name,
         value: fieldItem.name,
       }));
-  }, [activeCollection, appDataSourceManager, translateLabel]);
+  }, [activeCollection, getFieldInterface, hasFieldInterfaceLookup, translateLabel]);
   const valueFieldOptions = useMemo(() => {
     if (!activeCollection?.getFields) return [];
     const shouldKeep = (fieldItem: any) => {
@@ -182,8 +196,8 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
       if (fieldOptions.filterable === false || !interfaceName) {
         return false;
       }
-      if (appDataSourceManager) {
-        const fieldInterface = appDataSourceManager.collectionFieldInterfaceManager?.getFieldInterface?.(interfaceName);
+      if (hasFieldInterfaceLookup) {
+        const fieldInterface = getFieldInterface(interfaceName);
         if (!fieldInterface?.filterable) {
           return false;
         }
@@ -197,7 +211,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
         label: translateLabel(fieldItem.options?.uiSchema?.title) || translateLabel(fieldItem.title) || fieldItem.name,
         value: fieldItem.name,
       }));
-  }, [activeCollection, appDataSourceManager, translateLabel]);
+  }, [activeCollection, getFieldInterface, hasFieldInterfaceLookup, translateLabel]);
 
   useEffect(() => {
     if (resolvedFieldModel !== 'FilterFormCustomRecordSelectFieldModel') return;

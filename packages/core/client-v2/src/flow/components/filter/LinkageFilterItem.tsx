@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { lazy } from '../../../flow-compat';
+import { getFlowFieldInterfaceOptions, lazy } from '../../../flow-compat';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
 import uniqBy from 'lodash/uniqBy';
@@ -227,11 +227,12 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   const operatorMetadataList: OperatorMeta[] = useMemo(() => {
     if (leftFieldMeta) {
-      const dataSourceManager = model.context.app.dataSourceManager;
       const fieldInterface = leftFieldMeta.interface
-        ? (dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+        ? (getFlowFieldInterfaceOptions(
             leftFieldMeta.interface,
-          ) as FieldInterfaceDef)
+            model.context.dataSourceManager,
+            model.context.app?.dataSourceManager,
+          ) as FieldInterfaceDef | undefined)
         : undefined;
       const schemaOperators = (leftFieldMeta as any)?.uiSchema?.['x-filter-operators'] as
         | Array<OperatorMeta & { visible?: (meta: MetaTreeNode) => boolean }>
@@ -392,7 +393,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     const base = Array.isArray(tree) ? tree : [];
     const merged = mergeExtraMetaTreeWithBase(base, extraMetaTree);
     const getFieldInterface = (name: string) =>
-      model.context.app?.dataSourceManager?.collectionFieldInterfaceManager?.getFieldInterface?.(name) as
+      getFlowFieldInterfaceOptions(name, model.context.dataSourceManager, model.context.app?.dataSourceManager) as
         | FieldInterfaceDef
         | undefined;
     return await enhanceMetaTreeWithFilterableChildren(merged, getFieldInterface);
