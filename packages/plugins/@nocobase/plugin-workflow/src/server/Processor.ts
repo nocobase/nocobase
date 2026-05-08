@@ -68,6 +68,7 @@ export default class Processor {
   lastSavedJob: JobModel | null = null;
   abortController = new AbortController();
   timeoutGuard: NodeJS.Timeout | null = null;
+  private runningRegistered = false;
 
   constructor(
     public execution: ExecutionModel,
@@ -86,13 +87,13 @@ export default class Processor {
       clearTimeout(this.timeoutGuard);
     }
     this.timeoutGuard = setTimeout(() => {
-      this.abortForTimeout('timeout');
+      this.abortForTimeout();
     }, ms);
   }
 
-  abortForTimeout(reason = 'timeout') {
+  abortForTimeout() {
     if (!this.abortController.signal.aborted) {
-      this.abortController.abort(new WorkflowTimeoutError(`Workflow execution aborted by ${reason}`));
+      this.abortController.abort(new WorkflowTimeoutError('Workflow execution has been aborted'));
     }
   }
 
@@ -182,19 +183,23 @@ export default class Processor {
       });
       return;
     }
-    this.options.plugin.timeoutManager.bindProcessor(this);
-    await this.prepare();
-    if (this.nodes.length) {
-      const head = this.nodes.find((item) => !item.upstream);
-      if (!head) {
-        this.logger.warn(`head node not found for workflow (${execution.workflowId}), could not be started`, {
-          workflowId: execution.workflowId,
-        });
-        return this.exit(JOB_STATUS.ERROR);
+    this.enterRunningState();
+    try {
+      await this.prepare();
+      if (this.nodes.length) {
+        const head = this.nodes.find((item) => !item.upstream);
+        if (!head) {
+          this.logger.warn(`head node not found for workflow (${execution.workflowId}), could not be started`, {
+            workflowId: execution.workflowId,
+          });
+          return this.exit(JOB_STATUS.ERROR);
+        }
+        await this.run(head);
+      } else {
+        await this.exit(JOB_STATUS.RESOLVED);
       }
-      await this.run(head);
-    } else {
-      await this.exit(JOB_STATUS.RESOLVED);
+    } finally {
+      this.leaveRunningState();
     }
   }
 
@@ -206,10 +211,14 @@ export default class Processor {
       });
       return;
     }
-    this.options.plugin.timeoutManager.bindProcessor(this);
-    await this.prepare();
-    const node: FlowNodeModel = this.nodesMap.get(job.nodeId) as FlowNodeModel;
-    await this.recall(node, job);
+    this.enterRunningState();
+    try {
+      await this.prepare();
+      const node: FlowNodeModel = this.nodesMap.get(job.nodeId) as FlowNodeModel;
+      await this.recall(node, job);
+    } finally {
+      this.leaveRunningState();
+    }
   }
 
   private async exec(instruction: Runner, node: FlowNodeModel, prevJob?: JobModel): Promise<any> {
@@ -339,14 +348,11 @@ export default class Processor {
   }
 
   public async exit(s?: number | true) {
-    if (this.timeoutGuard) {
-      clearTimeout(this.timeoutGuard);
-      this.timeoutGuard = null;
-    }
+    this.leaveRunningState();
     if (s === true) {
-      this.options.plugin.timeoutManager.unbindProcessor(this.execution.id);
       return;
     }
+
     if (this.jobsToSave.size) {
       const newJobs = [];
       for (const job of this.jobsToSave.values()) {
@@ -403,7 +409,13 @@ export default class Processor {
     if (this.mainTransaction && this.mainTransaction !== this.transaction) {
       await this.mainTransaction.commit();
     }
-    this.options.plugin.timeoutManager.unbindProcessor(this.execution.id);
+
+    if (this.execution.status === EXECUTION_STATUS.STARTED) {
+      this.options.plugin.timeoutManager.scheduleExecutionTimeout(this.execution);
+    } else {
+      this.options.plugin.timeoutManager.clear(this.execution.id);
+    }
+
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`, {
       workflowId: this.execution.workflowId,
     });
@@ -453,6 +465,34 @@ export default class Processor {
     return this.nodes
       .filter((item) => item.upstream === node && item.branchIndex !== null)
       .sort((a, b) => Number(a.branchIndex) - Number(b.branchIndex));
+  }
+
+  private enterRunningState() {
+    this.options.plugin.timeoutManager.clear(this.execution.id);
+    this.options.plugin.registerRunningExecution(this.execution.id, () => this.abortForTimeout());
+    this.runningRegistered = true;
+
+    const remaining = this.execution.expiresAt ? this.execution.expiresAt.getTime() - Date.now() : null;
+    if (remaining == null) {
+      return;
+    }
+    if (remaining <= 0) {
+      this.abortForTimeout();
+      return;
+    }
+    this.setTimeoutGuard(remaining);
+  }
+
+  private leaveRunningState() {
+    if (this.timeoutGuard) {
+      clearTimeout(this.timeoutGuard);
+      this.timeoutGuard = null;
+    }
+    if (!this.runningRegistered) {
+      return;
+    }
+    this.options.plugin.unregisterRunningExecution(this.execution.id);
+    this.runningRegistered = false;
   }
 
   /**

@@ -11,7 +11,7 @@ import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 import PluginWorkflowServer from '../Plugin';
 import { EXECUTION_STATUS } from '../constants';
-import { abortExecution } from '../executionAbort';
+import { abortExecution } from '../utils';
 
 export async function destroy(context: Context, next: Next) {
   context.action.mergeParams({

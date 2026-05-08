@@ -9,20 +9,19 @@
 
 import { Op, type Transaction } from '@nocobase/database';
 import type PluginWorkflowServer from './Plugin';
-import Processor from './Processor';
 import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel } from './types';
-import { abortExecution } from './executionAbort';
+import { abortExecution } from './utils';
 import { WorkflowTimeoutError } from './timeout-errors';
 
 type EnsureStartedOptions = {
   transaction?: Transaction;
 };
 
-const SCAN_LIMIT = 100;
+const LOAD_BATCH_SIZE = 1000;
 
 export default class ExecutionTimeoutManager {
-  private readonly processors = new Map<string, Processor>();
+  private readonly timers = new Map<string, NodeJS.Timeout>();
 
   constructor(private readonly plugin: PluginWorkflowServer) {}
 
@@ -33,6 +32,7 @@ export default class ExecutionTimeoutManager {
 
   async ensureStarted(execution: ExecutionModel, options: EnsureStartedOptions = {}) {
     if (execution.startedAt) {
+      this.scheduleExecutionTimeout(execution);
       return execution;
     }
 
@@ -69,7 +69,76 @@ export default class ExecutionTimeoutManager {
     if (affected || !execution.startedAt) {
       await execution.reload({ transaction });
     }
+    this.scheduleExecutionTimeout(execution);
     return execution;
+  }
+
+  async load() {
+    const ExecutionModelClass = this.plugin.db.getModel('executions');
+    let cursor: { expiresAt: Date; id: number | string } | null = null;
+    let hasMore = true;
+
+    while (hasMore) {
+      const where: any = {
+        status: EXECUTION_STATUS.STARTED,
+        expiresAt: {
+          [Op.not]: null,
+        },
+      };
+
+      if (cursor) {
+        where[Op.or] = [
+          {
+            expiresAt: {
+              [Op.gt]: cursor.expiresAt,
+            },
+          },
+          {
+            expiresAt: cursor.expiresAt,
+            id: {
+              [Op.gt]: cursor.id,
+            },
+          },
+        ];
+      }
+
+      const executions = (await ExecutionModelClass.findAll({
+        attributes: ['id', 'workflowId', 'status', 'expiresAt'],
+        where,
+        order: [
+          ['expiresAt', 'ASC'],
+          ['id', 'ASC'],
+        ],
+        limit: LOAD_BATCH_SIZE,
+      })) as ExecutionModel[];
+
+      if (!executions.length) {
+        hasMore = false;
+        continue;
+      }
+
+      const now = new Date();
+      for (const execution of executions) {
+        if (this.isExpired(execution, now)) {
+          await this.abortExecutionIfExpired(execution);
+        } else {
+          this.scheduleExecutionTimeout(execution);
+        }
+      }
+
+      const last = executions[executions.length - 1];
+      cursor = {
+        expiresAt: last.expiresAt as Date,
+        id: last.id,
+      };
+    }
+  }
+
+  unload() {
+    for (const timer of this.timers.values()) {
+      clearTimeout(timer);
+    }
+    this.timers.clear();
   }
 
   isExpired(execution: ExecutionModel, now = new Date()) {
@@ -83,25 +152,23 @@ export default class ExecutionTimeoutManager {
     return execution.expiresAt.getTime() - now.getTime();
   }
 
-  async abort(execution: ExecutionModel, options: { transaction?: Transaction; reason?: string } = {}) {
-    return abortExecution(this.plugin, execution, options);
-  }
-
-  bindProcessor(processor: Processor) {
-    this.processors.set(String(processor.execution.id), processor);
-    this.armProcessor(processor);
-  }
-
-  unbindProcessor(executionId: number | string) {
-    this.processors.delete(String(executionId));
-  }
-
-  abortLocalProcessor(executionId: number | string, reason = 'timeout') {
-    const processor = this.processors.get(String(executionId));
-    if (!processor) {
-      return;
+  async abort(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
+    const aborted = await abortExecution(this.plugin, execution, options);
+    if (aborted) {
+      this.clearExecutionTimeout(execution.id);
     }
-    processor.abortForTimeout(reason);
+    return aborted;
+  }
+
+  async abortExecutionIfExpired(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
+    if (execution.status !== EXECUTION_STATUS.STARTED || !this.isExpired(execution)) {
+      return false;
+    }
+    return this.abort(execution, options);
+  }
+
+  clear(executionId: number | string) {
+    this.clearExecutionTimeout(executionId);
   }
 
   async throwIfExpired(execution: ExecutionModel) {
@@ -109,44 +176,71 @@ export default class ExecutionTimeoutManager {
       throw new WorkflowTimeoutError('Workflow execution has been aborted');
     }
 
-    if (this.isExpired(execution)) {
-      await this.abort(execution, { reason: 'timeout' });
+    if (await this.abortExecutionIfExpired(execution)) {
       throw new WorkflowTimeoutError();
     }
   }
 
-  async scanExpired() {
-    const ExecutionRepo = this.plugin.db.getRepository('executions');
-    const executions = await ExecutionRepo.find({
-      filter: {
-        status: EXECUTION_STATUS.STARTED,
-        expiresAt: {
-          [Op.not]: null,
-          [Op.lte]: new Date(),
-        },
-      },
-      limit: SCAN_LIMIT,
-      sort: ['id'],
-    });
+  scheduleExecutionTimeout(execution: ExecutionModel) {
+    const id = String(execution.id);
+    this.clearExecutionTimeout(id);
 
-    let count = 0;
-    for (const execution of executions) {
-      const aborted = await this.abort(execution, { reason: 'timeout' });
-      if (aborted) {
-        count += 1;
-      }
-    }
-    return count;
-  }
-
-  private armProcessor(processor: Processor) {
-    const remaining = this.getRemainingMs(processor.execution);
-    if (remaining == null || remaining <= 0) {
-      if (remaining != null && remaining <= 0) {
-        processor.abortForTimeout('timeout');
-      }
+    if (execution.status !== EXECUTION_STATUS.STARTED || !execution.expiresAt) {
       return;
     }
-    processor.setTimeoutGuard(remaining);
+
+    const remaining = this.getRemainingMs(execution);
+    if (remaining == null) {
+      return;
+    }
+
+    if (remaining <= 0) {
+      setImmediate(() => {
+        this.handleExecutionTimeout(id).catch((error) => {
+          this.plugin.getLogger(execution.workflowId).error(`execution (${execution.id}) timeout handling failed`, {
+            error,
+          });
+        });
+      });
+      return;
+    }
+
+    this.timers.set(
+      id,
+      setTimeout(() => {
+        this.handleExecutionTimeout(id).catch((error) => {
+          this.plugin.getLogger(execution.workflowId).error(`execution (${execution.id}) timeout handling failed`, {
+            error,
+          });
+        });
+      }, remaining),
+    );
+  }
+
+  private clearExecutionTimeout(executionId: number | string) {
+    const id = String(executionId);
+    const timer = this.timers.get(id);
+    if (!timer) {
+      return;
+    }
+    clearTimeout(timer);
+    this.timers.delete(id);
+  }
+
+  private async handleExecutionTimeout(executionId: string) {
+    this.clearExecutionTimeout(executionId);
+
+    if (this.plugin.abortRunningExecution(executionId)) {
+      return;
+    }
+
+    const execution = await this.plugin.db.getRepository('executions').findOne({
+      filterByTk: executionId,
+    });
+    if (!execution) {
+      return;
+    }
+
+    await this.abortExecutionIfExpired(execution);
   }
 }

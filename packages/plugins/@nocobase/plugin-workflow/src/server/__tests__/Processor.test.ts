@@ -298,8 +298,13 @@ describe('workflow > Processor', () => {
       expect(execution.startedAt).toBeTruthy();
       expect(execution.expiresAt).toBeTruthy();
 
-      await sleep(200);
-      await plugin.timeoutManager.scanExpired();
+      for (let i = 0; i < 10; i++) {
+        [execution] = await workflow.getExecutions();
+        if (execution.status === EXECUTION_STATUS.ABORTED) {
+          break;
+        }
+        await sleep(100);
+      }
 
       [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.ABORTED);

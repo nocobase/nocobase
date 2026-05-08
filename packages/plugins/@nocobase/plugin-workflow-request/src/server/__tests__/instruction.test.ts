@@ -296,8 +296,7 @@ describe('workflow > instructions > request', () => {
       let [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.PENDING);
 
-      await sleep(300);
-      await plugin.timeoutManager.scanExpired();
+      await sleep(350);
 
       [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);

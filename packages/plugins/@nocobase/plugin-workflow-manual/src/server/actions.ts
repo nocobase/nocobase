@@ -41,6 +41,13 @@ export async function submit(context: Context, next) {
   const [formKey] = Object.keys(values.result ?? {}).filter((key) => key !== '_');
   const actionKey = values.result?._;
 
+  if (!task.execution) {
+    return context.throw(400);
+  }
+  if (await plugin.abortExecutionIfExpired(task.execution)) {
+    return context.throw(400, context.t('Execution timed out', { ns: 'workflow' }));
+  }
+
   const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
   // NOTE: validate status
   if (

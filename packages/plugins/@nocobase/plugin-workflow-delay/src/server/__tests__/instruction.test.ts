@@ -128,7 +128,7 @@ describe('workflow > instructions > delay', () => {
       expect(execution.startedAt).toBeTruthy();
       expect(execution.expiresAt).toBeTruthy();
 
-      await plugin.timeoutManager.scanExpired();
+      await sleep(100);
 
       [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.ABORTED);
