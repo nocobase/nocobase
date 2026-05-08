@@ -86,7 +86,7 @@ const workflowFieldset = {
   options: {
     type: 'object',
     'x-decorator': 'FormItem',
-    // title: `{{ t("Options", { ns: "${NAMESPACE}" }) }}`,
+    title: `{{ t("Advance options", { ns: "${NAMESPACE}" }) }}`,
     'x-component': 'Fieldset',
     properties: {
       timeout: {
