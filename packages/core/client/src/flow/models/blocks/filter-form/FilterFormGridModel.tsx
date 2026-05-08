@@ -124,6 +124,23 @@ export class FilterFormGridModel extends GridModel {
     return super.getGridLayout();
   }
 
+  saveGridLayout(layout?: GridLayoutData | GridLayoutV2) {
+    super.saveGridLayout(layout);
+
+    if (this.context.flowSettingsEnabled && this.normalizedItemUidsOverride) {
+      const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
+      this.fullLayoutBeforeCollapse = normalizeGridLayout({
+        layout: params.layout ?? this.props.layout,
+        rows: params.rows ?? this.props.rows,
+        sizes: params.sizes ?? this.props.sizes,
+        rowOrder: params.rowOrder ?? this.props.rowOrder,
+        itemUids: this.getItemUids(),
+        gridUid: this.uid,
+        logger: console,
+      });
+    }
+  }
+
   handleDragStart(event: Parameters<GridModel['handleDragStart']>[0]) {
     this.readingFullLayoutForSettingsInteraction = Boolean(
       this.context.flowSettingsEnabled && this.normalizedItemUidsOverride,

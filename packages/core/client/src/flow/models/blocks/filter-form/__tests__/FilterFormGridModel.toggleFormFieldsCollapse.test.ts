@@ -396,4 +396,62 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
       second: [['field-2'], ['field-3']],
     });
   });
+
+  it('restores the latest saved full layout after editing while collapsed in flow settings', () => {
+    const model = engine.createModel<FilterFormGridModel>({
+      uid: 'filter-grid-collapse-settings-latest-layout',
+      use: 'FilterFormGridModel',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'first',
+              cells: [{ id: 'first-cell', items: ['field-1'] }],
+              sizes: [24],
+            },
+            {
+              id: 'second',
+              cells: [{ id: 'second-cell', items: ['field-2'] }],
+              sizes: [24],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = {
+      items: [
+        engine.createModel({ use: 'FlowModel', uid: 'field-1' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-2' }),
+      ],
+    };
+    (model.context as any).flowSettingsEnabled = true;
+
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
+      layout: model.props.layout,
+    });
+    model.toggleFormFieldsCollapse(true, 1);
+
+    const editedLayout = {
+      version: 2 as const,
+      rows: [
+        {
+          id: 'first',
+          cells: [
+            { id: 'first-cell-1', items: ['field-1'] },
+            { id: 'first-cell-2', items: ['field-2'] },
+          ],
+          sizes: [12, 12],
+        },
+      ],
+    };
+
+    model.saveGridLayout(editedLayout);
+    model.toggleFormFieldsCollapse(false, 1);
+
+    expect(projectLayoutToLegacyRows(model.props.layout).rows).toEqual({
+      first: [['field-1'], ['field-2']],
+    });
+  });
 });
