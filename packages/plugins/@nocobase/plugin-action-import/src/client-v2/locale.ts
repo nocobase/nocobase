@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { ImportActionModel } from '../../client-v2/ImportActionModel';
+export const NAMESPACE = 'action-import';

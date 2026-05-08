@@ -7,12 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildImportFieldOptions } from '../buildImportFieldOptions';
-
-export const getOptionFields = (fields, t) => {
-  return buildImportFieldOptions(
-    fields,
-    (field) => t(field?.uiSchema?.title) || field.name,
-    (field) => (field.targetCollection && field.targetCollection.getFields()) || [],
-  );
-};
+export { getOptionFields } from '../../client-v2/getOptionFields';
