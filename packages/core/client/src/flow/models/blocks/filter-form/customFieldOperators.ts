@@ -81,6 +81,12 @@ function getOperatorListByModel(fieldModel: string, fieldModelProps: Record<stri
   return typeof value === 'function' ? value(fieldModelProps) || [] : value || [];
 }
 
+function isArrayLikeField(field: any) {
+  return (
+    ['multipleSelect', 'checkboxGroup'].includes(field?.interface) || ['array', 'json', 'jsonb'].includes(field?.type)
+  );
+}
+
 function getSourceField(flowEngine: any, source: string[] = [], fallbackDataSourceKey?: string) {
   if (!Array.isArray(source) || source.length === 0) return;
   const hasDataSourceKey = !!flowEngine?.dataSourceManager?.getDataSource?.(source[0]);
@@ -186,12 +192,22 @@ function resolveByModelOrSource(params: ResolveOperatorParams): { operatorList: 
     return resolveByRecordSelect(params);
   }
 
+  const sourceField = getSourceField(flowEngine, source);
+  if (fieldModel === 'SelectFieldModel' && fieldModelProps?.mode === 'multiple' && sourceField) {
+    const sourceOperators = getFieldOperators(sourceField);
+    return {
+      operatorList: isArrayLikeField(sourceField)
+        ? getOperatorListByModel(fieldModel, fieldModelProps)
+        : toMultiValueOperators(sourceOperators),
+      meta: sourceField,
+    };
+  }
+
   const modelOperators = getOperatorListByModel(fieldModel, fieldModelProps);
   if (modelOperators.length > 0) {
     return { operatorList: modelOperators, meta: { fieldModel } };
   }
 
-  const sourceField = getSourceField(flowEngine, source);
   return {
     operatorList: getFieldOperators(sourceField),
     meta: sourceField,
