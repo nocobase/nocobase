@@ -121,7 +121,6 @@ export class JSEditableFieldModel extends FieldModel {
   useHooksBeforeRender() {
     const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
     const scriptCode = resolveScriptCode(codeParam);
-    const value = this.props?.value;
     const disabled = this.props?.disabled;
     const effectiveReadOnly = isReadOnlyMode(this);
 
@@ -130,7 +129,7 @@ export class JSEditableFieldModel extends FieldModel {
       if (effectiveReadOnly || !scriptCode) return;
       void this.applyFlow('jsSettings');
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [scriptCode, value, disabled, effectiveReadOnly, this.props?.pattern]);
+    }, [scriptCode, disabled, effectiveReadOnly, this.props?.pattern]);
   }
 
   render() {

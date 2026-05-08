@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../JSEditableFieldModel';
 
@@ -131,5 +131,23 @@ describe('JSEditableFieldModel', () => {
       expect(screen.getByText('hello')).toBeInTheDocument();
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     });
+  });
+
+  it('does not rerun JavaScript settings when field value changes', async () => {
+    const parent = renderParentFieldWithFlowRenderer({ value: 'hello' });
+    const field = parent.subModels.field as JSEditableFieldModel;
+    const applyFlowSpy = vi.spyOn(field, 'applyFlow');
+
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
+
+    applyFlowSpy.mockClear();
+
+    await act(async () => {
+      field.setProps({ value: 'hello1' });
+    });
+
+    expect(applyFlowSpy).not.toHaveBeenCalled();
   });
 });
