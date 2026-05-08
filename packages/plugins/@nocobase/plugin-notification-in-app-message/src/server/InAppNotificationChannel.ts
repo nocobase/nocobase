@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Transaction } from '@nocobase/database';
 import { SendFnType, BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { InAppMessageFormValues } from '../types';
@@ -46,11 +47,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     });
   }
 
-  private scheduleMessageEvents(
-    type: 'created' | 'updated',
-    messages: any[],
-    transaction?: { afterCommit?: (callback: () => void) => void } | null,
-  ) {
+  private scheduleMessageEvents(type: 'created' | 'updated', messages: any[], transaction?: Transaction) {
     if (!messages.length) {
       return;
     }
@@ -84,7 +81,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     channelName: string;
     receiveTimestamp: number;
     messageOptions: Record<string, any>;
-    transaction?: { afterCommit?: (callback: () => void) => void } | null;
+    transaction?: Transaction;
   }) {
     const { userIds, title, content, channelName, receiveTimestamp, messageOptions, transaction } = options;
     const MessageModel = this.app.db.getModel(MessagesDefinition.name);
