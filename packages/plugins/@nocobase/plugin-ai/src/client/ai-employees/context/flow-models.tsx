@@ -19,6 +19,7 @@ import { CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/c
 import { FlowUtils } from '../flow';
 import { Space } from 'antd';
 import { dialogController } from '../stores/dialog-controller';
+import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
 type SimplifyComponentNode = {
   uid: string;
@@ -42,12 +43,41 @@ const parseFlowModel = async (model: FlowModel) => {
   }
 };
 
+const getRelationFieldPrompt = (collectionField: FormItemModel['collectionField']) => {
+  if (!collectionField.targetCollection) {
+    return undefined;
+  }
+
+  const isToMany = ['hasMany', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
+  const requiredPropertyNames = _.uniq([collectionField.targetKey]).filter(Boolean);
+  const exampleObject = `{ ${requiredPropertyNames.map((name) => `"${name}": <${name}>`).join(', ')} }`;
+  const exampleValue = isToMany ? `[${exampleObject}]` : exampleObject;
+
+  return `This field must be filled with ${
+    isToMany ? 'an array of related record objects' : 'a related record object'
+  } from collection [${collectionField.targetCollection.name}]. Use [${
+    collectionField.targetKey
+  }] as the identity field. The value for [${collectionField.name}] must be ${
+    isToMany ? 'an array' : 'an object'
+  }. Each item must contain only [${requiredPropertyNames.join(', ')}]. Example: "${
+    collectionField.name
+  }": ${exampleValue}. Never output indexed or path-style keys such as "${collectionField.name}[0]" or "${
+    collectionField.name
+  }[1]", and never return only a primitive id.`;
+};
+
 const toSimplifyForm = (model: FormBlockModel) => {
-  const result = {
+  const result: {
+    uid: string;
+    fields: any[];
+    value: any;
+  } = {
     uid: model.uid,
     fields: [],
+    value: undefined,
   };
   const duplicateFields = new Set();
+  const excludeFieldValues = new Set();
   FlowUtils.walkthrough(model, (model) => {
     if (model instanceof FormItemModel && !duplicateFields.has(model.collectionField.name)) {
       const collectionField = model.collectionField;
@@ -58,12 +88,18 @@ const toSimplifyForm = (model: FormBlockModel) => {
         enum: collectionField.enum,
         readonly: collectionField.readonly,
         defaultValue: collectionField.defaultValue,
+        prompt: getRelationFieldPrompt(collectionField),
       });
       duplicateFields.add(collectionField.name);
     }
+    if (model instanceof UploadFieldModel && model.props?.value?.length && typeof model.props.value !== 'string') {
+      excludeFieldValues.add(model.props.name);
+    }
   });
   if (model.form) {
-    result['value'] = model.form.getFieldsValue();
+    result['value'] = model.form.getFieldsValue(true, (meta) => {
+      return !excludeFieldValues.has(meta.name[0]);
+    });
   }
   return result;
 };

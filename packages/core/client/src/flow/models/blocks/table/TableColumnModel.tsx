@@ -33,6 +33,7 @@ import { get, omit, capitalize } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
+import { getSavedAssociationTitleField, getTableColumnSortField } from './sortUtils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
 export function FieldDeletePlaceholder(props: any) {
@@ -116,6 +117,7 @@ export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
     </div>
   );
 };
+
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -172,7 +174,7 @@ export class TableColumnModel extends DisplayItemModel {
       .filter(Boolean);
   }
 
-  getColumnProps(): TableColumnProps {
+  getColumnProps(): TableColumnProps & { sortField?: string } {
     if (!this.props.width) {
       return;
     }
@@ -209,6 +211,7 @@ export class TableColumnModel extends DisplayItemModel {
 
     return {
       ...this.props,
+      sortField: getTableColumnSortField(this),
       ellipsis: true,
       title: this.props.tooltip ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -306,6 +309,7 @@ export class TableColumnModel extends DisplayItemModel {
             ? this.fieldPath.replace(`${this.context.prefixFieldPath}.`, '')
             : this.fieldPath;
           const value = get(record, namePath);
+          fork.setProps({ value });
           return (
             <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
@@ -332,12 +336,20 @@ TableColumnModel.registerFlow({
         if (!collectionField) {
           return;
         }
+        const titleField = getSavedAssociationTitleField(ctx.model);
+        const componentProps =
+          collectionField.isAssociationField() && titleField
+            ? {
+                ...collectionField.getComponentProps(),
+                ...collectionField.targetCollection?.getField?.(titleField)?.getComponentProps?.(),
+              }
+            : collectionField.getComponentProps();
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         // for quick edit
         await ctx.model.applySubModelsBeforeRenderFlows('field');
         ctx.model.setProps({
-          ...collectionField.getComponentProps(),
+          ...componentProps,
         });
       },
     },
@@ -456,7 +468,12 @@ TableColumnModel.registerFlow({
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
         const targetInterface = ctx.model.collectionField.getInterfaceOptions();
-        return !targetInterface.sortable || ctx.associationModel;
+        return (
+          !targetInterface.sortable ||
+          ctx.collectionField?.isAssociationField?.() ||
+          !!ctx.model.associationPathName ||
+          ctx.associationModel
+        );
       },
       defaultParams: {
         sorter: false,
@@ -519,7 +536,7 @@ TableColumnModel.registerFlow({
       defaultParams: (ctx: any) => {
         const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
         return {
-          label: ctx.model.props.titleField || titleField,
+          label: getSavedAssociationTitleField(ctx.model) || titleField,
         };
       },
       handler(ctx, params) {

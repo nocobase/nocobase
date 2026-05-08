@@ -14,6 +14,8 @@ export type SQLInstructionConfig = {
   dataSource?: string;
   sql?: string;
   withMeta?: boolean;
+  unsafeInjection?: boolean;
+  variables?: Array<{ name: string; value: any }>;
 };
 
 export default class extends Instruction {
@@ -23,7 +25,23 @@ export default class extends Instruction {
     if (!(collectionManager instanceof SequelizeCollectionManager)) {
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
     }
-    const sql = processor.getParsedValue(node.config.sql || '', node.id).trim();
+
+    const { unsafeInjection = false, variables: variablesConfig = [] } = node.config;
+
+    let sql = '';
+    let replacements = null;
+    if (unsafeInjection) {
+      sql = processor.getParsedValue(node.config.sql || '', node.id).trim();
+    } else {
+      sql = (node.config.sql || '').trim();
+      replacements = {};
+      for (const { name, value } of variablesConfig) {
+        if (name) {
+          replacements[name] = processor.getParsedValue(value, node.id);
+        }
+      }
+    }
+
     if (!sql) {
       return {
         status: JOB_STATUS.RESOLVED,
@@ -33,6 +51,7 @@ export default class extends Instruction {
     const [result = null, meta = null] =
       (await collectionManager.db.sequelize.query(sql, {
         transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+        replacements,
         // plain: true,
         // model: db.getCollection(node.config.collection).model
       })) ?? [];
@@ -43,8 +62,14 @@ export default class extends Instruction {
     };
   }
 
-  async test({ dataSource, sql, withMeta }: SQLInstructionConfig = {}) {
-    if (!sql) {
+  async test({
+    dataSource,
+    sql: sqlConfig,
+    withMeta,
+    unsafeInjection = false,
+    variables: variablesConfig = [],
+  }: SQLInstructionConfig = {}) {
+    if (!sqlConfig) {
       return {
         result: null,
         status: JOB_STATUS.RESOLVED,
@@ -58,7 +83,21 @@ export default class extends Instruction {
     }
 
     try {
-      const [result = null, meta = null] = (await collectionManager.db.sequelize.query(sql)) ?? [];
+      let sql = '';
+      let replacements = null;
+      if (unsafeInjection) {
+        sql = sqlConfig.trim();
+      } else {
+        sql = sqlConfig.trim();
+        replacements = {};
+        for (const { name, value } of variablesConfig) {
+          if (name) {
+            replacements[name] = value;
+          }
+        }
+      }
+
+      const [result = null, meta = null] = (await collectionManager.db.sequelize.query(sql, { replacements })) ?? [];
 
       return {
         result: withMeta ? [result, meta] : result,

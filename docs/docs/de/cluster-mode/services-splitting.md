@@ -65,12 +65,14 @@ Angenommen, es gibt vier Knoten, nämlich `node1`, `node2`, `node3` und `node4`.
 Beim Entwickeln von Geschäfts-Plugins können Sie ressourcenintensive Dienste je nach Anforderungsszenario aufteilen. Dies kann auf folgende Weisen erreicht werden:
 
 1. Definieren Sie einen neuen Dienst-Identifikator, zum Beispiel `my-plugin:process`, für die Umgebungsvariablenkonfiguration und stellen Sie eine Dokumentation dazu bereit.
-2. In der Geschäftslogik des serverseitigen Plugins verwenden Sie die `app.serving()`-Schnittstelle, um die Umgebung zu prüfen und zu entscheiden, ob der aktuelle Knoten einen bestimmten Dienst basierend auf der Umgebungsvariable bereitstellen soll.
+2. In der Geschäftslogik des serverseitigen Plugins verwenden Sie die `serving()`-Schnittstelle, um die Umgebung zu prüfen und zu entscheiden, ob der aktuelle Knoten einen bestimmten Dienst basierend auf der Umgebungsvariable bereitstellen soll.
 
 ```javascript
+import { serving } from '@nocobase/server';
+
 const MY_PLUGIN_SERVICE_KEY = 'my-plugin:process';
 // Im serverseitigen Code des Plugins
-if (this.app.serving(MY_PLUGIN_SERVICE_KEY)) {
+if (serving(MY_PLUGIN_SERVICE_KEY)) {
   // Verarbeiten Sie die Geschäftslogik für diesen Dienst
 } else {
   // Verarbeiten Sie die Geschäftslogik für diesen Dienst nicht

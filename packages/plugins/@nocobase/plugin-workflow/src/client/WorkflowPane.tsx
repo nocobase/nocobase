@@ -164,8 +164,7 @@ function WorkflowEnabledSwitch() {
   return (
     <Switch
       checked={Boolean(record?.enabled)}
-      checkedChildren={lang('On')}
-      unCheckedChildren={lang('Off')}
+      size="small"
       disabled={loading || !record?.id}
       loading={loading}
       onClick={(val, e) => e?.stopPropagation?.()}

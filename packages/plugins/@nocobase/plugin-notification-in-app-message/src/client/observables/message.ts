@@ -63,7 +63,7 @@ export const updateMessage = async (params: { filterByTk: any; values: Record<an
   const apiClient = getAPIClient();
   await apiClient.request({
     resource: InAppMessagesDefinition.name,
-    action: 'update',
+    action: 'updateMyOwn',
     method: 'post',
     params,
   });

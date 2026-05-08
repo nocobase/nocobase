@@ -359,6 +359,27 @@ Procesadores de datos de rastreo habilitados. El valor predeterminado es `consol
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### SERVER_REQUEST_WHITELIST
+
+Lista blanca de destinos permitidos para solicitudes HTTP salientes iniciadas desde el servidor, utilizada para prevenir ataques SSRF (Server-Side Request Forgery). Acepta una lista separada por comas de IPs exactas, rangos CIDR, nombres de host exactos y subdominios con comodín de un solo nivel.
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**Aplica a**: Nodos de "Solicitud HTTP" en flujos de trabajo y botones de acción de solicitud personalizada. Las solicitudes con ruta relativa (llamadas a la propia API de NocoBase) no se ven afectadas.
+
+**Sin configurar**: Se permiten todas las solicitudes `http`/`https` salientes (comportamiento existente). **Configurado**: Solo se permiten solicitudes cuyo host coincida con una entrada de la lista blanca; las solicitudes que no coincidan generarán un error.
+
+Formatos admitidos:
+
+| Formato | Ejemplo | Coincide con |
+| --- | --- | --- |
+| IPv4 exacta | `1.2.3.4` | Solo esa IP |
+| IPv4 CIDR | `10.0.0.0/8` | Todas las IPs de la subred |
+| Nombre de host exacto | `api.example.com` | Solo ese nombre de host |
+| Subdominio comodín | `*.example.com` | Un nivel de subdominio, p. ej. `foo.example.com`; **no** coincide con `example.com` ni `a.b.example.com` |
+
 ## Variables de Entorno Experimentales
 
 ### APPEND_PRESET_LOCAL_PLUGINS

@@ -105,6 +105,7 @@ async function setupFormModel() {
       { name: 'assignees', type: 'belongsToMany', target: 'users', interface: 'm2m' },
       { name: 'note', type: 'string', interface: 'text' },
       { name: 'status', type: 'string', interface: 'text' },
+      { name: 'rawPayload', type: 'json', filterable: true },
     ],
   });
 
@@ -219,6 +220,22 @@ describe('FlowModel core behaviors (collected)', () => {
     expect(i2).toEqual({ ping: 1 });
   });
 
+  it('stepParams initialized before first beforeRender does not trigger an extra rerun', async () => {
+    vi.useFakeTimers();
+    const spy = vi.fn().mockResolvedValue([]);
+    (engine as any).executor.dispatchEvent = spy;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-3-init' });
+
+    model.setStepParams('anyFlow', 'anyStep', { x: 1 });
+    await model.dispatchEvent('beforeRender', { ping: 1 });
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [, e1, i1] = spy.mock.calls[0];
+    expect(e1).toBe('beforeRender');
+    expect(i1).toEqual({ ping: 1 });
+  });
+
   it('applyFlow delegates to executor.runFlow', async () => {
     const spyRun = vi.fn().mockResolvedValue('ok');
     (engine as any).executor.runFlow = spyRun;
@@ -285,6 +302,27 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(Array.isArray(params.assignees.filterByTk)).toBe(true);
     expect(params.assignees.filterByTk).toEqual([3, 5]);
     expect(params.note).toBeUndefined();
+  });
+
+  it('keeps interfaced fields in formValues meta even when they are not configured in the form grid', async () => {
+    const model = await setupFormModel();
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+    mockFormGridEnabledFields(model, ['customer', 'note']);
+
+    const opt = (model.context as any).getPropertyOptions('formValues');
+    const meta = await opt.meta();
+    const props = await meta.properties();
+
+    expect(props).toHaveProperty('customer');
+    expect(props).toHaveProperty('note');
+    expect(props).toHaveProperty('status');
+    expect(props).toHaveProperty('assignees');
+    expect(props).not.toHaveProperty('rawPayload');
   });
 
   it('registers formValuesChange event and eventSettings flow', async () => {

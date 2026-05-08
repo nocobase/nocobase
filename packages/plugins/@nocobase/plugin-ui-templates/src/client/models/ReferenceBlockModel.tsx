@@ -28,6 +28,7 @@ import {
   parseResourceListResponse,
 } from '../utils/templateCompatibility';
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
+import { replaceGridLayoutUid } from '../utils/replaceGridLayoutUid';
 import {
   ensureBlockScopedEngine,
   ReferenceScopedRenderer,
@@ -1117,27 +1118,29 @@ ReferenceBlockModel.registerFlow({
             arr.splice(finalIndex, 0, newModel);
             arr.forEach((m, idx) => (m.sortIndex = idx));
 
-            // 替换 Grid rows 中的 uid，保持原位置
-            const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-            if (gridParams?.rows && typeof gridParams.rows === 'object') {
-              const newRows = _.cloneDeep(gridParams.rows);
-              for (const rowId of Object.keys(newRows)) {
-                const columns = newRows[rowId];
-                if (Array.isArray(columns)) {
-                  for (let ci = 0; ci < columns.length; ci++) {
-                    const col = columns[ci];
-                    if (Array.isArray(col)) {
-                      for (let ii = 0; ii < col.length; ii++) {
-                        if (col[ii] === oldModel.uid) {
-                          col[ii] = newModel.uid;
+            // 替换 Grid layout 中的 uid，保持原位置
+            if (!replaceGridLayoutUid(parent, oldModel.uid, newModel.uid)) {
+              const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
+              if (gridParams?.rows && typeof gridParams.rows === 'object') {
+                const newRows = _.cloneDeep(gridParams.rows);
+                for (const rowId of Object.keys(newRows)) {
+                  const columns = newRows[rowId];
+                  if (Array.isArray(columns)) {
+                    for (let ci = 0; ci < columns.length; ci++) {
+                      const col = columns[ci];
+                      if (Array.isArray(col)) {
+                        for (let ii = 0; ii < col.length; ii++) {
+                          if (col[ii] === oldModel.uid) {
+                            col[ii] = newModel.uid;
+                          }
                         }
                       }
                     }
                   }
                 }
+                parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
+                parent.setProps('rows', newRows);
               }
-              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
-              parent.setProps('rows', newRows);
             }
             await (newModel as any).afterAddAsSubModel?.();
           } else {

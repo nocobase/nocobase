@@ -8,11 +8,12 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Avatar, Spin, Popover, Card, Tag, Select, Switch, Alert } from 'antd';
+import { Avatar, Spin, Popover, Card, Tag, Select, Switch, Typography } from 'antd';
 import { FlowModel, tExpr, useFlowSettingsContext, observer } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
 import { AIEmployee, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
+import { useChatMessageActions } from '../../chatbox/hooks/useChatMessageActions';
 import { ProfileCard } from '../../ProfileCard';
 import { RemoteSelect, TextAreaWithContextSelector, useRequest, useToken } from '@nocobase/client';
 import { AddContextButton } from '../../AddContextButton';
@@ -23,7 +24,6 @@ import { dialogController } from '../../stores/dialog-controller';
 import { namespace } from '../../../locale';
 import { ContextItem as WorkContextItem } from '../../types';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
-import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useLLMServiceCatalog } from '../../../llm-services/hooks/useLLMServiceCatalog';
 import { useLLMProviders } from '../../../llm-services/llm-providers';
 import { useT } from '../../../locale';
@@ -67,8 +67,7 @@ const Shortcut: React.FC<ShortcutProps> = ({
 
   const { triggerTask } = useChatBoxActions();
   const addContextItems = useChatMessagesStore.use.addContextItems();
-
-  const setWebSearch = useChatConversationsStore.use.setWebSearch();
+  const { syncContextAttachments } = useChatMessageActions();
 
   const currentAvatar = useMemo(() => {
     const avatar = aiEmployee?.avatar;
@@ -110,6 +109,7 @@ const Shortcut: React.FC<ShortcutProps> = ({
             triggerTask({ aiEmployee, tasks, auto });
             if (context?.workContext?.length) {
               addContextItems(context.workContext);
+              syncContextAttachments(context.workContext);
             }
           }}
         />
@@ -286,7 +286,6 @@ const TaskWebSearchSwitch: React.FC = observer(() => {
 
   const supportWebSearch = selectedService?.supportWebSearch;
   const isDisabled = !!modelField?.value && supportWebSearch === false;
-  const showConflictWarning = !!field.value && !!selectedService?.isToolConflict;
 
   useEffect(() => {
     if (isDisabled && field.value) {
@@ -298,9 +297,6 @@ const TaskWebSearchSwitch: React.FC = observer(() => {
     <div>
       <Switch checked={!!field.value} disabled={isDisabled} onChange={(checked) => (field.value = checked)} />
       {isDisabled && <div style={{ marginTop: 8, color: 'rgba(0, 0, 0, 0.45)' }}>{t('Web search not supported')}</div>}
-      {showConflictWarning && (
-        <Alert style={{ marginTop: 8 }} type="warning" showIcon={true} message={t('Search disables tools')} />
-      )}
     </div>
   );
 });

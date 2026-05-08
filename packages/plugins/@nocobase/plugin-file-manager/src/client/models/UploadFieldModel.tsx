@@ -16,7 +16,7 @@ import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow
 import React, { useLayoutEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel, RecordPickerContent } from '@nocobase/client';
-import { FilePreviewRenderer } from '../previewer/filePreviewTypes';
+import { FilePreviewRenderer, getDownloadFileName } from '../previewer/filePreviewTypes';
 import {
   getUploadFieldPreviewIndex,
   normalizeUploadFieldFileList,
@@ -77,10 +77,7 @@ export const CardUpload = (props) => {
     if (!url) {
       return;
     }
-    const cleanUrl = url.split('?')[0].split('#')[0];
-    const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
-    const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
-    const filename = `${Date.now()}_${target.filename}${suffix}`;
+    const filename = getDownloadFileName(target, url);
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
       .then((response) => response.blob())

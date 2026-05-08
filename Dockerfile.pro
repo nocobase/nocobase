@@ -1,4 +1,4 @@
-FROM node:20.13-bullseye as builder
+FROM node:22.13-bullseye as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
@@ -43,7 +43,7 @@ RUN cd /app \
 RUN echo "${COMMIT_HASH}" > /tmp/commit_hash.txt
 
 
-FROM node:20.13-bullseye-slim
+FROM node:22.13-bullseye-slim
 RUN apt-get update && apt-get install -y nginx libaio1 \
   && apt-get install -y --no-install-recommends postgresql-common gnupg \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \

@@ -8,25 +8,40 @@
  */
 
 import { FormItem } from '@nocobase/flow-engine';
-import { Divider } from 'antd';
+import { Divider, theme } from 'antd';
 import React from 'react';
 import { CommonItemModel } from '../base';
 import { NBColorPicker } from '../fields/ColorFieldModel';
 
+const resolveThemeColor = (value: string | undefined, fallback: string) => {
+  return value ? value : fallback;
+};
+
+const DividerItem = (props: any) => {
+  const { token } = theme.useToken();
+  const { color, borderColor, label, orientation, dashed } = props;
+
+  return (
+    <Divider
+      type="horizontal"
+      style={{
+        color: resolveThemeColor(color, token.colorText),
+        borderColor: resolveThemeColor(borderColor, token.colorSplit),
+      }}
+      orientationMargin="0"
+      orientation={orientation}
+      dashed={dashed}
+    >
+      {label}
+    </Divider>
+  );
+};
+
 export class DividerItemModel extends CommonItemModel {
   render() {
-    const { color, borderColor, label, orientation, dashed } = this.props;
     return (
       <FormItem shouldUpdate showLabel={false}>
-        <Divider
-          type="horizontal"
-          style={{ color, borderColor }}
-          orientationMargin="0"
-          orientation={orientation}
-          dashed={dashed}
-        >
-          {label}
-        </Divider>
+        <DividerItem {...this.props} />
       </FormItem>
     );
   }
@@ -38,12 +53,12 @@ DividerItemModel.registerFlow({
   steps: {
     title: {
       title: '{{t("Edit divider")}}',
-      defaultParams: {
+      defaultParams: (ctx) => ({
         label: '{{t("Text")}}',
         orientation: 'left',
-        color: 'rgba(0, 0, 0, 0.88)',
-        borderColor: 'rgba(5, 5, 5, 0.06)',
-      },
+        color: ctx.themeToken?.colorText,
+        borderColor: ctx.themeToken?.colorSplit,
+      }),
       uiSchema(ctx) {
         return {
           label: {

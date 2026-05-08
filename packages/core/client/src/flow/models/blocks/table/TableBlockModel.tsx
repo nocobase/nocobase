@@ -35,6 +35,7 @@ import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
+import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import {
   applyMobilePaginationProps,
@@ -311,7 +312,14 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   onSuccess: (values) => {
                     const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
-                    setNestedValue(this.resource.getData(), recordIndex, record);
+                    if (typeof recordIndex === 'number') {
+                      this.resource.setItem(recordIndex, record);
+                    } else {
+                      const nextData = _.cloneDeep(this.resource.getData());
+                      setNestedValue(nextData, recordIndex, record);
+                      this.resource.setData(nextData);
+                    }
+                    this.resource.emit('refresh');
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.createFork({}, `${recordIndex}`);
                     // Provide expandable meta for current row record based on the collection in context
@@ -868,7 +876,9 @@ const HighPerformanceTable = React.memo(
         const globalSort = model.props.globalSort;
         const resourceSort = model.resource.getSort();
         const currentSort = resourceSort?.length ? resourceSort : globalSort;
-        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : currentSort;
+        const sorterField = resolveTableSorterField(sorter);
+        const sort =
+          sorter.order && sorterField ? (sorter.order === `ascend` ? [sorterField] : [`-${sorterField}`]) : currentSort;
         if (sorter) {
           model.resource.setSort(sort);
         }

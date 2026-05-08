@@ -10,6 +10,7 @@
 import {
   PropertyMetaFactory,
   createRecordMetaFactory,
+  ForkFlowModel,
   DndProvider,
   Droppable,
   FlowModelRenderer,
@@ -30,6 +31,8 @@ type GridItemModelStructure = {
     actions: ActionModel[];
   };
 };
+
+const recordIdentityByFork = new WeakMap<ForkFlowModel<any>, string>();
 
 export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
   onInit(options: any): void {
@@ -125,7 +128,18 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
                   wrap
                 >
                   {this.mapSubModels('actions', (action, i) => {
-                    const fork = action.createFork({}, `${index}`);
+                    const slotKey = `${index}`;
+                    const recordIdentity =
+                      this.context.collection?.getFilterByTK?.(record) || `${record?.id ?? ''}-${slotKey}`;
+                    const cachedFork = action.getFork(slotKey);
+                    if (cachedFork && recordIdentityByFork.get(cachedFork as any) !== recordIdentity) {
+                      cachedFork.dispose();
+                    }
+
+                    const fork = action.createFork({}, slotKey);
+                    recordIdentityByFork.set(fork as any, recordIdentity);
+                    fork.invalidateFlowCache('beforeRender');
+
                     if (fork.hidden && !isConfigMode) {
                       return;
                     }
@@ -161,6 +175,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
                         >
                           <FlowModelRenderer
                             model={fork}
+                            inputArgs={record}
                             showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                             extraToolbarItems={[
                               {

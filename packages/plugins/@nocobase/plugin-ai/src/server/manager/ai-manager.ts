@@ -31,6 +31,12 @@ export enum SupportedModel {
   EMBEDDING = 'EMBEDDING',
 }
 
+export type LLMModelOptions = {
+  llmService: string;
+  model: string;
+  webSearch?: boolean;
+};
+
 export class AIManager {
   llmProviders = new Map<string, LLMProviderMeta>();
   toolManager = new ToolManager();
@@ -54,5 +60,48 @@ export class AIManager {
     return Array.from(this.llmProviders.entries())
       .filter(([_, { supportedModel }]) => supportedModel && supportedModel.includes(model))
       .map(([name]) => name);
+  }
+
+  async getLLMService(options: LLMModelOptions) {
+    const { llmService, model, webSearch } = options ?? {};
+
+    // model is required - it's set by the frontend ModelSwitcher
+    if (!llmService || !model) {
+      throw new Error('LLM service not configured');
+    }
+
+    // Build model options from model
+    const modelOptions: Record<string, any> = {
+      llmService,
+      model,
+    };
+
+    if (webSearch === true) {
+      modelOptions.builtIn = { webSearch: true };
+    }
+
+    const service = await this.plugin.db.getRepository('llmServices').findOne({
+      filter: {
+        name: llmService,
+      },
+    });
+
+    if (!service) {
+      throw new Error('LLM service not found');
+    }
+
+    const providerOptions = this.llmProviders.get(service.provider);
+    if (!providerOptions) {
+      throw new Error('LLM service provider not found');
+    }
+
+    const Provider = providerOptions.provider;
+    const provider = new Provider({
+      app: this.plugin.app,
+      serviceOptions: service.options,
+      modelOptions,
+    });
+
+    return { provider, model, service };
   }
 }

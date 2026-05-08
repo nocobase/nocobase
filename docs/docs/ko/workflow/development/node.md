@@ -95,42 +95,69 @@ export const errorInstruction = {
 
 ### 비동기 노드
 
-흐름 제어 또는 비동기(시간 소모적인) I/O 작업이 필요한 경우, `run` 메서드는 `status`가 `JOB_STATUS.PENDING`인 객체를 반환하여 실행기에게 대기(일시 중단)하도록 지시할 수 있습니다. 이는 특정 외부 비동기 작업이 완료된 후 워크플로우 엔진에 실행을 계속하도록 알리기 위함입니다. `run` 함수에서 대기 상태 값을 반환하는 경우, 해당 지시는 반드시 `resume` 메서드를 구현해야 합니다. 그렇지 않으면 워크플로우 실행을 재개할 수 없습니다.
+노드가 워크플로우를 계속하기 전에 외부 작업의 완료를 기다려야 하는 경우(HTTP 요청, 서드파티 결제 콜백, 또는 기타 시간이 오래 걸리거나 즉시 반환되지 않는 작업 등), 먼저 `JOB_STATUS.PENDING` 상태로 작업을 저장하여 현재 실행을 일시 중단하고, 작업 완료 후 `resume`을 통해 재개해야 합니다. 일시 중단 로직을 사용하는 지시는 반드시 `resume` 메서드를 구현해야 합니다. 그렇지 않으면 워크플로우를 재개할 수 없습니다.
+
+권장 구현 패턴은 다음과 같습니다.
 
 ```ts
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
-export class PayInstruction extends Instruction {
-  async run(node, input, processor) {
-    // job could be create first via processor
-    const job = await processor.saveJob({
+export class AsyncInstruction extends Instruction {
+  async run(node: FlowNodeModel, prevJob, processor) {
+    // 1. Save the pending task and record its id
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
+      nodeId: node.id,
+      nodeKey: node.key,
+      upstreamId: prevJob?.id ?? null,
     });
 
-    const { workflow } = processor;
-    // do payment asynchronously
-    paymentService.pay(node.config, (result) => {
-      // notify processor to resume the job
-      return workflow.resume(job.id, result);
-    });
+    // 2. Explicitly call exit() to flush the task to the database and commit the transaction
+    await processor.exit();
 
-    // return created job instance
-    return job;
+    // 3. Initiate the async operation (the transaction is now committed, no longer holding the database connection)
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      const result = await someAsyncOperation(node.config);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = result;
+    } catch (error) {
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = { message: error.message };
+    } finally {
+      // 4. Re-query the task from the database; do not use the cached in-memory object
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
+      });
+      job.set(jobDone);
+
+      // 5. Notify the workflow engine to resume execution, entering the resume flow
+      this.workflow.resume(job);
+    }
+    // 6. Return nothing (void); the executor will exit immediately
   }
 
-  resume(node, job, processor) {
-    // check payment status
-    job.set('status', job.result.status === 'ok' ? JOB_STATUS.RESOVLED : JOB_STATUS.REJECTED);
+  async resume(node: FlowNodeModel, job, processor) {
+    // The job already has its final status set in run(), just return it
     return job;
-  },
-};
+  }
+}
 ```
 
-여기서 `paymentService`는 특정 결제 서비스를 의미합니다. 서비스의 콜백에서 워크플로우는 해당 작업의 실행 흐름을 재개하도록 트리거되며, 현재 흐름은 먼저 종료됩니다. 이후 워크플로우 엔진은 새로운 프로세서를 생성하여 노드의 `resume` 메서드로 전달하고, 이전에 일시 중단되었던 노드를 계속 실행합니다.
+주의해야 할 몇 가지 중요한 사항이 있습니다.
 
-:::info{title=팁}
-여기서 말하는 "비동기 작업"은 JavaScript의 `async` 함수를 의미하는 것이 아니라, 다른 외부 시스템과 상호 작용할 때 즉시 결과를 반환하지 않는 특정 작업을 의미합니다. 예를 들어, 결제 서비스는 결과를 알기 위해 다른 알림을 기다려야 할 수 있습니다.
-:::
+**왜 대기 중인 작업 객체를 반환하는 대신 `processor.exit()`을 명시적으로 호출하는가?**  
+`return { status: PENDING }`은 `run` 함수를 즉시 종료시켜 이후 코드를 실행하는 것이 불가능합니다. `await processor.exit()`을 호출하면 트랜잭션을 커밋하고 데이터베이스 컨텍스트를 종료할 뿐, 함수 자체는 계속 실행됩니다. 이를 통해 동일한 함수 본문 내에서 시간이 오래 걸리는 작업을 `await`하고 완료되면 `resume`을 호출할 수 있습니다. `exit()`을 건너뛰고 반환 전에 긴 작업을 직접 `await`하면, 데이터베이스 트랜잭션을 오랫동안 열어두어 잠금 경합을 일으킬 뿐만 아니라 작업 레코드는 작업 완료 후 트랜잭션이 커밋될 때까지 저장되지 않습니다.
+
+**왜 `saveJob`이 반환한 객체를 사용하지 않고 작업을 다시 조회하는가?**  
+`saveJob`이 반환하는 객체는 원래 트랜잭션에 바인딩된 인메모리 모델 인스턴스입니다. `processor.exit()`이 호출된 후 해당 트랜잭션은 커밋되어 닫혔습니다. 이 인스턴스를 직접 수정하고 `resume`을 호출하면 ORM 상태 이상(오래된 트랜잭션 참조, 상태 불일치 등)이 발생합니다. `id`로 데이터베이스에서 다시 조회하면 트랜잭션에 바인딩되지 않은 깨끗한 인스턴스를 얻을 수 있습니다.
+
+**왜 `run` 함수가 아무것도 반환하지 않는가(`void`)?**  
+`processor.exit()`이 이미 수동으로 호출되었습니다. 실행기가 `void`를 받으면 `exit(true)`를 호출하여 불필요한 처리 없이 즉시 종료합니다. 이 시점에 `IJob`을 반환하면 실행기가 다시 저장하고 커밋을 시도하여 오류가 발생합니다. 자세한 내용은 `run`/`resume` 반환값 유형 섹션을 참조하세요.
+
+**외부 콜백이 필요한 시나리오의 경우**(예: Webhook으로 알림을 받는 결제 결과), 동일한 접근 방식이 적용됩니다. 콜백을 등록하기 전에 `processor.exit()`을 호출하여 외부 시스템이 콜백을 호출하기 전에 작업 레코드가 데이터베이스에 있는지 확인합니다. 콜백 내에서 `id`로 작업을 다시 조회한 다음 `this.workflow.resume(job)`을 호출합니다.
+
+완전한 실제 예제는 다음을 참조하세요: [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (HTTP 요청 노드로, 비동기 워크플로우 브랜치에서 이 패턴을 사용)
 
 ### 노드 결과 상태
 
@@ -148,15 +175,61 @@ export class PayInstruction extends Instruction {
 
 더 많은 지시 반환 상태는 워크플로우 API 참조 부분을 확인해 주세요.
 
-### 조기 종료
+### `run`/`resume` 반환값 유형과 실행기 동작
 
-특정 워크플로우에서는 특정 노드에서 직접 프로세스를 종료해야 할 수 있습니다. 이때 `null`을 반환하여 현재 워크플로우를 종료하고 후속 노드를 더 이상 실행하지 않도록 할 수 있습니다.
+`run` 및 `resume` 메서드의 완전한 반환 타입 정의는 다음과 같습니다:
 
-이러한 상황은 병렬 분기 노드와 같은 일부 흐름 제어 유형의 노드에서 흔히 발생합니다([코드 참고](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)). 현재 노드의 워크플로우는 종료되지만, 하위 분기마다 새로운 워크플로우가 시작되어 계속 실행됩니다.
+```ts
+type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
+```
 
-:::warn{title=경고}
-확장 노드를 사용하여 분기 워크플로우를 스케줄링하는 것은 복잡성이 따르므로, 신중하게 처리하고 충분한 테스트를 수행해야 합니다.
+실행기(`Processor`)가 지시를 호출한 후, 반환값 유형에 따라 다른 처리 로직을 실행합니다. 세 가지 경우가 있습니다.
+
+#### 1. 작업 객체 `IJob` 반환
+
+가장 일반적인 경우입니다. 필수 `status` 필드와 선택적 `result` 필드를 포함하는 객체를 반환합니다. 실행기는 이를 노드의 작업 레코드로 저장하고 `status` 값에 따라 후속 흐름을 결정합니다:
+
+- `JOB_STATUS.RESOLVED`: 노드가 성공적으로 실행됨; 다운스트림 노드가 있으면 계속 실행하고, 없으면 워크플로우가 종료됨
+- `JOB_STATUS.PENDING`: 노드가 일시 중단 상태로 진입; 현재 실행 컨텍스트가 중지되고 외부 이벤트가 `resume`을 트리거할 때까지 대기
+- 기타 실패 상태(`FAILED`, `ERROR` 등): 분기 상위 노드로 전파되거나 전체 워크플로우를 직접 종료
+
+이 경로는 완전한 트랜잭션 커밋 경로입니다 — 실행기가 작업 레코드를 저장하고 데이터베이스에 쓰고 트랜잭션을 커밋합니다.
+
+예시: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (분기가 없을 때는 `job` 객체를 직접 반환; 분기가 있을 때는 아래 `void` 경우 참조)
+
+#### 2. `null` 반환
+
+`null`이 반환되면 실행기는 `processor.exit()`(인수 없이)를 호출하며, 효과는: **현재 대기 중인 작업을 데이터베이스에 플러시하고 트랜잭션을 커밋하지만 전체 실행 상태를 업데이트하지 않음**입니다.
+
+이 사용법은 분기 제어 노드의 `resume` 메서드에서 일반적입니다: 특정 분기가 완료되어 상위 노드의 작업 상태를 업데이트하고 저장해야 하지만(예: "N번 분기 완료" 기록), 다른 분기들은 여전히 실행 중이고 전체 실행은 나머지 분기를 기다리며 `STARTED` 상태를 유지해야 할 때 — `null`을 반환하면 전체 실행 상태에 영향을 주지 않고 현재 resume 컨텍스트를 종료합니다.
+
+예시: [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
+
+- [117](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L117)번 줄: 병렬 노드가 이미 조기 완료됨(resolved/rejected); 이후 분기 resume을 무시하고 바로 `null` 반환
+- [135](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L135)번 줄: 일부 분기가 아직 완료되지 않음(`PENDING`); 현재 진행 상황을 저장하고 `null`을 반환하여 다른 분기를 계속 대기
+
+#### 3. `void` 반환 (반환 없음, 즉 암묵적 `undefined`)
+
+`void`가 반환될 때(함수에 명시적 return 문이 없거나 실행 경로가 반환값 없이 종료될 때), 실행기는 `processor.exit(true)`를 호출하며, 효과는 **즉시 반환하며 데이터베이스 작업을 수행하지 않음**입니다.
+
+이 패턴은 **지시가 실행 스케줄링을 직접 인수한** 시나리오에 전용으로 사용됩니다: 지시 내부에서 `processor.run()`을 통해 수동으로 하위 워크플로우를 시작하며, 하위 워크플로우의 실행 체인이 완료 시 데이터베이스 쓰기와 트랜잭션 커밋을 처리합니다. 실행기가 다시 처리해서는 안 됩니다.
+
+일반적인 예시:
+
+- [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67): 분기가 있을 때 `processor.run(branchNode, savedJob)`을 수동으로 호출한 후 함수가 종료되어 암묵적으로 `void` 반환
+- [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108): 모든 분기를 반복하며 각각 `processor.run(branch, job)`을 호출한 후 함수가 종료되어 암묵적으로 `void` 반환
+
+:::warn{title=주의}
+`void`를 반환하기 전에 `processor.saveJob()`이 호출된 경우, 해당 작업 레코드는 현재 실행기에 의해 데이터베이스에 쓰여지지 않습니다. 이들은 실행기 작업 목록(메모리)에 임시 저장되며, `processor.run()`으로 시작된 하위 실행이 완료될 때 트리거되는 `exit()`에 의해 데이터베이스에 일괄 플러시됩니다. 따라서 이 패턴을 사용할 때는 이러한 레코드의 지속성을 완료할 정상적으로 종료되는 하위 실행 경로가 존재하는지 확인해야 합니다. 분기 워크플로우 스케줄링은 복잡성이 따르므로 신중하게 설계하고 충분히 테스트해야 합니다.
 :::
+
+세 가지 반환값 비교 요약:
+
+| 반환값 | 실행기 동작 | 일반적인 사용 사례 |
+|--------|-----------|------------|
+| `IJob` | 작업 저장, `status`에 따라 흐름 계속/종료/일시 중단 | 결과와 상태가 포함된 일반 노드 실행 |
+| `null` | 대기 중인 작업 플러시 및 트랜잭션 커밋, 실행 상태 업데이트 안 함 | 분기가 아직 대기 중, 현재 실행 컨텍스트에서 임시 종료 |
+| `void` | 즉시 반환, DB 작업 없음 | 노드가 하위 워크플로우를 스케줄링하여 후속 처리를 하위 워크플로우에 위임 |
 
 ### 더 알아보기
 

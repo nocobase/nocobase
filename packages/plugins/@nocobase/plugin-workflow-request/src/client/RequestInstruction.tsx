@@ -456,6 +456,14 @@ export default class extends Instruction {
         defaultValue: 5000,
       },
     },
+    onlyData: {
+      type: 'boolean',
+      'x-content': `{{t("Only return response data", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("If enabled, only the response data will be saved into result, and the status code and headers will be ignored.", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      default: true,
+    },
     ignoreFail: {
       type: 'boolean',
       'x-content': `{{t("Ignore failed request and continue workflow", { ns: "${NAMESPACE}" })}}`,
