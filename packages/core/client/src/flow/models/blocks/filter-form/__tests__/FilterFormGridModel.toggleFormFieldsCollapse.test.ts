@@ -147,6 +147,71 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
     expect(model.props.layout.rows[0].cells[0].items).toEqual(['field-1', 'field-2', 'field-3']);
   });
 
+  it('keeps nested columns inside the first visible row when collapsing a v2 layout', () => {
+    const model = engine.createModel<FilterFormGridModel>({
+      uid: 'filter-grid-collapse-nested-v2',
+      use: 'FilterFormGridModel',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'first',
+              cells: [
+                {
+                  id: 'first-cell',
+                  rows: [
+                    {
+                      id: 'first-nested-row',
+                      cells: [
+                        { id: 'first-nested-cell-1', items: ['field-1'] },
+                        { id: 'first-nested-cell-2', items: ['field-2'] },
+                      ],
+                      sizes: [12, 12],
+                    },
+                  ],
+                },
+              ],
+              sizes: [24],
+            },
+            {
+              id: 'second',
+              cells: [{ id: 'second-cell', items: ['field-3'] }],
+              sizes: [24],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = {
+      items: [
+        engine.createModel({ use: 'FlowModel', uid: 'field-1' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-2' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-3' }),
+      ],
+    };
+
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
+      layout: model.props.layout,
+    });
+
+    model.toggleFormFieldsCollapse(true, 1);
+
+    const collapsedNestedRow = model.props.layout.rows[0].cells[0].rows?.[0];
+    expect(collapsedNestedRow?.cells.map((cell) => cell.items)).toEqual([['field-1'], ['field-2']]);
+    expect(collapsedNestedRow?.sizes).toEqual([12, 12]);
+    expect(model.props.layout.rows).toHaveLength(1);
+
+    model.toggleFormFieldsCollapse(false, 1);
+
+    expect(model.props.layout.rows).toHaveLength(2);
+    expect(model.props.layout.rows[0].cells[0].rows?.[0].cells.map((cell) => cell.items)).toEqual([
+      ['field-1'],
+      ['field-2'],
+    ]);
+  });
+
   it('restores the persisted full layout when current props rows were already truncated', () => {
     const model = engine.createModel<FilterFormGridModel>({
       uid: 'filter-grid-collapse-restore',
@@ -272,6 +337,63 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
     expect(persistedItems).toEqual(['field-1', 'field-2', 'field-3']);
     expect(projectLayoutToLegacyRows(model.getGridLayout()).rows).toEqual({
       first: [['field-1']],
+    });
+  });
+
+  it('uses the full layout for flow-settings layout reads during collapsed mode', () => {
+    const model = engine.createModel<FilterFormGridModel>({
+      uid: 'filter-grid-collapse-settings-full-layout',
+      use: 'FilterFormGridModel',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'first',
+              cells: [{ id: 'first-cell', items: ['field-1'] }],
+              sizes: [24],
+            },
+            {
+              id: 'second',
+              cells: [
+                { id: 'second-cell-1', items: ['field-2'] },
+                { id: 'second-cell-2', items: ['field-3'] },
+              ],
+              sizes: [12, 12],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = {
+      items: [
+        engine.createModel({ use: 'FlowModel', uid: 'field-1' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-2' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-3' }),
+      ],
+    };
+    (model.context as any).flowSettingsEnabled = true;
+
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
+      layout: model.props.layout,
+    });
+
+    model.toggleFormFieldsCollapse(true, 1);
+
+    expect(projectLayoutToLegacyRows((model as any).normalizeLayoutFromSource()).rows).toEqual({
+      first: [['field-1']],
+    });
+    expect(projectLayoutToLegacyRows(model.getGridLayout()).rows).toEqual({
+      first: [['field-1']],
+      second: [['field-2'], ['field-3']],
+    });
+
+    model.saveGridLayout(model.getGridLayout());
+
+    expect(projectLayoutToLegacyRows(model.getStepParams(GRID_FLOW_KEY, GRID_STEP).layout).rows).toEqual({
+      first: [['field-1']],
+      second: [['field-2'], ['field-3']],
     });
   });
 });

@@ -12,8 +12,10 @@ import {
   AddSubModelButton,
   DragOverlayConfig,
   FlowSettingsButton,
+  GridCellV2,
   GridLayoutData,
   GridLayoutV2,
+  GridRowV2,
   normalizeGridLayout,
   observable,
   projectLayoutToLegacyRows,
@@ -26,6 +28,7 @@ import { FilterFormItemModel } from './FilterFormItemModel';
 export class FilterFormGridModel extends GridModel {
   private fullLayoutBeforeCollapse?: GridLayoutV2;
   private normalizedItemUidsOverride?: string[];
+  private readingFullLayoutForSettingsInteraction = false;
   itemSettingsMenuLevel = 2;
   itemFlowSettings = {
     showBackground: true,
@@ -87,12 +90,49 @@ export class FilterFormGridModel extends GridModel {
     });
   }
 
+  private normalizeStoredFullLayout(): GridLayoutV2 {
+    const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
+
+    return normalizeGridLayout({
+      layout: this.fullLayoutBeforeCollapse ?? params.layout ?? this.props.layout,
+      rows: params.rows ?? this.props.rows,
+      sizes: params.sizes ?? this.props.sizes,
+      rowOrder: params.rowOrder ?? this.props.rowOrder,
+      itemUids: this.getItemUids(),
+      gridUid: this.uid,
+      logger: console,
+    });
+  }
+
   protected override normalizeLayoutFromSource(source?: Partial<GridLayoutData>): GridLayoutV2 {
     // 只有运行时读取当前展示布局时才应用折叠态可见字段覆盖；
     // 带 source 的路径通常用于重算/持久化布局，必须始终基于完整字段集。
+    if (!source && this.readingFullLayoutForSettingsInteraction) {
+      return this.normalizeStoredFullLayout();
+    }
+
     return this.normalizeFilterFormLayout(source, {
-      useVisibleItemUids: !source,
+      useVisibleItemUids: !source && !this.readingFullLayoutForSettingsInteraction,
     });
+  }
+
+  getGridLayout(): GridLayoutV2 {
+    if (this.context.flowSettingsEnabled && this.normalizedItemUidsOverride) {
+      return this.normalizeStoredFullLayout();
+    }
+
+    return super.getGridLayout();
+  }
+
+  handleDragStart(event: Parameters<GridModel['handleDragStart']>[0]) {
+    this.readingFullLayoutForSettingsInteraction = Boolean(
+      this.context.flowSettingsEnabled && this.normalizedItemUidsOverride,
+    );
+    try {
+      super.handleDragStart(event);
+    } finally {
+      this.readingFullLayoutForSettingsInteraction = false;
+    }
   }
 
   private collectLayoutItemUids(rows: GridLayoutV2['rows']) {
@@ -117,6 +157,75 @@ export class FilterFormGridModel extends GridModel {
     visitRows(rows);
 
     return Array.from(itemUids);
+  }
+
+  private getCellVisibleRowCount(cell: GridCellV2): number {
+    if (cell.rows?.length) {
+      return cell.rows.reduce((count, row) => count + this.getRowVisibleRowCount(row), 0);
+    }
+
+    return cell.items?.length || 0;
+  }
+
+  private getRowVisibleRowCount(row: GridRowV2): number {
+    return row.cells.reduce((count, cell) => Math.max(count, this.getCellVisibleRowCount(cell)), 0);
+  }
+
+  private limitCellByVisibleCount(cell: GridCellV2, visibleRows: number): GridCellV2 | null {
+    if (visibleRows <= 0) {
+      return null;
+    }
+
+    if (cell.rows?.length) {
+      const rows = this.limitLayoutRowsByVisibleCount(cell.rows, visibleRows);
+      return rows.length ? { id: cell.id, rows } : null;
+    }
+
+    if (cell.items) {
+      const items = cell.items.slice(0, visibleRows);
+      return items.length ? { id: cell.id, items } : null;
+    }
+
+    return null;
+  }
+
+  private limitRowByVisibleCount(row: GridRowV2, visibleRows: number): GridRowV2 | null {
+    const cellsWithSizes = row.cells
+      .map((cell, index) => {
+        const limitedCell = this.limitCellByVisibleCount(cell, visibleRows);
+        return limitedCell ? { cell: limitedCell, size: row.sizes?.[index] } : null;
+      })
+      .filter(Boolean) as { cell: GridCellV2; size?: number }[];
+
+    if (!cellsWithSizes.length) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      cells: cellsWithSizes.map((entry) => entry.cell),
+      sizes: cellsWithSizes.map((entry) => entry.size ?? 1),
+    };
+  }
+
+  private limitLayoutRowsByVisibleCount(rows: GridLayoutV2['rows'], visibleRows: number): GridLayoutV2['rows'] {
+    const limitedRows: GridLayoutV2['rows'] = [];
+    let remainingRows = visibleRows;
+
+    rows.forEach((row) => {
+      if (remainingRows <= 0) {
+        return;
+      }
+
+      const rowHeight = this.getRowVisibleRowCount(row);
+      const limitedRow = this.limitRowByVisibleCount(row, Math.min(rowHeight, remainingRows));
+      if (limitedRow) {
+        limitedRows.push(limitedRow);
+        remainingRows -= Math.min(rowHeight, remainingRows);
+      }
+    });
+
+    return limitedRows;
   }
 
   /**
@@ -162,37 +271,6 @@ export class FilterFormGridModel extends GridModel {
     };
   }
 
-  /**
-   * 按“可视字段行数”裁剪布局，而不是只按 grid row 数裁剪。
-   * 这样即使拖拽后多个字段被排进同一个 cell，也仍然可以正确折叠。
-   */
-  private limitRowsByVisibleCount(
-    rows: Record<string, string[][]>,
-    rowOrder: string[],
-    visibleRows: number,
-  ): Record<string, string[][]> {
-    const limitedRows: Record<string, string[][]> = {};
-    let remainingRows = visibleRows;
-
-    rowOrder.forEach((rowKey) => {
-      if (remainingRows <= 0 || !rows[rowKey]) {
-        return;
-      }
-
-      const cells = rows[rowKey];
-      const rowHeight = cells.reduce((max, cell) => Math.max(max, cell.length), 0);
-      const visibleCount = Math.min(rowHeight, remainingRows);
-      const nextCells = cells.map((cell) => cell.slice(0, visibleCount));
-
-      if (nextCells.some((cell) => cell.length > 0)) {
-        limitedRows[rowKey] = nextCells;
-        remainingRows -= visibleCount;
-      }
-    });
-
-    return limitedRows;
-  }
-
   toggleFormFieldsCollapse(collapse: boolean, visibleRows: number) {
     const { rows: fullRows, rowOrder, layout } = this.getFullLayout();
 
@@ -219,10 +297,18 @@ export class FilterFormGridModel extends GridModel {
         });
     }
 
-    const limitedRows = this.limitRowsByVisibleCount(fullRows, rowOrder, visibleRows);
+    const fullLayout =
+      layout ||
+      normalizeGridLayout({
+        rows: fullRows,
+        rowOrder,
+        itemUids: this.getItemUids(),
+      });
     const limitedLayout = normalizeGridLayout({
-      rows: limitedRows,
-      rowOrder,
+      layout: {
+        version: 2,
+        rows: this.limitLayoutRowsByVisibleCount(fullLayout.rows, visibleRows),
+      },
     });
 
     this.normalizedItemUidsOverride = this.collectLayoutItemUids(limitedLayout.rows);
