@@ -13,7 +13,6 @@ import { InputNumber, Select, Space } from 'antd';
 import { lang } from '../locale';
 
 const UNIT_OPTIONS = [
-  { value: 1, label: 'Milliseconds' },
   { value: 1000, label: 'Seconds' },
   { value: 60_000, label: 'Minutes' },
   { value: 3600_000, label: 'Hours' },
@@ -21,9 +20,9 @@ const UNIT_OPTIONS = [
 
 function normalizeUnit(value?: number) {
   if (!value) {
-    return 1;
+    return UNIT_OPTIONS[0].value;
   }
-  return UNIT_OPTIONS.findLast((item) => value % item.value === 0)?.value ?? 1;
+  return UNIT_OPTIONS.findLast((item) => value % item.value === 0)?.value ?? UNIT_OPTIONS[0].value;
 }
 
 export const TimeoutInput = connect(
