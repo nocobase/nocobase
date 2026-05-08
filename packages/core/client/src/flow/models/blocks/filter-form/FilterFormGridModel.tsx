@@ -87,7 +87,11 @@ export class FilterFormGridModel extends GridModel {
   }
 
   protected override normalizeLayoutFromSource(source?: Partial<GridLayoutData>): GridLayoutV2 {
-    return this.normalizeFilterFormLayout(source);
+    // 只有运行时读取当前展示布局时才应用折叠态可见字段覆盖；
+    // 带 source 的路径通常用于重算/持久化布局，必须始终基于完整字段集。
+    return this.normalizeFilterFormLayout(source, {
+      useVisibleItemUids: !source,
+    });
   }
 
   private collectLayoutItemUids(rows: GridLayoutV2['rows']) {
