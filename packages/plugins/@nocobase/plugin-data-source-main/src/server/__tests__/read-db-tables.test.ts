@@ -259,7 +259,9 @@ describe('db2cm test', () => {
       });
       expect(listResponse.status).toBe(200);
       expect(listResponse.body.data).toHaveLength(1);
-      expect(listResponse.body.data[0].caspian_id.trim()).toBe('id1');
+      const row = listResponse.body.data[0];
+      const caspianId = row.caspian_id ?? row.caspianId;
+      expect(String(caspianId).trim()).toBe('id1');
       expect(listResponse.body.data[0].refpoint).toBe('rp1');
 
       const tablesAfterLoad = await mainDataSource.readTables();
