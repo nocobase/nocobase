@@ -32,11 +32,11 @@ describe('migrator', () => {
     expect(db.getModel('migrations').tableName).toBe('test_migrations');
   });
 
-  test('should preserve explicit tableName for loaded collections when tablePrefix is configured', async () => {
+  test('should preserve explicit tableName for database synced collections when tablePrefix is configured', async () => {
     db.collection({
       name: 'externalTable',
       tableName: 'a1',
-      loadedFromCollectionManager: true,
+      from: 'dbsync',
       fields: [
         {
           type: 'string',

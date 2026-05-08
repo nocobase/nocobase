@@ -309,10 +309,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.sequelize.beforeDefine((model, opts) => {
       if (this.options.tablePrefix) {
-        // Preserve explicit physical table names for collections loaded from
-        // an existing database via collection manager. Other models should
-        // keep the existing auto-prefix behavior.
-        if (opts.tableName && opts['loadedFromCollectionManager']) {
+        // Preserve explicit physical table names only for database-synced
+        // collections. Collections created from UI definitions should still
+        // follow the normal auto-prefix behavior.
+        if (opts.tableName && opts['from'] === 'dbsync') {
           return;
         }
         if (opts.tableName && opts.tableName.startsWith(this.options.tablePrefix)) {
