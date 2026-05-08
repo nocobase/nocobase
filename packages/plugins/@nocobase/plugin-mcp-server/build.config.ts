@@ -50,6 +50,7 @@ export default defineConfig({
       '@jsdevtools/ono',
       'call-me-maybe',
       'fast-uri',
+      'uri-js',
     ];
     for (const packageName of packagesToCopy) {
       const source = getPackageRoot(packageName);
