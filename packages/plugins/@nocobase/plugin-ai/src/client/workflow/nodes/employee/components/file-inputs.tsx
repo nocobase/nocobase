@@ -16,13 +16,13 @@ import ListCollapse from '../../../../components/ListCollapse';
 import { useT } from '../../../../locale';
 
 type FileInputItem = {
-  type?: 'file_id' | 'file_url';
+  type: 'attachments' | 'file_id' | 'file_url';
   collection?: string;
   value?: string;
 };
 
 const defaultFileInput: FileInputItem = {
-  type: 'file_id',
+  type: 'attachments',
 };
 
 export const FileInputs: React.FC = observer(() => {
@@ -51,8 +51,9 @@ export const FileInputs: React.FC = observer(() => {
         <Form component={false} layout="vertical">
           <Form.Item label={t('Attachment Type')} layout="vertical" required>
             <Select
-              value={item.type ?? 'file_id'}
+              value={item.type}
               options={[
+                { label: t('File (load via Attachment)'), value: 'attachments' },
                 { label: t('File (load via Files collection)'), value: 'file_id' },
                 { label: t('File (load via URL)'), value: 'file_url' },
               ]}
@@ -64,7 +65,7 @@ export const FileInputs: React.FC = observer(() => {
               }
             />
           </Form.Item>
-          {item.type !== 'file_url' ? (
+          {item.type === 'file_id' ? (
             <Form.Item label={t('Collection')} layout="vertical" required>
               <DataSourceCollectionCascader
                 value={item.collection}
@@ -74,7 +75,7 @@ export const FileInputs: React.FC = observer(() => {
               />
             </Form.Item>
           ) : null}
-          <Form.Item label={item.type === 'file_url' ? t('URL') : t('ID')} layout="vertical" required>
+          <Form.Item label={labelMapping(t, item.type)} layout="vertical" required>
             <WorkflowVariableInput
               variableOptions={{}}
               value={item.value}
@@ -87,3 +88,16 @@ export const FileInputs: React.FC = observer(() => {
     />
   );
 });
+
+const labelMapping = (t: any, type: string) => {
+  switch (type) {
+    case 'attachments':
+      return t('Attachment field');
+    case 'file_id':
+      return t('ID');
+    case 'file_url':
+      return t('URL');
+    default:
+      return t('Unknown');
+  }
+};
