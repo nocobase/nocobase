@@ -8,7 +8,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, projectLayoutToLegacyRows } from '@nocobase/flow-engine';
 import '@nocobase/client';
 import { GRID_FLOW_KEY, GRID_STEP } from '../../../base';
 import { FilterFormGridModel } from '../FilterFormGridModel';
@@ -184,5 +184,51 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
       third: [['field-3']],
     });
     expect(model.props.rowOrder).toEqual(['first', 'second', 'third']);
+  });
+
+  it('does not reinsert collapsed items when the render layout is normalized again', () => {
+    const model = engine.createModel<FilterFormGridModel>({
+      uid: 'filter-grid-collapse-visible-item-uids',
+      use: 'FilterFormGridModel',
+      props: {
+        rows: {
+          first: [['field-1']],
+          second: [['field-2']],
+          third: [['field-3']],
+        },
+        rowOrder: ['first', 'second', 'third'],
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = {
+      items: [
+        engine.createModel({ use: 'FlowModel', uid: 'field-1' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-2' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-3' }),
+      ],
+    };
+
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
+      rows: {
+        first: [['field-1']],
+        second: [['field-2']],
+        third: [['field-3']],
+      },
+      rowOrder: ['first', 'second', 'third'],
+    });
+
+    model.toggleFormFieldsCollapse(true, 1);
+
+    expect(projectLayoutToLegacyRows(model.getGridLayout()).rows).toEqual({
+      first: [['field-1']],
+    });
+
+    model.toggleFormFieldsCollapse(false, 1);
+
+    expect(projectLayoutToLegacyRows(model.getGridLayout()).rows).toEqual({
+      first: [['field-1']],
+      second: [['field-2']],
+      third: [['field-3']],
+    });
   });
 });

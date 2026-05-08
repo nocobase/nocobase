@@ -24,6 +24,7 @@ import { FilterFormItemModel } from './FilterFormItemModel';
 
 export class FilterFormGridModel extends GridModel {
   private fullLayoutBeforeCollapse?: GridLayoutV2;
+  private normalizedItemUidsOverride?: string[];
   itemSettingsMenuLevel = 2;
   itemFlowSettings = {
     showBackground: true,
@@ -64,6 +65,55 @@ export class FilterFormGridModel extends GridModel {
     return filterTargetKey || 'id';
   }
 
+  private normalizeFilterFormLayout(
+    source?: Partial<GridLayoutData>,
+    options?: {
+      useVisibleItemUids?: boolean;
+    },
+  ): GridLayoutV2 {
+    const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
+    const useVisibleItemUids = options?.useVisibleItemUids !== false;
+
+    return normalizeGridLayout({
+      layout: source?.layout ?? this.props.layout ?? params.layout,
+      rows: source?.rows ?? this.props.rows ?? params.rows,
+      sizes: source?.sizes ?? this.props.sizes ?? params.sizes,
+      rowOrder: source?.rowOrder ?? this.props.rowOrder ?? params.rowOrder,
+      // 折叠态只保留当前可见字段，避免归一化时把被裁掉的字段重新补回布局。
+      itemUids: useVisibleItemUids ? this.normalizedItemUidsOverride ?? this.getItemUids() : this.getItemUids(),
+      gridUid: this.uid,
+      logger: console,
+    });
+  }
+
+  protected override normalizeLayoutFromSource(source?: Partial<GridLayoutData>): GridLayoutV2 {
+    return this.normalizeFilterFormLayout(source);
+  }
+
+  private collectLayoutItemUids(rows: GridLayoutV2['rows']) {
+    const itemUids = new Set<string>();
+
+    const visitRows = (currentRows: GridLayoutV2['rows']) => {
+      currentRows.forEach((row) => {
+        row.cells.forEach((cell) => {
+          cell.items?.forEach((uid) => {
+            if (uid && this.flowEngine.getModel(uid)) {
+              itemUids.add(uid);
+            }
+          });
+
+          if (cell.rows?.length) {
+            visitRows(cell.rows);
+          }
+        });
+      });
+    };
+
+    visitRows(rows);
+
+    return Array.from(itemUids);
+  }
+
   /**
    * 获取筛选表单当前“完整布局”。
    * 折叠态会临时裁剪 props.rows，因此这里优先选取行数更多的那份布局，
@@ -71,8 +121,12 @@ export class FilterFormGridModel extends GridModel {
    */
   private getFullLayout() {
     const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
-    const currentLayout = this.props.layout ? this.getGridLayout() : undefined;
-    const savedLayout = params.layout ? this.normalizeLayoutFromSource(params) : undefined;
+    const currentLayout = this.props.layout
+      ? this.normalizeFilterFormLayout(undefined, { useVisibleItemUids: false })
+      : undefined;
+    const savedLayout = params.layout
+      ? this.normalizeFilterFormLayout(params, { useVisibleItemUids: false })
+      : undefined;
     const currentProjection = currentLayout
       ? projectLayoutToLegacyRows(currentLayout)
       : { rows: this.props.rows || {}, rowOrder: this.props.rowOrder };
@@ -138,6 +192,7 @@ export class FilterFormGridModel extends GridModel {
     const { rows: fullRows, rowOrder, layout } = this.getFullLayout();
 
     if (!collapse) {
+      this.normalizedItemUidsOverride = undefined;
       const restoredLayout = this.fullLayoutBeforeCollapse || layout;
       if (restoredLayout) {
         this.syncLayoutProps(restoredLayout);
@@ -165,6 +220,7 @@ export class FilterFormGridModel extends GridModel {
       rowOrder,
     });
 
+    this.normalizedItemUidsOverride = this.collectLayoutItemUids(limitedLayout.rows);
     this.syncLayoutProps(limitedLayout);
     this.setProps('rowOrder', rowOrder);
   }
