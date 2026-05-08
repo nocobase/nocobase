@@ -101,7 +101,7 @@ describe('ReadPretty:formatNumberWithSeparator', () => {
 
   test('Format number with custom 0 0,00 separator', () => {
     const formatted = formatNumberWithSeparator(1234567.89, '0 0,00', 1);
-    expect(formatted).toBe('1 234 567.9');
+    expect(formatted).toBe('1 234 567,9');
   });
   test('Format number with custom 0.00 separator', () => {
     const formatted = formatNumberWithSeparator(1234567.89, '0.00', 1);
@@ -135,9 +135,9 @@ describe('ReadPretty:formatNumber locale-aware default separator', () => {
     const result = formatNumber({ value: 1234567.89, step: 0.01, locale: 'de-DE' });
     expect(result).toBe('1.234.567,89');
   });
-  test('fr-FR locale defaults to space-thousands / dot-decimal', () => {
+  test('fr-FR locale defaults to space-thousands / comma-decimal', () => {
     const result = formatNumber({ value: 1234567.89, step: 0.01, locale: 'fr-FR' });
-    expect(result).toBe('1 234 567.89');
+    expect(result).toBe('1 234 567,89');
   });
   test('explicit separator wins over locale', () => {
     const result = formatNumber({

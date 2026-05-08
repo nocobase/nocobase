@@ -68,6 +68,7 @@ import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerf
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
+import { resolveColumnAlign } from './resolveColumnAlign';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -94,16 +95,6 @@ interface BodyCellComponentProps {
   rowIndex: number;
   isSubTable?: boolean;
 }
-
-// Field interfaces whose columns are right-aligned by default in tables.
-// Right-alignment makes decimal-aligned values comparable at a glance, which
-// matches accounting/spreadsheet convention. Users can override per column
-// via x-component-props.align.
-const NUMERIC_COLUMN_INTERFACES = new Set([
-  'number',
-  'integer',
-  'percent',
-]);
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -251,10 +242,7 @@ const useTableColumns = (
         // Auto right-align numeric columns (decimal-aligned reads better in tables;
         // matches accounting/spreadsheet convention). Explicit `align` in
         // x-component-props still wins.
-        const explicitAlign = columnSchema['x-component-props']?.align;
-        const isNumericInterface = NUMERIC_COLUMN_INTERFACES.has(_interface);
-        const autoAlign = isNumericInterface ? 'right' : undefined;
-        const align = explicitAlign ?? autoAlign;
+        const align = resolveColumnAlign(columnSchema['x-component-props']?.align, _interface);
 
         return {
           title: (

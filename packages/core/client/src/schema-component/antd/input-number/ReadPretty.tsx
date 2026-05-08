@@ -58,7 +58,7 @@ function countDecimalPlaces(value) {
 const separators = {
   '0,0.00': { thousands: ',', decimal: '.' },
   '0.0,00': { thousands: '.', decimal: ',' },
-  '0 0,00': { thousands: ' ', decimal: '.' },
+  '0 0,00': { thousands: ' ', decimal: ',' },
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
 //分隔符换算
