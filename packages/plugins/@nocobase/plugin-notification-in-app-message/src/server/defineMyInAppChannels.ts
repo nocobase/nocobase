@@ -63,6 +63,7 @@ export default function defineMyInAppChannels(app: Application) {
             ? Sequelize.literal(`${latestMsgReceiveTimestampSQL} < ${filter.latestMsgReceiveTimestamp.$lt}`)
             : null;
           const channelIdFilter = filter?.id ? { id: filter.id } : null;
+          const channelNameFilter = filter?.name ? { name: filter.name } : null;
           const statusMap = {
             all: 'read|unread',
             unread: 'unread',
@@ -128,7 +129,13 @@ export default function defineMyInAppChannels(app: Application) {
               },
               //@ts-ignore
               where: {
-                [Op.and]: [userFilter, latestMsgReceiveTSFilter, channelIdFilter, channelStatusFilter].filter(Boolean),
+                [Op.and]: [
+                  userFilter,
+                  latestMsgReceiveTSFilter,
+                  channelIdFilter,
+                  channelNameFilter,
+                  channelStatusFilter,
+                ].filter(Boolean),
               },
               sort: ['-latestMsgReceiveTimestamp'],
             });
@@ -136,7 +143,7 @@ export default function defineMyInAppChannels(app: Application) {
             const countRes = channelsRepo.count({
               //@ts-ignore
               where: {
-                [Op.and]: [userFilter, channelStatusFilter].filter(Boolean),
+                [Op.and]: [userFilter, channelNameFilter, channelStatusFilter].filter(Boolean),
               },
             });
             const [channels, count] = await Promise.all([channelsRes, countRes]);

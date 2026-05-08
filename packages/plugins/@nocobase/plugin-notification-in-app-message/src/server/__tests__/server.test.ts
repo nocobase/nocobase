@@ -203,6 +203,37 @@ describe('inapp message channels', () => {
       });
       expect(allChannelsRes.body.data.length).toBe(3);
     });
+
+    test('filter channel by name', async () => {
+      const channels = await channelsRepo.create({
+        values: [
+          {
+            title: 'target_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'other_channel',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const targetChannel = channels.find((channel) => channel.title === 'target_channel');
+      const otherChannel = channels.find((channel) => channel.title === 'other_channel');
+
+      await createMessages(
+        { messagesRepo },
+        { unreadNum: 1, readNum: 0, channelName: targetChannel.name, startTimeStamp: Date.now(), userId: currUserId },
+      );
+      await createMessages(
+        { messagesRepo },
+        { unreadNum: 1, readNum: 0, channelName: otherChannel.name, startTimeStamp: Date.now(), userId: currUserId },
+      );
+
+      const res = await currUserAgent.resource('myInAppChannels').list({ filter: { name: targetChannel.name } });
+
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].name).toBe(targetChannel.name);
+    });
     // test('channel last receive timestamp filter', () => {
     //   const currentTS = Date.now();
     // });
