@@ -176,8 +176,6 @@ const external = [
   'ahooks',
   'lodash',
   'china-division',
-  'file-saver',
-
   // langChain
   'langchain',
   '@langchain/core',
@@ -632,12 +630,13 @@ export async function buildPluginClient(
   }
   const sourcePackages = getPluginBrowserSourcePackages(cwd, globExcludeFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
+  const browserExternalPackages = excludePackages.filter((packageName) => packageName !== 'file-saver');
 
   checkRequire(clientFiles, log);
   buildCheck({ cwd, packageJson, entry: lane, files: clientFiles, log });
   const outDir = path.join(cwd, target_dir, laneConfig.distDir);
 
-  const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
+  const globals = browserExternalPackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
       laneConfig.externalSubpaths.forEach((subpath) => {
         prev[`${curr}/${subpath}`] = `${curr}/${subpath}`;

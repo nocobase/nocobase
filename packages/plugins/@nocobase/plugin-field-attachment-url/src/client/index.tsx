@@ -10,7 +10,7 @@
 import { Plugin, lazy } from '@nocobase/client';
 import { AttachmentURLFieldInterface } from './interfaces/attachment-url';
 import { useAttachmentUrlFieldProps } from './hook';
-import { AttachmentURLFieldModel } from './fieldModel/AttachmentURLFieldModel';
+import { AttachmentURLFieldModel } from '../client-v2/AttachmentURLFieldModel';
 const { AttachmentUrl } = lazy(() => import('./component/AttachmentUrl'), 'AttachmentUrl');
 
 import { attachmentUrlComponentFieldSettings } from './settings';
@@ -32,4 +32,5 @@ export class PluginFieldAttachmentUrlClient extends Plugin {
   }
 }
 
+export { AttachmentURLFieldModel } from '../client-v2/AttachmentURLFieldModel';
 export default PluginFieldAttachmentUrlClient;
