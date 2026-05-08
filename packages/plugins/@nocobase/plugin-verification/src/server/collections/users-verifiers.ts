@@ -15,6 +15,11 @@ import { defineCollection } from '@nocobase/database';
  */
 export default defineCollection({
   migrationRules: ['schema-only', 'overwrite', 'skip'],
+  recordUniqueKey: ['verifier'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   name: 'usersVerifiers',
   createdBy: true,
   updatedBy: true,

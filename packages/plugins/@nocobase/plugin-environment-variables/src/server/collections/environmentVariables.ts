@@ -13,7 +13,12 @@ import { VAR_NAME_RE } from '../../re';
 export default defineCollection({
   name: 'environmentVariables',
   autoGenId: false,
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['name'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   fields: [
     {
       type: 'string',

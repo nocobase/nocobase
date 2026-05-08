@@ -13,7 +13,12 @@ export default defineCollection({
   dumpRules: 'required',
   name: 'blockTemplates',
   autoGenId: false,
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['key'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   fields: [
     {
       type: 'uid',

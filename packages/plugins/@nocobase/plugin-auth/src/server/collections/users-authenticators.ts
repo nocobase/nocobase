@@ -18,7 +18,12 @@ export default defineCollection({
     group: 'user',
   },
   shared: true,
-  migrationRules: ['schema-only', 'overwrite'],
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
+  recordUniqueKey: ['authenticator'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   name: 'usersAuthenticators',
   model: 'UserAuthModel',
   createdBy: true,

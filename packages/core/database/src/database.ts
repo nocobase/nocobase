@@ -321,7 +321,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       autoGenId: false,
       timestamps: false,
       dumpRules: 'required',
-      migrationRules: ['schema-only', 'overwrite'],
+      migrationRules: ['schema-only', 'overwrite', 'skip', 'upsert', 'insert-ignore'],
+      recordUniqueKey: ['name'],
+      defaultMigrationRule: {
+        overwriteFirst: 'schema-only',
+        upsertFirst: 'upsert',
+      },
       origin: '@nocobase/database',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],
     });

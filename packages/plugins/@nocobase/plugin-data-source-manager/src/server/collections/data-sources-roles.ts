@@ -12,7 +12,12 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'dataSourcesRoles',
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   autoGenId: false,
   timestamps: false,
   model: 'DataSourcesRolesModel',

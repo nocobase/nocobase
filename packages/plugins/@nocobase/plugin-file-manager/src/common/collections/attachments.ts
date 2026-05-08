@@ -13,7 +13,12 @@ export default {
   dumpRules: {
     group: 'user',
   },
-  migrationRules: ['schema-only', 'overwrite'],
+  migrationRules: ['schema-only', 'overwrite', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   asStrategyResource: true,
   shared: true,
   name: 'attachments',

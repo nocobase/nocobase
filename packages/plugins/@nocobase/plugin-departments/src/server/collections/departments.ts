@@ -61,7 +61,12 @@ export const parentIdField = {
 
 export default defineCollection({
   name: 'departments',
-  migrationRules: ['overwrite'],
+  migrationRules: ['overwrite', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   title: '{{t("Departments")}}',
   dumpRules: 'required',
   tree: 'adjacency-list',

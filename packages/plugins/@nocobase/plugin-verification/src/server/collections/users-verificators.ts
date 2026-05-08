@@ -12,6 +12,11 @@ import { defineCollection } from '@nocobase/database';
 // Deprecated due to incorrect naming.
 export default defineCollection({
   migrationRules: ['skip'],
+  recordUniqueKey: ['verificator'],
+  defaultMigrationRule: {
+    overwriteFirst: 'skip',
+    upsertFirst: 'skip',
+  },
   name: 'usersVerificators',
   createdBy: true,
   updatedBy: true,

@@ -13,7 +13,12 @@ export default {
   dumpRules: {
     group: 'required',
   },
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   shared: true,
   name: 'collectionCategories',
   sortable: true,

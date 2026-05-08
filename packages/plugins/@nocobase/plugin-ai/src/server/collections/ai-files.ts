@@ -11,6 +11,11 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   name: 'aiFiles',
   createdBy: true,
   updatedBy: true,

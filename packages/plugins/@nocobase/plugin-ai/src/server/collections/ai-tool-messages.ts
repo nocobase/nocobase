@@ -10,7 +10,12 @@
 import { defineCollection, CollectionOptions } from '@nocobase/database';
 
 export default defineCollection({
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   autoGenId: false,
   name: 'aiToolMessages',
   fields: [

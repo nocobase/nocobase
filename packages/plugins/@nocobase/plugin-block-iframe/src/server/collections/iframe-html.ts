@@ -13,7 +13,12 @@ export default {
   namespace: 'iframe-block.iframe-html-storage',
   dumpRules: 'required',
   name: 'iframeHtml',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   createdBy: true,
   updatedBy: true,
   shared: true,

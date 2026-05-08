@@ -21,7 +21,12 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'departmentsUsers',
   dumpRules: 'required',
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['departmentId', 'user_id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   fields: [
     {
       type: 'boolean',

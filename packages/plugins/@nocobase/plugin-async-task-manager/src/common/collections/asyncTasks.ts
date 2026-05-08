@@ -11,7 +11,12 @@ export default {
   name: 'asyncTasks',
   autoGenId: false,
   dumpRules: 'required',
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   createdAt: true,
   updatedAt: true,
   createdBy: true,

@@ -13,5 +13,10 @@ export default defineCollection({
   name: 'uiButtonSchemasRoles',
   dumpRules: 'required',
   autoGenId: false,
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['uid', 'roleName'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
 });

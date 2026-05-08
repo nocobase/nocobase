@@ -11,7 +11,12 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'lcCheckpointBlobs',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['threadId', 'checkpointNs', 'channel', 'version'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   autoGenId: false,
   fields: [
     {

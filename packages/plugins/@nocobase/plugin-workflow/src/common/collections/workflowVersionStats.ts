@@ -13,7 +13,12 @@ export default {
   dumpRules: {
     group: 'log',
   },
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   name: 'workflowVersionStats',
   shared: true,
   autoGenId: false,

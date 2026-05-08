@@ -11,7 +11,12 @@ export default {
   dumpRules: {
     group: 'log',
   },
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'upsert',
+  },
   name: 'jobs',
   shared: true,
   autoGenId: false,

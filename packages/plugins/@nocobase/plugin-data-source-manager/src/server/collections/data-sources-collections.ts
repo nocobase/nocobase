@@ -13,7 +13,12 @@ export default defineCollection({
   name: 'dataSourcesCollections',
   model: 'DataSourcesCollectionModel',
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['key'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   shared: true,
   autoGenId: false,
   timestamps: false,
