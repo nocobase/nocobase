@@ -12,6 +12,7 @@ import {
   decodeBase64Url,
   encodeBase64Url,
   isCompleteCtxDatePath,
+  isCtxDateEditorExpression,
   isCtxDateExpression,
   parseCtxDateExpression,
   resolveCtxDatePath,
@@ -30,6 +31,13 @@ describe('dateVariable utils', () => {
     expect(isCtxDateExpression('{{ ctx.date.preset.today }}')).toBe(true);
     expect(isCtxDateExpression('{{ ctx.user.name }}')).toBe(false);
     expect(isCtxDateExpression('')).toBe(false);
+  });
+
+  it('detects date editor expressions separately from date variables', () => {
+    expect(isCtxDateEditorExpression('{{ ctx.date.preset.today }}')).toBe(true);
+    expect(isCtxDateEditorExpression('{{ ctx.date.relative.next.day.n1 }}')).toBe(true);
+    expect(isCtxDateEditorExpression('{{ ctx.date.exact.single.date.vMjAyNi0wMi0xMg }}')).toBe(true);
+    expect(isCtxDateEditorExpression('{{ ctx.date.now }}')).toBe(false);
   });
 
   it('serializes preset/relative/exact single/range', () => {
@@ -63,6 +71,7 @@ describe('dateVariable utils', () => {
 
   it('resolves preset/relative/exact path', () => {
     expect(typeof resolveCtxDatePath(['date', 'preset', 'now'])).toBe('string');
+    expect(typeof resolveCtxDatePath(['date', 'now'])).toBe('string');
 
     const today = resolveCtxDatePath(['date', 'preset', 'today']);
     expect(typeof today).toBe('string');
@@ -86,6 +95,7 @@ describe('dateVariable utils', () => {
 
   it('validates complete ctx.date path', () => {
     expect(isCompleteCtxDatePath(['date', 'preset', 'today'])).toBe(true);
+    expect(isCompleteCtxDatePath(['date', 'now'])).toBe(true);
     expect(isCompleteCtxDatePath(['date', 'relative', 'next', 'day', 'n12'])).toBe(true);
     expect(isCompleteCtxDatePath(['date', 'exact', 'single', 'date', 'vabc'])).toBe(true);
     expect(isCompleteCtxDatePath(['date', 'exact', 'range', 'date', 'vabc', 'vdef'])).toBe(true);

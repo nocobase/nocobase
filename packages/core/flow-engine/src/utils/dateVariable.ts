@@ -51,6 +51,10 @@ export function isCtxDatePathPrefix(pathSegments: string[]): boolean {
   if (segments[0] !== 'date') return false;
   if (segments.length === 1) return true;
 
+  if (segments.length === 2 && PRESET_KEYS.has(segments[1])) {
+    return true;
+  }
+
   if (segments[1] === 'preset') {
     if (segments.length === 2) return true;
     return segments.length === 3 && PRESET_KEYS.has(segments[2]);
@@ -207,10 +211,20 @@ export function isCtxDateExpression(value: unknown): value is string {
   return CTX_DATE_REGEX.test(value.trim());
 }
 
+export function isCtxDateEditorExpression(value: unknown): value is string {
+  if (!isCtxDateExpression(value)) return false;
+  const segments = withDatePrefix(parseCtxDateSegments(value as string) || []);
+  return segments[1] === 'preset' || segments[1] === 'relative' || segments[1] === 'exact';
+}
+
 export function isCompleteCtxDatePath(pathSegments: string[]): boolean {
   if (!isCtxDatePathPrefix(pathSegments)) return false;
   const segments = withDatePrefix((pathSegments || []).map((seg) => String(seg)));
   if (segments[0] !== 'date') return false;
+
+  if (segments.length === 2 && PRESET_KEYS.has(segments[1])) {
+    return true;
+  }
 
   if (segments[1] === 'preset') {
     return segments.length === 3 && PRESET_KEYS.has(segments[2]);
@@ -239,6 +253,10 @@ export function isCompleteCtxDatePath(pathSegments: string[]): boolean {
 export function parseCtxDateExpression(value: unknown): any {
   if (!isCtxDateExpression(value)) return undefined;
   const segments = withDatePrefix(parseCtxDateSegments(value as string) || []);
+
+  if (segments.length === 2 && PRESET_KEYS.has(segments[1])) {
+    return { type: segments[1] };
+  }
 
   if (segments[1] === 'preset' && segments.length === 3 && PRESET_KEYS.has(segments[2])) {
     return { type: segments[2] };
@@ -330,6 +348,10 @@ export function serializeCtxDateValue(value: unknown): string | undefined {
 export function resolveCtxDatePath(pathSegments: string[]): any {
   const segments = withDatePrefix((pathSegments || []).map((seg) => String(seg)));
   if (segments[0] !== 'date') return undefined;
+
+  if (segments.length === 2 && PRESET_KEYS.has(segments[1])) {
+    return resolveCtxDatePath(['date', 'preset', segments[1]]);
+  }
 
   if (segments[1] === 'preset' && segments.length === 3) {
     const key = segments[2];

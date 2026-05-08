@@ -1200,7 +1200,7 @@ export class RuleEngine {
 
     this.commitRuleDeps(rule, state, collector);
 
-    const normalizedResolved = this.normalizeResolvedValueForTarget(baseCtx, resolved);
+    const normalizedResolved = this.normalizeResolvedValueForTarget(baseCtx, ensuredTargetNamePath, resolved);
     const normalizedResolvedForTarget = this.normalizeResolvedValueForAssociationTarget(
       baseCtx,
       ensuredTargetNamePath,
@@ -1283,12 +1283,11 @@ export class RuleEngine {
     }
   }
 
-  private isTzAwareTargetInterface(targetInterface: unknown): boolean {
-    if (typeof targetInterface !== 'string') {
-      return false;
-    }
-
-    return ['datetime', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(targetInterface);
+  private isTzAwareTarget(targetInterface: unknown, targetType: unknown): boolean {
+    return (
+      ['datetime', 'createdAt', 'updatedAt', 'unixTimestamp'].includes(String(targetInterface || '')) ||
+      ['datetime', 'datetimeTz'].includes(String(targetType || ''))
+    );
   }
 
   private normalizeDateOnlyToStartOfDayIso(value: string): string {
@@ -1301,21 +1300,73 @@ export class RuleEngine {
     return parsed.startOf('day').toISOString();
   }
 
-  private normalizeResolvedValueForTarget(baseCtx: any, resolved: any): any {
-    const targetInterface = baseCtx?.model?.context?.collectionField?.interface;
-    if (!this.isTzAwareTargetInterface(targetInterface)) {
+  private parseDateLikeValue(value: unknown): dayjs.Dayjs | null {
+    if (dayjs.isDayjs(value)) {
+      return value.isValid() ? value : null;
+    }
+    if (value instanceof Date) {
+      const parsed = dayjs(value);
+      return parsed.isValid() ? parsed : null;
+    }
+    if (typeof value !== 'string') return null;
+
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+
+    const knownFormats = ['YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD', 'HH:mm:ss'];
+    for (const format of knownFormats) {
+      const parsed = dayjs(raw, format, true);
+      if (parsed.isValid()) return parsed;
+    }
+
+    const fallback = dayjs(raw);
+    return fallback.isValid() ? fallback : null;
+  }
+
+  private normalizeDateLikeValueByTargetField(targetField: any, value: any): any {
+    const targetInterface = targetField?.interface;
+    const targetType = targetField?.type;
+    const normalizedInterface = String(targetInterface || '');
+    const normalizedType = String(targetType || '');
+
+    if (this.isTzAwareTarget(targetInterface, targetType)) {
+      if (typeof value === 'string') {
+        return this.normalizeDateOnlyToStartOfDayIso(value);
+      }
+      return value;
+    }
+
+    const parsed = this.parseDateLikeValue(value);
+    if (!parsed?.isValid()) return value;
+
+    if (normalizedInterface === 'time' || normalizedType === 'time') {
+      return parsed.format('HH:mm:ss');
+    }
+
+    if (normalizedInterface === 'date' || normalizedInterface === 'dateOnly' || normalizedType === 'dateOnly') {
+      return parsed.format('YYYY-MM-DD');
+    }
+
+    if (normalizedInterface === 'datetimeNoTz' || normalizedType === 'datetimeNoTz') {
+      return parsed.format('YYYY-MM-DD HH:mm:ss');
+    }
+
+    return value;
+  }
+
+  private normalizeResolvedValueForTarget(baseCtx: any, targetNamePath: NamePath, resolved: any): any {
+    const targetField =
+      baseCtx?.model?.context?.collectionField || this.resolveCollectionFieldByNamePath(baseCtx, targetNamePath);
+
+    if (!targetField) {
       return resolved;
     }
 
-    if (typeof resolved === 'string') {
-      return this.normalizeDateOnlyToStartOfDayIso(resolved);
-    }
-
     if (Array.isArray(resolved)) {
-      return resolved.map((item) => (typeof item === 'string' ? this.normalizeDateOnlyToStartOfDayIso(item) : item));
+      return resolved.map((item) => this.normalizeDateLikeValueByTargetField(targetField, item));
     }
 
-    return resolved;
+    return this.normalizeDateLikeValueByTargetField(targetField, resolved);
   }
 
   private isPrimitiveAssociationTargetValue(value: unknown): value is string | number | boolean {

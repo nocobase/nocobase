@@ -98,6 +98,19 @@ describe('FieldAssignValueInput date exact normalization', () => {
     expect(parseCtxDateExpression(serializedRelative)).toEqual(relative);
   });
 
+  it('keeps flat current time variable expression as a variable tag value', () => {
+    const raw = '{{ ctx.date.now }}';
+    const normalized = normalizeDateVariableOutput(raw, {
+      picker: 'date',
+      showTime: true,
+      timeFormat: 'HH:mm:ss',
+      format: 'YYYY-MM-DD HH:mm:ss',
+      exactNormalizeMode: 'iso',
+    });
+
+    expect(normalized).toBe(raw);
+  });
+
   it('falls back to original value when parsing fails', () => {
     const raw = 'Not a valid date';
     const normalized = normalizeExact(raw, 'iso', 'MMMM Do YYYY', true);

@@ -19,6 +19,7 @@ import {
   parseValueToPath,
   isRunJSValue,
   isCtxDateExpression,
+  isCtxDateEditorExpression,
   parseCtxDateExpression,
   serializeCtxDateValue,
   type CollectionField,
@@ -298,7 +299,11 @@ export function normalizeDateVariableOutput(rawValue: any, options: DateVariable
     return rawValue;
   }
 
-  if (typeof rawValue === 'string' && isVariableExpression(rawValue) && !isCtxDateExpression(rawValue)) {
+  if (
+    typeof rawValue === 'string' &&
+    isVariableExpression(rawValue) &&
+    (!isCtxDateExpression(rawValue) || !isCtxDateEditorExpression(rawValue))
+  ) {
     return rawValue;
   }
 
@@ -1428,7 +1433,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       return value;
     }
 
-    if (isCtxDateExpression(value)) {
+    if (isCtxDateEditorExpression(value)) {
       const parsed = parseCtxDateExpression(value);
       return typeof parsed === 'undefined' ? '' : parsed;
     }
@@ -1480,7 +1485,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
           if (isRunJSValue(currentValue)) return ['runjs'];
-          if (useDateVariableConstant && isCtxDateExpression(currentValue)) {
+          if (useDateVariableConstant && isCtxDateEditorExpression(currentValue)) {
             return ['constant'];
           }
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];

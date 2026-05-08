@@ -72,6 +72,7 @@ export {
   isCompleteCtxDatePath,
   isCtxDatePathPrefix,
   isCtxDateExpression,
+  isCtxDateEditorExpression,
   parseCtxDateExpression,
   resolveCtxDatePath,
   serializeCtxDateValue,

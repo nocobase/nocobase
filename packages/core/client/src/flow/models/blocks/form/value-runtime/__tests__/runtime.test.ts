@@ -30,6 +30,15 @@ function createFormStub(initialValues: any = {}) {
 function createFieldContext(runtime: FormValueRuntime) {
   const ctx: any = new FlowContext();
   ctx.defineProperty('formValues', { get: () => runtime.formValues, cache: false });
+  ctx.defineProperty('date', {
+    get: () => ({
+      now: dayjs().toISOString(),
+      preset: {
+        now: dayjs().toISOString(),
+      },
+    }),
+    cache: false,
+  });
   ctx.defineProperty('app', {
     value: {
       jsonLogic: {
@@ -401,6 +410,97 @@ describe('FormValueRuntime (form assign rules)', () => {
       expect(dayjs(assigned).isValid()).toBe(true);
       expect(dayjs(assigned).format('YYYY-MM-DD')).toBe('2026-02-12');
     });
+  });
+
+  it('normalizes current time variable by target date/time field type', async () => {
+    const cases = [
+      {
+        name: 'dateOnly',
+        collectionField: { interface: 'dateOnly', type: 'dateOnly' },
+        assertValue: (assigned: any) => {
+          expect(assigned).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        },
+      },
+      {
+        name: 'time',
+        collectionField: { interface: 'time', type: 'time' },
+        assertValue: (assigned: any) => {
+          expect(assigned).toMatch(/^\d{2}:\d{2}:\d{2}$/);
+        },
+      },
+      {
+        name: 'datetimeNoTz',
+        collectionField: { interface: 'datetimeNoTz', type: 'datetimeNoTz' },
+        assertValue: (assigned: any) => {
+          expect(assigned).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+        },
+      },
+      {
+        name: 'datetimeTz',
+        collectionField: { interface: 'datetime', type: 'datetimeTz' },
+        assertValue: (assigned: any) => {
+          expect(typeof assigned).toBe('string');
+          expect(dayjs(assigned).isValid()).toBe(true);
+          expect(assigned).toMatch(/(?:Z|[+-]\d{2}:\d{2})$/);
+        },
+      },
+    ];
+
+    for (const item of cases) {
+      const engineEmitter = new EventEmitter();
+      const blockEmitter = new EventEmitter();
+      const formStub = createFormStub({});
+
+      const blockModel: any = {
+        uid: `form-assign-current-time-${item.name}`,
+        flowEngine: { emitter: engineEmitter },
+        emitter: blockEmitter,
+        dispatchEvent: vi.fn(),
+        getAclActionName: () => 'create',
+      };
+
+      const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+      runtime.mount({ sync: true });
+
+      const blockCtx = createFieldContext(runtime);
+      blockModel.context = blockCtx;
+
+      runtime.syncAssignRules([
+        {
+          key: `r-${item.name}`,
+          enable: true,
+          targetPath: 'a',
+          mode: 'assign',
+          condition: { logic: '$and', items: [] },
+          value: '{{ ctx.date.now }}',
+        },
+      ]);
+
+      const fieldCtx = createFieldContext(runtime);
+      fieldCtx.defineProperty('blockModel', { value: blockModel });
+      fieldCtx.defineProperty('collectionField', { value: item.collectionField });
+
+      const fieldModel: any = {
+        uid: `field-a-current-time-${item.name}`,
+        subModels: { field: {} },
+        getStepParams(flowKey: string, stepKey: string) {
+          if (flowKey === 'fieldSettings' && stepKey === 'init') {
+            return { fieldPath: 'a' };
+          }
+          return undefined;
+        },
+      };
+      fieldCtx.defineProperty('model', { value: fieldModel });
+      fieldModel.context = fieldCtx;
+
+      engineEmitter.emit('model:mounted', { model: fieldModel });
+
+      await waitFor(() => {
+        const assigned = formStub.getFieldValue(['a']);
+        expect(assigned).toBeTruthy();
+        item.assertValue(assigned);
+      });
+    }
   });
 
   it('supports RunJSValue and updates on formValues dependency change', async () => {

@@ -3442,6 +3442,17 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         return createBranch(['date']);
       },
+      meta: {
+        title: escapeT('Date variables'),
+        type: 'object',
+        sort: 980,
+        properties: {
+          now: {
+            title: escapeT('Current time'),
+            type: 'datetime',
+          },
+        },
+      },
       cache: false,
     });
     this.defineMethod(

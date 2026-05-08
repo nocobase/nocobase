@@ -1877,7 +1877,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const out = await (engine.context as any).resolveJsonTemplate({
       today: '{{ ctx.date.preset.today }}',
       next12: '{{ ctx.date.relative.next.day.n12 }}',
-      now: '{{ ctx.date.preset.now }}',
+      now: '{{ ctx.date.now }}',
     });
 
     expect(typeof out.today).toBe('string');
