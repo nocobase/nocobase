@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { FlowEngine, projectLayoutToLegacyRows } from '@nocobase/flow-engine';
 import '@nocobase/client';
 import { GRID_FLOW_KEY, GRID_STEP } from '../../../base';
+import { FilterFormCollapseActionModel } from '../FilterFormCollapseActionModel';
 import { FilterFormGridModel } from '../FilterFormGridModel';
 
 describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
@@ -18,8 +19,63 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
 
   beforeEach(() => {
     engine = new FlowEngine();
-    engine.registerModels({ FilterFormGridModel });
+    engine.registerModels({ FilterFormGridModel, FilterFormCollapseActionModel });
   });
+
+  const createGridModel = () => {
+    const model = engine.createModel<FilterFormGridModel>({
+      uid: 'filter-grid-shared',
+      use: 'FilterFormGridModel',
+      props: {
+        rows: {
+          first: [['field-1']],
+          second: [['field-2']],
+          third: [['field-3']],
+        },
+        rowOrder: ['first', 'second', 'third'],
+      },
+      structure: {} as any,
+    });
+    (model as any).subModels = {
+      items: [
+        engine.createModel({ use: 'FlowModel', uid: 'field-1' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-2' }),
+        engine.createModel({ use: 'FlowModel', uid: 'field-3' }),
+      ],
+    };
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
+      rows: {
+        first: [['field-1']],
+        second: [['field-2']],
+        third: [['field-3']],
+      },
+      rowOrder: ['first', 'second', 'third'],
+    });
+    return model;
+  };
+
+  const createCollapseActionModel = (gridModel: FilterFormGridModel, flowSettingsEnabled = false) => {
+    const model = engine.createModel<FilterFormCollapseActionModel>({
+      uid: `collapse-action-${flowSettingsEnabled ? 'settings' : 'runtime'}`,
+      use: 'FilterFormCollapseActionModel',
+      stepParams: {
+        collapseSettings: {
+          toggle: {
+            collapsedRows: 1,
+          },
+          defaultCollapsed: {
+            value: true,
+          },
+        },
+      },
+      structure: {} as any,
+    });
+    Object.assign(model.context as any, {
+      flowSettingsEnabled,
+      filterFormGridModel: gridModel,
+    });
+    return model;
+  };
 
   it('uses rowOrder from the full layout when collapsing after reorder', () => {
     const model = engine.createModel<FilterFormGridModel>({
@@ -187,35 +243,7 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
   });
 
   it('does not reinsert collapsed items when the render layout is normalized again', () => {
-    const model = engine.createModel<FilterFormGridModel>({
-      uid: 'filter-grid-collapse-visible-item-uids',
-      use: 'FilterFormGridModel',
-      props: {
-        rows: {
-          first: [['field-1']],
-          second: [['field-2']],
-          third: [['field-3']],
-        },
-        rowOrder: ['first', 'second', 'third'],
-      },
-      structure: {} as any,
-    });
-    (model as any).subModels = {
-      items: [
-        engine.createModel({ use: 'FlowModel', uid: 'field-1' }),
-        engine.createModel({ use: 'FlowModel', uid: 'field-2' }),
-        engine.createModel({ use: 'FlowModel', uid: 'field-3' }),
-      ],
-    };
-
-    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
-      rows: {
-        first: [['field-1']],
-        second: [['field-2']],
-        third: [['field-3']],
-      },
-      rowOrder: ['first', 'second', 'third'],
-    });
+    const model = createGridModel();
 
     model.toggleFormFieldsCollapse(true, 1);
 
@@ -226,6 +254,43 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
     model.toggleFormFieldsCollapse(false, 1);
 
     expect(projectLayoutToLegacyRows(model.getGridLayout()).rows).toEqual({
+      first: [['field-1']],
+      second: [['field-2']],
+      third: [['field-3']],
+    });
+  });
+
+  it('always expands the grid in flow settings mode even if defaultCollapsed is enabled', () => {
+    const gridModel = createGridModel();
+    gridModel.toggleFormFieldsCollapse(true, 1);
+
+    const collapseActionModel = createCollapseActionModel(gridModel, true);
+    collapseActionModel.onMount();
+
+    expect(projectLayoutToLegacyRows(gridModel.getGridLayout()).rows).toEqual({
+      first: [['field-1']],
+      second: [['field-2']],
+      third: [['field-3']],
+    });
+    expect(gridModel.props.rows).toEqual({
+      first: [['field-1']],
+      second: [['field-2']],
+      third: [['field-3']],
+    });
+  });
+
+  it('does not collapse the grid from collapse settings while flow settings are enabled', async () => {
+    const gridModel = createGridModel();
+    const collapseActionModel = createCollapseActionModel(gridModel, true);
+    const collapseFlow = collapseActionModel.getFlow('collapseSettings');
+    expect(collapseFlow).toBeDefined();
+    const defaultCollapsedStep = collapseFlow.steps.defaultCollapsed as any;
+    const toggleStep = collapseFlow.steps.toggle as any;
+
+    defaultCollapsedStep.beforeParamsSave({ model: collapseActionModel }, { value: true });
+    await toggleStep.handler({ model: collapseActionModel }, { collapsedRows: 1 });
+
+    expect(projectLayoutToLegacyRows(gridModel.getGridLayout()).rows).toEqual({
       first: [['field-1']],
       second: [['field-2']],
       third: [['field-3']],
