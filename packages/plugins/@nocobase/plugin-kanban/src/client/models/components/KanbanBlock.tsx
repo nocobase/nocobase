@@ -23,7 +23,7 @@ import {
   type KanbanGroupOption,
 } from '../utils';
 import { ColumnPanel } from './kanban-block/ColumnPanel';
-import { CardPlaceholder } from './kanban-block/CardRenderer';
+import { CardPlaceholder, getKanbanCardGap, getKanbanCardRadius } from './kanban-block/CardRenderer';
 import {
   applyKanbanColumnOverride,
   areKanbanRecordListsEqual,
@@ -94,6 +94,8 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   const [actionsHeight, setActionsHeight] = useState(0);
   const [errorHeight, setErrorHeight] = useState(0);
   const groupField = model.getGroupField();
+  const token = model.context.themeToken || {};
+  const boardGap = token.margin ?? 16;
   const groupFieldName = groupField?.name;
   const groupFieldScopeKey = getKanbanFieldScopeKey(groupField);
   const showActionsBar = !!model.context.flowSettingsEnabled || model.hasSubModel('actions');
@@ -198,8 +200,8 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
 
     const gapCount =
       Number(Boolean(showActionsBar && actionsHeight)) + Number(Boolean(groupOptionsError && errorHeight));
-    return Math.max(containerHeight - actionsHeight - errorHeight - gapCount * 16, 0);
-  }, [actionsHeight, containerHeight, errorHeight, groupOptionsError, isFixedHeight, showActionsBar]);
+    return Math.max(containerHeight - actionsHeight - errorHeight - gapCount * boardGap, 0);
+  }, [actionsHeight, boardGap, containerHeight, errorHeight, groupOptionsError, isFixedHeight, showActionsBar]);
 
   useEffect(() => {
     let cancelled = false;
@@ -558,12 +560,14 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         overflow-y: ${contentHeight ? 'hidden' : 'visible'};
         display: flex;
         align-items: stretch;
-        gap: 16px;
+        gap: ${boardGap}px;
         width: 100%;
       `}
       style={{ height: contentHeight }}
     >
-      {groupOptionsLoading && !groupOptions.length ? <CardPlaceholder /> : null}
+      {groupOptionsLoading && !groupOptions.length ? (
+        <CardPlaceholder cardGap={getKanbanCardGap(model)} cardRadius={getKanbanCardRadius(model)} />
+      ) : null}
       {mountedColumns.map((column) => {
         const hidden =
           column.isUnknown &&
@@ -600,7 +604,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         display: 'flex',
         flexDirection: 'column',
         minHeight: isFixedHeight ? 0 : DEFAULT_KANBAN_BLOCK_MIN_HEIGHT,
-        gap: 16,
+        gap: boardGap,
         height: isFixedHeight ? '100%' : 'auto',
       }}
     >
