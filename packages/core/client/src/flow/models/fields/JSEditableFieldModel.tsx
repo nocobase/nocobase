@@ -52,17 +52,15 @@ function JsEditableField() {
 ctx.render(<JsEditableField />);
 `;
 
-type PatternAwareModel = {
-  props?: { readOnly?: boolean; pattern?: string };
-  context?: { pattern?: string };
-  parent?: { props?: { pattern?: string } };
-};
-
-function getEffectivePattern(model?: PatternAwareModel) {
-  return model?.props?.pattern ?? model?.context?.pattern ?? model?.parent?.props?.pattern;
+function getEffectivePattern(model?: JSEditableFieldModel) {
+  return (
+    model?.props?.pattern ??
+    (model?.context as { pattern?: string } | undefined)?.pattern ??
+    (model?.parent as { props?: { pattern?: string } } | undefined)?.props?.pattern
+  );
 }
 
-function isReadOnlyMode(model?: PatternAwareModel) {
+function isReadOnlyMode(model?: JSEditableFieldModel) {
   return !!model?.props?.readOnly || getEffectivePattern(model) === 'readPretty';
 }
 
