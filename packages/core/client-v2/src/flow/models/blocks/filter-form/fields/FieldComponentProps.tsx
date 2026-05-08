@@ -14,7 +14,11 @@ import { Input, Radio, Checkbox, Space, Button, Select } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { FilterableItemModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
-import { getFlowFieldInterfaceOptions, hasFlowFieldInterfaceLookup, isTitleField } from '../../../../../flow-compat';
+import {
+  getFlowFieldInterfaceOptions,
+  hasFlowFieldInterfaceLookup,
+  isTitleFieldInterface,
+} from '../../../../../flow-compat';
 
 const RECORD_SELECT_DATA_SOURCE_KEY = 'recordSelectDataSourceKey';
 const RECORD_SELECT_COLLECTION_KEY = 'recordSelectTargetCollection';
@@ -175,7 +179,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
         return true;
       }
       const fieldOptions = fieldItem?.options || fieldItem;
-      return isTitleField(getFieldInterface(fieldOptions?.interface));
+      return isTitleFieldInterface(getFieldInterface(fieldOptions?.interface));
     };
     return (activeCollection.getFields() || [])
       .filter((fieldItem: any) => shouldKeep(fieldItem))

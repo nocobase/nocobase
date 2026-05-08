@@ -8,7 +8,7 @@
  */
 
 import { defineAction, DisplayItemModel, FlowModelContext, tExpr } from '@nocobase/flow-engine';
-import { getFlowFieldInterfaceOptions, isTitleField } from '../../flow-compat';
+import { getFlowFieldInterfaceOptions, isTitleFieldInterface } from '../../flow-compat';
 
 const normalizeFilterTargetKey = (filterTargetKey: any) => {
   if (typeof filterTargetKey === 'string') {
@@ -42,7 +42,9 @@ export const titleField = defineAction({
     const targetFields = targetCollection?.getFields?.() ?? [];
     const options = targetFields
       .filter((field) =>
-        isTitleField(getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager)),
+        isTitleFieldInterface(
+          getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager),
+        ),
       )
       .map((field) => ({
         value: field.name,

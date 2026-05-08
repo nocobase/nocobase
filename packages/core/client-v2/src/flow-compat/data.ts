@@ -31,25 +31,13 @@ export const hasFlowFieldInterfaceLookup = (
     (dataSourceManager) => typeof dataSourceManager?.collectionFieldInterfaceManager?.getFieldInterface === 'function',
   );
 
-export function isTitleField(fieldInterfaceOptions: FieldInterfaceOptions): boolean | undefined;
-export function isTitleField(
+export const isTitleFieldInterface = (fieldInterfaceOptions: FieldInterfaceOptions) => {
+  return fieldInterfaceOptions?.titleUsable;
+};
+
+export const isTitleField = (
   dataSourceManager: CollectionFieldInterfaceDataSourceManager | null | undefined,
   field: CollectionFieldOptions | null | undefined,
-): boolean | undefined;
-export function isTitleField(
-  dataSourceManagerOrFieldInterfaceOptions:
-    | CollectionFieldInterfaceDataSourceManager
-    | FieldInterfaceOptions
-    | null
-    | undefined,
-  field?: CollectionFieldOptions | null,
-) {
-  if (field) {
-    return getFlowFieldInterfaceOptions(
-      field.interface,
-      dataSourceManagerOrFieldInterfaceOptions as CollectionFieldInterfaceDataSourceManager,
-    )?.titleUsable;
-  }
-
-  return (dataSourceManagerOrFieldInterfaceOptions as FieldInterfaceOptions)?.titleUsable;
-}
+) => {
+  return isTitleFieldInterface(getFlowFieldInterfaceOptions(field?.interface, dataSourceManager));
+};

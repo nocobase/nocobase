@@ -16,6 +16,7 @@ export {
   getFlowFieldInterfaceOptions,
   hasFlowFieldInterfaceLookup,
   isTitleField,
+  isTitleFieldInterface,
 } from './data';
 export { FieldValidation } from './FieldValidation';
 export { HighPerformanceSpin } from './HighPerformanceSpin';
