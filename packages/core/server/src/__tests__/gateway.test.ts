@@ -63,6 +63,26 @@ describe('gateway', () => {
       expect((req as any).originalUrl).toBe('/api/__app/demo/idpOAuth:authorize?foo=bar');
     });
 
+    it('should proxy sub app requests with original url', async () => {
+      const req = {
+        url: '/api/__app/demo/.well-known/oauth-authorization-server',
+        headers: {},
+      } as any;
+      const res = {} as any;
+
+      const supervisor = AppSupervisor.getInstance();
+      const proxyWeb = vi.spyOn(supervisor, 'proxyWeb').mockImplementation(async (_appName, forwardedReq) => {
+        expect(forwardedReq.url).toBe('/api/__app/demo/.well-known/oauth-authorization-server');
+        return true;
+      });
+
+      await gateway.requestHandler(req, res);
+
+      expect(proxyWeb).toHaveBeenCalledWith('demo', req, res);
+      expect(req.url).toBe('/api/.well-known/oauth-authorization-server');
+      expect((req as any).originalUrl).toBe('/api/__app/demo/.well-known/oauth-authorization-server');
+    });
+
     it('should add same middleware into app selector once', async () => {
       const fn = async (ctx, next) => {
         ctx.resolvedAppName = 'test';
