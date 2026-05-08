@@ -87,7 +87,12 @@ async function main() {
     warnFn.dispose();
     errorFn.dispose();
 
-    const argsJson = JSON.stringify(args ?? {}, (_, v) => (v === undefined ? null : v));
+    let argsJson;
+    try {
+      argsJson = JSON.stringify(args ?? {}, (_, v) => (v === undefined ? null : v));
+    } catch (error) {
+      throw new Error('Script arguments must be JSON-serializable', { cause: error });
+    }
     const argsHandle = context.newString(argsJson);
     context.setProp(context.global, '__argsJson', argsHandle);
     argsHandle.dispose();
