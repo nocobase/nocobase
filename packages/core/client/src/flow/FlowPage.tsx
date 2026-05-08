@@ -28,6 +28,8 @@ import { getOpenViewStepParams } from './flows/openViewFlow';
 import { useDesignable } from '../schema-component';
 import { deviceType } from 'react-device-detect';
 
+const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
+
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
   return (
@@ -242,6 +244,10 @@ export const FlowRoute = () => {
                 const destroyRef = React.createRef<(result?: any, force?: boolean) => void>();
                 const updateRef = React.createRef<(value: any) => void>();
                 const openViewParams = getOpenViewStepParams(viewItem.model);
+                const associationName =
+                  openViewParams?.associationName && !hasUsableSourceId(viewItem.params.sourceId)
+                    ? null
+                    : openViewParams?.associationName;
                 const openerUids = viewList.slice(0, viewItem.index).map((item) => item.params.viewUid);
                 const navigation = new ViewNavigation(
                   flowEngine.context,
@@ -251,7 +257,7 @@ export const FlowRoute = () => {
                 viewItem.model.dispatchEvent('click', {
                   target: layoutContentRef.current,
                   collectionName: openViewParams?.collectionName,
-                  associationName: openViewParams?.associationName,
+                  associationName,
                   dataSourceKey: openViewParams?.dataSourceKey,
                   destroyRef,
                   updateRef,
