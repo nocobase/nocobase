@@ -45,21 +45,15 @@ export default class ExecutionTimeoutManager {
 
     const timeout = this.getTimeout(execution);
     const ExecutionModelClass = this.plugin.db.getModel('executions');
-    const expiresAtLiteral =
-      timeout > 0
-        ? this.plugin.db.isPostgresCompatibleDialect()
-          ? `NOW() + INTERVAL '${timeout} milliseconds'`
-          : this.plugin.db.isMySQLCompatibleDialect()
-            ? `DATE_ADD(NOW(), INTERVAL ${timeout * 1000} MICROSECOND)`
-            : `STRFTIME('%Y-%m-%d %H:%M:%f', JULIANDAY('now') + ${timeout} / 86400000.0)`
-        : null;
+    const startedAt = new Date();
+    const expiresAt = timeout > 0 ? new Date(startedAt.getTime() + timeout) : null;
 
     const [affected] = await ExecutionModelClass.update(
       {
-        startedAt: this.plugin.db.sequelize.fn('NOW'),
-        ...(expiresAtLiteral
+        startedAt,
+        ...(expiresAt
           ? {
-              expiresAt: this.plugin.db.sequelize.literal(expiresAtLiteral),
+              expiresAt,
             }
           : {}),
       },
