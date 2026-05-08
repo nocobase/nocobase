@@ -100,7 +100,9 @@ export class ClickableFieldModel extends FieldModel {
         const parentObj = associationPathName.includes('.')
           ? get(this.context.record, associationPathName.split('.')[0])
           : this.context.record;
-        const sourceId = parentObj?.[sourceKey] ?? this.context.record?.[foreignKey];
+        const sourceId = hasUsableSourceId(parentObj?.[sourceKey])
+          ? parentObj?.[sourceKey]
+          : this.context.record?.[foreignKey];
         const useAssociationResource = hasUsableSourceId(sourceId);
         let filterByTk = associationRecord?.[targetKey];
         if (associationField.interface === 'm2m') {
