@@ -36,13 +36,11 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
   const resolvedFieldModel = fieldModel || propsValue?.fieldModel;
   const flowEngine = useFlowEngine();
   const ctx = useFlowContext();
-  const contextDataSourceManager = ctx?.dataSourceManager || flowEngine?.dataSourceManager;
-  const appDataSourceManager = ctx?.app?.dataSourceManager;
-  const hasFieldInterfaceLookup = hasFlowFieldInterfaceLookup(contextDataSourceManager, appDataSourceManager);
+  const dataSourceManager = ctx?.dataSourceManager || flowEngine?.dataSourceManager || ctx?.app?.dataSourceManager;
+  const hasFieldInterfaceLookup = hasFlowFieldInterfaceLookup(dataSourceManager);
   const getFieldInterface = useCallback(
-    (interfaceName: string | undefined) =>
-      getFlowFieldInterfaceOptions(interfaceName, contextDataSourceManager, appDataSourceManager),
-    [appDataSourceManager, contextDataSourceManager],
+    (interfaceName: string | undefined) => getFlowFieldInterfaceOptions(interfaceName, dataSourceManager),
+    [dataSourceManager],
   );
 
   const getCurrentValue = () => field.value || {};

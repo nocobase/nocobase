@@ -37,18 +37,12 @@ export const titleField = defineAction({
   title: tExpr('Title field'),
   uiMode: (ctx) => {
     const targetCollection = ctx.collectionField.targetCollection;
-    const dataSourceManager = ctx.dataSourceManager || ctx.model?.context?.dataSourceManager;
-    const appDataSourceManager = ctx.app?.dataSourceManager;
+    const dataSourceManager =
+      ctx.dataSourceManager || ctx.model?.context?.dataSourceManager || ctx.app?.dataSourceManager;
     const targetFields = targetCollection?.getFields?.() ?? [];
     const options = targetFields
       .filter((field) =>
-        isTitleField(
-          getFlowFieldInterfaceOptions(
-            field.options?.interface || field.interface,
-            dataSourceManager,
-            appDataSourceManager,
-          ),
-        ),
+        isTitleField(getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager)),
       )
       .map((field) => ({
         value: field.name,
