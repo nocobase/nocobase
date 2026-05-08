@@ -130,6 +130,25 @@ describe('RootPageModel', () => {
 
       expect((rootPageModel as any).stepParams.pageSettings.general.enableTabs).toBe(true);
     });
+
+    it('should not sync enableTabs when opening other settings steps', async () => {
+      mockContext.currentRoute.enableTabs = false;
+      (rootPageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            enableTabs: true,
+          },
+        },
+      };
+
+      await rootPageModel.openFlowSettings({ flowKey: 'otherSettings', stepKey: 'general' } as any);
+
+      expect((rootPageModel as any).stepParams.pageSettings.general.enableTabs).toBe(true);
+      expect(mockPageModelOpenFlowSettings).toHaveBeenCalledWith({
+        flowKey: 'otherSettings',
+        stepKey: 'general',
+      });
+    });
   });
 
   describe('saveStepParams', () => {

@@ -91,7 +91,9 @@ export class RootPageModel extends PageModel {
   }
 
   async openFlowSettings(options?: Parameters<PageModel['openFlowSettings']>[0]) {
-    this.syncPageSettingsEnableTabsFromRoute();
+    if (options?.flowKey === 'pageSettings' && options?.stepKey === 'general') {
+      this.syncPageSettingsEnableTabsFromRoute();
+    }
     return super.openFlowSettings(options);
   }
 
