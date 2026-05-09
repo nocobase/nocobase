@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import { detectSessionShell, removeSessionIntegration, type SessionShell } from '../../lib/session-integration.js';
 
@@ -34,11 +43,16 @@ export default class SessionRemove extends Command {
 
     const result = await removeSessionIntegration(shell);
     this.log(`Session integration removed for ${result.shell}.`);
-    if (result.profileFile && result.profileUpdated) {
-      this.log(`Profile updated: ${result.profileFile}`);
+    if (result.profileUpdated) {
+      for (const profileFile of result.profileFiles) {
+        this.log(`Profile updated: ${profileFile}`);
+      }
     }
     if (result.managedFileRemoved) {
       this.log(`Managed file removed: ${result.managedFile}`);
+    }
+    if (result.cmdAutoRunRemoved) {
+      this.log(`cmd AutoRun updated: ${result.cmdAutoRunLocation}`);
     }
     if (result.agentConfigUpdated) {
       this.log(`Opencode config updated: ${result.agentConfigFile}`);

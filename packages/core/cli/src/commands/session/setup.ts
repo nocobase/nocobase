@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Command, Flags } from '@oclif/core';
 import { detectSessionShell, setupSessionIntegration, type SessionShell } from '../../lib/session-integration.js';
 
@@ -36,14 +45,20 @@ export default class SessionSetup extends Command {
     const result = await setupSessionIntegration(shell);
     this.log(`Session integration configured for ${result.shell}.`);
     this.log(`Managed file: ${result.managedFile}`);
+    if (result.cmdAutoRunConfigured) {
+      this.log(`cmd AutoRun updated: ${result.cmdAutoRunLocation}`);
+      this.log('Open a new cmd session to initialize NB_SESSION_ID automatically.');
+    }
     if (result.agentConfigured) {
       this.log(`Opencode agent plugin installed: ${result.agentPluginFile}`);
       this.log(`Opencode config updated: ${result.agentConfigFile}`);
     } else if (result.agentSkippedReason === 'opencode_config_not_found') {
       this.log('Opencode config not found. Skipped agent session integration.');
     }
-    if (result.profileFile) {
-      this.log(`Profile updated: ${result.profileFile}`);
+    if (result.profileFiles.length > 0) {
+      for (const profileFile of result.profileFiles) {
+        this.log(`Profile updated: ${profileFile}`);
+      }
       this.log('Open a new shell session or reload your profile to initialize NB_SESSION_ID automatically.');
     }
     if (result.manualStep) {

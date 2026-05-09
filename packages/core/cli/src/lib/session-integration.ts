@@ -7,9 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { execFile, execFileSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { resolveCliHomeDir } from './cli-home.js';
 
 export type SessionShell = 'bash' | 'zsh' | 'fish' | 'powershell' | 'cmd';
@@ -17,6 +28,12 @@ export type SessionShell = 'bash' | 'zsh' | 'fish' | 'powershell' | 'cmd';
 const START_MARKER = '# >>> nocobase nb session >>>';
 const END_MARKER = '# <<< nocobase nb session <<<';
 const OPENCODE_PLUGIN_NAME = 'nb-agent-session.js';
+const CMD_AUTORUN_REGISTRY_KEY = 'HKCU\\Software\\Microsoft\\Command Processor';
+const CMD_AUTORUN_REGISTRY_VALUE = 'AutoRun';
+const CMD_AUTORUN_OVERRIDE_FILE_ENV = 'NB_SESSION_CMD_AUTORUN_FILE';
+const WINDOWS_PARENT_PROCESS_OVERRIDE_ENV = 'NB_SESSION_TEST_PARENT_PROCESS_NAME';
+
+const execFileAsync = promisify(execFile);
 
 function shellDir() {
   return path.join(resolveCliHomeDir(), 'shell');
@@ -74,10 +91,251 @@ function managedFilePath(shell: SessionShell) {
   }
 }
 
-function detectWindowsPowerShellProfile() {
+function detectWindowsPowerShellProfiles() {
   const home = resolveSessionHomeDir();
   const modern = path.join(home, 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1');
-  return modern;
+  const legacy = path.join(home, 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1');
+  return Array.from(new Set([modern, legacy]));
+}
+
+function normalizeWindowsShellProcessName(processName: string): SessionShell | undefined {
+  const normalized = processName.trim().toLowerCase();
+  if (normalized === 'cmd' || normalized === 'cmd.exe') {
+    return 'cmd';
+  }
+  if (normalized === 'powershell' || normalized === 'powershell.exe' || normalized === 'pwsh' || normalized === 'pwsh.exe') {
+    return 'powershell';
+  }
+  return undefined;
+}
+
+function resolveWindowsShellFromProcessChain(processNames: string[]): SessionShell | undefined {
+  const normalizedShells = processNames
+    .map((processName) => normalizeWindowsShellProcessName(processName))
+    .filter((shell): shell is SessionShell => Boolean(shell));
+
+  if (normalizedShells.length === 0) {
+    return undefined;
+  }
+
+  let leadingCmdCount = 0;
+  while (normalizedShells[leadingCmdCount] === 'cmd') {
+    leadingCmdCount += 1;
+  }
+
+  if (leadingCmdCount > 0 && normalizedShells[leadingCmdCount] === 'powershell') {
+    return 'powershell';
+  }
+
+  return normalizedShells[0];
+}
+
+function detectWindowsShellByParentProcess(): SessionShell | undefined {
+  if (process.platform !== 'win32' || !process.ppid) {
+    return undefined;
+  }
+
+  const overrideParentProcess = String(process.env[WINDOWS_PARENT_PROCESS_OVERRIDE_ENV] ?? '').trim();
+  if (overrideParentProcess) {
+    return resolveWindowsShellFromProcessChain(overrideParentProcess.split(/[,\r\n]+/));
+  }
+
+  try {
+    return resolveWindowsShellFromProcessChain(
+      String(
+        execFileSync(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-Command',
+            [
+              `$id = ${process.ppid}`,
+              '$names = @()',
+              'for ($i = 0; $i -lt 6 -and $id; $i++) {',
+              '  $process = Get-CimInstance Win32_Process -Filter "ProcessId=$id" -ErrorAction SilentlyContinue',
+              '  if (-not $process) { break }',
+              '  $names += $process.Name',
+              '  $id = $process.ParentProcessId',
+              '}',
+              '$names -join [Environment]::NewLine',
+            ].join('; '),
+          ],
+          {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+            windowsHide: true,
+          },
+        ),
+      ).split(/\r?\n/),
+    );
+  } catch (_error) {
+    // fall back to environment-based detection
+  }
+
+  return undefined;
+}
+
+function cmdAutoRunSegment(managedFile: string) {
+  return `if exist "${managedFile}" call "${managedFile}"`;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function cmdAutoRunLocation() {
+  const overrideFile = String(process.env[CMD_AUTORUN_OVERRIDE_FILE_ENV] ?? '').trim();
+  if (overrideFile) {
+    return overrideFile;
+  }
+
+  return `${CMD_AUTORUN_REGISTRY_KEY}\\${CMD_AUTORUN_REGISTRY_VALUE}`;
+}
+
+function parseRegistryQueryValue(output: string, valueName: string) {
+  for (const line of output.split(/\r?\n/)) {
+    const match = line.match(new RegExp(`^\\s*${escapeRegExp(valueName)}\\s+REG_\\w+\\s*(.*)$`));
+    if (match) {
+      return match[1] ?? '';
+    }
+  }
+
+  return undefined;
+}
+
+async function readCmdAutoRunValue() {
+  const overrideFile = String(process.env[CMD_AUTORUN_OVERRIDE_FILE_ENV] ?? '').trim();
+  if (overrideFile) {
+    try {
+      return await fs.readFile(overrideFile, 'utf8');
+    } catch (_error) {
+      return undefined;
+    }
+  }
+
+  if (process.platform !== 'win32') {
+    return undefined;
+  }
+
+  try {
+    const { stdout } = await execFileAsync(
+      'reg',
+      ['query', CMD_AUTORUN_REGISTRY_KEY, '/v', CMD_AUTORUN_REGISTRY_VALUE],
+      { windowsHide: true },
+    );
+    return parseRegistryQueryValue(stdout, CMD_AUTORUN_REGISTRY_VALUE);
+  } catch (_error) {
+    return undefined;
+  }
+}
+
+async function writeCmdAutoRunValue(value: string) {
+  const overrideFile = String(process.env[CMD_AUTORUN_OVERRIDE_FILE_ENV] ?? '').trim();
+  if (overrideFile) {
+    await fs.mkdir(path.dirname(overrideFile), { recursive: true });
+    await fs.writeFile(overrideFile, value, 'utf8');
+    return;
+  }
+
+  if (process.platform !== 'win32') {
+    throw new Error('cmd AutoRun is only supported on Windows.');
+  }
+
+  await execFileAsync(
+    'reg',
+    ['add', CMD_AUTORUN_REGISTRY_KEY, '/v', CMD_AUTORUN_REGISTRY_VALUE, '/t', 'REG_SZ', '/d', value, '/f'],
+    { windowsHide: true },
+  );
+}
+
+async function deleteCmdAutoRunValue() {
+  const overrideFile = String(process.env[CMD_AUTORUN_OVERRIDE_FILE_ENV] ?? '').trim();
+  if (overrideFile) {
+    await fs.rm(overrideFile, { force: true });
+    return;
+  }
+
+  if (process.platform !== 'win32') {
+    return;
+  }
+
+  try {
+    await execFileAsync('reg', ['delete', CMD_AUTORUN_REGISTRY_KEY, '/v', CMD_AUTORUN_REGISTRY_VALUE, '/f'], {
+      windowsHide: true,
+    });
+  } catch (_error) {
+    // ignore missing registry value
+  }
+}
+
+function appendCmdAutoRunSegment(currentValue: string | undefined, segment: string) {
+  const current = String(currentValue ?? '').trim();
+  if (!current) {
+    return segment;
+  }
+  if (current.includes(segment)) {
+    return current;
+  }
+  return `${current} & ${segment}`;
+}
+
+function removeCmdAutoRunSegment(currentValue: string | undefined, segment: string) {
+  const current = String(currentValue ?? '').trim();
+  if (!current) {
+    return '';
+  }
+  if (current === segment) {
+    return '';
+  }
+
+  const escapedSegment = escapeRegExp(segment);
+  let next = current
+    .replace(new RegExp(`\\s*&\\s*${escapedSegment}$`), '')
+    .replace(new RegExp(`^${escapedSegment}\\s*&\\s*`), '')
+    .replace(new RegExp(`\\s*&\\s*${escapedSegment}(?=\\s*&\\s*)`, 'g'), '');
+
+  next = next.replace(/\s{2,}/g, ' ').trim();
+  next = next.replace(/\s*&\s*&\s*/g, ' & ').trim();
+  return next;
+}
+
+async function setupCmdAutoRun(managedFile: string) {
+  const segment = cmdAutoRunSegment(managedFile);
+  const currentValue = await readCmdAutoRunValue();
+  const nextValue = appendCmdAutoRunSegment(currentValue, segment);
+  if (nextValue === String(currentValue ?? '').trim()) {
+    return {
+      configured: true,
+      location: cmdAutoRunLocation(),
+    };
+  }
+
+  await writeCmdAutoRunValue(nextValue);
+  return {
+    configured: true,
+    location: cmdAutoRunLocation(),
+  };
+}
+
+async function removeCmdAutoRun(managedFile: string) {
+  const segment = cmdAutoRunSegment(managedFile);
+  const currentValue = await readCmdAutoRunValue();
+  const nextValue = removeCmdAutoRunSegment(currentValue, segment);
+  const current = String(currentValue ?? '').trim();
+  const changed = nextValue !== current;
+
+  if (changed) {
+    if (nextValue) {
+      await writeCmdAutoRunValue(nextValue);
+    } else {
+      await deleteCmdAutoRunValue();
+    }
+  }
+
+  return {
+    removed: changed,
+    location: cmdAutoRunLocation(),
+  };
 }
 
 export function detectSessionShell(): SessionShell | undefined {
@@ -103,10 +361,19 @@ export function detectSessionShell(): SessionShell | undefined {
   }
 
   if (process.platform === 'win32') {
+    const detectedWindowsShell = detectWindowsShellByParentProcess();
+    if (detectedWindowsShell) {
+      return detectedWindowsShell;
+    }
+
+    const comspec = String(process.env.ComSpec ?? '').trim().toLowerCase();
+    const prompt = String(process.env.PROMPT ?? '').trim();
+    if (prompt && comspec.endsWith('cmd.exe')) {
+      return 'cmd';
+    }
     if (process.env.PSModulePath) {
       return 'powershell';
     }
-    const comspec = String(process.env.ComSpec ?? '').trim().toLowerCase();
     if (comspec.endsWith('cmd.exe')) {
       return 'cmd';
     }
@@ -115,22 +382,28 @@ export function detectSessionShell(): SessionShell | undefined {
   return undefined;
 }
 
-export function getSessionShellProfilePath(shell: SessionShell): string | undefined {
+export function getSessionShellProfilePaths(shell: SessionShell): string[] {
   const home = resolveSessionHomeDir();
   switch (shell) {
     case 'bash':
-      return path.join(home, '.bashrc');
+      return [path.join(home, '.bashrc')];
     case 'zsh':
-      return path.join(home, '.zshrc');
+      return [path.join(home, '.zshrc')];
     case 'fish':
-      return path.join(home, '.config', 'fish', 'config.fish');
+      return [path.join(home, '.config', 'fish', 'config.fish')];
     case 'powershell':
-      return detectWindowsPowerShellProfile();
+      return process.platform === 'win32'
+        ? detectWindowsPowerShellProfiles()
+        : [path.join(home, '.config', 'powershell', 'Microsoft.PowerShell_profile.ps1')];
     case 'cmd':
-      return undefined;
+      return [];
     default:
-      return undefined;
+      return [];
   }
+}
+
+export function getSessionShellProfilePath(shell: SessionShell): string | undefined {
+  return getSessionShellProfilePaths(shell)[0];
 }
 
 function buildManagedFileContent(shell: SessionShell) {
@@ -172,7 +445,7 @@ function buildManagedFileContent(shell: SessionShell) {
         'if defined CODEX_THREAD_ID (',
         '  set "NB_SESSION_ID=%CODEX_THREAD_ID%"',
         ') else (',
-        '  for /f %%i in (\'node -e "console.log(require(\\\'node:crypto\\\').randomUUID())"\') do set "NB_SESSION_ID=nb-%%i"',
+        '  set "NB_SESSION_ID=nb-%RANDOM%%RANDOM%%RANDOM%%RANDOM%"',
         ')',
         '',
       ].join('\r\n');
@@ -348,7 +621,10 @@ export interface SessionSetupResult {
   shell: SessionShell;
   managedFile: string;
   profileFile?: string;
+  profileFiles: string[];
   profileUpdated: boolean;
+  cmdAutoRunConfigured: boolean;
+  cmdAutoRunLocation?: string;
   manualStep?: string;
   agentPluginFile?: string;
   agentConfigFile?: string;
@@ -362,14 +638,52 @@ export async function setupSessionIntegration(shell: SessionShell): Promise<Sess
   await fs.writeFile(managedFile, buildManagedFileContent(shell), 'utf8');
   const agent = await installOpencodeSessionPlugin(shell);
 
-  const profileFile = getSessionShellProfilePath(shell);
-  if (profileFile) {
-    await upsertMarkedBlock(profileFile, buildProfileSnippet(shell, managedFile));
+  if (shell === 'cmd') {
+    if (process.platform === 'win32' || String(process.env[CMD_AUTORUN_OVERRIDE_FILE_ENV] ?? '').trim()) {
+      try {
+        const autoRun = await setupCmdAutoRun(managedFile);
+        return {
+          shell,
+          managedFile,
+          profileFiles: [],
+          profileUpdated: false,
+          cmdAutoRunConfigured: autoRun.configured,
+          cmdAutoRunLocation: autoRun.location,
+          agentPluginFile: agent.pluginFile,
+          agentConfigFile: agent.configFile,
+          agentConfigured: agent.configured,
+          agentSkippedReason: agent.skippedReason,
+        };
+      } catch (_error) {
+        // fall through to the manual step guidance below
+      }
+    }
+
     return {
       shell,
       managedFile,
-      profileFile,
+      profileFiles: [],
+      profileUpdated: false,
+      cmdAutoRunConfigured: false,
+      agentPluginFile: agent.pluginFile,
+      agentConfigFile: agent.configFile,
+      agentConfigured: agent.configured,
+      agentSkippedReason: agent.skippedReason,
+      manualStep: `cmd.exe AutoRun was not updated. Run 'call "${managedFile}"' in the current cmd session before using nb, or configure AutoRun to call it automatically.`,
+    };
+  }
+
+  const profileFiles = getSessionShellProfilePaths(shell);
+  if (profileFiles.length > 0) {
+    const snippet = buildProfileSnippet(shell, managedFile);
+    await Promise.all(profileFiles.map((profileFile) => upsertMarkedBlock(profileFile, snippet)));
+    return {
+      shell,
+      managedFile,
+      profileFile: profileFiles[0],
+      profileFiles,
       profileUpdated: true,
+      cmdAutoRunConfigured: false,
       agentPluginFile: agent.pluginFile,
       agentConfigFile: agent.configFile,
       agentConfigured: agent.configured,
@@ -380,7 +694,9 @@ export async function setupSessionIntegration(shell: SessionShell): Promise<Sess
   return {
     shell,
     managedFile,
+    profileFiles: [],
     profileUpdated: false,
+    cmdAutoRunConfigured: false,
     agentPluginFile: agent.pluginFile,
     agentConfigFile: agent.configFile,
     agentConfigured: agent.configured,
@@ -393,8 +709,11 @@ export interface SessionRemoveResult {
   shell: SessionShell;
   managedFile: string;
   profileFile?: string;
+  profileFiles: string[];
   profileUpdated: boolean;
   managedFileRemoved: boolean;
+  cmdAutoRunRemoved: boolean;
+  cmdAutoRunLocation?: string;
   agentPluginFile?: string;
   agentConfigFile?: string;
   agentPluginRemoved: boolean;
@@ -411,16 +730,40 @@ export async function removeSessionIntegration(shell: SessionShell): Promise<Ses
     managedFileRemoved = false;
   }
 
-  const profileFile = getSessionShellProfilePath(shell);
-  const profileUpdated = profileFile ? await removeMarkedBlock(profileFile) : false;
+  if (shell === 'cmd') {
+    const autoRun = await removeCmdAutoRun(managedFile);
+    const agent = await removeOpencodeSessionPlugin(shell);
+
+    return {
+      shell,
+      managedFile,
+      profileFiles: [],
+      profileUpdated: false,
+      managedFileRemoved,
+      cmdAutoRunRemoved: autoRun.removed,
+      cmdAutoRunLocation: autoRun.location,
+      agentPluginFile: agent.pluginFile,
+      agentConfigFile: agent.configFile,
+      agentPluginRemoved: agent.pluginFileRemoved,
+      agentConfigUpdated: agent.configUpdated,
+    };
+  }
+
+  const profileFiles = getSessionShellProfilePaths(shell);
+  const profileUpdateResults = await Promise.all(
+    profileFiles.map(async (profileFile) => ((await removeMarkedBlock(profileFile)) ? profileFile : undefined)),
+  );
+  const updatedProfileFiles = profileUpdateResults.filter((profileFile): profileFile is string => Boolean(profileFile));
   const agent = await removeOpencodeSessionPlugin(shell);
 
   return {
     shell,
     managedFile,
-    profileFile,
-    profileUpdated,
+    profileFile: updatedProfileFiles[0],
+    profileFiles: updatedProfileFiles,
+    profileUpdated: updatedProfileFiles.length > 0,
     managedFileRemoved,
+    cmdAutoRunRemoved: false,
     agentPluginFile: agent.pluginFile,
     agentConfigFile: agent.configFile,
     agentPluginRemoved: agent.pluginFileRemoved,
