@@ -14,73 +14,77 @@ import {
   STORAGE_TYPE_S3,
   STORAGE_TYPE_TX_COS,
 } from '../../constants';
-import type { StorageTypeMeta } from './types';
+import type { StorageFieldMeta, StorageTypeMeta } from './types';
+
+function defineField(field: StorageFieldMeta): StorageFieldMeta {
+  return field;
+}
 
 const commonFields = {
-  title: {
+  title: defineField({
     name: 'title',
     label: 'Title',
     component: 'input',
     required: true,
-  },
-  name: {
+  }),
+  name: defineField({
     name: 'name',
     label: 'Storage name',
     component: 'input',
     required: true,
     description:
       'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
-  },
-  baseUrl: {
+  }),
+  baseUrl: defineField({
     name: 'baseUrl',
     label: 'Base URL',
     component: 'variableInput',
     required: true,
     description: 'Base URL for file access, could be your CDN base URL. For example: "https://cdn.nocobase.com".',
-  },
-  path: {
+  }),
+  path: defineField({
     name: 'path',
     label: 'Path',
     component: 'variableInput',
     description:
       'Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes "/" will be ignored. For example: "user/avatar".',
-  },
-  renameMode: {
+  }),
+  renameMode: defineField({
     name: 'renameMode',
     label: 'Renaming',
     component: 'radio',
     defaultValue: 'appendRandomID',
     description: 'Renaming strategy to avoid filename conflicts when uploading files.',
-  },
-  rulesSize: {
+  }),
+  rulesSize: defineField({
     name: ['rules', 'size'],
     label: 'File size limit',
     component: 'number',
     required: true,
     defaultValue: FILE_SIZE_LIMIT_DEFAULT,
     description: 'Minimum from 1 byte.',
-  },
-  rulesMimetype: {
+  }),
+  rulesMimetype: defineField({
     name: ['rules', 'mimetype'],
     label: 'File type allowed (in MIME type format)',
     component: 'input',
     placeholder: '*',
     description:
       'Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.',
-  },
-  default: {
+  }),
+  default: defineField({
     name: 'default',
     label: 'Default storage',
     component: 'checkbox',
-  },
-  paranoid: {
+  }),
+  paranoid: defineField({
     name: 'paranoid',
     label: 'Keep file in storage when destroy the file record',
     component: 'checkbox',
     description:
       'Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.',
-  },
-} satisfies Record<string, any>;
+  }),
+};
 
 export const storageTypes: Record<string, StorageTypeMeta> = {
   [STORAGE_TYPE_LOCAL]: {
@@ -151,6 +155,7 @@ export const storageTypes: Record<string, StorageTypeMeta> = {
         name: ['settings', 'requestOptions'],
         label: 'Request options',
         component: 'json',
+        defaultValue: {},
         description:
           'Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.',
       },
