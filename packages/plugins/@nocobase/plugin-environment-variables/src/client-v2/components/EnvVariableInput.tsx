@@ -7,31 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  useFlowContext,
-  VariableHybridInput,
-  type MetaTreeNode,
-  type VariableHybridInputConverters,
-} from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
+import { VariableHybridInput, type MetaTreeNode, type VariableHybridInputConverters } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useT } from '../locale';
-
-// Translation keys (e.g. "Variables and secrets") used in this component live in
-// the environment-variables plugin's locale, not file-manager's. We need an
-// extra `t` that knows about that namespace.
-const ENV_VARS_NS = '@nocobase/plugin-environment-variables';
+import { useEnvVariablesMetaTree } from '../utils/useEnvVariablesMetaTree';
 
 const ENV_EXPR_REGEXP = /\{\{\s*(\$env\.[^{}]+?)\s*\}\}/g;
 const ENV_SINGLE_EXPR_REGEXP = /^\{\{\s*(\$env\.[^{}]+?)\s*\}\}$/;
 
+/**
+ * Convert a stored value like `"{{ $env.foo.bar }}"` back into the
+ * `[$env, foo, bar]` path used by the variable picker.
+ */
 export function parseEnvPath(value?: string): string[] | undefined {
   const matched = value?.trim().match(ENV_SINGLE_EXPR_REGEXP);
   return matched?.[1] ? matched[1].split('.') : undefined;
 }
 
+/**
+ * Format a meta tree node back into a `"{{ $env.x.y }}"` server-compatible
+ * expression. Used as the `formatPathToValue` converter so the picker output
+ * survives a round trip through the API.
+ */
 export function formatEnvPath(meta?: MetaTreeNode) {
   const paths = meta?.paths || [];
   if (paths[0] !== '$env' || paths.length < 2) {
@@ -45,56 +42,26 @@ export interface EnvVariableInputProps {
   onChange?: (value: string) => void;
   addonBefore?: React.ReactNode;
   disabled?: boolean;
+  /**
+   * When true, plain (non-variable) values are masked via `Input.Password`
+   * so secret credentials are not displayed verbatim. Variable expressions
+   * remain editable through the variable picker even in password mode.
+   */
   password?: boolean;
   placeholder?: string;
 }
 
 const isVariableExpr = (value?: string) => typeof value === 'string' && /\{\{\s*[^{}]+?\s*\}\}/.test(value);
 
+/**
+ * Generic input component for fields that accept either a literal value or a
+ * `{{ $env.X }}` reference. Pulls metaTree from `useEnvVariablesMetaTree` so
+ * empty-state, refresh-on-focus and shared-cache behaviour are handled by
+ * this plugin and not duplicated per consumer.
+ */
 export function EnvVariableInput(props: EnvVariableInputProps) {
   const { password, ...rest } = props;
-  const ctx = useFlowContext();
-  const t = useT();
-  const { t: tEnv } = useTranslation(ENV_VARS_NS);
-  const variablesScopeTitle = tEnv('Variables and secrets', { defaultValue: t('Variables and secrets') });
-  const { data } = useRequest(
-    async () => {
-      try {
-        const response = await ctx.api.request({
-          url: 'environmentVariables?paginate=false',
-          skipNotify: true,
-        });
-        return response?.data?.data || [];
-      } catch {
-        return [];
-      }
-    },
-    {
-      refreshDeps: [ctx.api],
-    },
-  );
-
-  const metaTree = useMemo<MetaTreeNode[]>(() => {
-    const children = (Array.isArray(data) ? data : []).map((item: any) => ({
-      name: item.name,
-      parentTitles: [variablesScopeTitle],
-      title: item.name,
-      paths: ['$env', item.name],
-      type: item.type || 'string',
-    }));
-
-    return children.length
-      ? [
-          {
-            name: '$env',
-            title: variablesScopeTitle,
-            paths: ['$env'],
-            type: 'object',
-            children,
-          },
-        ]
-      : [];
-  }, [data, variablesScopeTitle]);
+  const metaTree = useEnvVariablesMetaTree();
 
   const converters = useMemo<VariableHybridInputConverters>(
     () => ({
@@ -105,8 +72,6 @@ export function EnvVariableInput(props: EnvVariableInputProps) {
     [],
   );
 
-  // For password fields: when value is plain (not a variable expression),
-  // render a masked Input.Password so secrets are not exposed; otherwise keep the variable editor.
   if (password && rest.value && !isVariableExpr(rest.value)) {
     return (
       <Input.Password
