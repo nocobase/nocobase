@@ -153,10 +153,6 @@ export class AIEmployee {
     return this.inWorkflow;
   }
 
-  async clearStreamCached() {
-    await this.streamCached.clear();
-  }
-
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
     return {
@@ -569,7 +565,7 @@ export class AIEmployee {
         } else if (mode === 'custom') {
           const { currentConversation } = chunks;
           if (chunks.action === 'AfterAIMessageSaved') {
-            await this.streamCached.clear();
+            await this.streamCached.skipped();
             aiMessageIdMap.set(currentConversation.sessionId, chunks.body.messageId);
 
             const data = responseMetadata.get(chunks.body.id);
@@ -670,7 +666,6 @@ export class AIEmployee {
       await this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       this.ctx.log.error(err);
-      await this.streamCached.clear();
       if (err.name === 'GraphRecursionError') {
         this.sendSpecificError({ name: err.name, message: err.message });
       } else {

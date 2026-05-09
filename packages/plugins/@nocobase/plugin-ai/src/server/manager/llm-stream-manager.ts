@@ -16,6 +16,7 @@ const LOCK_KEY_PREFIX = 'ai-llm-stream-lock';
 const WRITE_LOCK_TTL = 3000;
 const CACHE_TTL = 10 * 60 * 1000;
 const STREAM_END_MARK = '"type":"stream_end"';
+const SKIPPED_MARK = '__skipped__';
 const DEFAULT_POLL_INTERVAL = 50;
 const DEFAULT_INITIAL_WAIT_TIMEOUT = 1000;
 
@@ -59,6 +60,11 @@ export class LLMStreamCachedManager {
 
     while (!completed) {
       const chunks = await this.getChunks(sessionId);
+      const lastSkippedIndex = chunks.lastIndexOf(SKIPPED_MARK);
+
+      if (lastSkippedIndex >= offset) {
+        offset = lastSkippedIndex + 1;
+      }
 
       while (offset < chunks.length) {
         const chunk = chunks[offset++];
@@ -122,6 +128,10 @@ export class LLMStreamCached {
 
   async append(chunk: string) {
     await this.manager.append(this.sessionId, chunk);
+  }
+
+  async skipped() {
+    await this.append(SKIPPED_MARK);
   }
 
   async *stream(options?: { pollInterval?: number; initialWaitTimeout?: number }): AsyncGenerator<string, void, void> {

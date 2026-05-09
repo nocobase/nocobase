@@ -68,6 +68,27 @@ describe('LLMStreamCachedManager', () => {
 
     expect(written).toEqual(['data: {"type":"content","body":"hello"}\n\n', 'data: {"type":"stream_end"}\n\n']);
   });
+
+  it('should skip chunks before the last skipped mark', async () => {
+    const cached = llmStreamCachedManager.getCached('session-3');
+
+    await cached.append('data: {"type":"content","body":"old-1"}\n\n');
+    await cached.skipped();
+    await cached.append('data: {"type":"content","body":"old-2"}\n\n');
+    await cached.skipped();
+    await cached.append('data: {"type":"content","body":"next"}\n\n');
+    await cached.append('data: {"type":"stream_end"}\n\n');
+
+    const written: string[] = [];
+    for await (const chunk of cached.stream({
+      pollInterval: 10,
+      initialWaitTimeout: 200,
+    })) {
+      written.push(chunk);
+    }
+
+    expect(written).toEqual(['data: {"type":"content","body":"next"}\n\n', 'data: {"type":"stream_end"}\n\n']);
+  });
 });
 
 async function sleep(ms: number) {
