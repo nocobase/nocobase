@@ -46,7 +46,7 @@ export const SystemSettingsProvider: React.FC<{ children?: ReactNode }> = (props
       cache: false,
       meta: {
         type: 'string',
-        title: flowEngine.translate('Current language'),
+        title: '{{t("Current language")}}',
         interface: 'select',
         uiSchema: {
           enum: languageOptions,
