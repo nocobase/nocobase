@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DetailsItemModel, FieldModel, TableColumnModel, css } from '@nocobase/client';
+import { css } from '@emotion/css';
+import { DetailsItemModel, FieldModel, TableColumnModel } from '@nocobase/client-v2';
 import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { Image, Space, Tooltip, message } from 'antd';
 import { castArray } from 'lodash';
@@ -21,7 +22,7 @@ import {
   getPreviewThumbnailUrl,
   getPreviewFileUrl,
   normalizePreviewFile,
-} from '../previewer/filePreviewTypes';
+} from '../../shared/previewer/filePreviewTypes';
 
 const FilePreview = ({
   file,

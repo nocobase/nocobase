@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AppComponents';
-export * from './BlankComponent';
-export * from './Icon';
-export * from './form/JsonTextArea';
-export * from './RouterContextCleaner';
+export { DisplayPreviewFieldModel } from './DisplayPreviewFieldModel';
+export { UploadActionModel } from './UploadActionModel';
+export { CardUpload, UploadFieldModel } from './UploadFieldModel';

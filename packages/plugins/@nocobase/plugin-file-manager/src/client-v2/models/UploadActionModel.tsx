@@ -8,15 +8,15 @@
  */
 
 import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
-import { ActionModel, ActionSceneEnum, Icon, usePlugin, useRequest } from '@nocobase/client';
+import { ActionModel, ActionSceneEnum, Icon } from '@nocobase/client-v2';
 import { escapeT, useFlowContext } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
 import { Button, Upload } from 'antd';
 import { UploadFile } from 'antd/es/upload/interface';
 import { filesize } from 'filesize';
 import match from 'mime-match';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import FileManagerPlugin from '../';
 
 const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
@@ -118,9 +118,14 @@ const useUploadFiles = (model) => {
 export function useStorage(storage) {
   const name = storage ?? '';
   const url = `storages:getBasicInfo/${name}`;
-  const { loading, data, run } = useRequest<any>(
-    {
-      url,
+  const ctx = useFlowContext();
+  const { loading, data, run } = useRequest(
+    async () => {
+      const response = await ctx.api.request({
+        url,
+        skipNotify: true,
+      });
+      return response?.data;
     },
     {
       manual: true,
@@ -138,7 +143,7 @@ export function useStorageCfg(model) {
   const ctx = useFlowContext();
   const field = ctx.collectionField;
   const targetCollection = ctx.collectionField?.targetCollection;
-  const plugin = usePlugin(FileManagerPlugin);
+  const plugin = ctx.app.pm.get('@nocobase/plugin-file-manager');
   const collection = model.context.blockModel.collection;
   const storage = useStorage(field?.storage || collection.storage || targetCollection.storage);
   const storageType = plugin.getStorageType(storage?.type);

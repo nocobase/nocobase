@@ -9,14 +9,14 @@
 
 import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Upload } from '@formily/antd-v5';
+import { Upload } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
 import React, { useLayoutEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
-import { FieldModel, RecordPickerContent } from '@nocobase/client';
-import { FilePreviewRenderer, getDownloadFileName } from '../previewer/filePreviewTypes';
+import { FieldModel, RecordPickerContent } from '@nocobase/client-v2';
+import { FilePreviewRenderer, getDownloadFileName } from '../../shared/previewer/filePreviewTypes';
 import {
   getUploadFieldPreviewIndex,
   normalizeUploadFieldFileList,
@@ -139,7 +139,7 @@ export const CardUpload = (props) => {
           {...props}
           listType="picture-card"
           fileList={fileList}
-          onChange={(newFileList) => {
+          onChange={({ fileList: newFileList }) => {
             // 保留上传组件生成的 uid，避免上传完成后回灌值把同一项渲染成两张不同的卡片。
             setFileList((previousFileList) => normalizeUploadFieldFileList(newFileList, previousFileList));
             const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
