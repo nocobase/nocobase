@@ -38,6 +38,29 @@ describe('runjsDiagnostics', () => {
     expect(res.issues.some((i) => i.type === 'lint' && i.ruleId === 'no-noncallable-call')).toBe(true);
   });
 
+  it('does not report JSX callback parameters as undefined variables', async () => {
+    const ctx = createTestCtx();
+    const code = `
+const { Tag } = ctx.libs.antd;
+const columns = [
+  {
+    render: (roles, record) => (
+      <div>
+        {roles.map((role) => <Tag key={role.name}>{record.nickname || role.title}</Tag>)}
+      </div>
+    ),
+  },
+];
+ctx.render(<div />);
+`;
+    const res = await diagnoseRunJS(code, ctx);
+    expect(
+      res.issues.some(
+        (i) => i.type === 'lint' && i.ruleId === 'possible-undefined-variable' && /roles|record|role/.test(i.message),
+      ),
+    ).toBe(false);
+  });
+
   it('reports suspicious short ctx member call as a lint issue', async () => {
     const ctx = createTestCtx();
     const res = await diagnoseRunJS('ctx.fw();', ctx);

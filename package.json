@@ -58,6 +58,8 @@
     "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
     "@typescript-eslint/parser": "^6.2.0",
+    "**/@mongodb-js/zstd": "file:./packages/plugins/@nocobase/plugin-ai/npm-shims/@mongodb-js/zstd",
+    "**/node-liblzma": "file:./packages/plugins/@nocobase/plugin-ai/npm-shims/node-liblzma",
     "react-router-dom": "^6.30.1",
     "react-router": "^6.30.1",
     "react": "^18.0.0",

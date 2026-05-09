@@ -21,9 +21,14 @@ export default defineTools({
   definition: {
     name: 'lintAndTestJS',
     description:
-      'Lint, sandbox-check and trial-run a JavaScript snippet. Returns success/failure with diagnostics. Call this tool BEFORE outputting final code to verify it works.',
+      'Lint, sandbox-check and trial-run the current editor JavaScript/JSX code. Returns success/failure with diagnostics. Call this tool after writeJSCode or patchJSCode before final response.',
     schema: z.object({
-      code: z.string().describe('The JavaScript/JSX code to preview and validate'),
+      code: z
+        .string()
+        .optional()
+        .describe(
+          'Optional JavaScript/JSX code to preview and validate. Omit this to validate the current editor code.',
+        ),
     }),
   },
 

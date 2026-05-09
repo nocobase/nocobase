@@ -32,7 +32,9 @@ export const selectedMessageListObs = observable.computed(() => {
   if (selectedChannelNameObs.value) {
     const filteredMessages = messageListObs.value.filter(
       (message) =>
-        message.channelName === selectedChannelNameObs.value && filterMessageByStatus(message) && filterMessageByUserId,
+        message.channelName === selectedChannelNameObs.value &&
+        filterMessageByStatus(message) &&
+        filterMessageByUserId(message),
     );
     return filteredMessages;
   } else {
