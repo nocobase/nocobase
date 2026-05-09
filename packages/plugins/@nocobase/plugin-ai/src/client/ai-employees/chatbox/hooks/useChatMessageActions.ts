@@ -780,14 +780,6 @@ export const useChatMessageActions = () => {
 
       sessionChat.setBackgroundWorking(false);
       sessionChat.setResponseLoading(true);
-      if (!last?.loading || last.role !== aiEmployee.username) {
-        sessionChat.addMessage({
-          key: uid(),
-          role: aiEmployee.username,
-          content: { type: 'text', content: '' },
-          loading: true,
-        });
-      }
 
       const controller = new AbortController();
       sessionChat.setAbortController(controller);
@@ -807,6 +799,13 @@ export const useChatMessageActions = () => {
           sessionChat.setResponseLoading(false);
           return;
         }
+
+        sessionChat.addMessage({
+          key: uid(),
+          role: aiEmployee.username,
+          content: { type: 'text', content: '' },
+          loading: true,
+        });
 
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       } catch (err) {

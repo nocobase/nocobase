@@ -153,6 +153,10 @@ export class AIEmployee {
     return this.inWorkflow;
   }
 
+  async clearStreamCached() {
+    await this.streamCached.clear();
+  }
+
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
     return {
@@ -508,7 +512,7 @@ export class AIEmployee {
         from: this.from,
         username: this.employee.username,
       };
-      this.protocol.with(aiEmployeeConversation).startStream();
+      await this.protocol.with(aiEmployeeConversation).startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk, metadata] = chunks;
@@ -518,27 +522,27 @@ export class AIEmployee {
             if (chunk.content) {
               if (isReasoning) {
                 isReasoning = false;
-                this.protocol.with(currentConversation).stopReasoning();
+                await this.protocol.with(currentConversation).stopReasoning();
               }
               const parsedContent = provider.parseResponseChunk(chunk.content);
               if (parsedContent) {
-                this.protocol.with(currentConversation).content(parsedContent);
+                await this.protocol.with(currentConversation).content(parsedContent);
               }
             }
 
             if (chunk.tool_call_chunks?.length) {
-              this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
+              await this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
             }
 
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
-              this.protocol.with(currentConversation).webSearch(webSearch);
+              await this.protocol.with(currentConversation).webSearch(webSearch);
             }
 
             const reasoningContent = provider.parseReasoningContent(chunk);
             if (reasoningContent) {
               isReasoning = true;
-              this.protocol.with(currentConversation).reasoning(reasoningContent);
+              await this.protocol.with(currentConversation).reasoning(reasoningContent);
             }
           }
         } else if (mode === 'updates') {
@@ -548,8 +552,8 @@ export class AIEmployee {
             await this.handleInterruptedToolCalls(
               interrupt,
               (sessionId) => aiMessageIdMap.get(sessionId),
-              ({ messageId, interruptAction, toolCall, currentConversation }) => {
-                this.protocol.with(currentConversation).toolCallStatus({
+              async ({ messageId, interruptAction, toolCall, currentConversation }) => {
+                await this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
                     messageId,
                     id: toolCall.id,
@@ -565,6 +569,7 @@ export class AIEmployee {
         } else if (mode === 'custom') {
           const { currentConversation } = chunks;
           if (chunks.action === 'AfterAIMessageSaved') {
+            await this.streamCached.clear();
             aiMessageIdMap.set(currentConversation.sessionId, chunks.body.messageId);
 
             const data = responseMetadata.get(chunks.body.id);
@@ -594,11 +599,11 @@ export class AIEmployee {
               }
             }
           } else if (chunks.action === 'initToolCalls') {
-            this.protocol.with(currentConversation).toolCalls(chunks.body);
+            await this.protocol.with(currentConversation).toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.with(currentConversation).toolCallStatus({
+            await this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -610,7 +615,7 @@ export class AIEmployee {
           } else if (chunks.action === 'afterToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.with(currentConversation).toolCallStatus({
+            await this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -634,7 +639,7 @@ export class AIEmployee {
               for (const { metadata } of messages) {
                 const tools = toolsMap.get(metadata.toolName);
                 const toolCallResult = toolCallResultMap.get(metadata.toolCallId);
-                this.protocol.with(currentConversation).toolCallStatus({
+                await this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
                     messageId,
                     id: metadata.toolCallId,
@@ -650,9 +655,9 @@ export class AIEmployee {
               }
             }
 
-            this.protocol.with(currentConversation).newMessage();
+            await this.protocol.with(currentConversation).newMessage();
           } else if (chunks.action === 'afterSubAgentInvoke') {
-            this.protocol.with(currentConversation).subAgentCompleted();
+            await this.protocol.with(currentConversation).subAgentCompleted();
           }
         }
       }
@@ -662,7 +667,7 @@ export class AIEmployee {
         return;
       }
 
-      this.protocol.with(aiEmployeeConversation).endStream();
+      await this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       this.ctx.log.error(err);
       await this.streamCached.clear();
@@ -1685,46 +1690,46 @@ export class ChatStreamProtocol {
   }
 
   with(conversation: { sessionId: string; from: string; username: string }) {
-    const write = ({ type, body }: { type: string; body?: any }) => {
+    const write = async ({ type, body }: { type: string; body?: any }) => {
       const { sessionId, from, username } = conversation;
       const data = `data: ${JSON.stringify({ sessionId, from, username, type, body })}\n\n`;
-      void this.onWrite?.(data);
+      await this.onWrite?.(data);
       this.streamConsumer.write(data);
       this._statistics.addSent(data.length);
     };
 
     return {
-      startStream: () => {
+      startStream: async () => {
         this._statistics.reset();
-        write({ type: 'stream_start' });
+        await write({ type: 'stream_start' });
       },
 
-      endStream: () => {
-        write({ type: 'stream_end' });
+      endStream: async () => {
+        await write({ type: 'stream_end' });
       },
 
-      subAgentCompleted: () => {
-        write({ type: 'sub_agent_completed' });
+      subAgentCompleted: async () => {
+        await write({ type: 'sub_agent_completed' });
       },
 
-      newMessage: (content?: unknown) => {
-        write({ type: 'new_message', body: content });
+      newMessage: async (content?: unknown) => {
+        await write({ type: 'new_message', body: content });
       },
 
-      content: (content: string): void => {
-        write({ type: 'content', body: content });
+      content: async (content: string): Promise<void> => {
+        await write({ type: 'content', body: content });
       },
 
-      webSearch: (content: { type: string; query: string }[]) => {
-        write({ type: 'web_search', body: content });
+      webSearch: async (content: { type: string; query: string }[]) => {
+        await write({ type: 'web_search', body: content });
       },
 
-      reasoning: (content: { status: string; content: string }) => {
-        write({ type: 'reasoning', body: content });
+      reasoning: async (content: { status: string; content: string }) => {
+        await write({ type: 'reasoning', body: content });
       },
 
-      stopReasoning: () => {
-        write({
+      stopReasoning: async () => {
+        await write({
           type: 'reasoning',
           body: {
             status: 'stop',
@@ -1733,15 +1738,15 @@ export class ChatStreamProtocol {
         });
       },
 
-      toolCallChunks: (content: unknown) => {
-        write({ type: 'tool_call_chunks', body: content });
+      toolCallChunks: async (content: unknown) => {
+        await write({ type: 'tool_call_chunks', body: content });
       },
 
-      toolCalls: (content: unknown) => {
-        write({ type: 'tool_calls', body: content });
+      toolCalls: async (content: unknown) => {
+        await write({ type: 'tool_calls', body: content });
       },
 
-      toolCallStatus: ({
+      toolCallStatus: async ({
         toolCall,
         invokeStatus,
         status,
@@ -1762,7 +1767,7 @@ export class ChatStreamProtocol {
           allowedDecisions: string[];
         };
       }) => {
-        write({
+        await write({
           type: 'tool_call_status',
           body: {
             toolCall,
