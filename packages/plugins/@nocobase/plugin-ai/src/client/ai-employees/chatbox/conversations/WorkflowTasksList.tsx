@@ -103,6 +103,7 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
   const { token } = theme.useToken();
   const compile = useCompile();
   const containerRef = useRef<HTMLDivElement>(null);
+  const { loading, hasMore, loadMoreWorkflowTasks } = controller;
 
   const jobStatusOptions = [JOB_STATUS.PENDING, JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED, JOB_STATUS.ABORTED]
     .map((status) => JobStatusOptionsMap[status])
@@ -115,7 +116,7 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
     }
 
     const onScroll = () => {
-      if (controller.loading || !controller.hasMore) {
+      if (loading || !hasMore) {
         return;
       }
 
@@ -123,17 +124,16 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
       const distanceToBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
 
       if (distanceToBottom <= threshold) {
-        controller.loadMoreWorkflowTasks();
+        loadMoreWorkflowTasks();
       }
     };
 
     scrollContainer.addEventListener('scroll', onScroll);
-    onScroll();
 
     return () => {
       scrollContainer.removeEventListener('scroll', onScroll);
     };
-  }, [controller]);
+  }, [hasMore, loadMoreWorkflowTasks, loading]);
 
   if (controller.loading && !controller.workflowTasks.length) {
     return (

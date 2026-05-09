@@ -156,18 +156,20 @@ export default {
         return ctx.throw(403);
       }
 
-      const { sessionId, cursor } = ctx.action.params || {};
+      const { sessionId, cursor, updateRead: originalUpdateRead } = ctx.action.params || {};
       if (!sessionId) {
         ctx.throw(400);
       }
 
       const paginate = ctx.action.params?.paginate === 'false' ? false : true;
+      const updateRead = originalUpdateRead === 'true' || originalUpdateRead === true;
       try {
         ctx.body = await plugin.aiConversationsManager.getMessages({
           userId,
           sessionId,
           cursor,
           paginate,
+          updateRead,
         });
       } catch (error) {
         if (error.message === 'invalid sessionId') {

@@ -47,6 +47,7 @@ export type GetAIConversationMessagesParams = {
   sessionId: string;
   cursor?: string;
   paginate?: boolean;
+  updateRead?: boolean;
 };
 
 export type ParsedMessageRow = AIMessage & Model;
@@ -160,6 +161,7 @@ export class AIConversationsManager {
     sessionId,
     cursor,
     paginate = true,
+    updateRead = false,
   }: GetAIConversationMessagesParams): Promise<GetAIConversationMessagesResult> {
     const conversation = await this.getConversation({
       sessionId,
@@ -168,6 +170,17 @@ export class AIConversationsManager {
 
     if (!conversation) {
       throw new Error('invalid sessionId');
+    }
+
+    if (updateRead) {
+      await this.aiConversationsRepo.update({
+        values: {
+          read: true,
+        },
+        filter: {
+          sessionId,
+        },
+      });
     }
 
     const pageSize = 10;

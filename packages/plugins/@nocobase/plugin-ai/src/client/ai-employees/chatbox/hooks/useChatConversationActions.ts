@@ -32,7 +32,7 @@ export const useChatConversationActions = () => {
           sort: ['-updatedAt'],
           appends: ['aiEmployee'],
           page,
-          pageSize: 15,
+          pageSize: 50,
           filter,
         })
         .then((res) => res?.data);

@@ -46,7 +46,8 @@ export const useChatMessageActions = () => {
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
   const setModel = useChatBoxStore.use.setModel();
 
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = useChatConversationsStore.use.currentConversation?.();
+  const currentWebSearch = useChatConversationsStore.use.webSearch();
   const chat = useChat(currentConversation);
   const messages = chat.use.messages();
   const abortController = chat.use.abortController();
@@ -55,7 +56,6 @@ export const useChatMessageActions = () => {
   const setAbortController = chat.setAbortController;
   const setAttachments = chat.setAttachments;
   const setContextItems = chat.setContextItems;
-  const currentWebSearch = useChatConversationsStore.use.webSearch();
 
   const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
   const getSessionChat = useCallback((sessionId?: string) => chat.for(sessionId).getState(), [chat]);
@@ -109,11 +109,14 @@ export const useChatMessageActions = () => {
       sessionChat.setMessagesLoading(true);
       sessionChat.setMessagesError(null);
       try {
+        const activeConversation = useChatConversationsStore.getState().currentConversation;
         const res = await api.resource('aiConversations').getMessages({
           sessionId,
           cursor,
           paginate: false,
+          updateRead: sessionId === activeConversation,
         });
+
         const data = res?.data as MessagesResponse | undefined;
         if (!data?.data) {
           sessionChat.setMessagesMeta({});

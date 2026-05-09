@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useCallback, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
 import { Badge, Input, Segmented, Space } from 'antd';
 import { css } from '@emotion/css';
 import { useRequest } from '@nocobase/client';
@@ -19,8 +19,9 @@ import { useChat } from '../hooks/useChat';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { ConversationsList, useConversationsList } from './ConversationsList';
+import { ConversationsList } from './ConversationsList';
 import { WorkflowTasksList, useWorkflowTasksList } from './WorkflowTasksList';
+import { useChatConversationActions } from '../hooks/useChatConversationActions';
 
 const segmentedClassName = css`
   .ant-segmented-item,
@@ -39,6 +40,7 @@ export const Conversations: React.FC = memo(() => {
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
 
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
+  const showConversations = useChatBoxStore.use.showConversations();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
   const setModel = useChatBoxStore.use.setModel();
   const expanded = useChatBoxStore.use.expanded();
@@ -49,6 +51,10 @@ export const Conversations: React.FC = memo(() => {
   const setConversationSegmented = useChatConversationsStore.use.setConversationSegmented();
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
+
+  const { conversationsService } = useChatConversationActions();
+  const runSearchConversations = (keyword = '') => conversationsService.run(1, keyword);
+  const refreshConversations = () => conversationsService.run();
 
   const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
   const chat = useChat(currentConversation);
@@ -152,13 +158,19 @@ export const Conversations: React.FC = memo(() => {
     ],
   );
 
-  const conversationsController = useConversationsList({
-    onOpenConversation: openConversation,
-  });
-
   const workflowTasksController = useWorkflowTasksList({
     onOpenConversation: openConversation,
   });
+
+  useEffect(() => {
+    if (showConversations) {
+      if (conversationSegmented === 'conversations') {
+        refreshConversations();
+      } else {
+        workflowTasksController.refresh();
+      }
+    }
+  }, [showConversations, conversationSegmented]);
 
   return (
     <div
@@ -182,14 +194,14 @@ export const Conversations: React.FC = memo(() => {
           placeholder={t('Search')}
           onSearch={(val) => {
             if (conversationSegmented === 'conversations') {
-              conversationsController.runSearch(val);
+              runSearchConversations(val);
             } else {
               workflowTasksController.runSearch(val);
             }
           }}
           onClear={() => {
             if (conversationSegmented === 'conversations') {
-              conversationsController.runSearch('');
+              runSearchConversations('');
             } else {
               workflowTasksController.runSearch('');
             }
@@ -212,14 +224,7 @@ export const Conversations: React.FC = memo(() => {
             },
           ]}
           value={conversationSegmented}
-          onChange={(value) => {
-            setConversationSegmented(value);
-            if (value === 'conversations') {
-              conversationsController.refresh();
-            } else {
-              workflowTasksController.refresh();
-            }
-          }}
+          onChange={setConversationSegmented}
         />
       </div>
       <div
@@ -231,7 +236,7 @@ export const Conversations: React.FC = memo(() => {
         }}
       >
         {conversationSegmented === 'conversations' ? (
-          <ConversationsList controller={conversationsController} />
+          <ConversationsList onOpenConversation={openConversation} />
         ) : (
           <WorkflowTasksList controller={workflowTasksController} />
         )}
