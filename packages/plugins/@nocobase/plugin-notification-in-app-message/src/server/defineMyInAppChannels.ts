@@ -88,21 +88,22 @@ export default function defineMyInAppChannels(app: Application) {
           try {
             const channelsRes = channelsRepo.find({
               limit,
-              attributes: {
-                include: [
-                  [
-                    Sequelize.literal(`(
+              attributes: [
+                'name',
+                'title',
+                [
+                  Sequelize.literal(`(
                                 SELECT COUNT(*)
                                 FROM ${messagesTableName} AS messages
                                 WHERE
                                     messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
                                     AND messages.${messagesFieldName.userId} = ${userId}
                             )`),
-                    'totalMsgCnt',
-                  ],
-                  [Sequelize.literal(`'${userId}'`), 'userId'],
-                  [
-                    Sequelize.literal(`(
+                  'totalMsgCnt',
+                ],
+                [Sequelize.literal(`'${userId}'`), 'userId'],
+                [
+                  Sequelize.literal(`(
                                 SELECT COUNT(*)
                                 FROM ${messagesTableName} AS messages
                                 WHERE
@@ -110,11 +111,11 @@ export default function defineMyInAppChannels(app: Application) {
                                     AND messages.${messagesFieldName.status} = 'unread'
                                     AND messages.${messagesFieldName.userId} = ${userId}
                             )`),
-                    'unreadMsgCnt',
-                  ],
-                  [Sequelize.literal(latestMsgReceiveTimestampSQL), 'latestMsgReceiveTimestamp'],
-                  [
-                    Sequelize.literal(`(
+                  'unreadMsgCnt',
+                ],
+                [Sequelize.literal(latestMsgReceiveTimestampSQL), 'latestMsgReceiveTimestamp'],
+                [
+                  Sequelize.literal(`(
                       SELECT messages.${messagesFieldName.title}
                               FROM ${messagesTableName} AS messages
                               WHERE
@@ -123,10 +124,9 @@ export default function defineMyInAppChannels(app: Application) {
                               ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
                               LIMIT 1
                   )`),
-                    'latestMsgTitle',
-                  ],
+                  'latestMsgTitle',
                 ],
-              },
+              ],
               //@ts-ignore
               where: {
                 [Op.and]: [

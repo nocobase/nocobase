@@ -143,6 +143,16 @@ describe('inapp message channels', () => {
       expect(res.body.data[0].latestMsgTitle).toBe('user-0');
       expect(res.body.data[0].unreadMsgCnt).toBe(1);
       expect(res.body.data[0].latestMsgReceiveTimestamp).toBe(now);
+      expect(res.body.data[0]).toMatchObject({
+        name: channelsRes[0].name,
+        title: '测试渠道',
+        totalMsgCnt: 1,
+        userId: String(users[0].id),
+      });
+      expect(res.body.data[0]).not.toHaveProperty('options');
+      expect(res.body.data[0]).not.toHaveProperty('meta');
+      expect(res.body.data[0]).not.toHaveProperty('notificationType');
+      expect(res.body.data[0]).not.toHaveProperty('description');
     });
 
     test('filter channel by status', async () => {
