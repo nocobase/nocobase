@@ -16,7 +16,13 @@ import {
 import { useRequest } from 'ahooks';
 import { Input } from 'antd';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useT } from '../locale';
+
+// Translation keys (e.g. "Variables and secrets") used in this component live in
+// the environment-variables plugin's locale, not file-manager's. We need an
+// extra `t` that knows about that namespace.
+const ENV_VARS_NS = '@nocobase/plugin-environment-variables';
 
 const ENV_EXPR_REGEXP = /\{\{\s*(\$env\.[^{}]+?)\s*\}\}/g;
 const ENV_SINGLE_EXPR_REGEXP = /^\{\{\s*(\$env\.[^{}]+?)\s*\}\}$/;
@@ -49,6 +55,8 @@ export function EnvVariableInput(props: EnvVariableInputProps) {
   const { password, ...rest } = props;
   const ctx = useFlowContext();
   const t = useT();
+  const { t: tEnv } = useTranslation(ENV_VARS_NS);
+  const variablesScopeTitle = tEnv('Variables and secrets', { defaultValue: t('Variables and secrets') });
   const { data } = useRequest(
     async () => {
       try {
@@ -69,7 +77,7 @@ export function EnvVariableInput(props: EnvVariableInputProps) {
   const metaTree = useMemo<MetaTreeNode[]>(() => {
     const children = (Array.isArray(data) ? data : []).map((item: any) => ({
       name: item.name,
-      parentTitles: [t('Variables and secrets')],
+      parentTitles: [variablesScopeTitle],
       title: item.name,
       paths: ['$env', item.name],
       type: item.type || 'string',
@@ -79,14 +87,14 @@ export function EnvVariableInput(props: EnvVariableInputProps) {
       ? [
           {
             name: '$env',
-            title: t('Variables and secrets'),
+            title: variablesScopeTitle,
             paths: ['$env'],
             type: 'object',
             children,
           },
         ]
       : [];
-  }, [data, t]);
+  }, [data, variablesScopeTitle]);
 
   const converters = useMemo<VariableHybridInputConverters>(
     () => ({

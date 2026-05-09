@@ -119,7 +119,7 @@ export function useStorage(storage) {
   const name = storage ?? '';
   const url = `storages:getBasicInfo/${name}`;
   const ctx = useFlowContext();
-  const { loading, data, run } = useRequest<any>(
+  const { loading, data, run } = useRequest(
     async () => {
       const response = await ctx.api.request({
         url,
