@@ -23,7 +23,7 @@ export const useSystemSettings = () => {
 export const SystemSettingsProvider: React.FC<{ children?: ReactNode }> = (props) => {
   const result = useRequest({
     url: 'systemSettings:get',
-  });
+  }) as Result<any, any>;
   const flowEngine = useFlowEngine({ throwError: false });
   const enabledLanguages = result.data?.data?.enabledLanguages;
   const languageOptions = useMemo(
