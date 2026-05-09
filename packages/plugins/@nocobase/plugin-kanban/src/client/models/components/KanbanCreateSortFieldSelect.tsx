@@ -120,6 +120,7 @@ export const KanbanCreateSortFieldSelect = observer(
     const schemaOptions = useContext(SchemaOptionsContext);
     const flowSettingsContext = useFlowSettingsContext<any>();
     const model = flowSettingsContext?.model;
+    const token = model?.context?.themeToken || {};
     const collection = model?.collection || flowSettingsContext?.collection;
     const flowSettings = flowSettingsContext?.model?.context?.engine?.flowSettings;
     const grouping = useGroupingFormValues ? form?.values?.grouping || {} : {};
@@ -231,7 +232,7 @@ export const KanbanCreateSortFieldSelect = observer(
           : undefined;
 
       return (
-        <span style={{ color: 'rgba(0, 0, 0, 0.25)' }}>
+        <span style={{ color: token.colorTextDisabled || 'rgba(0, 0, 0, 0.25)' }}>
           (
           {scopedFieldTitle
             ? t('Grouped sorting based on', { ns: NAMESPACE }) + `「${scopedFieldTitle}」`

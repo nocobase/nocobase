@@ -123,8 +123,9 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
         const attachmentPart: Record<string, any> = {};
         if (files?.length) {
-          const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
+          const { resolveAttachments, resolveFileIds, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
           await resolveAttachments(files);
+          await resolveFileIds(files);
           await resolveUrls(files);
         }
 

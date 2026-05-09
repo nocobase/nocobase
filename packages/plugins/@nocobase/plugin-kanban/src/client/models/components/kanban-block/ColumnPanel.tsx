@@ -14,7 +14,7 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Droppable } from 'react-beautiful-dnd';
 import type { KanbanBlockModel } from '../../KanbanBlockModel';
 import { toKanbanAlphaColor } from '../../utils';
-import { CardPlaceholder, DraggableKanbanCard, LazyCardRenderer } from './CardRenderer';
+import { CardPlaceholder, DraggableKanbanCard, getKanbanCardGap, LazyCardRenderer } from './CardRenderer';
 import {
   type ColumnRefreshMeta,
   createColumnResource,
@@ -84,6 +84,14 @@ const ColumnPanelComponent = ({
       ? toKanbanAlphaColor(column.color, column.isUnknown ? 0.14 : 0.18)
       : 'var(--colorBgLayout)'
     : 'var(--colorBgLayout)';
+  const token = model.context.themeToken || {};
+  const cardGap = getKanbanCardGap(model);
+  const columnPadding = token.paddingSM ?? 12;
+  const columnBorderRadius = token.borderRadiusLG ?? 12;
+  const headerGap = token.marginSM ?? 8;
+  const headerPaddingBlock = token.paddingSM ?? 12;
+  const headerPaddingInline = token.padding ?? 14;
+  const countTextColor = token.colorTextDescription || 'rgba(0, 0, 0, 0.45)';
 
   const loadPage = useCallback(
     async (page: number, append = false) => {
@@ -287,7 +295,7 @@ const ColumnPanelComponent = ({
         min-height: ${fixedHeight ? '0' : '180px'};
         overflow-x: hidden;
         overflow-y: ${fixedHeight ? 'auto' : 'visible'};
-        padding: 12px;
+        padding: ${columnPadding}px;
         scrollbar-gutter: stable;
         transition: background 0.2s ease;
       `}
@@ -300,7 +308,7 @@ const ColumnPanelComponent = ({
         `}
       >
         {runtimeState.loading && !displayItems.length ? (
-          <CardPlaceholder />
+          <CardPlaceholder cardGap={cardGap} />
         ) : displayItems.length ? (
           displayItems.map((record, index) => {
             const recordKey = getRuntimeRecordKey(record, model.collection);
@@ -318,7 +326,7 @@ const ColumnPanelComponent = ({
                 <div
                   key={`card-wrap:${cardRenderKey}`}
                   className={css`
-                    margin-bottom: 12px;
+                    margin-bottom: ${cardGap}px;
                   `}
                 >
                   <LazyCardRenderer
@@ -370,7 +378,7 @@ const ColumnPanelComponent = ({
         min-height: ${fixedHeight ? '0' : DEFAULT_KANBAN_BLOCK_MIN_HEIGHT};
         height: ${fixedHeight ? '100%' : 'auto'};
         background: ${panelBackgroundColor};
-        border-radius: 12px;
+        border-radius: ${columnBorderRadius}px;
         border: 1px solid ${panelBorderColor};
         overflow: hidden;
         flex-shrink: 0;
@@ -381,13 +389,13 @@ const ColumnPanelComponent = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: 8,
-          padding: '12px 14px',
+          gap: headerGap,
+          padding: `${headerPaddingBlock}px ${headerPaddingInline}px`,
           background: panelHeaderBackgroundColor,
           borderBottom: `1px solid ${panelBorderColor}`,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: headerGap, flex: '1 1 auto', minWidth: 0 }}>
           <Badge color={column.color}></Badge>
           <span
             style={{
@@ -400,7 +408,7 @@ const ColumnPanelComponent = ({
           >
             {column.label}
           </span>
-          <span style={{ flexShrink: 0, color: 'rgba(0, 0, 0, 0.45)' }}>{displayCount}</span>
+          <span style={{ flexShrink: 0, color: countTextColor }}>{displayCount}</span>
         </div>
         {model.getQuickCreateEnabled() ? (
           <Tooltip title={model.translate('Add new')}>

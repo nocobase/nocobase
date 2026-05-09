@@ -15,13 +15,16 @@ import { useInView } from 'react-intersection-observer';
 import type { KanbanBlockModel } from '../../KanbanBlockModel';
 import { getKanbanCardRenderKey, getRuntimeRecordKey, type KanbanRuntimeRecord } from './shared';
 
-export const CardPlaceholder = () => {
+export const getKanbanCardGap = (model: KanbanBlockModel) => model.context.themeToken?.marginSM ?? 12;
+export const getKanbanCardRadius = (model: KanbanBlockModel) => model.context.themeToken?.borderRadiusLG ?? 12;
+
+export const CardPlaceholder = ({ cardGap = 12, cardRadius = 12 }: { cardGap?: number; cardRadius?: number }) => {
   return (
     <div
       className={css`
-        margin-bottom: 12px;
+        margin-bottom: ${cardGap}px;
         min-height: 132px;
-        border-radius: 12px;
+        border-radius: ${cardRadius}px;
         background: var(--ant-colorFillQuaternary);
         opacity: 0.55;
       `}
@@ -92,7 +95,7 @@ export const LazyCardRenderer = memo(
     if (!shouldRenderContent) {
       return (
         <div ref={ref}>
-          <CardPlaceholder />
+          <CardPlaceholder cardGap={getKanbanCardGap(model)} cardRadius={getKanbanCardRadius(model)} />
         </div>
       );
     }
@@ -146,6 +149,7 @@ export const DraggableKanbanCard = memo(
   }: DraggableKanbanCardProps) => {
     const recordKey = getRuntimeRecordKey(record, model.collection);
     const draggableId = String(recordKey || `${columnKey}:${index}`);
+    const cardGap = getKanbanCardGap(model);
 
     return (
       <Draggable draggableId={draggableId} index={index} isDragDisabled={!dragInteractionEnabled || !recordKey}>
@@ -162,7 +166,7 @@ export const DraggableKanbanCard = memo(
               willChange: snapshot.isDragging ? 'transform' : undefined,
             }}
             className={css`
-              margin-bottom: 12px;
+              margin-bottom: ${cardGap}px;
               backface-visibility: hidden;
               contain: layout;
             `}

@@ -10,7 +10,6 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { JOB_STATUS, JobModel } from '@nocobase/plugin-workflow';
 import { AIEmployeeInstructionFiles } from './types';
 import _ from 'lodash';
 import axios from 'axios';
@@ -21,6 +20,15 @@ import { resolveContentType, resolveFileIdentity } from '../../utils';
 export abstract class Files {
   static resolvers(plugin: Plugin, attachmentPart: Record<string, any>) {
     const resolveAttachments = async (files: AIEmployeeInstructionFiles[]) => {
+      const attachments = files
+        .filter((it) => it.type === 'attachments')
+        .flatMap((it) => (_.isArray(it.value) ? it.value : [it.value]));
+      if (attachments.length) {
+        attachmentPart.attachments = [...(attachmentPart.attachments ?? []), ...attachments];
+      }
+    };
+
+    const resolveFileIds = async (files: AIEmployeeInstructionFiles[]) => {
       const attachments = files.filter((it) => it.type === 'file_id');
       if (attachments.length) {
         const attachmentGroup = _.groupBy(attachments, (it) => it.collection);
@@ -93,6 +101,7 @@ export abstract class Files {
 
     return {
       resolveAttachments,
+      resolveFileIds,
       resolveUrls,
     };
   }

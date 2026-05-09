@@ -7,7 +7,7 @@ pkg: '@nocobase/plugin-workflow-javascript'
 
 JavaScript スクリプトノードを使用すると、ユーザーはワークフロー内でカスタムのサーバーサイド JavaScript スクリプトを実行できます。スクリプトでは、ワークフローの上流の変数をパラメーターとして使用でき、スクリプトの戻り値を下流のノードに提供して使用できます。
 
-スクリプトはNocoBaseアプリケーションのサーバーサイドでワーカースレッドとして実行されます。デフォルトでは、`require`やNode.js組み込みAPIをサポートしないセキュアなサンドボックス（isolated-vm）を使用します。詳細は[実行エンジン](#実行エンジン)および[機能一覧](#機能一覧)をご覧ください。
+スクリプトはNocoBaseアプリケーションのサーバーサイドでワーカースレッドとして実行されます。デフォルトでは、`require`やNode.js組み込みAPIをサポートしないセキュアなサンドボックス（WebAssembly ベースの QuickJS）を使用します。詳細は[実行エンジン](#実行エンジン)および[機能一覧](#機能一覧)をご覧ください。
 
 ## ノードの作成
 
@@ -49,7 +49,7 @@ JavaScriptスクリプトノードは、環境変数`WORKFLOW_SCRIPT_MODULES`の
 
 ### セーフモード（デフォルト）
 
-`WORKFLOW_SCRIPT_MODULES`が**未設定**の場合、スクリプトは[isolated-vm](https://github.com/laverdet/isolated-vm)エンジンを使用して実行されます。このエンジンは、隔離されたV8環境でコードを実行し、以下の特性があります。
+`WORKFLOW_SCRIPT_MODULES`が**未設定**の場合、スクリプトは[QuickJS](https://bellard.org/quickjs/)（WebAssembly ベース）エンジンを使用して実行されます。このエンジンは、隔離された JavaScript ランタイムでコードを実行し、以下の特性があります。
 
 - `require`を**サポートしません** — モジュールのインポートはできません
 - Node.js組み込みAPI（`process`、`Buffer`、`global`など）を**サポートしません**

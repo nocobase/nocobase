@@ -9,7 +9,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Cascader, Checkbox, Input, InputNumber, Radio, Select, Space, Switch } from 'antd';
-import { lazy } from '../../../flow-compat';
+import { getFlowFieldInterfaceOptions, lazy } from '../../../flow-compat';
 import merge from 'lodash/merge';
 import type { ISchema } from '@formily/json-schema';
 import {
@@ -286,18 +286,24 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         children?: Array<{ name: string; title?: string; schema?: ISchema; operators?: OperatorMeta[] }>;
       };
     };
+    const getFieldInterface = useCallback(
+      (interfaceName: string | undefined) =>
+        getFlowFieldInterfaceOptions(
+          interfaceName,
+          model.context.dataSourceManager,
+          model.context.app?.dataSourceManager,
+        ) as FieldInterfaceDef | undefined,
+      [model],
+    );
 
     // 基于字段接口的动态操作符元数据（优先使用子菜单 schema 中自定义的 operators，其次再用接口默认 operators）
     const operatorMetaList: OperatorMeta[] = useMemo(() => {
       if (!leftMeta) return [];
-      const dm = model.context.app?.dataSourceManager;
-      const fi = leftMeta.interface
-        ? (dm?.collectionFieldInterfaceManager?.getFieldInterface(leftMeta.interface) as FieldInterfaceDef | undefined)
-        : undefined;
+      const fi = leftMeta.interface ? getFieldInterface(leftMeta.interface) : undefined;
       const schemaOps: OperatorMeta[] | undefined = (leftMeta as any)?.uiSchema?.['x-filter-operators'];
       const baseOps = (Array.isArray(schemaOps) && schemaOps.length ? schemaOps : fi?.filterable?.operators) || [];
       return baseOps.filter((op) => !op.visible || op.visible(leftMeta));
-    }, [leftMeta, model]);
+    }, [getFieldInterface, leftMeta]);
 
     useEffect(() => {
       if (!operatorMetaList.length) return;
@@ -578,16 +584,11 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     const enhancedMetaTree = useMemo(() => {
       type MetaTreeProvider = () => MetaTreeNode[] | Promise<MetaTreeNode[]>;
       return async () => {
-        const dm = model.context.app?.dataSourceManager;
-        const fiMgr = dm?.collectionFieldInterfaceManager;
-
         // 优先复用已注入 meta；否则在本组件范围内临时构建
         const nodes: MetaTreeNode[] = await buildCollectionLeftMetaTreeLocal(model.context);
 
         const enhanceNode = async (node: MetaTreeNode): Promise<MetaTreeNode> => {
-          const fi = node.interface
-            ? (fiMgr?.getFieldInterface(node.interface) as FieldInterfaceDef | undefined)
-            : undefined;
+          const fi = node.interface ? getFieldInterface(node.interface) : undefined;
           const extraChildren: MetaTreeNode[] = [];
           const filterable = fi?.filterable;
           const childrenDefs = filterable?.children as
@@ -634,7 +635,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         }
         return out;
       };
-    }, [model]);
+    }, [getFieldInterface, model]);
 
     return (
       <Space wrap style={{ width: '100%' }}>
