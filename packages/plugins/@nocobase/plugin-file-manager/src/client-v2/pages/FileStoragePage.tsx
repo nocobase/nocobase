@@ -34,7 +34,7 @@ import { FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MAX, FILE_SIZE_LIMIT_MIN } fro
 import { useT } from '../locale';
 import { storageTypes } from '../storageTypes';
 import type { StorageFieldMeta, StorageTypeMeta } from '../storageTypes/types';
-import { EnvVariableInput } from '../utils/envVariableInput';
+import { EnvVariableInput } from '@nocobase/plugin-environment-variables/client-v2';
 
 type StorageRecord = {
   id: number | string;
@@ -291,20 +291,18 @@ function StorageFormView(props: {
           }
         />
       ) : null}
-      <div style={{ padding: '18px 24px 80px' }}>
-        <Form form={form} layout="vertical" initialValues={initialValues} className={storageFormClassName}>
-          <Form.Item name="type" hidden>
-            <Input />
-          </Form.Item>
-          {props.storageType.fields.map((field) => (
-            <StorageField
-              field={field}
-              key={Array.isArray(field.name) ? field.name.join('.') : field.name}
-              disabledDefault={props.mode === 'edit' && !!props.record?.default}
-            />
-          ))}
-        </Form>
-      </div>
+      <Form form={form} layout="vertical" initialValues={initialValues} className={storageFormClassName}>
+        <Form.Item name="type" hidden>
+          <Input />
+        </Form.Item>
+        {props.storageType.fields.map((field) => (
+          <StorageField
+            field={field}
+            key={Array.isArray(field.name) ? field.name.join('.') : field.name}
+            disabledDefault={props.mode === 'edit' && !!props.record?.default}
+          />
+        ))}
+      </Form>
       {view.Footer ? (
         <view.Footer>
           <Space>
@@ -363,11 +361,6 @@ export default function FileStoragePage() {
     (mode: 'create' | 'edit', storageType: StorageTypeMeta, record?: StorageRecord) => {
       ctx.viewer.drawer({
         width: '50%',
-        styles: {
-          body: { padding: 0 },
-          header: { padding: '8px 16px' },
-          footer: { padding: '8px 16px' },
-        },
         content: () => (
           <StorageFormView mode={mode} storageType={storageType} record={record} onSubmitted={() => refresh()} />
         ),

@@ -7,4 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { DisplayPreviewFieldModel } from '../../client-v2/models/DisplayPreviewFieldModel';
+export { default } from './plugin';
+export { EnvVariableInput, formatEnvPath, parseEnvPath } from './components/EnvVariableInput';
+export type { EnvVariableInputProps } from './components/EnvVariableInput';
+export { useEnvVariablesMetaTree } from './utils/useEnvVariablesMetaTree';
