@@ -34,7 +34,7 @@ export const useChatConversationActions = () => {
       return api
         .resource('aiConversations')
         .list({
-          sort: ['-updatedAt'],
+          sort: ['-createdAt'],
           appends: ['aiEmployee'],
           page,
           pageSize: 50,

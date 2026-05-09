@@ -491,6 +491,14 @@ export class AIEmployee {
         }
       } catch (e) {
         this.logger.error('Fail to save message after conversation abort', gathered);
+      } finally {
+        await this.aiConversationsRepo.update({
+          values: { llmActiveState: 'idle', read: true },
+          filter: {
+            sessionId: this.sessionId,
+          },
+        });
+        await this.streamCached.clear();
       }
     });
 

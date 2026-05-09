@@ -10,7 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Model, Op } from '@nocobase/database';
-import { parseResponseMessage, sendSSEError } from '../utils';
+import { sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 import { AIMessageInput } from '../types';
 
@@ -40,8 +40,38 @@ function sendErrorResponse(ctx: Context, errorMessage: string) {
   sendSSEError(ctx, errorMessage);
 }
 
+async function parallelConversationsLimit(ctx: Context, next: Next) {
+  const userId = ctx.auth?.user.id;
+  if (!userId) {
+    return ctx.throw(403);
+  }
+
+  const activeStreamCount = await ctx.db.getModel('aiConversations').count({
+    where: {
+      userId,
+      llmActiveState: 'streaming',
+      updatedAt: {
+        [Op.gte]: new Date(Date.now() - 10 * 60 * 1000),
+      },
+    },
+  });
+
+  if (activeStreamCount > 2) {
+    sendErrorResponse(ctx, ctx.t('There are conversations in progress. Please try again later.'));
+    return;
+  }
+
+  await next();
+}
+
 export default {
   name: 'aiConversations',
+  middlewares: [
+    {
+      only: ['sendMessages', 'resendMessages', 'resumeStream'],
+      handler: parallelConversationsLimit,
+    },
+  ],
   actions: {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
