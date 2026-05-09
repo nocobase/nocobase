@@ -35,6 +35,14 @@ export interface MobilePopupProps {
   children: ReactNode;
 }
 
+const getMobilePopupMaxHeight = () => {
+  if (typeof CSS !== 'undefined' && CSS.supports?.('height', '100dvh')) {
+    return 'calc(100dvh - var(--nb-mobile-page-header-height, 46px))';
+  }
+
+  return 'calc(100vh - var(--nb-mobile-page-header-height, 46px))';
+};
+
 export const MobilePopup: FC<MobilePopupProps> = (props) => {
   const { title, visible, onClose: closePopup, children, minHeight } = props;
   const { t } = useTranslation();
@@ -51,6 +59,16 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
       minHeight,
     };
   }, [newZIndex, minHeight]);
+  const bodyStyle = useMemo(() => {
+    return {
+      ...zIndexStyle,
+      maxHeight: getMobilePopupMaxHeight(),
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+    };
+  }, [zIndexStyle]);
 
   const theme = useMemo(() => {
     return {
@@ -77,7 +95,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
           onMaskClick={closePopup}
           getContainer={() => popupContainerRef.current}
           bodyClassName="nb-mobile-action-drawer-body"
-          bodyStyle={zIndexStyle}
+          bodyStyle={bodyStyle}
           maskStyle={zIndexStyle}
           style={zIndexStyle}
           destroyOnClose
