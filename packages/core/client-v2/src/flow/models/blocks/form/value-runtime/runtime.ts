@@ -137,6 +137,42 @@ export class FormValueRuntime {
     return this.getForm().getFieldsValue(true);
   }
 
+  canApplyDefaultValuePatch(namePath: NamePath, resolved: any) {
+    if (!namePath?.length) return false;
+    if (typeof resolved === 'undefined') return false;
+
+    const pathKey = namePathToPathKey(namePath);
+    const current = this.getFormValueAtPath(namePath);
+    const last = this.lastDefaultValueByPathKey.get(pathKey);
+    const nextSnapshot = isObservable(resolved) ? toJS(resolved) : resolved;
+    const currentSnapshot = isObservable(current) ? toJS(current) : current;
+    const currentEqualsLastDefault = typeof last !== 'undefined' && _.isEqual(currentSnapshot, last);
+    const explicitHit = this.findExplicitHit(pathKey);
+
+    if (explicitHit && !currentEqualsLastDefault) return false;
+
+    const canOverwrite = isEmptyValue(current) || currentEqualsLastDefault;
+    if (!canOverwrite && _.isEqual(current, nextSnapshot)) {
+      this.lastDefaultValueByPathKey.set(pathKey, nextSnapshot);
+      return false;
+    }
+
+    return canOverwrite;
+  }
+
+  recordDefaultValuePatch(namePath: NamePath, value?: any) {
+    if (!namePath?.length) return;
+    const pathKey = namePathToPathKey(namePath);
+    const snapshot =
+      arguments.length >= 2 ? (isObservable(value) ? toJS(value) : value) : this.getFormValueAtPath(namePath);
+    this.lastDefaultValueByPathKey.set(pathKey, snapshot);
+    const current = this.getFormValueAtPath(namePath);
+    const currentSnapshot = isObservable(current) ? toJS(current) : current;
+    if (_.isEqual(currentSnapshot, snapshot)) {
+      this.clearExplicitForDefaultPatch(pathKey);
+    }
+  }
+
   private getFormValueAtPath(namePath: NamePath) {
     const form: any = this.getForm?.();
     if (form && typeof form.getFieldValue === 'function') {
@@ -247,11 +283,7 @@ export class FormValueRuntime {
     let bumpedWriteSeq = false;
     for (const field of changedFields || []) {
       const name = field?.name;
-      const namePath: NamePath | null = Array.isArray(name)
-        ? (name as NamePath)
-        : typeof name === 'string' || typeof name === 'number'
-          ? ([name] as NamePath)
-          : null;
+      const namePath = this.normalizeObservedNamePath(name);
       if (!namePath?.length) continue;
       const nextValue = form.getFieldValue(namePath as any);
       const prevValue = _.get(this.valuesMirror, namePath);
@@ -265,8 +297,11 @@ export class FormValueRuntime {
       const isMeaningfulTouched =
         field?.touched === true && !this.shouldIgnoreSyntheticTouchedInit(namePath, prevValue, nextValue);
       if (isMeaningfulTouched) {
-        touchedChangedPathKeys.add(namePathToPathKey(namePath));
-        hasMeaningfulTouchedChange = true;
+        const pathKey = namePathToPathKey(namePath);
+        if (!this.shouldKeepDefaultPathValueEnabled(namePath, nextValue)) {
+          touchedChangedPathKeys.add(pathKey);
+          hasMeaningfulTouchedChange = true;
+        }
       }
     }
 
@@ -526,6 +561,10 @@ export class FormValueRuntime {
   }
 
   private getObservedChangedValue(path: NamePath, changedValues: any, snapshot: any) {
+    if (_.has(snapshot, path as any)) {
+      return _.get(snapshot, path as any);
+    }
+
     if (path?.length === 1) {
       const key = path[0];
       if (
@@ -546,6 +585,7 @@ export class FormValueRuntime {
 
     let observed = snapshot;
     for (const key of Object.keys(changedValues)) {
+      if (_.has(observed, [key])) continue;
       if (observed === snapshot) {
         observed = Array.isArray(snapshot) ? [...snapshot] : { ...snapshot };
       }
@@ -573,7 +613,15 @@ export class FormValueRuntime {
     this.lastObservedChangedPaths = null;
     this.lastObservedSource = null;
 
-    const rawSnapshot = allValues && typeof allValues === 'object' ? allValues : this.getFormValuesSnapshot();
+    // 子表格的 changedValues 可能只包含局部行对象，diff 必须以 form 当前完整快照为准，
+    // 否则缺失的 sibling 字段会被误判为用户清空。
+    const formSnapshot = this.getFormValuesSnapshot();
+    const rawSnapshot =
+      formSnapshot && typeof formSnapshot === 'object'
+        ? formSnapshot
+        : allValues && typeof allValues === 'object'
+          ? allValues
+          : changedValues;
     const snapshot = this.getObservedSnapshot(changedValues, rawSnapshot);
     this.reconcileArrayItemState([...rawChangedPaths, ...changedValuePaths], changedValues, snapshot);
     this.pruneDeletedArrayItemState(snapshot);
@@ -602,8 +650,16 @@ export class FormValueRuntime {
       this.bumpChangeTick();
     }
 
-    // 非 default 来源写入：需要使默认值永久失效（explicit）
+    const explicitPathsToMark: NamePath[] = [];
     for (const p of explicitPaths) {
+      if (this.shouldKeepDefaultPathEnabled(p, snapshot)) {
+        continue;
+      }
+      explicitPathsToMark.push(p);
+    }
+
+    // 非 default 来源写入：需要使默认值永久失效（explicit）
+    for (const p of explicitPathsToMark) {
       this.markExplicit(namePathToPathKey(p));
     }
 
@@ -733,7 +789,7 @@ export class FormValueRuntime {
     const source: ValueSource = options?.source ?? 'system';
     const triggerEvent = options?.triggerEvent !== false;
     const txId = options?.txId ?? createTxId();
-    const markExplicit = options?.markExplicit ?? source !== 'default';
+    const markExplicit = options?.markExplicit ?? (source !== 'default' && source !== 'linkage');
     const ownsTxId = typeof options?.txId === 'undefined';
 
     const linkageScopeDepth =
@@ -1071,10 +1127,12 @@ export class FormValueRuntime {
   private markExplicit(pathKey: string) {
     if (this.explicitSet.has(pathKey)) return;
     this.explicitSet.add(pathKey);
+    const preserveDescendantDefaults = this.shouldPreserveDescendantDefaultsOnExplicit(pathKey);
 
     // explicit 后默认值永远失效：清理该路径及其子路径的 lastDefault 记录，避免误判“仍是默认值”
     for (const k of Array.from(this.lastDefaultValueByPathKey.keys())) {
-      if (k === pathKey || k.startsWith(`${pathKey}.`) || k.startsWith(`${pathKey}[`)) {
+      const isDescendant = k.startsWith(`${pathKey}.`) || k.startsWith(`${pathKey}[`);
+      if (k === pathKey || (!preserveDescendantDefaults && isDescendant)) {
         this.lastDefaultValueByPathKey.delete(k);
       }
     }
@@ -1085,6 +1143,40 @@ export class FormValueRuntime {
       binding.dispose();
       this.observableBindings.delete(k);
     }
+  }
+
+  private normalizeObservedNamePath(name: NamePath | string | number | undefined): NamePath | null {
+    if (Array.isArray(name)) return name as NamePath;
+    if (typeof name === 'number') return [name];
+    if (typeof name !== 'string' || !name) return null;
+    const parsed = pathKeyToNamePath(name);
+    return parsed.length ? parsed : [name];
+  }
+
+  private clearExplicitForDefaultPatch(pathKey: string) {
+    for (const key of Array.from(this.explicitSet)) {
+      if (key === pathKey || key.startsWith(`${pathKey}.`) || key.startsWith(`${pathKey}[`)) {
+        this.explicitSet.delete(key);
+      }
+    }
+  }
+
+  private shouldPreserveDescendantDefaultsOnExplicit(pathKey: string) {
+    const value = this.getFormValueAtPath(pathKeyToNamePath(pathKey));
+    return Array.isArray(value);
+  }
+
+  private shouldKeepDefaultPathEnabled(namePath: NamePath, snapshot: any) {
+    return this.shouldKeepDefaultPathValueEnabled(namePath, _.get(snapshot, namePath as any));
+  }
+
+  private shouldKeepDefaultPathValueEnabled(namePath: NamePath, value: any) {
+    const pathKey = namePathToPathKey(namePath);
+    const last = this.lastDefaultValueByPathKey.get(pathKey);
+    if (typeof last === 'undefined') return false;
+
+    const nextSnapshot = isObservable(value) ? toJS(value) : value;
+    return _.isEqual(nextSnapshot, last);
   }
 
   private isExplicit(pathKey: string) {
