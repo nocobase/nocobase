@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "Referensi perintah nb env add: menyimpan alamat API NocoBase dan metode autentikasi, lalu mengubahnya menjadi env saat ini."
-keywords: "nb env add,NocoBase CLI,menambah lingkungan,alamat API,autentikasi"
+description: "Referensi perintah nb env add: simpan URL API NocoBase dan metode autentikasi, lalu beralih ke env tersebut."
+keywords: "nb env add,NocoBase CLI,tambah environment,API Base URL,autentikasi"
 ---
 
 # nb env add

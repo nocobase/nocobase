@@ -35,11 +35,12 @@ Các nhóm lệnh sau hiển thị trong `nb --help`:
 | [`nb app`](./app/index.md) | Quản lý runtime ứng dụng: khởi động, dừng, khởi động lại, log và nâng cấp. |
 | [`nb config`](./config/index.md) | Quản lý cấu hình mặc định của CLI. |
 | [`nb db`](./db/index.md) | Quản lý database tích hợp của env đã chọn. |
-| [`nb env`](./env/index.md) | Quản lý môi trường, trạng thái, chi tiết và lệnh runtime của project NocoBase. |
+| [`nb env`](./env/index.md) | Quản lý môi trường dự án NocoBase, env hiện tại, trạng thái, chi tiết và runtime lệnh. |
 | [`nb license`](./license/index.md) | Quản lý giấy phép thương mại và các plugin được cấp phép. |
 | [`nb plugin`](./plugin/index.md) | Quản lý plugin của env NocoBase đã chọn. |
 | [`nb scaffold`](./scaffold/index.md) | Sinh scaffold để phát triển plugin NocoBase. |
 | [`nb self`](./self/index.md) | Kiểm tra hoặc cập nhật chính NocoBase CLI. |
+| [`nb session`](./session/index.md) | Cấu hình `NB_SESSION_ID` để cô lập env hiện tại theo từng shell hoặc runtime agent. |
 | [`nb skills`](./skills/index.md) | Kiểm tra hoặc đồng bộ NocoBase AI coding skills cho workspace hiện tại. |
 | [`nb source`](./source/index.md) | Quản lý dự án source code cục bộ: tải về, develop, build và test. |
 
@@ -93,6 +94,8 @@ Kết nối ứng dụng có sẵn:
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Khởi động ứng dụng và làm mới các lệnh runtime:
@@ -153,6 +156,12 @@ Sau khi đặt `NB_CLI_ROOT=/your/workspace`, đường dẫn cấu hình sẽ t
 ```
 
 CLI cũng đọc tương thích cấu hình project cũ trong thư mục làm việc hiện tại.
+
+
+Cache phiên của env hiện tại được lưu tại:
+
+.nocobase/sessions/<NB_SESSION_ID>.json
+Env được dùng gần nhất trên toàn cục được lưu trong trường `lastEnv` của `config.json`. Khi `NB_SESSION_ID` chưa được thiết lập, CLI sẽ fallback về giá trị toàn cục đó.
 
 Cache lệnh runtime được lưu tại:
 
