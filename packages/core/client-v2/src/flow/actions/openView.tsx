@@ -345,7 +345,8 @@ export const openView = defineAction({
         target: ctx.inputArgs.target || ctx.layoutContentElement,
         dataSourceKey: runtimeDataSourceKey ?? actionDefaults.dataSourceKey,
         collectionName: runtimeCollectionName ?? actionDefaults.collectionName,
-        associationName: runtimeAssociationName ?? actionDefaults.associationName,
+        associationName:
+          typeof runtimeAssociationName !== 'undefined' ? runtimeAssociationName : actionDefaults.associationName,
         filterByTk: mergedFilterByTk,
         sourceId: mergedSourceId,
         tabUid: mergedTabUid,
