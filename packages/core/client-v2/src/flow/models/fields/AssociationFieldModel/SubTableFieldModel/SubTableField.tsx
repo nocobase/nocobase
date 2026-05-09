@@ -14,7 +14,40 @@ import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
+import { parsePathString } from '../../../blocks/form/value-runtime/path';
 import { getSubTableRowIdentity, normalizeSubTableRows } from './rowIdentity';
+
+type NamePath = Array<string | number>;
+
+function isSamePathPrefix(prefix: NamePath, path: NamePath) {
+  if (!prefix.length || prefix.length > path.length) return false;
+  return prefix.every((seg, index) => seg === path[index]);
+}
+
+function isRelatedPath(a: NamePath, b: NamePath) {
+  return isSamePathPrefix(a, b) || isSamePathPrefix(b, a);
+}
+
+function normalizeChangedPath(path: unknown): NamePath | null {
+  const rawPath = Array.isArray(path) ? path : typeof path === 'string' ? [path] : null;
+  if (!rawPath) return null;
+  const normalized = rawPath.flatMap((seg) => {
+    if (typeof seg === 'number') return [seg];
+    if (typeof seg !== 'string') return [];
+    return parsePathString(seg).filter((parsed): parsed is string | number => typeof parsed !== 'object');
+  });
+  return normalized.length ? normalized : null;
+}
+
+function shouldRefreshForChangedPaths(fieldPath: unknown, changedPaths: unknown) {
+  const currentFieldPath = normalizeChangedPath(fieldPath);
+  if (!currentFieldPath) return false;
+  const paths = Array.isArray(changedPaths) ? changedPaths : [];
+  return paths.some((path) => {
+    const changedPath = normalizeChangedPath(path);
+    return changedPath ? isRelatedPath(currentFieldPath, changedPath) : false;
+  });
+}
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -35,9 +68,12 @@ export function SubTableField(props) {
     resetPage,
     filterTargetKey = 'id',
     getCurrentValue,
+    fieldPathArray,
+    formValuesChangeEmitter,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
+  const [, forceRefresh] = useState(0);
   const rawCurrentValue = getCurrentValue();
   const currentValue = useMemo(() => normalizeSubTableRows(rawCurrentValue), [rawCurrentValue]);
   const getRecordIdentity = React.useCallback(
@@ -50,6 +86,17 @@ export function SubTableField(props) {
   useEffect(() => {
     resetPage && setCurrentPage(1);
   }, [resetPage]);
+  useEffect(() => {
+    if (!formValuesChangeEmitter?.on || !formValuesChangeEmitter?.off) return;
+    const listener = (payload: any) => {
+      if (!shouldRefreshForChangedPaths(fieldPathArray, payload?.changedPaths)) return;
+      forceRefresh((v) => v + 1);
+    };
+    formValuesChangeEmitter.on('formValuesChange', listener);
+    return () => {
+      formValuesChangeEmitter.off('formValuesChange', listener);
+    };
+  }, [fieldPathArray, formValuesChangeEmitter]);
   const applyValue = React.useCallback((nextValue: any) => onChange?.(normalizeSubTableRows(nextValue)), [onChange]);
   const getLatestValue = React.useCallback(() => normalizeSubTableRows(getCurrentValue()), [getCurrentValue]);
   useEffect(() => {

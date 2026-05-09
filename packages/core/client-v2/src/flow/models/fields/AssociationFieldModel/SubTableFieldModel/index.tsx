@@ -120,6 +120,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
         parentFieldIndex={this.context.fieldIndex}
         parentItem={this.context.item}
         filterTargetKey={this.collection.filterTargetKey}
+        formValuesChangeEmitter={this.context.blockModel?.emitter}
+        fieldPathArray={this.parent?.context?.fieldPathArray}
         getCurrentValue={this.getCurrentValue}
       />
     );
