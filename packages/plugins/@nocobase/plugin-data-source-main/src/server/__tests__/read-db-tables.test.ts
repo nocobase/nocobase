@@ -214,7 +214,7 @@ describe('db2cm test', () => {
         },
         {
           caspian_id: {
-            type: DataTypes.CHAR(32),
+            type: DataTypes.STRING(32),
             primaryKey: true,
             allowNull: false,
           },
@@ -260,9 +260,12 @@ describe('db2cm test', () => {
       expect(listResponse.status).toBe(200);
       expect(listResponse.body.data).toHaveLength(1);
       const row = listResponse.body.data[0];
-      const caspianId = row.caspian_id ?? row.caspianId;
-      expect(String(caspianId).trim()).toBe('id1');
-      expect(listResponse.body.data[0].refpoint).toBe('rp1');
+      expect(row.refpoint).toBe('rp1');
+
+      const records = await loadedCollection.repository.find();
+      expect(records).toHaveLength(1);
+      expect(String(records[0].get('caspian_id')).trim()).toBe('id1');
+      expect(records[0].get('refpoint')).toBe('rp1');
 
       const tablesAfterLoad = await mainDataSource.readTables();
       expect(tablesAfterLoad.some((table) => table.name === 'a1')).toBe(false);
