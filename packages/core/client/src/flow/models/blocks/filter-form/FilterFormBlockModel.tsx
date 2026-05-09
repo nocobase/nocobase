@@ -53,6 +53,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   autoTriggerFilter = true;
 
   private removeTargetBlockListener?: () => void;
+  private initialDefaultsPromise?: Promise<void>;
+  private initialRefreshHandledTargetIds = new Set<string>();
 
   get form() {
     return this.context.form;
@@ -81,13 +83,13 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     this.context.defineProperty('blockModel', {
       value: this,
     });
-    this.context.defineMethod('refreshTargets', async () => {
+    this.context.defineMethod('refreshTargets', async (options?: { excludeTargetIds?: Set<string> | string[] }) => {
       const gridModel = this.subModels.grid;
       const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
-      if (fieldModels) {
-        fieldModels.forEach((fieldModel) => {
-          fieldModel?.doFilter?.();
-        });
+      const filterIds = fieldModels?.map((fieldModel) => fieldModel?.uid).filter(Boolean);
+      if (filterIds?.length) {
+        const filterManager: FilterManager = this.context.filterManager;
+        await filterManager.refreshTargetsByFilter(filterIds, options);
       }
     });
   }
@@ -123,9 +125,31 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   }
 
   private async applyDefaultsAndInitialFilter() {
-    await this.ensureFilterItemsBeforeRender();
-    await this.applyFormDefaultValues();
-    await this.context.refreshTargets?.();
+    const prepared = await this.prepareInitialFilterValues();
+    if (prepared) {
+      await this.context.refreshTargets?.({ excludeTargetIds: this.initialRefreshHandledTargetIds });
+    }
+  }
+
+  async prepareInitialFilterValues() {
+    if (!this.form) {
+      return false;
+    }
+
+    if (!this.initialDefaultsPromise) {
+      this.initialDefaultsPromise = (async () => {
+        await this.ensureFilterItemsBeforeRender();
+        await this.applyFormDefaultValues();
+      })();
+    }
+
+    await this.initialDefaultsPromise;
+    return true;
+  }
+
+  markInitialTargetRefreshHandled(targetId: string) {
+    if (!targetId) return;
+    this.initialRefreshHandledTargetIds.add(targetId);
   }
 
   private async ensureFilterItemsBeforeRender() {
