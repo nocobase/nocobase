@@ -94,8 +94,6 @@ FormSubmitActionModel.registerFlow({
         try {
           ctx.model.setProps('loading', true);
           await submitHandler(ctx, params);
-          ctx.message.success(ctx.t('Saved successfully'));
-          ctx.model.setProps('loading', false);
         } catch (error) {
           ctx.model.setProps('loading', false);
           // 显示保存失败提示
@@ -107,12 +105,8 @@ FormSubmitActionModel.registerFlow({
         }
       },
     },
-    refreshAndClose: {
-      async handler(ctx) {
-        if (ctx.view) {
-          ctx.view.close();
-        }
-      },
+    afterSuccess: {
+      use: 'afterSuccess',
     },
   },
 });
