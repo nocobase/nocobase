@@ -13,10 +13,11 @@ import { ISchema, Plugin, SchemaSettings, useColumnSchema, useDesignable } from 
 import { CodeFieldInterface } from './interface';
 import { NAMESPACE } from '../common/constants';
 import { lang } from './lang';
-import { CodeFieldModel } from './models/CodeFieldModel';
-import { DisplayCodeFieldModel } from './models/DisplayCodeFieldModel';
+import { normalizeHeight, normalizeIndentUnit } from '../shared/codeFieldSettings';
+import { CodeFieldModel } from '../client-v2/models/CodeFieldModel';
+import { DisplayCodeFieldModel } from '../client-v2/models/DisplayCodeFieldModel';
 
-const CodeEditor = lazy(() => import('./CodeEditor'));
+const CodeEditor = lazy(() => import('../shared/CodeEditor'));
 
 export const codeComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:CodeEditor',
@@ -41,20 +42,20 @@ export const codeComponentSettings = new SchemaSettings({
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
-                default: fieldSchema?.['x-component-props']?.['height'] || 'auto',
+                default: normalizeHeight(fieldSchema?.['x-component-props']?.['height']),
                 description: `{{t('Could use CSS values (e.g., "300px" or "50%"). Use "auto" for automatic height adjustment based on content.', { ns: "${NAMESPACE}" })}}`,
               },
             },
           } as ISchema,
           onSubmit: ({ height }) => {
             const props = fSchema['x-component-props'] || {};
-            props['height'] = height;
+            props['height'] = normalizeHeight(height);
             const schema: ISchema = {
               ['x-uid']: fSchema['x-uid'],
             };
             schema['x-component-props'] = props;
             fSchema['x-component-props'] = props;
-            field.componentProps.height = height;
+            field.componentProps.height = props['height'];
             dn.emit('patch', {
               schema,
             });
@@ -83,19 +84,19 @@ export const codeComponentSettings = new SchemaSettings({
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
-                default: fieldSchema?.['x-component-props']?.['indentUnit'] || 2,
+                default: normalizeIndentUnit(fieldSchema?.['x-component-props']?.['indentUnit']),
               },
             },
           } as ISchema,
           onSubmit: ({ indentUnit }) => {
             const props = fSchema['x-component-props'] || {};
-            props['indentUnit'] = indentUnit;
+            props['indentUnit'] = normalizeIndentUnit(indentUnit);
             const schema: ISchema = {
               ['x-uid']: fSchema['x-uid'],
             };
             schema['x-component-props'] = props;
             fSchema['x-component-props'] = props;
-            field.componentProps.indentUnit = indentUnit;
+            field.componentProps.indentUnit = props['indentUnit'];
             dn.emit('patch', {
               schema,
             });
@@ -108,6 +109,9 @@ export const codeComponentSettings = new SchemaSettings({
 });
 
 export class PluginFieldCodeClient extends Plugin {
+  declare app: any;
+  declare flowEngine: any;
+
   // You can get and modify the app instance here
   async load() {
     this.app.addComponents({

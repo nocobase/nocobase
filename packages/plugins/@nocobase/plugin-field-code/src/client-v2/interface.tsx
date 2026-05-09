@@ -7,11 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterface } from '@nocobase/client-v2';
 import { NAMESPACE } from '../common/constants';
 import { LANGUAGES_LIST } from '../shared/languages';
 
-const { defaultProps, operators } = interfacesProperties;
+const bigFieldOperators = [
+  {
+    label: '{{t("contains")}}',
+    value: '$includes',
+    selected: true,
+    schema: { type: 'string', 'x-component': 'Input' },
+  },
+  { label: '{{t("does not contain")}}', value: '$notIncludes', schema: { type: 'string', 'x-component': 'Input' } },
+  { label: '{{t("is")}}', value: '$eq', schema: { type: 'string', 'x-component': 'Input' } },
+  { label: '{{t("is not")}}', value: '$ne', schema: { type: 'string', 'x-component': 'Input' } },
+  { label: '{{t("is empty")}}', value: '$empty', noValue: true, schema: { type: 'string', 'x-component': 'Input' } },
+  {
+    label: '{{t("is not empty")}}',
+    value: '$notEmpty',
+    noValue: true,
+    schema: { type: 'string', 'x-component': 'Input' },
+  },
+];
 
 export class CodeFieldInterface extends CollectionFieldInterface {
   name = 'code';
@@ -22,16 +39,19 @@ export class CodeFieldInterface extends CollectionFieldInterface {
   description = `{{t("Programming code editor with syntax highlighting.", { ns: "${NAMESPACE}" })}}`;
   sortable = true;
   default = {
+    interface: 'code',
     type: 'text',
-    // name,
     uiSchema: {
       type: 'string',
-      // title,
-      'x-component': 'CodeEditor',
+      'x-component': 'Input.TextArea',
     },
   };
+  availableTypes = ['text', 'string'];
+  filterable = {
+    operators: bigFieldOperators,
+  };
+  titleUsable = false;
   properties = {
-    ...defaultProps,
     'uiSchema.x-component-props.language': {
       type: 'string',
       title: `{{t("Programming language", { ns: "${NAMESPACE}" })}}`,
@@ -49,9 +69,4 @@ export class CodeFieldInterface extends CollectionFieldInterface {
       default: 'javascript',
     },
   };
-  availableTypes = ['text', 'string'];
-  filterable = {
-    operators: operators.bigField,
-  };
-  titleUsable = false;
 }

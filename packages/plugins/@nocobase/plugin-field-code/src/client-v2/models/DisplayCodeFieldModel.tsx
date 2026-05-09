@@ -8,10 +8,9 @@
  */
 
 import React from 'react';
-import { FieldModel } from '@nocobase/client';
-import { DisplayItemModel, largeField, tExpr } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../../common/constants';
-import CodeEditor from '../CodeEditor';
+import { FieldModel } from '@nocobase/client-v2';
+import { DisplayItemModel, largeField } from '@nocobase/flow-engine';
+import CodeEditor from '../../shared/CodeEditor';
 import {
   getHeightOptions,
   INDENT_UNIT_OPTIONS,
@@ -19,22 +18,29 @@ import {
   normalizeIndentUnit,
   renderHeightDropdown,
   renderIndentDropdown,
-} from './settings';
+} from '../../shared/codeFieldSettings';
+import { tExpr } from '../locale';
 
 @largeField()
 export class DisplayCodeFieldModel extends FieldModel {
+  declare props: Record<string, any>;
+
   render() {
     return <CodeEditor {...this.props} disabled />;
   }
 }
 
-DisplayCodeFieldModel.registerFlow({
+(DisplayCodeFieldModel as any).define({
+  label: tExpr('Code'),
+});
+
+(DisplayCodeFieldModel as any).registerFlow({
   key: 'displayCodeFieldSettings',
   sort: 200,
-  title: tExpr('Content settings', { ns: NAMESPACE }),
+  title: tExpr('Content settings'),
   steps: {
     height: {
-      title: tExpr('Content height', { ns: NAMESPACE }),
+      title: tExpr('Content height'),
       defaultParams(ctx) {
         return {
           height: ctx.model?.props?.height || 'auto',
@@ -59,7 +65,7 @@ DisplayCodeFieldModel.registerFlow({
       },
     },
     indentUnit: {
-      title: tExpr('Indent unit', { ns: NAMESPACE }),
+      title: tExpr('Indent unit'),
       defaultParams(ctx) {
         return {
           indentUnit: Number(ctx.model?.props?.indentUnit || 2),

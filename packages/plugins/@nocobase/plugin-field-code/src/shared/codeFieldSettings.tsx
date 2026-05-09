@@ -9,7 +9,7 @@
 
 import { Button, Divider, Input, InputNumber, Space } from 'antd';
 import React, { useState } from 'react';
-import { NAMESPACE } from '../../common/constants';
+import { NAMESPACE } from '../common/constants';
 
 export const HEIGHT_VALUES = ['auto', '100px', '200px', '300px', '400px', '500px'];
 
@@ -28,7 +28,7 @@ export const normalizeIndentUnit = (value?: number) => {
 };
 
 const getPluginT = (ctx) => {
-  return (key: string, options = {}) => ctx.t(key, { ...options, ns: NAMESPACE });
+  return (key: string, options = {}) => ctx.t(key, { ...options, ns: [NAMESPACE, 'client'] });
 };
 
 export const getHeightOptions = (ctx) => {
@@ -45,8 +45,8 @@ export const CustomHeight = ({ defaultValue, handleChange, setOpen, t }) => {
 
   return (
     <div
-      onClick={(e) => {
-        e.stopPropagation();
+      onClick={(event) => {
+        event.stopPropagation();
         setOpen(true);
       }}
       onMouseLeave={() => {
@@ -73,8 +73,8 @@ export const CustomIndentUnit = ({ defaultValue, handleChange, setOpen, t }) => 
 
   return (
     <div
-      onClick={(e) => {
-        e.stopPropagation();
+      onClick={(event) => {
+        event.stopPropagation();
         setOpen(true);
       }}
       onMouseLeave={() => {
