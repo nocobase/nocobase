@@ -37,6 +37,8 @@ function createEngineWithCollections() {
     fields: [
       { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
       { name: 'uid', type: 'string', interface: 'input', filterable: { operators: [] } },
+      { name: 'status', type: 'string', interface: 'select', filterable: { operators: [] } },
+      { name: 'tags', type: 'array', interface: 'multipleSelect', filterable: { operators: [] } },
       { name: 'createdAt', type: 'date', interface: 'datetime', filterable: { operators: [] } },
       {
         name: 'pluginInSource',
@@ -104,6 +106,27 @@ describe('custom field operators', () => {
       fieldModelProps: {},
     });
     expect(checkboxGroupOps.some((item) => item.value === '$match')).toBe(true);
+  });
+
+  it('uses multi-value scalar operators for multiple select custom fields bound to scalar source fields', () => {
+    const engine = createEngineWithCollections();
+
+    const scalarSourceOps = resolveCustomFieldOperatorList({
+      flowEngine: engine,
+      fieldModel: 'SelectFieldModel',
+      fieldModelProps: { mode: 'multiple' },
+      source: ['main', 'users', 'status'],
+    });
+    expect(scalarSourceOps[0]?.value).toBe('$in');
+    expect(scalarSourceOps.some((item) => item.value === '$match')).toBe(false);
+
+    const arraySourceOps = resolveCustomFieldOperatorList({
+      flowEngine: engine,
+      fieldModel: 'SelectFieldModel',
+      fieldModelProps: { mode: 'multiple' },
+      source: ['main', 'users', 'tags'],
+    });
+    expect(arraySourceOps[0]?.value).toBe('$match');
   });
 
   it('resolves record select operators by value field and multiple mode', () => {

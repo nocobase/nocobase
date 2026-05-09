@@ -12,10 +12,6 @@ import { Card, Typography, Button, App } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { lazy, useToken } from '@nocobase/client';
 import { useT } from '../../../locale';
-import { useChatBoxStore } from '../stores/chat-box';
-import { isEngineer, isSupportLanguage } from '../../built-in/utils';
-import { Code as AICoding } from '../../ai-coding/markdown/Code';
-import { useChatMessagesStore } from '../stores/chat-messages';
 
 const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
 
@@ -66,13 +62,5 @@ export const CodeBasic: React.FC<{
 };
 
 export const Code = (props: any) => {
-  const { className } = props;
-  const match = /language-(\w+)/.exec(className || '');
-  const language = match ? match[1] : '';
-
-  const editorRefMap = useChatMessagesStore.use.editorRef();
-  const currentEditorRefUid = useChatMessagesStore.use.currentEditorRefUid();
-  const hasEditorRef = !!editorRefMap[currentEditorRefUid];
-
-  return hasEditorRef && isSupportLanguage(language) ? <AICoding {...props} /> : <CodeBasic {...props} />;
+  return <CodeBasic {...props} />;
 };

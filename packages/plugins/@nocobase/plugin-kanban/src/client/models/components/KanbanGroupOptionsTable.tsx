@@ -159,6 +159,7 @@ export const KanbanGroupOptionsTable = observer(
 
     const api = useAPIClient();
     const resolvedModel = model || settingsContext?.model;
+    const token = resolvedModel?.context?.themeToken || {};
     const resolvedCollection = resolvedModel?.collection || collection || settingsContext?.collection;
     const resolvedDataSourceKey =
       resolvedCollection?.dataSourceKey || dataSourceKey || settingsContext?.dataSource?.key;
@@ -330,7 +331,7 @@ export const KanbanGroupOptionsTable = observer(
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          gap: optionsError ? 8 : 0,
+          gap: optionsError ? token.marginXS ?? 8 : 0,
         }}
       >
         {optionsError ? <Alert type="error" message={optionsError} showIcon /> : null}

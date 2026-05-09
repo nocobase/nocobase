@@ -11,7 +11,7 @@ keywords: "Workflow,JavaScript,script,logika kustom,script server-side,NocoBase"
 
 Node JavaScript Script memungkinkan user untuk mengeksekusi sebuah JavaScript script kustom di server-side dalam workflow. Pada script Anda dapat menggunakan variable dari upstream alur sebagai parameter, dan dapat menyediakan return value dari script untuk digunakan oleh Node downstream.
 
-Script akan dijalankan pada worker thread di server-side aplikasi NocoBase. Secara default menggunakan secure sandbox (isolated-vm) untuk dijalankan, tidak mendukung `require` dan API bawaan Node.js, untuk detailnya lihat [Engine Eksekusi](#engine-eksekusi) dan [Daftar Fitur](#daftar-fitur).
+Script akan dijalankan pada worker thread di server-side aplikasi NocoBase. Secara default menggunakan secure sandbox (QuickJS berbasis WebAssembly), tidak mendukung `require` dan API bawaan Node.js, untuk detailnya lihat [Engine Eksekusi](#engine-eksekusi) dan [Daftar Fitur](#daftar-fitur).
 
 ## Membuat Node
 
@@ -53,7 +53,7 @@ Node JavaScript Script mendukung dua engine eksekusi, otomatis berganti berdasar
 
 ### Mode Aman (default)
 
-Saat environment variable `WORKFLOW_SCRIPT_MODULES` **tidak dikonfigurasi**, script dieksekusi menggunakan engine [isolated-vm](https://github.com/laverdet/isolated-vm). Engine ini menjalankan kode pada environment isolasi V8 yang independen, dengan karakteristik berikut:
+Saat environment variable `WORKFLOW_SCRIPT_MODULES` **tidak dikonfigurasi**, script dieksekusi menggunakan engine [QuickJS](https://bellard.org/quickjs/) berbasis WebAssembly. Engine ini menjalankan kode pada runtime JavaScript terisolasi, dengan karakteristik berikut:
 
 - **Tidak mendukung** `require`, tidak dapat mengimport modul apa pun
 - **Tidak mendukung** API bawaan Node.js (seperti `process`, `Buffer`, `global`, dll.)

@@ -105,6 +105,25 @@ export class Gateway extends EventEmitter {
   private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
   private terminating = false;
 
+  private getOriginalRequestUrl(req: IncomingMessage) {
+    return ((req as any).originalUrl as string | undefined) || req.url;
+  }
+
+  private async proxyRequestToSubApp(
+    supervisor: AppSupervisor,
+    appName: string,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ) {
+    const internalUrl = req.url;
+    req.url = this.getOriginalRequestUrl(req);
+    try {
+      return await supervisor.proxyWeb(appName, req, res);
+    } finally {
+      req.url = internalUrl;
+    }
+  }
+
   private onTerminate = async (signal?: NodeJS.Signals) => {
     if (this.terminating) {
       return;
@@ -402,7 +421,7 @@ export class Gateway extends EventEmitter {
 
     if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
       if (handleApp !== 'main') {
-        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
         if (isProxy) {
           return;
         }
@@ -419,7 +438,7 @@ export class Gateway extends EventEmitter {
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
       if (handleApp !== 'main') {
-        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
         if (isProxy) {
           return;
         }
@@ -444,7 +463,7 @@ export class Gateway extends EventEmitter {
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
       if (this.isV2Request(pathname)) {
         if (handleApp !== 'main') {
-          const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+          const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
           if (isProxy) {
             return;
           }
@@ -467,7 +486,7 @@ export class Gateway extends EventEmitter {
       }
 
       if (handleApp !== 'main') {
-        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
         if (isProxy) {
           return;
         }
@@ -481,7 +500,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (handleApp !== 'main') {
-      const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+      const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
       if (isProxy) {
         return;
       }

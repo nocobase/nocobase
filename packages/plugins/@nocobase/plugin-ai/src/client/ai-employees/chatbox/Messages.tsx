@@ -23,6 +23,30 @@ import { useChatConversationsStore } from './stores/chat-conversations';
 
 const { Text, Link } = Typography;
 
+const STICKY_BOTTOM_THRESHOLD = 48;
+
+const isSameMessageContent = (prev: any, next: any) =>
+  prev === next ||
+  (prev?.messageId === next?.messageId &&
+    prev?.content === next?.content &&
+    prev?.reasoning === next?.reasoning &&
+    prev?.tool_calls === next?.tool_calls &&
+    prev?.metadata === next?.metadata &&
+    prev?.reference === next?.reference);
+
+const MemoBubble = React.memo(Bubble, (prevProps: any, nextProps: any) => {
+  return (
+    prevProps.loading === nextProps.loading &&
+    prevProps.placement === nextProps.placement &&
+    prevProps.variant === nextProps.variant &&
+    prevProps.avatar === nextProps.avatar &&
+    prevProps.header === nextProps.header &&
+    prevProps.footer === nextProps.footer &&
+    prevProps.messageRender === nextProps.messageRender &&
+    isSameMessageContent(prevProps.content, nextProps.content)
+  );
+});
+
 export const Messages: React.FC = () => {
   const t = useT();
   const { token } = useToken();
@@ -71,18 +95,33 @@ export const Messages: React.FC = () => {
   }, [renderedMessages]);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!containerRef.current) return;
+  const shouldStickToBottomRef = useRef(true);
 
+  const isNearBottom = useCallback((container: HTMLDivElement) => {
+    return container.scrollHeight - container.scrollTop - container.clientHeight <= STICKY_BOTTOM_THRESHOLD;
+  }, []);
+
+  const handleScroll = useCallback(() => {
     const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    shouldStickToBottomRef.current = isNearBottom(container);
+  }, [isNearBottom]);
 
-    const resizeObserver = new ResizeObserver(() => {
-      container.scrollTop = container.scrollHeight;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      if (shouldStickToBottomRef.current) {
+        container.scrollTop = container.scrollHeight;
+      }
     });
 
-    resizeObserver.observe(container);
-
-    return () => resizeObserver.disconnect();
+    return () => cancelAnimationFrame(frame);
   }, [messages]);
 
   const renderConversationToggleDivider = (
@@ -166,10 +205,10 @@ export const Messages: React.FC = () => {
 
     return indexPath === String(firstMessageIndex) ? (
       <div key={msg.key} ref={lastMessageRef}>
-        <Bubble {...role} loading={msg.loading} content={msg.content} />
+        <MemoBubble {...role} loading={msg.loading} content={msg.content} />
       </div>
     ) : (
-      <Bubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
+      <MemoBubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
     );
   };
 
@@ -200,6 +239,7 @@ export const Messages: React.FC = () => {
   return (
     <Layout.Content
       ref={containerRef}
+      onScroll={handleScroll}
       style={{
         margin: '16px 0',
         overflow: 'auto',
@@ -242,11 +282,9 @@ const BackgroundWorkingHint: React.FC = () => {
   const { messagesService } = useChatMessageActions();
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
-  const messages = useChatMessagesStore.use.messages();
+  const messagesLength = useChatMessagesStore((state) => state.messages.length);
   const [show, setShow] = useState(false);
   const messageCount = useRef(0);
-  const { updateReadonly } = useWorkflowTasks();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
 
   const refreshMessages = useCallback(() => {
     if (currentConversation) {
@@ -265,14 +303,14 @@ const BackgroundWorkingHint: React.FC = () => {
         setShow(false);
       }
     }
-  }, [api, currentConversation, updateReadonly, setResponseLoading]);
+  }, [api, currentConversation]);
 
   useEffect(() => {
-    if (messages.length !== messageCount.current) {
-      messageCount.current = messages.length;
+    if (messagesLength !== messageCount.current) {
+      messageCount.current = messagesLength;
       doStateCheck().catch(console.error);
     }
-  }, [messages]);
+  }, [messagesLength, doStateCheck]);
 
   if (!currentConversation) {
     return null;

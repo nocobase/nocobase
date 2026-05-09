@@ -8,6 +8,7 @@
  */
 
 import { tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
+import type { CollectionFieldInterfaceDataSourceManager } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
 import { ButtonProps, Popover, Transfer } from 'antd';
 import React from 'react';
@@ -15,6 +16,7 @@ import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { ActionModel, CollectionBlockModel } from '../base';
 import { FilterContainer } from '../../components/filter/FilterContainer';
 import _ from 'lodash';
+import { getFlowFieldInterfaceOptions } from '../../../flow-compat';
 
 export class FilterActionModel extends ActionModel {
   static scene = 'collection';
@@ -135,9 +137,11 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model } = useFlowSettingsContext();
-            const dm = model?.context?.app?.dataSourceManager;
-            const fiMgr = dm?.collectionFieldInterfaceManager;
-            const filterable = getFilterableFields(model.context.blockModel.collection, fiMgr);
+            const filterable = getFilterableFields(
+              model.context.blockModel.collection,
+              model.context.dataSourceManager,
+              model.context.app?.dataSourceManager,
+            );
             const dataSource = filterable.map((field: any) => ({ key: field.name, title: field.title }));
             return (
               <Transfer
@@ -157,9 +161,11 @@ FilterActionModel.registerFlow({
       },
       defaultParams(ctx) {
         // 默认仅包含“可筛选”的字段（与 1.0 一致），以避免 JSON 等未提供 operators 的字段出现在默认允许集合中
-        const dm = ctx?.model?.context?.app?.dataSourceManager;
-        const fiMgr = dm?.collectionFieldInterfaceManager;
-        const names = getFilterableFields(ctx.blockModel.collection, fiMgr).map((field: any) => field.name);
+        const names = getFilterableFields(
+          ctx.blockModel.collection,
+          ctx.model?.context?.dataSourceManager,
+          ctx.model?.context?.app?.dataSourceManager,
+        ).map((field: any) => field.name);
         return {
           filterableFieldNames: names || [],
         };
@@ -304,13 +310,15 @@ FilterActionModel.registerFlow({
   },
 });
 
-function getFilterableFields(collection: any, fiMgr: any) {
+function getFilterableFields(
+  collection: any,
+  ...dataSourceManagers: Array<CollectionFieldInterfaceDataSourceManager | null | undefined>
+) {
   const fields = collection?.getFields?.() || [];
-  if (!fiMgr) return [];
   return fields.filter((field: any) => {
     if (!field?.interface) return false;
     if (field?.filterable === false) return false;
-    const fi = fiMgr.getFieldInterface(field.interface);
+    const fi = getFlowFieldInterfaceOptions(field.interface, ...dataSourceManagers);
     return !!fi?.filterable;
   });
 }
