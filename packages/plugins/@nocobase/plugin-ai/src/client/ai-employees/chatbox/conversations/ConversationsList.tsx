@@ -50,7 +50,7 @@ const useSubmitActionProps = (conversationKey: string) => {
   const { setVisible } = useActionContext();
   const api = useAPIClient();
   const form = useForm();
-  const { conversationsService } = useChatConversationActions();
+  const { refresh } = useChatConversationActions();
   return {
     onClick: async () => {
       await form.submit();
@@ -62,7 +62,7 @@ const useSubmitActionProps = (conversationKey: string) => {
       });
       setVisible(false);
       form.reset();
-      conversationsService.run();
+      refresh();
     },
   };
 };
@@ -152,7 +152,7 @@ export const ConversationsList: React.FC<{
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
   const { startNewConversation } = useChatBoxActions();
-  const { conversationsService, lastConversationRef } = useChatConversationActions();
+  const { refresh, lastConversationRef } = useChatConversationActions();
 
   const onSelectConversation = useCallback(
     (sessionId: string) => {
@@ -180,12 +180,12 @@ export const ConversationsList: React.FC<{
         filterByTk: sessionId,
       });
       message.success(t('Deleted successfully'));
-      conversationsService.run();
+      refresh();
       if (currentEmployee) {
         startNewConversation();
       }
     },
-    [api, message, t, conversationsService, currentEmployee, startNewConversation],
+    [api, message, t, refresh, currentEmployee, startNewConversation],
   );
 
   const openDeleteConfirm = useCallback(

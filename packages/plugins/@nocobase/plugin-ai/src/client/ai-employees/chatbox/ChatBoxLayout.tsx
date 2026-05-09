@@ -19,6 +19,7 @@ import { useChatToolsStore } from './stores/chat-tools';
 // [AI_DEBUG]
 import { DebugPanel } from './DebugPanel';
 import { useWorkflowTasks } from './hooks/useWorkflowTasks';
+import { useChatConversationActions } from './hooks/useChatConversationActions';
 
 export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
@@ -33,8 +34,10 @@ export const ChatBoxLayout: React.FC<{
   useChatBoxEffect();
 
   const app = useApp();
+  const { refresh: refreshConversations } = useChatConversationActions();
   const { refresh: onAIEmployeeTaskStatusUpdate } = useWorkflowTasks();
   useEffect(() => {
+    refreshConversations();
     onAIEmployeeTaskStatusUpdate();
   }, []);
   useEffect(() => {

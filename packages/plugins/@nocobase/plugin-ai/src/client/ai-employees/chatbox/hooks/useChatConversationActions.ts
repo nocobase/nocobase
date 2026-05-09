@@ -18,6 +18,7 @@ export const useChatConversationActions = () => {
   const setConversations = useChatConversationsStore.use.setConversations();
   const keyword = useChatConversationsStore.use.keyword();
   const unreadCount = useChatConversationsStore.use.unreadCount();
+  const setUnreadCount = useChatConversationsStore.use.setUnreadCount();
 
   const conversationsService = useRequest<Conversation[]>(
     (page = 1, keyword = '') => {
@@ -54,7 +55,7 @@ export const useChatConversationActions = () => {
       },
     },
   );
-  const conversationsServiceRef = useRef<any>();
+  const conversationsServiceRef = useRef(conversationsService);
   conversationsServiceRef.current = conversationsService;
   const loadMoreConversations = useCallback(async () => {
     const conversationsService = conversationsServiceRef.current;
@@ -66,11 +67,27 @@ export const useChatConversationActions = () => {
   }, [keyword]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
+  const loadUnreadCount = useCallback(async () => {
+    const res = await api.resource('aiConversations').unreadCount();
+    setUnreadCount(res?.data?.data?.count || 0);
+  }, [api, setUnreadCount]);
+
+  const unreadConversationCountService = useRequest(loadUnreadCount, {
+    manual: true,
+  });
+  const unreadConversationCountServiceRef = useRef(unreadConversationCountService);
+  unreadConversationCountServiceRef.current = unreadConversationCountService;
+
   const runSearch = (keyword = '') => conversationsService.run(1, keyword);
-  const refresh = () => conversationsService.run();
+  const refresh = useCallback(() => {
+    conversationsServiceRef.current.run();
+    unreadConversationCountServiceRef.current.run();
+  }, []);
 
   return {
     conversationsService,
+    unreadConversationCountService,
+    loadUnreadCount,
     lastConversationRef,
     runSearch,
     refresh,

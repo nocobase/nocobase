@@ -20,6 +20,7 @@ import { isLeader } from '../built-in/utils';
 import { useLocation } from 'react-router-dom';
 import { useWorkflowTasks } from './hooks/useWorkflowTasks';
 import { useChat } from './hooks/useChat';
+import { useChatConversationActions } from './hooks/useChatConversationActions';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -27,7 +28,9 @@ export const ChatButton: React.FC = observer(() => {
   const isV1Page = ctx?.pageInfo?.version === 'v1';
   const { isMobileLayout } = useMobileLayout();
   const { token } = useToken();
-  const { unreadCount } = useWorkflowTasks();
+  const { unreadCount: unreadConversationCount } = useChatConversationActions();
+  const { unreadCount: unreadWorkflowTaskCount } = useWorkflowTasks();
+  const unreadCount = unreadConversationCount + unreadWorkflowTaskCount;
 
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;

@@ -60,6 +60,28 @@ export default {
       return actions.list(ctx, next);
     },
 
+    async unreadCount(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const count = await ctx.db.getModel('aiConversations').count({
+        where: {
+          userId,
+          read: false,
+          from: 'main-agent',
+          category: 'chat',
+        },
+      });
+
+      ctx.body = {
+        count,
+      };
+
+      await next();
+    },
+
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;

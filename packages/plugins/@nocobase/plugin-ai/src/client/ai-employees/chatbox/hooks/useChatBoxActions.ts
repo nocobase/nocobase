@@ -52,7 +52,7 @@ export const useChatBoxActions = () => {
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
-  const { conversationsService } = useChatConversationActions();
+  const { refresh: refreshConversations } = useChatConversationActions();
   const { sendMessages, syncContextAttachments } = useChatMessageActions();
 
   const clear = (options?: ClearOptions, sessionId: string | undefined = currentConversation) => {
@@ -102,7 +102,7 @@ export const useChatBoxActions = () => {
       ...options,
       onConversationCreate: (sessionId: string) => {
         setCurrentConversation(sessionId);
-        conversationsService.run();
+        refreshConversations();
       },
     };
     clear();

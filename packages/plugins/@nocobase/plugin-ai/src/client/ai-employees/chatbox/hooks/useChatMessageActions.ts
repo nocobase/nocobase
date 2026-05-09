@@ -48,6 +48,7 @@ export const useChatMessageActions = () => {
 
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const currentWebSearch = useChatConversationsStore.use.webSearch();
+  const setConversationUnreadCount = useChatConversationsStore.use.setUnreadCount();
   const chat = useChat(currentConversation);
   const messages = chat.use.messages();
   const abortController = chat.use.abortController();
@@ -110,11 +111,12 @@ export const useChatMessageActions = () => {
       sessionChat.setMessagesError(null);
       try {
         const activeConversation = useChatConversationsStore.getState().currentConversation;
+        const chatBoxOpen = useChatBoxStore.getState().open;
         const res = await api.resource('aiConversations').getMessages({
           sessionId,
           cursor,
           paginate: false,
-          updateRead: sessionId === activeConversation,
+          updateRead: sessionId === activeConversation && chatBoxOpen,
         });
 
         const data = res?.data as MessagesResponse | undefined;
@@ -158,13 +160,17 @@ export const useChatMessageActions = () => {
           return result;
         });
         sessionChat.setMessagesMeta(data.meta || {});
+        if (sessionId === activeConversation) {
+          const unreadCountRes = await api.resource('aiConversations').unreadCount();
+          setConversationUnreadCount(unreadCountRes?.data?.data?.count || 0);
+        }
       } catch (error) {
         sessionChat.setMessagesError(error);
       } finally {
         sessionChat.setMessagesLoading(false);
       }
     },
-    [api, getSessionChat, updateToolCallInvokeStatus],
+    [api, getSessionChat, setConversationUnreadCount, updateToolCallInvokeStatus],
   );
 
   const getConversationLLMActiveState = useCallback(

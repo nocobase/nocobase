@@ -23,7 +23,7 @@ export const useChatBoxEffect = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setRoles = useChatBoxStore.use.setRoles();
 
-  const { conversationsService } = useChatConversationActions();
+  const { refresh } = useChatConversationActions();
   const currentConversation = useChatConversationsStore.use.currentConversation();
 
   useEffect(() => {
@@ -57,10 +57,10 @@ export const useChatBoxEffect = () => {
 
   useEffect(() => {
     if (open) {
-      conversationsService.run();
+      refresh();
       senderRef?.current?.focus();
     }
-  }, [open]);
+  }, [open, refresh, senderRef]);
 
   useEffect(() => {
     if (open) {
@@ -71,7 +71,7 @@ export const useChatBoxEffect = () => {
   // Refresh conversations when current employee changes
   useEffect(() => {
     if (currentEmployee && open) {
-      conversationsService.run();
+      refresh();
     }
-  }, [currentEmployee?.username]);
+  }, [currentEmployee?.username, open, refresh]);
 };
