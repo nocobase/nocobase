@@ -21,7 +21,7 @@ import aiWorkflowTasks from './resource/aiWorkflowTasks';
 import aiTools from './resource/aiTools';
 import aiSkills from './resource/aiSkills';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
-import { AIConversationsManager } from './ai-employees/ai-conversations';
+import { AIConversationsManager, registerAIConversationReadNotification } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
@@ -116,6 +116,7 @@ export class PluginAIServer extends Plugin {
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
+    registerAIConversationReadNotification(this);
     registerOnJobAbortedHandler(this);
   }
 

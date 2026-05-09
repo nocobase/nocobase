@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Op, Transaction } from '@nocobase/database';
+import { Model, Op, Transaction, Transactionable } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
@@ -56,6 +56,30 @@ export type GetAIConversationMessagesResult = {
   rows: any[];
   hasMore?: boolean;
   cursor?: string | null;
+};
+
+export const registerAIConversationReadNotification = (plugin: PluginAIServer) => {
+  plugin.db.on('aiConversations.beforeSave', async (model: Model, options: Transactionable) => {
+    if (model.isNewRecord || !model.changed('read')) {
+      return;
+    }
+    const values = model.toJSON();
+    if (values.from !== 'main-agent' || values.category !== 'chat') {
+      return;
+    }
+    options.transaction?.afterCommit(async () => {
+      plugin.app.emit('ws:sendToUser', {
+        userId: values.userId,
+        message: {
+          type: 'ai-conversations:read',
+          payload: {
+            sessionId: values.sessionId,
+            read: values.read,
+          },
+        },
+      });
+    });
+  });
 };
 
 export class AIConversationsManager {

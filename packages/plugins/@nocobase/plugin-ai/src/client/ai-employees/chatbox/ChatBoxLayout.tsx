@@ -39,8 +39,10 @@ export const ChatBoxLayout: React.FC<{
   }, [loadUnreadCounts]);
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', loadUnreadCounts);
+    app.eventBus.addEventListener('ws:message:ai-conversations:read', loadUnreadCounts);
     return () => {
       app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', loadUnreadCounts);
+      app.eventBus.removeEventListener('ws:message:ai-conversations:read', loadUnreadCounts);
     };
   }, [app.eventBus, loadUnreadCounts]);
 
