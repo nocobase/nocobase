@@ -867,4 +867,150 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
     expect(store.roles[0].name).toBe('manual');
     expect(setFormValues).toHaveBeenCalledTimes(2);
   });
+
+  it('skips stale subtable row forks after the row has been removed', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const defaultHandler = vi.fn((actionCtx: any, { addFormValuePatch }: any) => {
+      addFormValuePatch({ path: 'roles.title', value: 'stale-title', whenEmpty: true });
+    });
+    const form = {
+      getFieldValue: vi.fn((path: Array<string | number>) => {
+        if (JSON.stringify(path) === JSON.stringify(['roles', 2])) {
+          return undefined;
+        }
+        if (JSON.stringify(path) === JSON.stringify(['roles'])) {
+          return [
+            { name: '1', title: '1' },
+            { name: '3', title: '3' },
+          ];
+        }
+      }),
+    };
+
+    const engine = new FlowEngine();
+    const staleRowFork = new FlowModel({ uid: 'stale-role-row-fork', flowEngine: engine }) as any;
+    staleRowFork.context.defineProperty('subTableRowFork', {
+      value: true,
+    });
+    staleRowFork.context.defineProperty('fieldIndex', {
+      value: ['roles:2'],
+    });
+    staleRowFork.context.defineProperty('form', {
+      value: form,
+    });
+    staleRowFork.context.defineProperty('item', {
+      value: {
+        index: 2,
+        __is_new__: true,
+        value: { name: '3', title: '3' },
+      },
+    });
+    staleRowFork.context.defineProperty('setFormValues', {
+      value: setFormValues,
+    });
+    staleRowFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    staleRowFork.getAction = vi.fn((name: string) => {
+      if (name === 'setFieldsDefaultValue') {
+        return {
+          handler: defaultHandler,
+        };
+      }
+    });
+
+    const masterModel: any = {
+      uid: 'master-stale-role-grid',
+      forks: new Set([staleRowFork]),
+    };
+    const rolesField: any = {
+      type: 'hasMany',
+      isAssociationField: () => true,
+      targetCollection: {
+        getField: (name: string) => ({ name, isAssociationField: () => false }),
+      },
+    };
+    const blockModel: any = {
+      collection: {
+        getField: (name: string) => (name === 'roles' ? rolesField : null),
+      },
+      formValueRuntime: {
+        canApplyDefaultValuePatch: vi.fn(() => true),
+        recordDefaultValuePatch: vi.fn(),
+      },
+    };
+    staleRowFork.context.defineProperty('blockModel', {
+      value: blockModel,
+    });
+
+    const gridModel: any = {
+      uid: 'grid-model-stale-role-row',
+      context: {
+        blockModel,
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'setFieldsDefaultValue') {
+          return {
+            handler: defaultHandler,
+          };
+        }
+      }),
+      __allModels: [],
+    };
+    const ctx: any = {
+      model: gridModel,
+      engine: {
+        forEachModel: (cb: (m: any) => void) => {
+          cb(masterModel);
+        },
+      },
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-stale-row',
+        changedPaths: [['roles']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => v,
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-stale-row',
+          title: 'rule-stale-row',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'setFieldsDefaultValue',
+              params: {
+                value: [
+                  {
+                    key: 'r-stale-row',
+                    enable: true,
+                    targetPath: 'roles.title',
+                    mode: 'default',
+                    value: 'stale-title',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(defaultHandler).not.toHaveBeenCalled();
+    expect(setFormValues).not.toHaveBeenCalled();
+  });
 });

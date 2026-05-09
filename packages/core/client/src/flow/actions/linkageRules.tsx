@@ -2378,18 +2378,24 @@ export const fieldLinkageRules = defineAction({
       return;
     }
 
-    const getRowScopeKeyFromModel = (model: any): string | null => {
+    const getRowFieldIndexInfoFromModel = (model: any) => {
       const fieldIndex = model?.context?.fieldIndex;
       const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
-      if (!arr.length) return null;
+      const normalized = arr.filter((it): it is string => typeof it === 'string');
       const entries: Array<{ name: string; index: number }> = [];
-      for (const it of arr) {
-        if (typeof it !== 'string') continue;
+      const path: Array<string | number> = [];
+      for (const it of normalized) {
         const [name, indexStr] = it.split(':');
         const index = Number(indexStr);
         if (!name || Number.isNaN(index)) continue;
         entries.push({ name, index });
+        path.push(name, index);
       }
+      return { normalized, entries, path };
+    };
+
+    const getRowScopeKeyFromModel = (model: any): string | null => {
+      const { entries } = getRowFieldIndexInfoFromModel(model);
       if (!entries.length) return null;
       const deepest = entries[entries.length - 1].name;
       const occurrence = entries.reduce((count, e) => (e.name === deepest ? count + 1 : count), 0);
@@ -2397,12 +2403,31 @@ export const fieldLinkageRules = defineAction({
     };
 
     const getRowFieldIndexKeyFromModel = (model: any): string | null => {
-      const fieldIndex = model?.context?.fieldIndex;
-      const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
-      if (!arr.length) return null;
-      const normalized = arr.filter((it) => typeof it === 'string');
+      const { normalized } = getRowFieldIndexInfoFromModel(model);
       if (!normalized.length) return null;
       return JSON.stringify(normalized);
+    };
+
+    const getRowPathFromModel = (model: any): Array<string | number> | null => {
+      const { path } = getRowFieldIndexInfoFromModel(model);
+      return path.length ? path : null;
+    };
+
+    const getFormForRowFork = (model: any) => {
+      return (
+        model?.context?.form ??
+        model?.context?.blockModel?.context?.form ??
+        ctx.model?.context?.form ??
+        ctx.model?.context?.blockModel?.context?.form
+      );
+    };
+
+    const isRowForkMountedInCurrentValue = (model: any): boolean => {
+      const rowPath = getRowPathFromModel(model);
+      if (!rowPath) return true;
+      const form = getFormForRowFork(model);
+      if (!form || typeof form.getFieldValue !== 'function') return true;
+      return typeof form.getFieldValue(rowPath as any) !== 'undefined';
     };
 
     const hasRowItemContext = (model: any): boolean => {
@@ -2451,6 +2476,7 @@ export const fieldLinkageRules = defineAction({
         forks.forEach((fork: any) => {
           if (!fork || fork.disposed) return;
           if (!isRowScopedForkModel(fork)) return;
+          if (!isRowForkMountedInCurrentValue(fork)) return;
           const rowScopeKey = getRowScopeKeyFromModel(fork);
           const fieldIndexKey = getRowFieldIndexKeyFromModel(fork);
           if (!rowScopeKey || !fieldIndexKey) return;
