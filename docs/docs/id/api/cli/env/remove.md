@@ -8,6 +8,8 @@ keywords: "nb env remove,NocoBase CLI,menghapus lingkungan,menghapus konfigurasi
 
 Menghapus env yang sudah dikonfigurasi. Perintah ini hanya menghapus konfigurasi env CLI; jika perlu membersihkan aplikasi lokal, container, dan storage, gunakan [`nb app down`](../app/down.md).
 
+Jika env yang dihapus juga merupakan env saat ini, CLI otomatis memilih env saat ini yang baru dari env yang tersisa. Jika tidak ada env yang tersisa, env saat ini akan dikosongkan.
+
 ## Penggunaan
 
 ```bash
@@ -32,4 +34,5 @@ nb env remove staging -f
 ## Perintah Terkait
 
 - [`nb app down`](../app/down.md)
+- [`nb env current`](./current.md)
 - [`nb env list`](./list.md)
