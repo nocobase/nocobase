@@ -134,7 +134,6 @@ const InnerInbox = (props) => {
   }, [currUserId]);
   const onIconClick = useCallback(() => {
     inboxVisible.value = true;
-    fetchChannels({});
   }, []);
 
   useEffect(() => {
