@@ -74,11 +74,13 @@ export function getPackagesFromFiles(files: string[]): string[] {
   return [...new Set(packageNames)];
 }
 
-export function getPluginBrowserSourcePackages(cwd: string, excludeFiles: string[]): string[] {
-  const files = fg.globSync(['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/server/**', ...excludeFiles], {
-    cwd,
-    absolute: true,
-  });
+export function getPluginBrowserSourcePackages(cwds: string[], excludeFiles: string[]): string[] {
+  const files = cwds.flatMap((cwd) =>
+    fg.globSync(['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/server/**', ...excludeFiles], {
+      cwd,
+      absolute: true,
+    }),
+  );
   const source = files.map((item) => fs.readFileSync(item, 'utf-8'));
 
   return getPackagesFromFiles(source);

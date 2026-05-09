@@ -630,7 +630,11 @@ export async function buildPluginClient(
     });
     clientFiles.push(...commercialFiles);
   }
-  const sourcePackages = getPluginBrowserSourcePackages(cwd, globExcludeFiles);
+  const sourceCwds = [cwd];
+  if (isCommercial) {
+    sourceCwds.push(path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL));
+  }
+  const sourcePackages = getPluginBrowserSourcePackages(sourceCwds, globExcludeFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
   checkRequire(clientFiles, log);
