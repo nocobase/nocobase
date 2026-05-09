@@ -55,6 +55,7 @@ export const Conversations: React.FC = memo(() => {
 
   const {
     unreadCount: unreadConversationCount,
+    loadUnreadCounts,
     runSearch: runSearchConversations,
     refresh: refreshConversations,
   } = useChatConversationActions();
@@ -165,6 +166,10 @@ export const Conversations: React.FC = memo(() => {
       setShowConversations,
     ],
   );
+
+  useEffect(() => {
+    void loadUnreadCounts();
+  }, [loadUnreadCounts]);
 
   useEffect(() => {
     if (showConversations) {

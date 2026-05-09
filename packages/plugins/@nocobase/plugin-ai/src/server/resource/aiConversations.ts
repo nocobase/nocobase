@@ -82,6 +82,37 @@ export default {
       await next();
     },
 
+    async unreadCounts(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const [conversationUnreadCount, workflowTaskUnreadCount] = await Promise.all([
+        ctx.db.getModel('aiConversations').count({
+          where: {
+            userId,
+            read: false,
+            from: 'main-agent',
+            category: 'chat',
+          },
+        }),
+        ctx.db.getModel('usersAiWorkflowTasks').count({
+          where: {
+            userId,
+            read: false,
+          },
+        }),
+      ]);
+
+      ctx.body = {
+        conversationUnreadCount,
+        workflowTaskUnreadCount,
+      };
+
+      await next();
+    },
+
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;

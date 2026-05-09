@@ -12,6 +12,7 @@ import { Conversation } from '../../types';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
+import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 
 export const useChatConversationActions = () => {
   const api = useAPIClient();
@@ -19,6 +20,7 @@ export const useChatConversationActions = () => {
   const keyword = useChatConversationsStore.use.keyword();
   const unreadCount = useChatConversationsStore.use.unreadCount();
   const setUnreadCount = useChatConversationsStore.use.setUnreadCount();
+  const setWorkflowTaskUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
 
   const conversationsService = useRequest<Conversation[]>(
     (page = 1, keyword = '') => {
@@ -67,27 +69,21 @@ export const useChatConversationActions = () => {
   }, [keyword]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
-  const loadUnreadCount = useCallback(async () => {
-    const res = await api.resource('aiConversations').unreadCount();
-    setUnreadCount(res?.data?.data?.count || 0);
-  }, [api, setUnreadCount]);
-
-  const unreadConversationCountService = useRequest(loadUnreadCount, {
-    manual: true,
-  });
-  const unreadConversationCountServiceRef = useRef(unreadConversationCountService);
-  unreadConversationCountServiceRef.current = unreadConversationCountService;
+  const loadUnreadCounts = useCallback(async () => {
+    const res = await api.resource('aiConversations').unreadCounts();
+    const data = res?.data?.data;
+    setUnreadCount(data?.conversationUnreadCount || 0);
+    setWorkflowTaskUnreadCount(data?.workflowTaskUnreadCount || 0);
+  }, [api, setUnreadCount, setWorkflowTaskUnreadCount]);
 
   const runSearch = (keyword = '') => conversationsService.run(1, keyword);
   const refresh = useCallback(() => {
     conversationsServiceRef.current.run();
-    unreadConversationCountServiceRef.current.run();
   }, []);
 
   return {
     conversationsService,
-    unreadConversationCountService,
-    loadUnreadCount,
+    loadUnreadCounts,
     lastConversationRef,
     runSearch,
     refresh,

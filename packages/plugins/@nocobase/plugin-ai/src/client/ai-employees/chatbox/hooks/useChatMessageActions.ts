@@ -160,10 +160,6 @@ export const useChatMessageActions = () => {
           return result;
         });
         sessionChat.setMessagesMeta(data.meta || {});
-        if (sessionId === activeConversation) {
-          const unreadCountRes = await api.resource('aiConversations').unreadCount();
-          setConversationUnreadCount(unreadCountRes?.data?.data?.count || 0);
-        }
       } catch (error) {
         sessionChat.setMessagesError(error);
       } finally {
