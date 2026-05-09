@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { DisplayPreviewFieldModel } from '../../client-v2/models/DisplayPreviewFieldModel';
+export const NAMESPACE = 'file-manager';

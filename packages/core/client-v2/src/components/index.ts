@@ -10,4 +10,5 @@
 export * from './AppComponents';
 export * from './BlankComponent';
 export * from './Icon';
+export * from './JsonTextArea';
 export * from './RouterContextCleaner';

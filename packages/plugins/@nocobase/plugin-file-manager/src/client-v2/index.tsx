@@ -7,4 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { DisplayPreviewFieldModel } from '../../client-v2/models/DisplayPreviewFieldModel';
+export { default } from './plugin';
+export { default as PluginFileManagerClientV2 } from './plugin';
