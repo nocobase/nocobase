@@ -45,19 +45,10 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
       '.nb-mobile-action-drawer-body': {
         borderTopLeftRadius: 8,
         borderTopRightRadius: 8,
-        maxHeight: 'calc(100vh - var(--nb-mobile-page-header-height, 46px))',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
         backgroundColor: token.colorBgLayout,
 
         '&::-webkit-scrollbar': {
           display: 'none',
-        },
-
-        '@supports (height: 100dvh)': {
-          maxHeight: 'calc(100dvh - var(--nb-mobile-page-header-height, 46px))',
         },
 
         // 不带 tab 页的半窗
