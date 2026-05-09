@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { DisplayPreviewFieldModel } from '../../client-v2/models/DisplayPreviewFieldModel';
+export { DisplayPreviewFieldModel } from './DisplayPreviewFieldModel';
+export { UploadActionModel } from './UploadActionModel';
+export { CardUpload, UploadFieldModel } from './UploadFieldModel';
