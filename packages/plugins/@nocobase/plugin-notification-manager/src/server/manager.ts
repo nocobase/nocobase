@@ -8,6 +8,7 @@
  */
 
 import { Registry } from '@nocobase/utils';
+import { v4 as uuidv4 } from 'uuid';
 import { COLLECTION_NAME } from '../constant';
 import PluginNotificationManagerServer from './plugin';
 import type {
@@ -35,10 +36,18 @@ export class NotificationManager implements NotificationManager {
     this.channelTypes.register(type, { Channel, useQueue });
   }
 
-  createSendingRecord = async (options: WriteLogOptions & Transactionable) => {
-    const logsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.logs);
-    const { transaction, ...values } = options;
-    return logsRepo.create({ values, transaction });
+  createSendingRecord = async (options: WriteLogOptions) => {
+    const LogsModel = this.plugin.app.db.getModel(COLLECTION_NAME.logs);
+    return LogsModel.create(
+      {
+        id: uuidv4(),
+        ...options,
+      },
+      {
+        hooks: false,
+        validate: false,
+      },
+    );
   };
 
   private toQueueMessage(params: SendOptions): NotificationQueueMessage {

@@ -190,7 +190,7 @@ describe('notification manager server', () => {
             publish,
           },
           db: {
-            getRepository: vi.fn((name) => {
+            getModel: vi.fn((name) => {
               if (name === COLLECTION_NAME.logs) {
                 return { create };
               }
@@ -248,7 +248,7 @@ describe('notification manager server', () => {
         getChannel,
         app: {
           db: {
-            getRepository: vi.fn((name) => {
+            getModel: vi.fn((name) => {
               if (name === COLLECTION_NAME.logs) {
                 return { create };
               }
@@ -294,10 +294,13 @@ describe('notification manager server', () => {
     expect(send.mock.calls[0][0]).not.toHaveProperty('transaction');
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
-        values: expect.objectContaining({
-          status: 'success',
-          channelName: testChannelData.name,
-        }),
+        id: expect.any(String),
+        status: 'success',
+        channelName: testChannelData.name,
+      }),
+      expect.objectContaining({
+        hooks: false,
+        validate: false,
       }),
     );
   });
@@ -322,7 +325,7 @@ describe('notification manager server', () => {
             publish,
           },
           db: {
-            getRepository: vi.fn((name) => {
+            getModel: vi.fn((name) => {
               if (name === COLLECTION_NAME.logs) {
                 return { create };
               }
@@ -403,7 +406,7 @@ describe('notification manager server', () => {
             publish,
           },
           db: {
-            getRepository: vi.fn((name) => {
+            getModel: vi.fn((name) => {
               if (name === COLLECTION_NAME.logs) {
                 return { create };
               }
