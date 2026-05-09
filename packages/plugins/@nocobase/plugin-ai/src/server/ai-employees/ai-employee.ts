@@ -39,6 +39,7 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
 import { Context } from '@nocobase/actions';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
+import { LLMStreamCached } from '../manager/llm-stream-manager';
 
 export interface ModelRef {
   llmService: string;
@@ -85,13 +86,14 @@ export class AIEmployee {
   private db: Database;
 
   private ctx: Context;
-  private systemMessage: string;
+  private systemMessage?: string;
   private protocol: ChatStreamProtocol;
   private webSearch?: boolean;
   private model?: ModelRef;
   private legacy?: boolean;
   private tools: { name: string }[];
   private inWorkflow?: boolean;
+  private streamCached: LLMStreamCached;
 
   constructor({
     ctx,
@@ -117,13 +119,14 @@ export class AIEmployee {
     this.legacy = legacy;
     this.from = from;
     this.tools = tools;
+    this.streamCached = this.plugin.llmStreamCachedManager.getCached(sessionId);
 
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
     this.protocol = ChatStreamProtocol.fromContext(ctx, async (chunk) => {
       try {
-        await this.plugin.llmStreamCachedManager.getCached(this.sessionId).append(chunk);
+        await this.streamCached.append(chunk);
       } catch (error) {
         this.logger.warn('Failed to append LLM stream cache', { sessionId: this.sessionId, error });
       }
@@ -249,6 +252,7 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
+    await this.streamCached.clear();
     await this.aiConversationsRepo.update({
       values: { llmActiveState: 'streaming' },
       filter: {
@@ -282,16 +286,16 @@ export class AIEmployee {
       return true;
     } catch (err) {
       this.ctx.log.error(err);
-      await this.plugin.llmStreamCachedManager.getCached(this.sessionId).clear();
       this.sendErrorResponse(err.message || 'Chat error warning');
       return false;
     } finally {
       await this.aiConversationsRepo.update({
-        values: { llmActiveState: 'idle' },
+        values: { llmActiveState: 'idle', read: false },
         filter: {
           sessionId: this.sessionId,
         },
       });
+      await this.streamCached.clear();
     }
   }
 
@@ -470,7 +474,6 @@ export class AIEmployee {
     let gathered: any;
     signal.addEventListener('abort', async () => {
       try {
-        await this.plugin.llmStreamCachedManager.getCached(this.sessionId).clear();
         if (gathered?.type === 'ai') {
           const values = convertAIMessage({
             aiEmployee: this,
@@ -497,8 +500,6 @@ export class AIEmployee {
         from: this.from,
         username: this.employee.username,
       };
-      const llmStreamCache = this.plugin.llmStreamCachedManager.getCached(this.sessionId);
-      await llmStreamCache.clear();
       this.protocol.with(aiEmployeeConversation).startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
@@ -656,7 +657,7 @@ export class AIEmployee {
       this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       this.ctx.log.error(err);
-      await this.plugin.llmStreamCachedManager.getCached(this.sessionId).clear();
+      await this.streamCached.clear();
       if (err.name === 'GraphRecursionError') {
         this.sendSpecificError({ name: err.name, message: err.message });
       } else {
