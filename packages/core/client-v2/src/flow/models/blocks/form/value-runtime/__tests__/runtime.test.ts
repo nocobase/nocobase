@@ -159,10 +159,139 @@ describe('FormValueRuntime (default rules)', () => {
     await runtime.setFormValues(fieldCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
 
+    // change dependency again -> default keeps following while target is still the last default
+    await runtime.setFormValues(fieldCtx, [{ path: ['b'], value: 'Z' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Z'));
+
     // user changes target -> default should be disabled permanently
     await runtime.setFormValues(fieldCtx, [{ path: ['a'], value: 'user' }], { source: 'user' });
-    await runtime.setFormValues(fieldCtx, [{ path: ['b'], value: 'Z' }], { source: 'user' });
+    await runtime.setFormValues(fieldCtx, [{ path: ['b'], value: 'W' }], { source: 'user' });
     expect(formStub.getFieldValue(['a'])).toBe('user');
+  });
+
+  it('allows direct default patches to keep following until target is explicitly changed', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ roleUid: 'role-uid-1', roleName: '' });
+
+    const blockModel: any = {
+      uid: 'form-direct-default-patch',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    expect(runtime.canApplyDefaultValuePatch(['roleName'], 'role-uid-1')).toBe(true);
+    await runtime.setFormValues(blockCtx, [{ path: ['roleName'], value: 'role-uid-1' }], {
+      source: 'linkage',
+      txId: 'tx-linkage-1',
+      linkageTxId: 'tx-linkage-1',
+    });
+    runtime.recordDefaultValuePatch(['roleName'], 'role-uid-1');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roleUid'], value: 'role-uid-2' }], { source: 'user' });
+    expect(runtime.canApplyDefaultValuePatch(['roleName'], 'role-uid-2')).toBe(true);
+    await runtime.setFormValues(blockCtx, [{ path: ['roleName'], value: 'role-uid-2' }], {
+      source: 'linkage',
+      txId: 'tx-linkage-2',
+      linkageTxId: 'tx-linkage-2',
+    });
+    runtime.recordDefaultValuePatch(['roleName'], 'role-uid-2');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roleUid'], value: 'role-uid-3' }], { source: 'user' });
+    expect(runtime.canApplyDefaultValuePatch(['roleName'], 'role-uid-3')).toBe(true);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roleName'], value: 'manual' }], { source: 'user' });
+    expect(runtime.canApplyDefaultValuePatch(['roleName'], 'role-uid-4')).toBe(false);
+  });
+
+  it('keeps direct default patches active when an unchanged default value is carried by a row change', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ roles: [{ uid: '1', title: '' }] });
+
+    const blockModel: any = {
+      uid: 'form-direct-default-patch-row',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    expect(runtime.canApplyDefaultValuePatch(['roles', 0, 'title'], '1')).toBe(true);
+    await runtime.setFormValues(blockCtx, [{ path: ['roles', 0, 'title'], value: '1' }], {
+      source: 'linkage',
+      txId: 'tx-linkage-row-1',
+      linkageTxId: 'tx-linkage-row-1',
+    });
+    runtime.recordDefaultValuePatch(['roles', 0, 'title'], '1');
+
+    lodashSet((runtime as any).valuesMirror, ['roles', 0, 'title'], undefined);
+    runtime.handleFormFieldsChange([{ name: ['roles', 0, 'title'], touched: true } as any]);
+    expect((runtime as any).findExplicitHit('roles[0].title')).toBeNull();
+    expect(runtime.canApplyDefaultValuePatch(['roles', 0, 'title'], '12')).toBe(true);
+
+    (runtime as any).markExplicit('roles');
+    expect((runtime as any).findExplicitHit('roles[0].title')).toBeNull();
+    expect(runtime.canApplyDefaultValuePatch(['roles', 0, 'title'], '12')).toBe(true);
+
+    lodashSet((runtime as any).valuesMirror, ['roles', 0, 'title'], undefined);
+
+    lodashSet((formStub as any).__store, ['roles', 0, 'uid'], '12');
+    runtime.handleFormValuesChange({ roles: formStub.getFieldValue(['roles']) }, formStub.getFieldsValue());
+
+    expect((runtime as any).findExplicitHit('roles[0].title')).toBeNull();
+    expect(runtime.canApplyDefaultValuePatch(['roles', 0, 'title'], '12')).toBe(true);
+    await runtime.setFormValues(blockCtx, [{ path: ['roles', 0, 'title'], value: '12' }], {
+      source: 'linkage',
+      txId: 'tx-linkage-row-2',
+      linkageTxId: 'tx-linkage-row-2',
+    });
+    runtime.recordDefaultValuePatch(['roles', 0, 'title'], '12');
+    expect(formStub.getFieldValue(['roles', 0, 'title'])).toBe('12');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles', 0, 'title'], value: 'manual' }], { source: 'user' });
+    expect(runtime.canApplyDefaultValuePatch(['roles', 0, 'title'], '13')).toBe(false);
+  });
+
+  it('does not mark omitted sibling fields from partial top-level changedValues as explicit', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({
+      roles: [{ __is_new__: true, __index__: 'row-1', name: '1', title: '1' }],
+    });
+
+    const blockModel: any = {
+      uid: 'form-direct-default-patch-partial-row',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    runtime.recordDefaultValuePatch(['roles', 0, 'title'], '1');
+
+    lodashSet((formStub as any).__store, ['roles', 0, 'name'], '12');
+    runtime.handleFormValuesChange({ roles: [{ name: '12' }] }, formStub.getFieldsValue());
+
+    expect((runtime as any).findExplicitHit('roles[0].title')).toBeNull();
+    expect(runtime.canApplyDefaultValuePatch(['roles', 0, 'title'], '12')).toBe(true);
   });
 
   it('handles onFieldsChange name as string and triggers default recompute', async () => {
@@ -3266,5 +3395,42 @@ describe('FormValueRuntime (form assign rules)', () => {
     const payload = dispatchCalls[dispatchCalls.length - 1][1];
     expect(payload.txId).toBe('tx-current');
     expect(payload.linkageTxId).toBe('tx-root');
+  });
+
+  it('does not mark linkage writes explicit so later user edits can keep following default linkage', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ roleUid: 'role-uid-1', roleName: '' });
+
+    const blockModel: any = {
+      uid: 'form-linkage-linkage-not-explicit',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roleName'], value: 'role-uid-1' }], {
+      source: 'linkage',
+      txId: 'tx-linkage-1',
+      linkageTxId: 'tx-linkage-1',
+      linkageScopeDepth: 0,
+    });
+
+    expect(formStub.getFieldValue(['roleName'])).toBe('role-uid-1');
+    expect((runtime as any).findExplicitHit('roleName')).toBeNull();
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roleUid'], value: 'role-uid-2' }], {
+      source: 'user',
+      txId: 'tx-user-1',
+    });
+    expect(formStub.getFieldValue(['roleUid'])).toBe('role-uid-2');
+    expect((runtime as any).findExplicitHit('roleName')).toBeNull();
   });
 });

@@ -51,11 +51,7 @@ import {
   getCollectionFromModel,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
-import {
-  namePathToPathKey,
-  parsePathString,
-  resolveDynamicNamePath,
-} from '../models/blocks/form/value-runtime/path';
+import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
 
 interface LinkageRule {
@@ -1759,7 +1755,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
   const linkageRules: LinkageRule[] = params.value as LinkageRule[];
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
-  const directValuePatches: Array<{ path: any; value: any }> = [];
+  const directValuePatches: Array<{ path: Array<string | number>; value: any; whenEmpty?: boolean }> = [];
   const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
   const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
     if (!Array.isArray(namePath) || !namePath.length) return true;
@@ -1800,6 +1796,24 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const fieldIndex = (ctx.model as any)?.context?.fieldIndex;
     return resolveDynamicNamePath(path, fieldIndex);
   };
+  const getDefaultPatchRuntime = () => {
+    const blockModel = (ctx.model as any)?.context?.blockModel ?? ctx.model;
+    return blockModel?.formValueRuntime ?? (ctx as any)?.formValueRuntime;
+  };
+  const rememberAppliedDefaultPatches = (patches: typeof directValuePatches) => {
+    const runtime = getDefaultPatchRuntime();
+    if (typeof runtime?.recordDefaultValuePatch !== 'function') return;
+
+    const lastPatchByPathKey = new Map<string, (typeof directValuePatches)[number]>();
+    for (const patch of patches) {
+      lastPatchByPathKey.set(namePathToPathKey(patch.path), patch);
+    }
+
+    for (const patch of lastPatchByPathKey.values()) {
+      if (!patch.whenEmpty) continue;
+      runtime.recordDefaultValuePatch(patch.path, patch.value);
+    }
+  };
   const addFormValuePatch = (patch: { path: any; value: any; whenEmpty?: boolean }) => {
     if (!patch) return;
     const path = (patch as any)?.path;
@@ -1823,20 +1837,33 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       return;
     }
     const whenEmpty = !!(patch as any)?.whenEmpty;
+    const value = (patch as any)?.value;
     try {
       const form = ctx.model?.context?.form;
       const current = form?.getFieldValue?.(resolvedPath);
-      if (whenEmpty && typeof current !== 'undefined' && current !== null && current !== '') {
-        return;
+      if (whenEmpty) {
+        const runtime = getDefaultPatchRuntime();
+        if (typeof runtime?.canApplyDefaultValuePatch === 'function') {
+          const canApply = runtime.canApplyDefaultValuePatch(resolvedPath, value);
+          if (!canApply) {
+            return;
+          }
+        } else if (typeof current !== 'undefined' && current !== null && current !== '') {
+          return;
+        }
       }
-      if (_.isEqual(current, (patch as any)?.value)) {
+      if (_.isEqual(current, value)) {
         return;
       }
     } catch {
       // ignore
     }
 
-    directValuePatches.push({ path: resolvedPath, value: (patch as any)?.value });
+    directValuePatches.push({
+      path: resolvedPath,
+      value,
+      ...(whenEmpty ? { whenEmpty: true } : {}),
+    });
   };
 
   const getModelTargetPathForPatch = (model: any): string | null => {
@@ -2018,6 +2045,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   if (typeof directSetter === 'function') {
     try {
       await trySetFormValues(directSetter, directCtx, 'linkage');
+      rememberAppliedDefaultPatches(allPatches);
       return;
     } catch (error) {
       console.warn('[linkageRules] Failed to set form values via setFormValues', {
@@ -2034,6 +2062,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   if (typeof blockSetter === 'function') {
     try {
       await trySetFormValues(blockSetter, blockCtx, 'linkage');
+      rememberAppliedDefaultPatches(allPatches);
       return;
     } catch (error) {
       console.warn('[linkageRules] Failed to set form values via setFormValues', {
@@ -2063,6 +2092,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       console.warn('[linkageRules] Failed to set form field value (fallback setFieldValue)', { path }, error);
     }
   });
+  rememberAppliedDefaultPatches(allPatches);
 };
 
 export const blockLinkageRules = defineAction({
@@ -2348,33 +2378,95 @@ export const fieldLinkageRules = defineAction({
       return;
     }
 
-    const getRowScopeKeyFromModel = (model: any): string | null => {
+    const getRowFieldIndexInfoFromModel = (model: any) => {
       const fieldIndex = model?.context?.fieldIndex;
       const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
-      if (!arr.length) return null;
+      const normalized = arr.filter((it): it is string => typeof it === 'string');
       const entries: Array<{ name: string; index: number }> = [];
-      for (const it of arr) {
-        if (typeof it !== 'string') continue;
+      const path: Array<string | number> = [];
+      for (const it of normalized) {
         const [name, indexStr] = it.split(':');
         const index = Number(indexStr);
         if (!name || Number.isNaN(index)) continue;
         entries.push({ name, index });
+        path.push(name, index);
       }
+      return { normalized, entries, path };
+    };
+
+    const getRowScopeKeyFromModel = (model: any): string | null => {
+      const { entries } = getRowFieldIndexInfoFromModel(model);
       if (!entries.length) return null;
       const deepest = entries[entries.length - 1].name;
       const occurrence = entries.reduce((count, e) => (e.name === deepest ? count + 1 : count), 0);
       return `${deepest}#${occurrence}`;
     };
 
+    const getRowFieldIndexKeyFromModel = (model: any): string | null => {
+      const { normalized } = getRowFieldIndexInfoFromModel(model);
+      if (!normalized.length) return null;
+      return JSON.stringify(normalized);
+    };
+
+    const getRowPathFromModel = (model: any): Array<string | number> | null => {
+      const { path } = getRowFieldIndexInfoFromModel(model);
+      return path.length ? path : null;
+    };
+
+    const getFormForRowFork = (model: any) => {
+      return (
+        model?.context?.form ??
+        model?.context?.blockModel?.context?.form ??
+        ctx.model?.context?.form ??
+        ctx.model?.context?.blockModel?.context?.form
+      );
+    };
+
+    const isRowForkMountedInCurrentValue = (model: any): boolean => {
+      const rowPath = getRowPathFromModel(model);
+      if (!rowPath) return true;
+      const form = getFormForRowFork(model);
+      if (!form || typeof form.getFieldValue !== 'function') return true;
+      return typeof form.getFieldValue(rowPath as any) !== 'undefined';
+    };
+
+    const hasRowItemContext = (model: any): boolean => {
+      const itemOptions = model?.context?.getPropertyOptions?.('item');
+      if (itemOptions) return true;
+      return typeof model?.context?.item !== 'undefined';
+    };
+
+    const hasSubTableRowMarker = (model: any): boolean => {
+      const markerOptions = model?.context?.getPropertyOptions?.('subTableRowFork');
+      if (markerOptions) return true;
+      return (
+        typeof model?.context?.subTableRowFork !== 'undefined' ||
+        typeof model?.subTableRowFork !== 'undefined' ||
+        model?.subTableRowFork === true
+      );
+    };
+
     const isRowGridForkModel = (model: any): boolean => {
       if (!model || typeof model !== 'object') return false;
       if ((model as any)?.subModels?.field) return false;
       if (!(model as any)?.subModels?.items) return false;
-      return !!getRowScopeKeyFromModel(model);
+      return !!getRowScopeKeyFromModel(model) && !!getRowFieldIndexKeyFromModel(model);
     };
 
-    const collectRowGridForksByKey = (): Map<string, FlowModel[]> => {
+    const isSubTableRowForkModel = (model: any): boolean => {
+      if (!model || typeof model !== 'object') return false;
+      if (!hasSubTableRowMarker(model)) return false;
+      if (!getRowScopeKeyFromModel(model) || !getRowFieldIndexKeyFromModel(model)) return false;
+      return hasRowItemContext(model);
+    };
+
+    const isRowScopedForkModel = (model: any): boolean => {
+      return isRowGridForkModel(model) || isSubTableRowForkModel(model);
+    };
+
+    const collectRowScopedForksByKey = (): Map<string, FlowModel[]> => {
       const out = new Map<string, FlowModel[]>();
+      const seenByKey = new Map<string, Set<string>>();
       const engine = ctx.engine;
       if (!engine?.forEachModel) return out;
 
@@ -2383,9 +2475,15 @@ export const fieldLinkageRules = defineAction({
         if (!forks || typeof forks.forEach !== 'function') return;
         forks.forEach((fork: any) => {
           if (!fork || fork.disposed) return;
-          if (!isRowGridForkModel(fork)) return;
+          if (!isRowScopedForkModel(fork)) return;
+          if (!isRowForkMountedInCurrentValue(fork)) return;
           const rowScopeKey = getRowScopeKeyFromModel(fork);
-          if (!rowScopeKey) return;
+          const fieldIndexKey = getRowFieldIndexKeyFromModel(fork);
+          if (!rowScopeKey || !fieldIndexKey) return;
+          const seen = seenByKey.get(rowScopeKey) || new Set<string>();
+          if (seen.has(fieldIndexKey)) return;
+          seen.add(fieldIndexKey);
+          seenByKey.set(rowScopeKey, seen);
           const arr = out.get(rowScopeKey) || [];
           arr.push(fork as FlowModel);
           out.set(rowScopeKey, arr);
@@ -2396,7 +2494,7 @@ export const fieldLinkageRules = defineAction({
     };
 
     const runRowScoped = async (): Promise<boolean> => {
-      const forksByKey = collectRowGridForksByKey();
+      const forksByKey = collectRowScopedForksByKey();
       let hasAnyRowFork = false;
       for (const [rowScopeKey, rowParams] of rowParamsByKey.entries()) {
         const forks = forksByKey.get(rowScopeKey) || [];
