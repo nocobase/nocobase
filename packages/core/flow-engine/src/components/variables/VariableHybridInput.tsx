@@ -464,7 +464,7 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
         /* inline lets long tag content wrap naturally across lines, mirroring v1. */
         display: inline;
         margin: 0 ${token.marginXXS}px;
-        padding: 2px ${token.paddingXS}px;
+        padding: ${token.paddingXXS}px ${token.paddingXS}px;
         font-size: ${token.fontSizeSM}px;
         line-height: ${token.lineHeightSM};
         color: ${token.colorPrimaryText};

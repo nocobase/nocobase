@@ -11,7 +11,21 @@ import { CloseOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-
 import { css } from '@emotion/css';
 import { JsonTextArea } from '@nocobase/client-v2';
 import { useFlowContext, useFlowView } from '@nocobase/flow-engine';
-import { App, Button, Card, Checkbox, Dropdown, Form, Input, InputNumber, Radio, Select, Space, Table } from 'antd';
+import {
+  App,
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  Form,
+  Input,
+  InputNumber,
+  Radio,
+  Select,
+  Space,
+  Table,
+  theme,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useRequest } from 'ahooks';
 import { cloneDeep, get, set } from 'lodash';
@@ -33,35 +47,24 @@ type StorageRecord = {
 
 const PAGE_SIZE = 50;
 
-const storageFormClassName = css`
-  .ant-form-item {
-    margin-bottom: 18px;
-  }
+function useStorageFormClassName() {
+  const { token } = theme.useToken();
+  return useMemo(
+    () => css`
+      .ant-radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: ${token.marginSM}px;
+      }
 
-  .ant-form-item-label {
-    padding-bottom: 4px;
-  }
-
-  .ant-form-item-label > label {
-    font-weight: 600;
-  }
-
-  .ant-form-item-extra {
-    margin-top: 4px;
-    line-height: 1.35;
-  }
-
-  .ant-radio-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .ant-radio-wrapper {
-    margin-inline-end: 0;
-    max-width: 100%;
-  }
-`;
+      .ant-radio-wrapper {
+        margin-inline-end: 0;
+        max-width: 100%;
+      }
+    `,
+    [token.marginSM],
+  );
+}
 
 // Mirrors v1's `.auto-width` rule (registered globally on FormItem in @nocobase/client):
 // shrinks the antd control to its content width but keeps a sensible minimum.
@@ -241,6 +244,7 @@ function StorageFormView(props: {
   const resource = useStorageResource();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const storageFormClassName = useStorageFormClassName();
   const initialValues = useMemo(
     () => getInitialValues({ mode: props.mode, storageType: props.storageType, record: props.record }),
     [props.mode, props.record, props.storageType],
