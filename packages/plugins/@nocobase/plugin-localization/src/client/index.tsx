@@ -8,9 +8,8 @@
  */
 
 import { Plugin } from '@nocobase/client';
-// import { Localization } from './Localization';
 import { lazy } from '@nocobase/client';
-const { Localization } = lazy(() => import('./Localization'), 'Localization');
+const Localization = lazy(() => import('../client-v2/pages/LocalizationPage'));
 import { NAMESPACE } from './locale';
 import { MissingKeyHandler } from './i18n-missing-handler';
 
