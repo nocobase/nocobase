@@ -129,3 +129,19 @@ test('setupSessionIntegration uses APPDATA for opencode integration on Windows',
     platformSpy.mockRestore();
   }
 });
+
+test('setupSessionIntegration keeps HOME-based opencode integration for bash on Windows', async () => {
+  const configPath = path.join(tempHome, '.config', 'opencode', 'opencode.json');
+  await mkdir(path.dirname(configPath), { recursive: true });
+  await writeFile(configPath, `${JSON.stringify({ plugin: [] }, null, 2)}\n`, 'utf8');
+
+  const platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
+  try {
+    const result = await setupSessionIntegration('bash');
+    expect(result.agentConfigured).toBe(true);
+    expect(result.agentConfigFile).toBe(configPath);
+    expect(result.agentPluginFile).toBe(path.join(tempHome, '.config', 'opencode', 'plugins', 'nb-agent-session.js'));
+  } finally {
+    platformSpy.mockRestore();
+  }
+});

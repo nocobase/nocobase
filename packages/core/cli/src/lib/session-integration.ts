@@ -26,8 +26,12 @@ function resolveSessionHomeDir() {
   return process.env.HOME || process.env.USERPROFILE || os.homedir();
 }
 
-function opencodeConfigDir() {
-  if (process.platform === 'win32') {
+function usesWindowsOpencodeConfig(shell: SessionShell) {
+  return process.platform === 'win32' && (shell === 'powershell' || shell === 'cmd');
+}
+
+function opencodeConfigDir(shell: SessionShell) {
+  if (usesWindowsOpencodeConfig(shell)) {
     const appData = process.env.APPDATA || path.join(resolveSessionHomeDir(), 'AppData', 'Roaming');
     return path.join(appData, 'opencode');
   }
@@ -35,12 +39,12 @@ function opencodeConfigDir() {
   return path.join(resolveSessionHomeDir(), '.config', 'opencode');
 }
 
-function opencodePluginFilePath() {
-  return path.join(opencodeConfigDir(), 'plugins', OPENCODE_PLUGIN_NAME);
+function opencodePluginFilePath(shell: SessionShell) {
+  return path.join(opencodeConfigDir(shell), 'plugins', OPENCODE_PLUGIN_NAME);
 }
 
-function opencodeConfigFilePath() {
-  return path.join(opencodeConfigDir(), 'opencode.json');
+function opencodeConfigFilePath(shell: SessionShell) {
+  return path.join(opencodeConfigDir(shell), 'opencode.json');
 }
 
 async function pathExists(filePath: string) {
@@ -235,19 +239,19 @@ function buildOpencodePluginContent() {
   ].join('\n');
 }
 
-async function installOpencodeSessionPlugin() {
-  const configFile = opencodeConfigFilePath();
+async function installOpencodeSessionPlugin(shell: SessionShell) {
+  const configFile = opencodeConfigFilePath(shell);
   const configExists = await pathExists(configFile);
   if (!configExists) {
     return {
-      pluginFile: opencodePluginFilePath(),
+      pluginFile: opencodePluginFilePath(shell),
       configFile,
       configured: false,
       skippedReason: 'opencode_config_not_found' as const,
     };
   }
 
-  const pluginFile = opencodePluginFilePath();
+  const pluginFile = opencodePluginFilePath(shell);
   await fs.mkdir(path.dirname(pluginFile), { recursive: true });
   await fs.writeFile(pluginFile, buildOpencodePluginContent(), 'utf8');
 
@@ -277,9 +281,9 @@ async function installOpencodeSessionPlugin() {
   };
 }
 
-async function removeOpencodeSessionPlugin() {
-  const pluginFile = opencodePluginFilePath();
-  const configFile = opencodeConfigFilePath();
+async function removeOpencodeSessionPlugin(shell: SessionShell) {
+  const pluginFile = opencodePluginFilePath(shell);
+  const configFile = opencodeConfigFilePath(shell);
 
   let pluginFileRemoved = false;
   try {
@@ -356,7 +360,7 @@ export async function setupSessionIntegration(shell: SessionShell): Promise<Sess
   const managedFile = managedFilePath(shell);
   await fs.mkdir(path.dirname(managedFile), { recursive: true });
   await fs.writeFile(managedFile, buildManagedFileContent(shell), 'utf8');
-  const agent = await installOpencodeSessionPlugin();
+  const agent = await installOpencodeSessionPlugin(shell);
 
   const profileFile = getSessionShellProfilePath(shell);
   if (profileFile) {
@@ -409,7 +413,7 @@ export async function removeSessionIntegration(shell: SessionShell): Promise<Ses
 
   const profileFile = getSessionShellProfilePath(shell);
   const profileUpdated = profileFile ? await removeMarkedBlock(profileFile) : false;
-  const agent = await removeOpencodeSessionPlugin();
+  const agent = await removeOpencodeSessionPlugin(shell);
 
   return {
     shell,
