@@ -535,4 +535,336 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
       linkageScopeDepth: 0,
     });
   });
+
+  it('runs row-scoped linkage rules for subtable row forks without subModels.items and deduplicates the same row', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const linkageAssignHandler = vi.fn((actionCtx: any, { value, addFormValuePatch }: any) => {
+      expect(actionCtx.linkageScopeDepth).toBe(0);
+      expect(actionCtx.item?.value?.uid).toBe('role-uid-1');
+      expect(value[0]?.value).toBe('role-uid-1');
+      addFormValuePatch({ path: 'roles.name', value: value[0].value });
+    });
+
+    const engine = new FlowEngine();
+    const makeRowFork = (uid: string) => {
+      const rowFork = new FlowModel({ uid, flowEngine: engine }) as any;
+      rowFork.context.defineMethod('subTableRowFork', () => true);
+      rowFork.context.defineProperty('fieldIndex', {
+        value: ['roles:0'],
+      });
+      rowFork.context.defineProperty('item', {
+        value: {
+          index: 0,
+          __is_new__: true,
+          value: {
+            uid: 'role-uid-1',
+          },
+        },
+      });
+      rowFork.context.defineProperty('setFormValues', {
+        value: setFormValues,
+      });
+      rowFork.context.defineProperty('app', {
+        value: {
+          jsonLogic: {
+            apply: () => true,
+          },
+        },
+      });
+      rowFork.getAction = vi.fn((name: string) => {
+        if (name === 'linkageAssignField') {
+          return {
+            handler: linkageAssignHandler,
+          };
+        }
+      });
+      return rowFork;
+    };
+
+    const rowFork1 = makeRowFork('role-row-fork-1');
+    const rowFork2 = makeRowFork('role-row-fork-2');
+
+    const masterModel1: any = {
+      uid: 'master-role-grid-1',
+      forks: new Set([rowFork1]),
+    };
+    const masterModel2: any = {
+      uid: 'master-role-grid-2',
+      forks: new Set([rowFork2]),
+    };
+
+    const rolesField: any = {
+      type: 'hasMany',
+      isAssociationField: () => true,
+      targetCollection: {
+        getField: (name: string) => ({ name, isAssociationField: () => false }),
+      },
+    };
+
+    const gridModel: any = {
+      uid: 'grid-model-role-row',
+      context: {
+        blockModel: {
+          collection: {
+            getField: (name: string) => (name === 'roles' ? rolesField : null),
+          },
+        },
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'linkageAssignField') {
+          return {
+            handler: linkageAssignHandler,
+          };
+        }
+      }),
+      __allModels: [],
+    };
+
+    const ctx: any = {
+      model: gridModel,
+      engine: {
+        forEachModel: (cb: (m: any) => void) => {
+          cb(masterModel1);
+          cb(masterModel2);
+        },
+      },
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-role-row',
+        changedPaths: [['roles', 0, 'uid']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => {
+        if (v === '{{ ctx.item.value.uid }}') {
+          return 'role-uid-1';
+        }
+        return v;
+      },
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-role-row',
+          title: 'rule-role-row',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  {
+                    key: 'r1',
+                    enable: true,
+                    targetPath: 'roles.name',
+                    mode: 'assign',
+                    value: '{{ ctx.item.value.uid }}',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(linkageAssignHandler).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [
+        {
+          path: ['roles', 0, 'name'],
+          value: 'role-uid-1',
+        },
+      ],
+      expect.objectContaining({
+        source: 'linkage',
+        linkageTxId: 'tx-role-row',
+        linkageScopeDepth: 0,
+      }),
+    );
+  });
+
+  it('keeps row-scoped default patches following while current value is still the last default', async () => {
+    const store = {
+      roles: [{ uid: 'role-uid-1', name: '' }],
+    };
+    const getAt = (path: Array<string | number>) => path.reduce((acc: any, seg) => acc?.[seg], store as any);
+    const setAt = (path: Array<string | number>, value: any) => {
+      let cur: any = store;
+      for (const seg of path.slice(0, -1)) {
+        cur = cur[seg];
+      }
+      cur[path[path.length - 1]] = value;
+    };
+    const pathKey = (path: Array<string | number>) => JSON.stringify(path);
+    const lastDefaults = new Map<string, any>();
+    const form = {
+      getFieldValue: (path: Array<string | number>) => getAt(path),
+    };
+    const formValueRuntime = {
+      canApplyDefaultValuePatch: vi.fn((path: Array<string | number>, value: any) => {
+        const current = getAt(path);
+        const last = lastDefaults.get(pathKey(path));
+        if (current === undefined || current === null || current === '') return true;
+        if (typeof last !== 'undefined' && current === last) return true;
+        if (current === value) {
+          lastDefaults.set(pathKey(path), value);
+        }
+        return false;
+      }),
+      recordDefaultValuePatch: vi.fn((path: Array<string | number>, value: any) => {
+        lastDefaults.set(pathKey(path), value);
+      }),
+    };
+    const setFormValues = vi.fn(async (patches: Array<{ path: Array<string | number>; value: any }>) => {
+      for (const patch of patches) {
+        setAt(patch.path, patch.value);
+      }
+    });
+    const defaultHandler = vi.fn((actionCtx: any, { value, addFormValuePatch }: any) => {
+      addFormValuePatch({ path: value[0].targetPath, value: value[0].value, whenEmpty: true });
+    });
+
+    const engine = new FlowEngine();
+    const rowFork = new FlowModel({ uid: 'role-default-row-fork', flowEngine: engine }) as any;
+    rowFork.context.defineProperty('subTableRowFork', {
+      value: true,
+    });
+    rowFork.context.defineProperty('fieldIndex', {
+      value: ['roles:0'],
+    });
+    rowFork.context.defineProperty('form', {
+      value: form,
+    });
+    rowFork.context.defineProperty('item', {
+      get: () => ({
+        index: 0,
+        __is_new__: true,
+        value: store.roles[0],
+      }),
+    });
+    rowFork.context.defineProperty('setFormValues', {
+      value: setFormValues,
+    });
+    rowFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    rowFork.getAction = vi.fn((name: string) => {
+      if (name === 'setFieldsDefaultValue') {
+        return {
+          handler: defaultHandler,
+        };
+      }
+    });
+
+    const masterModel: any = {
+      uid: 'master-role-default-grid',
+      forks: new Set([rowFork]),
+    };
+    const rolesField: any = {
+      type: 'hasMany',
+      isAssociationField: () => true,
+      targetCollection: {
+        getField: (name: string) => ({ name, isAssociationField: () => false }),
+      },
+    };
+    const blockModel: any = {
+      collection: {
+        getField: (name: string) => (name === 'roles' ? rolesField : null),
+      },
+      formValueRuntime,
+    };
+    rowFork.context.defineProperty('blockModel', {
+      value: blockModel,
+    });
+    const gridModel: any = {
+      uid: 'grid-model-role-default-row',
+      context: {
+        blockModel,
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'setFieldsDefaultValue') {
+          return {
+            handler: defaultHandler,
+          };
+        }
+      }),
+      __allModels: [],
+    };
+    const ctx: any = {
+      model: gridModel,
+      engine: {
+        forEachModel: (cb: (m: any) => void) => {
+          cb(masterModel);
+        },
+      },
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-role-default-row',
+        changedPaths: [['roles', 0, 'uid']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => v,
+    };
+    const makeParams = (value: string) => ({
+      value: [
+        {
+          key: `rule-${value}`,
+          title: `rule-${value}`,
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'setFieldsDefaultValue',
+              params: {
+                value: [
+                  {
+                    key: `r-${value}`,
+                    enable: true,
+                    targetPath: 'roles.name',
+                    mode: 'default',
+                    value,
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await fieldLinkageRules.handler(ctx, makeParams('role-uid-1'));
+    expect(store.roles[0].name).toBe('role-uid-1');
+
+    store.roles[0].uid = 'role-uid-2';
+    await fieldLinkageRules.handler(ctx, makeParams('role-uid-2'));
+    expect(store.roles[0].name).toBe('role-uid-2');
+    expect(setFormValues).toHaveBeenCalledTimes(2);
+    expect(formValueRuntime.canApplyDefaultValuePatch).toHaveBeenCalledTimes(2);
+    expect(formValueRuntime.recordDefaultValuePatch).toHaveBeenCalledTimes(2);
+
+    store.roles[0].name = 'manual';
+    store.roles[0].uid = 'role-uid-3';
+    await fieldLinkageRules.handler(ctx, makeParams('role-uid-3'));
+    expect(store.roles[0].name).toBe('manual');
+    expect(setFormValues).toHaveBeenCalledTimes(2);
+  });
 });
