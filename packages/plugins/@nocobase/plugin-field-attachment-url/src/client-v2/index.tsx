@@ -7,14 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client-v2';
-import { AttachmentURLFieldModel } from './AttachmentURLFieldModel';
+import { Application, Plugin } from '@nocobase/client-v2';
+import { AttachmentURLFieldInterface } from './interfaces/attachment-url';
 
-export class PluginFieldAttachmentUrlClient extends Plugin {
+export class PluginFieldAttachmentUrlClient extends Plugin<any, Application> {
   async load() {
-    this.app.flowEngine.registerModels({ AttachmentURLFieldModel });
+    this.app.addFieldInterfaces([AttachmentURLFieldInterface]);
+    this.flowEngine.registerModelLoaders({
+      AttachmentURLFieldModel: {
+        loader: () => import('./AttachmentURLFieldModel'),
+      },
+    });
   }
 }
 
+export { AttachmentURLFieldInterface } from './interfaces/attachment-url';
 export { AttachmentURLFieldModel } from './AttachmentURLFieldModel';
 export default PluginFieldAttachmentUrlClient;

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defaultProps, operators, CollectionFieldInterface } from '@nocobase/client';
+import { CollectionFieldInterface } from '@nocobase/client-v2';
 import {
   CHINA_REGION_BASE_COMPONENT_PROPS,
   CHINA_REGION_BASE_DEFAULT,
@@ -16,6 +16,15 @@ import {
   CHINA_REGION_LEVEL_OPTIONS,
   initializeChinaRegionValues,
 } from '../shared/chinaRegion';
+
+const stringOperators = [
+  { label: '{{t("contains")}}', value: '$includes', selected: true },
+  { label: '{{t("does not contain")}}', value: '$notIncludes' },
+  { label: '{{t("is")}}', value: '$eq' },
+  { label: '{{t("is not")}}', value: '$ne' },
+  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
+  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
+];
 
 export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   name = CHINA_REGION_INTERFACE_NAME;
@@ -28,20 +37,16 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
     ...CHINA_REGION_BASE_DEFAULT,
     uiSchema: {
       ...CHINA_REGION_BASE_DEFAULT.uiSchema,
-      'x-component-props': {
-        ...CHINA_REGION_BASE_COMPONENT_PROPS,
-        useDataSource: '{{ useChinaRegionDataSource }}',
-        useLoadData: '{{ useChinaRegionLoadData }}',
-      },
+      'x-component-props': { ...CHINA_REGION_BASE_COMPONENT_PROPS },
     },
   };
   availableTypes = ['belongsToMany'];
+
   initialize(values: any): void {
     initializeChinaRegionValues(values);
   }
 
   properties = {
-    ...defaultProps,
     'uiSchema.x-component-props.maxLevel': {
       type: 'number',
       'x-component': 'Radio.Group',
@@ -62,7 +67,7 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
     children: [
       {
         ...CHINA_REGION_FILTERABLE_CHILD_BASE,
-        operators: operators.string,
+        operators: stringOperators,
       },
     ],
   };

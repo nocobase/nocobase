@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
 import { FieldContext, useField } from '@formily/react';
 import { DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
-import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
+import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
 import { castArray } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { tExpr } from './locale';

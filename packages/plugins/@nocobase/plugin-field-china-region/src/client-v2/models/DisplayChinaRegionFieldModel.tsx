@@ -8,8 +8,9 @@
  */
 
 import React from 'react';
-import { FieldModel } from '@nocobase/client';
+import { FieldModel } from '@nocobase/client-v2';
 import { DisplayItemModel } from '@nocobase/flow-engine';
+import { tExpr } from '../locale';
 
 export class DisplayChinaRegionFieldModel extends FieldModel {
   render() {
@@ -19,26 +20,27 @@ export class DisplayChinaRegionFieldModel extends FieldModel {
       return null;
     }
 
-    // Handle array of region objects
     if (Array.isArray(value)) {
-      const sorted = [...value].sort((a, b) => {
-        if (a.level !== b.level) {
-          return a.level - b.level;
+      const sorted = [...value].sort((left, right) => {
+        if (left.level !== right.level) {
+          return left.level - right.level;
         }
-        return (a.sort || 0) - (b.sort || 0);
+        return (left.sort || 0) - (right.sort || 0);
       });
       const names = sorted.map((item) => item.name || item.label || item).filter(Boolean);
       return <span>{names.join('/')}</span>;
     }
 
-    // Handle single value
     if (typeof value === 'object' && value.name) {
       return <span>{value.name}</span>;
     }
 
-    // Handle string value
     return <span>{String(value)}</span>;
   }
 }
+
+DisplayChinaRegionFieldModel.define({
+  label: tExpr('China region'),
+});
 
 DisplayItemModel.bindModelToInterface('DisplayChinaRegionFieldModel', ['chinaRegion'], { isDefault: true });
