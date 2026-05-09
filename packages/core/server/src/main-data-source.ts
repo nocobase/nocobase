@@ -95,6 +95,7 @@ export class MainDataSource extends SequelizeDataSource {
         const results = await this.tables2Collections(toAddTables);
         const values = results.map((result) => ({
           ...result,
+          from: 'dbsync',
           underscored: false,
         }));
         await repo.create({ values, context: ctx });
@@ -115,7 +116,9 @@ export class MainDataSource extends SequelizeDataSource {
         ...filter,
       },
     });
-    const collections = loadedCollections.filter((collection: Model) => collection.options?.from !== 'db2cm');
+    const collections = loadedCollections.filter(
+      (collection: Model) => !['db2cm', 'dbsync'].includes(collection.options?.from),
+    );
     const loadedData = {};
     for (const collection of collections) {
       const c = db.getCollection(collection.name);
