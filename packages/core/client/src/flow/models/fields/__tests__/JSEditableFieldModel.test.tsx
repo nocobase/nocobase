@@ -68,13 +68,22 @@ function JsEditableField() {
 ctx.render(<JsEditableField />);
 `;
 
+const READONLY_AWARE_CODE = `
+const React = ctx.React;
+ctx.render(<span data-testid="js-readonly-state">{String(ctx.readOnly)}</span>);
+`;
+
 class ParentModel extends FlowModel<any> {
   render() {
     return <FlowModelRenderer model={this.subModels.field} />;
   }
 }
 
-function renderParentFieldWithFlowRenderer(fieldProps?: Record<string, any>, parentProps?: Record<string, any>) {
+function renderParentFieldWithFlowRenderer(
+  fieldProps?: Record<string, any>,
+  parentProps?: Record<string, any>,
+  code = EDITABLE_CODE,
+) {
   const engine = new FlowEngine();
   engine.registerModels({ JSEditableFieldModel, ParentModel });
   const parent = engine.createModel<ParentModel>({
@@ -89,7 +98,7 @@ function renderParentFieldWithFlowRenderer(fieldProps?: Record<string, any>, par
         stepParams: {
           jsSettings: {
             runJs: {
-              code: EDITABLE_CODE,
+              code,
             },
           },
         },
@@ -107,8 +116,21 @@ function renderParentFieldWithFlowRenderer(fieldProps?: Record<string, any>, par
 }
 
 describe('JSEditableFieldModel', () => {
-  it('renders fallback as text in display only mode', () => {
-    renderField({ pattern: 'readPretty', value: 'hello' }, EDITABLE_CODE);
+  it('renders configured JavaScript in display only mode', async () => {
+    const field = renderParentFieldWithFlowRenderer(
+      { pattern: 'readPretty', value: 'hello' },
+      undefined,
+      READONLY_AWARE_CODE,
+    ).subModels.field as JSEditableFieldModel;
+
+    await waitFor(() => {
+      expect(screen.getByTestId('js-readonly-state')).toHaveTextContent('true');
+      expect(field.context.ref.current).toBeInstanceOf(HTMLSpanElement);
+    });
+  });
+
+  it('renders fallback as text in display only mode when code is empty', () => {
+    renderField({ pattern: 'readPretty', value: 'hello' });
 
     expect(screen.getByText('hello')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('hello')).not.toBeInTheDocument();
@@ -121,7 +143,7 @@ describe('JSEditableFieldModel', () => {
   });
 
   it('rerenders as text when owner form item switches to display only', async () => {
-    const parent = renderParentFieldWithFlowRenderer({ value: 'hello' });
+    const parent = renderParentFieldWithFlowRenderer({ value: 'hello' }, undefined, '');
 
     await act(async () => {
       parent.setProps({ pattern: 'readPretty' });
@@ -149,5 +171,40 @@ describe('JSEditableFieldModel', () => {
     });
 
     expect(applyFlowSpy).not.toHaveBeenCalled();
+  });
+
+  it('coalesces script and pattern changes into one JavaScript settings run', async () => {
+    const parent = renderParentFieldWithFlowRenderer({ value: 'hello' }, undefined, '');
+    const field = parent.subModels.field as JSEditableFieldModel;
+    const applyFlowSpy = vi.spyOn(field, 'applyFlow');
+
+    await act(async () => {
+      field.setStepParams('jsSettings', 'runJs', { code: READONLY_AWARE_CODE });
+      parent.setProps({ pattern: 'readPretty' });
+      field.scheduleApplyJsSettings();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('js-readonly-state')).toHaveTextContent('true');
+    });
+
+    expect(applyFlowSpy).toHaveBeenCalledTimes(1);
+    expect(applyFlowSpy).toHaveBeenCalledWith('jsSettings');
+  });
+
+  it('applies JavaScript settings once on initial render', async () => {
+    const applyFlowSpy = vi.spyOn(FlowModel.prototype, 'applyFlow');
+    renderParentFieldWithFlowRenderer({ value: 'hello' });
+
+    try {
+      await waitFor(() => {
+        expect(screen.getByRole('textbox')).toBeInTheDocument();
+      });
+
+      expect(applyFlowSpy).toHaveBeenCalledTimes(1);
+      expect(applyFlowSpy.mock.calls).toEqual([['jsSettings']]);
+    } finally {
+      applyFlowSpy.mockRestore();
+    }
   });
 });

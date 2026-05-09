@@ -77,6 +77,7 @@ describe('pattern action', () => {
     });
     const field = parent.subModels.field;
     const saveSpy = vi.spyOn(engine, 'saveModel');
+    const applyJsSettingsSpy = vi.spyOn(field as JSEditableFieldModel, 'scheduleApplyJsSettings');
 
     await pattern.afterParamsSave?.(makeCtx(parent), { pattern: 'readPretty' }, { pattern: 'editable' });
 
@@ -87,6 +88,7 @@ describe('pattern action', () => {
       code: 'ctx.render("hello")',
     });
     expect(saveSpy).not.toHaveBeenCalled();
+    expect(applyJsSettingsSpy).toHaveBeenCalledTimes(1);
   });
 
   it('keeps JS editable field model when leaving display only', async () => {
@@ -115,12 +117,44 @@ describe('pattern action', () => {
     });
     const field = parent.subModels.field;
     const saveSpy = vi.spyOn(engine, 'saveModel');
+    const applyJsSettingsSpy = vi.spyOn(field as JSEditableFieldModel, 'scheduleApplyJsSettings');
 
     await pattern.afterParamsSave?.(makeCtx(parent), { pattern: 'editable' }, { pattern: 'readPretty' });
 
     expect(parent.subModels.field).toBe(field);
     expect(parent.subModels.field).toBeInstanceOf(JSEditableFieldModel);
     expect(saveSpy).not.toHaveBeenCalled();
+    expect(applyJsSettingsSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not reapply JS settings when pattern is unchanged', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      DummyFormItemModel,
+      FieldModel,
+      JSEditableFieldModel,
+    });
+
+    const parent = engine.createModel<DummyFormItemModel>({
+      use: DummyFormItemModel,
+      uid: 'form-item-js-unchanged',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-js-unchanged',
+          stepParams: {
+            fieldBinding: {
+              use: 'JSEditableFieldModel',
+            },
+          },
+        },
+      },
+    });
+    const applyJsSettingsSpy = vi.spyOn(parent.subModels.field as JSEditableFieldModel, 'scheduleApplyJsSettings');
+
+    await pattern.afterParamsSave?.(makeCtx(parent), { pattern: 'readPretty' }, { pattern: 'readPretty' });
+
+    expect(applyJsSettingsSpy).not.toHaveBeenCalled();
   });
 
   it('still rebuilds regular fields when switching to display only', async () => {

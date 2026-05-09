@@ -15,6 +15,10 @@ type PatternAwareFieldModelMeta = {
   preserveOnPatternChange?: boolean;
 };
 
+type PatternAwareFieldModel = {
+  scheduleApplyJsSettings?: () => void;
+};
+
 function shouldPreserveFieldModelOnPatternChange(ctx: any) {
   const fieldModel = ctx.model.subModels.field;
   const fieldUse = getFieldBindingUse(fieldModel) ?? fieldModel?.use;
@@ -69,6 +73,9 @@ export const pattern = defineAction({
   },
   afterParamsSave: async (ctx: any, params, previousParams) => {
     if (shouldPreserveFieldModelOnPatternChange(ctx)) {
+      if (params.pattern !== previousParams.pattern) {
+        (ctx.model.subModels.field as PatternAwareFieldModel | undefined)?.scheduleApplyJsSettings?.();
+      }
       return;
     }
 

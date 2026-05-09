@@ -91,12 +91,17 @@ const JSFormRuntime: React.FC<{
   }, [codeParam]);
 
   useEffect(() => {
-    if (readOnly || !containerRef.current || !scriptCode) return;
+    if (!containerRef.current || !scriptCode) return;
+    model.scheduleApplyJsSettings();
+  }, [model, scriptCode]);
+
+  useEffect(() => {
+    if (!containerRef.current || !scriptCode) return;
     const event = new CustomEvent('js-field:value-change', { detail: value });
     containerRef.current.dispatchEvent(event);
-  }, [value, scriptCode, readOnly]);
+  }, [value, scriptCode]);
 
-  if (readOnly) {
+  if (readOnly && !scriptCode) {
     return <span>{String(value ?? '')}</span>;
   }
 
@@ -117,19 +122,66 @@ const JSFormRuntime: React.FC<{
  */
 export class JSEditableFieldModel extends FieldModel {
   private _mountedOnce = false;
+  private _pendingJsSettingsApply = false;
+  private _lastAppliedJsSettings?: {
+    code: string;
+    disabled: boolean;
+    readOnly: boolean;
+    element: HTMLSpanElement | null;
+  };
+
+  scheduleApplyJsSettings() {
+    const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+    if (!resolveScriptCode(codeParam)) return;
+
+    if (this._pendingJsSettingsApply) {
+      return;
+    }
+
+    this._pendingJsSettingsApply = true;
+    queueMicrotask(() => {
+      this._pendingJsSettingsApply = false;
+
+      const nextCodeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+      const nextCode = resolveScriptCode(nextCodeParam);
+      const nextElement = this.context.ref?.current as HTMLSpanElement | null;
+      if (!nextCode || !nextElement) {
+        return;
+      }
+
+      const nextRun = {
+        code: nextCode,
+        disabled: !!this.props?.disabled,
+        readOnly: isReadOnlyMode(this),
+        element: nextElement,
+      };
+      const lastRun = this._lastAppliedJsSettings;
+      if (
+        lastRun &&
+        lastRun.code === nextRun.code &&
+        lastRun.disabled === nextRun.disabled &&
+        lastRun.readOnly === nextRun.readOnly &&
+        lastRun.element === nextRun.element
+      ) {
+        return;
+      }
+
+      this._lastAppliedJsSettings = nextRun;
+      void this.applyFlow('jsSettings');
+    });
+  }
 
   useHooksBeforeRender() {
     const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
     const scriptCode = resolveScriptCode(codeParam);
     const disabled = this.props?.disabled;
-    const effectiveReadOnly = isReadOnlyMode(this);
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      if (effectiveReadOnly || !scriptCode) return;
-      void this.applyFlow('jsSettings');
+      if (!scriptCode) return;
+      this.scheduleApplyJsSettings();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [scriptCode, disabled, effectiveReadOnly, this.props?.pattern]);
+    }, [scriptCode, disabled]);
   }
 
   render() {
@@ -171,6 +223,7 @@ JSEditableFieldModel.define(jsEditableFieldModelMeta);
 JSEditableFieldModel.registerFlow({
   key: 'jsSettings',
   title: tExpr('JavaScript settings'),
+  manual: true,
   steps: {
     runJs: {
       title: tExpr('Write JavaScript'),
@@ -209,10 +262,6 @@ JSEditableFieldModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        if (isReadOnlyMode(ctx.model)) {
-          return;
-        }
-
         const { code, version } = resolveRunJsParams(ctx, params);
         if (!code?.trim()) {
           return;
