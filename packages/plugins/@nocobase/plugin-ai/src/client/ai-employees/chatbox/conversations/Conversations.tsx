@@ -20,8 +20,9 @@ import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { ConversationsList } from './ConversationsList';
-import { WorkflowTasksList, useWorkflowTasksList } from './WorkflowTasksList';
+import { WorkflowTasksList } from './WorkflowTasksList';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
+import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 
 const segmentedClassName = css`
   .ant-segmented-item,
@@ -52,9 +53,16 @@ export const Conversations: React.FC = memo(() => {
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
 
-  const { conversationsService } = useChatConversationActions();
-  const runSearchConversations = (keyword = '') => conversationsService.run(1, keyword);
-  const refreshConversations = () => conversationsService.run();
+  const {
+    unreadCount: unreadConversationCount,
+    runSearch: runSearchConversations,
+    refresh: refreshConversations,
+  } = useChatConversationActions();
+  const {
+    unreadCount: unreadWorkTaskCount,
+    runSearch: runSearchWorkflowTasks,
+    refresh: refreshWorkflowTasks,
+  } = useWorkflowTasks();
 
   const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
   const chat = useChat(currentConversation);
@@ -158,19 +166,15 @@ export const Conversations: React.FC = memo(() => {
     ],
   );
 
-  const workflowTasksController = useWorkflowTasksList({
-    onOpenConversation: openConversation,
-  });
-
   useEffect(() => {
     if (showConversations) {
       if (conversationSegmented === 'conversations') {
         refreshConversations();
       } else {
-        workflowTasksController.refresh();
+        refreshWorkflowTasks();
       }
     }
-  }, [showConversations, conversationSegmented]);
+  }, [showConversations, conversationSegmented, refreshConversations, refreshWorkflowTasks]);
 
   return (
     <div
@@ -196,14 +200,14 @@ export const Conversations: React.FC = memo(() => {
             if (conversationSegmented === 'conversations') {
               runSearchConversations(val);
             } else {
-              workflowTasksController.runSearch(val);
+              runSearchWorkflowTasks(val);
             }
           }}
           onClear={() => {
             if (conversationSegmented === 'conversations') {
               runSearchConversations('');
             } else {
-              workflowTasksController.runSearch('');
+              runSearchWorkflowTasks('');
             }
           }}
           allowClear={true}
@@ -212,12 +216,20 @@ export const Conversations: React.FC = memo(() => {
           style={{ width: '100%', marginTop: 8 }}
           className={segmentedClassName}
           options={[
-            { label: t('Conversations'), value: 'conversations' },
+            {
+              label: (
+                <Space>
+                  {t('Conversations')}
+                  <Badge count={unreadConversationCount} size="small" />
+                </Space>
+              ),
+              value: 'conversations',
+            },
             {
               label: (
                 <Space>
                   {t('Workflow tasks')}
-                  <Badge count={workflowTasksController.unreadCount} size="small" />
+                  <Badge count={unreadWorkTaskCount} size="small" />
                 </Space>
               ),
               value: 'workflowTasks',
@@ -238,7 +250,7 @@ export const Conversations: React.FC = memo(() => {
         {conversationSegmented === 'conversations' ? (
           <ConversationsList onOpenConversation={openConversation} />
         ) : (
-          <WorkflowTasksList controller={workflowTasksController} />
+          <WorkflowTasksList onOpenConversation={openConversation} />
         )}
       </div>
     </div>

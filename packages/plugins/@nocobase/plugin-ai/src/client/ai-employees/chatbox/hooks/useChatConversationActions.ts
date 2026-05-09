@@ -17,6 +17,8 @@ export const useChatConversationActions = () => {
   const api = useAPIClient();
   const setConversations = useChatConversationsStore.use.setConversations();
   const keyword = useChatConversationsStore.use.keyword();
+  const unreadCount = useChatConversationsStore.use.unreadCount();
+
   const conversationsService = useRequest<Conversation[]>(
     (page = 1, keyword = '') => {
       const filter: any = {};
@@ -64,8 +66,14 @@ export const useChatConversationActions = () => {
   }, [keyword]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
+  const runSearch = (keyword = '') => conversationsService.run(1, keyword);
+  const refresh = () => conversationsService.run();
+
   return {
     conversationsService,
     lastConversationRef,
+    runSearch,
+    refresh,
+    unreadCount,
   };
 };
