@@ -12,7 +12,6 @@ import { CodeFieldInterface } from './interface';
 
 export class PluginFieldCodeClient extends Plugin<any, Application> {
   declare app: any;
-  declare flowEngine: any;
 
   async load() {
     this.app.addFieldInterfaces([CodeFieldInterface]);

@@ -9,3 +9,4 @@
 
 export { default } from './plugin';
 export { default as PluginFileManagerClientV2 } from './plugin';
+export { UploadFieldModel } from './models/UploadFieldModel';

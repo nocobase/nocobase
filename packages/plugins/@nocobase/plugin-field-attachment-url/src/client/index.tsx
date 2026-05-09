@@ -27,7 +27,7 @@ export class PluginFieldAttachmentUrlClient extends Plugin {
     this.app.addComponents({ AttachmentUrl });
     this.app.schemaSettingsManager.add(attachmentUrlComponentFieldSettings);
     this.flowEngine.registerModels({
-      AttachmentURLFieldModel,
+      AttachmentURLFieldModel: AttachmentURLFieldModel as any,
     });
   }
 }

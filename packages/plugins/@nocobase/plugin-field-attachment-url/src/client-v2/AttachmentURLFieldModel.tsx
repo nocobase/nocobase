@@ -105,12 +105,14 @@ const CardUpload = (props) => {
 };
 
 export class AttachmentURLFieldModel extends UploadFieldModel {
+  declare props: Record<string, any>;
+
   render() {
     return <CardUpload {...this.props} />;
   }
 }
 
-AttachmentURLFieldModel.define({
+(AttachmentURLFieldModel as any).define({
   label: tExpr('AttachmentURL'),
 });
 

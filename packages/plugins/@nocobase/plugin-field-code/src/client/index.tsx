@@ -110,7 +110,6 @@ export const codeComponentSettings = new SchemaSettings({
 
 export class PluginFieldCodeClient extends Plugin {
   declare app: any;
-  declare flowEngine: any;
 
   // You can get and modify the app instance here
   async load() {
