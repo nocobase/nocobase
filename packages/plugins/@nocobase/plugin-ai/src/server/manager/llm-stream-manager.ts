@@ -9,10 +9,12 @@
 
 import type { Cache } from '@nocobase/cache';
 import PluginAIServer from '../plugin';
+import { sleep } from '@nocobase/utils';
 
 const CACHE_NAME = 'ai-llm-stream-cache';
 const LOCK_KEY_PREFIX = 'ai-llm-stream-lock';
 const WRITE_LOCK_TTL = 3000;
+const CACHE_TTL = 10 * 60 * 1000;
 const STREAM_END_MARK = '"type":"stream_end"';
 const DEFAULT_POLL_INTERVAL = 50;
 const DEFAULT_INITIAL_WAIT_TIMEOUT = 1000;
@@ -21,6 +23,10 @@ export class LLMStreamCachedManager {
   private cachePromise?: Promise<Cache>;
 
   constructor(private readonly plugin: PluginAIServer) {}
+
+  getCached(sessionId: string) {
+    return new LLMStreamCached(sessionId, this);
+  }
 
   async clear(sessionId: string) {
     await this.withLock(sessionId, async () => {
@@ -34,7 +40,7 @@ export class LLMStreamCachedManager {
       const cache = await this.getCache();
       const chunks = (await cache.get<string[]>(sessionId)) ?? [];
       chunks.push(chunk);
-      await cache.set(sessionId, chunks);
+      await cache.set(sessionId, chunks, CACHE_TTL);
     });
   }
 
@@ -78,7 +84,7 @@ export class LLMStreamCachedManager {
         waited += pollInterval;
       }
 
-      await this.sleep(pollInterval);
+      await sleep(pollInterval);
     }
   }
 
@@ -101,13 +107,6 @@ export class LLMStreamCachedManager {
 
   private getLockKey(sessionId: string) {
     return `${LOCK_KEY_PREFIX}:${sessionId}`;
-  }
-
-  private async sleep(ms: number) {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
-  getCached(sessionId: string) {
-    return new LLMStreamCached(sessionId, this);
   }
 }
 
