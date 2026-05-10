@@ -12,6 +12,7 @@ import pc from 'picocolors';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
 import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
@@ -169,10 +170,28 @@ export default class LicensePluginsSync extends Command {
       description: 'Show detailed per-plugin sync logs',
       default: false,
     }),
+    yes: Flags.boolean({
+      description: 'Skip the interactive cross-env confirmation prompt',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsSync);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv ?? []));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
+
     const runtime = await requireLicenseRuntime(flags.env);
     if (!flags.json) {
       announceTargetEnv(runtime.envName);
