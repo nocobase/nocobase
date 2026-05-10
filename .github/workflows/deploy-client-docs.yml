@@ -44,6 +44,7 @@ jobs:
             echo "::set-output name=tags::pr-${{ github.event.pull_request.number }}"
           fi
       - name: copy files via ssh - ${{ steps.set-tags.outputs.tags }}
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.CN_CLIENT_HOST }}
