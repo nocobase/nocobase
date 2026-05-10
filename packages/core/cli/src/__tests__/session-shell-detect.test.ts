@@ -36,6 +36,11 @@ beforeEach(() => {
   delete process.env.BASH_VERSION;
   delete process.env.SHELL;
   delete process.env.LOGINSHELL;
+  delete process.env.PSModulePath;
+  delete process.env.ComSpec;
+  delete process.env.PROMPT;
+  delete process.env.MSYSTEM;
+  delete process.env.NB_SESSION_TEST_PARENT_PROCESS_NAME;
 });
 
 afterEach(() => {
