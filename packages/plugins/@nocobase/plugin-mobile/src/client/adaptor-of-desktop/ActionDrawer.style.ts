@@ -45,10 +45,11 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
       '.nb-mobile-action-drawer-body': {
         borderTopLeftRadius: 8,
         borderTopRightRadius: 8,
-        maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
-        overflowY: 'auto',
-        overflowX: 'hidden',
         backgroundColor: token.colorBgLayout,
+
+        '&::-webkit-scrollbar': {
+          display: 'none',
+        },
 
         // 不带 tab 页的半窗
         '& > .nb-grid-container': {
