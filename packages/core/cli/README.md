@@ -296,6 +296,20 @@ Show the current env:
 nb env
 ```
 
+Show only the current env name:
+
+```bash
+nb env current
+```
+
+Set up shell session integration for `NB_SESSION_ID`:
+
+```bash
+nb session setup
+nb session id
+nb session remove
+```
+
 List configured envs with token-verified API status:
 
 ```bash

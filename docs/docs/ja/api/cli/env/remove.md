@@ -8,6 +8,8 @@ keywords: "nb env remove,NocoBase CLI,環境削除,設定削除"
 
 設定済みの env を削除します。このコマンドは CLI の env 設定のみを削除します。ローカルアプリケーション、コンテナ、storage のクリーンアップが必要な場合は、[`nb app down`](../app/down.md) を使用してください。
 
+削除した env が現在の env でもある場合、CLI は残っている env から新しい current env を自動で選びます。env が 1 つも残っていない場合、current env はクリアされます。
+
 ## 使い方
 
 ```bash
@@ -32,4 +34,5 @@ nb env remove staging -f
 ## 関連コマンド
 
 - [`nb app down`](../app/down.md)
+- [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

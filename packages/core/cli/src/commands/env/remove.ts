@@ -62,7 +62,7 @@ export default class EnvRemove extends Command {
     this.log(`Removed env "${result.removed}".`);
 
     if (result.hasEnvs) {
-      this.log(`Current env: ${result.currentEnv}`);
+      this.log(`Current env: ${await getCurrentEnvName({ scope: resolveDefaultConfigScope() })}`);
       return;
     }
 

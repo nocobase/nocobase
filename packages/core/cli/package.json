@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "node ./scripts/clean.mjs",
     "build": "node ./scripts/build.mjs",
-    "test": "NB_CLI_ROOT=. TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli"
+    "test": "yarn cross-env NB_CLI_ROOT=. TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli/src"
   },
   "keywords": [],
   "author": "",
