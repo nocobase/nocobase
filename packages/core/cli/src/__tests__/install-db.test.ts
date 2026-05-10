@@ -270,7 +270,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.source).toBe('docker');
   expect(plan.networkName).toBe(networkName);
   expect(plan.containerName).toBe(`${containerPrefix}-demo-app`);
-  expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop');
+  expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop-full');
   expect(plan.appPort).toBe('13000');
   expect(plan.storagePath).toBe(resolveEnvRelativePath('./storage/demo'));
   expect(plan.appKey.length).toBe(64);

@@ -12,6 +12,11 @@ import pc from 'picocolors';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from '../../../lib/docker-image.ts';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
 import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { syncLicensedPlugins } from './shared.js';
@@ -22,9 +27,6 @@ import { announceTargetEnv, startTask, stopTask, succeedTask, updateTask } from 
 const SYNC_LOADING_DELAY_MS = 1200;
 const SYNC_LOADING_UPDATE_MS = 5000;
 const LOCAL_APP_PACKAGE_JSON_PATH = 'node_modules/@nocobase/app/package.json';
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
-const DEFAULT_DOCKER_VERSION = 'alpha';
-
 function formatActionLabel(action: 'installed' | 'updated' | 'removed' | 'skipped') {
   switch (action) {
     case 'installed':
@@ -99,7 +101,10 @@ async function resolveLocalAppVersion(runtime: Extract<ManagedAppRuntime, { kind
 
 async function resolveDockerAppVersion(runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>): Promise<string> {
   const config = runtime.env.config ?? {};
-  const imageRef = `${trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY}:${trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION}`;
+  const imageRef = resolveDockerImageRef(config.dockerRegistry, config.downloadVersion, {
+    defaultRegistry: DEFAULT_DOCKER_REGISTRY,
+    defaultVersion: DEFAULT_DOCKER_VERSION,
+  });
   const args = [
     'run',
     '--rm',
