@@ -59,7 +59,7 @@ describe('buildPluginUtils package extraction', () => {
       );
       fs.writeFileSync(path.join(tempRoot, 'src/server/plugin.ts'), "import Koa from 'koa';\nexport default Koa;");
 
-      const packages = getPluginBrowserSourcePackages(tempRoot, []);
+      const packages = getPluginBrowserSourcePackages([tempRoot], []);
 
       expect(packages).toEqual(expect.arrayContaining(['react', '@nocobase/client-v2', '@nocobase/flow-engine']));
       expect(packages).not.toContain('koa');
