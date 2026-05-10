@@ -144,7 +144,9 @@ const FlowRoute = () => {
         }
 
         if (target.reason === 'unsupportedV2Runtime') {
-          setGuardState({ pending: false, allowBridge: false, notFound: true });
+          if (active && requestId === requestIdRef.current) {
+            setGuardState({ pending: false, allowBridge: false, notFound: true });
+          }
           return;
         }
       }

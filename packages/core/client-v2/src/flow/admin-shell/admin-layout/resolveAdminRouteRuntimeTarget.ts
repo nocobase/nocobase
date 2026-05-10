@@ -197,7 +197,10 @@ export function findFirstAccessiblePageRoute(
   return undefined;
 }
 
-function resolvePageRuntimeTarget(options: ResolveAdminRouteRuntimeTargetOptions, route: NocoBaseDesktopRoute) {
+function resolvePageRuntimeTarget(
+  options: ResolveAdminRouteRuntimeTargetOptions,
+  route: NocoBaseDesktopRoute,
+): AdminRouteRuntimeTarget {
   const { app, preserveLocationState, location, log = console.warn } = options;
 
   if (!route.schemaUid) {
