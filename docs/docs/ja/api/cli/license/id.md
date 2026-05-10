@@ -19,6 +19,7 @@ nb license id [flags]
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env 名。省略時は現在の env が使用されます |
+| `--yes`, `-y` | boolean | 明示的に指定した `--env` が現在の env と異なる場合、対話確認をスキップします |
 | `--force` | boolean | 保存済みの instance ID があっても再生成します |
 | `--json` | boolean | JSON を出力します |
 
@@ -27,9 +28,12 @@ nb license id [flags]
 ```bash
 nb license id
 nb license id --env app1
+nb license id --env app1 --yes
 nb license id --env app1 --force
 nb license id --env app1 --json
 ```
+
+`--force` は instance ID の再生成を強制するだけです。cross-env の確認を置き換えるものではありません。明示的に指定した `--env` が現在以外の env を指す場合でも、確認または `--yes` が必要です。
 
 ## 関連コマンド
 

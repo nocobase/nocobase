@@ -41,6 +41,13 @@ Dynamic commands with request bodies support:
 
 `--body` and `--body-file` are mutually exclusive.
 
+Dynamic API commands also support:
+
+- `--env`, `-e`: CLI env name to send the request to; when omitted, the current env is used
+- `--yes`, `-y`: When an explicitly passed `--env` targets a different env than the current env, skip the interactive confirmation prompt
+
+If you explicitly pass `--env` and it differs from the current env, the CLI asks for confirmation first. In non-interactive terminals or AI agent sessions, add `--yes` yourself or run `nb env use <name>` first and try again.
+
 ## Related Commands
 
 - [`nb env update`](../env/update.md)

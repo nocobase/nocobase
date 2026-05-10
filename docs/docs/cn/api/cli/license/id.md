@@ -19,6 +19,7 @@ nb license id [flags]
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env 名称；省略时使用当前 env |
+| `--yes` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--force` | boolean | 即使已存在已保存实例 ID，也强制重新生成 |
 | `--json` | boolean | 输出 JSON |
 
@@ -27,9 +28,14 @@ nb license id [flags]
 ```bash
 nb license id
 nb license id --env app1
+nb license id --env app1 --yes
 nb license id --env app1 --force
 nb license id --env app1 --json
 ```
+
+## 说明
+
+`--force` 只用于强制重新生成实例 ID，不会替代跨 env 的确认；如果显式 `--env` 指向的不是当前 env，仍然需要交互确认或显式传入 `--yes`。
 
 ## 相关命令
 

@@ -19,6 +19,7 @@ nb license id [flags]
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
 | `--env`, `-e` | string | Name der CLI-env; wenn weggelassen, wird die aktuelle env verwendet |
+| `--yes`, `-y` | boolean | Wenn ein explizit übergebenes `--env` auf eine andere env als die aktuelle env zeigt, die interaktive Bestätigung überspringen |
 | `--force` | boolean | Instanz-ID neu erzeugen, auch wenn bereits eine gespeichert ist |
 | `--json` | boolean | JSON ausgeben |
 
@@ -27,9 +28,12 @@ nb license id [flags]
 ```bash
 nb license id
 nb license id --env app1
+nb license id --env app1 --yes
 nb license id --env app1 --force
 nb license id --env app1 --json
 ```
+
+`--force` erzwingt nur die Neuerzeugung der Instanz-ID. Es ersetzt keine env-übergreifende Bestätigung; wenn ein explizit übergebenes `--env` auf eine nicht aktuelle env zeigt, benötigen Sie weiterhin eine Bestätigung oder `--yes`.
 
 ## Verwandte Befehle
 

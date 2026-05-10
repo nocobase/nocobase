@@ -20,7 +20,8 @@ nb license plugins clean [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env 名称；省略时使用当前 env |
 | `--dry-run` | boolean | 仅预览将要删除的插件，不执行删除 |
-| `--verbose`, `-V` | boolean | 输出每个插件的详细清理日志 |
+| `--verbose` | boolean | 输出每个插件的详细清理日志 |
+| `--yes` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--json` | boolean | 输出 JSON |
 
 ## 示例
@@ -28,10 +29,15 @@ nb license plugins clean [flags]
 ```bash
 nb license plugins clean
 nb license plugins clean --env app1
+nb license plugins clean --env app1 --yes
 nb license plugins clean --env app1 --dry-run
 nb license plugins clean --env app1 --verbose
 nb license plugins clean --env app1 --json
 ```
+
+## 说明
+
+如果显式传入 `--env`，并且它与当前 env 不一致，CLI 会先要求确认；在非交互终端或 AI agent 场景下，需要由你自己显式追加 `--yes`，或者先执行 `nb env use <name>` 再重试。
 
 ## 相关命令
 
