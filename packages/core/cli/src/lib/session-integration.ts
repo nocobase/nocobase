@@ -407,9 +407,17 @@ export function detectSessionShell(): SessionShell | undefined {
   if (process.platform === 'win32') {
     const isMsysRuntime = Boolean(process.env.MSYSTEM);
     const detectedWindowsShell = detectWindowsShellByParentProcess();
-    const msysLoginShell = normalizedLoginShell ?? normalizedShell;
+    const shellHint = normalizedLoginShell ?? normalizedShell;
 
-    if (detectedWindowsShell && !(isMsysRuntime && detectedWindowsShell === 'cmd' && msysLoginShell)) {
+    if (detectedWindowsShell === 'bash' || detectedWindowsShell === 'zsh' || detectedWindowsShell === 'fish') {
+      return detectedWindowsShell;
+    }
+
+    if (shellHint === 'bash' || shellHint === 'zsh' || shellHint === 'fish') {
+      return shellHint;
+    }
+
+    if (detectedWindowsShell && !(isMsysRuntime && detectedWindowsShell === 'cmd' && shellHint)) {
       return detectedWindowsShell;
     }
 
