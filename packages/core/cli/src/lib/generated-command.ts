@@ -19,6 +19,7 @@
 import {Command, Flags} from '@oclif/core';
 import type {Interfaces} from '@oclif/core';
 import {executeApiRequest} from './api-client.js';
+import {ensureCrossEnvConfirmed} from './env-guard.js';
 import {applyPostProcessor} from './post-processors.js';
 import {registerPostProcessors} from '../post-processors/index.js';
 
@@ -159,6 +160,12 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
     default: false,
     helpGroup: 'Global',
   });
+  flags.yes = Flags.boolean({
+    char: 'y',
+    description: 'Confirm using --env when it targets a different env than the current env',
+    default: false,
+    helpGroup: 'Global',
+  });
   flags.env = Flags.string({
     char: 'e',
     description: 'Environment name',
@@ -192,6 +199,15 @@ export abstract class GeneratedApiCommand extends Command {
 
     const ctor = this.constructor as typeof GeneratedApiCommand;
     const {flags} = await this.parse(ctor);
+    const confirmed = await ensureCrossEnvConfirmed({
+      command: this,
+      requestedEnv: flags.env,
+      yes: flags.yes,
+    });
+    if (!confirmed) {
+      this.log('Canceled.');
+      return;
+    }
 
     const response = await executeApiRequest({
       envName: flags.env,
