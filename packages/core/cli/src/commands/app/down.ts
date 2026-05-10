@@ -19,8 +19,9 @@ import {
   runLocalNocoBaseCommand,
   type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
-import { removeEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, removeEnv } from '../../lib/auth-store.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { commandOutput, commandSucceeds, run } from '../../lib/run-npm.js';
 import {
   failTask,
@@ -137,8 +138,8 @@ function managedDockerNetworkName(runtime: Extract<ManagedAppRuntime, { kind: 'l
   return runtime.dockerNetworkName?.trim() || runtime.workspaceName?.trim() || undefined;
 }
 
-async function confirmDownAll(envName: string, yes: boolean, options?: { explicitEnv?: boolean }): Promise<boolean> {
-  if (yes) {
+async function confirmDownAll(envName: string, force: boolean, options?: { explicitEnv?: boolean }): Promise<boolean> {
+  if (force) {
     return true;
   }
 
@@ -146,11 +147,11 @@ async function confirmDownAll(envName: string, yes: boolean, options?: { explici
   if (!isInteractiveTerminal()) {
     if (usedCurrentEnv) {
       throw new Error(
-        `\`nb app down --all\` is using the current env "${envName}". Re-run with --env ${envName} --yes to delete everything for that env in non-interactive mode.`,
+        `\`nb app down --all\` is using the current env "${envName}". Re-run with --env ${envName} --force to delete everything for that env in non-interactive mode.`,
       );
     }
     throw new Error(
-      `\`nb app down --all\` needs confirmation. Re-run with --yes to delete everything for "${envName}" in non-interactive mode.`,
+      `\`nb app down --all\` needs confirmation. Re-run with --force to delete everything for "${envName}" in non-interactive mode.`,
     );
   }
 
@@ -172,6 +173,18 @@ async function confirmDownAll(envName: string, yes: boolean, options?: { explici
   return answer;
 }
 
+function formatDownCrossEnvForceRequiredMessage(currentEnv: string, requestedEnv: string): string {
+  return [
+    `Refusing to run against env "${requestedEnv}" because the current env is "${currentEnv}" and interactive confirmation is unavailable in the current agent session.`,
+    '',
+    'For safety, the agent will not switch envs automatically and will not add --force on your behalf.',
+    '',
+    'To continue:',
+    `- run \`nb env use ${requestedEnv}\` yourself and then re-run the command, or`,
+    `- re-run the same command with \`--env ${requestedEnv} --force\` to confirm this one-off cross-env operation.`,
+  ].join('\n');
+}
+
 function formatDownFailure(envName: string, message: string): string {
   return [
     `Couldn't bring down NocoBase for "${envName}".`,
@@ -187,7 +200,8 @@ export default class AppDown extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --env app1',
-    '<%= config.bin %> <%= command.id %> --env app1 --all --yes',
+    '<%= config.bin %> <%= command.id %> --env app1 --all --force',
+    '<%= config.bin %> <%= command.id %> --env app1 --force',
   ];
 
   static override flags = {
@@ -201,7 +215,12 @@ export default class AppDown extends Command {
     }),
     yes: Flags.boolean({
       char: 'y',
-      description: 'Confirm destructive actions without prompting',
+      description: 'Skip the interactive cross-env confirmation prompt',
+      default: false,
+    }),
+    force: Flags.boolean({
+      char: 'f',
+      description: 'Force a one-off cross-env operation when --env targets a different env in non-interactive mode',
       default: false,
     }),
     verbose: Flags.boolean({
@@ -213,6 +232,25 @@ export default class AppDown extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppDown);
     const requestedEnv = flags.env?.trim() || undefined;
+    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+      if (!isInteractiveTerminal()) {
+        const currentEnv = await getCurrentEnvName();
+        const normalizedCurrentEnv = String(currentEnv ?? '').trim() || undefined;
+        if (normalizedCurrentEnv && normalizedCurrentEnv !== requestedEnv && !flags.force) {
+          this.error(formatDownCrossEnvForceRequiredMessage(normalizedCurrentEnv, requestedEnv));
+        }
+      } else {
+        const confirmed = await ensureCrossEnvConfirmed({
+          command: this,
+          requestedEnv,
+          yes: flags.yes,
+        });
+        if (!confirmed) {
+          this.log('Canceled.');
+          return;
+        }
+      }
+    }
     const explicitEnv = Boolean(requestedEnv);
     const removeData = Boolean(flags.all);
     const removeEnvConfig = Boolean(flags.all);
@@ -245,7 +283,7 @@ export default class AppDown extends Command {
     if (flags.all) {
       let confirmed = false;
       try {
-        confirmed = await confirmDownAll(runtime.envName, flags.yes, { explicitEnv });
+        confirmed = await confirmDownAll(runtime.envName, flags.force, { explicitEnv });
       } catch (error: unknown) {
         this.error(error instanceof Error ? error.message : String(error));
       }

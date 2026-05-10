@@ -345,6 +345,29 @@ function createCommandHarness(parseResult: { args?: Record<string, any>; flags?:
   };
 }
 
+function setTerminalInteractivity(value: boolean) {
+  const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+  const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
+
+  Object.defineProperty(process.stdin, 'isTTY', {
+    configurable: true,
+    value,
+  });
+  Object.defineProperty(process.stdout, 'isTTY', {
+    configurable: true,
+    value,
+  });
+
+  return () => {
+    if (stdinDescriptor) {
+      Object.defineProperty(process.stdin, 'isTTY', stdinDescriptor);
+    }
+    if (stdoutDescriptor) {
+      Object.defineProperty(process.stdout, 'isTTY', stdoutDescriptor);
+    }
+  };
+}
+
 test('start enables daemon by default for npm/git envs', async () => {
   const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -1052,6 +1075,28 @@ test('restart does not forward default daemon flag unless the user provides it',
     ['app:stop', ['--env', 'docker-local']],
     ['app:start', ['--env', 'docker-local']],
   ]);
+});
+
+test('start rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  const restoreTerminal = setTerminalInteractivity(false);
+  const command = createCommandHarness({
+    flags: {
+      env: 'prod',
+      yes: false,
+    },
+  });
+  command.argv = ['--env', 'prod'];
+  mocks.getCurrentEnvName.mockResolvedValue('local');
+
+  try {
+    await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(
+      /Refusing to run against env "prod" because the current env is "local"/,
+    );
+    expect(mocks.resolveManagedAppRuntime.mock.calls.length).toBe(0);
+  } finally {
+    restoreTerminal();
+  }
 });
 
 test('logs supports --env and --no-follow for local app logs', async () => {
@@ -2713,7 +2758,7 @@ test('down keeps the managed Docker network and continues when removal fails but
   ]]);
 });
 
-test('down --all requires confirmation or --yes in non-interactive mode', async () => {
+test('down --all requires confirmation or --force in non-interactive mode', async () => {
   const { default: Down } = await import('../commands/app/down.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
@@ -2737,10 +2782,69 @@ test('down --all requires confirmation or --yes in non-interactive mode', async 
   });
   mocks.isInteractiveTerminal.mockReturnValue(false);
 
-  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/needs confirmation.*Re-run with --yes/i);
+  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/needs confirmation.*Re-run with --force/i);
 });
 
-test('down --all requires explicit --env together with --yes in non-interactive mode when using the current env', async () => {
+test('down explicit cross-env selection requires --force in non-interactive mode even when --yes is set', async () => {
+  const { default: Down } = await import('../commands/app/down.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      yes: true,
+      force: false,
+    },
+  });
+  command.argv = ['--env', 'docker-local', '--yes'];
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/will not add --force on your behalf/);
+});
+
+test('down explicit cross-env selection allows non-interactive one-off execution with --force', async () => {
+  const { default: Down } = await import('../commands/app/down.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+      },
+    },
+  });
+  mocks.commandSucceeds.mockResolvedValue(false);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      yes: false,
+      force: true,
+    },
+  });
+  command.argv = ['--env', 'docker-local', '--force'];
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  await Down.prototype.run.call(command);
+
+  expect(mocks.succeedTask.mock.calls.some((call) => String(call[0]).includes('Docker app container'))).toBe(true);
+});
+
+test('down --all requires explicit --env together with --force in non-interactive mode when using the current env', async () => {
   const { default: Down } = await import('../commands/app/down.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
@@ -2764,7 +2868,7 @@ test('down --all requires explicit --env together with --yes in non-interactive 
   mocks.isInteractiveTerminal.mockReturnValue(false);
 
   await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(
-    /is using the current env "docker-local".*Re-run with --env docker-local --yes/i,
+    /is using the current env "docker-local".*Re-run with --env docker-local --force/i,
   );
 });
 
@@ -3612,6 +3716,39 @@ test('pm disable routes local envs to the local nocobase command', async () => {
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['pm', 'disable', '@nocobase/plugin-a', '@nocobase/plugin-b']);
 });
 
+test('pm enable keeps API fallback for http envs and forwards the resolved env', async () => {
+  const { default: PmEnable } = await import('../commands/plugin/enable.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {},
+  });
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness({
+    args: {
+      packages: ['@nocobase/plugin-sample'],
+    },
+    flags: {
+      env: 'remote',
+      yes: true,
+    },
+  }, runCommand);
+  command.argv = ['--env', 'remote', '--yes', '@nocobase/plugin-sample'];
+
+  try {
+    await PmEnable.prototype.run.call(command);
+
+    expect(runCommand.mock.calls).toEqual([[
+      'api:pm:enable',
+      ['--await-response', '--filter-by-tk', '@nocobase/plugin-sample', '--env', 'remote', '--yes'],
+    ]]);
+  } finally {
+    restoreTerminal();
+  }
+});
+
 test('dev runs local npm/git source envs with saved env settings', async () => {
   const { default: Dev } = await import('../commands/source/dev.js');
   const runtime = {
@@ -3784,4 +3921,34 @@ test('pm list keeps API fallback for http envs', async () => {
   await PmList.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([['api:pm:list', ['--mode=summary']]]);
+});
+
+test('pm list forwards explicit env selection to API fallback', async () => {
+  const { default: PmList } = await import('../commands/plugin/list.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {},
+  });
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'remote',
+        yes: true,
+      },
+    },
+    runCommand,
+  );
+  command.argv = ['--env', 'remote', '--yes'];
+
+  try {
+    await PmList.prototype.run.call(command);
+
+    expect(runCommand.mock.calls).toEqual([['api:pm:list', ['--mode=summary', '--env', 'remote', '--yes']]]);
+  } finally {
+    restoreTerminal();
+  }
 });

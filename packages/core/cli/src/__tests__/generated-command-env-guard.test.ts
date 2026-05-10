@@ -166,8 +166,8 @@ test('generated API commands treat a canceled confirmation as a no-op', async ()
   }
 });
 
-test('generated API commands allow one-off cross-env requests when the user already passed --yes', async () => {
-  const restoreTerminal = setTerminalInteractivity(false);
+test('generated API commands let --yes skip the interactive cross-env confirmation prompt', async () => {
+  const restoreTerminal = setTerminalInteractivity(true);
   const { command } = createCommand({
     env: 'prod',
     yes: true,

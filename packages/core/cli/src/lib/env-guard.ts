@@ -17,6 +17,15 @@ function normalizeEnvName(value: unknown): string | undefined {
   return text || undefined;
 }
 
+export function hasExplicitEnvSelection(argv: string[]): boolean {
+  return argv.some((token, index) => (
+    token === '--env'
+    || token === '-e'
+    || token.startsWith('--env=')
+    || (token.startsWith('-e') && token.length > 2 && index >= 0)
+  ));
+}
+
 function isInteractiveTerminal(): boolean {
   return Boolean(input.isTTY && output.isTTY);
 }
@@ -48,11 +57,14 @@ export async function ensureCrossEnvConfirmed(options: {
   }
 
   const currentEnv = normalizeEnvName(await getCurrentEnvName());
-  if (!currentEnv || currentEnv === requestedEnv || options.yes) {
+  const interactiveTerminal = isInteractiveTerminal();
+  const bypassInteractivePrompt = interactiveTerminal && Boolean(options.yes);
+
+  if (!currentEnv || currentEnv === requestedEnv || bypassInteractivePrompt) {
     return true;
   }
 
-  if (!isInteractiveTerminal()) {
+  if (!interactiveTerminal) {
     options.command.error(formatCrossEnvRefusalMessage(currentEnv, requestedEnv));
   }
 
