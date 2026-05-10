@@ -127,17 +127,36 @@ test('removeSessionIntegration removes the managed shell block from bash profile
   expect(opencodeConfigContent).not.toContain('nb-agent-session.js');
 });
 
-test('setupSessionIntegration skips opencode agent integration when opencode config does not exist', async () => {
-  const result = await setupSessionIntegration('zsh');
-  const opencodePluginPath = path.join(tempHome, '.config', 'opencode', 'plugins', 'nb-agent-session.js');
+test('setupSessionIntegration creates opencode config when config dir exists but opencode.json does not', async () => {
+  const opencodeDir = path.join(tempHome, '.config', 'opencode');
+  await mkdir(opencodeDir, { recursive: true });
 
-  expect(result.agentConfigured).toBe(false);
-  expect(result.agentSkippedReason).toBe('opencode_config_not_found');
-  await expect(readFile(opencodePluginPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+  const result = await setupSessionIntegration('zsh');
+  const opencodePluginPath = path.join(opencodeDir, 'plugins', 'nb-agent-session.js');
+  const opencodeConfigPath = path.join(opencodeDir, 'opencode.json');
+  const opencodeConfigContent = await readFile(opencodeConfigPath, 'utf8');
+
+  expect(result.agentConfigured).toBe(true);
+  await expect(readFile(opencodePluginPath, 'utf8')).resolves.toContain('NbAgentSessionPlugin');
+  expect(JSON.parse(opencodeConfigContent)).toMatchObject({
+    $schema: 'https://opencode.ai/config.json',
+    plugin: [opencodePluginPath],
+  });
 });
 
-test('setupSessionIntegration uses APPDATA for opencode integration on Windows', async () => {
-  const configPath = path.join(tempHome, 'AppData', 'Roaming', 'opencode', 'opencode.json');
+test('setupSessionIntegration skips opencode agent integration when config dir does not exist', async () => {
+  const result = await setupSessionIntegration('zsh');
+  const opencodePluginPath = path.join(tempHome, '.config', 'opencode', 'plugins', 'nb-agent-session.js');
+  const opencodeConfigPath = path.join(tempHome, '.config', 'opencode', 'opencode.json');
+
+  expect(result.agentConfigured).toBe(false);
+  expect(result.agentSkippedReason).toBe('opencode_dir_not_found');
+  await expect(readFile(opencodePluginPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+  await expect(readFile(opencodeConfigPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+});
+
+test('setupSessionIntegration uses HOME config dir for opencode integration on Windows powershell', async () => {
+  const configPath = path.join(tempHome, '.config', 'opencode', 'opencode.json');
   await mkdir(path.dirname(configPath), { recursive: true });
   await writeFile(configPath, `${JSON.stringify({ plugin: [] }, null, 2)}\n`, 'utf8');
 
@@ -146,14 +165,14 @@ test('setupSessionIntegration uses APPDATA for opencode integration on Windows',
     const result = await setupSessionIntegration('powershell');
     expect(result.agentConfigured).toBe(true);
     expect(result.agentConfigFile).toBe(configPath);
-    expect(result.agentPluginFile).toBe(path.join(tempHome, 'AppData', 'Roaming', 'opencode', 'plugins', 'nb-agent-session.js'));
+    expect(result.agentPluginFile).toBe(path.join(tempHome, '.config', 'opencode', 'plugins', 'nb-agent-session.js'));
   } finally {
     platformSpy.mockRestore();
   }
 });
 
 test('setupSessionIntegration updates both PowerShell profile locations on Windows', async () => {
-  const configPath = path.join(tempHome, 'AppData', 'Roaming', 'opencode', 'opencode.json');
+  const configPath = path.join(tempHome, '.config', 'opencode', 'opencode.json');
   await mkdir(path.dirname(configPath), { recursive: true });
   await writeFile(configPath, `${JSON.stringify({ plugin: [] }, null, 2)}\n`, 'utf8');
 
@@ -175,7 +194,7 @@ test('setupSessionIntegration updates both PowerShell profile locations on Windo
 });
 
 test('removeSessionIntegration removes the session block from both PowerShell profile locations on Windows', async () => {
-  const configPath = path.join(tempHome, 'AppData', 'Roaming', 'opencode', 'opencode.json');
+  const configPath = path.join(tempHome, '.config', 'opencode', 'opencode.json');
   await mkdir(path.dirname(configPath), { recursive: true });
   await writeFile(configPath, `${JSON.stringify({ plugin: [] }, null, 2)}\n`, 'utf8');
 

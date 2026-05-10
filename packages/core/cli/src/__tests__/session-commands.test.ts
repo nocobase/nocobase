@@ -75,7 +75,7 @@ test('session setup uses detected shell and reports managed files', async () => 
   ]);
 });
 
-test('session setup reports skipped opencode integration when config is not found', async () => {
+test('session setup reports created opencode integration when config is not found', async () => {
   const { default: SessionSetup } = await import('../commands/session/setup.js');
   mocks.detectSessionShell.mockReturnValue('zsh');
   mocks.setupSessionIntegration.mockResolvedValue({
@@ -85,10 +85,10 @@ test('session setup reports skipped opencode integration when config is not foun
     profileFiles: ['/tmp/.zshrc'],
     profileUpdated: true,
     cmdAutoRunConfigured: false,
-    agentConfigured: false,
+    agentConfigured: true,
     agentPluginFile: '/tmp/.config/opencode/plugins/nb-agent-session.js',
     agentConfigFile: '/tmp/.config/opencode/opencode.json',
-    agentSkippedReason: 'opencode_config_not_found',
+    agentSkippedReason: undefined,
   });
 
   const log = vi.fn();
@@ -107,7 +107,8 @@ test('session setup reports skipped opencode integration when config is not foun
   expect(log.mock.calls.map(([message]) => message)).toEqual([
     'Session integration configured for zsh.',
     'Managed file: /tmp/.nocobase/shell/session.zsh',
-    'Opencode config not found. Skipped agent session integration.',
+    'Opencode agent plugin installed: /tmp/.config/opencode/plugins/nb-agent-session.js',
+    'Opencode config updated: /tmp/.config/opencode/opencode.json',
     'Profile updated: /tmp/.zshrc',
     'Open a new shell session or reload your profile to initialize NB_SESSION_ID automatically.',
   ]);
@@ -175,6 +176,44 @@ test('session remove uses detected shell and reports removed files', async () =>
   ]);
 });
 
+test('session setup reports skipped opencode integration when config dir is not found', async () => {
+  const { default: SessionSetup } = await import('../commands/session/setup.js');
+  mocks.detectSessionShell.mockReturnValue('zsh');
+  mocks.setupSessionIntegration.mockResolvedValue({
+    shell: 'zsh',
+    managedFile: '/tmp/.nocobase/shell/session.zsh',
+    profileFile: '/tmp/.zshrc',
+    profileFiles: ['/tmp/.zshrc'],
+    profileUpdated: true,
+    cmdAutoRunConfigured: false,
+    agentConfigured: false,
+    agentPluginFile: '/tmp/.config/opencode/plugins/nb-agent-session.js',
+    agentConfigFile: '/tmp/.config/opencode/opencode.json',
+    agentSkippedReason: 'opencode_dir_not_found',
+  });
+
+  const log = vi.fn();
+  const command = Object.assign(Object.create(SessionSetup.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {},
+    })),
+    log,
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await SessionSetup.prototype.run.call(command);
+
+  expect(log.mock.calls.map(([message]) => message)).toEqual([
+    'Session integration configured for zsh.',
+    'Managed file: /tmp/.nocobase/shell/session.zsh',
+    'Opencode config directory not found. Skipped agent session integration.',
+    'Profile updated: /tmp/.zshrc',
+    'Open a new shell session or reload your profile to initialize NB_SESSION_ID automatically.',
+  ]);
+});
+
 test('session setup reports every updated powershell profile', async () => {
   const { default: SessionSetup } = await import('../commands/session/setup.js');
   mocks.detectSessionShell.mockReturnValue('powershell');
@@ -188,10 +227,10 @@ test('session setup reports every updated powershell profile', async () => {
     ],
     profileUpdated: true,
     cmdAutoRunConfigured: false,
-    agentConfigured: false,
-    agentPluginFile: 'C:\\Users\\test\\AppData\\Roaming\\opencode\\plugins\\nb-agent-session.js',
-    agentConfigFile: 'C:\\Users\\test\\AppData\\Roaming\\opencode\\opencode.json',
-    agentSkippedReason: 'opencode_config_not_found',
+    agentConfigured: true,
+    agentPluginFile: 'C:\\Users\\test\\.config\\opencode\\plugins\\nb-agent-session.js',
+    agentConfigFile: 'C:\\Users\\test\\.config\\opencode\\opencode.json',
+    agentSkippedReason: undefined,
   });
 
   const log = vi.fn();
@@ -210,7 +249,8 @@ test('session setup reports every updated powershell profile', async () => {
   expect(log.mock.calls.map(([message]) => message)).toEqual([
     'Session integration configured for powershell.',
     'Managed file: C:\\Users\\test\\.nocobase\\shell\\session.ps1',
-    'Opencode config not found. Skipped agent session integration.',
+    'Opencode agent plugin installed: C:\\Users\\test\\.config\\opencode\\plugins\\nb-agent-session.js',
+    'Opencode config updated: C:\\Users\\test\\.config\\opencode\\opencode.json',
     'Profile updated: C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1',
     'Profile updated: C:\\Users\\test\\Documents\\WindowsPowerShell\\Microsoft.PowerShell_profile.ps1',
     'Open a new shell session or reload your profile to initialize NB_SESSION_ID automatically.',
@@ -227,10 +267,10 @@ test('session setup reports cmd AutoRun integration', async () => {
     profileUpdated: false,
     cmdAutoRunConfigured: true,
     cmdAutoRunLocation: 'HKCU\\Software\\Microsoft\\Command Processor\\AutoRun',
-    agentConfigured: false,
-    agentPluginFile: 'C:\\Users\\test\\AppData\\Roaming\\opencode\\plugins\\nb-agent-session.js',
-    agentConfigFile: 'C:\\Users\\test\\AppData\\Roaming\\opencode\\opencode.json',
-    agentSkippedReason: 'opencode_config_not_found',
+    agentConfigured: true,
+    agentPluginFile: 'C:\\Users\\test\\.config\\opencode\\plugins\\nb-agent-session.js',
+    agentConfigFile: 'C:\\Users\\test\\.config\\opencode\\opencode.json',
+    agentSkippedReason: undefined,
   });
 
   const log = vi.fn();
@@ -251,7 +291,8 @@ test('session setup reports cmd AutoRun integration', async () => {
     'Managed file: C:\\Users\\test\\.nocobase\\shell\\nb.cmd',
     'cmd AutoRun updated: HKCU\\Software\\Microsoft\\Command Processor\\AutoRun',
     'Open a new cmd session to initialize NB_SESSION_ID automatically.',
-    'Opencode config not found. Skipped agent session integration.',
+    'Opencode agent plugin installed: C:\\Users\\test\\.config\\opencode\\plugins\\nb-agent-session.js',
+    'Opencode config updated: C:\\Users\\test\\.config\\opencode\\opencode.json',
   ]);
 });
 

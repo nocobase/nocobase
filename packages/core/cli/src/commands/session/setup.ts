@@ -52,8 +52,8 @@ export default class SessionSetup extends Command {
     if (result.agentConfigured) {
       this.log(`Opencode agent plugin installed: ${result.agentPluginFile}`);
       this.log(`Opencode config updated: ${result.agentConfigFile}`);
-    } else if (result.agentSkippedReason === 'opencode_config_not_found') {
-      this.log('Opencode config not found. Skipped agent session integration.');
+    } else if (result.agentSkippedReason === 'opencode_dir_not_found') {
+      this.log('Opencode config directory not found. Skipped agent session integration.');
     }
     if (result.profileFiles.length > 0) {
       for (const profileFile of result.profileFiles) {

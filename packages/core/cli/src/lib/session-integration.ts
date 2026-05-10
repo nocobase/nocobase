@@ -43,16 +43,7 @@ function resolveSessionHomeDir() {
   return process.env.HOME || process.env.USERPROFILE || os.homedir();
 }
 
-function usesWindowsOpencodeConfig(shell: SessionShell) {
-  return process.platform === 'win32' && (shell === 'powershell' || shell === 'cmd');
-}
-
 function opencodeConfigDir(shell: SessionShell) {
-  if (usesWindowsOpencodeConfig(shell)) {
-    const appData = process.env.APPDATA || path.join(resolveSessionHomeDir(), 'AppData', 'Roaming');
-    return path.join(appData, 'opencode');
-  }
-
   return path.join(resolveSessionHomeDir(), '.config', 'opencode');
 }
 
@@ -591,18 +582,19 @@ function buildOpencodePluginContent() {
 }
 
 async function installOpencodeSessionPlugin(shell: SessionShell) {
+  const configDir = opencodeConfigDir(shell);
   const configFile = opencodeConfigFilePath(shell);
-  const configExists = await pathExists(configFile);
-  if (!configExists) {
+  const pluginFile = opencodePluginFilePath(shell);
+  const configDirExists = await pathExists(configDir);
+  if (!configDirExists) {
     return {
-      pluginFile: opencodePluginFilePath(shell),
+      pluginFile,
       configFile,
       configured: false,
-      skippedReason: 'opencode_config_not_found' as const,
+      skippedReason: 'opencode_dir_not_found' as const,
     };
   }
 
-  const pluginFile = opencodePluginFilePath(shell);
   await fs.mkdir(path.dirname(pluginFile), { recursive: true });
   await fs.writeFile(pluginFile, buildOpencodePluginContent(), 'utf8');
 
@@ -628,7 +620,6 @@ async function installOpencodeSessionPlugin(shell: SessionShell) {
     pluginFile,
     configFile,
     configured: true,
-    skippedReason: undefined,
   };
 }
 
@@ -707,7 +698,7 @@ export interface SessionSetupResult {
   agentPluginFile?: string;
   agentConfigFile?: string;
   agentConfigured: boolean;
-  agentSkippedReason?: 'opencode_config_not_found';
+  agentSkippedReason?: 'opencode_dir_not_found';
 }
 
 export async function setupSessionIntegration(shell: SessionShell): Promise<SessionSetupResult> {
