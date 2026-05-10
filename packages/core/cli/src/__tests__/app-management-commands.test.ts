@@ -60,6 +60,7 @@ const mocks = vi.hoisted(() => ({
   promptCancel: vi.fn(),
   renderTable: vi.fn((headers: string[], rows: string[][]) => [headers.join('|'), ...rows.map((row) => row.join('|'))].join('\n')),
   listEnvs: vi.fn(),
+  getCurrentEnvName: vi.fn(),
   run: vi.fn(),
   runNocoBaseCommand: vi.fn(),
   commandSucceeds: vi.fn(),
@@ -190,6 +191,7 @@ vi.mock('node:fs/promises', async (importOriginal) => {
 vi.mock('../lib/auth-store.js', () => ({
   removeEnv: mocks.removeEnv,
   listEnvs: mocks.listEnvs,
+  getCurrentEnvName: mocks.getCurrentEnvName,
   getEnv: mocks.getEnv,
   upsertEnv: mocks.upsertEnv,
 }));
@@ -280,9 +282,10 @@ beforeEach(() => {
   mocks.dockerContainerExists.mockResolvedValue(true);
   mocks.dockerContainerIsRunning.mockResolvedValue(true);
   mocks.listEnvs.mockResolvedValue({
-    currentEnv: 'local',
+    lastEnv: 'local',
     envs: {},
   });
+  mocks.getCurrentEnvName.mockResolvedValue('local');
   mocks.executeRawApiRequest.mockResolvedValue({
     ok: true,
     status: 200,
@@ -309,7 +312,7 @@ beforeEach(() => {
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.removeEnv.mockResolvedValue({
     removed: 'local',
-    currentEnv: 'default',
+    lastEnv: 'default',
     hasEnvs: false,
   });
   mocks.upsertEnv.mockResolvedValue(undefined);
@@ -339,6 +342,29 @@ function createCommandHarness(parseResult: { args?: Record<string, any>; flags?:
       throw new Error(message);
     },
     log: vi.fn(),
+  };
+}
+
+function setTerminalInteractivity(value: boolean) {
+  const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+  const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
+
+  Object.defineProperty(process.stdin, 'isTTY', {
+    configurable: true,
+    value,
+  });
+  Object.defineProperty(process.stdout, 'isTTY', {
+    configurable: true,
+    value,
+  });
+
+  return () => {
+    if (stdinDescriptor) {
+      Object.defineProperty(process.stdin, 'isTTY', stdinDescriptor);
+    }
+    if (stdoutDescriptor) {
+      Object.defineProperty(process.stdout, 'isTTY', stdoutDescriptor);
+    }
   };
 }
 
@@ -1051,6 +1077,28 @@ test('restart does not forward default daemon flag unless the user provides it',
   ]);
 });
 
+test('start rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  const restoreTerminal = setTerminalInteractivity(false);
+  const command = createCommandHarness({
+    flags: {
+      env: 'prod',
+      yes: false,
+    },
+  });
+  command.argv = ['--env', 'prod'];
+  mocks.getCurrentEnvName.mockResolvedValue('local');
+
+  try {
+    await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(
+      /Refusing to run against env "prod" because the current env is "local"/,
+    );
+    expect(mocks.resolveManagedAppRuntime.mock.calls.length).toBe(0);
+  } finally {
+    restoreTerminal();
+  }
+});
+
 test('logs supports --env and --no-follow for local app logs', async () => {
   const { default: Logs } = await import('../commands/app/logs.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -1181,22 +1229,69 @@ test('logs explains http envs do not have local runtime logs', async () => {
   await expect((() => Logs.prototype.run.call(command))()).rejects.toThrow(/Can't show runtime logs for "remote" from this machine\..*only has an API connection/s);
 });
 
-test('env list combines configured envs with API auth status', async () => {
+test('env list shows configured envs without runtime status probing', async () => {
   const { default: EnvList } = await import('../commands/env/list.js');
   mocks.listEnvs.mockResolvedValue({
-    currentEnv: 'local',
+    lastEnv: 'local',
     envs: {
       docker: {
+        kind: 'docker',
         apiBaseUrl: 'http://127.0.0.1:13000/api',
         auth: { type: 'token' },
         runtime: { version: '1.0.0' },
       },
       local: {
+        kind: 'local',
         apiBaseUrl: 'http://127.0.0.1:13001/api',
         auth: { type: 'oauth' },
         runtime: { version: '2.0.0' },
       },
       remote: {
+        kind: 'http',
+        baseUrl: 'https://demo.example.com/api',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {},
+  });
+
+  await EnvList.prototype.run.call(command);
+
+  expect(mocks.listEnvs.mock.calls).toEqual([[{ scope: 'global' }]]);
+  expect(mocks.resolveManagedAppRuntime).not.toHaveBeenCalled();
+  expect(mocks.executeRawApiRequest).not.toHaveBeenCalled();
+  expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual([
+    'Current',
+    'Name',
+    'Kind',
+    'API Base URL',
+    'Auth',
+    'Runtime',
+  ]);
+  expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
+    ['', 'docker', 'docker', 'http://127.0.0.1:13000/api', 'token', '1.0.0'],
+    ['*', 'local', 'local', 'http://127.0.0.1:13001/api', 'oauth', '2.0.0'],
+    ['', 'remote', 'http', 'https://demo.example.com/api', '', ''],
+  ]);
+});
+
+test('env status shows runtime status for all configured envs', async () => {
+  const { default: EnvStatus } = await import('../commands/env/status.js');
+  mocks.listEnvs.mockResolvedValue({
+    lastEnv: 'local',
+    envs: {
+      docker: {
+        kind: 'docker',
+        apiBaseUrl: 'http://127.0.0.1:13000/api',
+      },
+      local: {
+        kind: 'local',
+        apiBaseUrl: 'http://127.0.0.1:13001/api',
+      },
+      remote: {
+        kind: 'http',
         baseUrl: 'https://demo.example.com/api',
       },
     },
@@ -1210,11 +1305,9 @@ test('env list combines configured envs with API auth status', async () => {
         containerName: 'nb-demo-docker-app',
         workspaceName: 'nb-demo',
         env: {
+          runtime: { version: '1.0.0' },
           config: {
-            source: 'docker',
             appPort: 13000,
-            builtinDb: true,
-            dbDialect: 'postgres',
           },
         },
       };
@@ -1227,10 +1320,9 @@ test('env list combines configured envs with API auth status', async () => {
         projectRoot: '/tmp/nocobase',
         workspaceName: 'nb-demo',
         env: {
+          runtime: { version: '2.0.0' },
           config: {
-            source: 'npm',
             appPort: 13001,
-            builtinDb: false,
           },
         },
       };
@@ -1240,67 +1332,34 @@ test('env list combines configured envs with API auth status', async () => {
       envName: 'remote',
       source: undefined,
       env: {
+        runtime: {},
         config: {
           baseUrl: 'https://demo.example.com/api',
         },
       },
     };
   });
-  mocks.executeRawApiRequest
-    .mockResolvedValueOnce({ ok: true, status: 200, data: { data: { id: 1 } } })
-    .mockResolvedValueOnce({ ok: false, status: 401, data: { errors: [{ code: 'INVALID_TOKEN' }] } })
-    .mockRejectedValueOnce(new Error('fetch failed'));
+  mocks.dockerContainerExists.mockResolvedValue(true);
+  mocks.dockerContainerIsRunning.mockResolvedValue(true);
+  mocks.executeRawApiRequest.mockResolvedValueOnce({ ok: true, status: 200, data: {} });
+  vi.mocked(fetch).mockResolvedValue({
+    ok: true,
+    text: vi.fn().mockResolvedValue('ok'),
+  } as any);
 
   const command = createCommandHarness({
-    flags: {},
+    args: {},
+    flags: { all: true, 'json-output': false },
   });
 
-  await EnvList.prototype.run.call(command);
+  await EnvStatus.prototype.run.call(command);
 
-  expect(mocks.listEnvs.mock.calls).toEqual([[{ scope: 'global' }]]);
   expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['docker'], ['local'], ['remote']]);
-  expect(mocks.executeRawApiRequest.mock.calls).toEqual([
-    [
-      {
-        envName: 'docker',
-        scope: 'global',
-        method: 'GET',
-        path: '/auth:check',
-        timeoutMs: 2000,
-      },
-    ],
-    [
-      {
-        envName: 'local',
-        scope: 'global',
-        method: 'GET',
-        path: '/auth:check',
-        timeoutMs: 2000,
-      },
-    ],
-    [
-      {
-        envName: 'remote',
-        scope: 'global',
-        method: 'GET',
-        path: '/auth:check',
-        timeoutMs: 2000,
-      },
-    ],
-  ]);
-  expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual([
-    'Current',
-    'Name',
-    'Kind',
-    'App Status',
-    'URL',
-    'Auth',
-    'Runtime',
-  ]);
+  expect(mocks.renderTable.mock.calls[0]?.[0]).toEqual(['Env', 'Status', 'API Base URL']);
   expect(mocks.renderTable.mock.calls[0]?.[1]).toEqual([
-    ['', 'docker', 'docker', 'ok', 'http://127.0.0.1:13000', 'token', '1.0.0'],
-    ['*', 'local', 'local', 'auth failed', 'http://127.0.0.1:13001', 'oauth', '2.0.0'],
-    ['', 'remote', 'http', 'unreachable', 'https://demo.example.com', '', ''],
+    ['docker', 'running', 'http://127.0.0.1:13000/api'],
+    ['local', 'running', 'http://127.0.0.1:13001/api'],
+    ['remote', 'ok', 'https://demo.example.com/api'],
   ]);
 });
 
@@ -1512,7 +1571,7 @@ test('env info explains when the requested env does not exist', async () => {
 test('db ps lists all configured database runtime statuses', async () => {
   const { default: DbPs } = await import('../commands/db/ps.js');
   mocks.listEnvs.mockResolvedValue({
-    currentEnv: 'local',
+    lastEnv: 'local',
     envs: {
       docker: {},
       local: {},
@@ -2107,6 +2166,10 @@ test('test recreates the built-in test database before running tests', async () 
 
   await Test.prototype.run.call(command);
 
+  const postgresImage = mocks.run.mock.calls[1]?.[1]?.find?.((value: unknown) =>
+    typeof value === 'string' && (value.includes('postgres:16') || value.includes('/postgres:16')),
+  );
+
   expect(mocks.run.mock.calls).toEqual([
     [
       'docker',
@@ -2137,7 +2200,7 @@ test('test recreates the built-in test database before running tests', async () 
         `${TEST_POSTGRES_DATA_DIR}:/var/lib/postgresql/data`,
         '-p',
         '5433:5432',
-        'postgres:16',
+        postgresImage,
         'postgres',
         '-c',
         'wal_level=logical',
@@ -2416,9 +2479,13 @@ test('test waits for the MySQL test database port to become ready before running
 
   await Test.prototype.run.call(command);
 
+  const mysqlImage = mocks.run.mock.calls.at(-1)?.[1]?.find?.((value: unknown) =>
+    typeof value === 'string' && (value.includes('mysql:8') || value.includes('/mysql:8')),
+  );
+
   expect(mocks.run.mock.calls.at(-1)).toEqual([
     'docker',
-    expect.arrayContaining(['-p', '3307:3306', 'mysql:8']),
+    expect.arrayContaining(['-p', '3307:3306', mysqlImage]),
     {
       errorName: 'docker run',
       stdio: 'ignore',
@@ -2691,7 +2758,7 @@ test('down keeps the managed Docker network and continues when removal fails but
   ]]);
 });
 
-test('down --all requires confirmation or --yes in non-interactive mode', async () => {
+test('down --all requires confirmation or --force in non-interactive mode', async () => {
   const { default: Down } = await import('../commands/app/down.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
@@ -2715,10 +2782,69 @@ test('down --all requires confirmation or --yes in non-interactive mode', async 
   });
   mocks.isInteractiveTerminal.mockReturnValue(false);
 
-  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/needs confirmation.*Re-run with --yes/i);
+  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/needs confirmation.*Re-run with --force/i);
 });
 
-test('down --all requires explicit --env together with --yes in non-interactive mode when using the current env', async () => {
+test('down explicit cross-env selection requires --force in non-interactive mode even when --yes is set', async () => {
+  const { default: Down } = await import('../commands/app/down.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      yes: true,
+      force: false,
+    },
+  });
+  command.argv = ['--env', 'docker-local', '--yes'];
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(/will not add --force on your behalf/);
+});
+
+test('down explicit cross-env selection allows non-interactive one-off execution with --force', async () => {
+  const { default: Down } = await import('../commands/app/down.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+      },
+    },
+  });
+  mocks.commandSucceeds.mockResolvedValue(false);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      yes: false,
+      force: true,
+    },
+  });
+  command.argv = ['--env', 'docker-local', '--force'];
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  await Down.prototype.run.call(command);
+
+  expect(mocks.succeedTask.mock.calls.some((call) => String(call[0]).includes('Docker app container'))).toBe(true);
+});
+
+test('down --all requires explicit --env together with --force in non-interactive mode when using the current env', async () => {
   const { default: Down } = await import('../commands/app/down.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
@@ -2742,7 +2868,7 @@ test('down --all requires explicit --env together with --yes in non-interactive 
   mocks.isInteractiveTerminal.mockReturnValue(false);
 
   await expect((() => Down.prototype.run.call(command))()).rejects.toThrow(
-    /is using the current env "docker-local".*Re-run with --env docker-local --yes/i,
+    /is using the current env "docker-local".*Re-run with --env docker-local --force/i,
   );
 });
 
@@ -3590,6 +3716,39 @@ test('pm disable routes local envs to the local nocobase command', async () => {
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['pm', 'disable', '@nocobase/plugin-a', '@nocobase/plugin-b']);
 });
 
+test('pm enable keeps API fallback for http envs and forwards the resolved env', async () => {
+  const { default: PmEnable } = await import('../commands/plugin/enable.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {},
+  });
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness({
+    args: {
+      packages: ['@nocobase/plugin-sample'],
+    },
+    flags: {
+      env: 'remote',
+      yes: true,
+    },
+  }, runCommand);
+  command.argv = ['--env', 'remote', '--yes', '@nocobase/plugin-sample'];
+
+  try {
+    await PmEnable.prototype.run.call(command);
+
+    expect(runCommand.mock.calls).toEqual([[
+      'api:pm:enable',
+      ['--await-response', '--filter-by-tk', '@nocobase/plugin-sample', '--env', 'remote', '--yes'],
+    ]]);
+  } finally {
+    restoreTerminal();
+  }
+});
+
 test('dev runs local npm/git source envs with saved env settings', async () => {
   const { default: Dev } = await import('../commands/source/dev.js');
   const runtime = {
@@ -3762,4 +3921,34 @@ test('pm list keeps API fallback for http envs', async () => {
   await PmList.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([['api:pm:list', ['--mode=summary']]]);
+});
+
+test('pm list forwards explicit env selection to API fallback', async () => {
+  const { default: PmList } = await import('../commands/plugin/list.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {},
+  });
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'remote',
+        yes: true,
+      },
+    },
+    runCommand,
+  );
+  command.argv = ['--env', 'remote', '--yes'];
+
+  try {
+    await PmList.prototype.run.call(command);
+
+    expect(runCommand.mock.calls).toEqual([['api:pm:list', ['--mode=summary', '--env', 'remote', '--yes']]]);
+  } finally {
+    restoreTerminal();
+  }
 });

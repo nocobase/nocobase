@@ -35,11 +35,12 @@ La commande racine sert principalement à afficher l'aide et à acheminer les ap
 | [`nb app`](./app/index.md) | Gérer l'état d'exécution de l'application : démarrer, arrêter, redémarrer, consulter les logs et mettre à niveau. |
 | [`nb config`](./config/index.md) | Gérer la configuration par défaut du CLI. |
 | [`nb db`](./db/index.md) | Gérer la base de données intégrée de l'env sélectionné. |
-| [`nb env`](./env/index.md) | Gérer les environnements de projet NocoBase, leur état, leurs détails et leurs commandes runtime. |
+| [`nb env`](./env/index.md) | Gère les environnements de projet NocoBase, l’env courant, l’état, les détails et les runtimes de commandes. |
 | [`nb license`](./license/index.md) | Gérer les licences commerciales et les plugins sous licence. |
 | [`nb plugin`](./plugin/index.md) | Gérer les plugins de l'env NocoBase sélectionné. |
 | [`nb scaffold`](./scaffold/index.md) | Générer des squelettes pour le développement de plugins NocoBase. |
 | [`nb self`](./self/index.md) | Vérifier ou mettre à jour le NocoBase CLI lui-même. |
+| [`nb session`](./session/index.md) | Configure `NB_SESSION_ID` afin d’isoler l’env courant par shell ou runtime d’agent. |
 | [`nb skills`](./skills/index.md) | Vérifier ou synchroniser les NocoBase AI coding skills de l'espace de travail courant. |
 | [`nb source`](./source/index.md) | Gérer le projet source local : télécharger, développer, construire et tester. |
 
@@ -93,6 +94,8 @@ Connecter une application existante :
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Démarrer l'application et rafraîchir les commandes runtime :

@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Command } from '@oclif/core';
+import { Command, Flags } from '@oclif/core';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
 import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { fetchLicensedPluginPackages } from './shared.js';
 import { renderTable } from '../../../lib/ui.js';
@@ -25,10 +26,28 @@ export default class LicensePluginsList extends Command {
     env: licenseEnvFlag,
     json: licenseJsonFlag,
     'pkg-url': licensePkgUrlFlag,
+    yes: Flags.boolean({
+      description: 'Skip the interactive cross-env confirmation prompt',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsList);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv ?? []));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
+
     const runtime = await requireLicenseRuntime(flags.env);
     const { commercialPlugins, licensedPlugins } = await fetchLicensedPluginPackages(runtime, {
       pkgUrl: flags['pkg-url'],

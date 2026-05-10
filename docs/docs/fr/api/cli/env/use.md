@@ -8,6 +8,10 @@ keywords: "nb env use,NocoBase CLI,changer d'environnement,current env"
 
 Changer l'env CLI courant. Toutes les commandes ultérieures qui omettent `--env` utiliseront cet env par défaut.
 
+Lorsque le mode session est activé pour le shell ou le runtime actuel, ce changement n’affecte que la session en cours.
+
+Lorsque le mode session n’est pas activé, cela revient à mettre à jour le `last env` global. Dans ce cas, d’autres terminaux ou runtimes d’agent sans isolation de session peuvent aussi être affectés.
+
 ## Utilisation
 
 ```bash

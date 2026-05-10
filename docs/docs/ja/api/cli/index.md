@@ -35,11 +35,12 @@ nb [command]
 | [`nb app`](./app/index.md) | アプリケーションのランタイム管理：起動、停止、再起動、ログ、アップグレード。 |
 | [`nb config`](./config/index.md) | CLI のデフォルト設定を管理します。 |
 | [`nb db`](./db/index.md) | 選択した env の組み込みデータベースを管理します。 |
-| [`nb env`](./env/index.md) | NocoBase プロジェクト環境、ステータス、詳細、ランタイムコマンドを管理します。 |
+| [`nb env`](./env/index.md) | NocoBase プロジェクト環境、現在の env、状態、詳細、コマンドランタイムを管理します。 |
 | [`nb license`](./license/index.md) | 商用ライセンスとライセンス済みプラグインを管理します。 |
 | [`nb plugin`](./plugin/index.md) | 選択した NocoBase env のプラグインを管理します。 |
 | [`nb scaffold`](./scaffold/index.md) | NocoBase プラグイン開発のスキャフォールドを生成します。 |
 | [`nb self`](./self/index.md) | NocoBase CLI 自体のチェックまたはアップデートを行います。 |
+| [`nb session`](./session/index.md) | `NB_SESSION_ID` を設定し、現在の env をシェルまたはエージェントランタイムごとに分離します。 |
 | [`nb skills`](./skills/index.md) | 現在のワークスペースの NocoBase AI coding skills のチェックまたは同期を行います。 |
 | [`nb source`](./source/index.md) | ローカルソースコードプロジェクトの管理：ダウンロード、開発、ビルド、テスト。 |
 
@@ -93,6 +94,8 @@ nb init --env app1 --yes --source docker --version alpha
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 アプリケーションを起動してランタイムコマンドを更新：

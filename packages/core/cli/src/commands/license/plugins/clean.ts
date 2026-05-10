@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
 import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
 import { cleanLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
@@ -46,10 +47,28 @@ export default class LicensePluginsClean extends Command {
       description: 'Show detailed per-plugin clean logs',
       default: false,
     }),
+    yes: Flags.boolean({
+      description: 'Skip the interactive cross-env confirmation prompt',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicensePluginsClean);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv ?? []));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
+
     const runtime = await requireLicenseRuntime(flags.env);
     if (!flags.json) {
       announceTargetEnv(runtime.envName);
