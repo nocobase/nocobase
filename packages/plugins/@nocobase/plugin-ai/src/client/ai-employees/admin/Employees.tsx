@@ -16,6 +16,7 @@ import { Field } from '@formily/core';
 import { avatars } from '../avatars';
 import { ProfileSettings } from './ProfileSettings';
 import { SystemPrompt } from './SystemPrompt';
+import { ModelSettings } from './ModelSettings';
 import aiEmployees from '../../../collections/ai-employees';
 import { SkillSettings } from './SkillSettings';
 import { Templates } from './Templates';
@@ -62,6 +63,12 @@ const AIEmployeeForm: React.FC<{
           key: 'roleSetting',
           label: t('Role setting'),
           children: <SystemPrompt />,
+          forceRender: true,
+        },
+        {
+          key: 'modelSettings',
+          label: t('Model settings'),
+          children: <ModelSettings />,
           forceRender: true,
         },
         {

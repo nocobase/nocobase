@@ -71,7 +71,8 @@ export const useChatMessageActions = () => {
       return ensureModel({
         api,
         aiConfigRepository,
-        username: targetUsername,
+        aiEmployee:
+          state.currentEmployee?.username === targetUsername ? state.currentEmployee : { username: targetUsername },
         currentOverride: state.model,
         onResolved: setModel,
       });

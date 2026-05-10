@@ -25,13 +25,44 @@ export class AIEmployeesManager {
   }
 
   async resolveModel(employee: Model, model?: ModelRef | null): Promise<ModelRef> {
-    if (model?.llmService && model?.model) {
-      return model;
+    const modelSettings = employee.get?.('modelSettings') || (employee as any).modelSettings;
+    if (modelSettings?.enabled) {
+      const models = Array.isArray(modelSettings.models) ? modelSettings.models : [];
+      const configuredModels = models
+        .filter((item) => item?.llmService && item?.model)
+        .map((item) => ({
+          llmService: item.llmService,
+          model: item.model,
+        }));
+      if (!configuredModels.length && modelSettings.llmService && modelSettings.model) {
+        configuredModels.push({
+          llmService: modelSettings.llmService,
+          model: modelSettings.model,
+        });
+      }
+      if (!configuredModels.length) {
+        throw new Error('AI employee model not configured');
+      }
+
+      if (
+        model?.llmService &&
+        model?.model &&
+        configuredModels.some((item) => item.llmService === model.llmService && item.model === model.model)
+      ) {
+        return model;
+      }
+
+      const firstModel = configuredModels[0];
+      if (firstModel?.llmService && firstModel?.model) {
+        return {
+          llmService: firstModel.llmService,
+          model: firstModel.model,
+        };
+      }
     }
 
-    const modelSettings = employee.get?.('modelSettings') || (employee as any).modelSettings;
-    if (modelSettings?.llmService && modelSettings?.model) {
-      return modelSettings;
+    if (model?.llmService && model?.model) {
+      return model;
     }
 
     return await this.plugin.aiManager.resolveModel();

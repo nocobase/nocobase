@@ -308,6 +308,7 @@ export default {
         }
 
         const legacy = conversation.thread === 0;
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx,
@@ -317,7 +318,7 @@ export default {
           skillSettings: conversation.options?.skillSettings,
           tools: conversation.options?.tools,
           webSearch,
-          model,
+          model: resolvedModel,
           legacy,
         });
 
@@ -457,6 +458,7 @@ export default {
           sendErrorResponse(ctx, 'AI employee not found');
           return next();
         }
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx,
@@ -466,7 +468,7 @@ export default {
           skillSettings: conversation.options?.skillSettings,
           tools: conversation.options?.tools,
           webSearch,
-          model,
+          model: resolvedModel,
         });
         await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
       } catch (err) {
@@ -624,6 +626,7 @@ export default {
           sendErrorResponse(ctx, 'No tool calls found');
           return next();
         }
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx,
@@ -633,7 +636,7 @@ export default {
           skillSettings: conversation.options?.skillSettings,
           tools: conversation.options?.tools,
           webSearch,
-          model,
+          model: resolvedModel,
         });
 
         const userDecisions = await plugin.aiConversationsManager.getUserDecisions(messageId);

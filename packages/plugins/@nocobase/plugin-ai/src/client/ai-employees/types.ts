@@ -35,6 +35,15 @@ export type AIEmployee = {
   toolsConflict?: boolean;
   category?: string;
   deprecated?: boolean;
+  modelSettings?: {
+    enabled?: boolean;
+    llmService?: string;
+    model?: string;
+    models?: {
+      llmService?: string;
+      model?: string;
+    }[];
+  };
 };
 
 export type SkillSettings = {

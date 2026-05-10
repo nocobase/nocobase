@@ -433,5 +433,12 @@
   "Please enter and send the modification request": "请输入并发送修改要求",
   "{{ nickname }} is working in background.": "{{ nickname }} 在后台工作中",
   "Click": "点击",
-  "to Refresh.": "刷新。"
+  "to Refresh.": "刷新。",
+  "Enable dedicated model configuration": "启用该 AI 员工单独的模型配置",
+  "When enabled, this AI employee will always use the selected model and users cannot switch to other models in chat.": "启用后，该 AI 员工将始终使用所选模型，用户在对话中不能切换到其他模型。",
+  "When enabled, this AI employee can only use the selected models, and users can only switch between these models in chat.": "启用后，该 AI 员工只能使用这里选择的模型，用户在对话中也只能在这些模型之间切换。",
+  "Restrict this AI employee to the selected models.": "限制该 AI 员工只能使用所选模型。",
+  "Select model": "选择模型",
+  "Select models": "选择模型",
+  "Models": "模型"
 }

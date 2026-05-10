@@ -22,7 +22,7 @@ import { useChatToolsStore } from '../stores/chat-tools';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { useAPIClient } from '@nocobase/client';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
+import { getAIEmployeeModels, getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 
 export const useChatBoxActions = () => {
   const api = useAPIClient();
@@ -126,7 +126,7 @@ export const useChatBoxActions = () => {
     async (aiEmployee: AIEmployee) => {
       const allModels = getAllModels(await aiConfigRepository.getLLMServices());
       const currentModel = useChatBoxStore.getState().model;
-      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      const resolvedModel = resolveModel(api, aiEmployee, allModels, currentModel);
       if (!isSameModel(currentModel, resolvedModel)) {
         setModel(resolvedModel);
       }
@@ -138,7 +138,15 @@ export const useChatBoxActions = () => {
   const resolveTaskModel = useCallback(
     async (aiEmployee: AIEmployee, taskModel?: { llmService: string; model: string } | null) => {
       const allModels = getAllModels(await aiConfigRepository.getLLMServices());
-      if (isValidModel(taskModel, allModels)) {
+      const scopedModels = getAIEmployeeModels(aiEmployee, allModels);
+      if (!scopedModels.length) {
+        const currentModel = useChatBoxStore.getState().model;
+        if (currentModel) {
+          setModel(null);
+        }
+        return null;
+      }
+      if (!aiEmployee?.modelSettings?.enabled && isValidModel(taskModel, scopedModels)) {
         const currentModel = useChatBoxStore.getState().model;
         if (!isSameModel(currentModel, taskModel)) {
           setModel(taskModel);
@@ -146,7 +154,7 @@ export const useChatBoxActions = () => {
         return taskModel;
       }
       const currentModel = useChatBoxStore.getState().model;
-      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      const resolvedModel = resolveModel(api, aiEmployee, allModels, currentModel);
       if (!isSameModel(currentModel, resolvedModel)) {
         setModel(resolvedModel);
       }
