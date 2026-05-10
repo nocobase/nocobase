@@ -11,6 +11,7 @@ import { SyncOutlined, UploadOutlined } from '@ant-design/icons';
 import { Schema } from '@formily/react';
 import { languageCodes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
+import { AIEmployeeShortcut, type AIEmployee, type Task } from '@nocobase/plugin-ai/client-v2';
 import { useRequest } from 'ahooks';
 import {
   Button,
@@ -62,18 +63,18 @@ type SourceOption = {
   title: string;
 };
 
+type TranslationMode = 'full' | 'incremental';
+
+type LocalizationTask = Task & {
+  mode: TranslationMode;
+};
+
 type ListParams = {
   page: number;
   pageSize: number;
   module?: string;
   keyword?: string;
   hasTranslation?: boolean;
-};
-
-type LocalizationPageContentProps = {
-  api: any;
-  currentLocale: string;
-  t: (key: string) => string;
 };
 
 function normalizeListResponse(response: any) {
@@ -100,15 +101,14 @@ const TranslationField: React.FC<{ value?: string }> = ({ value }) => {
 };
 
 export default function LocalizationPage() {
-  const ctx = useFlowContext();
-  const t = useT();
-  const currentLocale = ctx.app.apiClient.auth.getLocale?.() || ctx.app.apiClient.auth.locale || 'en-US';
-
-  return <LocalizationPageContent api={ctx.app.apiClient} currentLocale={currentLocale} t={t} />;
+  return <LocalizationPageContent />;
 }
 
-export function LocalizationPageContent(props: LocalizationPageContentProps) {
-  const { api, currentLocale, t } = props;
+export function LocalizationPageContent() {
+  const ctx = useFlowContext();
+  const t = useT();
+  const api = ctx.app.apiClient;
+  const currentLocale = api.auth.getLocale?.() || api.auth.locale || 'en-US';
   const [form] = Form.useForm();
   const [params, setParams] = useState<ListParams>({ page: 1, pageSize: 50, hasTranslation: true });
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -132,11 +132,9 @@ export function LocalizationPageContent(props: LocalizationPageContentProps) {
     },
   );
 
-  const { data: sources = [], loading: sourcesLoading } = useRequest<SourceOption[]>(async () => {
-    return api
-      .resource(LOCALIZATION_RESOURCE)
-      .getSources()
-      .then((res) => res?.data?.data);
+  const { data: sources = [], loading: sourcesLoading } = useRequest(async (): Promise<SourceOption[]> => {
+    const response = await api.resource(LOCALIZATION_RESOURCE).getSources();
+    return response?.data?.data || [];
   });
 
   const rows: LocalizationText[] = listData?.rows || [];
@@ -177,7 +175,7 @@ export function LocalizationPageContent(props: LocalizationPageContentProps) {
       },
     });
     setEditingRecord(null);
-    await refresh();
+    refresh();
   };
 
   const destroyTranslation = async (record: LocalizationText) => {
@@ -185,7 +183,7 @@ export function LocalizationPageContent(props: LocalizationPageContentProps) {
       return;
     }
     await api.resource(LOCALIZATION_TRANSLATIONS_RESOURCE).destroy({ filterByTk: record.translationId });
-    await refresh();
+    refresh();
   };
 
   const bulkDestroyTranslations = async () => {
@@ -202,7 +200,7 @@ export function LocalizationPageContent(props: LocalizationPageContentProps) {
 
     await api.resource(LOCALIZATION_TRANSLATIONS_RESOURCE).destroy({ filterByTk: translationIds });
     setSelectedRowKeys([]);
-    await refresh();
+    refresh();
   };
 
   const publish = async () => {
@@ -311,20 +309,11 @@ export function LocalizationPageContent(props: LocalizationPageContentProps) {
                   {t('Delete translation')}
                 </Button>
               </Popconfirm>
-              <SyncResources
-                sources={sources}
-                loading={sourcesLoading}
-                api={api}
-                refresh={refresh}
-                onSync={async (types) => {
-                  await api.resource(LOCALIZATION_RESOURCE).sync({ values: { types } });
-                  await refresh();
-                }}
-                t={t}
-              />
+              <SyncResources sources={sources} loading={sourcesLoading} refresh={refresh} />
               <Button type="primary" icon={<UploadOutlined />} onClick={publish}>
                 {t('Publish')}
               </Button>
+              <LinaEmployee />
             </Space>
           </Col>
         </Row>
@@ -387,14 +376,55 @@ export function LocalizationPageContent(props: LocalizationPageContentProps) {
   );
 }
 
-function SyncResources(props: {
-  sources: SourceOption[];
-  loading?: boolean;
-  api: any;
-  refresh: () => Promise<void>;
-  t: (key: string) => string;
-}) {
-  const { sources, loading, api, refresh, t } = props;
+function LinaEmployee() {
+  const ctx = useFlowContext();
+  const t = useT();
+  const api = ctx.app.apiClient;
+  const currentLocale = api.auth.getLocale?.() || api.auth.locale || 'en-US';
+  const [loadingMode, setLoadingMode] = useState<TranslationMode | null>(null);
+  const lina: AIEmployee = {
+    username: 'lina',
+  };
+
+  const createTask = async (mode: TranslationMode) => {
+    setLoadingMode(mode);
+    try {
+      await api.resource(LOCALIZATION_RESOURCE).aiTranslate({
+        values: {
+          mode,
+          locale: currentLocale,
+          employeeUsername: 'lina',
+        },
+      });
+      message.success(t('Async task created'));
+    } finally {
+      setLoadingMode(null);
+    }
+  };
+
+  const tasks: LocalizationTask[] = [
+    { mode: 'full', title: t('Full translation') },
+    { mode: 'incremental', title: t('Incremental translation') },
+  ];
+
+  return (
+    <AIEmployeeShortcut
+      aiEmployee={lina}
+      tasks={tasks}
+      size={40}
+      mask={false}
+      onTaskClick={(task) => createTask((task as LocalizationTask).mode)}
+      loadingTaskTitle={tasks.find((task) => task.mode === loadingMode)?.title}
+      taskLoadingTitle={t('Creating...')}
+    />
+  );
+}
+
+function SyncResources(props: { sources: SourceOption[]; loading?: boolean; refresh: () => void | Promise<void> }) {
+  const { sources, loading, refresh } = props;
+  const ctx = useFlowContext();
+  const t = useT();
+  const api = ctx.app.apiClient;
   const [checkedList, setCheckedList] = useState<string[]>([]);
   const [syncing, setSyncing] = useState(false);
   const sourceNames = useMemo(() => sources.map((item) => item.name), [sources]);
@@ -451,7 +481,7 @@ function SyncResources(props: {
             },
           });
           setSyncing(false);
-          await refresh();
+          refresh();
         }}
       >
         {t('Sync')}

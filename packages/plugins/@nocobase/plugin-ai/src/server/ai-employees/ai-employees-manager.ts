@@ -8,11 +8,34 @@
  */
 
 import PluginAIServer from '../plugin';
+import type { Model } from '@nocobase/database';
+import type { ModelRef } from './ai-employee';
 
 export class AIEmployeesManager {
   conversationController = new Map<string, AbortController>();
 
   constructor(protected plugin: PluginAIServer) {}
+
+  async getEmployee(username: string): Promise<Model | null> {
+    return await this.plugin.db.getRepository('aiEmployees').findOne({
+      filter: {
+        username,
+      },
+    });
+  }
+
+  async resolveModel(employee: Model, model?: ModelRef | null): Promise<ModelRef> {
+    if (model?.llmService && model?.model) {
+      return model;
+    }
+
+    const modelSettings = employee.get?.('modelSettings') || (employee as any).modelSettings;
+    if (modelSettings?.llmService && modelSettings?.model) {
+      return modelSettings;
+    }
+
+    return await this.plugin.aiManager.resolveModel();
+  }
 
   onAbortConversation(sessionId: string) {
     const controller = this.conversationController.get(sessionId);

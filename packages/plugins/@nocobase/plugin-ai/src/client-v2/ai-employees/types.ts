@@ -7,4 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { avatars, avatarsMap } from '../../shared/ai-employees/avatars';
+export type AIEmployee = {
+  username: string;
+  nickname?: string;
+  position?: string;
+  avatar?: string;
+  bio?: string;
+  greeting?: string;
+  category?: string;
+};
+
+export type Task = {
+  title?: string;
+};

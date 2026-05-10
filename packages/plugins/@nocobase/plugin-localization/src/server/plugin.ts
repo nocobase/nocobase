@@ -10,18 +10,22 @@
 import { Model } from '@nocobase/database';
 import { InstallOptions, OFFICIAL_PLUGIN_PREFIX, Plugin } from '@nocobase/server';
 import localization from './actions/localization';
+import aiTranslate from './actions/aiTranslate';
 import localizationTexts from './actions/localizationTexts';
 import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
 import { NAMESPACE_COLLECTIONS } from './constants';
 import { SourceManager } from './source-manager';
 import { tval } from '@nocobase/utils';
+import { AsyncTasksManager } from '@nocobase/plugin-async-task-manager';
+import { LocalizationAITranslateTask } from './tasks/localization-ai-translate';
 // @ts-ignore
 import pkg from '../../package.json';
 
 export class PluginLocalizationServer extends Plugin {
   resources: Resources;
   sourceManager = new SourceManager();
+  private aiTranslateTaskRegistered = false;
 
   addNewTexts = async (texts: { text: string; module: string }[], options?: { transaction?: any; locale?: string }) => {
     texts = await this.resources.filterExists(texts, options?.transaction);
@@ -65,18 +69,37 @@ export class PluginLocalizationServer extends Plugin {
 
   afterAdd() {
     this.app.on('afterLoad', () => this.sourceManager.handleTextsSaved(this.db, this.addNewTexts));
+    this.app.on('afterLoad', () => this.registerAITranslateTaskType());
   }
 
   beforeLoad() {}
 
+  private registerAITranslateTaskType() {
+    if (this.aiTranslateTaskRegistered) {
+      return;
+    }
+    try {
+      const taskManager = this.app.container.get('AsyncTaskManager') as AsyncTasksManager;
+      taskManager.registerTaskType(LocalizationAITranslateTask);
+      this.aiTranslateTaskRegistered = true;
+    } catch (error) {
+      this.log.warn('AsyncTaskManager is not available, skip localization AI translate task registration.');
+    }
+  }
+
   async load() {
+    this.registerAITranslateTaskType();
+
     this.app.resourceManager.define({
       name: 'localizationTexts',
       actions: localizationTexts,
     });
     this.app.resourceManager.define({
       name: 'localization',
-      actions: localization,
+      actions: {
+        ...localization,
+        ...aiTranslate,
+      },
     });
 
     this.app.acl.registerSnippet({
