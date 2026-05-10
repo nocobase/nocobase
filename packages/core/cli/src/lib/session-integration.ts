@@ -98,10 +98,71 @@ function detectWindowsPowerShellProfiles() {
   return Array.from(new Set([modern, legacy]));
 }
 
+function normalizeShellHint(shellHint: string): SessionShell | undefined {
+  const normalized = shellHint.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  if (normalized === 'fish' || normalized === 'fish.exe') {
+    return 'fish';
+  }
+  if (normalized === 'zsh' || normalized === 'zsh.exe') {
+    return 'zsh';
+  }
+  if (normalized === 'bash' || normalized === 'bash.exe') {
+    return 'bash';
+  }
+  if (normalized === 'powershell' || normalized === 'powershell.exe' || normalized === 'pwsh' || normalized === 'pwsh.exe') {
+    return 'powershell';
+  }
+  if (normalized === 'cmd' || normalized === 'cmd.exe') {
+    return 'cmd';
+  }
+
+  const normalizedPath = normalized.replace(/\\/g, '/');
+  if (!normalizedPath) {
+    return undefined;
+  }
+  if (normalizedPath.endsWith('/zsh') || normalizedPath.endsWith('/zsh.exe')) {
+    return 'zsh';
+  }
+  if (normalizedPath.endsWith('/bash') || normalizedPath.endsWith('/bash.exe')) {
+    return 'bash';
+  }
+  if (normalizedPath.endsWith('/fish') || normalizedPath.endsWith('/fish.exe')) {
+    return 'fish';
+  }
+  if (normalizedPath.endsWith('/pwsh') || normalizedPath.endsWith('/pwsh.exe')) {
+    return 'powershell';
+  }
+  if (normalizedPath.endsWith('/powershell') || normalizedPath.endsWith('/powershell.exe')) {
+    return 'powershell';
+  }
+  if (normalizedPath.endsWith('/cmd') || normalizedPath.endsWith('/cmd.exe')) {
+    return 'cmd';
+  }
+
+  return undefined;
+}
+
 function normalizeWindowsShellProcessName(processName: string): SessionShell | undefined {
   const normalized = processName.trim().toLowerCase();
   if (normalized === 'cmd' || normalized === 'cmd.exe') {
     return 'cmd';
+  }
+  if (normalized === 'fish' || normalized === 'fish.exe') {
+    return 'fish';
+  }
+  if (normalized === 'zsh' || normalized === 'zsh.exe') {
+    return 'zsh';
+  }
+  if (
+    normalized === 'bash'
+    || normalized === 'bash.exe'
+    || normalized === 'git-bash'
+    || normalized === 'git-bash.exe'
+  ) {
+    return 'bash';
   }
   if (normalized === 'powershell' || normalized === 'powershell.exe' || normalized === 'pwsh' || normalized === 'pwsh.exe') {
     return 'powershell';
@@ -123,8 +184,8 @@ function resolveWindowsShellFromProcessChain(processNames: string[]): SessionShe
     leadingCmdCount += 1;
   }
 
-  if (leadingCmdCount > 0 && normalizedShells[leadingCmdCount] === 'powershell') {
-    return 'powershell';
+  if (leadingCmdCount > 0 && normalizedShells[leadingCmdCount]) {
+    return normalizedShells[leadingCmdCount];
   }
 
   return normalizedShells[0];
@@ -349,21 +410,28 @@ export function detectSessionShell(): SessionShell | undefined {
     return 'bash';
   }
 
-  const shellPath = String(process.env.SHELL ?? '').trim().toLowerCase();
-  if (shellPath.endsWith('/zsh')) {
-    return 'zsh';
-  }
-  if (shellPath.endsWith('/bash')) {
-    return 'bash';
-  }
-  if (shellPath.endsWith('/fish')) {
-    return 'fish';
-  }
+  const normalizedShell = normalizeShellHint(String(process.env.SHELL ?? ''));
+  const normalizedLoginShell = normalizeShellHint(String(process.env.LOGINSHELL ?? ''));
 
   if (process.platform === 'win32') {
+    const isMsysRuntime = Boolean(process.env.MSYSTEM);
     const detectedWindowsShell = detectWindowsShellByParentProcess();
-    if (detectedWindowsShell) {
+    const msysLoginShell = normalizedLoginShell ?? normalizedShell;
+
+    if (detectedWindowsShell && !(isMsysRuntime && detectedWindowsShell === 'cmd' && msysLoginShell)) {
       return detectedWindowsShell;
+    }
+
+    if (normalizedLoginShell) {
+      return normalizedLoginShell;
+    }
+
+    if (normalizedShell) {
+      return normalizedShell;
+    }
+
+    if (isMsysRuntime) {
+      return 'bash';
     }
 
     const comspec = String(process.env.ComSpec ?? '').trim().toLowerCase();
@@ -377,6 +445,16 @@ export function detectSessionShell(): SessionShell | undefined {
     if (comspec.endsWith('cmd.exe')) {
       return 'cmd';
     }
+
+    return undefined;
+  }
+
+  if (normalizedShell) {
+    return normalizedShell;
+  }
+
+  if (normalizedLoginShell) {
+    return normalizedLoginShell;
   }
 
   return undefined;
