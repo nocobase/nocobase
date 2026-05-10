@@ -7,16 +7,51 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { detectSessionShell } from '../lib/session-integration.js';
 
+const originalFishVersion = process.env.FISH_VERSION;
+const originalZshVersion = process.env.ZSH_VERSION;
+const originalBashVersion = process.env.BASH_VERSION;
+const originalShell = process.env.SHELL;
 const originalPsModulePath = process.env.PSModulePath;
 const originalComSpec = process.env.ComSpec;
 const originalPrompt = process.env.PROMPT;
 const originalParentProcessOverride = process.env.NB_SESSION_TEST_PARENT_PROCESS_NAME;
 
+beforeEach(() => {
+  delete process.env.FISH_VERSION;
+  delete process.env.ZSH_VERSION;
+  delete process.env.BASH_VERSION;
+  delete process.env.SHELL;
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+
+  if (originalFishVersion === undefined) {
+    delete process.env.FISH_VERSION;
+  } else {
+    process.env.FISH_VERSION = originalFishVersion;
+  }
+
+  if (originalZshVersion === undefined) {
+    delete process.env.ZSH_VERSION;
+  } else {
+    process.env.ZSH_VERSION = originalZshVersion;
+  }
+
+  if (originalBashVersion === undefined) {
+    delete process.env.BASH_VERSION;
+  } else {
+    process.env.BASH_VERSION = originalBashVersion;
+  }
+
+  if (originalShell === undefined) {
+    delete process.env.SHELL;
+  } else {
+    process.env.SHELL = originalShell;
+  }
 
   if (originalPsModulePath === undefined) {
     delete process.env.PSModulePath;
