@@ -25,7 +25,7 @@ nb license activate [flags]
 | `--account` | string | 在线激活使用的授权服务账号 |
 | `--password` | string | 在线激活使用的授权服务密码 |
 | `--desc` | string | 在线激活时提交的应用名称 |
-| `--yes` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
+| `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--json` | boolean | 输出 JSON |
 
 ## 示例

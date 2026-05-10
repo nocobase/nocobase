@@ -25,7 +25,7 @@ nb env add [name] [flags]
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Env name; prompted in TTY when omitted, required in non-TTY mode |
+| `[name]` | string | Environment name to save; prompted in TTY when omitted, required in non-TTY mode |
 | `--verbose` | boolean | Show detailed progress when writing config |
 | `--locale` | string | CLI prompt language: `en-US` or `zh-CN` |
 | `--api-base-url`, `-u` | string | NocoBase API URL, including the `/api` prefix |

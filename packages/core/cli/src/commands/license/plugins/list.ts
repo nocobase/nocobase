@@ -27,6 +27,7 @@ export default class LicensePluginsList extends Command {
     json: licenseJsonFlag,
     'pkg-url': licensePkgUrlFlag,
     yes: Flags.boolean({
+      char: 'y',
       description: 'Skip the interactive cross-env confirmation prompt',
       default: false,
     }),

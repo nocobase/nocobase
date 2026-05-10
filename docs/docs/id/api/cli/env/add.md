@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `[name]` | string | Nama lingkungan; jika dilewati di TTY akan ada prompt untuk mengisi, di non-TTY wajib diisi |
+| `[name]` | string | Nama lingkungan yang akan disimpan; di TTY akan diprompt jika dihilangkan, dan wajib di mode non-TTY |
 | `--verbose` | boolean | Menampilkan progress detail saat menulis konfigurasi |
 | `--locale` | string | Bahasa prompt CLI: `en-US` atau `zh-CN` |
 | `--api-base-url`, `-u` | string | Alamat API NocoBase, termasuk prefix `/api` |

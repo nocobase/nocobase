@@ -22,7 +22,7 @@ nb license plugins sync [flags]
 | `--dry-run` | boolean | 仅预览变更，不实际安装、升级或删除插件 |
 | `--version` | string | 要同步的 registry 版本或 dist-tag；默认使用当前工作区版本 |
 | `--verbose` | boolean | 输出每个插件的详细同步日志 |
-| `--yes` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
+| `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--json` | boolean | 输出 JSON |
 
 ## 示例

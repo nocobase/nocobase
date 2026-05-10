@@ -22,7 +22,7 @@ nb env use <name>
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `<name>` | string | Tên môi trường đã cấu hình |
+| `<name>` | string | Tên env đã cấu hình để chuyển sang |
 
 ## Ví dụ
 

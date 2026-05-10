@@ -48,6 +48,7 @@ export default class LicensePluginsClean extends Command {
       default: false,
     }),
     yes: Flags.boolean({
+      char: 'y',
       description: 'Skip the interactive cross-env confirmation prompt',
       default: false,
     }),

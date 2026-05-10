@@ -171,6 +171,7 @@ export default class LicensePluginsSync extends Command {
       default: false,
     }),
     yes: Flags.boolean({
+      char: 'y',
       description: 'Skip the interactive cross-env confirmation prompt',
       default: false,
     }),

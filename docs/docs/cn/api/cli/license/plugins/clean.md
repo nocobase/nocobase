@@ -21,7 +21,7 @@ nb license plugins clean [flags]
 | `--env`, `-e` | string | CLI env 名称；省略时使用当前 env |
 | `--dry-run` | boolean | 仅预览将要删除的插件，不执行删除 |
 | `--verbose` | boolean | 输出每个插件的详细清理日志 |
-| `--yes` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
+| `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--json` | boolean | 输出 JSON |
 
 ## 示例

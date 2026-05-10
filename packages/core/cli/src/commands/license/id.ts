@@ -33,6 +33,7 @@ export default class LicenseId extends Command {
     env: licenseEnvFlag,
     json: licenseJsonFlag,
     yes: Flags.boolean({
+      char: 'y',
       description: 'Skip the interactive cross-env confirmation prompt',
       default: false,
     }),

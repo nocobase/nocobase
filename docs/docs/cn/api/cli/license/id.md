@@ -19,7 +19,7 @@ nb license id [flags]
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env 名称；省略时使用当前 env |
-| `--yes` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
+| `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--force` | boolean | 即使已存在已保存实例 ID，也强制重新生成 |
 | `--json` | boolean | 输出 JSON |
 

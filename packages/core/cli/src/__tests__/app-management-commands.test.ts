@@ -1435,7 +1435,14 @@ test('env info shows grouped app details with secrets masked by default', async 
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('auth.accessToken');
 });
 
-test('env info supports json output with grouped sections', async () => {
+test('env info keeps --env as a hidden deprecated compatibility alias', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+
+  expect(EnvInfo.flags.env.hidden).toBe(true);
+  expect(EnvInfo.flags.env.deprecated).toBe(true);
+});
+
+test('env info supports the deprecated --env alias with grouped json output', async () => {
   const { default: EnvInfo } = await import('../commands/env/info.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'http',
@@ -1504,6 +1511,23 @@ test('env info supports json output with grouped sections', async () => {
       },
     },
   });
+});
+
+test('env info rejects conflicting environment names from the argument and deprecated --env', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+
+  const command = createCommandHarness({
+    args: {
+      name: 'prod',
+    },
+    flags: {
+      env: 'staging',
+      json: false,
+      'show-secrets': false,
+    },
+  });
+
+  await expect((() => EnvInfo.prototype.run.call(command))()).rejects.toThrow(/Please use only one/);
 });
 
 test('env info supports positional env name and shows grouped details', async () => {
