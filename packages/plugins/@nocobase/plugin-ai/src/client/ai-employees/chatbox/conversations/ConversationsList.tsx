@@ -22,9 +22,21 @@ import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { ListEmpty } from './common';
+import { Conversation } from '../../types';
 
 type UseConversationsListOptions = {
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
+};
+
+const getConversationModel = (conversation?: Conversation) => {
+  const modelSettings = conversation?.options?.modelSettings;
+  if (!modelSettings?.llmService || !modelSettings?.model) {
+    return undefined;
+  }
+  return {
+    llmService: modelSettings.llmService,
+    model: modelSettings.model,
+  };
 };
 
 const conversationItemClassName = css`
@@ -186,7 +198,8 @@ export const useConversationsList = ({ onOpenConversation }: UseConversationsLis
     (sessionId: string) => {
       setReadonly(false);
       setCurrentWorkflowTask(undefined);
-      onOpenConversation(sessionId, conversations.find((item) => item.sessionId === sessionId)?.aiEmployee?.username);
+      const conversation = conversations.find((item) => item.sessionId === sessionId);
+      onOpenConversation(sessionId, conversation?.aiEmployee?.username, getConversationModel(conversation));
     },
     [onOpenConversation, conversations, setCurrentWorkflowTask, setReadonly],
   );

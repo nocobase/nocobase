@@ -66,7 +66,8 @@ export default {
       if (!userId) {
         return ctx.throw(403);
       }
-      const { aiEmployee, systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
+      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings } =
+        ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -80,6 +81,7 @@ export default {
             systemMessage,
             skillSettings,
             conversationSettings,
+            modelSettings,
           },
         });
       } catch (error) {
@@ -115,8 +117,8 @@ export default {
         return ctx.throw(400, 'invalid sessionId');
       }
 
-      const { systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
-      if (!systemMessage && !skillSettings && !conversationSettings) {
+      const { systemMessage, skillSettings, conversationSettings, modelSettings } = ctx.action.params.values || {};
+      if (!systemMessage && !skillSettings && !conversationSettings && !modelSettings) {
         return ctx.throw(400, 'invalid options');
       }
 
@@ -124,7 +126,7 @@ export default {
         ctx.body = await plugin.aiConversationsManager.update({
           userId,
           sessionId,
-          options: { systemMessage, skillSettings, conversationSettings },
+          options: { systemMessage, skillSettings, conversationSettings, modelSettings },
         });
       } catch (error) {
         if (error.message === 'invalid sessionId') {

@@ -58,6 +58,13 @@ export type Conversation = {
   title: string;
   updatedAt: string;
   aiEmployee: AIEmployee;
+  options?: {
+    modelSettings?: {
+      llmService?: string;
+      model?: string;
+    };
+    [key: string]: any;
+  };
 };
 
 export type ContextItem = {

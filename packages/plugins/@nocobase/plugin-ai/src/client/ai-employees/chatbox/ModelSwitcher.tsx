@@ -17,6 +17,7 @@ import { useT } from '../../locale';
 import { AddLLMModal } from './AddLLMModal';
 import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
 import { getAIEmployeeModels, isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from './model';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const ModelSwitcher: React.FC<{ disabled?: boolean }> = observer(
   ({ disabled }) => {
@@ -28,6 +29,7 @@ export const ModelSwitcher: React.FC<{ disabled?: boolean }> = observer(
     const [isOpen, setIsOpen] = useState(false);
     const currentEmployee = useChatBoxStore.use.currentEmployee();
     const currentEmployeeUsername = currentEmployee?.username;
+    const currentConversation = useChatConversationsStore.use.currentConversation();
     const model = useChatBoxStore.use.model();
     const setModel = useChatBoxStore.use.setModel();
 
@@ -58,13 +60,14 @@ export const ModelSwitcher: React.FC<{ disabled?: boolean }> = observer(
     // Initialize: cache >> first model
     useEffect(() => {
       if (!currentEmployeeUsername) return;
+      if (currentConversation) return;
 
       const resolved = resolveModel(api, currentEmployee, allModels, model);
       if (isSameModel(resolved, model)) {
         return;
       }
       setModel(resolved);
-    }, [api, currentEmployee, currentEmployeeUsername, allModels, model, setModel]);
+    }, [api, currentConversation, currentEmployee, currentEmployeeUsername, allModels, model, setModel]);
 
     // Current selected model value
     const selectedModel = useMemo(() => {

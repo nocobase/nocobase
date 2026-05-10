@@ -57,7 +57,7 @@ export const Conversations: React.FC = memo(() => {
   const { clear } = useChatBoxActions();
 
   const openConversation = useCallback(
-    (sessionId: string, username?: string, model?: ModelRef) => {
+    (sessionId: string, username?: string, model?: ModelRef | null) => {
       if (sessionId === currentConversation) {
         setShowConversations(false);
         return;
@@ -70,10 +70,8 @@ export const Conversations: React.FC = memo(() => {
       }
       setMessages([]);
       clear();
-      if (model) {
+      if (model !== undefined) {
         setModel(model);
-      } else {
-        setModel(null);
       }
       messagesService.run(sessionId);
       if (!expanded) {

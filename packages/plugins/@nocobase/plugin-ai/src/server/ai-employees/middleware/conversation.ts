@@ -24,27 +24,30 @@ export const conversationMiddleware = (
   aiEmployee: AIEmployee,
   options: {
     providerName: string;
+    llmService?: string;
     model: string;
     messageId?: string;
     agentThread?: { sessionId: string; thread: number };
   },
 ) => {
-  const { providerName, model, messageId, agentThread } = options;
+  const { providerName, llmService, model, messageId, agentThread } = options;
 
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput =>
     _convertAIMessage({
       aiEmployee,
       providerName,
+      llmService,
       model,
       aiMessage,
     });
 
   const convertHumanMessage = (humanMessage: HumanMessage): AIMessageInput =>
-    _convertHumanMessage({ providerName, model, humanMessage });
+    _convertHumanMessage({ providerName, llmService, model, humanMessage });
 
   const convertToolMessage = (toolMessage: ToolMessage): AIMessageInput =>
     _convertToolMessage({
       providerName,
+      llmService,
       model,
       toolMessage,
     });

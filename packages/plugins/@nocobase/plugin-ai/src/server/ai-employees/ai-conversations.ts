@@ -16,6 +16,7 @@ export type AIConversationsOptions = {
   systemMessage?: unknown;
   skillSettings?: unknown;
   conversationSettings?: unknown;
+  modelSettings?: unknown;
   [key: string]: unknown;
 };
 
@@ -93,7 +94,7 @@ export class AIConversationsManager {
       throw new Error('invalid sessionId');
     }
 
-    const { systemMessage, skillSettings, conversationSettings } = inputOptions ?? {};
+    const { systemMessage, skillSettings, conversationSettings, modelSettings } = inputOptions ?? {};
     const options = conversation.options ?? {};
     if (systemMessage) {
       options['systemMessage'] = systemMessage;
@@ -103,6 +104,9 @@ export class AIConversationsManager {
     }
     if (conversationSettings) {
       options['conversationSettings'] = conversationSettings;
+    }
+    if (modelSettings) {
+      options['modelSettings'] = modelSettings;
     }
     const values: Record<string, unknown> = { options };
     if (title) {

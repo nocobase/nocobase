@@ -156,7 +156,7 @@ export class AIEmployee {
     };
   }
 
-  private async initSession({ messageId, provider, model, providerName }) {
+  private async initSession({ messageId, provider, model, providerName, llmService }) {
     const { tools, baseToolNames } = await this.getAgentTools();
     const resolvedTools = provider.resolveTools(tools.map(buildTool));
     if (!messageId && this.legacy !== true) {
@@ -164,7 +164,7 @@ export class AIEmployee {
         historyMessages: [],
         tools,
         resolvedTools,
-        middleware: await this.getMiddleware({ tools, baseToolNames, model, providerName }),
+        middleware: await this.getMiddleware({ tools, baseToolNames, model, providerName, llmService }),
         config: undefined,
         state: undefined,
       };
@@ -185,6 +185,7 @@ export class AIEmployee {
         baseToolNames,
         model,
         providerName,
+        llmService,
         messageId,
         agentThread,
       }),
@@ -217,6 +218,7 @@ export class AIEmployee {
       provider,
       model,
       providerName: service.provider,
+      llmService: service.get?.('name') || (service as any).name,
     });
 
     const chatContext = await this.aiChatConversation.getChatContext({
@@ -228,7 +230,15 @@ export class AIEmployee {
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
     });
 
-    return { providerName: service.provider, model, provider, chatContext, config, state };
+    return {
+      providerName: service.provider,
+      llmService: service.get?.('name') || (service as any).name,
+      model,
+      provider,
+      chatContext,
+      config,
+      state,
+    };
   }
 
   async stream({
@@ -250,7 +260,7 @@ export class AIEmployee {
       },
     });
     try {
-      const { providerName, model, provider, chatContext, config, state } = await this.buildChatContext({
+      const { providerName, llmService, model, provider, chatContext, config, state } = await this.buildChatContext({
         messageId,
         userMessages,
         userDecisions,
@@ -268,6 +278,7 @@ export class AIEmployee {
       await this.processChatStream(stream, {
         signal,
         providerName,
+        llmService,
         model,
         provider,
         responseMetadata,
@@ -450,6 +461,7 @@ export class AIEmployee {
     options: {
       signal: AbortSignal;
       providerName: string;
+      llmService?: string;
       model: string;
       provider: LLMProvider;
       allowEmpty?: boolean;
@@ -457,7 +469,7 @@ export class AIEmployee {
     },
   ) {
     const aiMessageIdMap = new Map<string, string>();
-    const { signal, providerName, model, provider, responseMetadata, allowEmpty = false } = options;
+    const { signal, providerName, llmService, model, provider, responseMetadata, allowEmpty = false } = options;
 
     let isReasoning = false;
     let gathered: any;
@@ -467,6 +479,7 @@ export class AIEmployee {
           const values = convertAIMessage({
             aiEmployee: this,
             providerName,
+            llmService,
             model,
             aiMessage: gathered,
           });
@@ -1486,13 +1499,14 @@ If information is missing, clearly state it in the summary.</Important>`;
 
   private async getMiddleware(options: {
     providerName: string;
+    llmService?: string;
     model: string;
     tools: any[];
     baseToolNames: Set<string>;
     messageId?: string;
     agentThread?: AgentThread;
   }) {
-    const { providerName, model, tools, baseToolNames, messageId, agentThread } = options;
+    const { providerName, llmService, model, tools, baseToolNames, messageId, agentThread } = options;
     const inWorkflow = await this.isInWorkflow();
     return [
       skillToolBindingMiddleware(this, {
@@ -1501,7 +1515,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
       ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
-      conversationMiddleware(this, { providerName, model, messageId, agentThread }),
+      conversationMiddleware(this, { providerName, llmService, model, messageId, agentThread }),
     ];
   }
 
