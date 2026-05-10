@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import {
+  getPluginBrowserSourcePackages,
   getPackageNameFromString,
   getPackagesFromFiles,
   isValidPackageName,
@@ -31,5 +35,36 @@ describe('buildPluginUtils package extraction', () => {
     ]);
 
     expect(packages).toEqual(expect.arrayContaining(['big.js', '@scope/pkg.name', 'json-pointer']));
+  });
+
+  it('should discover client-v2 runtime packages for client lane relative imports', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-plugin-browser-source-'));
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, 'src/client'), { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, 'src/client-v2/flow'), { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, 'src/server'), { recursive: true });
+
+      fs.writeFileSync(
+        path.join(tempRoot, 'src/client/index.tsx'),
+        ["import React from 'react';", "import '../client-v2/flow/model';", 'export default React;'].join('\n'),
+      );
+      fs.writeFileSync(
+        path.join(tempRoot, 'src/client-v2/flow/model.ts'),
+        [
+          "import { titleField } from '@nocobase/client-v2';",
+          "import { defineAction } from '@nocobase/flow-engine';",
+          'export const model = defineAction({ ...titleField, name: "bulkEditTitleField" });',
+        ].join('\n'),
+      );
+      fs.writeFileSync(path.join(tempRoot, 'src/server/plugin.ts'), "import Koa from 'koa';\nexport default Koa;");
+
+      const packages = getPluginBrowserSourcePackages([tempRoot], []);
+
+      expect(packages).toEqual(expect.arrayContaining(['react', '@nocobase/client-v2', '@nocobase/flow-engine']));
+      expect(packages).not.toContain('koa');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 });

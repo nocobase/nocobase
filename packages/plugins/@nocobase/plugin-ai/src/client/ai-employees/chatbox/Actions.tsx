@@ -25,19 +25,31 @@ export const Actions: React.FC<{
   const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
 
-  const messages = useChatMessagesStore.use.messages();
   const responseLoading = useChatMessagesStore.use.responseLoading();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
 
-  const reversedMessages = [...messages].reverse();
-  const lastMessage = reversedMessages.find((msg) => msg.role === currentEmployee.username);
+  const lastEmployeeMessageKey = useChatMessagesStore((state) => {
+    for (let i = state.messages.length - 1; i >= 0; i--) {
+      const msg = state.messages[i];
+      if (msg.role === currentEmployee?.username) {
+        return msg.key;
+      }
+    }
+  });
+  const workContext = useChatMessagesStore((state) => {
+    for (let i = state.messages.length - 1; i >= 0; i--) {
+      const workContext = state.messages[i].content.workContext;
+      if (workContext?.length) {
+        return workContext;
+      }
+    }
+    return null;
+  });
   const actions: (ActionOptions & { context: ContextItem })[] = useMemo(() => {
-    const message = reversedMessages.find((msg) => msg.content.workContext?.length > 0);
-    if (!message) {
+    if (!workContext?.length) {
       return [];
     }
-    const workContext = message.content.workContext;
     const result = [];
     for (const context of workContext) {
       const options = plugin.aiManager.getWorkContext(context.type);
@@ -59,8 +71,8 @@ export const Actions: React.FC<{
       }
     }
     return result;
-  }, [reversedMessages, responseType]);
-  if (responseLoading || !actions.length || message.messageId !== lastMessage.key) {
+  }, [plugin.aiManager, responseType, workContext]);
+  if (responseLoading || !actions.length || message.messageId !== lastEmployeeMessageKey) {
     return null;
   }
 

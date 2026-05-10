@@ -17,6 +17,7 @@ import { RunLog } from './hooks/useCodeRunner';
 export interface EditorRef {
   write(document: string): void;
   read(): string;
+  run?(): Promise<unknown>;
   buttonGroupHeight?: number;
   snippetEntries: SnippetEntry[];
   logs: RunLog[];

@@ -9,6 +9,7 @@
 
 import fs from 'fs';
 import chalk from 'chalk';
+import fg from 'fast-glob';
 import { builtinModules } from 'module';
 import path from 'path';
 
@@ -71,6 +72,18 @@ export function getPackagesFromFiles(files: string[]): string[] {
     .filter(isNotBuiltinModule);
 
   return [...new Set(packageNames)];
+}
+
+export function getPluginBrowserSourcePackages(cwds: string[], excludeFiles: string[]): string[] {
+  const files = cwds.flatMap((cwd) =>
+    fg.globSync(['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/server/**', ...excludeFiles], {
+      cwd,
+      absolute: true,
+    }),
+  );
+  const source = files.map((item) => fs.readFileSync(item, 'utf-8'));
+
+  return getPackagesFromFiles(source);
 }
 
 export function getSourcePackages(fileSources: string[]): string[] {

@@ -133,6 +133,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     return createRunJSCompletionSource({ hostCtx, staticOptions: finalExtra });
   }, [hostCtx, finalExtra]);
 
+  const runCurrentCode = useCallback(async () => {
+    const code = viewRef.current?.state.doc.toString() || '';
+    clearDiagnostics(viewRef.current);
+    const res = await run(code);
+    if (!res?.success) {
+      const rawErr = res?.error;
+      const errText = res?.timeout ? tr('Execution timed out') : String(rawErr || tr('Unknown error'));
+      const pos = parseErrorLineColumn(rawErr);
+      if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
+    }
+    return res;
+  }, [run, tr]);
+
   // JSX 转换支持暂时移除：直接按原样运行代码
 
   // 错误标注相关工具已提取至 errorHelpers.ts
@@ -153,6 +166,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       const v = viewRef.current;
       return v ? v.state.doc.toString() : '';
     },
+    run() {
+      return Promise.resolve(undefined);
+    },
 
     buttonGroupHeight: 0,
     snippetEntries: [],
@@ -160,6 +176,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   });
   extraEditorRef.current.snippetEntries = snippetEntries;
   extraEditorRef.current.logs = logs;
+  extraEditorRef.current.run = runCurrentCode;
 
   // snippet group display handled in SnippetsDrawer
 
@@ -210,23 +227,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                   {tr('Snippets')}
                 </Button>
                 <>
-                  <Button
-                    size="small"
-                    loading={running}
-                    onClick={async () => {
-                      const code = viewRef.current?.state.doc.toString() || '';
-                      clearDiagnostics(viewRef.current);
-                      const res = await run(code);
-                      if (!res?.success) {
-                        const rawErr = res?.error;
-                        const errText = res?.timeout
-                          ? tr('Execution timed out')
-                          : String(rawErr || tr('Unknown error'));
-                        const pos = parseErrorLineColumn(rawErr);
-                        if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
-                      }
-                    }}
-                  >
+                  <Button size="small" loading={running} onClick={runCurrentCode}>
                     {tr('Run')}
                   </Button>
                 </>
