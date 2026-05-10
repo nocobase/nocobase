@@ -12,17 +12,26 @@ import { EditableItemModel, useFlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 import { MobileDatePicker } from '../mobile-components/MobileDatePicker';
+import { useDateLimit } from './dateLimit';
 
 export const DateOnlyPicker = (props) => {
   const { value, format = 'YYYY-MM-DD', picker = 'date', showTime, ...rest } = props;
   const parsedValue = value && dayjs(value).isValid() ? dayjs(value) : null;
   const ctx = useFlowModelContext();
+  const { disabledDate, disabledTime, minDate, maxDate } = useDateLimit({
+    ...props,
+    currentForm: ctx.model?.context?.form,
+  });
   const componentProps = {
     ...rest,
     value: parsedValue,
     format,
     picker,
     showTime,
+    disabledDate,
+    disabledTime,
+    minDate,
+    maxDate,
     onChange: (val: any) => {
       const outputFormat = 'YYYY-MM-DD';
       if (!val) {
