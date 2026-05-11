@@ -9,7 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
-import { ensureInstanceId, licenseEnvFlag, licenseJsonFlag, requireLicenseRuntime } from './shared.js';
+import { createLicenseEnvFlag, ensureInstanceId, licenseJsonFlag, licenseYesFlag, requireLicenseRuntime } from './shared.js';
 
 export default class LicenseStatus extends Command {
   static override summary = 'Show commercial license status for the selected env';
@@ -22,13 +22,9 @@ export default class LicenseStatus extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --json',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to inspect. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
-    yes: Flags.boolean({
-      char: 'y',
-      description: 'Skip the interactive cross-env confirmation prompt',
-      default: false,
-    }),
+    yes: licenseYesFlag,
     doctor: Flags.boolean({
       description: 'Run extra diagnostic checks and suggestions',
       default: false,

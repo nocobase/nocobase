@@ -3924,6 +3924,40 @@ test('dev explains when the requested env does not exist', async () => {
   await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
 });
 
+test('dev rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
+  const { default: Dev } = await import('../commands/source/dev.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'prod',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: {},
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: false,
+      text: async () => 'not ok',
+    })),
+  );
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prod',
+      yes: false,
+    },
+  });
+  command.argv = ['--env', 'prod'];
+
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(
+    /Current env is "dev", but this command targets "prod" via --env\..*Re-run the same command with --yes to confirm this one-off cross-env operation\./s,
+  );
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
+});
+
 test('pm list keeps API fallback for http envs', async () => {
   const { default: PmList } = await import('../commands/plugin/list.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
