@@ -3953,7 +3953,7 @@ test('dev rejects cross-env requests in non-interactive agent sessions without -
   command.argv = ['--env', 'prod'];
 
   await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(
-    /Current env is "dev", but this command targets "prod" via --env\..*Re-run the same command with --yes to confirm this one-off cross-env operation\./s,
+    /Refusing to run against env "prod".*interactive confirmation is unavailable.*re-run the same command with `--env prod --yes` to confirm this one-off cross-env operation\./s,
   );
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
