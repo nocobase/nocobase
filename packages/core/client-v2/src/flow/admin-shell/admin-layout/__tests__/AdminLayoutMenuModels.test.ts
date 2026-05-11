@@ -18,6 +18,7 @@ import {
   AdminLayoutMenuItemRenderer,
   AdminLayoutMenuItemModel,
   AdminLayoutModel,
+  ADMIN_LAYOUT_MODEL_UID,
   getAdminLayoutMenuMovePositionOptions,
   normalizeAdminLayoutMenuLegacyVariables,
   openAdminLayoutMenuLink,
@@ -906,6 +907,195 @@ describe('AdminLayoutModel menu items', () => {
     expect(updateRoute).toHaveBeenCalledWith(1, {
       hideInMenu: true,
     });
+  });
+
+  it('should expose menu linkage rules only for existing menu items', async () => {
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    expect(menuSettingsFlow?.steps?.linkageRules?.use).toBe('menuLinkageRules');
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-linkage-settings',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+    const creationModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-linkage-creation-settings',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'link',
+          source: 'header',
+        },
+      },
+    });
+    const hideInSettings = menuSettingsFlow?.steps?.linkageRules?.hideInSettings as
+      | ((ctx: any) => Promise<boolean>)
+      | undefined;
+
+    await expect(hideInSettings?.({ model })).resolves.toBe(false);
+    await expect(hideInSettings?.({ model: creationModel })).resolves.toBe(true);
+  });
+
+  it('should persist menu linkage rules through flowModels and route flag', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-linkage-persist',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    model.setStepParams('menuSettings', 'linkageRules', {
+      value: [
+        { key: 'r1', title: 'Hide menu item', enable: true, condition: { logic: '$and', items: [] }, actions: [] },
+      ],
+    });
+
+    await model.saveStepParams();
+
+    expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+  });
+
+  it('should clear persisted menu linkage rules when no persisted state remains', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as any);
+    const destroy = vi.fn().mockResolvedValue(true);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.setModelRepository({ destroy } as any);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-linkage-clear',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute({
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        }),
+      },
+    });
+
+    model.setStepParams('menuSettings', 'linkageRules', { value: [] });
+    await model.saveStepParams();
+
+    expect(saveModel).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledWith('menu-item-linkage-clear');
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: undefined,
+    });
+  });
+
+  it('should restore menu linkage rules and rerender after hydrate', async () => {
+    engine.context.defineProperty('flowSettingsEnabled', {
+      value: true,
+    });
+    engine.setModelRepository({
+      findOne: vi.fn().mockResolvedValue({
+        uid: 'menu-item-linkage-hydrate',
+        use: 'AdminLayoutMenuItemModel',
+        stepParams: {
+          menuSettings: {
+            linkageRules: {
+              value: [
+                {
+                  key: 'r1',
+                  title: 'Persisted linkage',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [],
+                },
+              ],
+            },
+          },
+        },
+      }),
+    } as any);
+    const rerenderSpy = vi.spyOn(AdminLayoutMenuItemModel.prototype, 'rerender').mockResolvedValue(undefined as any);
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-linkage-hydrate',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    await waitFor(() => {
+      expect(model.getStepParams('menuSettings', 'linkageRules')).toMatchObject({
+        value: [{ key: 'r1' }],
+      });
+    });
+    expect(rerenderSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should hide menu route dynamically in runtime mode and refresh layout route tree', () => {
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      use: AdminLayoutModel,
+    });
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-dynamic-hidden',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    const refreshBefore = adminLayoutModel.menuRouteRefreshVersion;
+
+    model.setHidden(true);
+    const runtimeRoute = model.toProLayoutRoute({
+      designable: false,
+      isMobile: false,
+      t: (title) => title,
+    });
+    const designableRoute = model.toProLayoutRoute({
+      designable: true,
+      isMobile: false,
+      t: (title) => title,
+    });
+
+    expect(runtimeRoute).toBeNull();
+    expect(designableRoute?.hideInMenu).toBeFalsy();
+    expect(adminLayoutModel.menuRouteRefreshVersion).toBe(refreshBefore + 1);
+  });
+
+  it('should render hidden menu item with opacity and keep original title in config mode', () => {
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-hidden-in-config',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    model.setProps({
+      item: {
+        name: 'Page 1',
+        path: '/admin/page-1',
+        _route: createRoute(),
+        _model: model,
+      },
+      dom: React.createElement('span', null, 'Page 1'),
+      options: { isMobile: false, collapsed: false },
+      renderType: 'item',
+    });
+
+    const rendered = (model as any).renderHiddenInConfig();
+
+    expect(rendered?.props?.style).toMatchObject({ opacity: 0.3 });
+    expect(rendered?.props?.children?.props?.dom?.props?.children).toBe('Page 1');
   });
 
   it('should keep variable-aware editors for link menu settings', async () => {

@@ -145,6 +145,8 @@ export enum ActionScene {
   ACTION_LINKAGE_RULES,
   /** 动态事件流可用 */
   DYNAMIC_EVENT_FLOW,
+  /** 菜单项联动规则可用 */
+  MENU_LINKAGE_RULES,
 }
 
 /**

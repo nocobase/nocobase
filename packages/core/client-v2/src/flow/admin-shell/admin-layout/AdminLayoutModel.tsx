@@ -50,6 +50,7 @@ type GetAdminLayoutModelOptions<TModel extends FlowModel = AdminLayoutModel> = {
  */
 export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
   isMobileLayout = false;
+  menuRouteRefreshVersion = 0;
   private routeCoordinator?: AdminLayoutRouteCoordinator;
   private routeDisposer?: () => void;
   private activePageUid = '';
@@ -60,7 +61,17 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
     super(options);
     define(this, {
       isMobileLayout: observable.ref,
+      menuRouteRefreshVersion: observable.ref,
     });
+  }
+
+  /**
+   * 通知 Layout 重新生成 ProLayout 菜单路由。
+   *
+   * @returns {void}
+   */
+  refreshMenuRouteTree() {
+    this.menuRouteRefreshVersion += 1;
   }
 
   /**
