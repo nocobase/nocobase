@@ -3448,7 +3448,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         sort: 980,
         properties: {
           now: {
-            title: escapeT('Current time'),
+            title: escapeT('Now'),
             type: 'datetime',
           },
         },
