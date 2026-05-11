@@ -10,7 +10,7 @@
 import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@nocobase/test/client';
+import { render, waitFor } from '@nocobase/test/client';
 import { FieldStateRulesEditor, getFieldStateCascaderOptionsForState } from '../FieldStateRulesEditor';
 import type { FieldStateRuleItem } from '../FieldStateRulesEditor';
 
@@ -42,7 +42,7 @@ describe('FieldStateRulesEditor', () => {
     </ConfigProvider>
   );
 
-  it('injects current item variables into the condition for association sub-fields', () => {
+  const createRoleCollections = () => {
     const roleCollection = {
       getField: (name: string) =>
         name === 'name'
@@ -64,6 +64,11 @@ describe('FieldStateRulesEditor', () => {
       getField: (name: string) => (name === 'roles' ? rolesField : null),
       getFields: () => [rolesField],
     };
+    return { rootCollection };
+  };
+
+  it('injects current item variables into the condition for association sub-fields', () => {
+    const { rootCollection } = createRoleCollections();
     const value: FieldStateRuleItem[] = [
       {
         key: 'rule-1',
@@ -89,28 +94,35 @@ describe('FieldStateRulesEditor', () => {
     expect(getByTestId('mock-condition-builder').getAttribute('data-extra')).toBe('yes');
   });
 
+  it('does not inject current item variables for relation root fields', () => {
+    const { rootCollection } = createRoleCollections();
+    const value: FieldStateRuleItem[] = [
+      {
+        key: 'rule-1',
+        enable: true,
+        targetPath: 'roles',
+        state: 'disabled',
+        condition: { logic: '$and', items: [] },
+      },
+    ];
+
+    const { getByTestId } = render(
+      wrap(
+        <FieldStateRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={value}
+          stateOptions={stateOptions}
+        />,
+      ),
+    );
+
+    expect(getByTestId('mock-condition-builder').getAttribute('data-extra')).toBe('no');
+  });
+
   it('does not inject current item variables for visibility state targets', () => {
-    const roleCollection = {
-      getField: (name: string) =>
-        name === 'name'
-          ? { name: 'name', title: 'Name', type: 'string', interface: 'input', isAssociationField: () => false }
-          : null,
-      getFields: () => [
-        { name: 'name', title: 'Name', type: 'string', interface: 'input', isAssociationField: () => false },
-      ],
-    };
-    const rolesField = {
-      name: 'roles',
-      title: 'Roles',
-      type: 'hasMany',
-      interface: 'o2m',
-      isAssociationField: () => true,
-      targetCollection: roleCollection,
-    };
-    const rootCollection = {
-      getField: (name: string) => (name === 'roles' ? rolesField : null),
-      getFields: () => [rolesField],
-    };
+    const { rootCollection } = createRoleCollections();
     const value: FieldStateRuleItem[] = [
       {
         key: 'rule-1',
@@ -134,6 +146,43 @@ describe('FieldStateRulesEditor', () => {
     );
 
     expect(getByTestId('mock-condition-builder').getAttribute('data-extra')).toBe('no');
+  });
+
+  it('syncs visibility state sub-field targets back to top-level fields', async () => {
+    const { rootCollection } = createRoleCollections();
+    const onChange = vi.fn();
+    const value: FieldStateRuleItem[] = [
+      {
+        key: 'rule-1',
+        enable: true,
+        targetPath: 'roles.name',
+        fieldUid: 'role-name-field',
+        state: 'hidden',
+        condition: { logic: '$and', items: [] },
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldStateRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={value}
+          onChange={onChange}
+          stateOptions={stateOptions}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith([
+        expect.objectContaining({
+          targetPath: 'roles',
+          fieldUid: undefined,
+        }),
+      ]);
+    });
   });
 
   it('treats visibility state cascader options as top-level fields', () => {

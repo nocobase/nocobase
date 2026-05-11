@@ -68,6 +68,17 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
 
     expect(setProps).not.toHaveBeenCalled();
 
+    ctx.engine.getModel = vi.fn((uid: string) => (uid === 'role-name-item' ? roleNameItem : undefined));
+    linkageSetFieldProps.handler(ctx, {
+      value: {
+        fields: ['role-name-item'],
+        state: 'hidden',
+      },
+      setProps,
+    });
+
+    expect(setProps).not.toHaveBeenCalled();
+
     linkageSetFieldProps.handler(ctx, {
       value: [
         {

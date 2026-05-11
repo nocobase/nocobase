@@ -41,11 +41,7 @@ import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
-import {
-  FieldStateRulesEditor,
-  isTopLevelFieldStateTargetPath,
-  isVisibilityFieldState,
-} from '../components/FieldStateRulesEditor';
+import { FieldStateRulesEditor, isFieldStateTargetPathAllowed } from '../components/FieldStateRulesEditor';
 import type { FieldStateOption, FieldStateRuleItem, FieldStateValue } from '../components/FieldStateRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
@@ -504,7 +500,8 @@ function applyFieldStateRules(
     missingTargetWarning?: (item: FieldStateRuleItem) => void;
   },
 ) {
-  const items = normalizeFieldStateRuleItemsFromParams(options.value, createFieldStateTargetPathResolver(ctx));
+  const resolveTargetPath = createFieldStateTargetPathResolver(ctx);
+  const items = normalizeFieldStateRuleItemsFromParams(options.value, resolveTargetPath);
   if (!items.length) return;
 
   const evaluator = (path: any, operator: string, right: any) => {
@@ -521,7 +518,8 @@ function applyFieldStateRules(
       continue;
     }
 
-    if (isVisibilityFieldState(item?.state) && item?.targetPath && !isTopLevelFieldStateTargetPath(item.targetPath)) {
+    const targetPath = item?.targetPath || (item?.fieldUid ? resolveTargetPath(item.fieldUid) : undefined);
+    if (!isFieldStateTargetPathAllowed(item?.state, targetPath)) {
       continue;
     }
 
@@ -530,7 +528,8 @@ function applyFieldStateRules(
       continue;
     }
 
-    const model = resolveFieldStateTargetModel(ctx, item);
+    const targetItem = targetPath && targetPath !== item?.targetPath ? { ...item, targetPath } : item;
+    const model = resolveFieldStateTargetModel(ctx, targetItem);
     if (!model) {
       options.missingTargetWarning?.(item);
       continue;

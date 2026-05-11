@@ -79,13 +79,17 @@ export function isTopLevelFieldStateTargetPath(targetPath?: string): boolean {
   return parseTargetPathToSegments(targetPath).length <= 1;
 }
 
+export function isFieldStateTargetPathAllowed(state?: FieldStateValue, targetPath?: string): boolean {
+  return !isVisibilityFieldState(state) || isTopLevelFieldStateTargetPath(targetPath);
+}
+
 function getTopLevelTargetPath(targetPath?: string): string | undefined {
   const [root] = parseTargetPathToSegments(targetPath);
   return root || undefined;
 }
 
-function normalizeRuleTargetForState(item: FieldStateRuleItem): FieldStateRuleItem {
-  if (!isVisibilityFieldState(item?.state) || isTopLevelFieldStateTargetPath(item?.targetPath)) {
+export function normalizeFieldStateRuleTargetForState(item: FieldStateRuleItem): FieldStateRuleItem {
+  if (isFieldStateTargetPathAllowed(item?.state, item?.targetPath)) {
     return item;
   }
 
@@ -109,6 +113,42 @@ export function getFieldStateCascaderOptionsForState(
   }));
 }
 
+function isExplicitIndexSegment(segment?: string): boolean {
+  return typeof segment === 'string' && /^\d+$/.test(segment);
+}
+
+export function shouldUseFieldStateCurrentItemVariables(
+  rootCollection: any,
+  targetPath?: string,
+  state?: FieldStateValue,
+): boolean {
+  if (!rootCollection?.getField || !targetPath || isVisibilityFieldState(state)) return false;
+
+  const segs = parseTargetPathToSegments(targetPath);
+  if (segs.length < 2) return false;
+
+  let collection = rootCollection;
+  for (let i = 0; i < segs.length - 1; i++) {
+    const seg = segs[i];
+    const field = collection?.getField?.(seg);
+    if (!field?.isAssociationField?.()) break;
+
+    const isToMany = isToManyAssociationField(field);
+    if (isToMany) {
+      const next = segs[i + 1];
+      if (!isExplicitIndexSegment(next)) {
+        return true;
+      }
+      i += 1;
+    }
+
+    collection = field?.targetCollection;
+    if (!collection?.getField) break;
+  }
+
+  return false;
+}
+
 export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (props) => {
   const {
     t,
@@ -121,10 +161,18 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
     showEnable = true,
   } = props;
 
-  const value = React.useMemo(
-    () => (Array.isArray(rawValue) ? rawValue : []).map((item) => normalizeRuleTargetForState(item)),
-    [rawValue],
-  );
+  const normalizedValueState = React.useMemo(() => {
+    const raw = Array.isArray(rawValue) ? rawValue : [];
+    let changed = false;
+    const next = raw.map((item) => {
+      const normalized = normalizeFieldStateRuleTargetForState(item);
+      if (normalized !== item) changed = true;
+      return normalized;
+    });
+    return { value: next, changed };
+  }, [rawValue]);
+  const value = normalizedValueState.value;
+  const syncedNormalizedValueRef = React.useRef<FieldStateRuleItem[] | null>(null);
   const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
     Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
   );
@@ -132,6 +180,13 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
   React.useEffect(() => {
     setCascaderOptions(Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : []);
   }, [fieldOptions]);
+
+  React.useEffect(() => {
+    if (normalizedValueState.changed && syncedNormalizedValueRef.current !== normalizedValueState.value) {
+      syncedNormalizedValueRef.current = normalizedValueState.value;
+      onChange?.(normalizedValueState.value);
+    }
+  }, [normalizedValueState, onChange]);
 
   const getRuleKey = React.useCallback((item: FieldStateRuleItem, index: number) => item?.key || String(index), []);
 
@@ -248,7 +303,7 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
   );
 
   const patchItem = (index: number, patch: Partial<FieldStateRuleItem>) => {
-    const next = value.map((it, i) => (i === index ? normalizeRuleTargetForState({ ...it, ...patch }) : it));
+    const next = value.map((it, i) => (i === index ? normalizeFieldStateRuleTargetForState({ ...it, ...patch }) : it));
     onChange?.(next);
   };
 
@@ -484,7 +539,9 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
 
   const collapseItems: CollapseProps['items'] = value.map((item, index) => {
     const isVisibilityState = isVisibilityFieldState(item.state);
-    const extraMetaTree = isVisibilityState ? undefined : buildItemMetaTree(item.targetPath);
+    const extraMetaTree = shouldUseFieldStateCurrentItemVariables(rootCollection, item.targetPath, item.state)
+      ? buildItemMetaTree(item.targetPath)
+      : undefined;
     const fieldOptionsForState = isVisibilityState ? topLevelCascaderOptions : cascaderOptions;
 
     return {
