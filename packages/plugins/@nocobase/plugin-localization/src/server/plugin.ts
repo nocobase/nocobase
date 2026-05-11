@@ -127,15 +127,13 @@ export class PluginLocalizationServer extends Plugin {
       title: tval('System & Plugins', { ns: pkg.name }),
       sync: async (ctx) => {
         const resources = await ctx.app.localeManager.getBuiltInResources(ctx.get('X-Locale') || 'en-US');
-        const result = {};
+        const result: Record<string, Record<string, string>> = {};
         Object.entries(resources).forEach(([module, resource]) => {
-          if (module.startsWith(OFFICIAL_PLUGIN_PREFIX)) {
-            const name = module.replace(OFFICIAL_PLUGIN_PREFIX, '');
-            if (resources[name]) {
-              return;
-            }
-          }
-          result[module] = resource;
+          const name = module.startsWith(OFFICIAL_PLUGIN_PREFIX) ? module.replace(OFFICIAL_PLUGIN_PREFIX, '') : module;
+          result[name] = {
+            ...(result[name] || {}),
+            ...(resource as Record<string, string>),
+          };
         });
         return result;
       },
@@ -146,9 +144,14 @@ export class PluginLocalizationServer extends Plugin {
       sync: async (ctx) => {
         const db = ctx.db;
         const result = {};
-        const collections = Array.from(db.collections.values());
+        const collections = Array.from(db.collections.values()) as any[];
         for (const collection of collections) {
-          const fields = Array.from(collection.fields.values())
+          const fields = (
+            Array.from(collection.fields.values()) as {
+              name: string;
+              options?: { translation?: boolean };
+            }[]
+          )
             .filter((field) => field.options?.translation)
             .map((field) => field.name);
           if (!fields.length) {
@@ -170,12 +173,12 @@ export class PluginLocalizationServer extends Plugin {
     this.db.on('afterSave', async (instance: Model, options?: any) => {
       const module = `resources.${NAMESPACE_COLLECTIONS}`;
       const model = instance.constructor as typeof Model;
-      const collection = model.collection;
+      const collection = model.collection as any;
       if (!collection) {
         return;
       }
       const texts = [];
-      const fields = Array.from(collection.fields.values())
+      const fields = (Array.from(collection.fields.values()) as { name: string; options?: { translation?: boolean } }[])
         .filter((field) => field.options?.translation && instance['_changed'].has(field.name))
         .map((field) => field.name);
       if (!fields.length) {

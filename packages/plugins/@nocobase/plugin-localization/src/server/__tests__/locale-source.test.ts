@@ -9,18 +9,6 @@
 
 import { Plugin } from '@nocobase/server';
 import { createMockServer, MockServer } from '@nocobase/test';
-import localizationTexts from '../collections/localization-texts';
-import localizationTranslations from '../collections/localization-translations';
-import PluginLocalizationServer from '../plugin';
-
-class TestLocalizationPlugin extends PluginLocalizationServer {
-  constructor(app, options) {
-    super(app, {
-      name: 'localization',
-      ...options,
-    });
-  }
-}
 
 class TestLocaleSourcePlugin extends Plugin {
   async beforeLoad() {
@@ -57,12 +45,9 @@ describe('locale source', () => {
 
   it('adds localization texts when source collection fields are saved', async () => {
     app = await createMockServer({
-      plugins: [TestLocalizationPlugin, TestLocaleSourcePlugin],
+      plugins: ['localization', TestLocaleSourcePlugin],
     });
-    app.db.collection(localizationTexts);
-    app.db.collection(localizationTranslations);
-    await app.db.sync();
-    await app.emitAsync('afterLoad');
+    await app.localeManager.load();
 
     await app.db.getRepository('testLocaleSources').create({
       values: {

@@ -72,6 +72,39 @@ describe('sync', () => {
     expect(texts[1].translations[0].translation).toBe('Test2');
   });
 
+  it('should normalize official plugin package name when syncing local resources', async () => {
+    vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
+      '@nocobase/plugin-ai': {
+        'sync.local.ai1': 'AI1',
+      },
+      ai: {
+        'sync.local.ai2': 'AI2',
+      },
+    });
+    const res = await agent.resource('localization').sync({
+      values: {
+        types: ['local'],
+      },
+    });
+    expect(res.status).toBe(200);
+    const texts = await repo.find({
+      filter: {
+        text: {
+          $in: ['sync.local.ai1', 'sync.local.ai2'],
+        },
+      },
+      sort: ['text'],
+    });
+    expect(texts.map((text) => text.module)).toEqual(['resources.ai', 'resources.ai']);
+
+    const legacyTexts = await repo.find({
+      filter: {
+        module: 'resources.@nocobase/plugin-ai',
+      },
+    });
+    expect(legacyTexts.length).toBe(0);
+  });
+
   it('should reset existing local resource translations', async () => {
     vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
       test: {
