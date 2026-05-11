@@ -3755,6 +3755,170 @@ describe('flowSurfaces templates', () => {
     expect(configurablePopupActionSurface.tree.subModels?.page).toBeUndefined();
   });
 
+  it('should auto-template relation fields inside generated default details popups', async () => {
+    const unique = Date.now();
+    const sourceCollection = `generated_relation_employees_${unique}`;
+    const targetCollection = `generated_relation_departments_${unique}`;
+    const sourceDetailFields = [
+      'nickname',
+      'employeeNo',
+      'role',
+      'phone',
+      'email',
+      'status',
+      'location',
+      'startDate',
+      'grade',
+      'costCenter',
+      'notes',
+    ];
+    const targetDetailFields = [
+      'title',
+      'code',
+      'region',
+      'manager',
+      'location',
+      'phone',
+      'email',
+      'status',
+      'scope',
+      'costCenter',
+      'notes',
+    ];
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        fields: sourceDetailFields.map((name) => ({ name, type: 'string', interface: 'input' })),
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: targetCollection,
+        titleField: 'title',
+        fields: targetDetailFields.map((name) => ({ name, type: 'string', interface: 'input' })),
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'department',
+        type: 'belongsTo',
+        target: targetCollection,
+        foreignKey: 'departmentId',
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [sourceCollection]: [...sourceDetailFields, 'departmentId'],
+      [targetCollection]: targetDetailFields,
+    });
+
+    const page = await createPage(rootAgent, {
+      title: `Generated details relation popup page ${unique}`,
+      tabTitle: 'Generated details relation popup tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: sourceCollection,
+      },
+      defaults: {
+        collections: {
+          [sourceCollection]: {
+            fieldGroups: [
+              {
+                title: 'Employee profile',
+                fields: [...sourceDetailFields, 'department'],
+              },
+            ],
+            popups: {
+              view: {
+                name: 'Employee generated details',
+                description: 'View one employee record from generated details popup.',
+              },
+              associations: {
+                department: {
+                  view: {
+                    name: 'Generated department details',
+                    description: 'View one related department from generated details popup.',
+                  },
+                },
+              },
+            },
+          },
+          [targetCollection]: {
+            fieldGroups: [
+              {
+                title: 'Department profile',
+                fields: targetDetailFields,
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const tableSurface = await getSurface(rootAgent, { uid: table.uid });
+    const actionsColumn = _.castArray(tableSurface.tree.subModels?.columns || []).find(
+      (column: any) => column?.use === 'TableActionsColumnModel',
+    );
+    const viewAction = _.castArray(actionsColumn?.subModels?.actions || []).find(
+      (action: any) => action?.use === 'ViewActionModel',
+    );
+    expect(viewAction?.uid).toBeTruthy();
+
+    const actionSurface = await getSurface(rootAgent, { uid: viewAction.uid });
+    expect(actionSurface.tree.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+    const actionTemplate = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: actionSurface.tree.popup?.template?.uid,
+        },
+      }),
+    );
+    const actionTemplateSurface = await getSurface(rootAgent, { uid: actionTemplate.targetUid });
+    const generatedDetailsItems = _.castArray(
+      actionTemplateSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items?.[0]
+        ?.subModels?.grid?.subModels?.items || [],
+    );
+    const departmentItem = generatedDetailsItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
+    );
+    const departmentField = departmentItem?.subModels?.field;
+
+    expect(departmentField?.props?.clickToOpen).toBe(true);
+    expect(departmentField?.popup?.template).toMatchObject({
+      mode: 'reference',
+    });
+
+    const relationTemplate = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: departmentField.popup.template.uid,
+        },
+      }),
+    );
+    expect(relationTemplate.name).toBe('Generated department details');
+    expect(relationTemplate.description).toBe('View one related department from generated details popup.');
+    expect(relationTemplate.collectionName).toBe(targetCollection);
+    expect(relationTemplate.associationName).toBe(`${sourceCollection}.department`);
+
+    const relationTemplateSurface = await getSurface(rootAgent, { uid: relationTemplate.targetUid });
+    const relationDetailsBlock = _.castArray(
+      relationTemplateSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    const relationDetailsItems = _.castArray(relationDetailsBlock?.subModels?.grid?.subModels?.items || []);
+    expect(relationDetailsBlock?.use).toBe('DetailsBlockModel');
+    expect(
+      relationDetailsItems.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean),
+    ).toEqual(targetDetailFields);
+  });
+
   it('should support popup.tryTemplate through flowSurfaces apply on existing popup-capable child nodes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup tryTemplate apply page',

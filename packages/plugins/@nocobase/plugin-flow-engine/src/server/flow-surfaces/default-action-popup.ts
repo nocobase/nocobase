@@ -45,8 +45,10 @@ export type FlowSurfaceDefaultActionPopupFieldCandidate = {
 export type FlowSurfaceDefaultActionPopupFieldGroupField =
   | string
   | {
-      field: string;
+      field?: string;
+      fieldPath?: string;
       titleField?: string;
+      __autoPopupForRelationField?: boolean;
     };
 
 export type FlowSurfaceDefaultActionPopupFieldGroupCandidate = {
@@ -334,8 +336,9 @@ function normalizeFlowSurfaceDefaultActionPopupFieldGroupField(
   const titleField = String(fieldSpec.titleField || '').trim();
   return _.pickBy(
     {
-      field: fieldPath,
+      ...(fieldSpec.fieldPath ? { fieldPath } : { field: fieldPath }),
       titleField: titleField || undefined,
+      __autoPopupForRelationField: fieldSpec.__autoPopupForRelationField === true ? true : undefined,
     },
     (value) => !_.isUndefined(value),
   ) as FlowSurfaceDefaultActionPopupFieldGroupField;

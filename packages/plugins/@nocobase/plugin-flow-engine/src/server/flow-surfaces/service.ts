@@ -247,6 +247,7 @@ import {
 import type {
   FlowSurfaceDefaultActionPopupFieldCandidate,
   FlowSurfaceDefaultActionPopupFieldGroupCandidate,
+  FlowSurfaceDefaultActionPopupFieldGroupField,
   FlowSurfaceDefaultActionPopupType,
 } from './default-action-popup';
 import {
@@ -7709,7 +7710,7 @@ export class FlowSurfacesService {
     ) {
       const popupDefaultsMetadata = values[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
       inlinePopup = this.normalizeInlinePopup('addField', {
-        tryTemplate: popupDefaultsMetadata ? false : true,
+        tryTemplate: true,
         defaultType: 'view',
         ...(popupDefaultsMetadata
           ? {
@@ -10761,6 +10762,65 @@ export class FlowSurfacesService {
     });
   }
 
+  private decorateDefaultActionPopupAssociationField(field: any, popupProfile: FlowSurfacePopupBlockProfile | null) {
+    const rawFieldPath =
+      (typeof field === 'string' && field.trim()) ||
+      (_.isPlainObject(field) && typeof field.fieldPath === 'string' && field.fieldPath.trim()) ||
+      (_.isPlainObject(field) && typeof field.field === 'string' && field.field.trim()) ||
+      '';
+    if (!rawFieldPath) {
+      return field;
+    }
+    if (_.isPlainObject(field) && field.__autoPopupForRelationField === true) {
+      return field;
+    }
+    const collectionName = String(popupProfile?.collectionName || '').trim();
+    if (!collectionName) {
+      return field;
+    }
+    const dataSourceKey = String(popupProfile?.dataSourceKey || 'main').trim() || 'main';
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    const resolvedField = resolveFieldFromCollection(collection, rawFieldPath);
+    if (!isAssociationField(resolvedField)) {
+      return field;
+    }
+    return this.decorateDefaultActionPopupAssociationFieldObject(field, rawFieldPath);
+  }
+
+  private decorateDefaultActionPopupAssociationFieldObject(
+    field: FlowSurfaceDefaultActionPopupFieldGroupField,
+    fieldPath: string,
+  ): FlowSurfaceDefaultActionPopupFieldGroupField {
+    if (_.isPlainObject(field)) {
+      return {
+        ...field,
+        __autoPopupForRelationField: true,
+      };
+    }
+    return {
+      field: fieldPath,
+      __autoPopupForRelationField: true,
+    };
+  }
+
+  private decorateDefaultActionPopupAssociationFields(
+    fields: { fieldPaths?: string[]; fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] },
+    popupProfile: FlowSurfacePopupBlockProfile | null,
+  ) {
+    if (!fields?.fieldGroups?.length) {
+      return fields;
+    }
+    return {
+      ...fields,
+      fieldGroups: fields.fieldGroups.map((group) => ({
+        ...group,
+        fields: _.castArray(group.fields || []).map((field) =>
+          this.decorateDefaultActionPopupAssociationField(field, popupProfile),
+        ) as FlowSurfaceDefaultActionPopupFieldGroupField[],
+      })),
+    };
+  }
+
   private remapDefaultActionPopupLayout(layout: Record<string, any> | undefined, keyMap: ReadonlyMap<string, string>) {
     if (!layout || !keyMap.size) {
       return layout;
@@ -10802,7 +10862,10 @@ export class FlowSurfacesService {
       enabledPackages,
     });
     return this.remapDefaultActionPopupBlocks(
-      buildFlowSurfaceDefaultActionPopupBlocks(this.resolveDefaultActionPopupSemanticUse(actionNode?.use), fields),
+      buildFlowSurfaceDefaultActionPopupBlocks(
+        this.resolveDefaultActionPopupSemanticUse(actionNode?.use),
+        this.decorateDefaultActionPopupAssociationFields(fields, popupProfile),
+      ),
       keyMap,
       namespace,
     );
