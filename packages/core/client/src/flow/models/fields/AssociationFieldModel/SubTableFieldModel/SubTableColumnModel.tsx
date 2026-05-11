@@ -278,118 +278,120 @@ interface CellProps {
   commitOnChange?: boolean;
 }
 
-const MemoCell = observer(({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange }) => {
-  const isNew = record?.__is_new__;
-  const rowProps = rowFork?.props || parent.props;
-  const cellDisabled = getSubTableCellDisabled({
-    rowProps,
-    parentProps: parent.props,
-    isNew,
-  });
-  return (
-    <div
-      style={{
-        width,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-      }}
-      title={value}
-      className={css`
-        .ant-form-item-explain-error {
-          white-space: break-spaces;
-        }
-        .edit-icon {
-          position: absolute;
-          display: none;
-          color: #1890ff;
-          margin-left: 8px;
-          cursor: pointer;
-          z-index: 100;
-          top: 50%;
-          right: 8px;
-          transform: translateY(-50%);
-        }
-        &:hover {
-          background: rgba(24, 144, 255, 0.1) !important;
-        }
-        &:hover .edit-icon {
-          display: inline-flex;
-        }
-      `}
-    >
-      <SubTableRowRuleBinder model={rowFork} />
-      {parent.mapSubModels('field', (action: FieldModel) => {
-        const fieldPath = action.context.fieldPath.split('.');
-        const namePath = fieldPath.pop();
+const MemoCell = observer<CellProps>(
+  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange }) => {
+    const isNew = record?.__is_new__;
+    const rowProps = rowFork?.props || parent.props;
+    const cellDisabled = getSubTableCellDisabled({
+      rowProps,
+      parentProps: parent.props,
+      isNew,
+    });
+    return (
+      <div
+        style={{
+          width,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+        title={value}
+        className={css`
+          .ant-form-item-explain-error {
+            white-space: break-spaces;
+          }
+          .edit-icon {
+            position: absolute;
+            display: none;
+            color: #1890ff;
+            margin-left: 8px;
+            cursor: pointer;
+            z-index: 100;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+          }
+          &:hover {
+            background: rgba(24, 144, 255, 0.1) !important;
+          }
+          &:hover .edit-icon {
+            display: inline-flex;
+          }
+        `}
+      >
+        <SubTableRowRuleBinder model={rowFork} />
+        {parent.mapSubModels('field', (action: FieldModel) => {
+          const fieldPath = action.context.fieldPath.split('.');
+          const namePath = fieldPath.pop();
 
-        const fork: any = action.createFork({}, `${id}`);
-        fork.context.defineProperty('currentObject', { get: () => record });
-        if (rowFork) {
-          fork.context.defineProperty('item', {
-            get: () => rowFork.context.item,
-            cache: false,
-          });
-          fork.context.defineProperty('fieldIndex', {
-            get: () => rowFork.context.fieldIndex,
-            cache: false,
-          });
-        } else {
-          fork.context.defineProperty('item', {
-            get: () => {
-              const list = (parent as any)?.parent?.props?.value;
-              const length = Array.isArray(list) ? list.length : undefined;
-              return {
-                index: rowIdx,
-                length,
-                __is_new__: isNew,
-                __is_stored__: record?.__is_stored__,
-                value: record,
-              };
-            },
-            cache: false,
-          });
-        }
+          const fork: any = action.createFork({}, `${id}`);
+          fork.context.defineProperty('currentObject', { get: () => record });
+          if (rowFork) {
+            fork.context.defineProperty('item', {
+              get: () => rowFork.context.item,
+              cache: false,
+            });
+            fork.context.defineProperty('fieldIndex', {
+              get: () => rowFork.context.fieldIndex,
+              cache: false,
+            });
+          } else {
+            fork.context.defineProperty('item', {
+              get: () => {
+                const list = (parent as any)?.parent?.props?.value;
+                const length = Array.isArray(list) ? list.length : undefined;
+                return {
+                  index: rowIdx,
+                  length,
+                  __is_new__: isNew,
+                  __is_stored__: record?.__is_stored__,
+                  value: record,
+                };
+              },
+              cache: false,
+            });
+          }
 
-        if (rowProps.readPretty) {
-          fork.setProps({ value });
-          return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
-        }
+          if (rowProps.readPretty) {
+            fork.setProps({ value });
+            return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
+          }
 
-        if (rowProps.aclViewDisabled && !isNew) return null;
+          if (rowProps.aclViewDisabled && !isNew) return null;
 
-        return (
-          <FormItem
-            {...rowProps}
-            key={id}
-            name={buildDynamicNamePath([...fieldPath, rowIdx, namePath], parentFieldIndex)}
-            style={{ marginBottom: 0 }}
-            showLabel={false}
-            disabled={cellDisabled}
-          >
-            {fork.constructor.isLargeField ? (
-              <LargeFieldEdit
-                model={fork}
-                params={{
-                  fieldPath: [(parent as any).context.fieldPath, rowIdx, namePath],
-                  index: id,
-                }}
-                defaultValue={value}
-                disabled={cellDisabled}
-              />
-            ) : (
-              <FieldModelRendererOptimize
-                model={fork}
-                id={[(parent as any).context.fieldPath, rowIdx]}
-                commitOnChange={commitOnChange}
-              />
-            )}
-          </FormItem>
-        );
-      })}
-    </div>
-  );
-});
+          return (
+            <FormItem
+              {...rowProps}
+              key={id}
+              name={buildDynamicNamePath([...fieldPath, rowIdx, namePath], parentFieldIndex)}
+              style={{ marginBottom: 0 }}
+              showLabel={false}
+              disabled={cellDisabled}
+            >
+              {fork.constructor.isLargeField ? (
+                <LargeFieldEdit
+                  model={fork}
+                  params={{
+                    fieldPath: [(parent as any).context.fieldPath, rowIdx, namePath],
+                    index: id,
+                  }}
+                  defaultValue={value}
+                  disabled={cellDisabled}
+                />
+              ) : (
+                <FieldModelRendererOptimize
+                  model={fork}
+                  id={[(parent as any).context.fieldPath, rowIdx]}
+                  commitOnChange={commitOnChange}
+                />
+              )}
+            </FormItem>
+          );
+        })}
+      </div>
+    );
+  },
+);
 
 export interface SubTableColumnModelStructure {
   parent: SubTableFieldModel;
