@@ -36,6 +36,8 @@ import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/Table
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getSubTableRowIdentity } from './rowIdentity';
 
+const nestedSubTableFieldModels = ['SubTableFieldModel', 'PopupSubTableFieldModel'];
+
 const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
   React.useEffect(() => {
     const emitter = model?.flowEngine?.emitter;
@@ -401,6 +403,20 @@ export class SubTableColumnModel<
   T extends SubTableColumnModelStructure = SubTableColumnModelStructure,
 > extends EditableItemModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
+
+  static getBindingsByField(ctx, collectionField) {
+    return super
+      .getBindingsByField(ctx, collectionField)
+      ?.filter((binding) => !nestedSubTableFieldModels.includes(binding.modelName));
+  }
+
+  static getDefaultBindingByField(ctx, collectionField, options = {}) {
+    const binding = super.getDefaultBindingByField(ctx, collectionField, options);
+    if (binding && !nestedSubTableFieldModels.includes(binding.modelName)) {
+      return binding;
+    }
+    return this.getBindingsByField(ctx, collectionField)?.[0] || null;
+  }
 
   renderHiddenInConfig() {
     return <FieldWithoutPermissionPlaceholder targetModel={this} />;
