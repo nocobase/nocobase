@@ -247,7 +247,6 @@ import {
 import type {
   FlowSurfaceDefaultActionPopupFieldCandidate,
   FlowSurfaceDefaultActionPopupFieldGroupCandidate,
-  FlowSurfaceDefaultActionPopupFieldGroupField,
   FlowSurfaceDefaultActionPopupType,
 } from './default-action-popup';
 import {
@@ -10787,10 +10786,7 @@ export class FlowSurfacesService {
     return this.decorateDefaultActionPopupAssociationFieldObject(field, rawFieldPath);
   }
 
-  private decorateDefaultActionPopupAssociationFieldObject(
-    field: FlowSurfaceDefaultActionPopupFieldGroupField,
-    fieldPath: string,
-  ): FlowSurfaceDefaultActionPopupFieldGroupField {
+  private decorateDefaultActionPopupAssociationFieldObject(field: any, fieldPath: string) {
     if (_.isPlainObject(field)) {
       return {
         ...field,
@@ -10803,22 +10799,28 @@ export class FlowSurfacesService {
     };
   }
 
-  private decorateDefaultActionPopupAssociationFields(
-    fields: { fieldPaths?: string[]; fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] },
+  private decorateDefaultActionPopupAssociationBlocks(
+    blocks: any[],
     popupProfile: FlowSurfacePopupBlockProfile | null,
   ) {
-    if (!fields?.fieldGroups?.length) {
-      return fields;
-    }
-    return {
-      ...fields,
-      fieldGroups: fields.fieldGroups.map((group) => ({
-        ...group,
-        fields: _.castArray(group.fields || []).map((field) =>
-          this.decorateDefaultActionPopupAssociationField(field, popupProfile),
-        ) as FlowSurfaceDefaultActionPopupFieldGroupField[],
-      })),
-    };
+    return _.castArray(blocks || []).map((block) => ({
+      ...block,
+      fields: Array.isArray(block?.fields)
+        ? block.fields.map((field) => this.decorateDefaultActionPopupAssociationField(field, popupProfile))
+        : block?.fields,
+      fieldGroups: Array.isArray(block?.fieldGroups)
+        ? block.fieldGroups.map((group: any) =>
+            _.isPlainObject(group)
+              ? {
+                  ...group,
+                  fields: _.castArray(group.fields || []).map((field) =>
+                    this.decorateDefaultActionPopupAssociationField(field, popupProfile),
+                  ),
+                }
+              : group,
+          )
+        : block?.fieldGroups,
+    }));
   }
 
   private remapDefaultActionPopupLayout(layout: Record<string, any> | undefined, keyMap: ReadonlyMap<string, string>) {
@@ -10862,9 +10864,9 @@ export class FlowSurfacesService {
       enabledPackages,
     });
     return this.remapDefaultActionPopupBlocks(
-      buildFlowSurfaceDefaultActionPopupBlocks(
-        this.resolveDefaultActionPopupSemanticUse(actionNode?.use),
-        this.decorateDefaultActionPopupAssociationFields(fields, popupProfile),
+      this.decorateDefaultActionPopupAssociationBlocks(
+        buildFlowSurfaceDefaultActionPopupBlocks(this.resolveDefaultActionPopupSemanticUse(actionNode?.use), fields),
+        popupProfile,
       ),
       keyMap,
       namespace,
