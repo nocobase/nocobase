@@ -8,12 +8,28 @@
  */
 
 import { createMockClient } from '@nocobase/client-v2';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { NocoBaseBuildInPlugin } from '../nocobase-buildin-plugin';
 
 describe('nocobase buildin plugin auth redirect', () => {
   const originalLocation = globalThis.window.location;
+
+  beforeEach(() => {
+    Object.defineProperty(globalThis.window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+  });
 
   afterEach(() => {
     Object.defineProperty(globalThis.window, 'location', {
@@ -92,7 +108,7 @@ describe('nocobase buildin plugin auth redirect', () => {
     });
   });
 
-  it('should redirect authenticated v2 admin root to legacy default page before layout render', async () => {
+  it('should render v2 admin root without redirecting to legacy default page', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -118,6 +134,7 @@ describe('nocobase buildin plugin auth redirect', () => {
       },
     });
     app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
+    app.apiMock.onGet('systemSettings:get').reply(200, { data: {} });
     app.apiMock.onGet('/desktopRoutes:listAccessible').reply(200, {
       data: [
         {
@@ -133,53 +150,57 @@ describe('nocobase buildin plugin auth redirect', () => {
     const { container } = render(<Root />);
 
     await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/admin/legacy-page');
+      expect(container.innerHTML).toContain('No pages yet, please configure first');
     });
+    expect(replace).not.toHaveBeenCalled();
     expect(container.innerHTML).not.toContain('Legacy page');
   });
 
-  it('should redirect authenticated direct legacy v2 page access to v1 path', async () => {
-    const replace = vi.fn();
-    Object.defineProperty(globalThis.window, 'location', {
-      configurable: true,
-      value: {
-        ...originalLocation,
-        pathname: '/v2/admin/legacy-page/tab/tab-1',
-        search: '?from=direct',
-        hash: '#dialog',
-        replace,
-      },
-    });
-
-    const app = createMockClient({
-      publicPath: '/v2/',
-      plugins: [NocoBaseBuildInPlugin as any],
-      router: { type: 'memory', initialEntries: ['/v2/admin/legacy-page/tab/tab-1'] },
-    });
-    app.apiMock.onGet('app:getLang').reply(200, {
-      data: {
-        lang: 'en-US',
-        resources: { client: {} },
-        cron: {},
-      },
-    });
-    app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
-    app.apiMock.onGet('/desktopRoutes:listAccessible').reply(200, {
-      data: [
-        {
-          id: 1,
-          title: 'Legacy page',
-          schemaUid: 'legacy-page',
-          type: 'page',
+  it.each(['/v2/admin/legacy-page/tab/tab-1', '/v2/admin/legacy-page/view/detail'])(
+    'should show 404 for authenticated direct legacy v2 page access: %s',
+    async (pathname) => {
+      const replace = vi.fn();
+      Object.defineProperty(globalThis.window, 'location', {
+        configurable: true,
+        value: {
+          ...originalLocation,
+          pathname,
+          search: '?from=direct',
+          hash: '#dialog',
+          replace,
         },
-      ],
-    });
+      });
 
-    const Root = app.getRootComponent();
-    render(<Root />);
+      const app = createMockClient({
+        publicPath: '/v2/',
+        plugins: [NocoBaseBuildInPlugin as any],
+        router: { type: 'memory', initialEntries: [pathname] },
+      });
+      app.apiMock.onGet('app:getLang').reply(200, {
+        data: {
+          lang: 'en-US',
+          resources: { client: {} },
+          cron: {},
+        },
+      });
+      app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
+      app.apiMock.onGet('systemSettings:get').reply(200, { data: {} });
+      app.apiMock.onGet('/desktopRoutes:listAccessible').reply(200, {
+        data: [
+          {
+            id: 1,
+            title: 'Legacy page',
+            schemaUid: 'legacy-page',
+            type: 'page',
+          },
+        ],
+      });
 
-    await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/admin/legacy-page/tabs/tab-1?from=direct#dialog');
-    });
-  });
+      const Root = app.getRootComponent();
+      render(<Root />);
+
+      expect(await screen.findByText('404')).toBeInTheDocument();
+      expect(replace).not.toHaveBeenCalled();
+    },
+  );
 });

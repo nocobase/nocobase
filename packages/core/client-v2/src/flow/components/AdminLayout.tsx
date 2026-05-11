@@ -14,7 +14,7 @@ import { useApp } from '../../hooks/useApp';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
 import {
-  findFirstAccessiblePageRoute,
+  findFirstV2LandingRoute,
   resolveAdminRouteRuntimeTarget,
   toRouterNavigationPath,
 } from '../admin-shell/admin-layout/resolveAdminRouteRuntimeTarget';
@@ -92,7 +92,7 @@ const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ children }) 
         return;
       }
 
-      const firstAccessibleRoute = findFirstAccessiblePageRoute(routeRepository?.listAccessible?.() || []);
+      const firstAccessibleRoute = findFirstV2LandingRoute(routeRepository?.listAccessible?.() || []);
       if (!firstAccessibleRoute) {
         if (active) {
           setReady(true);
