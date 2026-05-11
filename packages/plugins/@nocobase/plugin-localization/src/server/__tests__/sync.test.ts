@@ -9,7 +9,6 @@
 
 import { Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import PluginLocalizationServer from '../plugin';
 import { NAMESPACE_COLLECTIONS } from '../constants';
 
 describe('sync', () => {
@@ -119,8 +118,7 @@ describe('sync', () => {
   });
 
   it('should get texts from db', async () => {
-    const plugin = app.pm.get('localization') as PluginLocalizationServer;
-    const source = plugin.sourceManager.sources.get('db');
+    const source = app.localeManager.sources.get('db');
     await app.db.getRepository('collections').create({
       values: {
         key: 'test-collection',

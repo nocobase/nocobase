@@ -40,7 +40,7 @@ import {
   LOCALIZATION_RESOURCE,
   LOCALIZATION_TEXTS_RESOURCE,
   LOCALIZATION_TRANSLATIONS_RESOURCE,
-} from '../../shared/constants';
+} from '../common/constants';
 import { useT } from '../locale';
 
 const { Text } = Typography;

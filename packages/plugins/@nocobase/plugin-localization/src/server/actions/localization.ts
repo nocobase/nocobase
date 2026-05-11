@@ -22,7 +22,7 @@ const sync = async (ctx: Context, next: Next) => {
     ctx.throw(400, ctx.t('Please provide synchronization source.'));
   }
 
-  const resources = await plugin.sourceManager.sync(ctx, types);
+  const resources = await ctx.app.localeManager.syncSources(ctx, types);
   let textValues = [];
   Object.entries(resources).forEach(([module, resource]) => {
     Object.keys(resource).forEach((text) => {
@@ -76,8 +76,7 @@ const publish = async (ctx: Context, next: Next) => {
 };
 
 const getSources = async (ctx: Context, next: Next) => {
-  const plugin = ctx.app.pm.get('localization') as PluginLocalizationServer;
-  const sources = Array.from(plugin.sourceManager.sources.getEntities());
+  const sources = Array.from(ctx.app.localeManager.sources.getEntities());
   ctx.body = sources.map(([name, source]) => ({
     name,
     title: source.title,

@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { MissingKeyHandler } from './common/i18n-missing-handler';
+export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';

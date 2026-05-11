@@ -9,7 +9,7 @@
 
 import { Application, Plugin } from '@nocobase/client-v2';
 import { MissingKeyHandler } from './i18n-missing-handler';
-import { LOCALIZATION_ACL_SNIPPET, LOCALIZATION_SETTINGS_KEY } from '../shared/constants';
+import { LOCALIZATION_ACL_SNIPPET, LOCALIZATION_SETTINGS_KEY } from './common/constants';
 
 export class PluginLocalizationClientV2 extends Plugin<any, Application> {
   async load() {

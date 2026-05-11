@@ -11,7 +11,6 @@ import { Context, Next, DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/actions
 import { Cache } from '@nocobase/cache';
 import { Database, Model, Op } from '@nocobase/database';
 import { PluginManager } from '@nocobase/server';
-import PluginLocalizationServer from '../plugin';
 
 const appendTranslations = async (db: Database, rows: Model[], locale: string): Promise<any[]> => {
   const texts = rows || [];
@@ -90,9 +89,8 @@ const list = async (ctx: Context, next: Next) => {
   // append plugin displayName
   const cache = ctx.app.cache as Cache;
   const pm = ctx.app.pm as PluginManager;
-  const plugin = pm.get('localization') as PluginLocalizationServer;
   const plugins = await cache.wrap(`lm-plugins:${locale}`, () => pm.list({ locale }));
-  const sources = Array.from(plugin.sourceManager.sources.getValues());
+  const sources = Array.from(ctx.app.localeManager.sources.getValues());
   const extendModules = sources
     .filter((source) => source.namespace)
     .map((source) => ({

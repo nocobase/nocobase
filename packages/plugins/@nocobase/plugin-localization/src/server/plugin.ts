@@ -8,6 +8,7 @@
  */
 
 import { Model } from '@nocobase/database';
+import type { LocaleSource } from '@nocobase/server';
 import { InstallOptions, OFFICIAL_PLUGIN_PREFIX, Plugin } from '@nocobase/server';
 import localization from './actions/localization';
 import aiTranslate from './actions/aiTranslate';
@@ -15,7 +16,6 @@ import localizationTexts from './actions/localizationTexts';
 import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
 import { NAMESPACE_COLLECTIONS } from './constants';
-import { SourceManager } from './source-manager';
 import { tval } from '@nocobase/utils';
 import { AsyncTasksManager } from '@nocobase/plugin-async-task-manager';
 import { LocalizationAITranslateTask } from './tasks/localization-ai-translate';
@@ -24,8 +24,8 @@ import pkg from '../../package.json';
 
 export class PluginLocalizationServer extends Plugin {
   resources: Resources;
-  sourceManager = new SourceManager();
   private aiTranslateTaskRegistered = false;
+  private localeSourceTextHookKeys = new Set<string>();
 
   addNewTexts = async (texts: { text: string; module: string }[], options?: { transaction?: any; locale?: string }) => {
     texts = await this.resources.filterExists(texts, options?.transaction);
@@ -68,7 +68,7 @@ export class PluginLocalizationServer extends Plugin {
   };
 
   afterAdd() {
-    this.app.on('afterLoad', () => this.sourceManager.handleTextsSaved(this.db, this.addNewTexts));
+    this.app.on('afterLoad', () => this.handleLocaleSourceTextsSaved());
     this.app.on('afterLoad', () => this.registerAITranslateTaskType());
   }
 
@@ -123,7 +123,7 @@ export class PluginLocalizationServer extends Plugin {
     });
     this.resources = new Resources(this.db, cache);
 
-    this.sourceManager.registerSource('local', {
+    this.app.localeManager.registerSource('local', {
       title: tval('System & Plugins', { ns: pkg.name }),
       sync: async (ctx) => {
         const resources = await ctx.app.localeManager.getBuiltInResources(ctx.get('X-Locale') || 'en-US');
@@ -140,7 +140,7 @@ export class PluginLocalizationServer extends Plugin {
         return result;
       },
     });
-    this.sourceManager.registerSource('db', {
+    this.app.localeManager.registerSource('db', {
       title: tval('Collections & Fields', { ns: pkg.name }),
       namespace: NAMESPACE_COLLECTIONS,
       sync: async (ctx) => {
@@ -187,6 +187,43 @@ export class PluginLocalizationServer extends Plugin {
       });
       await this.addNewTexts(texts, options);
     });
+  }
+
+  private handleLocaleSourceTextsSaved() {
+    for (const [sourceName, source] of this.app.localeManager.sources.getEntities() as Iterable<
+      [string, LocaleSource]
+    >) {
+      if (!source.collections) {
+        continue;
+      }
+      for (const [index, collectionOptions] of source.collections.entries()) {
+        const hookKey = `${sourceName}:${index}:${collectionOptions.collection}`;
+        if (this.localeSourceTextHookKeys.has(hookKey)) {
+          continue;
+        }
+        this.localeSourceTextHookKeys.add(hookKey);
+        this.db.on(`${collectionOptions.collection}.afterSave`, async (instance: Model, options) => {
+          let texts = [];
+          if (collectionOptions.getTexts) {
+            texts = await collectionOptions.getTexts(instance, options);
+          } else {
+            const fields = collectionOptions.fields || [];
+            const changedFields = fields.filter((field) => instance['_changed'].has(field));
+            if (!changedFields.length) {
+              return;
+            }
+            texts = changedFields
+              .map((field) => instance.get(field))
+              .filter(Boolean)
+              .map((text) => ({ text, module: `resources.${source.namespace}` }));
+          }
+          if (!texts?.length) {
+            return;
+          }
+          await this.addNewTexts(texts, options);
+        });
+      }
+    }
   }
 
   async handleSyncMessage(message: any): Promise<void> {
