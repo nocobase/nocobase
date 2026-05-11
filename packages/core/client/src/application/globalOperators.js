@@ -67,6 +67,9 @@ export function getOperators() {
     $ne: function (a, b) {
       return a != b;
     },
+    $neq: function (a, b) {
+      return a != b;
+    },
     '!==': function (a, b) {
       return a !== b;
     },
