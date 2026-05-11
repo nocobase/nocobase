@@ -196,6 +196,18 @@ Si necesita almacenar archivos sensibles, se recomienda utilizar un servicio de 
 
 ![](https://static-docs.nocobase.com/202501031623549.png)
 
+Para el almacenamiento local u otro almacenamiento público accesible directamente mediante URLs del mismo origen que la aplicación, también debe prestar especial atención a los riesgos introducidos por archivos con contenido activo. Archivos como `html`, `xhtml` y `svg` pueden ser interpretados y ejecutados directamente por el navegador. Si un atacante puede subir uno de estos archivos y engañar a un usuario para que lo abra, podría usar el dominio de confianza de su aplicación para alojar una página o script malicioso.
+
+Normalmente recomendamos a los administradores:
+
+- Priorizar almacenamiento privado, URLs firmadas o un dominio independiente para archivos, de modo que los archivos subidos por los usuarios no se sirvan directamente desde el mismo origen que la aplicación principal.
+- Aplicar una lista blanca estricta de tipos MIME para las cargas y permitir solo los tipos de archivo realmente necesarios para el negocio.
+- Tener especial cuidado al permitir tipos de contenido activo como `text/html`, `application/xhtml+xml` e `image/svg+xml`. Aunque el sistema intente devolver estos archivos como descarga, esto no debe considerarse un sustituto completo de las restricciones de carga y del aislamiento de origen.
+- Aplicar configuraciones de seguridad coherentes en proxies inversos, CDN, almacenamiento de objetos y cualquier otra capa de distribución de archivos estáticos, para evitar que archivos peligrosos se devuelvan en línea omitiendo la protección de la aplicación.
+- No utilizar almacenamiento local/público para alojar contenido web no confiable. Si realmente necesita hacerlo, use un dominio aislado y evalúe por separado CSP, la estrategia de descarga y el control de acceso.
+
+Si un administrador permite explícitamente la carga de tipos de archivo peligrosos, debe evaluar por su cuenta los riesgos resultantes de phishing, ejecución de scripts del mismo origen y filtración de información sensible, y asegurarse de que el servidor web, la puerta de enlace, la CDN y los servicios de almacenamiento apliquen restricciones coherentes en toda la cadena de despliegue.
+
 ### Copia de Seguridad de la Aplicación
 
 Para garantizar la seguridad de los datos de la aplicación y evitar su pérdida, le recomendamos que realice copias de seguridad de la base de datos regularmente.

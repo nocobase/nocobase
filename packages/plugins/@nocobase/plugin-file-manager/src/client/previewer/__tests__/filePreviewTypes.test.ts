@@ -8,7 +8,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getDownloadFileName } from '../filePreviewTypes';
+import { getDownloadFileName, getPreviewThumbnailUrl, isActiveContentFile } from '../filePreviewTypes';
 
 describe('getDownloadFileName', () => {
   afterEach(() => {
@@ -44,5 +44,17 @@ describe('getDownloadFileName', () => {
         url: 'https://example.com/files/contract.pdf?download=1',
       }),
     ).toBe('1700000000000_contract.pdf');
+  });
+
+  it('应识别主动内容文件类型', () => {
+    expect(isActiveContentFile({ mimetype: 'image/svg+xml', url: 'https://example.com/files/logo.svg' })).toBe(true);
+    expect(isActiveContentFile({ filename: 'index.html', url: 'https://example.com/files/index.html' })).toBe(true);
+    expect(isActiveContentFile({ mimetype: 'image/png', url: 'https://example.com/files/avatar.png' })).toBe(false);
+  });
+
+  it('主动内容文件应使用占位图而不是原始缩略图地址', () => {
+    expect(getPreviewThumbnailUrl({ mimetype: 'image/svg+xml', url: 'https://example.com/files/logo.svg' })).toBe(
+      '/file-placeholder/svg-200-200.png',
+    );
   });
 });
