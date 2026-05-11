@@ -16,7 +16,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { cloneDeep } from 'lodash';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
-import { storageFormRegistry, type StorageFormDefinition } from '../storage-forms';
+import { PluginFileManagerClientV2, type StorageType } from '../plugin';
 
 type StorageRecord = {
   id: number | string;
@@ -59,17 +59,13 @@ function createStorageName() {
   return `s_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-function getInitialValues(options: {
-  mode: 'create' | 'edit';
-  storageDef: StorageFormDefinition;
-  record?: StorageRecord;
-}) {
+function getInitialValues(options: { mode: 'create' | 'edit'; storageType: StorageType; record?: StorageRecord }) {
   if (options.mode === 'edit') {
     return cloneDeep(options.record || {});
   }
   return {
-    ...cloneDeep(options.storageDef.defaultValues || {}),
-    type: options.storageDef.name,
+    ...cloneDeep(options.storageType.defaultValues || {}),
+    type: options.storageType.name,
     name: createStorageName(),
   };
 }
@@ -81,7 +77,7 @@ function useStorageResource() {
 
 function StorageFormView(props: {
   mode: 'create' | 'edit';
-  storageDef: StorageFormDefinition;
+  storageType: StorageType;
   record?: StorageRecord;
   onSubmitted: () => void;
 }) {
@@ -92,8 +88,8 @@ function StorageFormView(props: {
   const [submitting, setSubmitting] = useState(false);
   const storageFormClassName = useStorageFormClassName();
   const initialValues = useMemo(
-    () => getInitialValues({ mode: props.mode, storageDef: props.storageDef, record: props.record }),
-    [props.mode, props.record, props.storageDef],
+    () => getInitialValues({ mode: props.mode, storageType: props.storageType, record: props.record }),
+    [props.mode, props.record, props.storageType],
   );
 
   useEffect(() => {
@@ -116,8 +112,8 @@ function StorageFormView(props: {
     }
   }, [form, props, resource, view]);
 
-  const StorageFormBody = useMemo(() => lazy(props.storageDef.formLoader), [props.storageDef]);
-  const title = `${props.mode === 'create' ? t('Add new') : t('Edit')} - ${t(props.storageDef.title)}`;
+  const StorageFormBody = useMemo(() => lazy(props.storageType.formLoader), [props.storageType]);
+  const title = `${props.mode === 'create' ? t('Add new') : t('Edit')} - ${t(props.storageType.title)}`;
 
   return (
     <div>
@@ -183,6 +179,8 @@ export default function FileStoragePage() {
   const ctx = useFlowContext();
   const { modal, message } = App.useApp();
   const resource = useStorageResource();
+  const fileManagerPlugin = ctx.app.pm.get(PluginFileManagerClientV2);
+  const storageTypes = useMemo(() => [...fileManagerPlugin.storageTypes.values()], [fileManagerPlugin]);
   const [page, setPage] = useState(1);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const { data, loading, refresh } = useRequest(
@@ -201,11 +199,11 @@ export default function FileStoragePage() {
   );
 
   const openForm = useCallback(
-    (mode: 'create' | 'edit', storageDef: StorageFormDefinition, record?: StorageRecord) => {
+    (mode: 'create' | 'edit', storageType: StorageType, record?: StorageRecord) => {
       ctx.viewer.drawer({
         width: '50%',
         content: () => (
-          <StorageFormView mode={mode} storageDef={storageDef} record={record} onSubmitted={() => refresh()} />
+          <StorageFormView mode={mode} storageType={storageType} record={record} onSubmitted={() => refresh()} />
         ),
       });
     },
@@ -248,8 +246,8 @@ export default function FileStoragePage() {
           <Space>
             <a
               onClick={() => {
-                const storageDef = storageFormRegistry.get(record.type || '');
-                if (!storageDef) {
+                const storageType = fileManagerPlugin.getStorageType(record.type);
+                if (!storageType) {
                   message.error(
                     t('Storage type {{type}} is not registered, please check if related plugin is enabled.').replace(
                       '{{type}}',
@@ -258,7 +256,7 @@ export default function FileStoragePage() {
                   );
                   return;
                 }
-                openForm('edit', storageDef, record);
+                openForm('edit', storageType, record);
               }}
             >
               {t('Edit')}
@@ -268,7 +266,7 @@ export default function FileStoragePage() {
         ),
       },
     ],
-    [handleDelete, message, openForm, t],
+    [fileManagerPlugin, handleDelete, message, openForm, t],
   );
 
   return (
@@ -283,14 +281,14 @@ export default function FileStoragePage() {
         </Button>
         <Dropdown
           menu={{
-            items: storageFormRegistry.list().map((storageDef) => ({
-              key: storageDef.name,
-              label: t(storageDef.title),
+            items: storageTypes.map((storageType) => ({
+              key: storageType.name,
+              label: t(storageType.title),
             })),
             onClick(info) {
-              const storageDef = storageFormRegistry.get(info.key);
-              if (storageDef) {
-                openForm('create', storageDef);
+              const storageType = fileManagerPlugin.getStorageType(info.key);
+              if (storageType) {
+                openForm('create', storageType);
               }
             },
           }}

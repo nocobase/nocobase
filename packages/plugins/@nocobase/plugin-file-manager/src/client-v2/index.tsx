@@ -9,13 +9,15 @@
 
 export { default } from './plugin';
 export { default as PluginFileManagerClientV2 } from './plugin';
-export type { StorageTypeRuntime } from './plugin';
-
-// Storage form extension surface: third-party / commercial plugins (e.g.
-// S3 Pro) call `storageFormRegistry.register(...)` to contribute additional
-// storage types into the file-manager settings page.
-export { storageFormRegistry } from './storage-forms';
-export type { StorageFormDefinition } from './storage-forms';
+// Storage type definition consumed by `fileManagerPlugin.registerStorageType()`.
+// Third-party / commercial plugins (e.g. S3 Pro) call:
+//   fileManagerPlugin.registerStorageType('s3-compatible', {
+//     title: 'S3 Pro',
+//     formLoader: () => import('./S3CompatibleStorageForm'),
+//     defaultValues: { ... },
+//     upload, createUploadCustomRequest,  // optional runtime overrides
+//   });
+export type { StorageType } from './plugin';
 
 // Reusable form items for plugins that ship their own storage form. Sharing
 // these from the file-manager surface keeps label / extra / validation rules
