@@ -179,6 +179,32 @@ describe('flowSurfaces association title field helpers', () => {
     });
   });
 
+  it('should reject id as a relation field uiSchema title field', () => {
+    const funds = createCollection('funds', [
+      createField('id', { interface: 'snowflakeId', primaryKey: true }),
+      createField('name', { interface: 'input', titleable: true }),
+    ]);
+    const collections = new Map([['funds', funds]]);
+    const fundField = createField('fund', {
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'funds',
+      uiSchema: {
+        'x-component-props': {
+          fieldNames: {
+            label: 'id',
+          },
+        },
+      },
+    });
+
+    expect(() =>
+      resolveAssociationSafeTitleField(fundField, 'main', (_dataSourceKey, collectionName) =>
+        collections.get(collectionName),
+      ),
+    ).toThrow("flowSurfaces titleField cannot use 'id'");
+  });
+
   it('should keep collection explicit titleField fallback when relation field label is absent', () => {
     const roles = createCollection(
       'roles',
@@ -252,7 +278,7 @@ describe('flowSurfaces association title field helpers', () => {
     );
   });
 
-  it('should allow relation fieldType to use synthetic id titleField compatibility', () => {
+  it('should reject relation fieldType id titleField compatibility', () => {
     const roles = createCollection('roles', [createField('name', { interface: 'input', titleable: true })]);
     const users = createCollection('users', [
       createField('roles', {
@@ -267,7 +293,7 @@ describe('flowSurfaces association title field helpers', () => {
     ]);
     const rolesField = users.getField('roles');
 
-    expect(
+    expect(() =>
       resolveRelationFieldType({
         fieldType: 'picker',
         containerUse: 'FormItemModel',
@@ -278,12 +304,29 @@ describe('flowSurfaces association title field helpers', () => {
         titleField: 'id',
         context: 'fields[0]',
       }),
-    ).toMatchObject({
-      fieldType: 'picker',
-      titleField: 'id',
-      fields: ['name'],
-      selectorFields: ['name'],
-    });
+    ).toThrow("flowSurfaces titleField cannot use 'id'");
+  });
+
+  it('should reject explicit collection titleField id', () => {
+    const collection = createCollection(
+      'id_targets',
+      [createField('id', { interface: 'snowflakeId', primaryKey: true }), createField('name', { interface: 'input' })],
+      {
+        titleField: 'id',
+      },
+    );
+
+    expect(() => assertCollectionTitleFieldExists(collection, 'id')).toThrow("flowSurfaces titleField cannot use 'id'");
+    expect(() => resolveCollectionSafeTitleField(collection)).toThrow("flowSurfaces titleField cannot use 'id'");
+  });
+
+  it('should not use id as an automatic titleable fallback', () => {
+    const collection = createCollection('id_only_targets', [
+      createField('id', { interface: 'snowflakeId', primaryKey: true }),
+      createField('meta', { interface: 'json' }),
+    ]);
+
+    expect(resolveCollectionSafeTitleField(collection)).toBeNull();
   });
 
   it('should treat interface-level titleUsable metadata as a valid first titleable fallback', () => {

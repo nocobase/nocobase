@@ -49,19 +49,19 @@ function defaultFilterFor(fieldPaths: string[]) {
 }
 
 function employeeDefaultFilter() {
-  return defaultFilterFor(['nickname', 'status']);
+  return defaultFilterFor(['nickname', 'status', 'email', 'phone']);
 }
 
 function nameCodeDefaultFilter() {
-  return defaultFilterFor(['name', 'code']);
+  return defaultFilterFor(['name', 'code', 'label', 'scope']);
 }
 
 function nameLabelCodeDefaultFilter() {
-  return defaultFilterFor(['name', 'label', 'code']);
+  return defaultFilterFor(['name', 'label', 'code', 'scope']);
 }
 
 function departmentDefaultFilter() {
-  return defaultFilterFor(['title']);
+  return defaultFilterFor(['title', 'code', 'status', 'scope']);
 }
 
 describe('flowSurfaces templates', () => {
@@ -77,11 +77,12 @@ describe('flowSurfaces templates', () => {
           { name: 'name', type: 'string', interface: 'input' },
           { name: 'code', type: 'string', interface: 'input' },
           { name: 'label', type: 'string', interface: 'input' },
+          { name: 'scope', type: 'string', interface: 'input' },
         ],
       },
     });
     await waitForFixtureCollectionsReady(app.db, {
-      [name]: ['name', 'code', 'label'],
+      [name]: ['name', 'code', 'label', 'scope'],
     });
   }
 
@@ -2623,7 +2624,6 @@ describe('flowSurfaces templates', () => {
                 dataSourceKey: 'main',
                 collectionName,
               },
-              skipDefaultRecordActions: true,
               fields: [
                 {
                   key: 'producerField',
@@ -2636,7 +2636,6 @@ describe('flowSurfaces templates', () => {
                         resource: {
                           binding: 'currentRecord',
                         },
-                        skipDefaultRecordActions: true,
                         fields: ['field1'],
                       },
                     ],
@@ -2656,9 +2655,8 @@ describe('flowSurfaces templates', () => {
                 dataSourceKey: 'main',
                 collectionName,
               },
-              defaultFilter: defaultFilterFor(['field1', 'field2', 'field3']),
+              defaultFilter: defaultFilterFor(['field1', 'field2', 'field3', 'field4']),
               fields: ['field1'],
-              actions: [],
               recordActions: [
                 {
                   key: 'consumerView',
@@ -2671,8 +2669,6 @@ describe('flowSurfaces templates', () => {
                   },
                 },
               ],
-              skipDefaultActions: true,
-              skipDefaultRecordActions: true,
             },
           ],
         },

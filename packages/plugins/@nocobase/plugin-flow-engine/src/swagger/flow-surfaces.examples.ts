@@ -23,6 +23,11 @@ const makePublicBlockDefaultFilter = (
       operator: '$eq',
       value: '',
     },
+    {
+      path: 'phone',
+      operator: '$includes',
+      value: '',
+    },
   ],
 ) => ({
   logic: '$and',
@@ -120,8 +125,18 @@ export const flowSurfaceExamples = {
                 value: '',
               },
               {
+                path: 'email',
+                operator: '$includes',
+                value: '',
+              },
+              {
                 path: 'status',
                 operator: '$eq',
+                value: '',
+              },
+              {
+                path: 'phone',
+                operator: '$includes',
                 value: '',
               },
             ]),
@@ -133,9 +148,24 @@ export const flowSurfaceExamples = {
                 settings: {
                   defaultFilter: makePublicBlockDefaultFilter([
                     {
+                      path: 'nickname',
+                      operator: '$includes',
+                      value: '',
+                    },
+                    {
+                      path: 'email',
+                      operator: '$includes',
+                      value: '',
+                    },
+                    {
                       path: 'status',
                       operator: '$eq',
                       value: 'active',
+                    },
+                    {
+                      path: 'phone',
+                      operator: '$includes',
+                      value: '',
                     },
                   ]),
                 },
@@ -308,6 +338,16 @@ export const flowSurfaceExamples = {
                 path: 'status',
                 operator: '$eq',
                 value: 'planned',
+              },
+              {
+                path: 'category',
+                operator: '$eq',
+                value: '',
+              },
+              {
+                path: 'scope',
+                operator: '$includes',
+                value: '',
               },
             ]),
             settings: {
@@ -553,9 +593,24 @@ export const flowSurfaceExamples = {
             settings: {
               defaultFilter: makePublicBlockDefaultFilter([
                 {
+                  path: 'username',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
+                  path: 'email',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
                   path: 'status',
                   operator: '$eq',
                   value: 'active',
+                },
+                {
+                  path: 'phone',
+                  operator: '$includes',
+                  value: '',
                 },
               ]),
             },
@@ -657,6 +712,21 @@ export const flowSurfaceExamples = {
             operator: '$includes',
             value: '',
           },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
+            operator: '$includes',
+            value: '',
+          },
         ]),
         fields: [
           'nickname',
@@ -709,6 +779,21 @@ export const flowSurfaceExamples = {
         defaultFilter: makePublicBlockDefaultFilter([
           {
             path: 'nickname',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
             operator: '$includes',
             value: '',
           },
@@ -1103,6 +1188,21 @@ export const flowSurfaceExamples = {
         operator: '$includes',
         value: 'staff',
       },
+      {
+        path: 'email',
+        operator: '$includes',
+        value: '',
+      },
+      {
+        path: 'status',
+        operator: '$eq',
+        value: '',
+      },
+      {
+        path: 'phone',
+        operator: '$includes',
+        value: '',
+      },
     ]),
     resourceInit: {
       dataSourceKey: 'main',
@@ -1110,7 +1210,7 @@ export const flowSurfaceExamples = {
     },
     defaultActionSettings: {
       filter: {
-        filterableFieldNames: ['username', 'email', 'status'],
+        filterableFieldNames: ['username', 'email', 'status', 'phone'],
         defaultFilter: {
           logic: '$and',
           items: [
@@ -1127,6 +1227,11 @@ export const flowSurfaceExamples = {
             {
               path: 'status',
               operator: '$eq',
+              value: '',
+            },
+            {
+              path: 'phone',
+              operator: '$includes',
               value: '',
             },
           ],
@@ -1452,6 +1557,21 @@ export const flowSurfaceExamples = {
             operator: '$includes',
             value: 'staff',
           },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
+            operator: '$includes',
+            value: '',
+          },
         ]),
         resourceInit: {
           dataSourceKey: 'main',
@@ -1463,7 +1583,7 @@ export const flowSurfaceExamples = {
         },
         defaultActionSettings: {
           filter: {
-            filterableFieldNames: ['username', 'email', 'status'],
+            filterableFieldNames: ['username', 'email', 'status', 'phone'],
             defaultFilter: {
               logic: '$and',
               items: [
@@ -1480,6 +1600,11 @@ export const flowSurfaceExamples = {
                 {
                   path: 'status',
                   operator: '$eq',
+                  value: '',
+                },
+                {
+                  path: 'phone',
+                  operator: '$includes',
                   value: '',
                 },
               ],

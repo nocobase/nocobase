@@ -37,7 +37,9 @@ import {
 } from './chart-config';
 import {
   buildFlowSurfaceDefaultFilterFromCollection,
+  FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT,
   isFlowSurfacePublicDataSurfaceBlockType,
+  resolveFlowSurfaceDefaultFilterFieldNames,
 } from './public-data-surface-default-filter';
 import {
   hasFlowSurfaceInlinePopupBlocks,
@@ -1539,8 +1541,6 @@ function collectDefaultBlockActionGeneratedPopupRequirements(
       return;
     }
     const slot = descriptor.scope === 'recordActions' ? 'recordActions' : 'actions';
-    const slotSkipped =
-      slot === 'recordActions' ? block?.skipDefaultRecordActions === true : block?.skipDefaultActions === true;
     const actions = Array.isArray(block?.[slot]) ? block[slot] : [];
     const matchedIndex = actions.findIndex(
       (action: any) => resolveAuthoringActionType(action, block) === descriptor.type,
@@ -1557,9 +1557,6 @@ function collectDefaultBlockActionGeneratedPopupRequirements(
         requirements,
         actionType,
       );
-      return;
-    }
-    if (slotSkipped) {
       return;
     }
     addGeneratedPopupRequirementForBlock(
@@ -1968,6 +1965,8 @@ function collectBlockErrors(
     });
   }
 
+  collectRemovedDefaultActionOptOutErrors(block, path, errors);
+
   if (hasFields && hasFieldGroups) {
     pushAuthoringError(errors, {
       path,
@@ -1991,6 +1990,7 @@ function collectBlockErrors(
   collectFieldsLayoutErrors(block, path, errors);
   collectTemplateBackedPublicDataSurfaceDefaultOverrideErrors(block, blockType, path, errors);
   collectDefaultFilterErrors(block.defaultFilter, `${path}.defaultFilter`, errors, block, context);
+  collectEffectiveDefaultFilterFieldCountErrors(block, path, errors, context);
   collectDefaultActionSettingsFilterErrors(
     block.defaultActionSettings,
     `${path}.defaultActionSettings`,
@@ -2010,6 +2010,24 @@ function collectBlockErrors(
   collectHiddenPopupSettingsErrors(block.settings, `${path}.settings`, blockType, errors, context);
   collectReactionErrors(block.reaction, `${path}.reaction`, localKeys, errors);
   collectFieldListErrors(block.fields, `${path}.fields`, errors, localKeys, context, block);
+}
+
+function collectRemovedDefaultActionOptOutErrors(block: any, path: string, errors: AuthoringErrorInput[]) {
+  const removedKeys = ['skipDefaultActions', 'skipDefaultRecordActions'].filter((key) =>
+    Object.prototype.hasOwnProperty.call(block, key),
+  );
+  if (!removedKeys.length) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'default-actions-opt-out-unsupported',
+    message:
+      'flowSurfaces authoring no longer supports skipDefaultActions or skipDefaultRecordActions; default actions always merge with explicit actions',
+    details: {
+      keys: removedKeys,
+    },
+  });
 }
 
 function collectUnsupportedMainBlockSectionErrors(
@@ -2499,7 +2517,50 @@ function collectDefaultFilterErrors(
       message: `flowSurfaces authoring ${path} must include at least one concrete filter item`,
     });
   }
+  collectDefaultFilterFieldCountErrors(value, path, errors);
   visitFilterItems(value, path, errors, block, context);
+}
+
+function collectDefaultFilterFieldCountErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+  const fieldNames = resolveFlowSurfaceDefaultFilterFieldNames(value);
+  if (fieldNames.length >= FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'defaultFilter-minimum-fields',
+    message: `flowSurfaces authoring ${path} must include at least ${FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT} filterable fields`,
+    details: {
+      fieldCount: fieldNames.length,
+      requiredFieldCount: FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT,
+      fieldNames,
+    },
+  });
+}
+
+function collectEffectiveDefaultFilterFieldCountErrors(
+  block: any,
+  blockPath: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!doesBlockConsumeDefaultFilterAction(block)) {
+    return;
+  }
+  if (hasOwnDefined(block, 'defaultFilter') || hasOwnDefined(block?.defaultActionSettings?.filter, 'defaultFilter')) {
+    return;
+  }
+  const effectiveDefaultFilter = getEffectiveFilterSettingsDefaultFilter(
+    block,
+    undefined,
+    `${blockPath}.defaultActionSettings.filter`,
+    blockPath,
+    context,
+  );
+  if (!effectiveDefaultFilter) {
+    return;
+  }
+  collectDefaultFilterFieldCountErrors(effectiveDefaultFilter.value, effectiveDefaultFilter.path, errors);
 }
 
 function collectDefaultFilterGroupShapeErrors(value: any, path: string, errors: AuthoringErrorInput[]) {

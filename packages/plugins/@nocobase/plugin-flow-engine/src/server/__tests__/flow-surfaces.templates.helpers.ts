@@ -188,6 +188,8 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'nickname', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'input' },
+        { name: 'email', type: 'string', interface: 'email' },
+        { name: 'phone', type: 'string', interface: 'phone' },
       ],
     },
   });
@@ -197,7 +199,12 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       title: 'Departments',
       titleField: 'title',
       filterTargetKey: 'title',
-      fields: [{ name: 'title', type: 'string', interface: 'input' }],
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'select' },
+        { name: 'scope', type: 'string', interface: 'input' },
+      ],
     },
   });
   await rootAgent.resource('collections.fields', 'employees').create({
@@ -220,7 +227,7 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
   });
 
   await waitForFixtureCollectionsReady(db, {
-    departments: ['title'],
-    employees: ['nickname', 'status', 'departmentId', 'secondaryDepartmentId'],
+    departments: ['title', 'code', 'status', 'scope'],
+    employees: ['nickname', 'status', 'email', 'phone', 'departmentId', 'secondaryDepartmentId'],
   });
 }

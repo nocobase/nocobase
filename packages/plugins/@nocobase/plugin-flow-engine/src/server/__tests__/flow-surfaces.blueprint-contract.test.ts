@@ -392,6 +392,40 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   },
                 ],
               },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const managerColumns = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.use === 'TableColumnModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'manager',
+    );
+    const managerColumn = managerColumns.find((item) => item?.props?.titleField === 'nickname');
+
+    expect(managerColumn?.props?.titleField).toBe('nickname');
+    expect(managerColumn?.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('nickname');
+    expect(managerColumn?.subModels?.field?.props?.titleField).toBe('nickname');
+
+    const invalidTitle = `Invalid relation id title field blueprint ${Date.now()}`;
+    const invalidRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: invalidTitle,
+          },
+        },
+        page: {
+          title: invalidTitle,
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
               {
                 key: 'employeesIdTitleTable',
                 type: 'table',
@@ -408,22 +442,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
         ],
       },
     });
-
-    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
-    const data = getData(executeRes);
-    const managerColumns = collectDescendantNodes(
-      data.surface.tree,
-      (item) => item?.use === 'TableColumnModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'manager',
-    );
-    const managerColumn = managerColumns.find((item) => item?.props?.titleField === 'nickname');
-    const managerIdTitleColumn = managerColumns.find((item) => item?.props?.titleField === 'id');
-
-    expect(managerColumn?.props?.titleField).toBe('nickname');
-    expect(managerColumn?.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('nickname');
-    expect(managerColumn?.subModels?.field?.props?.titleField).toBe('nickname');
-    expect(managerIdTitleColumn?.props?.titleField).toBe('id');
-    expect(managerIdTitleColumn?.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('id');
-    expect(managerIdTitleColumn?.subModels?.field?.props?.titleField).toBe('id');
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain("cannot use unreadable relation title field 'id'");
   });
 
   it('should create one page from a simplified page blueprint and return only target/surface', async () => {

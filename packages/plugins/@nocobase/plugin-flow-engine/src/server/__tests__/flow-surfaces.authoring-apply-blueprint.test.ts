@@ -113,7 +113,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       [DEFAULT_FILTER_CAP_COLLECTION]: DEFAULT_FILTER_CAP_FIELDS,
       [LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION]: ['title', 'targetId'],
       [LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION]: LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS,
-      categories: ['sort'],
+      categories: ['title', 'code', 'status', 'scope', 'sort'],
     });
   }, 120000);
 
@@ -508,14 +508,21 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(filterAction).toBeTruthy();
     const generatedFilter = filterAction?.props?.defaultFilterValue;
     expect(generatedFilter?.logic).toBe('$and');
-    expect(generatedFilter?.items).toHaveLength(2);
-    expect(generatedFilter.items.map((item: any) => item.path)).toEqual(['nickname', 'status']);
-    expect(generatedFilter.items.map((item: any) => item.operator)).toEqual(['$includes', '$includes']);
+    expect(generatedFilter?.items).toHaveLength(4);
+    expect(generatedFilter.items.map((item: any) => item.path)).toEqual(['nickname', 'email', 'status', 'phone']);
+    expect(generatedFilter.items.map((item: any) => item.operator)).toEqual([
+      '$includes',
+      '$includes',
+      '$includes',
+      '$includes',
+    ]);
     expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(generatedFilter);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status']);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
     expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
       'nickname',
+      'email',
       'status',
+      'phone',
     ]);
   });
 
@@ -563,7 +570,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
   });
 
-  it('should accept explicit narrow defaultFilter without requiring common business field coverage', async () => {
+  it('should reject explicit narrow defaultFilter before applyBlueprint writes', async () => {
     const explicitFilter = {
       logic: '$and',
       items: [{ path: 'nickname', operator: '$notEmpty' }],
@@ -596,13 +603,74 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
 
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    expect(response.body.errors.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['defaultFilter-minimum-fields']),
+    );
+    expect(response.body.errors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining(['$.tabs[0].blocks[0].defaultFilter']),
+    );
+    for (const error of response.body.errors) {
+      expectStructuredError(error, {
+        status: 400,
+        type: 'bad_request',
+      });
+    }
+  });
+
+  it('should truncate explicit defaultFilter and filterable fields to four candidates', async () => {
+    const explicitFilter = {
+      logic: '$and',
+      items: [
+        { path: 'capField1', operator: '$notEmpty' },
+        { path: 'capField2', operator: '$notEmpty' },
+        { path: 'capField3', operator: '$notEmpty' },
+        { path: 'capField4', operator: '$notEmpty' },
+        { path: 'capField5', operator: '$notEmpty' },
+        { path: 'capField6', operator: '$notEmpty' },
+      ],
+    };
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring truncate explicit default filter blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring truncate explicit default filter blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+                fields: ['capField1'],
+                defaultFilter: explicitFilter,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
     expect(response.status, readErrorMessage(response)).toBe(200);
     const data = getData(response);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
     const filterAction = readTableActionNodes(persistedTable).find((item: any) => item?.use === 'FilterActionModel');
-    expect(filterAction?.props?.defaultFilterValue).toEqual(explicitFilter);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname']);
+    expect(filterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
+      'capField1',
+      'capField2',
+      'capField3',
+      'capField4',
+    ]);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
   });
 
   it('should add default table record actions when raw applyBlueprint omits recordActions', async () => {
@@ -708,11 +776,10 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'ViewActionModel',
       'EditActionModel',
       'DeleteActionModel',
-      'UpdateRecordActionModel',
     ]);
   });
 
-  it('should skip default table actions only through explicit opt-out fields', async () => {
+  it('should reject removed default action opt-out fields before applyBlueprint writes', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -745,12 +812,14 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
 
-    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
-    const data = getData(executeRes);
-    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
-    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
-    expect(readTableActionUses(persistedTable)).toEqual([]);
-    expect(readTableRecordActionUses(persistedTable)).toEqual([]);
+    expect(executeRes.status).toBe(400);
+    expect(executeRes.body?.errors).toEqual(expect.any(Array));
+    expect(executeRes.body.errors.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['default-actions-opt-out-unsupported']),
+    );
+    expect(executeRes.body.errors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining(['$.tabs[0].blocks[0]']),
+    );
   });
 
   it('should keep template-backed table blocks from receiving default record actions', async () => {
@@ -775,8 +844,6 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
                 fields: ['nickname'],
-                recordActions: [],
-                skipDefaultRecordActions: true,
               },
             ],
           },
@@ -835,7 +902,12 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const data = getData(executeRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
-    expect(readTableRecordActionUses(persistedTable)).toEqual([]);
+    expect(readTableRecordActionUses(persistedTable)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+      'UpdateRecordActionModel',
+    ]);
   });
 
   it('should accept legacy popup display modes and map page to embed openView', async () => {
@@ -1184,7 +1256,12 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 collection: 'categories',
                 defaultFilter: {
                   logic: '$and',
-                  items: [{ path: 'title', operator: '$notEmpty' }],
+                  items: [
+                    { path: 'title', operator: '$notEmpty' },
+                    { path: 'code', operator: '$notEmpty' },
+                    { path: 'status', operator: '$notEmpty' },
+                    { path: 'scope', operator: '$notEmpty' },
+                  ],
                 },
                 fields: ['title'],
                 settings: {
@@ -1577,6 +1654,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                     { path: LARGE_DEFAULTS_ACTION_FIELDS[0], operator: '$notEmpty' },
                     { path: LARGE_DEFAULTS_ACTION_FIELDS[1], operator: '$notEmpty' },
                     { path: LARGE_DEFAULTS_ACTION_FIELDS[2], operator: '$notEmpty' },
+                    { path: LARGE_DEFAULTS_ACTION_FIELDS[3], operator: '$notEmpty' },
                   ],
                 },
                 fields: [LARGE_DEFAULTS_ACTION_FIELDS[0]],
@@ -2038,6 +2116,8 @@ function employeeDefaultFilter() {
     items: [
       { path: 'nickname', operator: '$notEmpty' },
       { path: 'status', operator: '$notEmpty' },
+      { path: 'email', operator: '$notEmpty' },
+      { path: 'phone', operator: '$notEmpty' },
     ],
   };
 }
@@ -2048,6 +2128,8 @@ function calendarDefaultFilter() {
     items: [
       { path: 'title', operator: '$notEmpty' },
       { path: 'status', operator: '$notEmpty' },
+      { path: 'category', operator: '$notEmpty' },
+      { path: 'scope', operator: '$notEmpty' },
     ],
   };
 }

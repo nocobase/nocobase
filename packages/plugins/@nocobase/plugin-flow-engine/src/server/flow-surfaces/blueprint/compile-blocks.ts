@@ -23,6 +23,7 @@ import {
   assertFlowSurfaceConcreteDefaultFilterItem,
   backfillFlowSurfaceFilterActionDefaultFilter,
   buildFlowSurfaceDefaultFilterFromCollection,
+  clampFlowSurfaceDefaultFilterToCandidateLimit,
   isFlowSurfacePublicDataSurfaceBlockType,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from '../public-data-surface-default-filter';
@@ -127,8 +128,6 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'defaultFilter',
   'actions',
   'recordActions',
-  'skipDefaultActions',
-  'skipDefaultRecordActions',
   'script',
   'chart',
   'pageSize',
@@ -1906,8 +1905,11 @@ function compileBlocks(
     const blockDefaultFilter = !_.isUndefined(explicitBlockDefaultFilter)
       ? explicitBlockDefaultFilter
       : buildApplyBlueprintDefaultFilter(block, blockType, template, getCollection);
-    if (!_.isUndefined(blockDefaultFilter)) {
-      assertFlowSurfaceConcreteDefaultFilterItem('applyBlueprint', blockDefaultFilter, {
+    const effectiveBlockDefaultFilter = !_.isUndefined(blockDefaultFilter)
+      ? clampFlowSurfaceDefaultFilterToCandidateLimit(blockDefaultFilter)
+      : undefined;
+    if (!_.isUndefined(effectiveBlockDefaultFilter)) {
+      assertFlowSurfaceConcreteDefaultFilterItem('applyBlueprint', effectiveBlockDefaultFilter, {
         path: blockContext,
       });
     }
@@ -2000,8 +2002,6 @@ function compileBlocks(
       template,
       actions: explicitActions,
       recordActions: explicitRecordActions,
-      skipDefaultActions: block.skipDefaultActions === true,
-      skipDefaultRecordActions: block.skipDefaultRecordActions === true,
       createAction: (descriptor) =>
         compileInjectedDefaultAction(
           descriptor,
@@ -2025,19 +2025,17 @@ function compileBlocks(
         : mergedActions.recordActions;
     const actionsWithDefaultFilter = backfillFlowSurfaceFilterActionDefaultFilter(
       mergedActions.actions,
-      blockDefaultFilter,
+      effectiveBlockDefaultFilter,
     );
     return buildDefinedPayload({
       key,
       type: isTemplateBackedBlock ? undefined : blockType,
       resource: isTemplateBackedBlock ? undefined : buildBlockResource(block, blockContext),
       template,
-      defaultFilter: !isTemplateBackedBlock ? blockDefaultFilter : undefined,
+      defaultFilter: !isTemplateBackedBlock ? effectiveBlockDefaultFilter : undefined,
       settings: Object.keys(settings).length
         ? compileTreeConnectSettingsTargets(settings, blockKeysByLocalKey, blockContext)
         : undefined,
-      skipDefaultActions: block.skipDefaultActions === true ? true : undefined,
-      skipDefaultRecordActions: block.skipDefaultRecordActions === true ? true : undefined,
       fields: isTemplateBackedBlock || blockType === 'calendar' || blockType === 'tree' ? undefined : fields,
       fieldsLayout:
         isTemplateBackedBlock || blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree'

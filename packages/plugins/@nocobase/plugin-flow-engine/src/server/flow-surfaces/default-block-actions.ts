@@ -220,17 +220,11 @@ export function mergeFlowSurfaceDefaultBlockActions<T extends { type?: string; p
   template?: unknown;
   actions?: T[];
   recordActions?: T[];
-  skipDefaultActions?: boolean;
-  skipDefaultRecordActions?: boolean;
   createAction: (descriptor: FlowSurfaceDefaultBlockActionDescriptor) => T;
 }) {
   const descriptors = resolveDefaultBlockActions(input.blockType, input.template);
-  const actionDescriptors = input.skipDefaultActions
-    ? []
-    : descriptors.filter((descriptor) => descriptor.scope === 'actions');
-  const recordActionDescriptors = input.skipDefaultRecordActions
-    ? []
-    : descriptors.filter((descriptor) => descriptor.scope === 'recordActions');
+  const actionDescriptors = descriptors.filter((descriptor) => descriptor.scope === 'actions');
+  const recordActionDescriptors = descriptors.filter((descriptor) => descriptor.scope === 'recordActions');
 
   return {
     actions: mergeDefaultActionList(input.actions, actionDescriptors, input.createAction),

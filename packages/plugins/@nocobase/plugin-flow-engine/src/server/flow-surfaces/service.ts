@@ -78,6 +78,7 @@ import {
   backfillFlowSurfaceDefaultFilterSetting,
   backfillFlowSurfaceFilterActionDefaultFilter,
   buildFlowSurfaceDefaultFilterFromCollection,
+  clampFlowSurfaceDefaultFilterToCandidateLimit,
   isFlowSurfacePublicDataSurfaceBlockType,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from './public-data-surface-default-filter';
@@ -226,6 +227,8 @@ import type {
 } from './reaction/types';
 import {
   assertCollectionTitleFieldExists,
+  assertFlowSurfaceTitleFieldIsNotId,
+  normalizeFlowSurfaceTitleField,
   resolveAssociationSafeTitleField,
   resolveAssociationTitleFieldTargetCollection,
 } from './association-title-field';
@@ -886,6 +889,39 @@ function normalizeCalendarFieldCapabilityValues(source: any, defaults: readonly 
           : [];
   const values = rawValues.map((item) => String(item || '').trim()).filter(Boolean);
   return values.length ? Array.from(new Set(values)) : [...defaults];
+}
+
+function isFlowSurfaceIdTitleField(value: any) {
+  return normalizeFlowSurfaceTitleField(value) === 'id';
+}
+
+function assertNoFlowSurfaceIdTitleFieldSettings(value: any) {
+  if (!_.isPlainObject(value) && !Array.isArray(value)) {
+    return;
+  }
+  const visit = (node: any, path: string[]) => {
+    if (Array.isArray(node)) {
+      node.forEach((item, index) => visit(item, [...path, String(index)]));
+      return;
+    }
+    if (!_.isPlainObject(node)) {
+      return;
+    }
+    Object.entries(node).forEach(([key, child]) => {
+      if (key === 'titleField' && isFlowSurfaceIdTitleField(child)) {
+        assertFlowSurfaceTitleFieldIsNotId(child);
+      }
+      if (
+        (key === 'label' || key === 'title') &&
+        (path[path.length - 1] === 'fieldNames' || path[path.length - 1] === 'titleField') &&
+        isFlowSurfaceIdTitleField(child)
+      ) {
+        assertFlowSurfaceTitleFieldIsNotId(child);
+      }
+      visit(child, [...path, key]);
+    });
+  };
+  visit(value, []);
 }
 
 export class FlowSurfacesService {
@@ -5628,8 +5664,10 @@ export class FlowSurfacesService {
           blockUid: result.uid,
           transaction: options.transaction,
         });
-        if (!_.isUndefined(generatedDefaultFilter)) {
-          generatedDefaultFilterByComposeBlockUid.set(result.uid, generatedDefaultFilter);
+        const effectiveGeneratedDefaultFilter =
+          this.normalizeEffectivePublicDataSurfaceDefaultFilter(generatedDefaultFilter);
+        if (!_.isUndefined(effectiveGeneratedDefaultFilter)) {
+          generatedDefaultFilterByComposeBlockUid.set(result.uid, effectiveGeneratedDefaultFilter);
         }
         return result;
       },
@@ -6842,6 +6880,14 @@ export class FlowSurfacesService {
         normalizedSettings.defaultFilter,
         `flowSurfaces ${actionName} defaultActionSettings.filter.defaultFilter expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
       );
+      normalizedSettings.defaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(
+        normalizedSettings.defaultFilter,
+      );
+      if (!hasOwnDefined(normalizedSettings, 'filterableFieldNames')) {
+        normalizedSettings.filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(
+          normalizedSettings.defaultFilter,
+        );
+      }
     }
     return normalizedSettings;
   }
@@ -6864,6 +6910,13 @@ export class FlowSurfacesService {
       ...(defaultActionSettings || {}),
       filter: nextFilterSettings,
     };
+  }
+
+  private normalizeEffectivePublicDataSurfaceDefaultFilter(defaultFilter: any) {
+    if (_.isUndefined(defaultFilter)) {
+      return undefined;
+    }
+    return clampFlowSurfaceDefaultFilterToCandidateLimit(defaultFilter);
   }
 
   private buildDefaultFilterFromResourceInput(input: {
@@ -6969,6 +7022,7 @@ export class FlowSurfacesService {
                   }
                 : semanticResource,
         });
+    effectiveBlockDefaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(effectiveBlockDefaultFilter);
     const normalizedDefaultActionSettings = this.normalizeDefaultActionSettings(
       'addBlock',
       values.defaultActionSettings,
@@ -7088,6 +7142,7 @@ export class FlowSurfacesService {
           value: effectiveResourceInit,
         },
       });
+      effectiveBlockDefaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(effectiveBlockDefaultFilter);
       defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
         normalizedDefaultActionSettings,
         effectiveBlockDefaultFilter,
@@ -7329,8 +7384,6 @@ export class FlowSurfacesService {
           blockType: String(catalogItem.key || values.type || '').trim(),
           defaultActionSettings,
           popupDefaultsMetadata,
-          skipDefaultActions: values.skipDefaultActions === true,
-          skipDefaultRecordActions: values.skipDefaultRecordActions === true,
         },
         {
           ...options,
@@ -11228,6 +11281,7 @@ export class FlowSurfacesService {
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const normalizedValues = _.cloneDeep(values || {});
+    assertNoFlowSurfaceIdTitleFieldSettings(normalizedValues);
     this.normalizeCanonicalBlockHeaderWriteForUpdateSettings(current, normalizedValues);
     const contract = getNodeContract(current.use);
     const nextPayload: Record<string, any> = { uid: current.uid };
@@ -11307,6 +11361,7 @@ export class FlowSurfacesService {
     const shouldValidateFlowRegistry =
       !_.isUndefined(nextPayload.flowRegistry) || !_.isUndefined(nextPayload.stepParams);
 
+    assertNoFlowSurfaceIdTitleFieldSettings(_.pick(effectiveNode, ['props', 'stepParams']));
     this.validateCalendarBlockState('updateSettings', effectiveNode);
     this.validateKanbanBlockState('updateSettings', effectiveNode);
 
@@ -11762,7 +11817,20 @@ export class FlowSurfacesService {
           "flowSurfaces updateSettings filter action values 'props.defaultFilterValue/filterValue' and 'stepParams.filterSettings.defaultFilter.defaultFilter' must match",
         );
       }
-      const filterValue = hasStepDefaultFilter ? nextStepFilter : nextPropFilter;
+      const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(
+        hasStepDefaultFilter ? nextStepFilter : nextPropFilter,
+      );
+      if (!hasPropsFilterableFieldNames && !hasStepFilterableFieldNames) {
+        const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(filterValue);
+        if (filterableFieldNames.length) {
+          nextProps.filterableFieldNames = filterableFieldNames;
+          _.set(
+            nextStepParams,
+            ['filterSettings', 'filterableFieldNames', 'filterableFieldNames'],
+            _.cloneDeep(filterableFieldNames),
+          );
+        }
+      }
       nextProps.defaultFilterValue = _.cloneDeep(filterValue);
       nextProps.filterValue = _.cloneDeep(filterValue);
       _.set(nextStepParams, ['filterSettings', 'defaultFilter', 'defaultFilter'], _.cloneDeep(filterValue));
@@ -13991,8 +14059,6 @@ export class FlowSurfacesService {
       blockType?: string;
       defaultActionSettings?: FlowSurfaceDefaultActionSettings;
       popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
-      skipDefaultActions?: boolean;
-      skipDefaultRecordActions?: boolean;
     },
     options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
   ) {
@@ -14000,12 +14066,6 @@ export class FlowSurfacesService {
       blockType: input.blockType,
     });
     for (const descriptor of descriptors) {
-      if (descriptor.scope === 'actions' && input.skipDefaultActions === true) {
-        continue;
-      }
-      if (descriptor.scope === 'recordActions' && input.skipDefaultRecordActions === true) {
-        continue;
-      }
       let settings = input.defaultActionSettings?.[descriptor.type];
       if (descriptor.type === 'filter' && !_.isUndefined(settings)) {
         settings = this.normalizeDefaultFilterActionSettings('addBlock', settings);
@@ -14111,13 +14171,15 @@ export class FlowSurfacesService {
       path: `block #${index + 1}`,
     });
     const resource = this.normalizeResourceInput(input.resource);
-    const effectiveBlockDefaultFilter = !_.isUndefined(blockDefaultFilter)
-      ? blockDefaultFilter
-      : this.buildDefaultFilterFromResourceInput({
-          blockType: type,
-          template,
-          resource,
-        });
+    const effectiveBlockDefaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(
+      !_.isUndefined(blockDefaultFilter)
+        ? blockDefaultFilter
+        : this.buildDefaultFilterFromResourceInput({
+            blockType: type,
+            template,
+            resource,
+          }),
+    );
     const actions = _.castArray(input.actions || [])
       .map((action, actionIndex) => normalizeComposeActionSpec(action, actionIndex))
       .map((action) => this.attachComposeActionPopupDefaults(action, popupDefaultsMetadata));
@@ -14230,8 +14292,6 @@ export class FlowSurfacesService {
       template,
       actions,
       recordActions,
-      skipDefaultActions: input.skipDefaultActions === true,
-      skipDefaultRecordActions: input.skipDefaultRecordActions === true,
       createAction: (descriptor) =>
         this.buildInjectedComposeDefaultActionSpec(
           descriptor,

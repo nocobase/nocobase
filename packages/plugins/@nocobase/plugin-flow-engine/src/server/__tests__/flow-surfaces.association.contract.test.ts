@@ -1295,6 +1295,25 @@ describe('flowSurfaces association contract', () => {
     expect(opaqueRes.status).toBe(400);
     expect(readErrorMessage(opaqueRes)).toContain("target collection 'opaque_targets' has no usable titleField");
 
+    const updateSettingsIdEditItemTitleFieldLabelRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: managerField.wrapperUid,
+        },
+        stepParams: {
+          editItemSettings: {
+            titleField: {
+              label: 'id',
+            },
+          },
+        },
+      },
+    });
+    expect(updateSettingsIdEditItemTitleFieldLabelRes.status).toBe(400);
+    expect(readErrorMessage(updateSettingsIdEditItemTitleFieldLabelRes)).toContain(
+      "flowSurfaces titleField cannot use 'id'",
+    );
+
     const invalidTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {
@@ -1357,6 +1376,49 @@ describe('flowSurfaces association contract', () => {
       fieldPath: 'manager',
     });
 
+    const configureIdTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: managerField.wrapperUid,
+        },
+        changes: {
+          titleField: 'id',
+        },
+      },
+    });
+    expect(configureIdTitleFieldRes.status).toBe(400);
+    expect(readErrorMessage(configureIdTitleFieldRes)).toContain("flowSurfaces titleField cannot use 'id'");
+
+    const updateSettingsIdTitleFieldRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: managerField.wrapperUid,
+        },
+        props: {
+          titleField: 'id',
+        },
+      },
+    });
+    expect(updateSettingsIdTitleFieldRes.status).toBe(400);
+    expect(readErrorMessage(updateSettingsIdTitleFieldRes)).toContain("flowSurfaces titleField cannot use 'id'");
+
+    const updateSettingsIdFieldNamesLabelRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: managerField.wrapperUid,
+        },
+        stepParams: {
+          tableColumnSettings: {
+            fieldNames: {
+              label: 'id',
+            },
+          },
+        },
+      },
+    });
+    expect(updateSettingsIdFieldNamesLabelRes.status).toBe(400);
+    expect(readErrorMessage(updateSettingsIdFieldNamesLabelRes)).toContain("flowSurfaces titleField cannot use 'id'");
+
     const idTitleFieldTable = await addBlockData(rootAgent, {
       target: {
         uid: page.tabSchemaUid,
@@ -1376,13 +1438,8 @@ describe('flowSurfaces association contract', () => {
         titleField: 'id',
       },
     });
-    expect(idTitleFieldRes.status, readErrorMessage(idTitleFieldRes)).toBe(200);
-    const idTitleManagerField = getData(idTitleFieldRes);
-    const idTitleWrapperReadback = await getSurface(rootAgent, { uid: idTitleManagerField.wrapperUid });
-    const idTitleInnerReadback = await getSurface(rootAgent, { uid: idTitleManagerField.fieldUid });
-    expect(idTitleWrapperReadback.tree.props?.titleField).toBe('id');
-    expect(idTitleInnerReadback.tree.props?.titleField).toBe('id');
-    expect(idTitleWrapperReadback.tree.stepParams?.tableColumnSettings?.fieldNames?.label).toBe('id');
+    expect(idTitleFieldRes.status).toBe(400);
+    expect(readErrorMessage(idTitleFieldRes)).toContain("flowSurfaces titleField cannot use 'id'");
 
     const invalidTitleFieldRes = await rootAgent.resource('flowSurfaces').addField({
       values: {

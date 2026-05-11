@@ -28,7 +28,8 @@ export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES = new Set([
 ]);
 export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPE_LABEL = 'table/list/gridCard/calendar/kanban';
 export const FLOW_SURFACE_DEFAULT_FILTER_MAX_CANDIDATE_FIELDS = 4;
-export const FLOW_SURFACE_DEFAULT_FILTER_MINIMUM_COVERAGE_FIELDS = 3;
+export const FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT = 4;
+export const FLOW_SURFACE_DEFAULT_FILTER_MINIMUM_COVERAGE_FIELDS = FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT;
 
 const FLOW_SURFACE_DEFAULT_FILTER_CANDIDATE_INTERFACES = new Set([
   'input',
@@ -157,6 +158,10 @@ export function buildFlowSurfaceDefaultFilterFromCollection(
   };
 }
 
+export function clampFlowSurfaceDefaultFilterToCandidateLimit(defaultFilter: any) {
+  return clampFlowSurfaceDefaultFilterGroup(defaultFilter, FLOW_SURFACE_DEFAULT_FILTER_MAX_CANDIDATE_FIELDS).value;
+}
+
 export function resolveFlowSurfaceDefaultFilterFieldNames(defaultFilter: any): string[] {
   const fieldNames: string[] = [];
   const seen = new Set<string>();
@@ -169,7 +174,7 @@ export function resolveFlowSurfaceDefaultFilterFieldNames(defaultFilter: any): s
       return;
     }
     const path = typeof value.path === 'string' ? value.path.trim() : '';
-    if (path && !path.includes('.') && !seen.has(path)) {
+    if (path && !seen.has(path)) {
       seen.add(path);
       fieldNames.push(path);
     }
@@ -179,6 +184,56 @@ export function resolveFlowSurfaceDefaultFilterFieldNames(defaultFilter: any): s
   };
   visit(defaultFilter);
   return fieldNames;
+}
+
+function clampFlowSurfaceDefaultFilterGroup(value: any, remaining: number): { value: any; remaining: number } {
+  if (remaining <= 0) {
+    return {
+      value: _.isPlainObject(value)
+        ? {
+            ..._.cloneDeep(value),
+            items: [],
+          }
+        : value,
+      remaining: 0,
+    };
+  }
+  if (!_.isPlainObject(value) || !Array.isArray(value.items)) {
+    return {
+      value: _.cloneDeep(value),
+      remaining,
+    };
+  }
+
+  const nextItems: any[] = [];
+  let nextRemaining = remaining;
+  for (const item of value.items) {
+    if (nextRemaining <= 0) {
+      break;
+    }
+    if (_.isPlainObject(item) && Array.isArray(item.items)) {
+      const nested = clampFlowSurfaceDefaultFilterGroup(item, nextRemaining);
+      if (_.isPlainObject(nested.value) && Array.isArray(nested.value.items) && nested.value.items.length) {
+        nextItems.push(nested.value);
+      }
+      nextRemaining = nested.remaining;
+      continue;
+    }
+    if (_.isPlainObject(item) && typeof item.path === 'string' && typeof item.operator === 'string') {
+      nextItems.push(_.cloneDeep(item));
+      nextRemaining -= 1;
+      continue;
+    }
+    nextItems.push(_.cloneDeep(item));
+  }
+
+  return {
+    value: {
+      ..._.cloneDeep(value),
+      items: nextItems,
+    },
+    remaining: nextRemaining,
+  };
 }
 
 export function normalizeFlowSurfacePublicBlockDefaultFilter(

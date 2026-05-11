@@ -488,12 +488,8 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('calendar');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('kanban');
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
-      'never more than 4',
-    );
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
-      'Explicit values must contain at least one concrete caller-chosen filter item',
-    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('exactly 4');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('at least 4');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintFieldSpec',
     );
@@ -503,14 +499,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintRecordActionSpec',
     );
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultActions.type).toBe('boolean');
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultActions.description).toContain(
-      'Partial actions[] no longer suppress missing defaults',
-    );
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultRecordActions.type).toBe('boolean');
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultRecordActions.description).toContain(
-      'Partial recordActions[] no longer suppress missing defaults',
-    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultActions).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultRecordActions).toBeUndefined();
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.enum).toEqual([
       'table',
       'calendar',
@@ -646,13 +636,13 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.title).toBe('Overview');
     expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.blocks?.[0]?.key).toBe('employeeForm');
     const applyBlueprintTableBlock = applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.blocks?.[1];
-    expect(applyBlueprintTableBlock?.defaultFilter?.items).toHaveLength(2);
+    expect(applyBlueprintTableBlock?.defaultFilter?.items).toHaveLength(4);
     expect(applyBlueprintTableBlock?.actions?.[0]?.key).toBe('filterAction');
     expect(applyBlueprintTableBlock?.actions?.[0]?.settings?.defaultFilter?.items?.[0]?.value).toBe('active');
     const applyBlueprintCalendarBlock = applyBlueprintRequest.examples?.calendarPage?.value?.tabs?.[0]?.blocks?.[0];
     expect(applyBlueprintCalendarBlock?.type).toBe('calendar');
     expect(applyBlueprintCalendarBlock?.collection).toBe('calendar_events');
-    expect(applyBlueprintCalendarBlock?.defaultFilter?.items).toHaveLength(2);
+    expect(applyBlueprintCalendarBlock?.defaultFilter?.items).toHaveLength(4);
     expect(applyBlueprintCalendarBlock?.actions).toEqual(
       expect.arrayContaining(['filter', 'addNew', 'refresh', 'today', 'turnPages', 'title', 'selectView']),
     );
@@ -914,7 +904,7 @@ describe('flowSurfaces swagger', () => {
         }),
       ]),
     );
-    expect(filterTableBlock.defaultFilter.items).toHaveLength(3);
+    expect(filterTableBlock.defaultFilter.items).toHaveLength(4);
     expect(filterTableBlock.actions.map((item: any) => (typeof item === 'string' ? item : item.type))).toEqual([
       'filter',
       'addNew',
@@ -934,7 +924,7 @@ describe('flowSurfaces swagger', () => {
     expect(composeRequest.examples.staticBlocks.value.blocks[0].type).toBe('markdown');
     expect(composeRequest.examples.staticBlocks.value.blocks[1].type).toBe('iframe');
     expect(composeRequest.examples.listRich.value.blocks[0].type).toBe('list');
-    expect(composeRequest.examples.listRich.value.blocks[0].defaultFilter.items).toHaveLength(1);
+    expect(composeRequest.examples.listRich.value.blocks[0].defaultFilter.items).toHaveLength(4);
     expect(composeRequest.examples.listRich.value.blocks[0].recordActions).toBeTruthy();
     expect(
       composeRequest.examples.listRich.value.blocks[0].recordActions.map((item: any) =>
@@ -942,7 +932,7 @@ describe('flowSurfaces swagger', () => {
       ),
     ).toEqual(expect.arrayContaining(['view', 'edit', 'popup', 'delete']));
     expect(composeRequest.examples.gridCardRich.value.blocks[0].type).toBe('gridCard');
-    expect(composeRequest.examples.gridCardRich.value.blocks[0].defaultFilter.items).toHaveLength(1);
+    expect(composeRequest.examples.gridCardRich.value.blocks[0].defaultFilter.items).toHaveLength(4);
     expect(composeRequest.examples.gridCardRich.value.blocks[0].recordActions).toBeTruthy();
     expect(
       composeRequest.examples.gridCardRich.value.blocks[0].recordActions.map((item: any) =>
@@ -961,7 +951,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
       'When omitted, backend authoring generates a default filter',
     );
-    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain('never more than 4');
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain('exactly 4');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
       'action-level value wins',
     );
@@ -1276,15 +1266,15 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
-    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.description).toContain('never more than 4');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.description).toContain('exactly 4');
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaults.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaults',
     );
-    expect(schemas.FlowSurfaceAddBlockRequest.properties.skipDefaultActions.type).toBe('boolean');
-    expect(schemas.FlowSurfaceAddBlockRequest.properties.skipDefaultRecordActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.skipDefaultActions).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.skipDefaultRecordActions).toBeUndefined();
     expect(schemas.FlowSurfaceDefaultActionSettings.properties.filter.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultFilterActionSettings',
     );
@@ -1424,7 +1414,7 @@ describe('flowSurfaces swagger', () => {
     expect(addBlocksRequest.example.blocks[1].type).toBe('createForm');
     expect(addBlocksRequest.example.blocks[0].settings.pageSize).toBe(50);
     expect(addBlocksRequest.example.blocks[0].defaultFilter.items[0].value).toBe('staff');
-    expect(addBlocksRequest.example.blocks[0].defaultActionSettings.filter.defaultFilter.items).toHaveLength(3);
+    expect(addBlocksRequest.example.blocks[0].defaultActionSettings.filter.defaultFilter.items).toHaveLength(4);
     expect(addBlocksRequest.example.blocks[1].fields[0].fieldType).toBe('popupSubTable');
     expect(addBlocksRequest.example.blocks[1].fieldsLayout.rows).toEqual([['rolesField']]);
     expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
@@ -1435,12 +1425,12 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
-    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.description).toContain('never more than 4');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.description).toContain('exactly 4');
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );
-    expect(schemas.FlowSurfaceAddBlockItem.properties.skipDefaultActions.type).toBe('boolean');
-    expect(schemas.FlowSurfaceAddBlockItem.properties.skipDefaultRecordActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.skipDefaultActions).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.skipDefaultRecordActions).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
     );
@@ -1453,8 +1443,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.anyOf).toEqual(
       expect.arrayContaining([{ required: ['type'] }, { required: ['template'] }]),
     );
-    expect(schemas.FlowSurfaceComposeBlockSpec.properties.skipDefaultActions.type).toBe('boolean');
-    expect(schemas.FlowSurfaceComposeBlockSpec.properties.skipDefaultRecordActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.skipDefaultActions).toBeUndefined();
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.skipDefaultRecordActions).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.props).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.stepParams).toBeUndefined();

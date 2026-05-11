@@ -87,7 +87,7 @@ export function getExplicitCollectionTitleFieldName(collection: any) {
   return typeof explicit === 'string' ? explicit.trim() || undefined : undefined;
 }
 
-function normalizeTitleFieldName(value: any) {
+export function normalizeFlowSurfaceTitleField(value: any) {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -95,10 +95,16 @@ function normalizeTitleFieldName(value: any) {
   return normalized || undefined;
 }
 
+export function assertFlowSurfaceTitleFieldIsNotId(value: any) {
+  if (normalizeFlowSurfaceTitleField(value) === 'id') {
+    throwBadRequest("flowSurfaces titleField cannot use 'id'");
+  }
+}
+
 function getAssociationConfiguredLabelFieldName(field: any) {
   return (
-    normalizeTitleFieldName(field?.uiSchema?.['x-component-props']?.fieldNames?.label) ||
-    normalizeTitleFieldName(field?.options?.uiSchema?.['x-component-props']?.fieldNames?.label)
+    normalizeFlowSurfaceTitleField(field?.uiSchema?.['x-component-props']?.fieldNames?.label) ||
+    normalizeFlowSurfaceTitleField(field?.options?.uiSchema?.['x-component-props']?.fieldNames?.label)
   );
 }
 
@@ -111,22 +117,18 @@ function isLastResortTitleField(field: any) {
   return !!(fieldInterface && LAST_RESORT_TITLE_FIELD_INTERFACES.has(fieldInterface));
 }
 
+function isIdTitleFieldName(value: any) {
+  return normalizeFlowSurfaceTitleField(value) === 'id';
+}
+
 export function assertCollectionTitleFieldExists(collection: any, fieldName: string) {
   const normalizedFieldName = typeof fieldName === 'string' ? fieldName.trim() : String(fieldName || '').trim();
   if (!normalizedFieldName) {
     throwBadRequest('flowSurfaces association titleField must be a non-empty string');
   }
+  assertFlowSurfaceTitleFieldIsNotId(normalizedFieldName);
   const field = resolveFieldFromCollection(collection, normalizedFieldName);
   if (!field) {
-    if (normalizedFieldName === 'id') {
-      return {
-        name: 'id',
-        field: 'id',
-        type: 'bigInt',
-        interface: 'id',
-        collection,
-      };
-    }
     throwBadRequest(
       `flowSurfaces collection '${
         getCollectionName(collection) || 'unknown'
@@ -153,7 +155,7 @@ export function resolveCollectionSafeTitleField(collection: any): FlowSurfaceRes
   }
 
   const firstTitleableField = getCollectionFields(collection).find(
-    (field) => !!getFieldName(field) && isTitleableCollectionField(field),
+    (field) => !!getFieldName(field) && !isIdTitleFieldName(getFieldName(field)) && isTitleableCollectionField(field),
   );
   if (!firstTitleableField) {
     return null;
@@ -161,7 +163,11 @@ export function resolveCollectionSafeTitleField(collection: any): FlowSurfaceRes
 
   const preferredTitleableField =
     getCollectionFields(collection).find(
-      (field) => !!getFieldName(field) && isTitleableCollectionField(field) && !isLastResortTitleField(field),
+      (field) =>
+        !!getFieldName(field) &&
+        !isIdTitleFieldName(getFieldName(field)) &&
+        isTitleableCollectionField(field) &&
+        !isLastResortTitleField(field),
     ) || firstTitleableField;
 
   return {
@@ -191,6 +197,7 @@ export function resolveAssociationSafeTitleField(
   }
   const configuredLabelFieldName = getAssociationConfiguredLabelFieldName(field);
   if (configuredLabelFieldName) {
+    assertFlowSurfaceTitleFieldIsNotId(configuredLabelFieldName);
     const configuredLabelField = resolveFieldFromCollection(targetCollection, configuredLabelFieldName);
     if (configuredLabelField) {
       return {

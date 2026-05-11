@@ -424,9 +424,11 @@ describe('flowSurfaces backend authoring localized compiler', () => {
     );
     expect(filterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
       'nickname',
+      'email',
       'status',
+      'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status']);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
   });
 
   it('should use explicit addBlock defaultFilter without backend field selection', async () => {
@@ -870,6 +872,8 @@ function employeeDefaultFilter() {
     items: [
       { path: 'nickname', operator: '$notEmpty' },
       { path: 'status', operator: '$notEmpty' },
+      { path: 'email', operator: '$notEmpty' },
+      { path: 'phone', operator: '$notEmpty' },
     ],
   };
 }
@@ -880,6 +884,8 @@ function calendarDefaultFilter() {
     items: [
       { path: 'title', operator: '$notEmpty' },
       { path: 'status', operator: '$notEmpty' },
+      { path: 'category', operator: '$notEmpty' },
+      { path: 'scope', operator: '$notEmpty' },
     ],
   };
 }
@@ -890,6 +896,8 @@ function kanbanDefaultFilter() {
     items: [
       { path: 'title', operator: '$notEmpty' },
       { path: 'status', operator: '$notEmpty' },
+      { path: 'priority', operator: '$notEmpty' },
+      { path: 'scope', operator: '$notEmpty' },
     ],
   };
 }
@@ -897,6 +905,11 @@ function kanbanDefaultFilter() {
 function departmentDefaultFilter() {
   return {
     logic: '$and',
-    items: [{ path: 'title', operator: '$notEmpty' }],
+    items: [
+      { path: 'title', operator: '$notEmpty' },
+      { path: 'code', operator: '$notEmpty' },
+      { path: 'status', operator: '$notEmpty' },
+      { path: 'scope', operator: '$notEmpty' },
+    ],
   };
 }

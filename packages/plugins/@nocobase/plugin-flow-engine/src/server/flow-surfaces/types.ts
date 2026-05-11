@@ -255,8 +255,6 @@ export type FlowSurfaceNodeSpec = {
   decoratorProps?: Record<string, any>;
   stepParams?: Record<string, any>;
   flowRegistry?: Record<string, any>;
-  skipDefaultActions?: boolean;
-  skipDefaultRecordActions?: boolean;
   subModels?: Record<string, FlowSurfaceNodeSpec | FlowSurfaceNodeSpec[]>;
 };
 

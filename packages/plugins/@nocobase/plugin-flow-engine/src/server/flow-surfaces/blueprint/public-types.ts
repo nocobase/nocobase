@@ -219,8 +219,6 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   defaultFilter?: Record<string, any>;
   actions?: FlowSurfaceApplyBlueprintActionSpec[];
   recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
-  skipDefaultActions?: boolean;
-  skipDefaultRecordActions?: boolean;
   script?: string;
   chart?: string;
   pageSize?: number;
