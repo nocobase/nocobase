@@ -79,8 +79,10 @@ import {
   backfillFlowSurfaceFilterActionDefaultFilter,
   buildFlowSurfaceDefaultFilterFromCollection,
   clampFlowSurfaceDefaultFilterToCandidateLimit,
+  FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT,
   isFlowSurfacePublicDataSurfaceBlockType,
   normalizeFlowSurfacePublicBlockDefaultFilter,
+  resolveFlowSurfaceDefaultFilterFieldNames,
 } from './public-data-surface-default-filter';
 import type { FlowSurfacePlanOnlyActionName } from './planning/action-specs';
 import { describeSurface as describePlanningSurface, executeInternalPlan } from './planning/runtime';
@@ -3517,7 +3519,12 @@ export class FlowSurfacesService {
     }
   }
 
-  private buildPlanningRuntimeDeps(options: { popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession } = {}) {
+  private buildPlanningRuntimeDeps(
+    options: {
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+      skipGeneratedLayoutSingleColumnErrors?: boolean;
+    } = {},
+  ) {
     return {
       normalizeGetTarget: (value: any) => this.normalizeGetTarget(value),
       resolveLocator: (target: FlowSurfaceReadLocator, resolveOptions?: { transaction?: any }) =>
@@ -3569,6 +3576,7 @@ export class FlowSurfacesService {
     const actionOptions = {
       transaction,
       popupTemplateAliasSession: options.popupTemplateAliasSession,
+      skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
     };
     switch (action) {
       case 'compose':
@@ -3779,6 +3787,7 @@ export class FlowSurfacesService {
       },
       this.buildPlanningRuntimeDeps({
         popupTemplateAliasSession,
+        skipGeneratedLayoutSingleColumnErrors: true,
       }),
       options,
     );
@@ -5566,12 +5575,14 @@ export class FlowSurfacesService {
       transaction?: any;
       enabledPackages?: ReadonlySet<string>;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+      skipGeneratedLayoutSingleColumnErrors?: boolean;
     } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     await assertFlowSurfaceAuthoringPayload('compose', values, {
       transaction: options.transaction,
       enabledPackages,
+      skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
@@ -6916,7 +6927,14 @@ export class FlowSurfacesService {
     if (_.isUndefined(defaultFilter)) {
       return undefined;
     }
-    return clampFlowSurfaceDefaultFilterToCandidateLimit(defaultFilter);
+    const normalizedDefaultFilter = clampFlowSurfaceDefaultFilterToCandidateLimit(defaultFilter);
+    const fieldNames = resolveFlowSurfaceDefaultFilterFieldNames(normalizedDefaultFilter);
+    if (fieldNames.length < FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT) {
+      throwBadRequest(
+        `flowSurfaces defaultFilter must include at least ${FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT} filterable fields`,
+      );
+    }
+    return normalizedDefaultFilter;
   }
 
   private buildDefaultFilterFromResourceInput(input: {

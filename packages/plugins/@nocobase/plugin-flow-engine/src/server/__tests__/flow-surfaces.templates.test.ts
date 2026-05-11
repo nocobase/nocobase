@@ -1459,11 +1459,13 @@ describe('flowSurfaces templates', () => {
         fields: [
           { name: 'name', type: 'string', interface: 'input' },
           { name: 'code', type: 'string', interface: 'input' },
+          { name: 'label', type: 'string', interface: 'input' },
+          { name: 'scope', type: 'string', interface: 'input' },
         ],
       },
     });
     await waitForFixtureCollectionsReady(app.db, {
-      popup_try_template_batch_targets: ['name', 'code'],
+      popup_try_template_batch_targets: ['name', 'code', 'label', 'scope'],
     });
 
     const page = await createPage(rootAgent, {
@@ -2616,6 +2618,18 @@ describe('flowSurfaces templates', () => {
       await rootAgent.resource('flowSurfaces').compose({
         values: {
           target: { uid: page.gridUid },
+          defaults: {
+            collections: {
+              [collectionName]: {
+                fieldGroups: [
+                  {
+                    title: 'All fields',
+                    fields: fieldNames,
+                  },
+                ],
+              },
+            },
+          },
           blocks: [
             {
               key: 'producerDetails',
@@ -3384,11 +3398,16 @@ describe('flowSurfaces templates', () => {
       values: {
         name: 'popup_try_template_record_context_targets',
         title: 'Popup Try Template Record Context Targets',
-        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'label', type: 'string', interface: 'input' },
+          { name: 'scope', type: 'string', interface: 'input' },
+        ],
       },
     });
     await waitForFixtureCollectionsReady(app.db, {
-      popup_try_template_record_context_targets: ['name'],
+      popup_try_template_record_context_targets: ['name', 'code', 'label', 'scope'],
     });
 
     const page = await createPage(rootAgent, {
@@ -3429,6 +3448,18 @@ describe('flowSurfaces templates', () => {
       description: 'Popup template requiring a current record for popup.tryTemplate context coverage.',
       saveMode: 'duplicate',
     });
+    expect(recordTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    const recordTemplateSurface = await getSurface(rootAgent, {
+      uid: recordTemplate.targetUid,
+    });
+    const recordTemplateDetails = _.castArray(
+      recordTemplateSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(recordTemplateDetails?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'popup_try_template_record_context_targets',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
 
     const blockAction = getData(
       await rootAgent.resource('flowSurfaces').addAction({
@@ -3457,9 +3488,23 @@ describe('flowSurfaces templates', () => {
       }),
     );
     const targetRecordActionSurface = await getSurface(rootAgent, { uid: targetRecordAction.uid });
-    expect(targetRecordActionSurface.tree.popup.template).toMatchObject({
-      uid: recordTemplate.uid,
+    const targetRecordActionTemplate = targetRecordActionSurface.tree.popup.template;
+    expect(targetRecordActionTemplate).toMatchObject({
       mode: 'reference',
+    });
+    const targetRecordActionPopupTemplate = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: targetRecordActionTemplate.uid,
+        },
+      }),
+    );
+    expect(targetRecordActionPopupTemplate.collectionName).toBe('popup_try_template_record_context_targets');
+    expect(targetRecordActionPopupTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(getPopupOpenView(targetRecordActionSurface.tree)).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'popup_try_template_record_context_targets',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });
 
@@ -3468,11 +3513,16 @@ describe('flowSurfaces templates', () => {
       values: {
         name: 'popup_try_template_miss_targets',
         title: 'Popup Try Template Miss Targets',
-        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'label', type: 'string', interface: 'input' },
+          { name: 'scope', type: 'string', interface: 'input' },
+        ],
       },
     });
     await waitForFixtureCollectionsReady(app.db, {
-      popup_try_template_miss_targets: ['name'],
+      popup_try_template_miss_targets: ['name', 'code', 'label', 'scope'],
     });
 
     const page = await createPage(rootAgent, {
@@ -3803,11 +3853,16 @@ describe('flowSurfaces templates', () => {
       values: {
         name: 'popup_try_template_apply_record_context_targets',
         title: 'Popup Try Template Apply Record Context Targets',
-        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'label', type: 'string', interface: 'input' },
+          { name: 'scope', type: 'string', interface: 'input' },
+        ],
       },
     });
     await waitForFixtureCollectionsReady(app.db, {
-      popup_try_template_apply_record_context_targets: ['name'],
+      popup_try_template_apply_record_context_targets: ['name', 'code', 'label', 'scope'],
     });
 
     const page = await createPage(rootAgent, {
@@ -3915,9 +3970,23 @@ describe('flowSurfaces templates', () => {
     const recordActionSurface = await getSurface(rootAgent, {
       uid: recordAction.uid,
     });
-    expect(recordActionSurface.tree.popup.template).toMatchObject({
-      uid: recordTemplate.uid,
+    const recordActionTemplate = recordActionSurface.tree.popup.template;
+    expect(recordActionTemplate).toMatchObject({
       mode: 'reference',
+    });
+    const recordActionPopupTemplate = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: recordActionTemplate.uid,
+        },
+      }),
+    );
+    expect(recordActionPopupTemplate.collectionName).toBe('popup_try_template_apply_record_context_targets');
+    expect(recordActionPopupTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(getPopupOpenView(recordActionSurface.tree)).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'popup_try_template_apply_record_context_targets',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });
 

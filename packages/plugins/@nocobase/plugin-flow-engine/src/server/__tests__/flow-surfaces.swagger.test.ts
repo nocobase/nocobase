@@ -638,7 +638,11 @@ describe('flowSurfaces swagger', () => {
     const applyBlueprintTableBlock = applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.blocks?.[1];
     expect(applyBlueprintTableBlock?.defaultFilter?.items).toHaveLength(4);
     expect(applyBlueprintTableBlock?.actions?.[0]?.key).toBe('filterAction');
-    expect(applyBlueprintTableBlock?.actions?.[0]?.settings?.defaultFilter?.items?.[0]?.value).toBe('active');
+    expect(
+      applyBlueprintTableBlock?.actions?.[0]?.settings?.defaultFilter?.items?.find(
+        (item: any) => item.path === 'status',
+      )?.value,
+    ).toBe('active');
     const applyBlueprintCalendarBlock = applyBlueprintRequest.examples?.calendarPage?.value?.tabs?.[0]?.blocks?.[0];
     expect(applyBlueprintCalendarBlock?.type).toBe('calendar');
     expect(applyBlueprintCalendarBlock?.collection).toBe('calendar_events');
@@ -912,7 +916,9 @@ describe('flowSurfaces swagger', () => {
       'bulkDelete',
       'link',
     ]);
-    expect(filterTableBlock.actions[0].settings.defaultFilter.items[0].value).toBe('active');
+    expect(
+      filterTableBlock.actions[0].settings.defaultFilter.items.find((item: any) => item.path === 'status')?.value,
+    ).toBe('active');
     expect(filterTableBlock.recordActions.map((item: any) => (typeof item === 'string' ? item : item.type))).toEqual([
       'view',
       'edit',
@@ -1235,7 +1241,7 @@ describe('flowSurfaces swagger', () => {
     expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
     expect(
       addBlockRequest.examples.tableDefaultFilters.value.defaultActionSettings.filter.filterableFieldNames,
-    ).toEqual(['username', 'email', 'status']);
+    ).toEqual(['username', 'email', 'status', 'phone']);
     expect(addBlockRequest.examples.tableDefaultFilters.value.defaultFilter.items[0].value).toBe('staff');
     expect(addBlockRequest.examples.popupCurrentRecord.value.resource.binding).toBe('currentRecord');
     expect(addBlockRequest.examples.popupAssociatedRecords.value.resource).toMatchObject({

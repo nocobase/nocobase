@@ -25,12 +25,13 @@ const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS = [
 const FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
 const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION: Record<string, string[]> = {
   users: ['nickname', 'username', 'email', 'phone'],
-  employees: ['nickname', 'status', 'bio'],
-  departments: ['title', 'location'],
-  categories: ['title'],
-  tasks: ['title', 'status'],
-  calendar_events: ['title', 'status', 'startsAt'],
-  kanban_tasks: ['title', 'status', 'department'],
+  employees: ['nickname', 'status', 'email', 'phone'],
+  departments: ['title', 'location', 'code', 'scope'],
+  categories: ['title', 'code', 'status', 'scope'],
+  tasks: ['title', 'status', 'priority', 'scope'],
+  calendar_events: ['title', 'status', 'category', 'scope'],
+  kanban_tasks: ['title', 'status', 'priority', 'scope'],
+  no_interface_fields: ['name', 'code', 'label', 'scope'],
   roles: ['title', 'name'],
 };
 
@@ -1927,6 +1928,21 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: 'nocobase',
         },
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '@nocobase.com',
+        },
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'admin',
+        },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: '',
+        },
       ],
     };
     const configureFilterAction = await rootAgent.resource('flowSurfaces').configure({
@@ -1935,7 +1951,7 @@ describe('flowSurfaces resource', () => {
           uid: filterAction.uid,
         },
         changes: {
-          filterableFieldNames: ['username', 'email', 'roles'],
+          filterableFieldNames: ['username', 'email', 'nickname', 'phone'],
           defaultFilter,
         },
       },
@@ -1945,11 +1961,12 @@ describe('flowSurfaces resource', () => {
     const filterReadback = await getSurface(rootAgent, {
       uid: filterAction.uid,
     });
-    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email', 'roles']);
+    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email', 'nickname', 'phone']);
     expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
       'username',
       'email',
-      'roles',
+      'nickname',
+      'phone',
     ]);
     expect(filterReadback.tree.props?.defaultFilterValue).toEqual(defaultFilter);
     expect(filterReadback.tree.props?.filterValue).toEqual(defaultFilter);
@@ -1974,6 +1991,16 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: '',
         },
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: '',
+        },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: '',
+        },
       ],
     };
     const calendarDefaultFilter = {
@@ -1989,6 +2016,16 @@ describe('flowSurfaces resource', () => {
           operator: '$eq',
           value: '',
         },
+        {
+          path: 'category',
+          operator: '$eq',
+          value: '',
+        },
+        {
+          path: 'scope',
+          operator: '$includes',
+          value: '',
+        },
       ],
     };
 
@@ -1996,25 +2033,25 @@ describe('flowSurfaces resource', () => {
       {
         type: 'table',
         collectionName: 'users',
-        filterableFieldNames: ['username', 'email'],
+        filterableFieldNames: ['username', 'email', 'nickname', 'phone'],
         defaultFilter: usersDefaultFilter,
       },
       {
         type: 'list',
         collectionName: 'users',
-        filterableFieldNames: ['username', 'email'],
+        filterableFieldNames: ['username', 'email', 'nickname', 'phone'],
         defaultFilter: usersDefaultFilter,
       },
       {
         type: 'gridCard',
         collectionName: 'users',
-        filterableFieldNames: ['username', 'email'],
+        filterableFieldNames: ['username', 'email', 'nickname', 'phone'],
         defaultFilter: usersDefaultFilter,
       },
       {
         type: 'calendar',
         collectionName: 'calendar_events',
-        filterableFieldNames: ['title', 'status'],
+        filterableFieldNames: ['title', 'status', 'category', 'scope'],
         defaultFilter: calendarDefaultFilter,
       },
     ]) {
@@ -2075,6 +2112,11 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: 'staff',
         },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: 'staff',
+        },
       ],
     };
     const calendarDefaultFilter = {
@@ -2089,6 +2131,16 @@ describe('flowSurfaces resource', () => {
           path: 'status',
           operator: '$eq',
           value: 'confirmed',
+        },
+        {
+          path: 'category',
+          operator: '$eq',
+          value: 'planning',
+        },
+        {
+          path: 'scope',
+          operator: '$includes',
+          value: 'planning',
         },
       ],
     };
@@ -2174,10 +2226,11 @@ describe('flowSurfaces resource', () => {
     );
     expect(filterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
       'nickname',
+      'email',
       'status',
-      'bio',
+      'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status', 'bio']);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
   });
 
   it('should auto-generate defaultFilter for compose semantic resource data blocks', async () => {
@@ -2232,10 +2285,11 @@ describe('flowSurfaces resource', () => {
     );
     expect(filterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
       'nickname',
+      'email',
       'status',
-      'bio',
+      'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status', 'bio']);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
   });
 
   it('should reject addBlock block-level empty defaultFilter groups before low-level runtime normalization', async () => {
@@ -2275,12 +2329,27 @@ describe('flowSurfaces resource', () => {
       {
         type: 'table',
         collectionName: 'users',
-        filterableFieldNames: ['email'],
+        filterableFieldNames: ['email', 'username', 'nickname', 'phone'],
         blockDefaultFilter: {
           logic: '$and',
           items: [
             {
               path: 'username',
+              operator: '$includes',
+              value: 'staff',
+            },
+            {
+              path: 'email',
+              operator: '$includes',
+              value: 'staff',
+            },
+            {
+              path: 'nickname',
+              operator: '$includes',
+              value: 'staff',
+            },
+            {
+              path: 'phone',
               operator: '$includes',
               value: 'staff',
             },
@@ -2294,18 +2363,48 @@ describe('flowSurfaces resource', () => {
               operator: '$includes',
               value: '@nocobase.com',
             },
+            {
+              path: 'username',
+              operator: '$includes',
+              value: 'admin',
+            },
+            {
+              path: 'nickname',
+              operator: '$includes',
+              value: 'admin',
+            },
+            {
+              path: 'phone',
+              operator: '$includes',
+              value: 'admin',
+            },
           ],
         },
       },
       {
         type: 'calendar',
         collectionName: 'calendar_events',
-        filterableFieldNames: ['status'],
+        filterableFieldNames: ['status', 'title', 'category', 'scope'],
         blockDefaultFilter: {
           logic: '$and',
           items: [
             {
               path: 'title',
+              operator: '$includes',
+              value: 'planning',
+            },
+            {
+              path: 'status',
+              operator: '$eq',
+              value: 'planning',
+            },
+            {
+              path: 'category',
+              operator: '$eq',
+              value: 'planning',
+            },
+            {
+              path: 'scope',
               operator: '$includes',
               value: 'planning',
             },
@@ -2318,6 +2417,21 @@ describe('flowSurfaces resource', () => {
               path: 'status',
               operator: '$eq',
               value: 'confirmed',
+            },
+            {
+              path: 'title',
+              operator: '$includes',
+              value: 'planning',
+            },
+            {
+              path: 'category',
+              operator: '$eq',
+              value: 'planning',
+            },
+            {
+              path: 'scope',
+              operator: '$includes',
+              value: 'planning',
             },
           ],
         },
@@ -2375,6 +2489,21 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: '',
         },
+        {
+          path: 'username',
+          operator: '$includes',
+          value: '',
+        },
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '',
+        },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: '',
+        },
       ],
     };
 
@@ -2393,7 +2522,7 @@ describe('flowSurfaces resource', () => {
             },
             defaultActionSettings: {
               filter: {
-                filterableFieldNames: ['nickname'],
+                filterableFieldNames: ['nickname', 'username', 'email', 'phone'],
                 defaultFilter,
               },
             },
@@ -2420,7 +2549,7 @@ describe('flowSurfaces resource', () => {
     const filterAction = _.castArray(tableReadback.tree.subModels?.actions || []).find(
       (item: any) => item?.use === 'FilterActionModel',
     );
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname']);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
     expect(filterAction?.props?.defaultFilterValue).toEqual(defaultFilter);
     expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(defaultFilter);
   });
@@ -2453,6 +2582,11 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: 'staff',
         },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: 'staff',
+        },
       ],
     };
     const settingsDefaultFilter = {
@@ -2460,6 +2594,21 @@ describe('flowSurfaces resource', () => {
       items: [
         {
           path: 'nickname',
+          operator: '$includes',
+          value: 'admin',
+        },
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'admin',
+        },
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '@nocobase.com',
+        },
+        {
+          path: 'phone',
           operator: '$includes',
           value: 'admin',
         },
@@ -2477,6 +2626,16 @@ describe('flowSurfaces resource', () => {
           path: 'status',
           operator: '$eq',
           value: 'confirmed',
+        },
+        {
+          path: 'category',
+          operator: '$eq',
+          value: 'planning',
+        },
+        {
+          path: 'scope',
+          operator: '$includes',
+          value: 'planning',
         },
       ],
     };
@@ -2506,7 +2665,7 @@ describe('flowSurfaces resource', () => {
             defaultFilter: blockDefaultFilter,
             defaultActionSettings: {
               filter: {
-                filterableFieldNames: ['nickname'],
+                filterableFieldNames: ['nickname', 'username', 'email', 'phone'],
                 defaultFilter: settingsDefaultFilter,
               },
             },
@@ -2551,7 +2710,7 @@ describe('flowSurfaces resource', () => {
     );
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
-    expect(listFilterAction?.props?.filterableFieldNames).toEqual(['nickname']);
+    expect(listFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
     expect(listFilterAction?.props?.defaultFilterValue).toEqual(settingsDefaultFilter);
     expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(settingsDefaultFilter);
     expect(calendarFilterAction?.props?.defaultFilterValue).toEqual(calendarBlockDefaultFilter);
@@ -2626,6 +2785,11 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: 'staff',
         },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: 'staff',
+        },
       ],
     };
     const explicitActionFilter = {
@@ -2646,6 +2810,11 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: '@nocobase.com',
         },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: 'admin',
+        },
       ],
     };
     const calendarBlockDefaultFilter = {
@@ -2660,6 +2829,16 @@ describe('flowSurfaces resource', () => {
           path: 'status',
           operator: '$eq',
           value: 'confirmed',
+        },
+        {
+          path: 'category',
+          operator: '$eq',
+          value: 'planning',
+        },
+        {
+          path: 'scope',
+          operator: '$includes',
+          value: 'planning',
         },
       ],
     };
@@ -2948,7 +3127,8 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(incompleteFilterRes.status).toBe(200);
+    expect(incompleteFilterRes.status).toBe(400);
+    expect(readErrorMessage(incompleteFilterRes)).toContain('must include at least 4 filterable fields');
 
     const invalidDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -2989,13 +3169,18 @@ describe('flowSurfaces resource', () => {
         },
         defaultActionSettings: {
           filter: {
-            filterableFieldNames: ['username'],
+            filterableFieldNames: ['username', 'nickname', 'email', 'phone'],
             defaultFilter: {
               logic: '$and',
               items: [
                 {
                   logic: '$or',
-                  items: [{ path: 'username', operator: '$includes', value: '' }],
+                  items: [
+                    { path: 'username', operator: '$includes', value: '' },
+                    { path: 'nickname', operator: '$includes', value: '' },
+                    { path: 'email', operator: '$includes', value: '' },
+                    { path: 'phone', operator: '$includes', value: '' },
+                  ],
                 },
               ],
             },
@@ -3189,6 +3374,21 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: 'nocobase',
         },
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '@nocobase.com',
+        },
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'admin',
+        },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: '',
+        },
       ],
     };
     const updateViaProps = await rootAgent.resource('flowSurfaces').updateSettings({
@@ -3197,7 +3397,7 @@ describe('flowSurfaces resource', () => {
           uid: filterAction.uid,
         },
         props: {
-          filterableFieldNames: ['username', 'email'],
+          filterableFieldNames: ['username', 'email', 'nickname', 'phone'],
           defaultFilterValue: filterFromDefaultFilterValue,
         },
       },
@@ -3207,12 +3407,14 @@ describe('flowSurfaces resource', () => {
     let filterReadback = await getSurface(rootAgent, {
       uid: filterAction.uid,
     });
-    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email']);
+    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email', 'nickname', 'phone']);
     expect(filterReadback.tree.props?.defaultFilterValue).toEqual(filterFromDefaultFilterValue);
     expect(filterReadback.tree.props?.filterValue).toEqual(filterFromDefaultFilterValue);
     expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
       'username',
       'email',
+      'nickname',
+      'phone',
     ]);
     expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
       filterFromDefaultFilterValue,
@@ -3225,6 +3427,21 @@ describe('flowSurfaces resource', () => {
           path: 'email',
           operator: '$includes',
           value: '@nocobase.com',
+        },
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'nocobase',
+        },
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'admin',
+        },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: '',
         },
       ],
     };
@@ -3255,6 +3472,21 @@ describe('flowSurfaces resource', () => {
           operator: '$includes',
           value: 'admin',
         },
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'nocobase',
+        },
+        {
+          path: 'email',
+          operator: '$includes',
+          value: '@nocobase.com',
+        },
+        {
+          path: 'phone',
+          operator: '$includes',
+          value: '',
+        },
       ],
     };
     const updateViaStepParams = await rootAgent.resource('flowSurfaces').updateSettings({
@@ -3265,7 +3497,7 @@ describe('flowSurfaces resource', () => {
         stepParams: {
           filterSettings: {
             filterableFieldNames: {
-              filterableFieldNames: ['nickname', 'roles'],
+              filterableFieldNames: ['nickname', 'username', 'email', 'phone'],
             },
             defaultFilter: {
               defaultFilter: filterFromStepParams,
@@ -3279,12 +3511,14 @@ describe('flowSurfaces resource', () => {
     filterReadback = await getSurface(rootAgent, {
       uid: filterAction.uid,
     });
-    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['nickname', 'roles']);
+    expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
     expect(filterReadback.tree.props?.defaultFilterValue).toEqual(filterFromStepParams);
     expect(filterReadback.tree.props?.filterValue).toEqual(filterFromStepParams);
     expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
       'nickname',
-      'roles',
+      'username',
+      'email',
+      'phone',
     ]);
     expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(filterFromStepParams);
 
@@ -6759,15 +6993,15 @@ describe('flowSurfaces resource', () => {
 
     const rolesTableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
       dataSourceKey: 'main',
-      collectionName: 'roles',
+      collectionName: 'no_interface_fields',
     });
     const rolesDetailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
       dataSourceKey: 'main',
-      collectionName: 'roles',
+      collectionName: 'no_interface_fields',
     });
     const rolesEditFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
       dataSourceKey: 'main',
-      collectionName: 'roles',
+      collectionName: 'no_interface_fields',
     });
 
     for (const [targetUid, fieldPath] of [
@@ -6784,11 +7018,11 @@ describe('flowSurfaces resource', () => {
         },
       });
       expect(invalidRes.status).toBe(400);
-      expect(readErrorMessage(invalidRes)).toContain(`roles.${fieldPath}`);
+      expect(readErrorMessage(invalidRes)).toContain(`no_interface_fields.${fieldPath}`);
       expect(readErrorMessage(invalidRes)).toContain('has no interface');
     }
 
-    const validField = await addField(rootAgent, rolesTableUid, 'title');
+    const validField = await addField(rootAgent, rolesTableUid, 'name');
     const validFieldReadback = await getSurface(rootAgent, {
       uid: validField.fieldUid,
     });
@@ -10386,6 +10620,8 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       fields: [
         { name: 'title', type: 'string', interface: 'input' },
         { name: 'location', type: 'string', interface: 'input' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'scope', type: 'string', interface: 'input' },
       ],
     },
   });
@@ -10397,6 +10633,8 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       fields: [
         { name: 'nickname', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'input' },
+        { name: 'email', type: 'string', interface: 'email' },
+        { name: 'phone', type: 'string', interface: 'phone' },
         { name: 'age', type: 'integer', interface: 'number' },
         { name: 'bio', type: 'text', interface: 'textarea' },
         { name: 'isManager', type: 'boolean', interface: 'checkbox' },
@@ -10419,7 +10657,12 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       name: 'categories',
       title: 'Categories',
       template: 'tree',
-      fields: [{ name: 'title', interface: 'input', title: 'Title' }],
+      fields: [
+        { name: 'title', interface: 'input', title: 'Title' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'input' },
+        { name: 'scope', type: 'string', interface: 'input' },
+      ],
     },
   });
 
@@ -10430,6 +10673,8 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       fields: [
         { name: 'title', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'input' },
+        { name: 'priority', type: 'string', interface: 'input' },
+        { name: 'scope', type: 'string', interface: 'input' },
       ],
     },
   });
@@ -10444,6 +10689,8 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
       fields: [
         { name: 'title', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'select' },
+        { name: 'category', type: 'string', interface: 'select' },
+        { name: 'scope', type: 'string', interface: 'input' },
         { name: 'startsAt', type: 'date', interface: 'datetime' },
         { name: 'endsAt', type: 'date', interface: 'datetime' },
       ],
@@ -10483,6 +10730,8 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
             ],
           },
         },
+        { name: 'priority', type: 'string', interface: 'select' },
+        { name: 'scope', type: 'string', interface: 'input' },
       ],
     },
   });
@@ -10537,6 +10786,21 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
 
   await rootAgent.resource('collections').create({
     values: {
+      name: 'no_interface_fields',
+      title: 'No interface fields',
+      fields: [
+        { name: 'name', type: 'string', interface: 'input' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'label', type: 'string', interface: 'input' },
+        { name: 'scope', type: 'string', interface: 'input' },
+        { name: 'default', type: 'string' },
+        { name: 'hidden', type: 'string' },
+      ],
+    },
+  });
+
+  await rootAgent.resource('collections').create({
+    values: {
       name: 'skills',
       title: 'Skills',
       fields: [{ name: 'label', type: 'string', interface: 'input' }],
@@ -10584,13 +10848,14 @@ async function setupFixtureCollections(rootAgent: any, db?: Database) {
 
   if (db) {
     await waitForFixtureCollectionsReady(db, {
-      categories: ['title', 'parentId'],
-      departments: ['title', 'location'],
-      employees: ['nickname', 'status', 'age', 'bio', 'isManager', 'departmentId'],
-      tasks: ['title', 'status', 'employeeId'],
-      calendar_events: ['title', 'status', 'startsAt', 'endsAt'],
-      kanban_tasks: ['title', 'status', 'status_sort', 'departmentId', 'department_sort'],
+      categories: ['title', 'code', 'status', 'scope', 'parentId'],
+      departments: ['title', 'location', 'code', 'scope'],
+      employees: ['nickname', 'status', 'email', 'phone', 'age', 'bio', 'isManager', 'departmentId'],
+      tasks: ['title', 'status', 'priority', 'scope', 'employeeId'],
+      calendar_events: ['title', 'status', 'category', 'scope', 'startsAt', 'endsAt'],
+      kanban_tasks: ['title', 'status', 'priority', 'scope', 'status_sort', 'departmentId', 'department_sort'],
       employee_logs: ['content', 'employeeId'],
+      no_interface_fields: ['name', 'code', 'label', 'scope', 'default', 'hidden'],
       skills: ['label'],
       employee_skills: ['id', 'employeeId', 'skillId'],
     });

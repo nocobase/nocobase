@@ -594,6 +594,136 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     }
   });
 
+  it('should aggregate explicit layout coverage and custom edit popup count errors before applyBlueprint writes', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring layout coverage errors page',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            layout: {
+              rows: [
+                ['mainDetails', 'missingTabBlock'],
+                ['layoutFilter'],
+                ['sideDetails'],
+                ['sideDetails'],
+                ['editTable'],
+              ],
+            },
+            blocks: [
+              {
+                key: 'layoutFilter',
+                type: 'filterForm',
+                collection: 'employees',
+                fields: ['status'],
+              },
+              {
+                key: 'mainDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: ['nickname', 'email', 'phone'],
+                fieldsLayout: {
+                  rows: [['nickname', 'missingField'], ['nickname'], ['email']],
+                },
+              },
+              {
+                key: 'sideDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+              {
+                key: 'extraDetails',
+                type: 'details',
+                collection: 'employees',
+                fields: ['email'],
+              },
+              {
+                type: 'details',
+                collection: 'employees',
+                fields: ['phone'],
+              },
+              {
+                key: 'editTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+                recordActions: [
+                  {
+                    key: 'edit',
+                    type: 'edit',
+                    popup: {
+                      blocks: [
+                        {
+                          type: 'editForm',
+                          collection: 'employees',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                        {
+                          type: 'editForm',
+                          collection: 'employees',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    expect(response.body.errors.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining([
+        'block-layout-unknown-key',
+        'block-layout-duplicate-key',
+        'block-layout-missing-key',
+        'block-layout-filter-must-lead',
+        'block-layout-single-column',
+        'fieldsLayout-unknown-field-key',
+        'fieldsLayout-duplicate-field-key',
+        'fieldsLayout-missing-field-key',
+        'fieldsLayout-single-column',
+        'custom-edit-popup-edit-form-count',
+      ]),
+    );
+    expect(response.body.errors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.tabs[0].layout.rows[0][1]',
+        '$.tabs[0].layout.rows[3][0]',
+        '$.tabs[0].layout.rows[0]',
+        '$.tabs[0].layout.rows',
+        '$.tabs[0].blocks[1].fieldsLayout.rows[0][1]',
+        '$.tabs[0].blocks[1].fieldsLayout.rows',
+        '$.tabs[0].blocks[1].fields[2]',
+        '$.tabs[0].blocks[3]',
+        '$.tabs[0].blocks[4].key',
+        '$.tabs[0].blocks[5].recordActions[0].popup',
+      ]),
+    );
+    for (const error of response.body.errors) {
+      expectStructuredError(error, {
+        status: 400,
+        type: 'bad_request',
+      });
+    }
+  });
+
   it('should aggregate live metadata field errors before write target resolution', async () => {
     const response = await rootAgent.resource('flowSurfaces').compose({
       values: {
@@ -678,6 +808,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                     { path: 'field1', operator: '$notEmpty' },
                     { path: 'field2', operator: '$notEmpty' },
                     { path: 'field3', operator: '$notEmpty' },
+                    { path: 'field4', operator: '$notEmpty' },
                   ],
                 },
                 actions: [
@@ -763,6 +894,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                     { path: 'field1', operator: '$notEmpty' },
                     { path: 'field2', operator: '$notEmpty' },
                     { path: 'field3', operator: '$notEmpty' },
+                    { path: 'field4', operator: '$notEmpty' },
                   ],
                 },
                 actions: [
@@ -848,7 +980,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                 fields: ['field1'],
                 defaultFilter: {
                   logic: '$and',
-                  items: [{ path: 'field1', operator: '$notEmpty' }],
+                  items: [
+                    { path: 'field1', operator: '$notEmpty' },
+                    { path: 'field2', operator: '$notEmpty' },
+                    { path: 'field3', operator: '$notEmpty' },
+                    { path: 'field4', operator: '$notEmpty' },
+                  ],
                 },
                 actions: [
                   {
@@ -907,7 +1044,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             fields: ['field1'],
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'field1', operator: '$notEmpty' }],
+              items: [
+                { path: 'field1', operator: '$notEmpty' },
+                { path: 'field2', operator: '$notEmpty' },
+                { path: 'field3', operator: '$notEmpty' },
+                { path: 'field4', operator: '$notEmpty' },
+              ],
             },
             actions: [
               {
@@ -951,7 +1093,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             fields: ['field1'],
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'field1', operator: '$notEmpty' }],
+              items: [
+                { path: 'field1', operator: '$notEmpty' },
+                { path: 'field2', operator: '$notEmpty' },
+                { path: 'field3', operator: '$notEmpty' },
+                { path: 'field4', operator: '$notEmpty' },
+              ],
             },
             actions: [
               {
@@ -1060,6 +1207,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                 { path: 'field1', operator: '$notEmpty' },
                 { path: 'field2', operator: '$notEmpty' },
                 { path: 'field3', operator: '$notEmpty' },
+                { path: 'field4', operator: '$notEmpty' },
               ],
             },
             actions: [
@@ -1109,6 +1257,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                 { path: LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS[0], operator: '$notEmpty' },
                 { path: LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS[1], operator: '$notEmpty' },
                 { path: LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS[2], operator: '$notEmpty' },
+                { path: LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS[3], operator: '$notEmpty' },
               ],
             },
             actions: [
@@ -1154,7 +1303,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             fields: [LARGE_GENERATED_POPUP_CODE_FIELDS[0]],
             defaultFilter: {
               logic: '$and',
-              items: [{ path: LARGE_GENERATED_POPUP_CODE_FIELDS[0], operator: '$notEmpty' }],
+              items: [
+                { path: LARGE_GENERATED_POPUP_CODE_FIELDS[0], operator: '$notEmpty' },
+                { path: LARGE_GENERATED_POPUP_CODE_FIELDS[1], operator: '$notEmpty' },
+                { path: LARGE_GENERATED_POPUP_CODE_FIELDS[2], operator: '$notEmpty' },
+                { path: LARGE_GENERATED_POPUP_CODE_FIELDS[3], operator: '$notEmpty' },
+              ],
             },
             actions: [
               {
@@ -1192,6 +1346,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         items: [
           { path: 'nickname', operator: '$notEmpty' },
           { path: 'status', operator: '$notEmpty' },
+          { path: 'email', operator: '$notEmpty' },
+          { path: 'phone', operator: '$notEmpty' },
         ],
       },
     });
@@ -1329,6 +1485,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         items: [
           { path: 'title', operator: '$notEmpty' },
           { path: 'status', operator: '$notEmpty' },
+          { path: 'priority', operator: '$notEmpty' },
+          { path: 'scope', operator: '$notEmpty' },
         ],
       },
       settings: {
@@ -1382,6 +1540,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         items: [
           { path: 'title', operator: '$notEmpty' },
           { path: 'status', operator: '$notEmpty' },
+          { path: 'priority', operator: '$notEmpty' },
+          { path: 'scope', operator: '$notEmpty' },
         ],
       },
       settings: {
@@ -1457,7 +1617,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
-  it('should not require collection default fieldGroups when popup blocks are explicit', async () => {
+  it('should require collection default fieldGroups for generated defaults inside explicit popup blocks', async () => {
     const response = await rootAgent.resource('flowSurfaces').compose({
       values: {
         target: { uid: 'missing-target-never-resolved' },
@@ -1469,10 +1629,54 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             fields: ['field1'],
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'field1', operator: '$notEmpty' }],
+              items: [
+                { path: 'field1', operator: '$notEmpty' },
+                { path: 'field2', operator: '$notEmpty' },
+                { path: 'field3', operator: '$notEmpty' },
+                { path: 'field4', operator: '$notEmpty' },
+              ],
             },
-            recordActions: [],
-            skipDefaultRecordActions: true,
+            recordActions: [
+              {
+                type: 'view',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'explicitDetails',
+                      type: 'details',
+                      collection: LARGE_GENERATED_POPUP_COLLECTION,
+                      fieldGroups: [
+                        {
+                          title: 'Core',
+                          fields: ['field1', 'field2'],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+              {
+                type: 'edit',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'explicitEditForm',
+                      type: 'editForm',
+                      collection: LARGE_GENERATED_POPUP_COLLECTION,
+                      fieldGroups: [
+                        {
+                          title: 'Core',
+                          fields: ['field1', 'field2'],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+              {
+                type: 'delete',
+              },
+            ],
             actions: [
               {
                 key: 'createLargeRecord',
@@ -1499,9 +1703,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       },
     });
 
-    expect(response.body?.errors?.map((error: any) => error.ruleId) || []).not.toContain(
-      'missing-default-field-groups',
-    );
+    expect(response.body?.errors?.map((error: any) => error.ruleId) || []).toContain('missing-default-field-groups');
   });
 
   it('should allow large explicit field grids because backend field grouping is advisory', async () => {
@@ -1702,7 +1904,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             template: { uid: 'table-template-uid' },
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'nickname', operator: '$notEmpty' }],
+              items: [
+                { path: 'nickname', operator: '$notEmpty' },
+                { path: 'status', operator: '$notEmpty' },
+                { path: 'email', operator: '$notEmpty' },
+                { path: 'phone', operator: '$notEmpty' },
+              ],
             },
           },
           {
@@ -1713,7 +1920,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               filter: {
                 defaultFilter: {
                   logic: '$and',
-                  items: [{ path: 'nickname', operator: '$notEmpty' }],
+                  items: [
+                    { path: 'nickname', operator: '$notEmpty' },
+                    { path: 'status', operator: '$notEmpty' },
+                    { path: 'email', operator: '$notEmpty' },
+                    { path: 'phone', operator: '$notEmpty' },
+                  ],
                 },
               },
             },
@@ -1757,6 +1969,18 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                         path: 'missingFilterField',
                         operator: '$notEmpty',
                       },
+                      {
+                        path: 'nickname',
+                        operator: '$notEmpty',
+                      },
+                      {
+                        path: 'status',
+                        operator: '$notEmpty',
+                      },
+                      {
+                        path: 'email',
+                        operator: '$notEmpty',
+                      },
                     ],
                   },
                 },
@@ -1791,7 +2015,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             collection: 'employees',
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'department', operator: '$notEmpty' }],
+              items: [
+                { path: 'department', operator: '$notEmpty' },
+                { path: 'nickname', operator: '$notEmpty' },
+                { path: 'status', operator: '$notEmpty' },
+                { path: 'email', operator: '$notEmpty' },
+              ],
             },
           },
           {
@@ -1800,7 +2029,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             collection: 'employees',
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'nickname', operator: '$definitelyBad' }],
+              items: [
+                { path: 'nickname', operator: '$definitelyBad' },
+                { path: 'status', operator: '$notEmpty' },
+                { path: 'email', operator: '$notEmpty' },
+                { path: 'phone', operator: '$notEmpty' },
+              ],
             },
           },
           {
@@ -1809,7 +2043,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             collection: 'employees',
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'nickname', operator: '$notEmpty' }],
+              items: [
+                { path: 'nickname', operator: '$notEmpty' },
+                { path: 'status', operator: '$notEmpty' },
+                { path: 'email', operator: '$notEmpty' },
+                { path: 'phone', operator: '$notEmpty' },
+              ],
               nickname: {
                 $definitelyBad: 'active',
               },
@@ -1890,7 +2129,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             collection: 'employees',
             defaultFilter: {
               logic: '$and',
-              items: [{ path: 'nickname', operator: '$notEmpty' }],
+              items: [
+                { path: 'nickname', operator: '$notEmpty' },
+                { path: 'email', operator: '$notEmpty' },
+                { path: 'phone', operator: '$notEmpty' },
+                { path: 'department.title', operator: '$notEmpty' },
+              ],
             },
             actions: [
               {
@@ -1954,10 +2198,85 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     const matchingErrors = response.body.errors.filter(
       (error: any) => error.ruleId === 'defaultFilter-filterable-field-missing',
     );
-    expect(matchingErrors).toHaveLength(2);
+    expect(matchingErrors).toHaveLength(6);
     expect(matchingErrors.map((error: any) => error.path)).toEqual(
-      expect.arrayContaining(['$.blocks[0].defaultFilter.items[0].path', '$.blocks[1].defaultFilter.items[0].path']),
+      expect.arrayContaining([
+        '$.blocks[0].defaultFilter.items[0].path',
+        '$.blocks[0].defaultFilter.items[1].path',
+        '$.blocks[0].defaultFilter.items[3].path',
+        '$.blocks[1].defaultFilter.items[0].path',
+        '$.blocks[1].defaultFilter.items[1].path',
+        '$.blocks[1].defaultFilter.items[3].path',
+      ]),
     );
+  });
+
+  it('should reject explicit defaultFilter payloads with fewer than four fields', async () => {
+    const threeFieldDefaultFilter = {
+      logic: '$and',
+      items: [
+        { path: 'nickname', operator: '$notEmpty' },
+        { path: 'status', operator: '$notEmpty' },
+        { path: 'email', operator: '$notEmpty' },
+      ],
+    };
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'narrowBlockDefaultFilterTable',
+            type: 'table',
+            collection: 'employees',
+            defaultFilter: threeFieldDefaultFilter,
+          },
+          {
+            key: 'narrowActionSettingsDefaultFilterTable',
+            type: 'table',
+            collection: 'employees',
+            actions: [
+              {
+                key: 'filter',
+                type: 'filter',
+                settings: {
+                  defaultFilter: threeFieldDefaultFilter,
+                },
+              },
+            ],
+          },
+          {
+            key: 'narrowDefaultActionSettingsDefaultFilterTable',
+            type: 'table',
+            collection: 'employees',
+            defaultActionSettings: {
+              filter: {
+                defaultFilter: threeFieldDefaultFilter,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const minimumErrors = response.body?.errors?.filter(
+      (error: any) => error.ruleId === 'defaultFilter-minimum-fields',
+    );
+    expect(minimumErrors).toHaveLength(3);
+    expect(minimumErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.blocks[0].defaultFilter',
+        '$.blocks[1].actions[0].settings.defaultFilter',
+        '$.blocks[2].defaultActionSettings.filter.defaultFilter',
+      ]),
+    );
+    for (const error of minimumErrors) {
+      expect(error.details).toMatchObject({
+        fieldCount: 3,
+        requiredFieldCount: 4,
+        fieldNames: ['nickname', 'status', 'email'],
+      });
+    }
   });
 
   it('should not add common-field coverage errors for explicit defaultFilter payloads', async () => {

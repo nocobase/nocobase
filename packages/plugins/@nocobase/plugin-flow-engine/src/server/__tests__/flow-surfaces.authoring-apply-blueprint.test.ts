@@ -776,6 +776,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'ViewActionModel',
       'EditActionModel',
       'DeleteActionModel',
+      'UpdateRecordActionModel',
     ]);
   });
 
@@ -906,7 +907,6 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'ViewActionModel',
       'EditActionModel',
       'DeleteActionModel',
-      'UpdateRecordActionModel',
     ]);
   });
 

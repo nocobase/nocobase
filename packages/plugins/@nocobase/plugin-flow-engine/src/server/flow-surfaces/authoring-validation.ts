@@ -67,6 +67,7 @@ export interface FlowSurfaceAuthoringValidationContext {
   enabledPackages?: ReadonlySet<string>;
   currentNode?: any;
   skipGeneratedPopupDefaultFieldGroups?: boolean;
+  skipGeneratedLayoutSingleColumnErrors?: boolean;
   findModelById?: (
     uid: string,
     options?: {
@@ -218,6 +219,7 @@ const KANBAN_ACTION_TYPE_ALIASES = new Map([
 ]);
 const CALENDAR_ALLOWED_ACTION_TYPES = new Set(CALENDAR_ACTION_TYPE_ALIASES.values());
 const KANBAN_ALLOWED_ACTION_TYPES = new Set(KANBAN_ACTION_TYPE_ALIASES.values());
+const EDIT_ACTION_TYPES = new Set(['edit']);
 const LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD = 10;
 type GeneratedPopupDefaultActionType = 'addNew' | 'view' | 'edit';
 const DEFAULT_ACTION_POPUP_TYPES = new Set<GeneratedPopupDefaultActionType>(['addNew', 'view', 'edit']);
@@ -2241,16 +2243,23 @@ function collectTopLevelLayoutErrors(
     if (!_.isPlainObject(tab)) {
       return;
     }
-    collectPublicLayoutErrors(tab.layout, `$.tabs[${tabIndex}].layout`, getBlockKeys(tab.blocks), 'block', errors);
+    collectPublicLayoutErrors(
+      tab.layout,
+      `$.tabs[${tabIndex}].layout`,
+      getBlockLayoutEntries(tab.blocks, `$.tabs[${tabIndex}].blocks`),
+      'block',
+      errors,
+    );
   });
 }
 
 function collectPublicLayoutErrors(
   layout: any,
   layoutPath: string,
-  knownKeys: Set<string>,
+  knownEntries: LayoutKnownEntry[],
   kind: 'block' | 'field',
   errors: AuthoringErrorInput[],
+  options: { skipSingleColumn?: boolean } = {},
 ) {
   if (_.isUndefined(layout)) {
     return;
@@ -2272,6 +2281,25 @@ function collectPublicLayoutErrors(
     });
     return;
   }
+  const knownByKey = new Map<string, LayoutKnownEntry>();
+  knownEntries.forEach((entry) => {
+    if (entry.key && !knownByKey.has(entry.key)) {
+      knownByKey.set(entry.key, entry);
+    }
+  });
+  if (kind === 'block') {
+    knownEntries
+      .filter((entry) => !entry.key)
+      .forEach((entry) => {
+        pushAuthoringError(errors, {
+          path: `${entry.path}.key`,
+          ruleId: 'block-layout-key-required',
+          message: `flowSurfaces authoring ${entry.path}.key is required when explicit layout is provided`,
+        });
+      });
+  }
+  const mentioned = new Set<string>();
+  const rowKeys: string[][] = [];
   rows.forEach((row: any, rowIndex: number) => {
     if (!Array.isArray(row) || !row.length) {
       pushAuthoringError(errors, {
@@ -2281,6 +2309,8 @@ function collectPublicLayoutErrors(
       });
       return;
     }
+    const currentRowKeys: string[] = [];
+    rowKeys.push(currentRowKeys);
     row.forEach((cell: any, cellIndex: number) => {
       const key = getLayoutCellKey(cell);
       const cellPath = `${layoutPath}.rows[${rowIndex}][${cellIndex}]`;
@@ -2292,15 +2322,73 @@ function collectPublicLayoutErrors(
         });
         return;
       }
-      if (!knownKeys.has(key)) {
+      currentRowKeys.push(key);
+      if (!knownByKey.has(key)) {
         pushAuthoringError(errors, {
           path: cellPath,
           ruleId: `${kind}-layout-unknown-key`,
           message: `flowSurfaces authoring ${cellPath} references unknown ${kind} '${key}'`,
         });
       }
+      if (mentioned.has(key)) {
+        pushAuthoringError(errors, {
+          path: cellPath,
+          ruleId: `${kind}-layout-duplicate-key`,
+          message: `flowSurfaces authoring ${cellPath} duplicates ${kind} '${key}'`,
+        });
+      }
+      mentioned.add(key);
     });
   });
+  for (const entry of knownByKey.values()) {
+    if (mentioned.has(entry.key)) {
+      continue;
+    }
+    pushAuthoringError(errors, {
+      path: entry.path,
+      ruleId: `${kind}-layout-missing-key`,
+      message: `flowSurfaces authoring ${entry.path} must appear exactly once in explicit layout rows`,
+    });
+  }
+  if (kind !== 'block' || knownByKey.size <= 1) {
+    return;
+  }
+  const filterKeys = Array.from(knownByKey.values())
+    .filter((entry) => isFilterBlockType(entry.type))
+    .map((entry) => entry.key);
+  if (filterKeys.length) {
+    const firstRow = rowKeys[0] || [];
+    const firstRowContainsOnlyFilters =
+      firstRow.length > 0 && firstRow.every((key) => filterKeys.includes(key) || !knownByKey.has(key));
+    const allFiltersPlacedFirst = filterKeys.every((key) => firstRow.includes(key));
+    if (!firstRowContainsOnlyFilters || !allFiltersPlacedFirst) {
+      pushAuthoringError(errors, {
+        path: `${layoutPath}.rows[0]`,
+        ruleId: 'block-layout-filter-must-lead',
+        message: `flowSurfaces authoring ${layoutPath}.rows[0] must place all filter blocks alone in the first row`,
+      });
+    }
+  }
+  const nonFilterKeys = new Set(
+    Array.from(knownByKey.values())
+      .filter((entry) => !isFilterBlockType(entry.type))
+      .map((entry) => entry.key),
+  );
+  const nonFilterRows = rowKeys
+    .map((row) => row.filter((key) => nonFilterKeys.has(key)))
+    .filter((row) => row.length > 0);
+  if (
+    !options.skipSingleColumn &&
+    nonFilterKeys.size > 1 &&
+    nonFilterRows.length >= nonFilterKeys.size &&
+    nonFilterRows.every((row) => row.length <= 1)
+  ) {
+    pushAuthoringError(errors, {
+      path: `${layoutPath}.rows`,
+      ruleId: 'block-layout-single-column',
+      message: `flowSurfaces authoring ${layoutPath}.rows must not place every non-filter block on its own row`,
+    });
+  }
 }
 
 function collectFieldsLayoutErrors(block: any, blockPath: string, errors: AuthoringErrorInput[]) {
@@ -2336,6 +2424,7 @@ function collectFieldsLayoutErrors(block: any, blockPath: string, errors: Author
   }
   const known = new Set(fieldKeys);
   const mentioned = new Set<string>();
+  const rowFieldCounts: number[] = [];
   rows.forEach((row: any, rowIndex: number) => {
     if (!Array.isArray(row) || !row.length) {
       pushAuthoringError(errors, {
@@ -2345,6 +2434,7 @@ function collectFieldsLayoutErrors(block: any, blockPath: string, errors: Author
       });
       return;
     }
+    let rowFieldCount = 0;
     row.forEach((cell: any, cellIndex: number) => {
       const key = getLayoutCellKey(cell);
       const cellPath = `${layoutPath}.rows[${rowIndex}][${cellIndex}]`;
@@ -2363,6 +2453,9 @@ function collectFieldsLayoutErrors(block: any, blockPath: string, errors: Author
           message: `flowSurfaces authoring ${cellPath} references unknown field '${key}'`,
         });
       }
+      if (known.has(key)) {
+        rowFieldCount += 1;
+      }
       if (mentioned.has(key)) {
         pushAuthoringError(errors, {
           path: cellPath,
@@ -2372,7 +2465,30 @@ function collectFieldsLayoutErrors(block: any, blockPath: string, errors: Author
       }
       mentioned.add(key);
     });
+    if (rowFieldCount > 0) {
+      rowFieldCounts.push(rowFieldCount);
+    }
   });
+  fieldKeys.forEach((key, index) => {
+    if (mentioned.has(key)) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${blockPath}.fields[${index}]`,
+      ruleId: 'fieldsLayout-missing-field-key',
+      message: `flowSurfaces authoring ${blockPath}.fields[${index}] must appear exactly once in fieldsLayout rows`,
+    });
+  });
+  const blockType = String(block.type || '').trim();
+  const requiresCompactRows =
+    (blockType === 'filterForm' && fieldKeys.length >= 3) || (blockType !== 'filterForm' && fieldKeys.length >= 2);
+  if (requiresCompactRows && rowFieldCounts.length >= fieldKeys.length && rowFieldCounts.every((count) => count <= 1)) {
+    pushAuthoringError(errors, {
+      path: `${layoutPath}.rows`,
+      ruleId: 'fieldsLayout-single-column',
+      message: `flowSurfaces authoring ${layoutPath}.rows must not place every field on its own row`,
+    });
+  }
 }
 
 function collectSortingAliasErrors(
@@ -3554,6 +3670,8 @@ function collectActionErrors(
   collectLocalKeys(action.openView, localKeys);
   collectPopupErrors(action.popup, `${path}.popup`, errors, localKeys, context);
   collectPopupErrors(action.openView, `${path}.openView`, errors, localKeys, context);
+  collectCustomEditPopupErrors(actionType, action.popup, `${path}.popup`, errors);
+  collectCustomEditPopupErrors(actionType, action.openView, `${path}.openView`, errors);
   if (actionType === 'jsItem') {
     if (!isJsItemActionSlotSupported(String(block?.type || '').trim(), slot)) {
       pushAuthoringError(errors, {
@@ -3580,6 +3698,28 @@ function collectActionErrors(
       });
     }
   }
+}
+
+function collectCustomEditPopupErrors(actionType: string, popup: any, path: string, errors: AuthoringErrorInput[]) {
+  if (
+    !EDIT_ACTION_TYPES.has(actionType) ||
+    !_.isPlainObject(popup) ||
+    hasFlowSurfaceTemplateReference(popup.template) ||
+    !Array.isArray(popup.blocks)
+  ) {
+    return;
+  }
+  const editFormCount = popup.blocks.filter((block) => {
+    return _.isPlainObject(block) && String(block.type || '').trim() === 'editForm';
+  }).length;
+  if (editFormCount === 1) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'custom-edit-popup-edit-form-count',
+    message: `flowSurfaces authoring ${path} custom edit popup must contain exactly one editForm block; found ${editFormCount}`,
+  });
 }
 
 function collectActionSettingsFilterErrors(
@@ -3868,7 +4008,16 @@ function collectPopupErrors(
       message: `flowSurfaces authoring ${path} cannot combine saveAsTemplate with template`,
     });
   }
-  collectPublicLayoutErrors(popup.layout, `${path}.layout`, getBlockKeys(popup.blocks), 'block', errors);
+  collectPublicLayoutErrors(
+    popup.layout,
+    `${path}.layout`,
+    getBlockLayoutEntries(popup.blocks, `${path}.blocks`),
+    'block',
+    errors,
+    {
+      skipSingleColumn: context.skipGeneratedLayoutSingleColumnErrors === true,
+    },
+  );
   collectReactionErrors(popup.reaction, `${path}.reaction`, localKeys, errors);
   collectNestedBlockErrors(popup.blocks, `${path}.blocks`, errors, localKeys, context);
 }
@@ -4432,6 +4581,31 @@ function getBlockKeys(blocks: any): Set<string> {
     }
   });
   return keys;
+}
+
+interface LayoutKnownEntry {
+  key: string;
+  path: string;
+  type?: string;
+}
+
+function getBlockLayoutEntries(blocks: any, blocksPath: string): LayoutKnownEntry[] {
+  return _.castArray(blocks || [])
+    .map((block, index) => {
+      if (!_.isPlainObject(block)) {
+        return null;
+      }
+      return {
+        key: String(block.key || '').trim(),
+        path: `${blocksPath}[${index}]`,
+        type: String(block.type || '').trim(),
+      };
+    })
+    .filter(Boolean) as LayoutKnownEntry[];
+}
+
+function isFilterBlockType(blockType: any) {
+  return String(blockType || '').trim() === 'filterForm';
 }
 
 function getLayoutCellKey(cell: any): string {

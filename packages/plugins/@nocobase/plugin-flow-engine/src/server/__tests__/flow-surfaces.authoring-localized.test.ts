@@ -477,6 +477,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
       items: [
         { path: 'nickname', operator: '$notEmpty' },
         { path: 'status', operator: '$notEmpty' },
+        { path: 'email', operator: '$notEmpty' },
         { path: 'department.title', operator: '$notEmpty' },
       ],
     };
