@@ -13,6 +13,7 @@ import { getViewDiffAndUpdateHidden } from '../../getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from '../../flows/openViewFlow';
 import { resolveViewParamsToViewList } from '../../resolveViewParamsToViewList';
 import { AdminLayoutRouteCoordinator } from '../AdminLayoutRouteCoordinator';
+import { BaseLayoutRouteCoordinator } from '../BaseLayoutRouteCoordinator';
 import { RouteModel } from '../../models/base/RouteModel';
 
 vi.mock('../../resolveViewParamsToViewList', () => ({
@@ -113,5 +114,39 @@ describe('AdminLayoutRouteCoordinator', () => {
       sourceId: '1',
       triggerByRouter: true,
     });
+  });
+
+  it('parses view stack with custom layout prefix', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: 'test-route' },
+        pathname: '/embed/test-route/view/popup/filterbytk/member',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    mockResolveViewParamsToViewList.mockReturnValue([]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { layoutPathPrefix: 'embed' });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    expect(mockResolveViewParamsToViewList).toHaveBeenCalledWith(
+      engine,
+      [{ viewUid: 'test-route' }, { viewUid: 'popup', filterByTk: 'member' }],
+      expect.anything(),
+    );
   });
 });

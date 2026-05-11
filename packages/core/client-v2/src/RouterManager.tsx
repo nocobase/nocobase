@@ -50,6 +50,7 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
   componentLoader?: ComponentLoader;
   skipAuthCheck?: boolean;
+  authCheck?: boolean;
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 export type RouterComponentType = React.FC<{ BaseLayout?: ComponentType }>;

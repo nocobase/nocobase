@@ -13,6 +13,14 @@ import { ViewParam as SharedViewParam } from '../utils';
 
 type ViewParams = Omit<SharedViewParam, 'viewUid'> & { viewUid?: string };
 
+export interface GeneratePathnameFromViewParamsOptions {
+  prefix?: string;
+}
+
+export interface ViewNavigationOptions {
+  layoutPathPrefix?: string;
+}
+
 function encodeFilterByTk(val: SharedViewParam['filterByTk']): string {
   if (val === undefined || val === null) return '';
   // 1.x 兼容：对象按 key1=v1&key2=v2 拼接后整体 encodeURIComponent
@@ -43,12 +51,17 @@ function hasUsableSourceId(sourceId: unknown): sourceId is string | number {
  * generatePathnameFromViewParams([{ viewUid: 'xxx' }, { viewUid: 'yyy' }]) // '/admin/xxx/view/yyy'
  * ```
  */
-export function generatePathnameFromViewParams(viewParams: ViewParams[]): string {
+export function generatePathnameFromViewParams(
+  viewParams: ViewParams[],
+  options: GeneratePathnameFromViewParamsOptions = {},
+): string {
+  const prefix = options.prefix || 'admin';
+
   if (!viewParams || viewParams.length === 0) {
-    return '/admin';
+    return `/${prefix}`;
   }
 
-  const segments = ['admin'];
+  const segments = [prefix];
 
   viewParams.forEach((viewParam, index) => {
     // 如果不是第一个视图，添加 'view' 关键字
@@ -81,10 +94,12 @@ export class ViewNavigation {
   viewStack: ReadonlyArray<ViewParams>; // 只能通过 setViewStack 修改
   ctx: FlowEngineContext;
   viewParams: ViewParams;
+  private readonly layoutPathPrefix?: string;
 
-  constructor(ctx: FlowEngineContext, viewParams: ViewParams[]) {
+  constructor(ctx: FlowEngineContext, viewParams: ViewParams[], options: ViewNavigationOptions = {}) {
     this.setViewStack(viewParams);
     this.ctx = ctx;
+    this.layoutPathPrefix = options.layoutPathPrefix;
 
     define(this, {
       viewParams: observable,
@@ -106,7 +121,7 @@ export class ViewNavigation {
     });
 
     // 2. 根据 viewStack 生成新的 pathname
-    const newPathname = generatePathnameFromViewParams(newViewStack);
+    const newPathname = generatePathnameFromViewParams(newViewStack, { prefix: this.getLayoutPathPrefix() });
 
     // 3. 触发一次跳转。使用 replace 的方式
     this.ctx.router.navigate(newPathname, { replace: true });
@@ -115,7 +130,9 @@ export class ViewNavigation {
   navigateTo(viewParam: ViewParams, opts?: { replace?: boolean; state?: any }) {
     // 1. 基于当前 viewStack 生成一个 pathname
     // 2. 将当前传入的参数转为 path string
-    const newViewPathname = generatePathnameFromViewParams([...this.viewStack, viewParam]);
+    const newViewPathname = generatePathnameFromViewParams([...this.viewStack, viewParam], {
+      prefix: this.getLayoutPathPrefix(),
+    });
 
     // 3. 与 pathname 拼接成新的 pathname（这里直接使用新生成的 pathname）
     const newPathname = newViewPathname;
@@ -126,7 +143,11 @@ export class ViewNavigation {
 
   back() {
     const prevStack = this.viewStack.slice(0, -1);
-    const prevPath = generatePathnameFromViewParams(prevStack);
+    const prevPath = generatePathnameFromViewParams(prevStack, { prefix: this.getLayoutPathPrefix() });
     this.ctx.router.navigate(prevPath, { replace: true });
+  }
+
+  private getLayoutPathPrefix() {
+    return this.layoutPathPrefix || (this.ctx as any).layoutPathPrefix || 'admin';
   }
 }

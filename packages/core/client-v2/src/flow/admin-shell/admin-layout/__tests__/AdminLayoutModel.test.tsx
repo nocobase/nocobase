@@ -140,6 +140,23 @@ describe('AdminLayoutModel runtime', () => {
     expect(engine.context.layoutContentElement).toBeNull();
   });
 
+  it('should expose layoutPathPrefix only while mounted', async () => {
+    const engine = new FlowEngine();
+    const { unmount } = render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    expect(engine.context.layoutPathPrefix).toBe('admin');
+
+    unmount();
+
+    expect(engine.context.layoutPathPrefix).toBeUndefined();
+    expect(engine.context.currentRoute).toEqual({});
+    expect(engine.context.layoutContentElement).toBeNull();
+  });
+
   it('should expose live engine currentRoute when active page changes', async () => {
     const engine = new FlowEngine();
     const routeMap = {

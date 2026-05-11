@@ -283,6 +283,129 @@ describe('FlowRoute', () => {
     }
   });
 
+  it('should render not found for legacy page when behavior is notFound', async () => {
+    const originalLocation = window.location;
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        pathname: '/v2/embed/test-page',
+        replace,
+      },
+    });
+
+    try {
+      const engine = new FlowEngine();
+      engine.context.defineProperty('routeRepository', {
+        value: {
+          refreshAccessible: hookState.refresh,
+          isAccessibleLoaded: () => true,
+          ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+          getRouteBySchemaUid: vi.fn(() => ({ type: 'page', schemaUid: 'test-page' })),
+        },
+      });
+      engine.context.defineProperty('app', {
+        value: {
+          getPublicPath: () => '/v2/',
+          router: {
+            getBasename: () => '/v2',
+          },
+        },
+      });
+
+      const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+        engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+        {
+          registerRoutePage: vi.fn(),
+          updateRoutePage: vi.fn(),
+          unregisterRoutePage: vi.fn(),
+        },
+      );
+
+      const result = render(
+        <FlowEngineProvider engine={engine}>
+          <MemoryRouter initialEntries={['/embed/test-page']}>
+            <Routes>
+              <Route path="/embed/:name" element={<FlowRoute legacyPageBehavior="notFound" />} />
+            </Routes>
+          </MemoryRouter>
+        </FlowEngineProvider>,
+      );
+
+      await result.findByText('404');
+      expect(replace).not.toHaveBeenCalled();
+      expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
+  });
+
+  it('should bridge legacy page when behavior is bridge', async () => {
+    const originalLocation = window.location;
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        pathname: '/v2/admin/test-page',
+        replace,
+      },
+    });
+
+    try {
+      const engine = new FlowEngine();
+      engine.context.defineProperty('routeRepository', {
+        value: {
+          refreshAccessible: hookState.refresh,
+          isAccessibleLoaded: () => true,
+          ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+          getRouteBySchemaUid: vi.fn(() => ({ type: 'page', schemaUid: 'test-page' })),
+        },
+      });
+      engine.context.defineProperty('app', {
+        value: {
+          getPublicPath: () => '/v2/',
+          router: {
+            getBasename: () => '/v2',
+          },
+        },
+      });
+
+      const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+        engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+        {
+          registerRoutePage: vi.fn(),
+          updateRoutePage: vi.fn(),
+          unregisterRoutePage: vi.fn(),
+        },
+      );
+
+      render(
+        <FlowEngineProvider engine={engine}>
+          <MemoryRouter initialEntries={['/flow/test-page']}>
+            <Routes>
+              <Route path="/flow/:name" element={<FlowRoute legacyPageBehavior="bridge" />} />
+            </Routes>
+          </MemoryRouter>
+        </FlowEngineProvider>,
+      );
+
+      await waitFor(() => {
+        expect(adminLayoutModel.registerRoutePage).toHaveBeenCalled();
+      });
+      expect(replace).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
+  });
+
   it('should not redirect when route does not exist', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();

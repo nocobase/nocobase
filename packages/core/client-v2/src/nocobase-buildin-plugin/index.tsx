@@ -50,6 +50,15 @@ function isAdminRuntimeRoute(pathname: string, basename?: string) {
   return normalizedPathname === '/admin' || normalizedPathname.startsWith('/admin/');
 }
 
+function hasAuthCheckRoute(app: Application, pathname: string) {
+  const matchedRoutes = app.router.matchRoutes(pathname) || [];
+  return matchedRoutes.some((match) => match?.route?.authCheck === true);
+}
+
+function shouldCheckRuntimeRoute(app: Application, pathname: string) {
+  return isAdminRuntimeRoute(pathname, app.router.getBasename()) || hasAuthCheckRoute(app, pathname);
+}
+
 const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
@@ -65,7 +74,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
     const basename = app.router.getBasename();
     const isSkippedAuthCheckRoute =
       isBuiltinAuthRoute(location.pathname, basename) || app.router.isSkippedAuthCheckRoute(location.pathname);
-    const shouldBootstrap = isAdminRuntimeRoute(location.pathname, basename);
+    const shouldBootstrap = shouldCheckRuntimeRoute(app, location.pathname);
 
     if (isSkippedAuthCheckRoute || !shouldBootstrap) {
       setLoading(false);
@@ -126,7 +135,7 @@ const CurrentUserProvider: FC = ({ children }) => {
     const isSkippedAuthCheckRoute =
       isBuiltinAuthRoute(pathnameRef.current, app.router.getBasename()) ||
       app.router.isSkippedAuthCheckRoute(pathnameRef.current);
-    const shouldCheckCurrentUser = isAdminRuntimeRoute(pathnameRef.current, app.router.getBasename());
+    const shouldCheckCurrentUser = shouldCheckRuntimeRoute(app, pathnameRef.current);
 
     if (isSkippedAuthCheckRoute || !shouldCheckCurrentUser) {
       // 认证页等免鉴权路由不应再执行 `/auth:check`，否则未登录时会重复鉴权并触发重定向抖动。

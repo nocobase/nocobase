@@ -102,6 +102,15 @@ describe('parsePathnameToViewParams', () => {
     expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }]);
   });
 
+  test('should parse custom root prefix', () => {
+    const result = parsePathnameToViewParams('/embed/xxx/tab/yyy/view/zzz', { rootPrefix: 'embed' });
+    expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }, { viewUid: 'zzz' }]);
+  });
+
+  test('should keep admin as default root prefix', () => {
+    expect(parsePathnameToViewParams('/embed/xxx')).toEqual([]);
+  });
+
   test('should parse filterByTk from key-value encoded segment into object', () => {
     const kv = encodeURIComponent('id=1&tenant=ac');
     const path = `/admin/xxx/filterbytk/${kv}`;

@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { type FlowEngine, useFlowEngine } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { deviceType } from 'react-device-detect';
-import { useAdminLayoutRoutePage } from '../admin-shell/useAdminLayoutRoutePage';
 import { useParams } from 'react-router-dom';
 import { useApp } from '../../hooks/useApp';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
 import { resolveAdminRouteRuntimeTarget } from '../admin-shell/admin-layout/resolveAdminRouteRuntimeTarget';
+import { getAdminLayoutModel, type AdminLayoutModel } from '../admin-shell/admin-layout/AdminLayoutModel';
+import type { BaseLayoutModel } from '../admin-shell/BaseLayoutModel';
+import { useLayoutRoutePage } from '../admin-shell/useLayoutRoutePage';
 import { AppNotFound } from '../../components';
 
 type FlowRouteGuardState = {
@@ -23,7 +25,24 @@ type FlowRouteGuardState = {
   notFound: boolean;
 };
 
-const BridgeFlowRoute = ({ pageUid }: { pageUid: string }) => {
+export type LegacyPageBehavior = 'redirect' | 'notFound' | 'bridge';
+
+export type FlowRouteProps = {
+  getLayoutModel?: (flowEngine: FlowEngine) => BaseLayoutModel | undefined;
+  routePrefix?: string;
+  legacyPageBehavior?: LegacyPageBehavior;
+};
+
+const getDefaultAdminLayoutModel = (flowEngine: FlowEngine) =>
+  getAdminLayoutModel<AdminLayoutModel>(flowEngine, { required: true });
+
+const BridgeFlowRoute = ({
+  pageUid,
+  getLayoutModel,
+}: {
+  pageUid: string;
+  getLayoutModel: (flowEngine: FlowEngine) => BaseLayoutModel | undefined;
+}) => {
   const flowEngine = useFlowEngine();
   const routeRepository = flowEngine.context.routeRepository;
   const refreshDesktopRoutes = React.useMemo(
@@ -60,11 +79,12 @@ const BridgeFlowRoute = ({ pageUid }: { pageUid: string }) => {
     });
   }, [flowEngine]);
 
-  useAdminLayoutRoutePage({
+  useLayoutRoutePage({
     flowEngine,
     pageUid,
     refreshDesktopRoutes,
     layoutContentRef,
+    getLayoutModel,
   });
 
   return <div ref={layoutContentRef} />;
@@ -84,7 +104,8 @@ const BridgeFlowRoute = ({ pageUid }: { pageUid: string }) => {
  * @returns {JSX.Element} 当前动态页面的布局挂载节点
  * @throws {Error} 当缺少 `route.params.name` 时抛出异常
  */
-const FlowRoute = () => {
+const FlowRoute = (props: FlowRouteProps = {}) => {
+  const { getLayoutModel = getDefaultAdminLayoutModel, legacyPageBehavior = 'redirect' } = props;
   const flowEngine = useFlowEngine();
   const app = useApp();
   const routeRepository = flowEngine.context.routeRepository;
@@ -125,7 +146,22 @@ const FlowRoute = () => {
       }
 
       const route = routeRepository?.getRouteBySchemaUid?.(pageUid);
+      if (!route && legacyPageBehavior === 'notFound') {
+        setGuardState({ pending: false, allowBridge: false, notFound: true });
+        return;
+      }
+
       if (route?.type === NocoBaseDesktopRouteType.page) {
+        if (legacyPageBehavior === 'notFound') {
+          setGuardState({ pending: false, allowBridge: false, notFound: true });
+          return;
+        }
+
+        if (legacyPageBehavior === 'bridge') {
+          setGuardState({ pending: false, allowBridge: true, notFound: false });
+          return;
+        }
+
         const target = resolveAdminRouteRuntimeTarget({
           app,
           route,
@@ -161,22 +197,23 @@ const FlowRoute = () => {
     return () => {
       active = false;
     };
-  }, [app, pageUid, routeRepository]);
+  }, [app, legacyPageBehavior, pageUid, routeRepository]);
 
   const content = useMemo(() => {
     if (guardState.pending) {
       return null;
     }
 
+    if (guardState.notFound) {
+      return <AppNotFound />;
+    }
+
     if (!guardState.allowBridge) {
-      if (guardState.notFound) {
-        return <AppNotFound />;
-      }
       return null;
     }
 
-    return <BridgeFlowRoute pageUid={pageUid} />;
-  }, [guardState.allowBridge, guardState.notFound, guardState.pending, pageUid]);
+    return <BridgeFlowRoute pageUid={pageUid} getLayoutModel={getLayoutModel} />;
+  }, [getLayoutModel, guardState.allowBridge, guardState.notFound, guardState.pending, pageUid]);
 
   return content;
 };

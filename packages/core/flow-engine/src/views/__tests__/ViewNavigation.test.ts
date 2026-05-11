@@ -146,6 +146,14 @@ describe('ViewNavigation', () => {
 
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin', { replace: true });
     });
+
+    it('should use explicit layout prefix when navigating back', () => {
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }], { layoutPathPrefix: 'embed' });
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/embed', { replace: true });
+    });
   });
 });
 
@@ -158,6 +166,11 @@ describe('generatePathnameFromViewParams', () => {
 
   it('should generate single view path', () => {
     expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }])).toBe('/admin/xxx');
+  });
+
+  it('should generate path with custom prefix', () => {
+    expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }], { prefix: 'embed' })).toBe('/embed/xxx');
+    expect(generatePathnameFromViewParams([], { prefix: 'embed' })).toBe('/embed');
   });
 
   it('should generate view with tab', () => {

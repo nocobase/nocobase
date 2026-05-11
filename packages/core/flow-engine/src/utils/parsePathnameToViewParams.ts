@@ -18,6 +18,10 @@ export interface ViewParam {
   sourceId?: string;
 }
 
+export interface ParsePathnameToViewParamsOptions {
+  rootPrefix?: string;
+}
+
 /**
  * 解析路径名为视图参数数组
  *
@@ -33,10 +37,15 @@ export interface ViewParam {
  * parsePathnameToViewParams('/admin/xxx/view/yyy') // [{ viewUid: 'xxx' }, { viewUid: 'yyy' }]
  * ```
  */
-export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
+export const parsePathnameToViewParams = (
+  pathname: string,
+  options: ParsePathnameToViewParamsOptions = {},
+): ViewParam[] => {
   if (!pathname || pathname === '/') {
     return [];
   }
+
+  const rootPrefix = options.rootPrefix || 'admin';
 
   // 移除开头的斜杠并分割路径
   const segments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
@@ -52,8 +61,8 @@ export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
   while (i < segments.length) {
     const segment = segments[i];
 
-    // 处理 admin 或 view 关键字
-    if (segment === 'admin' || segment === 'view') {
+    // 处理布局根前缀或 view 关键字
+    if (segment === rootPrefix || segment === 'view') {
       // 如果有当前视图，先保存到结果中
       if (currentView) {
         result.push(currentView);
