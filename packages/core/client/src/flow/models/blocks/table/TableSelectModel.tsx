@@ -48,9 +48,11 @@ export class TableSelectModel extends TableBlockModel {
         return v[this.collection.filterTargetKey];
       })
       .filter(Boolean);
-    this.resource.addFilterGroup(`${this.uid}-select`, {
-      [`${this.collection.filterTargetKey}.$ne`]: filterKeys,
-    });
+    if (filterKeys.length) {
+      this.resource.addFilterGroup(`${this.uid}-select`, {
+        [`${this.collection.filterTargetKey}.$ne`]: filterKeys,
+      });
+    }
   }
 }
 
