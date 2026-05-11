@@ -23,15 +23,15 @@ const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS = [
   'ui-templates',
 ] as const;
 const FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
-const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELD_BY_COLLECTION: Record<string, string> = {
-  users: 'username',
-  employees: 'nickname',
-  departments: 'title',
-  categories: 'title',
-  tasks: 'title',
-  calendar_events: 'title',
-  kanban_tasks: 'title',
-  roles: 'title',
+const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION: Record<string, string[]> = {
+  users: ['nickname', 'username', 'email', 'phone'],
+  employees: ['nickname', 'status', 'bio'],
+  departments: ['title', 'location'],
+  categories: ['title'],
+  tasks: ['title', 'status'],
+  calendar_events: ['title', 'status', 'startsAt'],
+  kanban_tasks: ['title', 'status', 'department'],
+  roles: ['title', 'name'],
 };
 
 describe('flowSurfaces resource', () => {
@@ -2061,7 +2061,17 @@ describe('flowSurfaces resource', () => {
       logic: '$and',
       items: [
         {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'staff',
+        },
+        {
           path: 'username',
+          operator: '$includes',
+          value: 'staff',
+        },
+        {
+          path: 'email',
           operator: '$includes',
           value: 'staff',
         },
@@ -2074,6 +2084,11 @@ describe('flowSurfaces resource', () => {
           path: 'title',
           operator: '$includes',
           value: 'planning',
+        },
+        {
+          path: 'status',
+          operator: '$eq',
+          value: 'confirmed',
         },
       ],
     };
@@ -2103,12 +2118,124 @@ describe('flowSurfaces resource', () => {
       const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
         (item: any) => item?.use === 'FilterActionModel',
       );
+      const filterableFieldNames = blockCase.defaultFilter.items.map((item: any) => item.path);
       expect(filterAction?.props?.defaultFilterValue).toEqual(blockCase.defaultFilter);
       expect(filterAction?.props?.filterValue).toEqual(blockCase.defaultFilter);
       expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockCase.defaultFilter);
-      expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
-      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
+      expect(filterAction?.props?.filterableFieldNames).toEqual(filterableFieldNames);
+      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual(
+        filterableFieldNames,
+      );
     }
+  });
+
+  it('should auto-generate defaultFilter for addBlock semantic resource data blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Semantic default filter addBlock page',
+      tabTitle: 'Semantic default filter addBlock tab',
+    });
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const popupAction = await addAction(rootAgent, tableUid, 'popup', {
+      popup: {
+        blocks: [
+          {
+            key: 'seedDetails',
+            type: 'details',
+            resource: {
+              binding: 'currentCollection',
+            },
+            fields: ['nickname'],
+          },
+        ],
+      },
+    });
+
+    const popupTable = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: popupAction.uid,
+          },
+          type: 'table',
+          resource: {
+            binding: 'currentCollection',
+          },
+        },
+      }),
+    );
+    const readback = await getSurface(rootAgent, {
+      uid: popupTable.uid,
+    });
+    const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(filterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
+      'nickname',
+      'status',
+      'bio',
+    ]);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status', 'bio']);
+  });
+
+  it('should auto-generate defaultFilter for compose semantic resource data blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Semantic default filter compose page',
+      tabTitle: 'Semantic default filter compose tab',
+    });
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const popupAction = await addAction(rootAgent, tableUid, 'popup', {
+      popup: {
+        blocks: [
+          {
+            key: 'seedDetails',
+            type: 'details',
+            resource: {
+              binding: 'currentCollection',
+            },
+            fields: ['nickname'],
+          },
+        ],
+      },
+    });
+
+    const composeResult = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: popupAction.uid,
+          },
+          blocks: [
+            {
+              key: 'semanticEmployeesTable',
+              type: 'table',
+              resource: {
+                binding: 'currentCollection',
+              },
+              fields: ['nickname'],
+            },
+          ],
+        },
+      }),
+    );
+    const composedBlock = composeResult.blocks.find((item: any) => item.key === 'semanticEmployeesTable');
+    const readback = await getSurface(rootAgent, {
+      uid: composedBlock.uid,
+    });
+    const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(filterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
+      'nickname',
+      'status',
+      'bio',
+    ]);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status', 'bio']);
   });
 
   it('should reject addBlock block-level empty defaultFilter groups before low-level runtime normalization', async () => {
@@ -2312,7 +2439,17 @@ describe('flowSurfaces resource', () => {
       logic: '$and',
       items: [
         {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'staff',
+        },
+        {
           path: 'username',
+          operator: '$includes',
+          value: 'staff',
+        },
+        {
+          path: 'email',
           operator: '$includes',
           value: 'staff',
         },
@@ -2335,6 +2472,11 @@ describe('flowSurfaces resource', () => {
           path: 'title',
           operator: '$includes',
           value: 'planning',
+        },
+        {
+          path: 'status',
+          operator: '$eq',
+          value: 'confirmed',
         },
       ],
     };
@@ -2470,7 +2612,17 @@ describe('flowSurfaces resource', () => {
       logic: '$and',
       items: [
         {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'staff',
+        },
+        {
           path: 'username',
+          operator: '$includes',
+          value: 'staff',
+        },
+        {
+          path: 'email',
           operator: '$includes',
           value: 'staff',
         },
@@ -2479,6 +2631,16 @@ describe('flowSurfaces resource', () => {
     const explicitActionFilter = {
       logic: '$and',
       items: [
+        {
+          path: 'nickname',
+          operator: '$includes',
+          value: 'admin',
+        },
+        {
+          path: 'username',
+          operator: '$includes',
+          value: 'admin',
+        },
         {
           path: 'email',
           operator: '$includes',
@@ -2493,6 +2655,11 @@ describe('flowSurfaces resource', () => {
           path: 'title',
           operator: '$includes',
           value: 'planning',
+        },
+        {
+          path: 'status',
+          operator: '$eq',
+          value: 'confirmed',
         },
       ],
     };
@@ -2715,7 +2882,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(unsupportedBlockRes.status).toBe(200);
 
-    const missingDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
+    const generatedDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
           uid: page.tabSchemaUid,
@@ -2727,8 +2894,20 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(missingDefaultFilterRes.status).toBe(400);
-    expectFlowSurfaceError(missingDefaultFilterRes, 'public-data-surface-default-filter-required', '$.defaultFilter');
+    expect(generatedDefaultFilterRes.status).toBe(200);
+    const generatedDefaultFilterReadback = await getSurface(rootAgent, {
+      uid: getData(generatedDefaultFilterRes).uid,
+    });
+    const generatedFilterAction = _.castArray(generatedDefaultFilterReadback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(generatedFilterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
+      'nickname',
+      'username',
+      'email',
+      'phone',
+    ]);
+    expect(generatedFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
 
     const invalidShapeRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -3912,6 +4091,18 @@ describe('flowSurfaces resource', () => {
         target: {
           uid: field.fieldUid,
         },
+        defaults: {
+          collections: {
+            departments: {
+              popups: {
+                view: {
+                  name: 'Department details',
+                  description: 'Generated department details popup.',
+                },
+              },
+            },
+          },
+        },
         changes: {
           openView: {
             mode: 'modal',
@@ -3919,7 +4110,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(configureFieldRes.status).toBe(200);
+    expect(configureFieldRes.status, readErrorMessage(configureFieldRes)).toBe(200);
 
     const configuredFieldReadback = await getSurface(rootAgent, {
       uid: field.fieldUid,
@@ -4002,6 +4193,18 @@ describe('flowSurfaces resource', () => {
         target: {
           uid: viewAction.uid,
         },
+        defaults: {
+          collections: {
+            employees: {
+              popups: {
+                view: {
+                  name: 'Employee details',
+                  description: 'Generated employee details popup.',
+                },
+              },
+            },
+          },
+        },
         changes: {
           openView: {
             dataSourceKey: 'main',
@@ -4016,6 +4219,112 @@ describe('flowSurfaces resource', () => {
       uid: viewAction.uid,
     });
     expect(configuredActionReadback.tree.stepParams?.popupSettings?.openView.mode).toBe('dialog');
+  });
+
+  it('should apply configure generated relation field popup content for small collections', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Configure field defaults page',
+      tabTitle: 'Configure field defaults tab',
+    });
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const field = await addField(rootAgent, detailsUid, 'department.title');
+
+    const configureFieldRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(configureFieldRes.status, readErrorMessage(configureFieldRes)).toBe(200);
+
+    const popupSurface = await getPopupSurfaceForHost(rootAgent, field.fieldUid);
+    const popupBlock = getFirstPopupBlock(popupSurface);
+    const popupItems = _.castArray(popupBlock?.subModels?.grid?.subModels?.items || []);
+    expect(popupBlock?.use).toBe('DetailsBlockModel');
+    expect(popupItems.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
+      expect.arrayContaining(['title', 'location']),
+    );
+  });
+
+  it('should apply configure generated action popup content for small collections', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Configure action defaults page',
+      tabTitle: 'Configure action defaults tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const viewAction = await addRecordAction(rootAgent, tableUid, 'view', {
+      popup: {
+        tryTemplate: false,
+      },
+    });
+    const emptyPopup = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        spec: {
+          subModels: {
+            page: {
+              use: 'ChildPageModel',
+              subModels: {
+                tabs: [
+                  {
+                    use: 'ChildPageTabModel',
+                    subModels: {
+                      grid: {
+                        use: 'BlockGridModel',
+                        subModels: {
+                          items: [],
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(emptyPopup.status, readErrorMessage(emptyPopup)).toBe(200);
+
+    const configureActionRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(configureActionRes.status, readErrorMessage(configureActionRes)).toBe(200);
+
+    const popupSurface = await getPopupSurfaceForHost(rootAgent, viewAction.uid);
+    const popupBlock = getFirstPopupBlock(popupSurface);
+    const popupItems = _.castArray(popupBlock?.subModels?.grid?.subModels?.items || []);
+    expect(popupBlock?.use).toBe('DetailsBlockModel');
+    expect(popupItems.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
+      expect.arrayContaining(['nickname', 'status', 'age', 'bio']),
+    );
   });
 
   it('should reject field popup content when settings target an external popup uid', async () => {
@@ -5296,11 +5605,12 @@ describe('flowSurfaces resource', () => {
     const editPopupFieldPaths = _.castArray(editPopupBlock?.subModels?.grid?.subModels?.items || []).map(
       (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath,
     );
+    const editPopupBusinessFieldPaths = editPopupFieldPaths.filter(Boolean);
     expect(editPopupTab?.props?.title).toBe('{{t("Edit")}}');
     expect(editPopupBlock?.use).toBe('EditFormModel');
     expect(editPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
-    expect(editPopupFieldPaths).toEqual(expect.arrayContaining(['nickname', 'department']));
-    expect(editPopupFieldPaths).not.toEqual(
+    expect(editPopupBusinessFieldPaths).toEqual(expect.arrayContaining(['nickname', 'status', 'age', 'bio']));
+    expect(editPopupBusinessFieldPaths).not.toEqual(
       expect.arrayContaining(['createdAt', 'updatedAt', 'departmentId', 'tasks', 'logs', 'skills']),
     );
     expect(_.castArray(editPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -9889,6 +10199,31 @@ async function getSurface(rootAgent: any, target: Record<string, any>) {
   );
 }
 
+async function getPopupSurfaceForHost(rootAgent: any, hostUid: string) {
+  const hostSurface = await getSurface(rootAgent, {
+    uid: hostUid,
+  });
+  const popupTemplateUid = hostSurface.tree.popup?.template?.uid;
+  if (!popupTemplateUid) {
+    return hostSurface;
+  }
+  const popupTemplate = getData(
+    await rootAgent.resource('flowSurfaces').getTemplate({
+      values: {
+        uid: popupTemplateUid,
+      },
+    }),
+  );
+  return getSurface(rootAgent, {
+    uid: popupTemplate.targetUid,
+  });
+}
+
+function getFirstPopupBlock(popupSurface: any) {
+  const popupTab = _.castArray(popupSurface?.tree?.subModels?.page?.subModels?.tabs || [])[0];
+  return _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
+}
+
 async function getFlowModelSelfAsyncFlag(db: Database, uid: string) {
   const node = await db.getRepository('flowModelTreePath').findOne({
     filter: {
@@ -9931,15 +10266,13 @@ function hasFlowSurfaceTestEffectiveDefaultFilter(values: Record<string, any>) {
 
 function buildFlowSurfaceTestDefaultFilter(resourceInit?: Record<string, any>) {
   const collectionName = String(resourceInit?.collectionName || '').trim();
-  const path = FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELD_BY_COLLECTION[collectionName] || 'title';
+  const paths = FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION[collectionName] || ['title'];
   return {
     logic: '$and',
-    items: [
-      {
-        path,
-        operator: '$notEmpty',
-      },
-    ],
+    items: paths.map((path) => ({
+      path,
+      operator: '$notEmpty',
+    })),
   };
 }
 

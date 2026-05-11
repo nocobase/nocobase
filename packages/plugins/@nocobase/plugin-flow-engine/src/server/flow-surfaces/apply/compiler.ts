@@ -611,6 +611,8 @@ function createBlockNode(
       ...(desiredNode.clientKey ? { clientKey: desiredNode.clientKey } : {}),
       type: blockCatalogItem.key,
       resourceInit: extractResourceInit(desiredNode),
+      ...(desiredNode.skipDefaultActions === true ? { skipDefaultActions: true } : {}),
+      ...(desiredNode.skipDefaultRecordActions === true ? { skipDefaultRecordActions: true } : {}),
     },
   });
 

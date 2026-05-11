@@ -21,6 +21,16 @@ import {
 } from './flow-surfaces.contract.helpers';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
+function kanbanDefaultFilter() {
+  return {
+    logic: '$and',
+    items: [
+      { path: 'title', operator: '$notEmpty' },
+      { path: 'status', operator: '$notEmpty' },
+    ],
+  };
+}
+
 describe('flowSurfaces kanban contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
@@ -145,6 +155,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName,
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
     const quickCreateTarget = getData(
       await rootAgent.resource('flowSurfaces').addAction({
@@ -210,6 +221,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
 
     const readback = await getSurface(rootAgent, {
@@ -310,6 +322,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
       settings: {
         height: 420,
       },
@@ -339,6 +352,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
 
     const quickCreateActionUid = `${kanban.uid}-quick-create-action`;
@@ -406,6 +420,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
     const initialReadback = await getSurface(rootAgent, {
       uid: kanban.uid,
@@ -552,6 +567,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
     const initialReadback = await getSurface(rootAgent, {
       uid: kanban.uid,
@@ -628,6 +644,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
 
     const addFieldRes = await rootAgent.resource('flowSurfaces').addField({
@@ -726,6 +743,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
 
     const configureRes = await rootAgent.resource('flowSurfaces').configure({
@@ -917,6 +935,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
     const initialReadback = await getSurface(rootAgent, {
       uid: kanban.uid,
@@ -1001,6 +1020,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
       settings: {
         quickCreatePopup: {
           mode: 'dialog',
@@ -1051,6 +1071,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
       settings: {
         quickCreatePopup: {
           uid: quickCreateTargetUid,
@@ -1104,6 +1125,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
 
     const initialConfigureRes = await rootAgent.resource('flowSurfaces').configure({
@@ -1171,6 +1193,7 @@ describe('flowSurfaces kanban contract', () => {
               dataSourceKey: 'main',
               collectionName: 'kanban_tasks',
             },
+            defaultFilter: kanbanDefaultFilter(),
             fields: ['title'],
             actions: ['popup', 'js'],
             settings: {
@@ -1250,13 +1273,6 @@ describe('flowSurfaces kanban contract', () => {
         defaults: {
           collections: {
             [collectionName]: {
-              fieldGroups: [
-                {
-                  key: 'taskMain',
-                  title: 'Task main',
-                  fields: ['title', 'status'],
-                },
-              ],
               popups: {
                 addNew: {
                   name: 'Create kanban task',
@@ -1278,8 +1294,18 @@ describe('flowSurfaces kanban contract', () => {
                 key: 'taskBoard',
                 type: 'kanban',
                 collection: collectionName,
+                defaultFilter: kanbanDefaultFilter(),
                 fields: ['title'],
-                actions: ['popup', 'js', 'jsItem'],
+                actions: [
+                  'popup',
+                  'js',
+                  {
+                    type: 'jsItem',
+                    settings: {
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
                 settings: {
                   groupField: 'status',
                   quickCreateEnabled: true,
@@ -1387,18 +1413,6 @@ describe('flowSurfaces kanban contract', () => {
     const cardPopup = await readPrimaryPopupBlock(`${kanbanBlock.uid}-card-view-action`);
     expect(quickCreatePopup.popupBlock?.use).toBe('CreateFormModel');
     expect(cardPopup.popupBlock?.use).toBe('DetailsBlockModel');
-    expect(
-      collectDescendantNodes(
-        quickCreatePopup.popupBlock,
-        (item) => item?.use === 'DividerItemModel' && item?.props?.label === 'Task main',
-      ),
-    ).toHaveLength(1);
-    expect(
-      collectDescendantNodes(
-        cardPopup.popupBlock,
-        (item) => item?.use === 'DividerItemModel' && item?.props?.label === 'Task main',
-      ),
-    ).toHaveLength(1);
     await expectPersistedKanbanPopupOpenView(kanbanBlock.uid, 'quickCreateAction', {
       mode: 'dialog',
       size: 'large',
@@ -1429,14 +1443,14 @@ describe('flowSurfaces kanban contract', () => {
             },
           ],
         },
-        message: '.fieldGroups is not supported on kanban main blocks',
+        message: 'kanban main blocks do not support fieldGroups',
       },
       {
         key: 'recordActions',
         payload: {
           recordActions: ['view'],
         },
-        message: '.recordActions is not supported on kanban main blocks in v1',
+        message: 'kanban main blocks do not support recordActions',
       },
       {
         key: 'fieldsLayout',
@@ -1445,7 +1459,7 @@ describe('flowSurfaces kanban contract', () => {
             rows: [[{ field: 'title' }]],
           },
         },
-        message: '.fieldsLayout is not supported on kanban main blocks; use fields[] only',
+        message: 'kanban main blocks do not support fieldsLayout',
       },
       {
         key: 'compose-fieldGroups',
@@ -1458,7 +1472,7 @@ describe('flowSurfaces kanban contract', () => {
             },
           ],
         },
-        message: 'kanban does not support fieldGroups[] on the main block',
+        message: 'kanban main blocks do not support fieldGroups',
       },
       {
         key: 'compose-recordActions',
@@ -1466,7 +1480,7 @@ describe('flowSurfaces kanban contract', () => {
         payload: {
           recordActions: ['view'],
         },
-        message: 'kanban does not support recordActions[] on the main block',
+        message: 'kanban main blocks do not support recordActions',
       },
       {
         key: 'compose-fieldsLayout',
@@ -1476,7 +1490,7 @@ describe('flowSurfaces kanban contract', () => {
             rows: [[{ field: 'title' }]],
           },
         },
-        message: 'kanban does not support fieldsLayout on the main block',
+        message: 'kanban main blocks do not support fieldsLayout',
       },
     ];
 
@@ -1499,6 +1513,7 @@ describe('flowSurfaces kanban contract', () => {
                   dataSourceKey: 'main',
                   collectionName: 'kanban_tasks',
                 },
+                defaultFilter: kanbanDefaultFilter(),
                 ...item.payload,
               },
             ],
@@ -1526,6 +1541,7 @@ describe('flowSurfaces kanban contract', () => {
                     key: 'taskBoard',
                     type: 'kanban',
                     collection: 'kanban_tasks',
+                    defaultFilter: kanbanDefaultFilter(),
                     ...item.payload,
                   },
                 ],
@@ -1559,6 +1575,7 @@ describe('flowSurfaces kanban contract', () => {
                 key: 'taskBoard',
                 type: 'kanban',
                 collection: 'kanban_tasks',
+                defaultFilter: kanbanDefaultFilter(),
                 fields: ['title'],
                 settings: {
                   groupField: 'status',
@@ -1638,6 +1655,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
     const outerReadback = await getSurface(rootAgent, {
       uid: outerKanban.uid,
@@ -1653,6 +1671,7 @@ describe('flowSurfaces kanban contract', () => {
         dataSourceKey: 'main',
         collectionName: 'kanban_tasks',
       },
+      defaultFilter: kanbanDefaultFilter(),
     });
     const nestedQuickCreateActionUid = `${nestedKanban.uid}-quick-create-action`;
     const nestedCardViewActionUid = `${nestedKanban.uid}-card-view-action`;

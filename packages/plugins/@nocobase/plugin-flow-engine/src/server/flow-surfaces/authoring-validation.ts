@@ -10,6 +10,7 @@
 import * as _ from 'lodash';
 import { operators as databaseOperators } from '@nocobase/database';
 import { Op } from 'sequelize';
+import * as antDesignIconAsn from '@ant-design/icons-svg';
 import type { FlowSurfaceErrorItemInput } from './errors';
 import { throwAggregateBadRequest } from './errors';
 import {
@@ -19,16 +20,36 @@ import {
   getFieldInterface,
   getFieldName,
   getFieldType,
+  inferAssociationLeafDisplayFieldUse,
+  inferFieldMenuEditableFieldUse,
   isAssociationField,
   normalizeFieldPath,
   resolveFieldFromCollection,
   resolveFieldTargetCollection,
 } from './service-helpers';
-import { getChartBuilderResourceInit } from './chart-config';
+import { resolveRegisteredFieldBinding } from './field-binding-registry';
+import { resolveAssociationSafeTitleField } from './association-title-field';
 import {
+  CHART_BASIC_VISUAL_TYPES,
+  CHART_QUERY_MODES,
+  CHART_VISUAL_MODES,
+  getChartBuilderResourceInit,
+} from './chart-config';
+import {
+  buildFlowSurfaceDefaultFilterFromCollection,
   isFlowSurfacePublicDataSurfaceBlockType,
-  resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames,
 } from './public-data-surface-default-filter';
+import {
+  hasFlowSurfaceInlinePopupBlocks,
+  hasFlowSurfaceInlinePopupTemplate,
+  pickFlowSurfaceDefaultActionPopupFieldGroups,
+  pickFlowSurfaceDefaultActionPopupFieldPaths,
+} from './default-action-popup';
+import { getFlowSurfaceDefaultBlockActions } from './default-block-actions';
+import { hiddenPopupHostHasLocalContent } from './hidden-popup-contract';
+import { FIELD_WRAPPER_USES } from './node-use-sets';
+import { FLOW_SURFACE_INTERNAL_FIELD_KEYS } from './field-type-resolver';
+import { hasFlowSurfaceTemplateDocument, hasFlowSurfaceTemplateReference } from './template-reference';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -41,7 +62,9 @@ export interface FlowSurfaceAuthoringValidationContext {
   hostBlockType?: string;
   hostCollectionName?: string;
   hostDataSourceKey?: string;
+  enabledPackages?: ReadonlySet<string>;
   currentNode?: any;
+  skipGeneratedPopupDefaultFieldGroups?: boolean;
   findModelById?: (
     uid: string,
     options?: {
@@ -60,7 +83,10 @@ const MAIN_BLOCK_UNSUPPORTED_SECTIONS: Record<string, string[]> = {
 
 const FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
+const NON_COUNTED_FIELD_TYPES = new Set(['divider', 'jsitem', 'jscolumn']);
 const SORTABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'tree', 'kanban', 'gridCard', 'map']);
+const CHART_BLOCK_TYPES = new Set(['chart']);
+const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
 const PUBLIC_BLOCK_TYPE_BY_MODEL_USE: Record<string, string> = {
   TableBlockModel: 'table',
   CalendarBlockModel: 'calendar',
@@ -95,6 +121,44 @@ const GRID_CARD_ALLOWED_SETTINGS_KEYS = new Set([
   'sorting',
   'layout',
 ]);
+
+const CHART_QUERY_MODE_SET = new Set(CHART_QUERY_MODES);
+const CHART_VISUAL_MODE_SET = new Set(CHART_VISUAL_MODES);
+const CHART_BASIC_VISUAL_TYPE_SET = new Set(CHART_BASIC_VISUAL_TYPES);
+const CHART_VISUAL_LEGACY_BUILDER_KEYS = new Set([
+  'xField',
+  'yField',
+  'seriesField',
+  'sizeField',
+  'pieCategory',
+  'pieValue',
+  'doughnutCategory',
+  'doughnutValue',
+  'funnelCategory',
+  'funnelValue',
+]);
+const CHART_REQUIRED_VISUAL_MAPPINGS_BY_TYPE: Record<string, string[]> = {
+  line: ['x', 'y'],
+  area: ['x', 'y'],
+  bar: ['x', 'y'],
+  barHorizontal: ['x', 'y'],
+  scatter: ['x', 'y'],
+  pie: ['category', 'value'],
+  doughnut: ['category', 'value'],
+  funnel: ['category', 'value'],
+};
+const CHART_BUILDER_QUERY_FORBIDDEN_KEYS = new Set(['collectionPath', 'sql', 'sqlDatasource']);
+const CHART_SQL_QUERY_FORBIDDEN_KEYS = new Set([
+  'resource',
+  'collectionPath',
+  'measures',
+  'dimensions',
+  'filter',
+  'sorting',
+  'limit',
+  'offset',
+]);
+const CHART_CUSTOM_VISUAL_FORBIDDEN_KEYS = new Set(['type', 'mappings', 'style']);
 
 const JS_ITEM_COLLECTION_ACTION_HOST_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
 const JS_ITEM_RECORD_ACTION_HOST_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
@@ -152,6 +216,57 @@ const KANBAN_ACTION_TYPE_ALIASES = new Map([
 ]);
 const CALENDAR_ALLOWED_ACTION_TYPES = new Set(CALENDAR_ACTION_TYPE_ALIASES.values());
 const KANBAN_ALLOWED_ACTION_TYPES = new Set(KANBAN_ACTION_TYPE_ALIASES.values());
+const LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD = 10;
+type GeneratedPopupDefaultActionType = 'addNew' | 'view' | 'edit';
+const DEFAULT_ACTION_POPUP_TYPES = new Set<GeneratedPopupDefaultActionType>(['addNew', 'view', 'edit']);
+const DEFAULT_ACTION_POPUP_FIELD_CONTEXT_BY_TYPE: Record<
+  GeneratedPopupDefaultActionType,
+  {
+    mode: 'details' | 'form';
+    ownerUse: 'CreateFormModel' | 'DetailsBlockModel' | 'EditFormModel';
+  }
+> = {
+  addNew: {
+    mode: 'form',
+    ownerUse: 'CreateFormModel',
+  },
+  view: {
+    mode: 'details',
+    ownerUse: 'DetailsBlockModel',
+  },
+  edit: {
+    mode: 'form',
+    ownerUse: 'EditFormModel',
+  },
+};
+const HIDDEN_POPUP_ACTION_TYPE_BY_BLOCK_TYPE: Record<string, Record<string, GeneratedPopupDefaultActionType>> = {
+  calendar: {
+    quickCreatePopup: 'addNew',
+    eventPopup: 'view',
+  },
+  kanban: {
+    quickCreatePopup: 'addNew',
+    cardPopup: 'view',
+  },
+};
+const CONFIGURE_OPEN_VIEW_ACTION_TYPE_BY_MODEL_USE: Record<string, GeneratedPopupDefaultActionType> = {
+  AddNewActionModel: 'addNew',
+  AddChildActionModel: 'addNew',
+  CalendarQuickCreateActionModel: 'addNew',
+  KanbanQuickCreateActionModel: 'addNew',
+  ViewActionModel: 'view',
+  CalendarEventViewActionModel: 'view',
+  KanbanCardViewActionModel: 'view',
+  EditActionModel: 'edit',
+};
+const DEFAULTS_ALLOWED_KEYS = ['collections'];
+const DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups'];
+const DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
+const DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
+const DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
+const DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
+const DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
+const DEFAULT_POPUP_ACTIONS = ['view', 'addNew', 'edit'];
 
 export async function assertFlowSurfaceAuthoringPayload(
   actionName: FlowSurfaceAuthoringWriteAction,
@@ -176,10 +291,17 @@ export async function collectFlowSurfaceAuthoringErrors(
   }
 
   await collectNavigationGroupErrors(actionName, values, context, errors);
+  await collectNavigationIconErrors(actionName, values, context, errors);
   collectTopLevelLayoutErrors(actionName, values, errors);
+  collectDefaultsShapeErrors(values?.defaults, '$.defaults', errors);
+  collectDefaultCollectionFieldGroupSemanticErrors(values?.defaults, context, errors);
+  collectApplyBlueprintChartAssetErrors(actionName, values, errors);
 
   if (actionName === 'configure') {
     await collectConfigureErrors(values, errors, context);
+    if (!context.skipGeneratedPopupDefaultFieldGroups) {
+      collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, context, errors);
+    }
     return errors;
   }
 
@@ -188,6 +310,9 @@ export async function collectFlowSurfaceAuthoringErrors(
   blocks.forEach(({ block }) => collectLocalKeys(block, localKeys));
   blocks.forEach(({ block, path }) => collectBlockErrors(block, path, errors, localKeys, context));
   collectReactionErrors(values?.reaction, '$.reaction', localKeys, errors);
+  if (!context.skipGeneratedPopupDefaultFieldGroups) {
+    collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, context, errors);
+  }
 
   return errors;
 }
@@ -223,6 +348,74 @@ async function collectNavigationGroupErrors(
   });
 }
 
+async function collectNavigationIconErrors(
+  actionName: FlowSurfaceAuthoringWriteAction,
+  values: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  if (actionName !== 'applyBlueprint' || values?.mode !== 'create') {
+    return;
+  }
+  const group = _.isPlainObject(values?.navigation?.group) ? values.navigation.group : null;
+  const groupRouteId = String(group?.routeId || '').trim();
+  if (group && !groupRouteId) {
+    const groupIcon = String(group.icon || '').trim();
+    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context))) {
+      pushAuthoringError(errors, {
+        path: '$.navigation.group.icon',
+        ruleId: 'missing-menu-group-icon',
+        message: 'flowSurfaces authoring $.navigation.group.icon is required when creating a new navigation group',
+      });
+    } else if (groupIcon && !isValidAntDesignIconName(groupIcon)) {
+      pushAuthoringError(errors, {
+        path: '$.navigation.group.icon',
+        ruleId: 'invalid-menu-group-icon',
+        message: 'flowSurfaces authoring $.navigation.group.icon must be a valid Ant Design icon name',
+        details: {
+          icon: groupIcon,
+        },
+      });
+    }
+  } else if (group && String(group.icon || '').trim() && !isValidAntDesignIconName(group.icon)) {
+    pushAuthoringError(errors, {
+      path: '$.navigation.group.icon',
+      ruleId: 'invalid-menu-group-icon',
+      message: 'flowSurfaces authoring $.navigation.group.icon must be a valid Ant Design icon name',
+      details: {
+        icon: String(group.icon || '').trim(),
+      },
+    });
+  }
+
+  const item = _.isPlainObject(values?.navigation?.item) ? values.navigation.item : null;
+  const itemIcon = String(item?.icon || '').trim();
+  if (itemIcon && !isValidAntDesignIconName(itemIcon)) {
+    pushAuthoringError(errors, {
+      path: '$.navigation.item.icon',
+      ruleId: 'invalid-menu-item-icon',
+      message: 'flowSurfaces authoring $.navigation.item.icon must be a valid Ant Design icon name',
+      details: {
+        icon: itemIcon,
+      },
+    });
+  }
+}
+
+async function shouldRequireNewNavigationGroupIcon(group: any, context: FlowSurfaceAuthoringValidationContext) {
+  const groupTitle = String(group?.title || '').trim();
+  if (!groupTitle || !context.findMenuGroupRoutesByTitle) {
+    return true;
+  }
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
+  return matchedRoutes.length === 0;
+}
+
+function isValidAntDesignIconName(value: any) {
+  const normalized = String(value || '').trim();
+  return !!normalized && ANT_DESIGN_ICON_NAMES.has(normalized);
+}
+
 function getAuthoringBlocks(actionName: FlowSurfaceAuthoringWriteAction, values: any) {
   if (actionName === 'addBlock') {
     return [{ block: values, path: '$' }];
@@ -248,6 +441,1507 @@ function getAuthoringBlocks(actionName: FlowSurfaceAuthoringWriteAction, values:
     );
   }
   return [];
+}
+
+function collectApplyBlueprintChartAssetErrors(
+  actionName: FlowSurfaceAuthoringWriteAction,
+  values: any,
+  errors: AuthoringErrorInput[],
+) {
+  if (actionName !== 'applyBlueprint') {
+    return;
+  }
+  const chartAssets = _.isPlainObject(values?.assets?.charts) ? values.assets.charts : {};
+  collectChartAssetRegistryErrors(chartAssets, '$.assets.charts', errors);
+  _.castArray(values?.tabs || []).forEach((tab, tabIndex) => {
+    collectChartAssetBlockListErrors(tab?.blocks, `$.tabs[${tabIndex}].blocks`, chartAssets, errors);
+  });
+}
+
+function collectChartAssetBlockListErrors(
+  blocks: any,
+  path: string,
+  chartAssets: Record<string, any>,
+  errors: AuthoringErrorInput[],
+) {
+  if (!Array.isArray(blocks)) {
+    return;
+  }
+  blocks.forEach((block, index) => collectChartAssetBlockTreeErrors(block, `${path}[${index}]`, chartAssets, errors));
+}
+
+function collectChartAssetBlockTreeErrors(
+  block: any,
+  path: string,
+  chartAssets: Record<string, any>,
+  errors: AuthoringErrorInput[],
+) {
+  if (!_.isPlainObject(block)) {
+    return;
+  }
+  collectChartBlockAssetReferenceErrors(block, path, chartAssets, errors);
+  collectChartAssetBlockListErrors(block.blocks, `${path}.blocks`, chartAssets, errors);
+  collectChartAssetBlockListErrors(block.popup?.blocks, `${path}.popup.blocks`, chartAssets, errors);
+  ['actions', 'recordActions'].forEach((slot) => {
+    if (!Array.isArray(block[slot])) {
+      return;
+    }
+    block[slot].forEach((action: any, index: number) => {
+      collectChartAssetBlockListErrors(
+        action?.popup?.blocks,
+        `${path}.${slot}[${index}].popup.blocks`,
+        chartAssets,
+        errors,
+      );
+      collectChartAssetBlockListErrors(
+        action?.openView?.blocks,
+        `${path}.${slot}[${index}].openView.blocks`,
+        chartAssets,
+        errors,
+      );
+    });
+  });
+  if (Array.isArray(block.fields)) {
+    block.fields.forEach((field: any, index: number) => {
+      collectChartAssetBlockListErrors(
+        field?.popup?.blocks,
+        `${path}.fields[${index}].popup.blocks`,
+        chartAssets,
+        errors,
+      );
+    });
+  }
+  Object.entries(HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE[String(block.type || '').trim()] || {}).forEach(([, key]) => {
+    collectChartAssetBlockListErrors(
+      block.settings?.[key]?.blocks,
+      `${path}.settings.${key}.blocks`,
+      chartAssets,
+      errors,
+    );
+  });
+}
+
+function collectChartBlockAssetReferenceErrors(
+  block: any,
+  path: string,
+  chartAssets: Record<string, any>,
+  errors: AuthoringErrorInput[],
+) {
+  if (!CHART_BLOCK_TYPES.has(String(block?.type || '').trim())) {
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(block, 'stepParams')) {
+    pushAuthoringError(errors, {
+      path: `${path}.stepParams`,
+      ruleId: 'chart-block-step-params-unsupported',
+      message: `flowSurfaces authoring ${path}.stepParams is not accepted on public chart blocks; put chart configuration under assets.charts and reference it with block.chart`,
+    });
+  }
+  const chartKey = String(block.chart || '').trim();
+  if (!chartKey) {
+    pushAuthoringError(errors, {
+      path: `${path}.chart`,
+      ruleId: 'chart-block-asset-reference-required',
+      message: `flowSurfaces authoring ${path}.chart must reference one key from assets.charts`,
+    });
+    return;
+  }
+  if (!_.isPlainObject(chartAssets?.[chartKey])) {
+    pushAuthoringError(errors, {
+      path: `${path}.chart`,
+      ruleId: 'chart-block-asset-reference-missing',
+      message: `flowSurfaces authoring ${path}.chart references missing chart asset '${chartKey}'`,
+      details: {
+        chartKey,
+      },
+    });
+  }
+}
+
+function collectChartAssetRegistryErrors(charts: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(charts)) {
+    return;
+  }
+  Object.entries(charts).forEach(([key, asset]) => {
+    const assetPath = `${path}.${key}`;
+    if (!_.isPlainObject(asset)) {
+      pushAuthoringError(errors, {
+        path: assetPath,
+        ruleId: 'chart-asset-invalid',
+        message: `flowSurfaces authoring ${assetPath} must be an object`,
+      });
+      return;
+    }
+    collectChartAssetQueryErrors(asset, assetPath, errors);
+    collectChartAssetVisualErrors(asset, assetPath, errors);
+  });
+}
+
+function collectChartAssetQueryErrors(asset: any, path: string, errors: AuthoringErrorInput[]) {
+  const query = asset.query;
+  if (!_.isPlainObject(query)) {
+    pushAuthoringError(errors, {
+      path: `${path}.query`,
+      ruleId: 'chart-query-missing',
+      message: `flowSurfaces authoring ${path}.query is required`,
+    });
+    return;
+  }
+  const mode = String(query.mode || 'builder').trim();
+  if (!CHART_QUERY_MODE_SET.has(mode as any)) {
+    pushAuthoringError(errors, {
+      path: `${path}.query.mode`,
+      ruleId: 'chart-query-mode-unsupported',
+      message: `flowSurfaces authoring ${path}.query.mode '${mode}' is not supported`,
+      details: {
+        mode,
+      },
+    });
+    return;
+  }
+  if (mode === 'sql') {
+    collectSqlChartAssetQueryErrors(query, path, errors);
+    return;
+  }
+  collectBuilderChartAssetQueryErrors(query, path, errors);
+}
+
+function collectBuilderChartAssetQueryErrors(query: any, path: string, errors: AuthoringErrorInput[]) {
+  const resource = _.isPlainObject(query.resource) ? query.resource : null;
+  if (!String(resource?.collectionName || '').trim()) {
+    pushAuthoringError(errors, {
+      path: `${path}.query.resource`,
+      ruleId: 'chart-builder-query-resource-missing',
+      message: `flowSurfaces authoring ${path}.query.resource.collectionName is required for builder chart assets`,
+    });
+  }
+  if (!Array.isArray(query.measures) || !query.measures.length) {
+    pushAuthoringError(errors, {
+      path: `${path}.query.measures`,
+      ruleId: 'chart-builder-query-measures-missing',
+      message: `flowSurfaces authoring ${path}.query.measures must include at least one measure`,
+    });
+  }
+  collectForbiddenObjectKeyErrors(
+    query,
+    `${path}.query`,
+    CHART_BUILDER_QUERY_FORBIDDEN_KEYS,
+    'chart-builder-query-forbidden-keys',
+    errors,
+  );
+}
+
+function collectSqlChartAssetQueryErrors(query: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!String(query.sql || '').trim()) {
+    pushAuthoringError(errors, {
+      path: `${path}.query.sql`,
+      ruleId: 'chart-sql-query-text-missing',
+      message: `flowSurfaces authoring ${path}.query.sql must be a non-empty string`,
+    });
+  }
+  collectForbiddenObjectKeyErrors(
+    query,
+    `${path}.query`,
+    CHART_SQL_QUERY_FORBIDDEN_KEYS,
+    'chart-sql-query-forbidden-builder-keys',
+    errors,
+  );
+}
+
+function collectChartAssetVisualErrors(asset: any, path: string, errors: AuthoringErrorInput[]) {
+  const visual = asset.visual;
+  if (!_.isPlainObject(visual)) {
+    pushAuthoringError(errors, {
+      path: `${path}.visual`,
+      ruleId: 'chart-visual-missing',
+      message: `flowSurfaces authoring ${path}.visual is required`,
+    });
+    return;
+  }
+  collectForbiddenObjectKeyErrors(
+    visual,
+    `${path}.visual`,
+    CHART_VISUAL_LEGACY_BUILDER_KEYS,
+    'chart-visual-legacy-builder-keys-unsupported',
+    errors,
+  );
+  const mode = String(visual.mode || 'basic').trim();
+  if (!CHART_VISUAL_MODE_SET.has(mode as any)) {
+    pushAuthoringError(errors, {
+      path: `${path}.visual.mode`,
+      ruleId: 'chart-visual-mode-unsupported',
+      message: `flowSurfaces authoring ${path}.visual.mode '${mode}' is not supported`,
+      details: {
+        mode,
+      },
+    });
+    return;
+  }
+  if (mode === 'custom') {
+    if (!String(visual.raw || '').trim()) {
+      pushAuthoringError(errors, {
+        path: `${path}.visual.raw`,
+        ruleId: 'chart-custom-visual-raw-missing',
+        message: `flowSurfaces authoring ${path}.visual.raw is required for custom chart assets`,
+      });
+    }
+    collectForbiddenObjectKeyErrors(
+      visual,
+      `${path}.visual`,
+      CHART_CUSTOM_VISUAL_FORBIDDEN_KEYS,
+      'chart-custom-visual-public-keys-unsupported',
+      errors,
+    );
+    return;
+  }
+  const type = String(visual.type || '').trim();
+  if (!type) {
+    pushAuthoringError(errors, {
+      path: `${path}.visual.type`,
+      ruleId: 'chart-visual-type-missing',
+      message: `flowSurfaces authoring ${path}.visual.type is required for basic chart assets`,
+    });
+  } else if (!CHART_BASIC_VISUAL_TYPE_SET.has(type as any)) {
+    pushAuthoringError(errors, {
+      path: `${path}.visual.type`,
+      ruleId: 'chart-visual-type-unsupported',
+      message: `flowSurfaces authoring ${path}.visual.type '${type}' is not supported`,
+      details: {
+        type,
+      },
+    });
+  }
+  if (!_.isPlainObject(visual.mappings)) {
+    pushAuthoringError(errors, {
+      path: `${path}.visual.mappings`,
+      ruleId: 'chart-visual-mappings-missing',
+      message: `flowSurfaces authoring ${path}.visual.mappings is required for basic chart assets`,
+    });
+    return;
+  }
+  const missingMappings = _.castArray(CHART_REQUIRED_VISUAL_MAPPINGS_BY_TYPE[type] || []).filter(
+    (mappingKey) => !String(visual.mappings[mappingKey] || '').trim(),
+  );
+  if (missingMappings.length) {
+    pushAuthoringError(errors, {
+      path: `${path}.visual.mappings`,
+      ruleId: 'chart-visual-required-mappings-missing',
+      message: `flowSurfaces authoring ${path}.visual.mappings is missing required keys: ${missingMappings.join(', ')}`,
+      details: {
+        type,
+        missingMappings,
+      },
+    });
+  }
+}
+
+function collectForbiddenObjectKeyErrors(
+  value: any,
+  path: string,
+  forbiddenKeys: Set<string>,
+  ruleId: string,
+  errors: AuthoringErrorInput[],
+) {
+  if (!_.isPlainObject(value)) {
+    return;
+  }
+  const keys = Object.keys(value).filter((key) => forbiddenKeys.has(key));
+  if (!keys.length) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path,
+    ruleId,
+    message: `flowSurfaces authoring ${path} does not accept keys: ${keys.join(', ')}`,
+    details: {
+      keys,
+    },
+  });
+}
+
+function collectDefaultsShapeErrors(defaults: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(defaults)) {
+    return;
+  }
+  if (!_.isPlainObject(defaults)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(defaults, path, DEFAULTS_ALLOWED_KEYS, 'defaults-unsupported-key', errors);
+  if (_.isUndefined(defaults.collections)) {
+    return;
+  }
+  if (!_.isPlainObject(defaults.collections)) {
+    pushAuthoringError(errors, {
+      path: `${path}.collections`,
+      ruleId: 'defaults-collections-invalid-shape',
+      message: `flowSurfaces authoring ${path}.collections must be an object`,
+    });
+    return;
+  }
+  Object.entries(defaults.collections).forEach(([collectionName, collectionDefaults]) => {
+    const normalizedCollectionName = String(collectionName || '').trim();
+    if (!normalizedCollectionName) {
+      pushAuthoringError(errors, {
+        path: `${path}.collections`,
+        ruleId: 'defaults-collection-name-required',
+        message: `flowSurfaces authoring ${path}.collections keys must be non-empty collection names`,
+      });
+      return;
+    }
+    collectDefaultCollectionShapeErrors(collectionDefaults, `${path}.collections.${normalizedCollectionName}`, errors);
+  });
+}
+
+function collectDefaultCollectionShapeErrors(collectionDefaults: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(collectionDefaults)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-collection-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(
+    collectionDefaults,
+    path,
+    DEFAULT_COLLECTION_ALLOWED_KEYS,
+    'defaults-collection-unsupported-key',
+    errors,
+  );
+  collectDefaultFieldGroupsShapeErrors(collectionDefaults.fieldGroups, `${path}.fieldGroups`, errors);
+  collectDefaultPopupsShapeErrors(collectionDefaults.popups, `${path}.popups`, errors);
+}
+
+function collectDefaultFieldGroupsShapeErrors(fieldGroups: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(fieldGroups)) {
+    return;
+  }
+  if (!Array.isArray(fieldGroups) || !fieldGroups.length) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-fieldGroups-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be a non-empty array`,
+    });
+    return;
+  }
+  fieldGroups.forEach((group, groupIndex) => {
+    const groupPath = `${path}[${groupIndex}]`;
+    if (!_.isPlainObject(group)) {
+      pushAuthoringError(errors, {
+        path: groupPath,
+        ruleId: 'defaults-fieldGroups-group-invalid-shape',
+        message: `flowSurfaces authoring ${groupPath} must be an object`,
+      });
+      return;
+    }
+    collectUnsupportedKeysErrors(
+      group,
+      groupPath,
+      DEFAULT_FIELD_GROUP_ALLOWED_KEYS,
+      'defaults-fieldGroups-group-unsupported-key',
+      errors,
+    );
+    if (!String(group.title || '').trim()) {
+      pushAuthoringError(errors, {
+        path: `${groupPath}.title`,
+        ruleId: 'defaults-fieldGroups-group-title-required',
+        message: `flowSurfaces authoring ${groupPath}.title must be a non-empty string`,
+      });
+    }
+    if (!Array.isArray(group.fields) || !group.fields.length) {
+      pushAuthoringError(errors, {
+        path: `${groupPath}.fields`,
+        ruleId: 'defaults-fieldGroups-group-fields-required',
+        message: `flowSurfaces authoring ${groupPath}.fields must be a non-empty array`,
+      });
+      return;
+    }
+    group.fields.forEach((field, fieldIndex) =>
+      collectDefaultFieldShapeErrors(field, `${groupPath}.fields[${fieldIndex}]`, errors),
+    );
+  });
+}
+
+function collectDefaultFieldShapeErrors(field: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isString(field)) {
+    if (!field.trim()) {
+      pushAuthoringError(errors, {
+        path,
+        ruleId: 'defaults-fieldGroups-field-field-required',
+        message: `flowSurfaces authoring ${path} must be a non-empty field path`,
+      });
+    }
+    return;
+  }
+  if (!_.isPlainObject(field)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-fieldGroups-field-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be a string or an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(
+    field,
+    path,
+    DEFAULT_FIELD_ALLOWED_KEYS,
+    'defaults-fieldGroups-field-unsupported-key',
+    errors,
+  );
+  if (!String(field.field || '').trim()) {
+    pushAuthoringError(errors, {
+      path: `${path}.field`,
+      ruleId: 'defaults-fieldGroups-field-field-required',
+      message: `flowSurfaces authoring ${path}.field must be a non-empty string`,
+    });
+  }
+  if (!_.isUndefined(field.titleField) && !String(field.titleField || '').trim()) {
+    pushAuthoringError(errors, {
+      path: `${path}.titleField`,
+      ruleId: 'defaults-fieldGroups-field-titleField-required',
+      message: `flowSurfaces authoring ${path}.titleField must be a non-empty string`,
+    });
+  }
+}
+
+function collectDefaultPopupsShapeErrors(popups: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(popups)) {
+    return;
+  }
+  if (!_.isPlainObject(popups)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-popups-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectDefaultPopupActionMapShapeErrors(
+    popups,
+    path,
+    DEFAULT_POPUPS_ALLOWED_KEYS,
+    'defaults-popups-unsupported-key',
+    errors,
+  );
+  if (_.isUndefined(popups.associations)) {
+    return;
+  }
+  if (!_.isPlainObject(popups.associations)) {
+    pushAuthoringError(errors, {
+      path: `${path}.associations`,
+      ruleId: 'defaults-popups-associations-invalid-shape',
+      message: `flowSurfaces authoring ${path}.associations must be an object`,
+    });
+    return;
+  }
+  Object.entries(popups.associations).forEach(([associationName, actionMap]) => {
+    const normalizedAssociationName = String(associationName || '').trim();
+    if (!normalizedAssociationName) {
+      pushAuthoringError(errors, {
+        path: `${path}.associations`,
+        ruleId: 'defaults-popups-association-name-required',
+        message: `flowSurfaces authoring ${path}.associations keys must be non-empty field names`,
+      });
+      return;
+    }
+    collectDefaultPopupActionMapShapeErrors(
+      actionMap,
+      `${path}.associations.${normalizedAssociationName}`,
+      DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS,
+      'defaults-popups-association-unsupported-key',
+      errors,
+    );
+  });
+}
+
+function collectDefaultPopupActionMapShapeErrors(
+  actionMap: any,
+  path: string,
+  allowedKeys: string[],
+  unsupportedRuleId: string,
+  errors: AuthoringErrorInput[],
+) {
+  if (!_.isPlainObject(actionMap)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-popups-action-map-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(actionMap, path, allowedKeys, unsupportedRuleId, errors);
+  DEFAULT_POPUP_ACTIONS.forEach((action) =>
+    collectDefaultPopupNameShapeErrors(actionMap[action], `${path}.${action}`, errors),
+  );
+}
+
+function collectDefaultPopupNameShapeErrors(popupName: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(popupName)) {
+    return;
+  }
+  if (!_.isPlainObject(popupName)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-popups-name-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(
+    popupName,
+    path,
+    DEFAULT_POPUP_ACTION_ALLOWED_KEYS,
+    'defaults-popups-name-unsupported-key',
+    errors,
+  );
+  if (!String(popupName.name || '').trim()) {
+    pushAuthoringError(errors, {
+      path: `${path}.name`,
+      ruleId: 'defaults-popups-name-name-required',
+      message: `flowSurfaces authoring ${path}.name must be a non-empty string`,
+    });
+  }
+  if (!String(popupName.description || '').trim()) {
+    pushAuthoringError(errors, {
+      path: `${path}.description`,
+      ruleId: 'defaults-popups-name-description-required',
+      message: `flowSurfaces authoring ${path}.description must be a non-empty string`,
+    });
+  }
+}
+
+function collectDefaultCollectionFieldGroupSemanticErrors(
+  defaults: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  if (!context.getCollection || !_.isPlainObject(defaults?.collections)) {
+    return;
+  }
+  Object.entries(defaults.collections).forEach(([collectionName, collectionDefaults]) => {
+    const normalizedCollectionName = String(collectionName || '').trim();
+    const fieldGroups = _.isPlainObject(collectionDefaults) ? collectionDefaults.fieldGroups : undefined;
+    if (!normalizedCollectionName || !Array.isArray(fieldGroups)) {
+      return;
+    }
+    const collection = context.getCollection('main', normalizedCollectionName);
+    if (!collection) {
+      return;
+    }
+    const basePath = `$.defaults.collections.${normalizedCollectionName}.fieldGroups`;
+    collectDefaultFieldGroupUnknownFieldErrors(fieldGroups, basePath, collection, errors);
+    collectDefaultFieldGroupRelationTitleFieldErrors(fieldGroups, basePath, collection, 'main', context, errors);
+    if (countDefaultFieldGroupEffectiveFields(fieldGroups) <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
+      pushAuthoringError(errors, {
+        path: basePath,
+        ruleId: 'default-field-groups-only-for-large-generated-popups',
+        message: `flowSurfaces authoring ${basePath} should be omitted for collections with ${LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD} or fewer effective fields`,
+        details: {
+          collection: normalizedCollectionName,
+          threshold: LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD,
+        },
+      });
+    }
+  });
+}
+
+function collectDefaultFieldGroupUnknownFieldErrors(
+  fieldGroups: any[],
+  basePath: string,
+  collection: any,
+  errors: AuthoringErrorInput[],
+) {
+  forEachDefaultFieldGroupField(
+    fieldGroups,
+    (field, fieldPath, path) => {
+      if (!fieldPath) {
+        return;
+      }
+      if (resolveDefaultFieldGroupField(collection, fieldPath)) {
+        return;
+      }
+      pushAuthoringError(errors, {
+        path,
+        ruleId: 'default-field-group-unknown-field',
+        message: `flowSurfaces authoring ${path} references unknown collection default field '${fieldPath}'`,
+        details: {
+          fieldPath,
+          collection: getCollectionName(collection),
+          availableFields: getCollectionFields(collection).map(getFieldName).filter(Boolean),
+        },
+      });
+    },
+    basePath,
+  );
+}
+
+function collectDefaultFieldGroupRelationTitleFieldErrors(
+  fieldGroups: any[],
+  basePath: string,
+  collection: any,
+  dataSourceKey: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  forEachDefaultFieldGroupField(
+    fieldGroups,
+    (field, fieldPath, path) => {
+      if (!fieldPath || !_.isPlainObject(field) || !Object.prototype.hasOwnProperty.call(field, 'titleField')) {
+        return;
+      }
+      const titleField = String(field.titleField || '').trim();
+      if (!titleField) {
+        return;
+      }
+      const resolvedField = resolveDefaultFieldGroupField(collection, fieldPath);
+      if (!resolvedField || !isAssociationField(resolvedField)) {
+        return;
+      }
+      const targetCollection = resolveFieldTargetCollection(
+        resolvedField,
+        dataSourceKey,
+        (nextDataSourceKey, targetCollectionName) => context.getCollection?.(nextDataSourceKey, targetCollectionName),
+      );
+      if (!targetCollection) {
+        return;
+      }
+      const targetField = resolveFieldFromCollection(targetCollection, titleField);
+      if (titleField === 'id' || (targetField && isAssociationField(targetField))) {
+        pushAuthoringError(errors, {
+          path: `${path}.titleField`,
+          ruleId: 'relation-titleField-unreadable',
+          message: `flowSurfaces authoring ${path}.titleField cannot use unreadable relation title field '${titleField}'`,
+          details: {
+            fieldPath,
+            titleField,
+            targetCollection: getCollectionName(targetCollection),
+          },
+        });
+        return;
+      }
+      if (!targetField) {
+        pushAuthoringError(errors, {
+          path: `${path}.titleField`,
+          ruleId: 'relation-titleField-unknown',
+          message: `flowSurfaces authoring ${path}.titleField references unknown relation title field '${titleField}'`,
+          details: {
+            fieldPath,
+            titleField,
+            targetCollection: getCollectionName(targetCollection),
+            availableFields: getCollectionFields(targetCollection).map(getFieldName).filter(Boolean),
+          },
+        });
+      }
+    },
+    basePath,
+  );
+}
+
+function collectDefaultFieldGroupsCoverageErrors(
+  fieldGroups: any,
+  basePath: string,
+  collection: any,
+  requiredFieldNames: string[],
+  errors: AuthoringErrorInput[],
+) {
+  if (!Array.isArray(fieldGroups) || !fieldGroups.length || !requiredFieldNames.length) {
+    return;
+  }
+  const providedFieldNames = new Set<string>();
+  forEachDefaultFieldGroupField(
+    fieldGroups,
+    (_field, fieldPath) => {
+      if (fieldPath && resolveDefaultFieldGroupField(collection, fieldPath)) {
+        providedFieldNames.add(fieldPath);
+      }
+    },
+    basePath,
+  );
+  const missingFieldNames = requiredFieldNames.filter((fieldName) => !providedFieldNames.has(fieldName));
+  if (!missingFieldNames.length) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path: basePath,
+    ruleId: 'default-field-groups-incomplete',
+    message: `flowSurfaces authoring ${basePath} does not cover required generated popup fields: ${missingFieldNames.join(
+      ', ',
+    )}`,
+    details: {
+      collection: getCollectionName(collection),
+      missingFieldNames,
+    },
+  });
+}
+
+function forEachDefaultFieldGroupField(
+  fieldGroups: any[],
+  visitor: (field: any, fieldPath: string, path: string) => void,
+  basePath: string,
+) {
+  fieldGroups.forEach((group, groupIndex) => {
+    if (!_.isPlainObject(group) || !Array.isArray(group.fields)) {
+      return;
+    }
+    group.fields.forEach((field, fieldIndex) => {
+      visitor(field, getDefaultFieldGroupFieldPath(field), `${basePath}[${groupIndex}].fields[${fieldIndex}]`);
+    });
+  });
+}
+
+function getDefaultFieldGroupFieldPath(field: any) {
+  if (_.isString(field)) {
+    return field.trim();
+  }
+  if (!_.isPlainObject(field)) {
+    return '';
+  }
+  return String(field.field || '').trim();
+}
+
+function resolveDefaultFieldGroupField(collection: any, fieldPath: string) {
+  if (!fieldPath || fieldPath.includes('.')) {
+    return null;
+  }
+  return getCollectionFields(collection).find((field) => getFieldName(field) === fieldPath) || null;
+}
+
+function countDefaultFieldGroupEffectiveFields(fieldGroups: any[]) {
+  let count = 0;
+  forEachDefaultFieldGroupField(
+    fieldGroups,
+    (field, fieldPath) => {
+      if (!fieldPath) {
+        return;
+      }
+      if (
+        _.isPlainObject(field) &&
+        NON_COUNTED_FIELD_TYPES.has(
+          String(field.type || '')
+            .trim()
+            .toLowerCase(),
+        )
+      ) {
+        return;
+      }
+      count += 1;
+    },
+    '$.defaults.fieldGroups',
+  );
+  return count;
+}
+
+function collectUnsupportedKeysErrors(
+  value: Record<string, any>,
+  path: string,
+  allowedKeys: string[],
+  ruleId: string,
+  errors: AuthoringErrorInput[],
+) {
+  const unsupportedKeys = Object.keys(value).filter((key) => !allowedKeys.includes(key));
+  if (!unsupportedKeys.length) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path,
+    ruleId,
+    message: `flowSurfaces authoring ${path} only accepts ${allowedKeys.join(
+      ', ',
+    )}; unsupported keys: ${unsupportedKeys.join(', ')}`,
+    details: {
+      allowedKeys,
+      unsupportedKeys,
+    },
+  });
+}
+
+type GeneratedPopupDefaultFieldGroupRequirement = {
+  dataSourceKey: string;
+  collection: string;
+  actionTypes: GeneratedPopupDefaultActionType[];
+  triggerPaths: string[];
+};
+
+function collectGeneratedPopupDefaultFieldGroupErrors(
+  actionName: FlowSurfaceAuthoringWriteAction,
+  values: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  if (!context.getCollection) {
+    return;
+  }
+  const requirements = new Map<string, GeneratedPopupDefaultFieldGroupRequirement>();
+
+  if (actionName === 'configure') {
+    collectConfigureGeneratedPopupRequirements(values, context, requirements);
+  } else {
+    getAuthoringBlocks(actionName, values).forEach(({ block, path }) =>
+      collectBlockGeneratedPopupRequirements(block, path, context, requirements),
+    );
+  }
+
+  for (const requirement of requirements.values()) {
+    const collection = context.getCollection(requirement.dataSourceKey, requirement.collection);
+    if (!collection) {
+      continue;
+    }
+    const businessFieldNames = getGeneratedPopupBusinessFieldNames(collection);
+    collectDefaultFieldGroupsCoverageErrors(
+      getDefaultCollectionFieldGroups(values?.defaults, requirement.collection),
+      `$.defaults.collections.${requirement.collection}.fieldGroups`,
+      collection,
+      businessFieldNames,
+      errors,
+    );
+    if (businessFieldNames.length <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
+      continue;
+    }
+    if (
+      hasUsableDefaultCollectionFieldGroups(
+        values?.defaults,
+        requirement.collection,
+        collection,
+        requirement.dataSourceKey,
+        requirement.actionTypes,
+        context,
+      )
+    ) {
+      continue;
+    }
+    const path = `$.defaults.collections.${requirement.collection}.fieldGroups`;
+    if (errors.some((error) => error.path === path && error.ruleId === 'missing-default-field-groups')) {
+      continue;
+    }
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'missing-default-field-groups',
+      message: `flowSurfaces authoring ${path} is required because collection '${requirement.collection}' has ${businessFieldNames.length} business fields and generated popups require collection-level fieldGroups`,
+      details: {
+        collection: requirement.collection,
+        dataSourceKey: requirement.dataSourceKey,
+        businessFieldCount: businessFieldNames.length,
+        threshold: LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD,
+        actionTypes: requirement.actionTypes,
+        requiredFieldNames: businessFieldNames,
+        triggerPaths: requirement.triggerPaths,
+      },
+    });
+  }
+}
+
+function collectConfigureGeneratedPopupRequirements(
+  values: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  const changes = values?.changes;
+  if (!_.isPlainObject(changes)) {
+    return;
+  }
+  const hostBlockType = normalizeAuthoringHostBlockType(context.hostBlockType);
+  const hasResourceChange = _.isPlainObject(changes.resource);
+  const block = {
+    type: hostBlockType,
+    collection: hasResourceChange ? undefined : context.hostCollectionName,
+    dataSourceKey: context.hostDataSourceKey,
+    resource: hasResourceChange ? changes.resource : undefined,
+  };
+  if (hasResourceChange) {
+    const keys = HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE[hostBlockType] || [];
+    keys.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(changes, key)) {
+        return;
+      }
+      const actionType = getHiddenPopupGeneratedActionType(hostBlockType, key);
+      if (!actionType) {
+        return;
+      }
+      addGeneratedPopupRequirementForBlock(block, context, `$.changes.resource.${key}`, requirements, actionType);
+    });
+  }
+  collectHiddenPopupGeneratedPopupRequirements(changes, '$.changes', block, context, requirements);
+  collectConfigureOpenViewGeneratedPopupRequirement(changes, context, requirements);
+}
+
+function collectConfigureOpenViewGeneratedPopupRequirement(
+  changes: Record<string, any>,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!Object.prototype.hasOwnProperty.call(changes, 'openView') || !_.isPlainObject(changes.openView)) {
+    return;
+  }
+  const popupHostNode = getConfigureOpenViewPopupHostNode(context.currentNode);
+  if (!popupHostNode?.uid || !doesConfigureOpenViewGenerate(changes.openView, popupHostNode)) {
+    return;
+  }
+  if (hiddenPopupHostHasLocalContent(popupHostNode)) {
+    return;
+  }
+  const actionType = resolveConfigureOpenViewGeneratedActionType(context.currentNode, popupHostNode, changes.openView);
+  if (!actionType) {
+    return;
+  }
+  const collectionName = resolveConfigureOpenViewCollectionName(changes.openView, context, popupHostNode);
+  if (!collectionName) {
+    return;
+  }
+  addGeneratedPopupRequirement(
+    {
+      dataSourceKey: resolveConfigureOpenViewDataSourceKey(changes.openView, context, popupHostNode),
+      collectionName,
+      triggerPath: '$.changes.openView',
+      actionType,
+    },
+    requirements,
+  );
+}
+
+function getConfigureOpenViewPopupHostNode(currentNode: any) {
+  const currentUse = String(currentNode?.use || '').trim();
+  if (FIELD_WRAPPER_USES.has(currentUse)) {
+    return currentNode?.subModels?.field || null;
+  }
+  return currentNode || null;
+}
+
+function doesConfigureOpenViewGenerate(openView: Record<string, any>, popupHostNode: any) {
+  if (hasFlowSurfaceInlinePopupTemplate(openView) || String(openView.popupTemplateUid || '').trim()) {
+    return false;
+  }
+  const openViewUid = String(openView.uid || '').trim();
+  const popupHostUid = String(popupHostNode?.uid || '').trim();
+  return !openViewUid || !popupHostUid || openViewUid === popupHostUid;
+}
+
+function resolveConfigureOpenViewGeneratedActionType(
+  currentNode: any,
+  popupHostNode: any,
+  openView: Record<string, any>,
+): GeneratedPopupDefaultActionType | undefined {
+  const actionType =
+    CONFIGURE_OPEN_VIEW_ACTION_TYPE_BY_MODEL_USE[String(popupHostNode?.use || '').trim()] ||
+    CONFIGURE_OPEN_VIEW_ACTION_TYPE_BY_MODEL_USE[String(currentNode?.use || '').trim()];
+  if (actionType) {
+    return actionType;
+  }
+  if (!isConfigureOpenViewFieldHost(currentNode, popupHostNode)) {
+    return undefined;
+  }
+  return normalizeDefaultPopupActionType(openView.defaultType) || 'view';
+}
+
+function isConfigureOpenViewFieldHost(currentNode: any, popupHostNode: any) {
+  const currentUse = String(currentNode?.use || '').trim();
+  const popupHostUse = String(popupHostNode?.use || '').trim();
+  return (
+    FIELD_WRAPPER_USES.has(currentUse) ||
+    popupHostUse.endsWith('FieldModel') ||
+    _.isPlainObject(popupHostNode?.stepParams?.fieldSettings?.init)
+  );
+}
+
+function resolveConfigureOpenViewCollectionName(
+  openView: Record<string, any>,
+  context: FlowSurfaceAuthoringValidationContext,
+  popupHostNode: any,
+) {
+  const openViewCollectionName = String(openView.collectionName || '').trim();
+  if (openViewCollectionName) {
+    return openViewCollectionName;
+  }
+  return (
+    resolveConfigureFieldTargetCollectionName(popupHostNode, context) || String(context.hostCollectionName || '').trim()
+  );
+}
+
+function resolveConfigureOpenViewDataSourceKey(
+  openView: Record<string, any>,
+  context: FlowSurfaceAuthoringValidationContext,
+  popupHostNode: any,
+) {
+  return (
+    String(openView.dataSourceKey || '').trim() ||
+    String(popupHostNode?.stepParams?.fieldSettings?.init?.dataSourceKey || '').trim() ||
+    String(context.hostDataSourceKey || '').trim() ||
+    'main'
+  );
+}
+
+function resolveConfigureFieldTargetCollectionName(fieldNode: any, context: FlowSurfaceAuthoringValidationContext) {
+  const init = _.isPlainObject(fieldNode?.stepParams?.fieldSettings?.init)
+    ? fieldNode.stepParams.fieldSettings.init
+    : {};
+  const sourceCollectionName = String(init.collectionName || '').trim();
+  if (!sourceCollectionName || !context.getCollection) {
+    return undefined;
+  }
+  const dataSourceKey = String(init.dataSourceKey || '').trim() || 'main';
+  const sourceCollection = context.getCollection(dataSourceKey, sourceCollectionName);
+  const fullFieldPath = normalizeFieldPath(init.fieldPath || '', init.associationPathName);
+  const associationPath = String(init.associationPathName || '').trim() || fullFieldPath.split('.')[0];
+  if (!associationPath) {
+    return undefined;
+  }
+  const sourceField = resolveFieldFromCollection(sourceCollection, associationPath);
+  const targetCollection = resolveFieldTargetCollection(sourceField, dataSourceKey, context.getCollection);
+  return getCollectionName(targetCollection);
+}
+
+function collectBlockGeneratedPopupRequirements(
+  block: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!_.isPlainObject(block)) {
+    return;
+  }
+  const blockType = String(block.type || '').trim();
+  collectDefaultBlockActionGeneratedPopupRequirements(block, blockType, path, context, requirements);
+  collectActionListGeneratedPopupRequirements(block.actions, `${path}.actions`, block, context, requirements);
+  collectActionListGeneratedPopupRequirements(
+    block.recordActions,
+    `${path}.recordActions`,
+    block,
+    context,
+    requirements,
+  );
+  collectHiddenPopupGeneratedPopupRequirements(block.settings, `${path}.settings`, block, context, requirements);
+  collectFieldListGeneratedPopupRequirements(block.fields, `${path}.fields`, block, context, requirements);
+  collectFieldGroupsGeneratedPopupRequirements(block.fieldGroups, `${path}.fieldGroups`, block, context, requirements);
+  collectNestedBlocksGeneratedPopupRequirements(block.blocks, `${path}.blocks`, context, requirements);
+}
+
+function collectDefaultBlockActionGeneratedPopupRequirements(
+  block: any,
+  blockType: string,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!blockType || hasFlowSurfaceTemplateDocument(block?.template)) {
+    return;
+  }
+  const descriptors = getFlowSurfaceDefaultBlockActions({
+    blockType,
+    template: block?.template,
+  }).filter((descriptor) => _.isPlainObject(descriptor.popup));
+  descriptors.forEach((descriptor) => {
+    const actionType = normalizeDefaultPopupActionType(descriptor.type);
+    if (!actionType) {
+      return;
+    }
+    const slot = descriptor.scope === 'recordActions' ? 'recordActions' : 'actions';
+    const slotSkipped =
+      slot === 'recordActions' ? block?.skipDefaultRecordActions === true : block?.skipDefaultActions === true;
+    const actions = Array.isArray(block?.[slot]) ? block[slot] : [];
+    const matchedIndex = actions.findIndex(
+      (action: any) => resolveAuthoringActionType(action, block) === descriptor.type,
+    );
+    if (matchedIndex >= 0) {
+      const matchedAction = actions[matchedIndex];
+      if (_.isPlainObject(matchedAction) && !doesDefaultActionPopupGenerate(matchedAction.popup)) {
+        return;
+      }
+      addGeneratedPopupRequirementForBlock(
+        block,
+        context,
+        `${path}.${slot}[${matchedIndex}].popup`,
+        requirements,
+        actionType,
+      );
+      return;
+    }
+    if (slotSkipped) {
+      return;
+    }
+    addGeneratedPopupRequirementForBlock(
+      block,
+      context,
+      `${path}.${slot}.${descriptor.type}`,
+      requirements,
+      actionType,
+    );
+  });
+}
+
+function collectActionListGeneratedPopupRequirements(
+  actions: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!Array.isArray(actions)) {
+    return;
+  }
+  actions.forEach((action, index) => {
+    const actionPath = `${path}[${index}]`;
+    const actionType = resolveDefaultPopupActionType(resolveAuthoringActionType(action, block));
+    const defaultActionType = normalizeDefaultPopupActionType(actionType);
+    if (_.isPlainObject(action) && defaultActionType && doesDefaultActionPopupGenerate(action.popup)) {
+      addGeneratedPopupRequirementForBlock(block, context, `${actionPath}.popup`, requirements, defaultActionType);
+    }
+    if (_.isPlainObject(action)) {
+      collectPopupGeneratedPopupRequirements(action.popup, `${actionPath}.popup`, context, requirements);
+      collectPopupGeneratedPopupRequirements(action.openView, `${actionPath}.openView`, context, requirements);
+    }
+  });
+}
+
+function collectHiddenPopupGeneratedPopupRequirements(
+  settings: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!_.isPlainObject(settings)) {
+    return;
+  }
+  const blockType = String(block?.type || '').trim();
+  const keys = HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE[blockType] || [];
+  keys.forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(settings, key)) {
+      return;
+    }
+    const actionType = getHiddenPopupGeneratedActionType(blockType, key);
+    if (doesDefaultActionPopupGenerate(settings[key])) {
+      addGeneratedPopupRequirementForBlock(block, context, `${path}.${key}`, requirements, actionType);
+    }
+    collectPopupGeneratedPopupRequirements(settings[key], `${path}.${key}`, context, requirements);
+  });
+}
+
+function collectFieldListGeneratedPopupRequirements(
+  fields: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!Array.isArray(fields)) {
+    return;
+  }
+  fields.forEach((field, index) => {
+    const fieldPath = `${path}[${index}]`;
+    if (_.isString(field)) {
+      addGeneratedPopupRequirementForRelationField(field, fieldPath, block, context, requirements, 'view');
+      return;
+    }
+    if (!_.isPlainObject(field)) {
+      return;
+    }
+    if (_.isPlainObject(field.popup) && doesDefaultActionPopupGenerate(field.popup)) {
+      addGeneratedPopupRequirementForRelationField(
+        field,
+        fieldPath,
+        block,
+        context,
+        requirements,
+        getRelationFieldGeneratedPopupActionType(field),
+      );
+    }
+    collectPopupGeneratedPopupRequirements(field.popup, `${fieldPath}.popup`, context, requirements);
+  });
+}
+
+function collectFieldGroupsGeneratedPopupRequirements(
+  fieldGroups: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!Array.isArray(fieldGroups)) {
+    return;
+  }
+  fieldGroups.forEach((group, groupIndex) => {
+    if (!_.isPlainObject(group)) {
+      return;
+    }
+    collectFieldListGeneratedPopupRequirements(
+      group.fields,
+      `${path}[${groupIndex}].fields`,
+      block,
+      context,
+      requirements,
+    );
+  });
+}
+
+function collectPopupGeneratedPopupRequirements(
+  popup: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!_.isPlainObject(popup)) {
+    return;
+  }
+  collectNestedBlocksGeneratedPopupRequirements(popup.blocks, `${path}.blocks`, context, requirements);
+}
+
+function collectNestedBlocksGeneratedPopupRequirements(
+  blocks: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  if (!Array.isArray(blocks)) {
+    return;
+  }
+  blocks.forEach((block, index) =>
+    collectBlockGeneratedPopupRequirements(block, `${path}[${index}]`, context, requirements),
+  );
+}
+
+function addGeneratedPopupRequirementForBlock(
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  triggerPath: string,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+  actionType: GeneratedPopupDefaultActionType | undefined,
+) {
+  if (!actionType) {
+    return;
+  }
+  const collectionName = getBlockCollectionName(block, context);
+  if (!collectionName) {
+    return;
+  }
+  addGeneratedPopupRequirement(
+    {
+      dataSourceKey: getBlockDataSourceKey(block, context),
+      collectionName,
+      triggerPath,
+      actionType,
+    },
+    requirements,
+  );
+}
+
+function addGeneratedPopupRequirementForRelationField(
+  fieldSpec: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+  actionType: GeneratedPopupDefaultActionType,
+) {
+  const sourceCollection = getBlockCollection(block, context);
+  if (!sourceCollection || !context.getCollection) {
+    return;
+  }
+  const fieldPath = getFieldPathInput(fieldSpec);
+  const sourceField = resolveFieldFromCollection(sourceCollection, fieldPath);
+  if (!sourceField || !isAssociationField(sourceField)) {
+    return;
+  }
+  const dataSourceKey = getBlockDataSourceKey(block, context);
+  const targetCollection = resolveFieldTargetCollection(sourceField, dataSourceKey, context.getCollection);
+  const targetCollectionName = getCollectionName(targetCollection);
+  if (!targetCollectionName) {
+    return;
+  }
+  addGeneratedPopupRequirement(
+    {
+      dataSourceKey,
+      collectionName: targetCollectionName,
+      triggerPath: `${path}.popup`,
+      actionType,
+    },
+    requirements,
+  );
+}
+
+function addGeneratedPopupRequirement(
+  input: {
+    dataSourceKey: string;
+    collectionName: string;
+    triggerPath: string;
+    actionType: GeneratedPopupDefaultActionType;
+  },
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+) {
+  const dataSourceKey = normalizeDataSourceKey(input.dataSourceKey);
+  const collection = String(input.collectionName || '').trim();
+  if (!collection) {
+    return;
+  }
+  const key = `${dataSourceKey}.${collection}`;
+  const existing =
+    requirements.get(key) ||
+    ({
+      dataSourceKey,
+      collection,
+      actionTypes: [],
+      triggerPaths: [],
+    } as GeneratedPopupDefaultFieldGroupRequirement);
+  if (!existing.actionTypes.includes(input.actionType)) {
+    existing.actionTypes.push(input.actionType);
+  }
+  if (!existing.triggerPaths.includes(input.triggerPath)) {
+    existing.triggerPaths.push(input.triggerPath);
+  }
+  requirements.set(key, existing);
+}
+
+function resolveDefaultPopupActionType(actionType: string) {
+  if (actionType === 'addChild') {
+    return 'addNew';
+  }
+  return actionType;
+}
+
+function normalizeDefaultPopupActionType(actionType: any): GeneratedPopupDefaultActionType | undefined {
+  const normalized = resolveDefaultPopupActionType(String(actionType || '').trim());
+  if (!DEFAULT_ACTION_POPUP_TYPES.has(normalized as GeneratedPopupDefaultActionType)) {
+    return undefined;
+  }
+  return normalized as GeneratedPopupDefaultActionType;
+}
+
+function getHiddenPopupGeneratedActionType(blockType: string, key: string) {
+  return HIDDEN_POPUP_ACTION_TYPE_BY_BLOCK_TYPE[blockType]?.[key];
+}
+
+function getRelationFieldGeneratedPopupActionType(fieldSpec: any): GeneratedPopupDefaultActionType {
+  const popup = _.isPlainObject(fieldSpec?.popup) ? fieldSpec.popup : undefined;
+  return normalizeDefaultPopupActionType(popup?.defaultType) || 'view';
+}
+
+function doesDefaultActionPopupGenerate(popup: any) {
+  if (_.isUndefined(popup)) {
+    return true;
+  }
+  if (!_.isPlainObject(popup)) {
+    return false;
+  }
+  return !hasFlowSurfaceInlinePopupTemplate(popup) && !hasFlowSurfaceInlinePopupBlocks(popup);
+}
+
+function getGeneratedPopupBusinessFieldCandidates(collection: any) {
+  return getCollectionFields(collection).flatMap((field) => {
+    const fieldName = String(getFieldName(field) || '').trim();
+    const fieldInterface = String(getFieldInterface(field) || '').trim();
+    const fieldType = String(getFieldType(field) || '').trim();
+    if (!fieldName || !fieldInterface || field?.hidden || field?.options?.hidden) {
+      return [];
+    }
+    if (fieldType === 'sort' || fieldInterface === 'sort') {
+      return [];
+    }
+    return [
+      {
+        field,
+        fieldPath: fieldName,
+      },
+    ];
+  });
+}
+
+function getGeneratedPopupBusinessFieldNames(collection: any) {
+  const candidates = getGeneratedPopupBusinessFieldCandidates(collection);
+  return pickFlowSurfaceDefaultActionPopupFieldPaths(candidates, {
+    excludeAuditTimestampFields: true,
+  });
+}
+
+function getGeneratedPopupRuntimeFieldCandidates(input: {
+  collection: any;
+  dataSourceKey: string;
+  actionType: GeneratedPopupDefaultActionType;
+  context: FlowSurfaceAuthoringValidationContext;
+}) {
+  const candidateContext = DEFAULT_ACTION_POPUP_FIELD_CONTEXT_BY_TYPE[input.actionType];
+  return getCollectionFields(input.collection).flatMap((field) => {
+    const fieldName = getFieldName(field);
+    const fieldInterface = getFieldInterface(field);
+    if (!fieldName || !fieldInterface) {
+      return [];
+    }
+
+    const registeredBinding = resolveRegisteredFieldBinding({
+      containerUse: candidateContext.ownerUse,
+      field,
+      dataSourceKey: input.dataSourceKey,
+      enabledPackages: input.context.enabledPackages,
+      getCollection: (dataSourceKey, collectionName) => input.context.getCollection?.(dataSourceKey, collectionName),
+      useStrictOnly: true,
+    });
+
+    if (isAssociationField(field)) {
+      if (!registeredBinding?.modelClassName) {
+        const safeTitleField = resolveAssociationSafeTitleField(
+          field,
+          input.dataSourceKey,
+          (dataSourceKey, collectionName) => input.context.getCollection?.(dataSourceKey, collectionName),
+        );
+        if (!safeTitleField?.fieldName) {
+          return [];
+        }
+      }
+    } else if (!registeredBinding?.modelClassName) {
+      const hasLegacyCapability =
+        candidateContext.mode === 'form'
+          ? !!inferFieldMenuEditableFieldUse(fieldInterface)
+          : !!inferAssociationLeafDisplayFieldUse(fieldInterface);
+      if (!hasLegacyCapability) {
+        return [];
+      }
+    }
+
+    return [
+      {
+        field,
+        fieldPath: fieldName,
+      },
+    ];
+  });
+}
+
+function hasUsableDefaultCollectionFieldGroups(
+  defaults: any,
+  collectionName: string,
+  collection: any,
+  dataSourceKey: string,
+  actionTypes: GeneratedPopupDefaultActionType[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  const fieldGroups = getDefaultCollectionFieldGroups(defaults, collectionName);
+  if (!Array.isArray(fieldGroups) || !fieldGroups.length) {
+    return false;
+  }
+  const requiredActionTypes: GeneratedPopupDefaultActionType[] = actionTypes.length ? actionTypes : ['view'];
+  return requiredActionTypes.every((actionType) => {
+    const pickedGroups = pickFlowSurfaceDefaultActionPopupFieldGroups(
+      getGeneratedPopupRuntimeFieldCandidates({
+        collection,
+        dataSourceKey,
+        actionType,
+        context,
+      }),
+      fieldGroups,
+      {
+        excludeAuditTimestampFields: actionType !== 'view',
+      },
+    );
+    return pickedGroups.length > 0;
+  });
+}
+
+function getDefaultCollectionFieldGroups(defaults: any, collectionName: string) {
+  const collections = _.isPlainObject(defaults?.collections) ? defaults.collections : undefined;
+  const collectionDefaults = _.isPlainObject(collections?.[collectionName]) ? collections[collectionName] : undefined;
+  return collectionDefaults?.fieldGroups;
 }
 
 function collectBlockErrors(
@@ -297,7 +1991,6 @@ function collectBlockErrors(
   collectFieldsLayoutErrors(block, path, errors);
   collectTemplateBackedPublicDataSurfaceDefaultOverrideErrors(block, blockType, path, errors);
   collectDefaultFilterErrors(block.defaultFilter, `${path}.defaultFilter`, errors, block, context);
-  collectBlockDefaultFilterCommonFieldErrors(block, blockType, path, errors, context);
   collectDefaultActionSettingsFilterErrors(
     block.defaultActionSettings,
     `${path}.defaultActionSettings`,
@@ -305,7 +1998,6 @@ function collectBlockErrors(
     block,
     context,
   );
-  collectRequiredPublicDataSurfaceDefaultFilterError(block, blockType, path, errors);
   collectSemanticBindingErrors(block, blockType, path, errors, context);
   collectChartDisplayTitleErrors(block, blockType, path, errors);
   collectChartBuilderRelationFieldErrors(block, blockType, path, errors);
@@ -387,7 +2079,9 @@ function collectFieldGroupsShapeErrors(
       });
     } else {
       group.fields.forEach((fieldPath: any, fieldIndex: number) => {
-        collectUnknownFieldPathError(fieldPath, `${groupPath}.fields[${fieldIndex}]`, block, context, errors);
+        const itemPath = `${groupPath}.fields[${fieldIndex}]`;
+        collectInternalFieldKeysErrors(fieldPath, itemPath, errors);
+        collectUnknownFieldPathError(fieldPath, itemPath, block, context, errors);
       });
     }
   });
@@ -428,6 +2122,7 @@ async function collectConfigureErrors(
   collectChartBuilderRelationFieldErrors(changes, hostBlockType, '$.changes', errors);
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
+  collectFieldListInternalKeyErrors(changes.fields, '$.changes.fields', errors);
   const connectFieldsTargets = collectTreeConnectFieldsErrors(changes.connectFields, '$.changes.connectFields', errors);
   await collectTreeConnectFieldsLiveErrors(connectFieldsTargets, changes, '$.changes.connectFields', errors, context);
   collectPopupLikeErrors(changes.popup, '$.changes.popup', errors, context);
@@ -876,43 +2571,13 @@ function collectDefaultFilterGroupShapeErrors(value: any, path: string, errors: 
   });
 }
 
-function collectRequiredPublicDataSurfaceDefaultFilterError(
-  block: any,
-  blockType: string,
-  path: string,
-  errors: AuthoringErrorInput[],
-) {
-  if (!isFlowSurfacePublicDataSurfaceBlockType(blockType) || !_.isUndefined(block?.template)) {
-    return;
-  }
-  if (hasExplicitEffectiveDefaultFilter(block)) {
-    return;
-  }
-  // Missing and explicit-but-invalid filters intentionally use different ruleIds:
-  // this rule tells UI Builder that it must select a filter, while
-  // collectDefaultFilterErrors reports malformed filters it already selected.
-  pushAuthoringError(errors, {
-    path: `${path}.defaultFilter`,
-    ruleId: 'public-data-surface-default-filter-required',
-    message: `flowSurfaces authoring ${path}.defaultFilter is required; UI Builder must choose an explicit defaultFilter for direct table/list/gridCard/calendar/kanban blocks`,
-    details: {
-      blockType,
-      effectivePrecedence: [
-        'filter actions[].settings.defaultFilter',
-        'defaultActionSettings.filter.defaultFilter',
-        'defaultFilter',
-      ],
-    },
-  });
-}
-
 function collectTemplateBackedPublicDataSurfaceDefaultOverrideErrors(
   block: any,
   blockType: string,
   path: string,
   errors: AuthoringErrorInput[],
 ) {
-  if (!isFlowSurfacePublicDataSurfaceBlockType(blockType) || _.isUndefined(block?.template)) {
+  if (!isFlowSurfacePublicDataSurfaceBlockType(blockType) || !hasFlowSurfaceTemplateDocument(block?.template)) {
     return;
   }
   if (hasOwn(block, 'defaultFilter')) {
@@ -931,49 +2596,6 @@ function collectTemplateBackedPublicDataSurfaceDefaultOverrideErrors(
         'Template-backed table, list, gridCard, calendar, and kanban blocks do not support defaultActionSettings; use filter action settings on direct blocks instead.',
     });
   }
-}
-
-function collectBlockDefaultFilterCommonFieldErrors(
-  block: any,
-  blockType: string,
-  path: string,
-  errors: AuthoringErrorInput[],
-  context: FlowSurfaceAuthoringValidationContext = {},
-) {
-  if (
-    !isFlowSurfacePublicDataSurfaceBlockType(blockType) ||
-    !_.isUndefined(block?.template) ||
-    !hasOwnDefined(block, 'defaultFilter')
-  ) {
-    return;
-  }
-  if (
-    hasFilterActionSettingsKey(block, 'defaultFilter') ||
-    hasFilterActionSettingsKey(block, 'filterableFieldNames') ||
-    hasOwnDefined(block?.defaultActionSettings?.filter, 'defaultFilter') ||
-    hasOwnDefined(block?.defaultActionSettings?.filter, 'filterableFieldNames')
-  ) {
-    return;
-  }
-  collectDefaultFilterCommonFieldErrors(block.defaultFilter, `${path}.defaultFilter`, errors, block, context);
-}
-
-function hasExplicitEffectiveDefaultFilter(block: any) {
-  if (Array.isArray(block?.actions)) {
-    if (hasFilterActionSettingsKey(block, 'defaultFilter')) {
-      return true;
-    }
-  }
-  if (hasOwnDefined(block?.defaultActionSettings?.filter, 'defaultFilter')) {
-    return true;
-  }
-  return hasOwnDefined(block, 'defaultFilter');
-}
-
-function hasFilterActionSettingsKey(block: any, key: string) {
-  return _.castArray(block?.actions || []).some(
-    (action: any) => isFilterAction(action) && hasOwnDefined(action?.settings, key),
-  );
 }
 
 function collectDefaultActionSettingsFilterErrors(
@@ -1024,31 +2646,25 @@ function collectDefaultActionSettingsFilterErrors(
     block,
     context,
   );
-  const effectiveDefaultFilter = hasOwnDefined(filterSettings, 'defaultFilter')
-    ? { value: filterSettings.defaultFilter, path: `${filterSettingsPath}.defaultFilter` }
-    : hasOwnDefined(block, 'defaultFilter')
-      ? { value: block.defaultFilter, path: `${path.replace(/\.defaultActionSettings$/, '')}.defaultFilter` }
-      : null;
+  const blockPath = path.replace(/\.defaultActionSettings$/, '');
+  const effectiveDefaultFilter = getEffectiveFilterSettingsDefaultFilter(
+    block,
+    filterSettings,
+    filterSettingsPath,
+    blockPath,
+    context,
+  );
   collectDefaultFilterFilterableFieldErrors(
     effectiveDefaultFilter?.value,
     effectiveDefaultFilter?.path || `${filterSettingsPath}.defaultFilter`,
     filterableFieldNames,
     errors,
   );
-  if (_.isUndefined(filterableFieldNames)) {
-    collectDefaultFilterCommonFieldErrors(
-      effectiveDefaultFilter?.value,
-      effectiveDefaultFilter?.path || `${filterSettingsPath}.defaultFilter`,
-      errors,
-      block,
-      context,
-    );
-  }
 }
 
 function doesBlockConsumeDefaultFilterAction(block: any) {
   const blockType = String(block?.type || '').trim();
-  return isFlowSurfacePublicDataSurfaceBlockType(blockType) && _.isUndefined(block?.template);
+  return isFlowSurfacePublicDataSurfaceBlockType(blockType) && !hasFlowSurfaceTemplateDocument(block?.template);
 }
 
 function hasConcreteFilterItem(value: any): boolean {
@@ -1942,33 +3558,39 @@ function collectActionSettingsFilterErrors(
     block,
     context,
   );
-  const effectiveDefaultFilter = getEffectiveFilterActionDefaultFilter(block, action, path);
+  const effectiveDefaultFilter = getEffectiveFilterActionDefaultFilter(block, action, path, context);
   collectDefaultFilterFilterableFieldErrors(
     effectiveDefaultFilter?.value,
     effectiveDefaultFilter?.path || `${settingsPath}.defaultFilter`,
     filterableFieldNames,
     errors,
   );
-  if (_.isUndefined(filterableFieldNames)) {
-    collectDefaultFilterCommonFieldErrors(
-      effectiveDefaultFilter?.value,
-      effectiveDefaultFilter?.path || `${settingsPath}.defaultFilter`,
-      errors,
-      block,
-      context,
-    );
-  }
 }
 
-function getEffectiveFilterActionDefaultFilter(block: any, action: any, actionPath: string) {
+function getEffectiveFilterActionDefaultFilter(
+  block: any,
+  action: any,
+  actionPath: string,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
   const settings = action?.settings;
+  const blockPath = getBlockPathFromActionPath(actionPath);
+  return getEffectiveFilterSettingsDefaultFilter(block, settings, `${actionPath}.settings`, blockPath, context);
+}
+
+function getEffectiveFilterSettingsDefaultFilter(
+  block: any,
+  settings: any,
+  settingsPath: string,
+  blockPath: string,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
   if (hasOwnDefined(settings, 'defaultFilter')) {
     return {
       value: settings.defaultFilter,
-      path: `${actionPath}.settings.defaultFilter`,
+      path: `${settingsPath}.defaultFilter`,
     };
   }
-  const blockPath = getBlockPathFromActionPath(actionPath);
   if (hasOwnDefined(block?.defaultActionSettings?.filter, 'defaultFilter')) {
     return {
       value: block.defaultActionSettings.filter.defaultFilter,
@@ -1981,7 +3603,25 @@ function getEffectiveFilterActionDefaultFilter(block: any, action: any, actionPa
       path: `${blockPath}.defaultFilter`,
     };
   }
+  const generatedDefaultFilter = buildGeneratedDefaultFilterForBlock(block, context);
+  if (!_.isUndefined(generatedDefaultFilter)) {
+    return {
+      value: generatedDefaultFilter,
+      path: `${blockPath}.defaultFilter`,
+    };
+  }
   return null;
+}
+
+function buildGeneratedDefaultFilterForBlock(block: any, context: FlowSurfaceAuthoringValidationContext) {
+  if (!doesBlockConsumeDefaultFilterAction(block)) {
+    return undefined;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return undefined;
+  }
+  return buildFlowSurfaceDefaultFilterFromCollection(collection);
 }
 
 function getBlockPathFromActionPath(actionPath: string) {
@@ -2048,50 +3688,6 @@ function collectDefaultFilterFilterableFieldErrors(
         filterableFieldNames,
       },
     });
-  });
-}
-
-function collectDefaultFilterCommonFieldErrors(
-  defaultFilter: any,
-  defaultFilterPath: string,
-  errors: AuthoringErrorInput[],
-  block?: any,
-  context: FlowSurfaceAuthoringValidationContext = {},
-) {
-  if (_.isUndefined(defaultFilter) || !hasConcreteFilterItem(defaultFilter)) {
-    return;
-  }
-  const collection = getBlockCollection(block, context);
-  if (!collection) {
-    return;
-  }
-  const minimumCandidateFieldNames = resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection);
-  if (!minimumCandidateFieldNames.length) {
-    return;
-  }
-  const refs = collectDefaultFilterFieldRefs(defaultFilter, defaultFilterPath);
-  const coveredCandidateFieldNames = minimumCandidateFieldNames.filter((fieldName) =>
-    refs.some((ref) => ref.fieldPath === fieldName),
-  );
-  if (coveredCandidateFieldNames.length >= minimumCandidateFieldNames.length) {
-    return;
-  }
-  const collectionName = getCollectionName(collection) || getBlockCollectionName(block, context);
-  const errorPath = `${defaultFilterPath}.items`;
-  if (errors.some((error) => error.path === errorPath && error.ruleId === 'defaultFilter-common-fields-incomplete')) {
-    return;
-  }
-  pushAuthoringError(errors, {
-    path: errorPath,
-    ruleId: 'defaultFilter-common-fields-incomplete',
-    message: `flowSurfaces authoring ${defaultFilterPath}.items must cover at least ${
-      minimumCandidateFieldNames.length
-    } common business fields when available for collection ${collectionName}: ${minimumCandidateFieldNames.join(', ')}`,
-    details: {
-      collection: collectionName,
-      minimumCandidateFieldNames,
-      coveredCandidateFieldCount: coveredCandidateFieldNames.length,
-    },
   });
 }
 
@@ -2204,7 +3800,7 @@ function collectPopupErrors(
   if (!_.isPlainObject(popup)) {
     return;
   }
-  if (!_.isUndefined(popup.saveAsTemplate) && !_.isUndefined(popup.template)) {
+  if (!_.isUndefined(popup.saveAsTemplate) && hasFlowSurfaceTemplateReference(popup.template)) {
     pushAuthoringError(errors, {
       path,
       ruleId: 'popup-saveAsTemplate-template-conflict',
@@ -2291,6 +3887,7 @@ function collectFieldListErrors(
     return;
   }
   fields.forEach((field, index) => {
+    collectInternalFieldKeysErrors(field, `${path}[${index}]`, errors);
     const fieldPath = getFieldPathInput(field);
     if (fieldPath) {
       collectUnknownFieldPathError(fieldPath, `${path}[${index}]`, block, context, errors);
@@ -2303,6 +3900,41 @@ function collectFieldListErrors(
     collectPopupErrors(field.popup, `${path}[${index}].popup`, errors, localKeys, context);
     collectActionListErrors(field.actions, `${path}[${index}].actions`, errors, block, context);
     collectReactionErrors(field.reaction, `${path}[${index}].reaction`, localKeys, errors);
+  });
+}
+
+function collectFieldListInternalKeyErrors(fields: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!Array.isArray(fields)) {
+    return;
+  }
+  fields.forEach((field, index) => collectInternalFieldKeysErrors(field, `${path}[${index}]`, errors));
+}
+
+function collectInternalFieldKeysErrors(field: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(field)) {
+    return;
+  }
+  collectInternalFieldKeysOnObject(field, path, errors);
+  collectInternalFieldKeysOnObject(field.settings, `${path}.settings`, errors);
+}
+
+function collectInternalFieldKeysOnObject(value: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(value)) {
+    return;
+  }
+  const forbidden = FLOW_SURFACE_INTERNAL_FIELD_KEYS.filter((key) => Object.prototype.hasOwnProperty.call(value, key));
+  if (!forbidden.length) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'internal-field-keys-not-public',
+    message: `flowSurfaces authoring ${path} field objects must use public fieldType/fields/titleField keys; remove internal keys: ${forbidden.join(
+      ', ',
+    )}`,
+    details: {
+      keys: forbidden,
+    },
   });
 }
 

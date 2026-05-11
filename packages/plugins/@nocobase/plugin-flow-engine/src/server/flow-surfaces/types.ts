@@ -8,6 +8,7 @@
  */
 
 import { FLOW_SURFACE_MUTATE_OP_TYPES, FLOW_SURFACE_PLAN_STEP_ACTIONS } from './constants';
+import type { FlowSurfaceApplyBlueprintDefaults } from './blueprint';
 
 export type FlowSurfaceNodeDomain = 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry';
 export type FlowSurfaceMergeStrategy = 'deep' | 'replace';
@@ -254,6 +255,8 @@ export type FlowSurfaceNodeSpec = {
   decoratorProps?: Record<string, any>;
   stepParams?: Record<string, any>;
   flowRegistry?: Record<string, any>;
+  skipDefaultActions?: boolean;
+  skipDefaultRecordActions?: boolean;
   subModels?: Record<string, FlowSurfaceNodeSpec | FlowSurfaceNodeSpec[]>;
 };
 
@@ -293,11 +296,13 @@ export type FlowSurfaceComposeValues = {
   mode?: FlowSurfaceComposeMode;
   blocks?: Array<Record<string, any>>;
   layout?: Record<string, any>;
+  defaults?: FlowSurfaceApplyBlueprintDefaults;
 };
 
 export type FlowSurfaceConfigureValues = {
   target: FlowSurfaceWriteTarget;
   changes: Record<string, any>;
+  defaults?: FlowSurfaceApplyBlueprintDefaults;
 };
 
 export type FlowSurfaceContextVarInfo = {

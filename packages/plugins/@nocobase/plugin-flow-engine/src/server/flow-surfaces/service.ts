@@ -60,6 +60,7 @@ import {
   resolveApplyBlueprintPageLocator,
 } from './blueprint';
 import type {
+  FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDocument,
   FlowSurfaceApplyBlueprintProgram,
   FlowSurfaceApplyBlueprintReplaceTargetInfo,
@@ -70,11 +71,13 @@ import {
   getFlowSurfaceDefaultBlockActions,
   mergeFlowSurfaceDefaultBlockActions,
 } from './default-block-actions';
+import { hasFlowSurfaceTemplateReference } from './template-reference';
 import { countFlowSurfaceNonTemplateTitleCleanupDataBlocks } from './data-block-rules';
 import type { FlowSurfaceDefaultBlockActionDescriptor } from './default-block-actions';
 import {
   backfillFlowSurfaceDefaultFilterSetting,
   backfillFlowSurfaceFilterActionDefaultFilter,
+  buildFlowSurfaceDefaultFilterFromCollection,
   isFlowSurfacePublicDataSurfaceBlockType,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from './public-data-surface-default-filter';
@@ -243,11 +246,16 @@ import type {
 } from './default-action-popup';
 import {
   FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
+  attachFlowSurfaceApplyBlueprintPopupDefaults,
+  buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   getFlowSurfaceApplyBlueprintDefaultCollection,
   readFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   resolveFlowSurfaceApplyBlueprintDefaultPopupMetadata,
 } from './blueprint/defaults';
-import type { FlowSurfaceApplyBlueprintPopupDefaultActionType } from './blueprint/defaults';
+import type {
+  FlowSurfaceApplyBlueprintPopupDefaultActionType,
+  FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+} from './blueprint/defaults';
 import {
   assertFlowSurfaceComposeUniqueKeys,
   assertSupportedSimpleChanges,
@@ -3715,8 +3723,10 @@ export class FlowSurfacesService {
   }
 
   async applyBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
       transaction: options.transaction,
+      enabledPackages,
       findMenuGroupRoutesByTitle: (title, transaction) => this.findMenuGroupRoutesByTitle(title, transaction),
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
@@ -4708,10 +4718,23 @@ export class FlowSurfacesService {
   }
 
   private async syncFlowTemplateUsagesForNodeTree(rootUid: string, transaction?: any) {
+    await this.syncFlowTemplateUsagesForNodeTreeExcluding(rootUid, undefined, transaction);
+  }
+
+  private async syncFlowTemplateUsagesForNodeTreeExcluding(
+    rootUid: string,
+    excludedTemplateUids?: Iterable<string> | undefined,
+    transaction?: any,
+  ) {
     const usageRepo = this.getFlowTemplateUsageRepositorySafe();
     if (!usageRepo) {
       return;
     }
+    const excluded = new Set(
+      Array.from(excludedTemplateUids || [])
+        .map((templateUid) => String(templateUid || '').trim())
+        .filter(Boolean),
+    );
     const persistedNodes = await this.repository.findNodesById(rootUid, {
       transaction,
       includeAsyncNode: true,
@@ -4734,6 +4757,9 @@ export class FlowSurfacesService {
 
     for (const [modelUid, templateUids] of usageMap.entries()) {
       for (const templateUid of templateUids) {
+        if (excluded.has(templateUid)) {
+          continue;
+        }
         await usageRepo.updateOrCreate({
           filterKeys: ['templateUid', 'modelUid'],
           values: {
@@ -4747,6 +4773,35 @@ export class FlowSurfacesService {
           },
         });
       }
+    }
+  }
+
+  private async clearFlowTemplateUsagesForNodeTreeTemplate(
+    rootUid: string,
+    templateUid: string | undefined,
+    transaction?: any,
+  ) {
+    const usageRepo = this.getFlowTemplateUsageRepositorySafe();
+    const normalizedTemplateUid = String(templateUid || '').trim();
+    if (!usageRepo || !normalizedTemplateUid) {
+      return;
+    }
+    const modelUids = (
+      await this.repository.findNodesById(rootUid, {
+        transaction,
+        includeAsyncNode: true,
+      })
+    )
+      .map((row: any) => String(row?.uid || '').trim())
+      .filter(Boolean);
+    for (const modelUid of modelUids) {
+      await usageRepo.destroy({
+        filter: {
+          templateUid: normalizedTemplateUid,
+          modelUid,
+        },
+        transaction,
+      });
     }
   }
 
@@ -4995,7 +5050,8 @@ export class FlowSurfacesService {
       }),
       transaction: options.transaction,
     });
-    await this.syncFlowTemplateUsagesForNodeTree(templateTargetUid, options.transaction);
+    await this.syncFlowTemplateUsagesForNodeTreeExcluding(templateTargetUid, [templateUid], options.transaction);
+    await this.clearFlowTemplateUsagesForNodeTreeTemplate(templateTargetUid, templateUid, options.transaction);
 
     if (saveMode === 'convert') {
       const template = {
@@ -5023,6 +5079,7 @@ export class FlowSurfacesService {
       } else {
         await this.convertBlockSourceToTemplateReference(sourceNode, template, templateTargetUid, options.transaction);
       }
+      await this.clearFlowTemplateUsagesForNodeTreeTemplate(templateTargetUid, templateUid, options.transaction);
     }
 
     return this.getTemplate(
@@ -5475,16 +5532,18 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
     } = {},
   ) {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     await assertFlowSurfaceAuthoringPayload('compose', values, {
       transaction: options.transaction,
+      enabledPackages,
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
     const popupTemplateAliasSession = options.popupTemplateAliasSession || this.createPopupTemplateAliasSession();
     const target = await this.prepareWriteTarget('compose', values?.target, values, options);
     const mode = this.assertComposeMode(values?.mode);
-    const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages);
+    const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
+    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages, popupDefaultsMetadata);
     this.validateComposePopupTemplateAliases(normalizedBlocks, popupTemplateAliasSession);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
@@ -5515,6 +5574,7 @@ export class FlowSurfacesService {
       layout: values.layout,
     });
 
+    const generatedDefaultFilterByComposeBlockUid = new Map<string, any>();
     const result = await executeComposeRuntime(plan, {
       removeExistingItem: async (uid) => this.removeNodeTreeWithBindings(uid, options.transaction),
       createBlock: async (payload, spec) => {
@@ -5549,7 +5609,7 @@ export class FlowSurfacesService {
           ...calendarPopupSettings,
           ...kanbanPopupSettings,
         };
-        return this.addBlock(
+        const result = await this.addBlock(
           {
             ...payload,
             ...(Object.keys(hiddenPopupSettings).length ? { settings: hiddenPopupSettings } : {}),
@@ -5562,6 +5622,16 @@ export class FlowSurfacesService {
             skipAuthoringValidation: true,
           },
         );
+        const generatedDefaultFilter = await this.buildDefaultFilterFromDataBlockUid({
+          blockType: spec.type,
+          template: spec.template,
+          blockUid: result.uid,
+          transaction: options.transaction,
+        });
+        if (!_.isUndefined(generatedDefaultFilter)) {
+          generatedDefaultFilterByComposeBlockUid.set(result.uid, generatedDefaultFilter);
+        }
+        return result;
       },
       applyNodeSettings: async (actionName, targetUid, settings) => {
         if (!targetUid) {
@@ -5577,13 +5647,21 @@ export class FlowSurfacesService {
         }),
       applyFieldSettings: async (actionName, fieldResult, settings) =>
         this.applyInlineFieldSettings(actionName, fieldResult, settings, options),
-      createAction: async (payload) =>
-        this.addAction(payload, {
-          ...options,
-          enabledPackages,
-          autoCompleteDefaultPopup: false,
-          popupTemplateAliasSession,
-        }),
+      createAction: async (payload, spec, blockResult) =>
+        this.addAction(
+          this.backfillComposeActionPayloadDefaultFilter(
+            payload,
+            spec,
+            blockResult,
+            generatedDefaultFilterByComposeBlockUid,
+          ),
+          {
+            ...options,
+            enabledPackages,
+            autoCompleteDefaultPopup: false,
+            popupTemplateAliasSession,
+          },
+        ),
       createRecordAction: async (payload) =>
         this.addRecordAction(payload, {
           ...options,
@@ -5633,7 +5711,10 @@ export class FlowSurfacesService {
     return result;
   }
 
-  async configure(values: FlowSurfaceConfigureValues, options: { transaction?: any } = {}) {
+  async configure(
+    values: FlowSurfaceConfigureValues,
+    options: { transaction?: any; skipConfigureGeneratedDefaultPopup?: boolean } = {},
+  ) {
     const target = await this.prepareWriteTarget('configure', values?.target, values, options);
     if (!_.isPlainObject(values.changes) || !Object.keys(values.changes).length) {
       throwBadRequest('flowSurfaces configure requires a non-empty changes object');
@@ -5644,14 +5725,20 @@ export class FlowSurfacesService {
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
     const currentResourceInit = this.getDataBlockResourceInit(current);
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const popupDefaultsMetadata = options.skipConfigureGeneratedDefaultPopup
+      ? undefined
+      : this.buildPopupDefaultsMetadata(values?.defaults);
     await assertFlowSurfaceAuthoringPayload('configure', values, {
       transaction: options.transaction,
       hostBlockType: current?.use,
       hostDataSourceKey: currentResourceInit?.dataSourceKey,
       hostCollectionName: currentResourceInit?.collectionName,
+      enabledPackages,
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
       currentNode: current,
+      skipGeneratedPopupDefaultFieldGroups: options.skipConfigureGeneratedDefaultPopup === true,
       findModelById: (uid, findOptions) => this.repository.findModelById(uid, findOptions),
       findOwningBlockGrid: (uid, transaction) => this.findOwningBlockGrid(uid, transaction),
     });
@@ -5660,6 +5747,11 @@ export class FlowSurfacesService {
       use: current?.use,
       settings: changes,
     });
+    const configureOptions = {
+      ...options,
+      enabledPackages,
+      popupDefaultsMetadata,
+    };
 
     if (resolved.kind === 'page' && resolved.pageRoute) {
       return this.configurePage(target, changes, options);
@@ -5671,13 +5763,13 @@ export class FlowSurfacesService {
       return this.configureTableBlock(target, changes, options);
     }
     if (current?.use === 'CalendarBlockModel') {
-      return this.configureCalendarBlock(target, current, changes, options);
+      return this.configureCalendarBlock(target, current, changes, options, popupDefaultsMetadata);
     }
     if (current?.use === 'TreeBlockModel') {
       return this.configureTreeBlock(target, current, changes, options);
     }
     if (current?.use === 'KanbanBlockModel') {
-      return this.configureKanbanBlock(target, current, changes, options);
+      return this.configureKanbanBlock(target, current, changes, options, popupDefaultsMetadata);
     }
     if (SIMPLE_FORM_BLOCK_USES.has(current?.use || '')) {
       return this.configureFormBlock(target, current.use, changes, options);
@@ -5719,7 +5811,7 @@ export class FlowSurfacesService {
       return this.configureActionColumn(target, changes, options);
     }
     if (FIELD_WRAPPER_USES.has(current?.use || '')) {
-      return this.configureFieldWrapper(target, current, changes, options);
+      return this.configureFieldWrapper(target, current, changes, configureOptions);
     }
     if (STANDALONE_FIELD_NODE_USES.has(current?.use || '')) {
       if (current?.use === 'JSColumnModel') {
@@ -5731,11 +5823,11 @@ export class FlowSurfacesService {
       return this.configureJSItem(target, changes, options);
     }
     if (isFieldNodeUse(current?.use)) {
-      return this.configureFieldNode(target, changes, options);
+      return this.configureFieldNode(target, changes, configureOptions);
     }
     if (ACTION_BUTTON_USES.has(current?.use || '')) {
       return this.configureActionNode(target, current.use, changes, {
-        ...options,
+        ...configureOptions,
         current,
       });
     }
@@ -6774,6 +6866,58 @@ export class FlowSurfacesService {
     };
   }
 
+  private buildDefaultFilterFromResourceInput(input: {
+    blockType?: string;
+    template?: unknown;
+    resource?: FlowSurfaceNormalizedResourceInput;
+    fallback?: {
+      dataSourceKey?: string;
+      collectionName?: string;
+    };
+  }) {
+    const blockType = String(input.blockType || '').trim();
+    if (!isFlowSurfacePublicDataSurfaceBlockType(blockType) || hasFlowSurfaceTemplateReference(input.template)) {
+      return undefined;
+    }
+    const resource =
+      input.resource?.kind === 'raw'
+        ? input.resource.value
+        : input.resource?.kind === 'semantic'
+          ? input.resource.value
+          : undefined;
+    const dataSourceKey = String(resource?.dataSourceKey || input.fallback?.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(resource?.collectionName || input.fallback?.collectionName || '').trim();
+    if (!collectionName) {
+      return undefined;
+    }
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    return buildFlowSurfaceDefaultFilterFromCollection(collection);
+  }
+
+  private async buildDefaultFilterFromDataBlockUid(input: {
+    blockType?: string;
+    template?: unknown;
+    blockUid?: string;
+    transaction?: any;
+  }) {
+    if (!input.blockUid) {
+      return undefined;
+    }
+    const blockNode = await this.repository.findModelById(input.blockUid, {
+      transaction: input.transaction,
+      includeAsyncNode: true,
+    });
+    const resourceInit = this.getDataBlockResourceInit(blockNode);
+    return this.buildDefaultFilterFromResourceInput({
+      blockType: input.blockType,
+      template: input.template,
+      resource: {
+        kind: 'raw',
+        value: resourceInit,
+      },
+    });
+  }
+
   async addBlock(
     values: Record<string, any>,
     options: {
@@ -6785,27 +6929,53 @@ export class FlowSurfacesService {
       skipAuthoringValidation?: boolean;
     } = {},
   ) {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     if (options.skipAuthoringValidation !== true) {
       await assertFlowSurfaceAuthoringPayload('addBlock', values, {
         transaction: options.transaction,
+        enabledPackages,
         getCollection: (dataSourceKey, collectionName) =>
           this.getCollection(dataSourceKey || 'main', collectionName || ''),
       });
     }
-    const templateRef = _.isUndefined(values?.template)
-      ? undefined
-      : this.normalizeFlowTemplateReference('addBlock', values.template, {
-          allowUsage: true,
-          expectedType: 'block',
-        });
+    const templateRef =
+      _.isUndefined(values?.template) || !hasFlowSurfaceTemplateReference(values?.template)
+        ? undefined
+        : this.normalizeFlowTemplateReference('addBlock', values.template, {
+            allowUsage: true,
+            expectedType: 'block',
+          });
     const blockType = String(values?.type || '').trim();
     const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('addBlock', values.defaultFilter, {
       blockType: blockType || undefined,
       template: templateRef,
     });
-    const defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
-      this.normalizeDefaultActionSettings('addBlock', values.defaultActionSettings),
-      blockDefaultFilter,
+    const semanticResource = this.normalizeResourceInput(values.resource);
+    const rawResourceInit = _.isUndefined(values.resourceInit)
+      ? undefined
+      : normalizeSimpleResourceInit(values.resourceInit);
+    let effectiveBlockDefaultFilter = !_.isUndefined(blockDefaultFilter)
+      ? blockDefaultFilter
+      : this.buildDefaultFilterFromResourceInput({
+          blockType,
+          template: templateRef,
+          resource:
+            semanticResource?.kind === 'raw'
+              ? semanticResource
+              : rawResourceInit
+                ? {
+                    kind: 'raw',
+                    value: rawResourceInit,
+                  }
+                : semanticResource,
+        });
+    const normalizedDefaultActionSettings = this.normalizeDefaultActionSettings(
+      'addBlock',
+      values.defaultActionSettings,
+    );
+    let defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
+      normalizedDefaultActionSettings,
+      effectiveBlockDefaultFilter,
     );
     if (templateRef && !_.isUndefined(values.defaultActionSettings)) {
       throwBadRequest(`flowSurfaces addBlock template import does not allow defaultActionSettings`);
@@ -6815,6 +6985,7 @@ export class FlowSurfacesService {
       await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
       return result;
     }
+    const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
     const target = await this.prepareWriteTarget('addBlock', values?.target, values, options);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     let inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
@@ -6825,14 +6996,10 @@ export class FlowSurfacesService {
       settings: inlineSettings,
       preserveTitle: options.preserveSingleScopeDataBlockTitle === true,
     });
-    const semanticResource = this.normalizeResourceInput(values.resource);
-    const rawResourceInit = _.isUndefined(values.resourceInit)
-      ? undefined
-      : normalizeSimpleResourceInit(values.resourceInit);
+    inlineSettings = this.attachHiddenPopupDefaultsToBlockSettings(inlineSettings, blockType, popupDefaultsMetadata);
     if (semanticResource && rawResourceInit) {
       throwBadRequest('flowSurfaces addBlock does not allow resource and resourceInit at the same time');
     }
-    const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const hasInlineFields =
       Object.prototype.hasOwnProperty.call(values || {}, 'fields') ||
       Object.prototype.hasOwnProperty.call(values || {}, 'fieldsLayout');
@@ -6886,6 +7053,8 @@ export class FlowSurfacesService {
           },
           0,
           enabledPackages,
+          false,
+          popupDefaultsMetadata,
         )
       : null;
     const resolvedResourceInit = await this.resolvePopupCollectionBlockResourceInit({
@@ -6910,6 +7079,20 @@ export class FlowSurfacesService {
             dataSourceKey: 'main',
           }
         : resolvedResourceInit;
+    if (_.isUndefined(effectiveBlockDefaultFilter)) {
+      effectiveBlockDefaultFilter = this.buildDefaultFilterFromResourceInput({
+        blockType,
+        template: templateRef,
+        resource: {
+          kind: 'raw',
+          value: effectiveResourceInit,
+        },
+      });
+      defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
+        normalizedDefaultActionSettings,
+        effectiveBlockDefaultFilter,
+      );
+    }
     const blockProps =
       catalogItem.use === 'CalendarBlockModel'
         ? this.buildCalendarInitialBlockProps({
@@ -7024,15 +7207,15 @@ export class FlowSurfacesService {
         });
         if (calendarNode?.uid) {
           await this.ensureCalendarBlockPopupHosts(calendarNode, options.transaction, {
-            quickCreateAction: this.resolveCalendarInitialPopupOverride(
-              inlineSettings,
-              'quickCreatePopup',
-              'quickCreatePopupSettings',
+            quickCreateAction: this.attachPopupDefaultsMetadata(
+              this.resolveCalendarInitialPopupOverride(inlineSettings, 'quickCreatePopup', 'quickCreatePopupSettings'),
+              popupDefaultsMetadata,
+              { forceEmpty: true },
             ),
-            eventViewAction: this.resolveCalendarInitialPopupOverride(
-              inlineSettings,
-              'eventPopup',
-              'eventPopupSettings',
+            eventViewAction: this.attachPopupDefaultsMetadata(
+              this.resolveCalendarInitialPopupOverride(inlineSettings, 'eventPopup', 'eventPopupSettings'),
+              popupDefaultsMetadata,
+              { forceEmpty: true },
             ),
           });
         }
@@ -7044,12 +7227,16 @@ export class FlowSurfacesService {
         });
         if (kanbanNode?.uid) {
           await this.ensureKanbanBlockPopupHosts(kanbanNode, options.transaction, {
-            quickCreateAction: this.resolveKanbanInitialPopupOverride(
-              inlineSettings,
-              'quickCreatePopup',
-              'quickCreatePopupSettings',
+            quickCreateAction: this.attachPopupDefaultsMetadata(
+              this.resolveKanbanInitialPopupOverride(inlineSettings, 'quickCreatePopup', 'quickCreatePopupSettings'),
+              popupDefaultsMetadata,
+              { forceEmpty: true },
             ),
-            cardViewAction: this.resolveKanbanInitialPopupOverride(inlineSettings, 'cardPopup', 'cardPopupSettings'),
+            cardViewAction: this.attachPopupDefaultsMetadata(
+              this.resolveKanbanInitialPopupOverride(inlineSettings, 'cardPopup', 'cardPopupSettings'),
+              popupDefaultsMetadata,
+              { forceEmpty: true },
+            ),
           });
         }
       }
@@ -7141,6 +7328,9 @@ export class FlowSurfacesService {
           blockUid: created,
           blockType: String(catalogItem.key || values.type || '').trim(),
           defaultActionSettings,
+          popupDefaultsMetadata,
+          skipDefaultActions: values.skipDefaultActions === true,
+          skipDefaultRecordActions: values.skipDefaultRecordActions === true,
         },
         {
           ...options,
@@ -7779,7 +7969,9 @@ export class FlowSurfacesService {
   }
 
   async addBlocks(values: Record<string, any>) {
+    const enabledPackages = await this.resolveEnabledPluginPackages();
     await assertFlowSurfaceAuthoringPayload('addBlocks', values, {
+      enabledPackages,
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
@@ -7791,10 +7983,16 @@ export class FlowSurfacesService {
       itemField: 'blocks',
       resultField: 'blocks',
       invoke: (itemValues, options) =>
-        this.addBlock(itemValues, {
-          ...options,
-          preserveSingleScopeDataBlockTitle,
-        }),
+        this.addBlock(
+          {
+            ...itemValues,
+            ...(!_.isUndefined(values?.defaults) ? { defaults: values.defaults } : {}),
+          },
+          {
+            ...options,
+            preserveSingleScopeDataBlockTitle,
+          },
+        ),
     });
   }
 
@@ -8189,7 +8387,7 @@ export class FlowSurfacesService {
     const tryTemplate = this.normalizeOptionalPopupTryTemplate(actionName, normalizedPopup.tryTemplate);
     const defaultType = this.normalizePopupDefaultType(actionName, normalizedPopup.defaultType);
     const saveAsTemplate = this.normalizePopupSaveAsTemplate(actionName, normalizedPopup.saveAsTemplate);
-    if (saveAsTemplate && !_.isUndefined(normalizedPopup.template)) {
+    if (saveAsTemplate && hasFlowSurfaceTemplateReference(normalizedPopup.template)) {
       throwBadRequest(`flowSurfaces ${actionName} popup.saveAsTemplate cannot be combined with popup.template`);
     }
     if (_.isUndefined(tryTemplate)) {
@@ -8211,6 +8409,150 @@ export class FlowSurfacesService {
       normalizedPopup[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY] = _.cloneDeep(popupDefaultsMetadata);
     }
     return normalizedPopup;
+  }
+
+  private getInlinePopupComposeMode(popup: Record<string, any> | undefined): FlowSurfaceComposeMode {
+    return popup?.mode === 'append' ? 'append' : 'replace';
+  }
+
+  private getInlinePopupDisplayOpenView(popup: Record<string, any> | undefined) {
+    if (!_.isPlainObject(popup?.openView)) {
+      return undefined;
+    }
+    return _.cloneDeep(popup.openView);
+  }
+
+  private mergeInlinePopupDisplayOpenView(
+    currentOpenView: Record<string, any> | undefined | null,
+    popup: Record<string, any> | undefined,
+  ) {
+    const displayOpenView = this.getInlinePopupDisplayOpenView(popup);
+    if (!displayOpenView || !Object.keys(displayOpenView).length) {
+      return currentOpenView;
+    }
+    return {
+      ...(_.isPlainObject(currentOpenView) ? _.cloneDeep(currentOpenView) : {}),
+      ...displayOpenView,
+    };
+  }
+
+  private buildPopupDefaultsMetadata(defaults?: FlowSurfaceApplyBlueprintDefaults) {
+    return buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata(defaults);
+  }
+
+  private buildDefaultsFromPopupMetadata(popup: Record<string, any> | undefined) {
+    const metadata = readFlowSurfaceApplyBlueprintPopupDefaultsMetadata(popup);
+    if (!metadata?.collections) {
+      return undefined;
+    }
+    return {
+      collections: _.cloneDeep(metadata.collections),
+    } as FlowSurfaceApplyBlueprintDefaults;
+  }
+
+  private attachPopupDefaultsMetadata(
+    popup: Record<string, any> | undefined,
+    metadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+    options: { forceEmpty?: boolean } = {},
+  ) {
+    if (!metadata) {
+      return popup;
+    }
+    if (_.isUndefined(popup)) {
+      if (!options.forceEmpty) {
+        return popup;
+      }
+      return attachFlowSurfaceApplyBlueprintPopupDefaults({}, metadata) as Record<string, any>;
+    }
+    if (!_.isPlainObject(popup)) {
+      return popup;
+    }
+    return attachFlowSurfaceApplyBlueprintPopupDefaults(popup, metadata) as Record<string, any>;
+  }
+
+  private isGeneratedDefaultPopupActionType(type?: string) {
+    const normalized = String(type || '').trim();
+    return normalized === 'addChild' || isFlowSurfaceDefaultActionPopupType(normalized);
+  }
+
+  private attachComposeActionPopupDefaults<T extends { type?: string; popup?: Record<string, any> }>(
+    action: T,
+    metadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+  ): T {
+    if (!metadata || !this.isGeneratedDefaultPopupActionType(action?.type)) {
+      return action;
+    }
+    return {
+      ...action,
+      popup: this.attachPopupDefaultsMetadata(action.popup, metadata, { forceEmpty: true }),
+    };
+  }
+
+  private attachComposeFieldPopupDefaults<T extends Record<string, any>>(
+    field: T,
+    metadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+  ): T {
+    if (!metadata) {
+      return field;
+    }
+    const shouldAttach = field.__autoPopupForRelationField === true || !_.isUndefined(field.popup);
+    if (!shouldAttach) {
+      return field;
+    }
+    return {
+      ...field,
+      ...(field.__autoPopupForRelationField === true
+        ? { [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: _.cloneDeep(metadata) }
+        : {}),
+      ...(!_.isUndefined(field.popup)
+        ? {
+            popup: this.attachPopupDefaultsMetadata(field.popup, metadata),
+          }
+        : {}),
+    };
+  }
+
+  private attachHiddenPopupDefaultsToBlockSettings(
+    settings: Record<string, any> | undefined,
+    blockType: string | undefined,
+    metadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+  ) {
+    if (!metadata || !_.isPlainObject(settings)) {
+      return settings;
+    }
+    const keys =
+      blockType === 'calendar'
+        ? ['quickCreatePopup', 'eventPopup']
+        : blockType === 'kanban'
+          ? ['quickCreatePopup', 'cardPopup']
+          : [];
+    if (!keys.length) {
+      return settings;
+    }
+    const nextSettings = _.cloneDeep(settings);
+    let changed = false;
+    for (const key of keys) {
+      if (!_.isPlainObject(nextSettings[key])) {
+        continue;
+      }
+      nextSettings[key] = this.attachPopupDefaultsMetadata(nextSettings[key], metadata);
+      changed = true;
+    }
+    return changed ? nextSettings : settings;
+  }
+
+  private buildConfigureGeneratedDefaultPopup(
+    metadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+    options: { defaultType?: 'view' | 'edit' } = {},
+  ) {
+    return this.attachPopupDefaultsMetadata(
+      buildDefinedPayload({
+        tryTemplate: false,
+        defaultType: options.defaultType,
+        [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: false,
+      }),
+      metadata,
+    );
   }
 
   private normalizePopupSaveAsTemplate(
@@ -8378,6 +8720,10 @@ export class FlowSurfacesService {
     return popup?.[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY] === true;
   }
 
+  private shouldAutoSaveDefaultFieldPopupTemplate(popup: Record<string, any> | undefined) {
+    return popup?.[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY] !== false;
+  }
+
   private resolveDefaultActionPopupSemanticUse(use?: string): string | undefined {
     const normalizedUse = String(use || '').trim();
     if (normalizedUse === 'AddChildActionModel') {
@@ -8432,7 +8778,9 @@ export class FlowSurfacesService {
     } else if (_.isUndefined(nextPopup.tryTemplate)) {
       nextPopup.tryTemplate = true;
     }
-    nextPopup[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY] = true;
+    if (_.isUndefined(nextPopup[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY])) {
+      nextPopup[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY] = true;
+    }
     return nextPopup;
   }
 
@@ -8518,6 +8866,7 @@ export class FlowSurfacesService {
     const normalizedTitle =
       this.normalizeOptionalPopupTitle(popup?.title) || this.normalizeOptionalPopupTitle(fallbackTitle);
     return buildDefinedPayload({
+      ...this.getInlinePopupDisplayOpenView(popup),
       template: popup?.template,
       title: normalizedTitle,
     });
@@ -8721,6 +9070,21 @@ export class FlowSurfacesService {
     return undefined;
   }
 
+  private popupTemplateMatchesImplicitDefaultActionHost(
+    template: FlowSurfaceTemplateRow,
+    popup: Record<string, any> | undefined,
+    targetContext?: FlowSurfaceTemplateListTargetContext,
+  ) {
+    if (
+      popup?.[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY] !== true ||
+      !this.isDefaultActionPopupUseForNode(targetContext?.node)
+    ) {
+      return true;
+    }
+    const templateUse = String(template?.useModel || '').trim();
+    return !templateUse || POPUP_ACTION_USES.has(templateUse);
+  }
+
   private inferPopupDefaultTypeFromTemplateTree(node: any): FlowSurfacePopupTemplateSemanticType {
     const popupPage = getSingleNodeSubModel(node?.subModels?.page);
     const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
@@ -8805,6 +9169,9 @@ export class FlowSurfacesService {
             requireExactAssociationName,
           }) !== priority
         ) {
+          continue;
+        }
+        if (!this.popupTemplateMatchesImplicitDefaultActionHost(template, popup, targetContext)) {
           continue;
         }
         if (
@@ -9226,6 +9593,73 @@ export class FlowSurfacesService {
     });
   }
 
+  private async applyInlineFieldPopupDisplayOpenView(
+    actionName: string,
+    fieldHostUid: string | undefined,
+    popup: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    const displayOpenView = this.getInlinePopupDisplayOpenView(popup);
+    if (!fieldHostUid || !displayOpenView || !Object.keys(displayOpenView).length) {
+      return;
+    }
+    const { fieldNode } = await this.loadFieldHostNodes(fieldHostUid, options.transaction);
+    const nextOpenView = this.mergeInlinePopupDisplayOpenView(this.resolvePopupHostOpenView(fieldNode), popup);
+    if (!_.isPlainObject(nextOpenView) || _.isEqual(nextOpenView, this.resolvePopupHostOpenView(fieldNode))) {
+      return;
+    }
+    await this.configureFieldNode(
+      {
+        uid: fieldHostUid,
+      },
+      {
+        openView: nextOpenView,
+      },
+      {
+        ...options,
+        openViewActionName: actionName,
+      },
+    );
+  }
+
+  private async applyInlineActionPopupDisplayOpenView(
+    actionName: string,
+    actionUid: string | undefined,
+    actionUse: string | undefined,
+    popup: Record<string, any> | undefined,
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
+    },
+  ) {
+    const displayOpenView = this.getInlinePopupDisplayOpenView(popup);
+    if (!actionUid || !actionUse || !displayOpenView || !Object.keys(displayOpenView).length) {
+      return;
+    }
+    const actionNode = await this.repository.findModelById(actionUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    const nextOpenView = this.mergeInlinePopupDisplayOpenView(this.resolvePopupHostOpenView(actionNode), popup);
+    if (!_.isPlainObject(nextOpenView) || _.isEqual(nextOpenView, this.resolvePopupHostOpenView(actionNode))) {
+      return;
+    }
+    await this.configureActionNode(
+      {
+        uid: actionUid,
+      },
+      actionUse,
+      {
+        openView: nextOpenView,
+      },
+      {
+        ...options,
+        openViewActionName: actionName,
+      },
+    );
+  }
+
   private async ensureLocalFieldPopupSurface(
     actionName: string,
     fieldHostUid: string | undefined,
@@ -9261,8 +9695,12 @@ export class FlowSurfacesService {
             clickToOpen: true,
             openView: this.buildDefaultFieldOpenView(fieldNode, wrapperNode),
           },
+          defaults: this.buildDefaultsFromPopupMetadata(input.popup),
         },
-        options,
+        {
+          ...options,
+          skipConfigureGeneratedDefaultPopup: true,
+        },
       );
       const reloaded = await this.loadFieldHostNodes(fieldHostUid, options.transaction);
       fieldNode = reloaded.fieldNode;
@@ -9273,6 +9711,8 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(openView) || this.isExternalPopupOpenView(openView, fieldHostUid)) {
       return {};
     }
+
+    await this.applyInlineFieldPopupDisplayOpenView(actionName, fieldHostUid, input.popup, options);
 
     return this.collectPopupSurfaceKeys(
       fieldHostUid,
@@ -9285,7 +9725,7 @@ export class FlowSurfacesService {
     actionName: string,
     targetUid: string | undefined,
     settings: Record<string, any> | undefined,
-    options: { transaction?: any },
+    options: { transaction?: any; skipConfigureGeneratedDefaultPopup?: boolean },
   ) {
     if (!targetUid || !settings || !Object.keys(settings).length) {
       return;
@@ -9298,7 +9738,10 @@ export class FlowSurfacesService {
           },
           changes: settings,
         },
-        options,
+        {
+          ...options,
+          skipConfigureGeneratedDefaultPopup: options.skipConfigureGeneratedDefaultPopup ?? true,
+        },
       );
     } catch (error: any) {
       rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} settings invalid`);
@@ -9364,6 +9807,7 @@ export class FlowSurfacesService {
   ) {
     popup = this.prepareInlinePopupTemplateAliases(actionName, popup, options.popupTemplateAliasSession);
     const fieldHostUid = result.fieldUid || result.uid;
+    const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup?.layout);
     if (!_.isUndefined(popup?.template)) {
       Object.assign(
         result,
@@ -9382,7 +9826,10 @@ export class FlowSurfacesService {
       );
       return;
     }
-    const matchedTemplate = await this.tryResolvePopupTemplateForHost(actionName, popup, fieldHostUid, options);
+    const matchedTemplate =
+      popup?.saveAsTemplate && hasLocalPopupContent
+        ? null
+        : await this.tryResolvePopupTemplateForHost(actionName, popup, fieldHostUid, options);
     if (matchedTemplate?.uid) {
       Object.assign(
         result,
@@ -9414,7 +9861,6 @@ export class FlowSurfacesService {
       }
       let { fieldNode, wrapperNode } = await this.loadFieldHostNodes(fieldHostUid, options.transaction);
       this.assertInlinePopupSaveAsTemplateSource(actionName, popup);
-      const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup.layout);
       if (popup.tryTemplate && !hasLocalPopupContent && !this.shouldAutoCompleteDefaultFieldPopup(fieldNode, popup)) {
         return;
       }
@@ -9440,7 +9886,7 @@ export class FlowSurfacesService {
             target: {
               uid: fieldHostUid,
             },
-            mode: popup.mode || 'replace',
+            mode: this.getInlinePopupComposeMode(popup),
             blocks: this.buildDefaultFieldPopupBlocks(
               fieldNode,
               popupContext,
@@ -9449,10 +9895,13 @@ export class FlowSurfacesService {
               options.enabledPackages,
             ),
             layout: popup.layout,
+            defaults: this.buildDefaultsFromPopupMetadata(popup),
           },
           options,
         );
-        await this.autoSaveDefaultFieldPopupAsTemplate(result, popup, options);
+        if (this.shouldAutoSaveDefaultFieldPopupTemplate(popup)) {
+          await this.autoSaveDefaultFieldPopupAsTemplate(result, popup, options);
+        }
       } else {
         const popupBlocks = await this.materializeInlineRelationFieldPopupBlocks(
           fieldHostUid,
@@ -9464,9 +9913,10 @@ export class FlowSurfacesService {
             target: {
               uid: fieldHostUid,
             },
-            mode: popup.mode || 'replace',
+            mode: this.getInlinePopupComposeMode(popup),
             blocks: popupBlocks,
             layout: popup.layout,
+            defaults: this.buildDefaultsFromPopupMetadata(popup),
           },
           options,
         );
@@ -9512,7 +9962,10 @@ export class FlowSurfacesService {
               },
               changes: wrapperChanges,
             },
-            options,
+            {
+              ...options,
+              skipConfigureGeneratedDefaultPopup: true,
+            },
           ),
         );
       }
@@ -9526,7 +9979,10 @@ export class FlowSurfacesService {
               },
               changes: fieldChanges,
             },
-            options,
+            {
+              ...options,
+              skipConfigureGeneratedDefaultPopup: true,
+            },
           ),
         );
       }
@@ -9850,21 +10306,27 @@ export class FlowSurfacesService {
     if (this.normalizeOptionalPopupTitle(currentOpenView?.title) === openViewTitle) {
       return;
     }
-    await this.configureFieldNode(
+    const openViewStep = findFlowTemplateOpenViewStep(fieldNode);
+    if (!openViewStep) {
+      return;
+    }
+    const nextStepParams = _.cloneDeep(fieldNode?.stepParams || {});
+    const currentGroup = _.isPlainObject(nextStepParams[openViewStep.flowKey])
+      ? _.cloneDeep(nextStepParams[openViewStep.flowKey])
+      : {};
+    currentGroup[openViewStep.stepKey] = {
+      ...(_.isPlainObject(currentOpenView) ? currentOpenView : {}),
+      title: openViewTitle,
+    };
+    nextStepParams[openViewStep.flowKey] = currentGroup;
+    await this.repository.patch(
       {
         uid: normalizedFieldHostUid,
+        stepParams: nextStepParams,
       },
-      {
-        openView: {
-          ...(_.isPlainObject(currentOpenView) ? currentOpenView : {}),
-          title: openViewTitle,
-        },
-      },
-      {
-        ...options,
-        openViewActionName: 'addField',
-      },
+      { transaction: options.transaction },
     );
+    fieldNode.stepParams = nextStepParams;
   }
 
   private async autoSaveDefaultFieldPopupAsTemplate(
@@ -10052,6 +10514,12 @@ export class FlowSurfacesService {
     const actionConfig = this.getDefaultActionPopupConfigForNode(actionNode);
     if (!actionConfig) {
       return undefined;
+    }
+    if (popup?.saveAsTemplate) {
+      return {
+        name: popup.saveAsTemplate.name,
+        description: popup.saveAsTemplate.description,
+      };
     }
     const associationDefaultContext = this.resolveApplyBlueprintAssociationDefaultContext(
       popupProfile?.associationName,
@@ -10284,6 +10752,7 @@ export class FlowSurfacesService {
       mode: popup?.mode || 'replace',
       blocks: this.buildDefaultActionPopupBlocks(actionNode, popupProfile, popup, keyMap, namespace, enabledPackages),
       layout: this.remapDefaultActionPopupLayout(popup?.layout, keyMap),
+      defaults: this.buildDefaultsFromPopupMetadata(popup),
     };
   }
 
@@ -10606,7 +11075,9 @@ export class FlowSurfacesService {
     }
     if (
       this.isExternalPopupOpenView(initialOpenView, actionNode.uid) &&
-      (_.isUndefined(popup) || this.isEmptyInlinePopupPayload(popup))
+      (_.isUndefined(popup) ||
+        this.isEmptyInlinePopupPayload(popup) ||
+        (!popup?.saveAsTemplate && this.isSemanticallyEmptyInlinePopup(popup)))
     ) {
       return;
     }
@@ -10614,6 +11085,7 @@ export class FlowSurfacesService {
     popup = this.prepareInlinePopupTemplateAliases(actionName, popup, options.popupTemplateAliasSession);
     popup = this.buildImplicitTemplateDefaultActionPopup(actionNode, popup);
     const templateOpenViewTitle = this.resolveDefaultActionPopupTemplateOpenViewTitle(actionNode, popup);
+    const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup?.layout);
     if (popup && hasFlowSurfaceInlinePopupTemplate(popup)) {
       const templateRef = this.normalizeFlowTemplateReference(actionName, popup.template, {
         expectedType: 'popup',
@@ -10643,7 +11115,10 @@ export class FlowSurfacesService {
       }
       return;
     }
-    const matchedTemplate = await this.tryResolvePopupTemplateForHost(actionName, popup, actionUid, options);
+    const matchedTemplate =
+      popup?.saveAsTemplate && hasLocalPopupContent
+        ? null
+        : await this.tryResolvePopupTemplateForHost(actionName, popup, actionUid, options);
     if (matchedTemplate?.uid) {
       await this.configureActionNode(
         {
@@ -10694,7 +11169,6 @@ export class FlowSurfacesService {
     }
     const shouldAutoCompleteDefaultPopup = this.shouldAutoCompleteDefaultActionPopup(actionNode, popup, options);
     this.assertInlinePopupSaveAsTemplateSource(actionName, popup);
-    const hasLocalPopupContent = hasFlowSurfaceInlinePopupBlocks(popup) || !_.isUndefined(popup?.layout);
     if (_.isUndefined(popup) && !shouldAutoCompleteDefaultPopup) {
       return;
     }
@@ -10708,19 +11182,22 @@ export class FlowSurfacesService {
           ...options,
           popupTabTitle: templateOpenViewTitle,
         });
+        await this.applyInlineActionPopupDisplayOpenView(actionName, actionUid, actionNode.use, popup, options);
         if (this.shouldAutoSaveDefaultActionPopupTemplate(popup)) {
           await this.autoSaveDefaultActionPopupAsTemplate(actionUid, popup, options);
         }
       } else if (!_.isUndefined(popup)) {
         await this.hydrateLocalActionPopupCurrentRecordContext(actionNode, options);
+        await this.applyInlineActionPopupDisplayOpenView(actionName, actionUid, actionNode.use, popup, options);
         await this.compose(
           {
             target: {
               uid: actionUid,
             },
-            mode: popup.mode || 'replace',
+            mode: this.getInlinePopupComposeMode(popup),
             blocks: popup.blocks || [],
             layout: popup.layout,
+            defaults: this.buildDefaultsFromPopupMetadata(popup),
           },
           options,
         );
@@ -13268,6 +13745,7 @@ export class FlowSurfacesService {
     descriptor: FlowSurfaceDefaultBlockActionDescriptor,
     existingKeys: Set<string>,
     context: string,
+    popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   ) {
     const baseKey = `${descriptor.type}Default`;
     let candidate = baseKey;
@@ -13281,7 +13759,35 @@ export class FlowSurfacesService {
       key: normalizeFlowSurfaceComposeKey(candidate, `${context} default ${descriptor.scope} '${descriptor.type}'`),
       type: descriptor.type,
       settings: {},
-      ...(descriptor.popup ? { popup: _.cloneDeep(descriptor.popup) } : {}),
+      ...(descriptor.popup
+        ? {
+            popup: this.attachPopupDefaultsMetadata(_.cloneDeep(descriptor.popup), popupDefaultsMetadata),
+          }
+        : {}),
+    };
+  }
+
+  private backfillComposeActionPayloadDefaultFilter(
+    payload: Record<string, unknown>,
+    spec: { type?: string; settings?: Record<string, any> },
+    blockResult: { uid?: string },
+    defaultFilterByBlockUid: Map<string, any>,
+  ) {
+    if (String(spec?.type || '').trim() !== 'filter') {
+      return payload;
+    }
+    const blockUid = String(blockResult?.uid || '').trim();
+    const defaultFilter = blockUid ? defaultFilterByBlockUid.get(blockUid) : undefined;
+    if (_.isUndefined(defaultFilter)) {
+      return payload;
+    }
+    const settings = backfillFlowSurfaceDefaultFilterSetting(spec.settings, defaultFilter);
+    if (_.isUndefined(settings) || !_.isPlainObject(settings) || !Object.keys(settings).length) {
+      return payload;
+    }
+    return {
+      ...payload,
+      settings,
     };
   }
 
@@ -13484,6 +13990,9 @@ export class FlowSurfacesService {
       blockUid: string;
       blockType?: string;
       defaultActionSettings?: FlowSurfaceDefaultActionSettings;
+      popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
+      skipDefaultActions?: boolean;
+      skipDefaultRecordActions?: boolean;
     },
     options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
   ) {
@@ -13491,6 +14000,12 @@ export class FlowSurfacesService {
       blockType: input.blockType,
     });
     for (const descriptor of descriptors) {
+      if (descriptor.scope === 'actions' && input.skipDefaultActions === true) {
+        continue;
+      }
+      if (descriptor.scope === 'recordActions' && input.skipDefaultRecordActions === true) {
+        continue;
+      }
       let settings = input.defaultActionSettings?.[descriptor.type];
       if (descriptor.type === 'filter' && !_.isUndefined(settings)) {
         settings = this.normalizeDefaultFilterActionSettings('addBlock', settings);
@@ -13501,7 +14016,9 @@ export class FlowSurfacesService {
         },
         type: descriptor.type,
         settings: !_.isUndefined(settings) ? _.cloneDeep(settings) : undefined,
-        popup: descriptor.popup ? _.cloneDeep(descriptor.popup) : undefined,
+        popup: descriptor.popup
+          ? this.attachPopupDefaultsMetadata(_.cloneDeep(descriptor.popup), input.popupDefaultsMetadata)
+          : undefined,
       });
       if (descriptor.scope === 'actions') {
         await this.addAction(actionValues, options);
@@ -13536,6 +14053,7 @@ export class FlowSurfacesService {
     index: number,
     enabledPackages?: ReadonlySet<string>,
     preserveSingleScopeDataBlockTitle = false,
+    popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   ) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
@@ -13592,12 +14110,20 @@ export class FlowSurfacesService {
       template,
       path: `block #${index + 1}`,
     });
-    const actions = _.castArray(input.actions || []).map((action, actionIndex) =>
-      normalizeComposeActionSpec(action, actionIndex),
-    );
-    const recordActions = _.castArray(input.recordActions || []).map((action, actionIndex) =>
-      normalizeComposeActionSpec(action, actionIndex),
-    );
+    const resource = this.normalizeResourceInput(input.resource);
+    const effectiveBlockDefaultFilter = !_.isUndefined(blockDefaultFilter)
+      ? blockDefaultFilter
+      : this.buildDefaultFilterFromResourceInput({
+          blockType: type,
+          template,
+          resource,
+        });
+    const actions = _.castArray(input.actions || [])
+      .map((action, actionIndex) => normalizeComposeActionSpec(action, actionIndex))
+      .map((action) => this.attachComposeActionPopupDefaults(action, popupDefaultsMetadata));
+    const recordActions = _.castArray(input.recordActions || [])
+      .map((action, actionIndex) => normalizeComposeActionSpec(action, actionIndex))
+      .map((action) => this.attachComposeActionPopupDefaults(action, popupDefaultsMetadata));
     const hasFields = Object.prototype.hasOwnProperty.call(input, 'fields');
     const hasFieldGroups = Object.prototype.hasOwnProperty.call(input, 'fieldGroups');
     const hasActions = Object.prototype.hasOwnProperty.call(input, 'actions');
@@ -13669,9 +14195,11 @@ export class FlowSurfacesService {
     if (hasFieldGroups && Object.prototype.hasOwnProperty.call(input, 'fieldsLayout')) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} cannot mix fieldGroups with fieldsLayout`);
     }
-    const fields = hasFieldGroups
-      ? this.normalizeComposeFieldGroups(input.fieldGroups, type, `flowSurfaces compose block #${index + 1}`)
-      : _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex));
+    const fields = (
+      hasFieldGroups
+        ? this.normalizeComposeFieldGroups(input.fieldGroups, type, `flowSurfaces compose block #${index + 1}`)
+        : _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex))
+    ).map((field) => this.attachComposeFieldPopupDefaults(field, popupDefaultsMetadata));
     assertFlowSurfaceComposeUniqueKeys(fields, `flowSurfaces compose block #${index + 1} fields`);
     assertFlowSurfaceComposeUniqueKeys(actions, `flowSurfaces compose block #${index + 1} actions`);
     assertFlowSurfaceComposeUniqueKeys(recordActions, `flowSurfaces compose block #${index + 1} recordActions`);
@@ -13702,24 +14230,22 @@ export class FlowSurfacesService {
       template,
       actions,
       recordActions,
+      skipDefaultActions: input.skipDefaultActions === true,
+      skipDefaultRecordActions: input.skipDefaultRecordActions === true,
       createAction: (descriptor) =>
         this.buildInjectedComposeDefaultActionSpec(
           descriptor,
           descriptor.scope === 'actions' ? actionKeys : recordActionKeys,
           `flowSurfaces compose block #${index + 1}`,
+          popupDefaultsMetadata,
         ),
     });
     const actionsWithDefaultFilter = backfillFlowSurfaceFilterActionDefaultFilter(
       mergedActions.actions,
-      blockDefaultFilter,
+      effectiveBlockDefaultFilter,
     );
-    return {
-      index: index + 1,
-      key,
-      type,
-      catalogItem: blockCatalogItem,
-      resource: this.normalizeResourceInput(input.resource),
-      settings:
+    const settings =
+      this.attachHiddenPopupDefaultsToBlockSettings(
         this.normalizeSingleScopeDataBlockTitleSettings({
           blockType: type,
           template,
@@ -13727,6 +14253,16 @@ export class FlowSurfacesService {
           settings: _.isPlainObject(input.settings) ? input.settings : undefined,
           preserveTitle: preserveSingleScopeDataBlockTitle,
         }) || {},
+        type,
+        popupDefaultsMetadata,
+      ) || {};
+    return {
+      index: index + 1,
+      key,
+      type,
+      catalogItem: blockCatalogItem,
+      resource,
+      settings,
       fields,
       ...(fieldsLayout ? { fieldsLayout } : {}),
       actions: actionsWithDefaultFilter,
@@ -13735,11 +14271,21 @@ export class FlowSurfacesService {
     };
   }
 
-  private normalizeComposeBlocks(input: any, enabledPackages?: ReadonlySet<string>) {
+  private normalizeComposeBlocks(
+    input: any,
+    enabledPackages?: ReadonlySet<string>,
+    popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+  ) {
     const rawBlocks = _.castArray(input || []);
     const preserveSingleScopeDataBlockTitle = countFlowSurfaceNonTemplateTitleCleanupDataBlocks(rawBlocks) > 1;
     const normalizedBlocks = rawBlocks.map((item, index) =>
-      this.normalizeComposeBlock(item, index, enabledPackages, preserveSingleScopeDataBlockTitle),
+      this.normalizeComposeBlock(
+        item,
+        index,
+        enabledPackages,
+        preserveSingleScopeDataBlockTitle,
+        popupDefaultsMetadata,
+      ),
     );
     assertFlowSurfaceComposeUniqueKeys(normalizedBlocks, 'flowSurfaces compose blocks');
     return normalizedBlocks;
@@ -14217,6 +14763,7 @@ export class FlowSurfacesService {
     current: any,
     changes: Record<string, any>,
     options: { transaction?: any },
+    popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('CalendarBlockModel');
     const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
@@ -14275,7 +14822,13 @@ export class FlowSurfacesService {
     const eventPopupSettingsBase = resourceChanged
       ? this.stripCalendarPopupTargetSettingsForResourceChange('eventViewAction', currentEventPopupSettings)
       : currentEventPopupSettings;
-    const quickCreatePopupSettings = hasQuickCreatePopupChange
+    const quickCreatePopupSettingsBaseWithDefaults = resourceChanged
+      ? this.attachPopupDefaultsMetadata(quickCreatePopupSettingsBase, popupDefaultsMetadata, { forceEmpty: true })
+      : quickCreatePopupSettingsBase;
+    const eventPopupSettingsBaseWithDefaults = resourceChanged
+      ? this.attachPopupDefaultsMetadata(eventPopupSettingsBase, popupDefaultsMetadata, { forceEmpty: true })
+      : eventPopupSettingsBase;
+    let quickCreatePopupSettings = hasQuickCreatePopupChange
       ? _.isNull(changes.quickCreatePopup)
         ? quickCreatePopupSettingsInput || {}
         : this.mergeCalendarPopupSettings(
@@ -14284,11 +14837,21 @@ export class FlowSurfacesService {
             quickCreatePopupSettingsInput,
           )
       : undefined;
-    const eventPopupSettings = hasEventPopupChange
+    let eventPopupSettings = hasEventPopupChange
       ? _.isNull(changes.eventPopup)
         ? eventPopupSettingsInput || {}
         : this.mergeCalendarPopupSettings('eventViewAction', eventPopupSettingsBase, eventPopupSettingsInput)
       : undefined;
+    if (hasQuickCreatePopupChange) {
+      quickCreatePopupSettings = this.attachPopupDefaultsMetadata(quickCreatePopupSettings, popupDefaultsMetadata, {
+        forceEmpty: true,
+      });
+    }
+    if (hasEventPopupChange) {
+      eventPopupSettings = this.attachPopupDefaultsMetadata(eventPopupSettings, popupDefaultsMetadata, {
+        forceEmpty: true,
+      });
+    }
 
     const previousQuickCreateOpenView = this.buildCalendarPopupOpenView({
       blockNode: current,
@@ -14356,12 +14919,12 @@ export class FlowSurfacesService {
                   ...(hasQuickCreatePopupChange
                     ? { quickCreatePopupSettings: quickCreatePopupSettings || {} }
                     : resourceChanged
-                      ? { quickCreatePopupSettings: quickCreatePopupSettingsBase }
+                      ? { quickCreatePopupSettings: quickCreatePopupSettingsBaseWithDefaults }
                       : {}),
                   ...(hasEventPopupChange
                     ? { eventPopupSettings: eventPopupSettings || {} }
                     : resourceChanged
-                      ? { eventPopupSettings: eventPopupSettingsBase }
+                      ? { eventPopupSettings: eventPopupSettingsBaseWithDefaults }
                       : {}),
                 }),
               }
@@ -14386,12 +14949,12 @@ export class FlowSurfacesService {
         quickCreateAction: hasQuickCreatePopupChange
           ? quickCreatePopupSettings
           : resourceChanged
-            ? quickCreatePopupSettingsBase
+            ? quickCreatePopupSettingsBaseWithDefaults
             : undefined,
         eventViewAction: hasEventPopupChange
           ? eventPopupSettings
           : resourceChanged
-            ? eventPopupSettingsBase
+            ? eventPopupSettingsBaseWithDefaults
             : undefined,
       },
       {
@@ -14526,6 +15089,7 @@ export class FlowSurfacesService {
     current: any,
     changes: Record<string, any>,
     options: { transaction?: any },
+    popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('KanbanBlockModel');
     const blockCardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
@@ -14727,16 +15291,30 @@ export class FlowSurfacesService {
     const cardPopupBase = resourceChanged
       ? this.stripKanbanPopupTargetSettingsForResourceChange('cardViewAction', currentCardPopupSettings, current.uid)
       : currentCardPopupSettings;
-    const quickCreatePopup = shouldWriteQuickCreatePopup
+    const quickCreatePopupBaseWithDefaults = resourceChanged
+      ? this.attachPopupDefaultsMetadata(quickCreatePopupBase, popupDefaultsMetadata, { forceEmpty: true })
+      : quickCreatePopupBase;
+    const cardPopupBaseWithDefaults = resourceChanged
+      ? this.attachPopupDefaultsMetadata(cardPopupBase, popupDefaultsMetadata, { forceEmpty: true })
+      : cardPopupBase;
+    let quickCreatePopup = shouldWriteQuickCreatePopup
       ? _.isNull(changes.quickCreatePopup)
         ? quickCreatePopupInput || {}
         : this.mergeKanbanPopupSettings('quickCreateAction', quickCreatePopupBase, quickCreatePopupInput, current.uid)
       : undefined;
-    const cardPopup = shouldWriteCardPopup
+    let cardPopup = shouldWriteCardPopup
       ? _.isNull(changes.cardPopup)
         ? cardPopupInput || {}
         : this.mergeKanbanPopupSettings('cardViewAction', cardPopupBase, cardPopupInput, current.uid)
       : undefined;
+    if (shouldWriteQuickCreatePopup) {
+      quickCreatePopup = this.attachPopupDefaultsMetadata(quickCreatePopup, popupDefaultsMetadata, {
+        forceEmpty: true,
+      });
+    }
+    if (shouldWriteCardPopup) {
+      cardPopup = this.attachPopupDefaultsMetadata(cardPopup, popupDefaultsMetadata, { forceEmpty: true });
+    }
     const previousQuickCreateOpenView = this.buildKanbanPopupOpenView({
       blockNode: current,
       actionKey: 'quickCreateAction',
@@ -14985,7 +15563,7 @@ export class FlowSurfacesService {
       await this.replaceKanbanStoredPopupSettings(
         popupSettingsStorageNode,
         'quickCreateAction',
-        quickCreatePopupBase,
+        quickCreatePopupBaseWithDefaults,
         options.transaction,
       );
     }
@@ -14993,7 +15571,7 @@ export class FlowSurfacesService {
       await this.replaceKanbanStoredPopupSettings(
         popupSettingsStorageNode,
         'cardViewAction',
-        cardPopupBase,
+        cardPopupBaseWithDefaults,
         options.transaction,
       );
     }
@@ -15004,9 +15582,13 @@ export class FlowSurfacesService {
         quickCreateAction: shouldWriteQuickCreatePopup
           ? quickCreatePopup || {}
           : resourceChanged
-            ? quickCreatePopupBase
+            ? quickCreatePopupBaseWithDefaults
             : undefined,
-        cardViewAction: shouldWriteCardPopup ? cardPopup || {} : resourceChanged ? cardPopupBase : undefined,
+        cardViewAction: shouldWriteCardPopup
+          ? cardPopup || {}
+          : resourceChanged
+            ? cardPopupBaseWithDefaults
+            : undefined,
       },
       {
         displayFallbackOpenViews: {
@@ -15747,7 +16329,11 @@ export class FlowSurfacesService {
     target: FlowSurfaceWriteTarget,
     current: any,
     changes: Record<string, any>,
-    options: { transaction?: any },
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
+    },
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     assertSupportedSimpleChanges('field wrapper', changes, getConfigureOptionKeysForUse(current?.use));
@@ -16010,7 +16596,10 @@ export class FlowSurfacesService {
           uid: innerUid,
         },
         _.pick(changes, ['clickToOpen', 'openView', 'displayStyle', 'code', 'version']),
-        options,
+        {
+          ...options,
+          enabledPackages,
+        },
       );
     }
 
@@ -16022,7 +16611,13 @@ export class FlowSurfacesService {
   private async configureFieldNode(
     target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
-    options: { transaction?: any; openViewActionName?: string },
+    options: {
+      transaction?: any;
+      openViewActionName?: string;
+      enabledPackages?: ReadonlySet<string>;
+      popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
+      skipConfigureGeneratedDefaultPopup?: boolean;
+    },
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const resolved = await this.locator.resolve(target, options);
@@ -16208,6 +16803,30 @@ export class FlowSurfacesService {
       },
     );
     if (hasOwnDefined(changes, 'openView')) {
+      const generatedPopup = options.skipConfigureGeneratedDefaultPopup
+        ? undefined
+        : this.buildConfigureGeneratedDefaultPopup(options.popupDefaultsMetadata, {
+            defaultType: this.getRequestedPopupDefaultType(changes.openView) || 'view',
+          });
+      if (generatedPopup) {
+        const { fieldNode } = await this.loadFieldHostNodes(target.uid, options.transaction);
+        const fieldOpenView = this.resolvePopupHostOpenView(fieldNode);
+        if (
+          !String(fieldOpenView?.popupTemplateUid || '').trim() &&
+          !this.isExternalPopupOpenView(fieldOpenView, target.uid) &&
+          !this.popupHostHasLocalContent(fieldNode) &&
+          this.shouldAutoCompleteDefaultFieldPopup(fieldNode, generatedPopup)
+        ) {
+          await this.applyInlineFieldPopup(options.openViewActionName || 'configure field', result, generatedPopup, {
+            ...options,
+            enabledPackages,
+          });
+          return {
+            ...result,
+            ...(await this.collectPopupSurfaceKeys(target.uid, options.transaction)),
+          };
+        }
+      }
       return {
         ...result,
         ...(await this.ensureLocalFieldPopupSurface(
@@ -16243,7 +16862,14 @@ export class FlowSurfacesService {
     target: FlowSurfaceWriteTarget,
     use: string,
     changes: Record<string, any>,
-    options: { transaction?: any; openViewActionName?: string; current?: any },
+    options: {
+      transaction?: any;
+      openViewActionName?: string;
+      current?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
+      skipConfigureGeneratedDefaultPopup?: boolean;
+    },
   ) {
     const currentNode =
       options.current ||
@@ -16496,7 +17122,7 @@ export class FlowSurfacesService {
         : {}),
     });
 
-    return this.updateSettings(
+    const result = await this.updateSettings(
       {
         target,
         ...(Object.keys(props).length ? { props } : {}),
@@ -16508,6 +17134,32 @@ export class FlowSurfacesService {
         popupTemplateHostUid: target.uid,
       },
     );
+    const generatedPopup = options.skipConfigureGeneratedDefaultPopup
+      ? undefined
+      : this.buildConfigureGeneratedDefaultPopup(options.popupDefaultsMetadata);
+    if (!_.isUndefined(changes.openView) && generatedPopup && target.uid) {
+      const refreshedActionNode = await this.repository.findModelById(target.uid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      const refreshedOpenView = this.resolvePopupHostOpenView(refreshedActionNode);
+      if (
+        !String(refreshedOpenView?.popupTemplateUid || '').trim() &&
+        !this.popupHostHasLocalContent(refreshedActionNode) &&
+        this.shouldAutoCompleteDefaultActionPopup(refreshedActionNode, generatedPopup)
+      ) {
+        await this.applyInlineActionPopup(
+          options.openViewActionName || 'configure action',
+          target.uid,
+          generatedPopup,
+          {
+            ...options,
+            enabledPackages: options.enabledPackages,
+          },
+        );
+      }
+    }
+    return result;
   }
 
   private async normalizeActionPanelActionChanges(
@@ -18061,8 +18713,10 @@ export class FlowSurfacesService {
       includeAsyncNode: true,
     });
     const openView = this.resolvePopupHostOpenView(actionNode);
+    const hasPopupDefaultsMetadata = !!readFlowSurfaceApplyBlueprintPopupDefaultsMetadata(input.popupSettings);
     if (
-      !this.shouldAutoBindPopupTemplate(openView, input.popupSettings, input.actionUid) ||
+      (!this.shouldAutoBindPopupTemplate(openView, input.popupSettings, input.actionUid) &&
+        !hasPopupDefaultsMetadata) ||
       String(openView?.popupTemplateUid || '').trim() ||
       this.popupHostHasLocalContent(actionNode)
     ) {
@@ -19011,6 +19665,7 @@ export class FlowSurfacesService {
       input.resourceInit,
     );
     const currentProps = _.cloneDeep(input.props || {});
+    const fieldNameChanges = _.pick(input.settings || {}, ['titleField', 'colorField', 'startField', 'endField']);
     const props = {
       ...currentProps,
       fieldNames: this.normalizeCalendarFieldNamesForCollection({
@@ -19018,11 +19673,16 @@ export class FlowSurfacesService {
         collection,
         collectionName,
         currentFieldNames: currentProps.fieldNames,
+        changes: Object.keys(fieldNameChanges).length ? fieldNameChanges : undefined,
         resetInvalidExisting: true,
       }),
       defaultView: currentProps.defaultView || 'month',
       enableQuickCreateEvent:
-        typeof currentProps.enableQuickCreateEvent === 'boolean' ? currentProps.enableQuickCreateEvent : true,
+        typeof input.settings?.quickCreateEvent === 'boolean'
+          ? input.settings.quickCreateEvent
+          : typeof currentProps.enableQuickCreateEvent === 'boolean'
+            ? currentProps.enableQuickCreateEvent
+            : true,
       weekStart: typeof currentProps.weekStart === 'number' ? currentProps.weekStart : 1,
     };
     delete (props as any).quickCreatePopup;

@@ -90,7 +90,7 @@ export type FlowSurfaceApplyBlueprintBlockResource =
 
 export type FlowSurfaceApplyBlueprintPopup = {
   title?: string;
-  mode?: 'replace' | 'append';
+  mode?: 'replace' | 'append' | 'drawer' | 'dialog' | 'page' | 'modal' | 'embed';
   template?: Record<string, any>;
   tryTemplate?: boolean;
   defaultType?: 'view' | 'edit';
@@ -219,8 +219,17 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   defaultFilter?: Record<string, any>;
   actions?: FlowSurfaceApplyBlueprintActionSpec[];
   recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
+  skipDefaultActions?: boolean;
+  skipDefaultRecordActions?: boolean;
   script?: string;
   chart?: string;
+  pageSize?: number;
+  sort?: unknown;
+  sorting?: unknown;
+  titleField?: string;
+  colorField?: string;
+  startField?: string;
+  endField?: string;
 };
 
 export type FlowSurfaceApplyBlueprintTabDocument = {

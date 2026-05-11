@@ -489,7 +489,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('calendar');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('kanban');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
-      'at least one concrete filter item',
+      'never more than 4',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain(
+      'Explicit values must contain at least one concrete caller-chosen filter item',
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintFieldSpec',
@@ -499,6 +502,14 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintRecordActionSpec',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultActions.description).toContain(
+      'Partial actions[] no longer suppress missing defaults',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultRecordActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultRecordActions.description).toContain(
+      'Partial recordActions[] no longer suppress missing defaults',
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.enum).toEqual([
       'table',
@@ -858,6 +869,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeFieldPopup.properties.saveAsTemplate.description).toContain(
       'final bound template uid',
     );
+    expect(schemas.FlowSurfaceComposeFieldPopup.properties.defaults).toBeUndefined();
     expect(schemas.FlowSurfaceApplyNodePopup.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfacePopupTemplateRef',
     );
@@ -947,8 +959,9 @@ describe('flowSurfaces swagger', () => {
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
-      'compatibility-tolerant',
+      'When omitted, backend authoring generates a default filter',
     );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain('never more than 4');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
       'action-level value wins',
     );
@@ -1030,6 +1043,12 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
       'Blocks, fields, and actions can declare stable `key` values',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
+      'defaults.collections.<collection>.fieldGroups',
+    );
+    expect(schemas.FlowSurfaceComposeRequest.properties.defaults.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaults',
+    );
     expect(schemas.FlowSurfaceComposeActionResult.properties.popupGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.assignFormUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.type.enum).toEqual(
@@ -1074,6 +1093,12 @@ describe('flowSurfaces swagger', () => {
     const configureRequest =
       swaggerDocument.paths['/flowSurfaces:configure'].post.requestBody.content['application/json'];
     expect(configureRequest.examples.fieldOpenView.value.changes.clickToOpen).toBe(true);
+    expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain(
+      'defaults.collections.<collection>.fieldGroups',
+    );
+    expect(schemas.FlowSurfaceConfigureRequest.properties.defaults.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaults',
+    );
     expect(configureRequest.examples.fieldOpenView.value.changes.openView.collectionName).toBe('departments');
     expect(configureRequest.examples.associationFieldPopup.value.changes.openView.collectionName).toBe('roles');
     expect(configureRequest.examples.associationFieldPopup.value.changes.openView.associationName).toBe('users.roles');
@@ -1211,6 +1236,10 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
       'defaultActionSettings.filter.defaultFilter',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
+      'defaults.collections.<collection>.fieldGroups',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).not.toContain('Legacy');
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain('`kanban`');
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
     expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
@@ -1247,13 +1276,21 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.description).toContain('never more than 4');
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaults.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaults',
+    );
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.skipDefaultActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.skipDefaultRecordActions.type).toBe('boolean');
     expect(schemas.FlowSurfaceDefaultActionSettings.properties.filter.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultFilterActionSettings',
     );
-    expect(schemas.FlowSurfaceDefaultActionSettings.description).toContain('Legacy');
+    expect(schemas.FlowSurfaceDefaultActionSettings.description).toContain(
+      'defaultActionSettings.filter.defaultFilter',
+    );
     expect(schemas.FlowSurfaceDefaultActionSettings.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceDefaultFilterActionSettings.properties.defaultFilter.$ref).toBe(
       '#/components/schemas/FlowSurfaceFilterGroup',
@@ -1371,6 +1408,16 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain(
       'defaultActionSettings.filter.defaultFilter',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain(
+      'defaults.collections.<collection>.fieldGroups',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain(
+      'Authoring validation is all-or-none before the batch starts',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).not.toContain(
+      'Partial-success semantics apply',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).not.toContain('Legacy');
     expect(swaggerDocument.paths['/flowSurfaces:addBlocks'].post.description).toContain('`kanban`');
     expect(addBlocksRequest.example.blocks).toHaveLength(2);
     expect(addBlocksRequest.example.blocks[0].type).toBe('table');
@@ -1381,13 +1428,19 @@ describe('flowSurfaces swagger', () => {
     expect(addBlocksRequest.example.blocks[1].fields[0].fieldType).toBe('popupSubTable');
     expect(addBlocksRequest.example.blocks[1].fieldsLayout.rows).toEqual([['rolesField']]);
     expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
+    expect(schemas.FlowSurfaceAddBlocksRequest.properties.defaults.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaults',
+    );
     expect(schemas.FlowSurfaceAddBlockItem.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
+    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.description).toContain('never more than 4');
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );
+    expect(schemas.FlowSurfaceAddBlockItem.properties.skipDefaultActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.skipDefaultRecordActions.type).toBe('boolean');
     expect(schemas.FlowSurfaceAddBlockItem.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
     );
@@ -1400,6 +1453,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.anyOf).toEqual(
       expect.arrayContaining([{ required: ['type'] }, { required: ['template'] }]),
     );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.skipDefaultActions.type).toBe('boolean');
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.skipDefaultRecordActions.type).toBe('boolean');
     expect(schemas.FlowSurfaceAddBlockItem.properties.props).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.stepParams).toBeUndefined();
@@ -1574,7 +1629,10 @@ describe('flowSurfaces swagger', () => {
     expect(applyRequest.example.spec.subModels.items).toHaveLength(2);
     expect(schemas.FlowSurfaceFilterGroup.properties.logic.enum).toEqual(['$and', '$or']);
     expect(schemas.FlowSurfaceFilterGroup.properties.items.type).toBe('array');
-    expect(schemas.FlowSurfaceFilterGroup.example).toEqual({ logic: '$and', items: [] });
+    expect(schemas.FlowSurfaceFilterGroup.example).toEqual({
+      logic: '$and',
+      items: [{ path: 'nickname', operator: '$notEmpty' }],
+    });
 
     const getPath = swaggerDocument.paths['/flowSurfaces:get'].get;
     expect(getPath.requestBody).toBeUndefined();

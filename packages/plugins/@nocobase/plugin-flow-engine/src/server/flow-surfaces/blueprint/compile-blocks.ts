@@ -22,6 +22,8 @@ import {
 import {
   assertFlowSurfaceConcreteDefaultFilterItem,
   backfillFlowSurfaceFilterActionDefaultFilter,
+  buildFlowSurfaceDefaultFilterFromCollection,
+  isFlowSurfacePublicDataSurfaceBlockType,
   normalizeFlowSurfacePublicBlockDefaultFilter,
 } from '../public-data-surface-default-filter';
 import { normalizeFlowSurfacePublicSortingAlias } from '../public-compatibility';
@@ -33,7 +35,8 @@ import {
 import type { FlowSurfaceApplyBlueprintPopupDefaultsMetadata } from './defaults';
 import { normalizeBlockHiddenPopupSettings } from '../hidden-popup-contract';
 import type { FlowSurfaceResourceBindingKey } from '../types';
-import { getCollectionFields, getFieldName, getFieldType } from '../service-helpers';
+import { getCollectionFields, getFieldInterface, getFieldName, getFieldTarget, getFieldType } from '../service-helpers';
+import { hasFlowSurfaceTemplateDocument, hasFlowSurfaceTemplateReference } from '../template-reference';
 import type {
   FlowSurfaceApplyBlueprintCollectionResolver,
   FlowSurfaceApplyBlueprintActionSpec,
@@ -75,6 +78,16 @@ type FlowSurfaceCompiledPopup = {
   popupTitle?: string;
 };
 
+type FlowSurfaceCompilePopupOptions = {
+  ownerActionType?: string;
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
+  mode?: FlowSurfaceApplyBlueprintMode;
+  popupDepth?: number;
+  triggerKind?: 'field' | 'action' | 'recordAction';
+  triggerLabel?: string;
+  hostBlock?: FlowSurfaceApplyBlueprintBlockSpec;
+};
+
 const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'table',
   'calendar',
@@ -114,8 +127,17 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'defaultFilter',
   'actions',
   'recordActions',
+  'skipDefaultActions',
+  'skipDefaultRecordActions',
   'script',
   'chart',
+  'pageSize',
+  'sort',
+  'sorting',
+  'titleField',
+  'colorField',
+  'startField',
+  'endField',
 ];
 
 const APPLY_BLUEPRINT_FIELD_ALLOWED_KEYS = [
@@ -151,6 +173,15 @@ const APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS = [
   'blocks',
   'layout',
 ];
+const APPLY_BLUEPRINT_POPUP_COMPOSE_MODES = new Set(['replace', 'append']);
+const APPLY_BLUEPRINT_POPUP_DISPLAY_MODE_ALIASES: Record<string, string> = {
+  modal: 'dialog',
+  page: 'embed',
+};
+const APPLY_BLUEPRINT_POPUP_DISPLAY_MODES = new Set(['drawer', 'dialog', 'embed', 'page', 'modal']);
+const APPLY_BLUEPRINT_CALENDAR_FIELD_BINDING_KEYS = ['titleField', 'colorField', 'startField', 'endField'] as const;
+const APPLY_BLUEPRINT_POPUP_PAGE_MODE_BLOCK_THRESHOLD = 3;
+const APPLY_BLUEPRINT_POPUP_PAGE_MODE_FIELD_THRESHOLD = 20;
 const APPLY_BLUEPRINT_POPUP_SAVE_AS_TEMPLATE_ALLOWED_KEYS = ['name', 'description', 'local'];
 const APPLY_BLUEPRINT_LAYOUT_ALLOWED_KEYS = ['rows'];
 const APPLY_BLUEPRINT_LAYOUT_CELL_ALLOWED_KEYS = ['key', 'span'];
@@ -518,6 +549,299 @@ function resolvePopupTitleSettings(settings: Record<string, any>, title?: string
   const nextSettings = _.cloneDeep(settings || {});
   if (_.isUndefined(_.get(nextSettings, ['openView', 'title']))) {
     _.set(nextSettings, ['openView', 'title'], title);
+  }
+  return nextSettings;
+}
+
+function normalizeApplyBlueprintPopupMode(value: any, context: string) {
+  const rawMode = readOptionalString(value);
+  if (!rawMode) {
+    return {};
+  }
+  if (APPLY_BLUEPRINT_POPUP_COMPOSE_MODES.has(rawMode)) {
+    return {
+      composeMode: rawMode as 'replace' | 'append',
+    };
+  }
+  if (APPLY_BLUEPRINT_POPUP_DISPLAY_MODES.has(rawMode)) {
+    return {
+      displayMode: APPLY_BLUEPRINT_POPUP_DISPLAY_MODE_ALIASES[rawMode] || rawMode,
+    };
+  }
+  throwBadRequest(`${context}.mode must be 'replace', 'append', 'drawer', 'dialog' or 'page'`);
+}
+
+function countApplyBlueprintPopupDirectEffectiveFields(blocks: FlowSurfaceApplyBlueprintBlockSpec[]) {
+  return blocks.reduce((count, block) => {
+    if (!_.isPlainObject(block) || readOptionalString(block.type) === 'filterForm') {
+      return count;
+    }
+    const fields = Object.prototype.hasOwnProperty.call(block, 'fieldGroups')
+      ? _.castArray(block.fieldGroups || []).flatMap((group: any) => _.castArray(group?.fields || []))
+      : _.castArray(block.fields || []);
+    return (
+      count +
+      fields.filter((field: any) => {
+        if (_.isPlainObject(field)) {
+          const type = String(field.type || '').trim();
+          return type !== 'divider' && type !== 'jsitem' && type !== 'jscolumn';
+        }
+        return !!String(field || '').trim();
+      }).length
+    );
+  }, 0);
+}
+
+function countApplyBlueprintPopupNonFilterBlocks(blocks: FlowSurfaceApplyBlueprintBlockSpec[]) {
+  return blocks.filter((block) => _.isPlainObject(block) && readOptionalString(block.type) !== 'filterForm').length;
+}
+
+function shouldDefaultApplyBlueprintPopupDisplayPage(
+  popup: FlowSurfaceApplyBlueprintPopup,
+  popupBlocks: FlowSurfaceApplyBlueprintBlockSpec[],
+  options: { popupDepth?: number },
+) {
+  if (hasFlowSurfaceTemplateReference(popup.template)) {
+    return false;
+  }
+  if (Object.prototype.hasOwnProperty.call(popup, 'mode')) {
+    return false;
+  }
+  if ((options.popupDepth || 1) !== 1) {
+    return false;
+  }
+  if (!popupBlocks.length) {
+    return false;
+  }
+  return (
+    countApplyBlueprintPopupNonFilterBlocks(popupBlocks) > APPLY_BLUEPRINT_POPUP_PAGE_MODE_BLOCK_THRESHOLD ||
+    countApplyBlueprintPopupDirectEffectiveFields(popupBlocks) > APPLY_BLUEPRINT_POPUP_PAGE_MODE_FIELD_THRESHOLD
+  );
+}
+
+const MAX_AUTO_TEMPLATE_NAME_LENGTH = 80;
+const MAX_AUTO_TEMPLATE_DESCRIPTION_LENGTH = 160;
+const MAX_HEADER_TEXT = 60;
+const CJK_TEXT_PATTERN = /[\u3400-\u9fff\uf900-\ufaff]/;
+
+function normalizeMetadataText(value: any) {
+  return typeof value === 'string' ? value.trim() : String(value || '').trim();
+}
+
+function trimAutoTemplateLabel(value: any, maxLength = MAX_AUTO_TEMPLATE_NAME_LENGTH) {
+  const source = normalizeMetadataText(value);
+  if (!source) {
+    return '';
+  }
+  if (source.length <= maxLength) {
+    return source;
+  }
+  if (maxLength <= 3) {
+    return source.slice(0, maxLength);
+  }
+  return `${source.slice(0, maxLength - 3)}...`;
+}
+
+function getApplyBlueprintCollectionLabel(block?: Record<string, any>) {
+  return (
+    normalizeMetadataText(block?.collection) ||
+    normalizeMetadataText(block?.resource?.collectionName) ||
+    normalizeMetadataText(block?.resource?.collection) ||
+    ''
+  );
+}
+
+function buildApplyBlueprintBlockHeader(block?: Record<string, any>) {
+  return (
+    normalizeMetadataText(block?.title) ||
+    getApplyBlueprintCollectionLabel(block) ||
+    normalizeMetadataText(block?.key) ||
+    normalizeMetadataText(block?.type)
+  );
+}
+
+function inferPopupTemplateMetadataLocale(
+  popup: FlowSurfaceApplyBlueprintPopup,
+  options: { triggerLabel?: string; hostBlock?: FlowSurfaceApplyBlueprintBlockSpec },
+) {
+  const candidates = [
+    popup.title,
+    options.triggerLabel,
+    options.hostBlock?.title,
+    options.hostBlock?.key,
+    getApplyBlueprintCollectionLabel(options.hostBlock),
+    ..._.castArray(popup.blocks || []).flatMap((block: any) => [
+      block?.title,
+      block?.key,
+      block?.type,
+      getApplyBlueprintCollectionLabel(block),
+    ]),
+  ];
+  return candidates.some((value) => CJK_TEXT_PATTERN.test(normalizeMetadataText(value))) ? 'zh' : 'en';
+}
+
+function getPopupTemplateTriggerLabel(kind: string | undefined, locale: string) {
+  const normalizedKind = String(kind || '').trim();
+  if (locale === 'zh') {
+    if (normalizedKind === 'field') {
+      return '字段';
+    }
+    if (normalizedKind === 'recordAction') {
+      return '记录操作';
+    }
+    if (normalizedKind === 'action') {
+      return '操作';
+    }
+    return '弹窗';
+  }
+  if (normalizedKind === 'field') {
+    return 'field';
+  }
+  if (normalizedKind === 'recordAction') {
+    return 'record action';
+  }
+  if (normalizedKind === 'action') {
+    return 'action';
+  }
+  return 'popup';
+}
+
+function describePopupTemplateTrigger(kind: string | undefined, label: string | undefined, locale: string) {
+  const kindLabel = getPopupTemplateTriggerLabel(kind, locale);
+  const normalizedLabel = normalizeMetadataText(label);
+  if (!normalizedLabel) {
+    return kindLabel;
+  }
+  return locale === 'zh' ? `${kindLabel}“${normalizedLabel}”` : `${kindLabel} "${normalizedLabel}"`;
+}
+
+function describePopupTemplateHost(block: FlowSurfaceApplyBlueprintBlockSpec | undefined, locale: string) {
+  return (
+    normalizeMetadataText(block?.title) ||
+    getApplyBlueprintCollectionLabel(block) ||
+    normalizeMetadataText(block?.key) ||
+    normalizeMetadataText(block?.type) ||
+    (locale === 'zh' ? '当前区块' : 'current block')
+  );
+}
+
+function summarizePopupTemplateBlocks(blocks: FlowSurfaceApplyBlueprintBlockSpec[] | undefined, locale: string) {
+  const labels = _.uniq(
+    _.castArray(blocks || [])
+      .map((block: any) => trimAutoTemplateLabel(buildApplyBlueprintBlockHeader(block), MAX_HEADER_TEXT))
+      .filter(Boolean),
+  ).slice(0, 3);
+  if (!labels.length) {
+    return locale === 'zh' ? '本地 popup 内容' : 'local popup content';
+  }
+  return labels.join(locale === 'zh' ? '、' : ', ');
+}
+
+function buildApplyBlueprintAutoSaveTemplateMetadata(
+  popup: FlowSurfaceApplyBlueprintPopup,
+  options: {
+    triggerKind?: string;
+    triggerLabel?: string;
+    hostBlock?: FlowSurfaceApplyBlueprintBlockSpec;
+  },
+) {
+  const locale = inferPopupTemplateMetadataLocale(popup, options);
+  const popupTitle = normalizeMetadataText(popup.title);
+  const hostLabel = describePopupTemplateHost(options.hostBlock, locale);
+  const triggerLabel = describePopupTemplateTrigger(options.triggerKind, options.triggerLabel, locale);
+  const contentLabel = summarizePopupTemplateBlocks(popup.blocks, locale);
+  const name = popupTitle
+    ? locale === 'zh'
+      ? `${popupTitle}弹窗模板`
+      : `${popupTitle} popup template`
+    : locale === 'zh'
+      ? `${hostLabel} ${triggerLabel} 弹窗模板`
+      : `${hostLabel} ${triggerLabel} popup template`;
+  const description =
+    locale === 'zh'
+      ? `复用弹窗模板。宿主：${hostLabel}；触发器：${triggerLabel}；内容：${contentLabel}。`
+      : `Reusable popup template for ${triggerLabel} on ${hostLabel}. Content: ${contentLabel}.`;
+  return {
+    name: trimAutoTemplateLabel(name, MAX_AUTO_TEMPLATE_NAME_LENGTH),
+    description: trimAutoTemplateLabel(description, MAX_AUTO_TEMPLATE_DESCRIPTION_LENGTH),
+  };
+}
+
+function normalizeApplyBlueprintCalendarCompatSettings(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  settings: Record<string, any>,
+) {
+  if (readOptionalString(block.type) !== 'calendar') {
+    return settings;
+  }
+  let nextSettings = settings;
+  const ensureNextSettings = () => {
+    if (nextSettings === settings) {
+      nextSettings = _.cloneDeep(settings || {});
+    }
+    return nextSettings;
+  };
+  for (const key of APPLY_BLUEPRINT_CALENDAR_FIELD_BINDING_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(block, key) && !Object.prototype.hasOwnProperty.call(nextSettings, key)) {
+      ensureNextSettings()[key] = (block as any)[key];
+    }
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(nextSettings, 'quickCreateEnabled') &&
+    !Object.prototype.hasOwnProperty.call(nextSettings, 'quickCreateEvent')
+  ) {
+    ensureNextSettings().quickCreateEvent = nextSettings.quickCreateEnabled;
+  }
+  if (nextSettings !== settings) {
+    delete nextSettings.quickCreateEnabled;
+  }
+  return nextSettings;
+}
+
+function isApplyBlueprintCompatibleTreeTableDragSortFieldMeta(field: any) {
+  if (String(getFieldInterface(field) || getFieldType(field) || '').trim() !== 'sort') {
+    return false;
+  }
+  return (
+    !String(getFieldTarget(field) || '').trim() && !String(field?.scopeKey || field?.options?.scopeKey || '').trim()
+  );
+}
+
+function getApplyBlueprintCompatibleTreeTableDragSortFieldName(collection: any) {
+  return getFieldName(getCollectionFields(collection).find(isApplyBlueprintCompatibleTreeTableDragSortFieldMeta));
+}
+
+function isApplyBlueprintCompatibleTreeTableDragSortField(collection: any, fieldName: string) {
+  const field = getCollectionFields(collection).find((candidate) => getFieldName(candidate) === fieldName);
+  return !!field && isApplyBlueprintCompatibleTreeTableDragSortFieldMeta(field);
+}
+
+function normalizeApplyBlueprintTreeTableDragSortBy(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  settings: Record<string, any>,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+) {
+  if (
+    readOptionalString(block.type) !== 'table' ||
+    settings?.treeTable !== true ||
+    !Object.prototype.hasOwnProperty.call(settings || {}, 'dragSortBy')
+  ) {
+    return settings;
+  }
+  const collection = resolveBlueprintBlockCollection(block, getCollection);
+  if (!collection) {
+    return settings;
+  }
+  const currentFieldName = readOptionalString(settings.dragSortBy);
+  if (currentFieldName && isApplyBlueprintCompatibleTreeTableDragSortField(collection, currentFieldName)) {
+    return settings;
+  }
+  const nextSettings = _.cloneDeep(settings || {});
+  const replacementFieldName = getApplyBlueprintCompatibleTreeTableDragSortFieldName(collection);
+  if (replacementFieldName) {
+    nextSettings.dragSortBy = replacementFieldName;
+  } else {
+    delete nextSettings.dragSortBy;
   }
   return nextSettings;
 }
@@ -986,10 +1310,7 @@ function compilePopup(
   assets: FlowSurfaceApplyBlueprintAssets,
   context: string,
   defaults?: FlowSurfaceApplyBlueprintDefaults,
-  options: {
-    ownerActionType?: string;
-    getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
-  } = {},
+  options: FlowSurfaceCompilePopupOptions = {},
 ): FlowSurfaceCompiledPopup {
   if (_.isUndefined(popup)) {
     return {};
@@ -999,7 +1320,10 @@ function compilePopup(
   }
   assertOnlyAllowedKeys(popup, context, APPLY_BLUEPRINT_POPUP_ALLOWED_KEYS);
   const popupTitle = readOptionalString(popup.title);
+  const popupMode = normalizeApplyBlueprintPopupMode(popup.mode, context);
   const template = ensureOptionalTemplate(popup.template, `${context}.template`);
+  const hasTemplateReference = hasFlowSurfaceTemplateReference(template);
+  const hasTemplateDocument = hasFlowSurfaceTemplateDocument(template);
   const tryTemplate = _.isUndefined(popup.tryTemplate)
     ? undefined
     : _.isBoolean(popup.tryTemplate)
@@ -1024,13 +1348,20 @@ function compilePopup(
           local: readOptionalString(popup.saveAsTemplate.local),
         })
       : throwBadRequest(`${context}.saveAsTemplate must be an object`);
-  if (saveAsTemplate && template) {
+  if (saveAsTemplate && hasTemplateReference) {
     throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);
   }
-  if (template) {
+  if (hasTemplateReference) {
     return {
       popup: {
         template,
+        ...(popupMode.displayMode
+          ? {
+              openView: {
+                mode: popupMode.displayMode,
+              },
+            }
+          : {}),
       },
       popupTitle,
     };
@@ -1040,7 +1371,8 @@ function compilePopup(
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
-  if (saveAsTemplate && !popupBlocks.length && tryTemplate !== true) {
+  const willAutoTryTemplate = _.isUndefined(popup.tryTemplate) && options.mode === 'create' && !hasTemplateDocument;
+  if (saveAsTemplate && !popupBlocks.length && tryTemplate !== true && !willAutoTryTemplate) {
     throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
   }
   const compiledBlocks = popupBlocks.length
@@ -1052,6 +1384,10 @@ function compilePopup(
         defaults,
         collectReferencedBlockKeys(popup.layout, `${context}.layout`),
         options.getCollection,
+        {
+          mode: options.mode,
+          popupDepth: (options.popupDepth || 1) + 1,
+        },
       )
     : { blocks: [], blockKeysByLocalKey: new Map<string, string>() };
   const layout =
@@ -1062,17 +1398,36 @@ function compilePopup(
           `${context}.layout`,
         )
       : undefined;
-  const popupMode = readOptionalString(popup.mode) as 'replace' | 'append' | undefined;
-  if (popupMode && popupMode !== 'replace' && popupMode !== 'append') {
-    throwBadRequest(`${context}.mode must be 'replace' or 'append'`);
-  }
-  const effectiveTryTemplate = _.isUndefined(popup.tryTemplate) ? true : tryTemplate;
+  const autoSaveAsTemplate =
+    _.isUndefined(saveAsTemplate) && options.mode === 'create' && !hasTemplateDocument && popupBlocks.length > 0
+      ? buildApplyBlueprintAutoSaveTemplateMetadata(popup, options)
+      : undefined;
+  const effectiveTryTemplate =
+    autoSaveAsTemplate || saveAsTemplate
+      ? tryTemplate
+      : _.isUndefined(popup.tryTemplate) && options.mode === 'create' && !hasTemplateDocument
+        ? true
+        : tryTemplate;
+  const displayMode =
+    popupMode.displayMode ||
+    (shouldDefaultApplyBlueprintPopupDisplayPage(popup, popupBlocks, options)
+      ? 'embed'
+      : popupBlocks.length && (options.popupDepth || 1) > 1
+        ? 'drawer'
+        : undefined);
   const compiledPopup = buildDefinedPayload({
-    mode: popupMode || (popupBlocks.length || template || layout ? 'replace' : undefined),
-    template,
+    mode: popupMode.composeMode || (popupBlocks.length || layout ? 'replace' : undefined),
+    template: hasTemplateDocument ? template : undefined,
+    ...(displayMode
+      ? {
+          openView: {
+            mode: displayMode,
+          },
+        }
+      : {}),
     ...(!_.isUndefined(effectiveTryTemplate) ? { tryTemplate: effectiveTryTemplate } : {}),
     ...(defaultType ? { defaultType } : {}),
-    ...(saveAsTemplate ? { saveAsTemplate } : {}),
+    ...(saveAsTemplate || autoSaveAsTemplate ? { saveAsTemplate: saveAsTemplate || autoSaveAsTemplate } : {}),
     blocks: compiledBlocks.blocks.length ? compiledBlocks.blocks : undefined,
     layout,
   });
@@ -1165,6 +1520,7 @@ function compileField(
   popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   defaults?: FlowSurfaceApplyBlueprintDefaults,
   getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+  popupOptions: FlowSurfaceCompilePopupOptions = {},
 ) {
   if (typeof input === 'string') {
     const fieldPath = assertNonEmptyString(input, `${context}[${index}]`);
@@ -1205,6 +1561,11 @@ function compileField(
   }
   const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
     getCollection,
+    mode: popupOptions.mode,
+    popupDepth: popupOptions.popupDepth,
+    triggerKind: 'field',
+    triggerLabel: input.label || input.field || input.key,
+    hostBlock: popupOptions.hostBlock,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   const popup = shouldAttachDefaultPopupMetadata(input.popup, undefined)
@@ -1241,6 +1602,8 @@ function compileAction(
   options: {
     avoidKeys?: Set<string>;
     generatedConflictPrefix?: string;
+    popupOptions?: FlowSurfaceCompilePopupOptions;
+    triggerKind?: 'action' | 'recordAction';
   } = {},
 ) {
   const buildActionKey = (localKey: string, isExplicit: boolean, keyContext: string) => {
@@ -1268,12 +1631,13 @@ function compileAction(
   if (typeof input === 'string') {
     const type = assertNonEmptyString(input, `${context}[${index}]`);
     const localKey = normalizeBlueprintLocalKey(undefined, `${type}_${index + 1}`, `${context}[${index}]`);
+    const defaultPopup = APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES.has(type)
+      ? attachDefaultActionPopupMetadata(undefined, type, popupDefaultsMetadata)
+      : undefined;
     return {
       key: buildActionKey(localKey, false, `${context}[${index}]`),
       type,
-      ...(APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES.has(type)
-        ? { popup: attachDefaultActionPopupMetadata(undefined, type, popupDefaultsMetadata) }
-        : {}),
+      ...(defaultPopup ? { popup: defaultPopup } : {}),
     };
   }
   if (!_.isPlainObject(input)) {
@@ -1291,6 +1655,11 @@ function compileAction(
   const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
     ownerActionType: type,
     getCollection,
+    mode: options.popupOptions?.mode,
+    popupDepth: options.popupOptions?.popupDepth,
+    triggerKind: options.triggerKind,
+    triggerLabel: input.title || input.key || input.type,
+    hostBlock: options.popupOptions?.hostBlock,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   const popup = shouldAttachDefaultPopupMetadata(input.popup, type)
@@ -1315,11 +1684,9 @@ function compileInjectedDefaultAction(
   const popup = shouldAttachDefaultPopupMetadata(descriptorPopup, descriptor.type)
     ? attachCompiledPopupDefaults(descriptorPopup, popupDefaultsMetadata)
     : undefined;
+  const localKey = descriptor.type === 'submit' ? 'submitAction' : `${descriptor.type}_default_${index + 1}`;
   return buildDefinedPayload({
-    key: normalizeFlowSurfaceComposeKey(
-      buildScopedKey(scopePrefix, `${descriptor.type}_default_${index + 1}`),
-      `${context}[${index}]`,
-    ),
+    key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, localKey), `${context}[${index}]`),
     type: descriptor.type,
     popup,
   });
@@ -1427,6 +1794,10 @@ function compileBlocks(
   defaults?: FlowSurfaceApplyBlueprintDefaults,
   requiredExplicitBlockKeys: Set<string> = new Set(),
   getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+  options: {
+    mode?: FlowSurfaceApplyBlueprintMode;
+    popupDepth?: number;
+  } = {},
 ): FlowSurfaceCompiledBlocks {
   const blockKeysByLocalKey = new Map<string, string>();
   const referencedBlockKeys = new Set<string>(requiredExplicitBlockKeys);
@@ -1494,6 +1865,7 @@ function compileBlocks(
     const blockType = readOptionalString(block.type);
     const stripSingleScopeTitle = shouldStripSingleScopeApplyBlueprintDataBlockTitle(block, rawBlocks);
     let settings = resolveAssetSettings(block.settings, block, assets, blockContext);
+    settings = normalizeApplyBlueprintCalendarCompatSettings(block, settings);
     if (!stripSingleScopeTitle && readOptionalString(block.title) && _.isUndefined(settings.title)) {
       settings.title = readOptionalString(block.title);
     }
@@ -1514,17 +1886,26 @@ function compileBlocks(
       type: blockType,
       settings,
     });
+    settings = normalizeApplyBlueprintTreeTableDragSortBy(block, settings, getCollection);
     if (blockType === 'calendar') {
       settings = normalizeApplyBlueprintCalendarPopupSettings(settings, blockContext, popupDefaultsMetadata);
     } else if (blockType === 'kanban') {
       settings = normalizeApplyBlueprintKanbanPopupSettings(settings, blockContext, popupDefaultsMetadata);
     }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
-    const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('applyBlueprint', block.defaultFilter, {
-      blockType,
-      template,
-      path: blockContext,
-    });
+    const isTemplateBackedBlock = hasFlowSurfaceTemplateReference(template);
+    const explicitBlockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter(
+      'applyBlueprint',
+      block.defaultFilter,
+      {
+        blockType,
+        template,
+        path: blockContext,
+      },
+    );
+    const blockDefaultFilter = !_.isUndefined(explicitBlockDefaultFilter)
+      ? explicitBlockDefaultFilter
+      : buildApplyBlueprintDefaultFilter(block, blockType, template, getCollection);
     if (!_.isUndefined(blockDefaultFilter)) {
       assertFlowSurfaceConcreteDefaultFilterItem('applyBlueprint', blockDefaultFilter, {
         path: blockContext,
@@ -1542,6 +1923,11 @@ function compileBlocks(
         popupDefaultsMetadata,
         defaults,
         getCollection,
+        {
+          mode: options.mode,
+          popupDepth: options.popupDepth || 1,
+          hostBlock: block,
+        },
       ),
     );
     const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
@@ -1567,6 +1953,14 @@ function compileBlocks(
         popupDefaultsMetadata,
         defaults,
         getCollection,
+        {
+          popupOptions: {
+            mode: options.mode,
+            popupDepth: options.popupDepth || 1,
+            hostBlock: block,
+          },
+          triggerKind: 'action',
+        },
       ),
     );
     const explicitActionKeys = new Set(explicitActions.map((action) => action.key).filter(Boolean));
@@ -1583,12 +1977,18 @@ function compileBlocks(
         {
           avoidKeys: explicitActionKeys,
           generatedConflictPrefix: 'record',
+          popupOptions: {
+            mode: options.mode,
+            popupDepth: options.popupDepth || 1,
+            hostBlock: block,
+          },
+          triggerKind: 'recordAction',
         },
       ),
     );
     const shouldInjectAddChild =
       blockType === 'table' &&
-      _.isUndefined(template) &&
+      !hasFlowSurfaceTemplateDocument(template) &&
       settings?.treeTable === true &&
       canInjectTreeTableAddChildDefault(block, getCollection);
     const injectedActionIndexes = {
@@ -1600,6 +2000,8 @@ function compileBlocks(
       template,
       actions: explicitActions,
       recordActions: explicitRecordActions,
+      skipDefaultActions: block.skipDefaultActions === true,
+      skipDefaultRecordActions: block.skipDefaultRecordActions === true,
       createAction: (descriptor) =>
         compileInjectedDefaultAction(
           descriptor,
@@ -1627,18 +2029,25 @@ function compileBlocks(
     );
     return buildDefinedPayload({
       key,
-      type: blockType,
-      resource: buildBlockResource(block, blockContext),
+      type: isTemplateBackedBlock ? undefined : blockType,
+      resource: isTemplateBackedBlock ? undefined : buildBlockResource(block, blockContext),
       template,
+      defaultFilter: !isTemplateBackedBlock ? blockDefaultFilter : undefined,
       settings: Object.keys(settings).length
         ? compileTreeConnectSettingsTargets(settings, blockKeysByLocalKey, blockContext)
         : undefined,
-      fields: blockType === 'calendar' || blockType === 'tree' ? undefined : fields,
+      skipDefaultActions: block.skipDefaultActions === true ? true : undefined,
+      skipDefaultRecordActions: block.skipDefaultRecordActions === true ? true : undefined,
+      fields: isTemplateBackedBlock || blockType === 'calendar' || blockType === 'tree' ? undefined : fields,
       fieldsLayout:
-        blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree' ? undefined : fieldsLayout,
-      actions: blockType === 'tree' ? undefined : actionsWithDefaultFilter,
+        isTemplateBackedBlock || blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree'
+          ? undefined
+          : fieldsLayout,
+      actions: isTemplateBackedBlock || blockType === 'tree' ? undefined : actionsWithDefaultFilter,
       recordActions:
-        blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree' ? undefined : finalRecordActions,
+        isTemplateBackedBlock || blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree'
+          ? undefined
+          : finalRecordActions,
     });
   });
 
@@ -1646,6 +2055,24 @@ function compileBlocks(
     blocks,
     blockKeysByLocalKey,
   };
+}
+
+function buildApplyBlueprintDefaultFilter(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  blockType: string | undefined,
+  template: unknown,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+) {
+  if (
+    !blockType ||
+    !isFlowSurfacePublicDataSurfaceBlockType(blockType) ||
+    hasFlowSurfaceTemplateDocument(template) ||
+    !getCollection
+  ) {
+    return undefined;
+  }
+  const collection = resolveBlueprintBlockCollection(block, getCollection);
+  return buildFlowSurfaceDefaultFilterFromCollection(collection);
 }
 
 export function compileTabComposeValues(
@@ -1668,6 +2095,9 @@ export function compileTabComposeValues(
     document.defaults,
     collectReferencedBlockKeys(tab.layout, layoutPath),
     options.getCollection,
+    {
+      mode: document.mode,
+    },
   );
   const layout = compileLayout(
     tab.layout || autoLayoutFromBlockKeys(compiledBlocks.blocks.map((block) => block.key)),
@@ -1678,5 +2108,6 @@ export function compileTabComposeValues(
     mode: options.mode,
     blocks: compiledBlocks.blocks,
     layout,
+    defaults: document.defaults,
   });
 }

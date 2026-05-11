@@ -661,7 +661,10 @@ export function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boo
 }
 
 export function rethrowInlineConfigurationError(error: any, prefix: string): never {
-  const message = `${prefix}: ${error?.message || String(error)}`;
+  const childMessages = isFlowSurfaceAggregateError(error)
+    ? error.errors.map((item) => item.message).filter(Boolean)
+    : [];
+  const message = `${prefix}: ${[error?.message || String(error), ...childMessages].join('; ')}`;
   if (isFlowSurfaceError(error)) {
     const normalized = normalizeFlowSurfaceError(error);
     if (normalized.type === 'bad_request') {

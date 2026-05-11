@@ -432,7 +432,7 @@ export function buildFlowSurfaceDefaultActionPopupBlocks(
 }
 
 export function hasFlowSurfaceInlinePopupTemplate(popup?: Record<string, any>) {
-  return typeof popup !== 'undefined' && typeof popup?.template !== 'undefined';
+  return _.isPlainObject(popup?.template) && !!String(popup.template.uid || popup.template.local || '').trim();
 }
 
 export function hasFlowSurfaceInlinePopupBlocks(popup?: Record<string, any>) {

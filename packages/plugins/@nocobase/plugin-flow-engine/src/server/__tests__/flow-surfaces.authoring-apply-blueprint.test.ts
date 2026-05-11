@@ -20,6 +20,18 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
+
+const LARGE_DEFAULTS_ACTION_COLLECTION = 'flow_surface_authoring_large_defaults_actions';
+const LARGE_DEFAULTS_ACTION_FIELDS = Array.from({ length: 11 }, (_item, index) => `actionField${index + 1}`);
+const DEFAULT_FILTER_CAP_COLLECTION = 'flow_surface_authoring_default_filter_caps';
+const DEFAULT_FILTER_CAP_FIELDS = Array.from({ length: 6 }, (_item, index) => `capField${index + 1}`);
+const LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION = 'flow_surface_authoring_large_defaults_sources';
+const LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION = 'flow_surface_authoring_large_defaults_targets';
+const LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS = Array.from(
+  { length: 11 },
+  (_item, index) => `targetField${index + 1}`,
+);
 
 describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
   let context: FlowSurfacesContractContext;
@@ -33,6 +45,76 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       enabledPluginAliases: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
     });
     ({ rootAgent, flowRepo, routesRepo } = context);
+    await rootAgent.resource('collections').create({
+      values: {
+        name: LARGE_DEFAULTS_ACTION_COLLECTION,
+        title: 'Flow surface authoring large defaults actions',
+        fields: LARGE_DEFAULTS_ACTION_FIELDS.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: DEFAULT_FILTER_CAP_COLLECTION,
+        title: 'Flow surface authoring default filter caps',
+        fields: DEFAULT_FILTER_CAP_FIELDS.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION,
+        title: 'Flow surface authoring large defaults sources',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION,
+        title: 'Flow surface authoring large defaults targets',
+        fields: LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections.fields', LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION).create({
+      values: {
+        name: 'target',
+        type: 'belongsTo',
+        target: LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION,
+        foreignKey: 'targetId',
+        interface: 'm2o',
+      },
+    });
+    await rootAgent.resource('collections.fields', 'categories').create({
+      values: {
+        name: 'sort',
+        type: 'sort',
+        interface: 'sort',
+        hidden: true,
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [LARGE_DEFAULTS_ACTION_COLLECTION]: LARGE_DEFAULTS_ACTION_FIELDS,
+      [DEFAULT_FILTER_CAP_COLLECTION]: DEFAULT_FILTER_CAP_FIELDS,
+      [LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION]: ['title', 'targetId'],
+      [LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION]: LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS,
+      categories: ['sort'],
+    });
   }, 120000);
 
   afterAll(async () => {
@@ -90,6 +172,75 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
         direction: 'asc',
       },
     ]);
+  });
+
+  it('should accept whole-page chart assets with public builder resource settings', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring chart asset blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring chart asset blueprint',
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [
+                  {
+                    field: 'id',
+                    aggregation: 'count',
+                    alias: 'employeeCount',
+                  },
+                ],
+                dimensions: [{ field: 'status' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'status',
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const chartBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ChartBlockModel')[0];
+    const persistedChart = await flowRepo.findModelById(chartBlock.uid, { includeAsyncNode: true });
+    expect(persistedChart?.stepParams?.chartSettings?.configure?.query?.collectionPath).toEqual(['main', 'employees']);
+    expect(persistedChart?.stepParams?.chartSettings?.configure?.chart?.option?.builder).toMatchObject({
+      type: 'bar',
+      xField: 'status',
+      yField: 'employeeCount',
+    });
   });
 
   it('should strip single-scope non-template data block titles before persisting', async () => {
@@ -321,7 +472,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(persistedEventAction?.stepParams?.popupSettings?.openView?.popupTemplateUid).toBeTruthy();
   });
 
-  it('should require UI Builder supplied defaultFilter instead of auto-generating one', async () => {
+  it('should auto-generate a capped defaultFilter for direct public data blocks', async () => {
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -349,14 +500,709 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
 
-    expect(response.status).toBe(400);
-    expect(response.body?.errors).toEqual(expect.any(Array));
-    expect(response.body.errors.map((error: any) => error.ruleId)).toEqual(
-      expect.arrayContaining(['public-data-surface-default-filter-required']),
+    expect(response.status, readErrorMessage(response)).toBe(200);
+    const data = getData(response);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const filterAction = readTableActionNodes(persistedTable).find((item: any) => item?.use === 'FilterActionModel');
+    expect(filterAction).toBeTruthy();
+    const generatedFilter = filterAction?.props?.defaultFilterValue;
+    expect(generatedFilter?.logic).toBe('$and');
+    expect(generatedFilter?.items).toHaveLength(2);
+    expect(generatedFilter.items.map((item: any) => item.path)).toEqual(['nickname', 'status']);
+    expect(generatedFilter.items.map((item: any) => item.operator)).toEqual(['$includes', '$includes']);
+    expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(generatedFilter);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status']);
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
+      'nickname',
+      'status',
+    ]);
+  });
+
+  it('should cap auto-generated defaultFilter fields at four candidates', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring capped generated default filter blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring capped generated default filter blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+                fields: ['capField1'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+    const data = getData(response);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const filterAction = readTableActionNodes(persistedTable).find((item: any) => item?.use === 'FilterActionModel');
+    const generatedFilter = filterAction?.props?.defaultFilterValue;
+    expect(generatedFilter?.items).toHaveLength(4);
+    expect(generatedFilter.items.map((item: any) => item.path)).toEqual([
+      'capField1',
+      'capField2',
+      'capField3',
+      'capField4',
+    ]);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
+  });
+
+  it('should accept explicit narrow defaultFilter without requiring common business field coverage', async () => {
+    const explicitFilter = {
+      logic: '$and',
+      items: [{ path: 'nickname', operator: '$notEmpty' }],
+    };
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring narrow explicit default filter blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring narrow explicit default filter blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+                defaultFilter: explicitFilter,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+    const data = getData(response);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const filterAction = readTableActionNodes(persistedTable).find((item: any) => item?.use === 'FilterActionModel');
+    expect(filterAction?.props?.defaultFilterValue).toEqual(explicitFilter);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname']);
+  });
+
+  it('should add default table record actions when raw applyBlueprint omits recordActions', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring default table record actions',
+          },
+        },
+        page: {
+          title: 'Authoring default table record actions',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                template: {},
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableRecordActionUses(persistedTable)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+    ]);
+  });
+
+  it('should merge missing table actions and recordActions when raw applyBlueprint supplies partial lists', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring partial default table actions',
+          },
+        },
+        page: {
+          title: 'Authoring partial default table actions',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+                actions: [
+                  {
+                    type: 'filter',
+                    settings: {
+                      title: 'Custom filter',
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    type: 'view',
+                    popup: {
+                      title: 'Custom view',
+                    },
+                  },
+                  {
+                    type: 'updateRecord',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableActionUses(persistedTable)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
+    ]);
+    expect(readTableRecordActionUses(persistedTable)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+      'UpdateRecordActionModel',
+    ]);
+  });
+
+  it('should skip default table actions only through explicit opt-out fields', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring table default action opt out',
+          },
+        },
+        page: {
+          title: 'Authoring table default action opt out',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+                actions: [],
+                recordActions: [],
+                skipDefaultActions: true,
+                skipDefaultRecordActions: true,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableActionUses(persistedTable)).toEqual([]);
+    expect(readTableRecordActionUses(persistedTable)).toEqual([]);
+  });
+
+  it('should keep template-backed table blocks from receiving default record actions', async () => {
+    const templateSourceRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring table template source',
+          },
+        },
+        page: {
+          title: 'Authoring table template source',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'templateSourceTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+                recordActions: [],
+                skipDefaultRecordActions: true,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(templateSourceRes.status, readErrorMessage(templateSourceRes)).toBe(200);
+    const templateSourceData = getData(templateSourceRes);
+    const sourceTable = collectDescendantNodes(
+      templateSourceData.surface.tree,
+      (item) => item?.use === 'TableBlockModel',
+    )[0];
+    const saveTemplateRes = await rootAgent.resource('flowSurfaces').saveTemplate({
+      values: {
+        target: {
+          uid: sourceTable.uid,
+        },
+        name: `Authoring table template ${Date.now()}`,
+        description: 'Table block template used for default record action compatibility coverage.',
+        saveMode: 'duplicate',
+      },
+    });
+    expect(saveTemplateRes.status, readErrorMessage(saveTemplateRes)).toBe(200);
+    const template = getData(saveTemplateRes);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring table template consumer',
+          },
+        },
+        page: {
+          title: 'Authoring table template consumer',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'templateBackedTable',
+                type: 'table',
+                template: {
+                  uid: template.uid,
+                  mode: 'copy',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableRecordActionUses(persistedTable)).toEqual([]);
+  });
+
+  it('should accept legacy popup display modes and map page to embed openView', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring popup display mode page',
+          },
+        },
+        page: {
+          title: 'Authoring popup display mode page',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+                recordActions: [
+                  {
+                    key: 'viewEmployee',
+                    type: 'view',
+                    popup: {
+                      mode: 'page',
+                      blocks: [
+                        {
+                          key: 'employeeDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    const persistedAction = await flowRepo.findModelById(viewAction.uid, { includeAsyncNode: true });
+    const openView = persistedAction?.stepParams?.popupSettings?.openView;
+    expect(openView?.mode).toBe('embed');
+    const templateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, openView?.popupTemplateUid);
+    const popupDetails = collectDescendantNodes(templateSurface, (item) => item?.use === 'DetailsBlockModel')[0];
+    expect(popupDetails?.uid).toBeTruthy();
+  });
+
+  it('should default large first-layer local popups to page display mode and not nested popups', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring large popup display mode',
+          },
+        },
+        page: {
+          title: 'Authoring large popup display mode',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+                recordActions: [
+                  {
+                    key: 'viewEmployee',
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'first',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                        {
+                          key: 'second',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                        {
+                          key: 'third',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                        {
+                          key: 'fourth',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: [
+                            {
+                              field: 'department',
+                              popup: {
+                                tryTemplate: false,
+                                blocks: [
+                                  {
+                                    key: 'nestedDepartmentDetails',
+                                    type: 'details',
+                                    fields: ['title'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    const persistedAction = await flowRepo.findModelById(viewAction.uid, { includeAsyncNode: true });
+    const actionOpenView = persistedAction?.stepParams?.popupSettings?.openView;
+    expect(actionOpenView?.mode).toBe('embed');
+    const templateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, actionOpenView?.popupTemplateUid);
+    const departmentField = collectDescendantNodes(
+      templateSurface,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
+    )[0];
+    expect(departmentField?.uid).toBeTruthy();
+    const persistedDepartmentField = await flowRepo.findModelById(findPopupHostNode(departmentField).uid, {
+      includeAsyncNode: true,
+    });
+    expect(readPopupOpenView(persistedDepartmentField)?.mode).toBe('drawer');
+  });
+
+  it('should auto-save explicit local action popups as templates in applyBlueprint create mode', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring action popup auto template',
+          },
+        },
+        page: {
+          title: 'Authoring action popup auto template',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+                recordActions: [
+                  {
+                    key: 'viewEmployee',
+                    type: 'view',
+                    title: 'Review employee',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'employeeDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    const persistedAction = await flowRepo.findModelById(viewAction.uid, { includeAsyncNode: true });
+    const templateUid = persistedAction?.stepParams?.popupSettings?.openView?.popupTemplateUid;
+    expect(templateUid).toBeTruthy();
+    const template = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: templateUid,
+        },
+      }),
     );
-    expect(response.body.errors.map((error: any) => error.path)).toEqual(
-      expect.arrayContaining(['$.tabs[0].blocks[0].defaultFilter']),
-    );
+    expect(template.name).toContain('Review employee');
+    expect(template.description).toContain('Reusable popup template');
+  });
+
+  it('should normalize legacy calendar field bindings and quickCreateEnabled before writing', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring calendar legacy settings',
+          },
+        },
+        page: {
+          title: 'Authoring calendar legacy settings',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'eventsCalendar',
+                type: 'calendar',
+                collection: 'calendar_events',
+                defaultFilter: calendarDefaultFilter(),
+                titleField: 'title',
+                colorField: 'status',
+                startField: 'startsAt',
+                endField: 'endsAt',
+                settings: {
+                  quickCreateEnabled: false,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const calendarBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CalendarBlockModel')[0];
+    const persistedCalendar = await flowRepo.findModelById(calendarBlock.uid, { includeAsyncNode: true });
+    expect(persistedCalendar?.props?.fieldNames).toMatchObject({
+      title: 'title',
+      colorFieldName: 'status',
+      start: 'startsAt',
+      end: 'endsAt',
+    });
+    expect(persistedCalendar?.props?.enableQuickCreateEvent).toBe(false);
+  });
+
+  it('should accept and strip legacy top-level pagination and sorting keys in applyBlueprint blocks', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring top-level table compatibility',
+          },
+        },
+        page: {
+          title: 'Authoring top-level table compatibility',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: ['nickname'],
+                pageSize: 99,
+                sort: ['nickname'],
+                sorting: [{ field: 'createdAt', direction: 'asc' }],
+                settings: {
+                  pageSize: 20,
+                  sorting: [{ field: 'nickname', direction: 'desc' }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(persistedTable?.stepParams?.tableSettings?.pageSize?.pageSize).toBe(20);
+    expect(persistedTable?.stepParams?.tableSettings?.defaultSorting?.sort).toEqual([
+      {
+        field: 'nickname',
+        direction: 'desc',
+      },
+    ]);
+  });
+
+  it('should normalize incompatible legacy tree table dragSortBy before writing', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring tree table drag sort compatibility',
+          },
+        },
+        page: {
+          title: 'Authoring tree table drag sort compatibility',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'categoriesTable',
+                type: 'table',
+                collection: 'categories',
+                defaultFilter: {
+                  logic: '$and',
+                  items: [{ path: 'title', operator: '$notEmpty' }],
+                },
+                fields: ['title'],
+                settings: {
+                  treeTable: true,
+                  dragSortBy: 'title',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(persistedTable?.stepParams?.tableSettings?.dragSortBy?.dragSortBy).toBe('sort');
   });
 
   it('should normalize a unique navigation.group.title to the existing routeId before writing', async () => {
@@ -697,21 +1543,21 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
         },
         defaults: {
           collections: {
-            employees: {
+            [LARGE_DEFAULTS_ACTION_COLLECTION]: {
               popups: {
                 addNew: {
-                  name: 'Employees add popup from backend defaults',
-                  description: 'Employees add popup default metadata from applyBlueprint defaults.',
+                  name: 'Large action add popup from backend defaults',
+                  description: 'Large action add popup default metadata from applyBlueprint defaults.',
                 },
               },
               fieldGroups: [
                 {
                   title: 'Identity',
-                  fields: ['nickname'],
+                  fields: LARGE_DEFAULTS_ACTION_FIELDS.slice(0, 6),
                 },
                 {
                   title: 'Workflow',
-                  fields: ['status'],
+                  fields: LARGE_DEFAULTS_ACTION_FIELDS.slice(6),
                 },
               ],
             },
@@ -724,9 +1570,16 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
               {
                 key: 'employeesTable',
                 type: 'table',
-                collection: 'employees',
-                defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                collection: LARGE_DEFAULTS_ACTION_COLLECTION,
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: LARGE_DEFAULTS_ACTION_FIELDS[0], operator: '$notEmpty' },
+                    { path: LARGE_DEFAULTS_ACTION_FIELDS[1], operator: '$notEmpty' },
+                    { path: LARGE_DEFAULTS_ACTION_FIELDS[2], operator: '$notEmpty' },
+                  ],
+                },
+                fields: [LARGE_DEFAULTS_ACTION_FIELDS[0]],
                 actions: [
                   {
                     key: 'createEmployee',
@@ -762,9 +1615,9 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       }),
     );
     expect(template).toMatchObject({
-      name: 'Employees add popup from backend defaults',
-      description: 'Employees add popup default metadata from applyBlueprint defaults.',
-      collectionName: 'employees',
+      name: 'Large action add popup from backend defaults',
+      description: 'Large action add popup default metadata from applyBlueprint defaults.',
+      collectionName: LARGE_DEFAULTS_ACTION_COLLECTION,
       type: 'popup',
     });
     const templateSurface = await flowRepo.findModelById(template.targetUid, { includeAsyncNode: true });
@@ -777,7 +1630,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       true,
     );
     expect(formItems.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
-      expect.arrayContaining(['nickname', 'status']),
+      expect.arrayContaining([LARGE_DEFAULTS_ACTION_FIELDS[0], LARGE_DEFAULTS_ACTION_FIELDS[10]]),
     );
   });
 
@@ -795,28 +1648,32 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
         },
         defaults: {
           collections: {
-            employees: {
+            [LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION]: {
               popups: {
                 associations: {
-                  department: {
+                  target: {
                     view: {
-                      name: 'Employee department popup from backend defaults',
-                      description: 'Employee department popup default metadata from applyBlueprint defaults.',
+                      name: 'Large association popup from backend defaults',
+                      description: 'Large association popup default metadata from applyBlueprint defaults.',
                     },
                   },
                 },
               },
             },
-            departments: {
+            [LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION]: {
               fieldGroups: [
                 {
-                  title: 'Department identity',
-                  fields: ['title'],
+                  title: 'Target identity',
+                  fields: LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS.slice(0, 6),
+                },
+                {
+                  title: 'Target details',
+                  fields: LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS.slice(6),
                 },
               ],
               popups: {
                 view: {
-                  name: 'Department generic popup should not win',
+                  name: 'Target generic popup should not win',
                   description: 'Generic target popup defaults should not override association popup defaults.',
                 },
               },
@@ -830,8 +1687,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
               {
                 key: 'employeeDetails',
                 type: 'details',
-                collection: 'employees',
-                fields: ['department'],
+                collection: LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION,
+                fields: ['target'],
               },
             ],
           },
@@ -844,7 +1701,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const departmentField = collectDescendantNodes(
       data.surface.tree,
       (item) =>
-        item?.stepParams?.fieldSettings?.init?.fieldPath === 'department' &&
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'target' &&
         !!(item?.popup?.template?.uid || item?.stepParams?.popupSettings?.openView?.popupTemplateUid),
     )[0];
     expect(departmentField?.uid).toBeTruthy();
@@ -865,10 +1722,10 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       }),
     );
     expect(template).toMatchObject({
-      name: 'Employee department popup from backend defaults',
-      description: 'Employee department popup default metadata from applyBlueprint defaults.',
-      collectionName: 'departments',
-      associationName: 'employees.department',
+      name: 'Large association popup from backend defaults',
+      description: 'Large association popup default metadata from applyBlueprint defaults.',
+      collectionName: LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION,
+      associationName: `${LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION}.target`,
       type: 'popup',
     });
 
@@ -876,12 +1733,16 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const detailsBlock = collectDescendantNodes(templateSurface, (item) => item?.use === 'DetailsBlockModel')[0];
     const detailsItems = _.castArray(detailsBlock?.subModels?.grid?.subModels?.items || []);
     expect(
-      detailsItems.some(
-        (item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Department identity',
-      ),
+      detailsItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Target identity'),
+    ).toBe(true);
+    expect(
+      detailsItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Target details'),
     ).toBe(true);
     expect(detailsItems.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
-      expect.arrayContaining(['title']),
+      expect.arrayContaining([
+        LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS[0],
+        LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS[10],
+      ]),
     );
   });
 
@@ -1082,10 +1943,15 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       data.surface.tree,
       (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department',
     )[0];
-    const popupDetails = collectDescendantNodes(
-      departmentField,
-      (item) => item?.use === 'DetailsBlockModel' && item?.uid !== 'department',
-    )[0];
+    expect(departmentField?.uid).toBeTruthy();
+    const departmentPopupHost = findPopupHostNode(departmentField);
+    const persistedDepartmentField = await flowRepo.findModelById(departmentPopupHost.uid, { includeAsyncNode: true });
+    const popupTemplateUid =
+      readPopupTemplateUid(persistedDepartmentField) ||
+      readPopupTemplateUid(departmentPopupHost) ||
+      readPopupTemplateUid(departmentField);
+    const templateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, popupTemplateUid);
+    const popupDetails = collectDescendantNodes(templateSurface, (item) => item?.use === 'DetailsBlockModel')[0];
     expect(popupDetails?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'departments',
@@ -1114,6 +1980,56 @@ function collectDescendantNodes(node: any, predicate: (input: any) => boolean, b
     });
   });
   return bucket;
+}
+
+function readTableRecordActionUses(node: any) {
+  const actionsColumn = _.castArray(node?.subModels?.columns || []).find(
+    (column: any) => column?.use === 'TableActionsColumnModel',
+  );
+  return _.castArray(actionsColumn?.subModels?.actions || []).map((item: any) => item?.use);
+}
+
+function readTableActionNodes(node: any) {
+  return _.castArray(node?.subModels?.actions || []);
+}
+
+function readTableActionUses(node: any) {
+  return readTableActionNodes(node).map((item: any) => item?.use);
+}
+
+function readPopupOpenView(node: any) {
+  return (
+    node?.stepParams?.popupSettings?.openView ||
+    node?.stepParams?.selectExitRecordSettings?.openView ||
+    node?.stepParams?.openSelectRecordView?.openView ||
+    node?.stepParams?.openAddRecordView?.openView
+  );
+}
+
+function readPopupTemplateUid(node: any) {
+  return node?.popup?.template?.uid || readPopupOpenView(node)?.popupTemplateUid;
+}
+
+function findPopupHostNode(node: any) {
+  return (
+    collectDescendantNodes(
+      node,
+      (item) => _.isPlainObject(readPopupOpenView(item)) || !!readPopupTemplateUid(item),
+    )[0] || node
+  );
+}
+
+async function readPopupTemplateSurface(rootAgent: any, flowRepo: any, templateUid: string | undefined) {
+  expect(templateUid).toBeTruthy();
+  const template = getData(
+    await rootAgent.resource('flowSurfaces').getTemplate({
+      values: {
+        uid: templateUid,
+      },
+    }),
+  );
+  expect(template?.targetUid).toBeTruthy();
+  return flowRepo.findModelById(template.targetUid, { includeAsyncNode: true });
 }
 
 function employeeDefaultFilter() {

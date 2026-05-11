@@ -2001,6 +2001,7 @@ describe('flowSurfaces templates', () => {
     const actionMissCollection = `popup_try_save_action_miss_${unique}`;
     const recordBaseCollection = `popup_try_save_record_base_${unique}`;
     const recordMissCollection = `popup_try_save_record_miss_${unique}`;
+    const recordNoBlocksCollection = `popup_try_save_record_no_blocks_${unique}`;
 
     await createPopupTestCollection(fieldBaseCollection);
     await createPopupTestCollection(fieldMissCollection);
@@ -2008,6 +2009,7 @@ describe('flowSurfaces templates', () => {
     await createPopupTestCollection(actionMissCollection);
     await createPopupTestCollection(recordBaseCollection);
     await createPopupTestCollection(recordMissCollection);
+    await createPopupTestCollection(recordNoBlocksCollection);
 
     const page = await createPage(rootAgent, {
       title: `Popup try+save template page ${unique}`,
@@ -2059,6 +2061,14 @@ describe('flowSurfaces templates', () => {
       resourceInit: {
         dataSourceKey: 'main',
         collectionName: recordMissCollection,
+      },
+    });
+    const recordNoBlocksDetails = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: recordNoBlocksCollection,
       },
     });
 
@@ -2238,7 +2248,7 @@ describe('flowSurfaces templates', () => {
 
     const recordNoBlocksRes = await rootAgent.resource('flowSurfaces').addRecordAction({
       values: {
-        target: { uid: recordBaseTable.uid },
+        target: { uid: recordNoBlocksDetails.uid },
         type: 'view',
         popup: {
           tryTemplate: true,
@@ -2575,6 +2585,104 @@ describe('flowSurfaces templates', () => {
 
     await expectTemplateUsage(rootAgent, fieldTemplate.uid, 3);
     await expectTemplateUsage(rootAgent, nestedTemplate.uid, 2);
+  });
+
+  it('should not treat popup.template.local as a generated popup requiring default fieldGroups', async () => {
+    const unique = Date.now();
+    const collectionName = `popup_local_large_${unique}`;
+    const fieldNames = Array.from({ length: 11 }, (_item, index) => `field${index + 1}`);
+    const templateName = `Compose popup local large ${unique}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        fields: fieldNames.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: fieldNames,
+    });
+
+    const page = await createPage(rootAgent, {
+      title: `Compose popup local large page ${unique}`,
+      tabTitle: 'Compose popup local large tab',
+    });
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: { uid: page.gridUid },
+          blocks: [
+            {
+              key: 'producerDetails',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName,
+              },
+              skipDefaultRecordActions: true,
+              fields: [
+                {
+                  key: 'producerField',
+                  fieldPath: 'field1',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'producerPopupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        skipDefaultRecordActions: true,
+                        fields: ['field1'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: templateName,
+                      description: 'Large collection popup template created earlier in the same compose call.',
+                      local: 'largePopupAlias',
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              key: 'consumerTable',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName,
+              },
+              defaultFilter: defaultFilterFor(['field1', 'field2', 'field3']),
+              fields: ['field1'],
+              actions: [],
+              recordActions: [
+                {
+                  key: 'consumerView',
+                  type: 'view',
+                  popup: {
+                    template: {
+                      local: 'largePopupAlias',
+                      mode: 'reference',
+                    },
+                  },
+                },
+              ],
+              skipDefaultActions: true,
+              skipDefaultRecordActions: true,
+            },
+          ],
+        },
+      }),
+    );
+
+    const template = await findPopupTemplateByName(templateName);
+    const consumerTable = composeRes.blocks.find((item: any) => item.key === 'consumerTable');
+    const consumerAction = consumerTable.recordActions.find((item: any) => item.key === 'consumerView');
+    await expectPopupTemplateReference(consumerAction.uid, template.uid);
   });
 
   it('should let popup.template.local reuse the final bound template uid from combined tryTemplate + saveAsTemplate producers in compose', async () => {

@@ -15,6 +15,7 @@ import {
   getComposeBlock,
   getData,
   getSurface,
+  readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
@@ -398,7 +399,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
     expect((gridAfterFailedConfigure?.filterManager || []).some((item: any) => item?.filterId === treeUid)).toBe(false);
   });
 
-  it('should require addBlock data surfaces to carry a UI Builder supplied defaultFilter', async () => {
+  it('should auto-generate addBlock data surface defaultFilter from live metadata', async () => {
     const page = await createPage(rootAgent, {
       title: 'Authoring localized missing default filter page',
       tabTitle: 'Authoring localized missing default filter tab',
@@ -415,9 +416,17 @@ describe('flowSurfaces backend authoring localized compiler', () => {
       },
     });
 
-    expect(response.status).toBe(400);
-    assertAggregateRuleIds(response, ['public-data-surface-default-filter-required']);
-    expect(response.body.errors.map((error: any) => error.path)).toEqual(expect.arrayContaining(['$.defaultFilter']));
+    expect(response.status, readErrorMessage(response)).toBe(200);
+    const tableUid = getData(response).uid;
+    const readback = await getSurface(rootAgent, { uid: tableUid });
+    const filterAction = (readback.tree.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    expect(filterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual([
+      'nickname',
+      'status',
+    ]);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status']);
   });
 
   it('should use explicit addBlock defaultFilter without backend field selection', async () => {

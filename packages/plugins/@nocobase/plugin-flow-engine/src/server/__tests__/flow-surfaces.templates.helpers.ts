@@ -60,7 +60,7 @@ function buildDefaultFilter(collectionName: string, collectionMeta: any[]) {
 }
 
 export function getData(response: any) {
-  expect(response.status).toBe(200);
+  expect(response.status, readErrorMessage(response)).toBe(200);
   return response.body?.data?.data ?? response.body?.data;
 }
 

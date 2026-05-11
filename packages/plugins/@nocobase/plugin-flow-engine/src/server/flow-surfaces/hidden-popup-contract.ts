@@ -641,12 +641,16 @@ export function unsetHiddenPopupPayloadPathAndPruneEmptyParents(payload: Record<
 }
 
 export function buildImplicitHiddenPopupDefaultContent(popupSettings?: Record<string, any>) {
-  if (_.isPlainObject(popupSettings) && popupSettings.tryTemplate === false) {
+  const defaultsMetadata = _.isPlainObject(popupSettings)
+    ? _.pick(popupSettings, [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY])
+    : {};
+  const hasDefaultsMetadata = _.isPlainObject(defaultsMetadata[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]);
+  if (_.isPlainObject(popupSettings) && popupSettings.tryTemplate === false && !hasDefaultsMetadata) {
     return undefined;
   }
   return {
-    ...(_.isPlainObject(popupSettings) ? _.pick(popupSettings, [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]) : {}),
-    tryTemplate: true,
+    ...defaultsMetadata,
+    tryTemplate: hasDefaultsMetadata ? false : true,
     [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
   };
 }

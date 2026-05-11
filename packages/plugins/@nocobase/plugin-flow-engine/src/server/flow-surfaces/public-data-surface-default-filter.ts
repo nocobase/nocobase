@@ -17,6 +17,7 @@ import {
   getFieldName,
   isAssociationField,
 } from './service-helpers';
+import { hasFlowSurfaceTemplateDocument } from './template-reference';
 
 export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES = new Set([
   'table',
@@ -137,6 +138,49 @@ export function resolveFlowSurfaceDefaultFilterCandidateFieldNames(
   return selectedFieldNames;
 }
 
+export function buildFlowSurfaceDefaultFilterFromCollection(
+  collection: any,
+  options: {
+    maxCandidates?: number;
+  } = {},
+) {
+  const candidateFieldNames = resolveFlowSurfaceDefaultFilterCandidateFieldNames(collection, options);
+  if (!candidateFieldNames.length) {
+    return undefined;
+  }
+  return {
+    logic: '$and',
+    items: candidateFieldNames.map((fieldName) => ({
+      path: fieldName,
+      operator: resolveFlowSurfaceDefaultFilterOperator(collection, fieldName),
+    })),
+  };
+}
+
+export function resolveFlowSurfaceDefaultFilterFieldNames(defaultFilter: any): string[] {
+  const fieldNames: string[] = [];
+  const seen = new Set<string>();
+  const visit = (value: any) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!_.isPlainObject(value)) {
+      return;
+    }
+    const path = typeof value.path === 'string' ? value.path.trim() : '';
+    if (path && !path.includes('.') && !seen.has(path)) {
+      seen.add(path);
+      fieldNames.push(path);
+    }
+    if (Array.isArray(value.items)) {
+      value.items.forEach(visit);
+    }
+  };
+  visit(defaultFilter);
+  return fieldNames;
+}
+
 export function normalizeFlowSurfacePublicBlockDefaultFilter(
   actionName: string,
   defaultFilter: any,
@@ -151,7 +195,7 @@ export function normalizeFlowSurfacePublicBlockDefaultFilter(
   }
 
   const fieldPath = buildFlowSurfaceDefaultFilterFieldPath(actionName, options.path);
-  if (!isFlowSurfacePublicDataSurfaceBlockType(options.blockType) || !_.isUndefined(options.template)) {
+  if (!isFlowSurfacePublicDataSurfaceBlockType(options.blockType) || hasFlowSurfaceTemplateDocument(options.template)) {
     throwBadRequest(
       `flowSurfaces ${actionName} ${fieldPath} is only supported on direct ${FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPE_LABEL} blocks`,
     );
@@ -205,20 +249,33 @@ export function backfillFlowSurfaceDefaultFilterSetting(settings: any, defaultFi
   if (_.isUndefined(defaultFilter)) {
     return settings;
   }
+  const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(defaultFilter);
+  const defaults = {
+    ...(filterableFieldNames.length ? { filterableFieldNames } : {}),
+    defaultFilter: _.cloneDeep(defaultFilter),
+  };
   if (_.isUndefined(settings)) {
-    return {
-      defaultFilter: _.cloneDeep(defaultFilter),
-    };
+    return defaults;
   }
   if (!_.isPlainObject(settings)) {
     return settings;
   }
   if (Object.prototype.hasOwnProperty.call(settings, 'defaultFilter')) {
+    const explicitFilterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(settings.defaultFilter);
+    if (
+      !Object.prototype.hasOwnProperty.call(settings, 'filterableFieldNames') &&
+      explicitFilterableFieldNames.length
+    ) {
+      return {
+        ..._.cloneDeep(settings),
+        filterableFieldNames: explicitFilterableFieldNames,
+      };
+    }
     return settings;
   }
   return {
+    ...defaults,
     ..._.cloneDeep(settings),
-    defaultFilter: _.cloneDeep(defaultFilter),
   };
 }
 
@@ -228,9 +285,8 @@ export function backfillFlowSurfaceFilterActionDefaultFilter<
     settings?: Record<string, any>;
   },
 >(actions: T[], defaultFilter: any): T[] {
-  // Only mirror a caller-supplied block defaultFilter into an existing filter action.
-  // Do not choose fields or synthesize a filter here; missing defaults are reported
-  // by authoring validation so UI Builder owns that decision.
+  // Mirror the effective block defaultFilter into an existing filter action.
+  // Missing direct data-surface defaults are generated earlier from collection metadata.
   if (_.isUndefined(defaultFilter)) {
     return actions;
   }
@@ -265,6 +321,14 @@ function isDefaultFilterCandidateBusinessField(field: any) {
     return false;
   }
   return !isAssociationField(field);
+}
+
+function resolveFlowSurfaceDefaultFilterOperator(collection: any, fieldName: string) {
+  const field = getCollectionFields(collection).find(
+    (candidate) => normalizeText(getFieldName(candidate)) === fieldName,
+  );
+  const fieldInterface = normalizeText(getFieldInterface(field));
+  return fieldInterface === 'select' || fieldInterface === 'radioGroup' ? '$eq' : '$includes';
 }
 
 function normalizeText(value: any) {
