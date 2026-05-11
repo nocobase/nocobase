@@ -20,7 +20,7 @@ export class PluginBlockMarkdownClient extends Plugin {
 
   getCDN() {
     if (process.env.NODE_ENV === 'production') {
-      return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
+      return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client-v2/vditor';
     }
     return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
   }
