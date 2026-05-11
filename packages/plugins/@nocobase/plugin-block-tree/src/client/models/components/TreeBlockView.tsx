@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   createRecordMetaFactory,
@@ -18,9 +19,10 @@ import {
   observer,
 } from '@nocobase/flow-engine';
 import type { ForkFlowModel, PropertyMetaFactory } from '@nocobase/flow-engine';
-import { Checkbox, DatePicker, Input, InputNumber, Radio, Select, Space, Switch } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import { Checkbox, DatePicker, Input, InputNumber, Radio, Select, Space, Switch, Tooltip } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Tree, TreeProps } from '../../component';
+import { useTreeTranslation } from '../../locale';
 import type { TreeBlockModel } from '../TreeBlockModel';
 
 const SEARCH_FILTER_GROUP = '__tree_search__';
@@ -66,6 +68,56 @@ const normalizeChangeValue = (input: any) => {
 
 const omitUndefined = (props: Record<string, any> = {}) => {
   return Object.fromEntries(Object.entries(props).filter(([, value]) => value !== undefined));
+};
+
+export const getTreeTitleFieldDeletedMessage = (
+  model: Pick<TreeBlockModel, 'collection' | 'getTitleFieldName'>,
+  t: (key: string, options?: any) => string,
+) => {
+  const collection: any = model.collection;
+  const dataSource = collection?.dataSource;
+  const titleFieldName = model.getTitleFieldName();
+  const dataSourcePrefix = dataSource ? `${t(dataSource.displayName || dataSource.key)} > ` : '';
+  const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+  const nameValue = `${dataSourcePrefix}${collectionPrefix}${titleFieldName}`;
+
+  return t('The title field "{{name}}" may have been deleted. Please select another field.', {
+    name: nameValue,
+  }).replaceAll('&gt;', '>');
+};
+
+export const getTreeNodeTitleContent = ({
+  model,
+  collectionField,
+  titleFieldModel,
+  value,
+  node,
+  fallbackTitle,
+}: {
+  model: TreeBlockModel;
+  collectionField: any;
+  titleFieldModel: any;
+  value: any;
+  node: any;
+  fallbackTitle?: React.ReactNode;
+}) => {
+  const isTitleFieldMissing = !collectionField && !!model.getTitleFieldName();
+
+  if (isTitleFieldMissing) {
+    return (
+      <TreeNodeTitleContent model={model} record={node} title={<TreeTitleFieldDeletedPlaceholder model={model} />} />
+    );
+  }
+
+  if (value === null || value === undefined || value === '') {
+    return <TreeNodeTitleContent model={model} record={node} title="N/A" />;
+  }
+
+  if (!titleFieldModel?.createFork) {
+    return <TreeNodeTitleContent model={model} record={node} title={fallbackTitle || String(value)} />;
+  }
+
+  return null;
 };
 
 const renderFilterInput = (app: any, schema: any, value: any, onChange: (value: any) => void): React.ReactElement => {
@@ -401,9 +453,25 @@ const TreeNodeTitleContent = ({
   );
 };
 
+const TreeTitleFieldDeletedPlaceholder = ({ model }: { model: TreeBlockModel }) => {
+  const { t } = useTreeTranslation();
+  const content = useMemo(() => getTreeTitleFieldDeletedMessage(model, t), [model, t]);
+
+  return (
+    <Tooltip title={content}>
+      <ExclamationCircleOutlined style={{ opacity: '0.3' }} />
+    </Tooltip>
+  );
+};
+
 export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => {
   const resource = model.resource;
+  const treeData = resource.getData();
   const collection = model.collection;
+  const [searchValue, setSearchValue] = useState<any>();
+  const fullTreeDataRef = useRef<any[]>([]);
+  const previousTreeDataRef = useRef<any[]>();
+  const awaitingSearchResetRef = useRef(false);
   const collectionFilterTargetKey = collection?.filterTargetKey;
   const propsFieldNames = model.props?.fieldNames;
   const fieldNames = useMemo(
@@ -437,13 +505,40 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
     [model.context.app, schema],
   );
 
+  useEffect(() => {
+    if (searchValue === '' || searchValue == null) {
+      if (awaitingSearchResetRef.current) {
+        if (previousTreeDataRef.current !== treeData) {
+          fullTreeDataRef.current = treeData || [];
+          awaitingSearchResetRef.current = false;
+        }
+      } else {
+        fullTreeDataRef.current = treeData || [];
+      }
+    }
+
+    previousTreeDataRef.current = treeData;
+  }, [searchValue, treeData]);
+
   const onSearch = useCallback<NonNullable<TreeProps['onSearch']>>(
     (value) => {
       if (!resource) {
         return;
       }
 
-      if (value === '' || value == null) {
+      const isClearingSearch = value === '' || value == null;
+      const hadSearchValue = !(searchValue === '' || searchValue == null);
+
+      if (!isClearingSearch && !hadSearchValue) {
+        fullTreeDataRef.current = treeData || [];
+      }
+      if (isClearingSearch && hadSearchValue) {
+        awaitingSearchResetRef.current = true;
+      }
+
+      setSearchValue(value);
+
+      if (isClearingSearch) {
         resource.removeFilterGroup(SEARCH_FILTER_GROUP);
       } else {
         resource.addFilterGroup(SEARCH_FILTER_GROUP, {
@@ -456,7 +551,7 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
       resource.setPage(1);
       void resource.refresh();
     },
-    [operator?.value, resource, titleField],
+    [operator?.value, resource, searchValue, titleField, treeData],
   );
 
   const onSelect = useCallback<NonNullable<TreeProps['onSelect']>>(
@@ -468,24 +563,29 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
       if (selectedKey === undefined || selectedKey === null) {
         model.setSelectedFilterValues([]);
       } else {
-        const selectedNode = findNodeByKey(resource.getData() || [], fieldNames.key, selectedKey);
+        const treeDataForFilter =
+          searchValue === '' || searchValue == null ? treeData || [] : fullTreeDataRef.current || [];
+        const selectedNode = findNodeByKey(treeDataForFilter, fieldNames.key, selectedKey);
         const keys = collectDescendantKeys(selectedNode, fieldNames.key, []);
         model.setSelectedFilterValues(keys.length ? keys : [selectedKey]);
       }
 
       void model.context.filterManager?.refreshTargetsByFilter?.(model.uid);
     },
-    [fieldNames.key, model, resource],
+    [fieldNames.key, model, searchValue, treeData],
   );
 
   const renderNodeTitle = useCallback<NonNullable<TreeProps['renderNodeTitle']>>(
     (value, node, fallbackTitle) => {
-      if (value === null || value === undefined || value === '') {
-        return <TreeNodeTitleContent model={model} record={node} title="N/A" />;
-      }
-
-      if (!titleFieldModel?.createFork || !collectionField) {
-        return <TreeNodeTitleContent model={model} record={node} title={fallbackTitle || String(value)} />;
+      if (!collectionField || value === null || value === undefined || value === '' || !titleFieldModel?.createFork) {
+        return getTreeNodeTitleContent({
+          model,
+          collectionField,
+          titleFieldModel,
+          value,
+          node,
+          fallbackTitle,
+        });
       }
 
       const nodeKey = node?.[fieldNames.key] ?? `${titleField}-${String(value)}`;
@@ -564,7 +664,7 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
         searchable={model.props.searchable ?? true}
         defaultExpandAll={model.props.defaultExpandAll ?? false}
         fieldNames={fieldNames}
-        treeData={resource.getData()}
+        treeData={treeData}
         loading={resource.loading}
         selectedKeys={model.selectedKeys.value}
         onSearch={onSearch}
