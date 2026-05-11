@@ -310,7 +310,7 @@ export const useChatMessageActions = () => {
 
       const processResumeStreamUnavailable = (data: any) => {
         if (data.type === 'chunks_cache_missing') {
-          sessionChat.setBackgroundWorking(true);
+          sessionChat.setResumeStreamFailed(true);
         }
       };
 

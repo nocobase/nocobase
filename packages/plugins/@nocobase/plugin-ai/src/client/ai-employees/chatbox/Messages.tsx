@@ -286,14 +286,36 @@ const BackgroundWorkingHint: React.FC = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
   const messages = chat.use.messages();
   const backgroundWorking = chat.use.backgroundWorking();
+  const resumeStreamFailed = chat.use.resumeStreamFailed();
   const setBackgroundWorking = chat.setBackgroundWorking;
+  const setResponseLoading = chat.setResponseLoading;
+  const setResumeStreamFailed = chat.setResumeStreamFailed;
 
   const doStateCheck = useCallback(async () => {
     if (currentConversation) {
       const llmActiveState = await getConversationLLMActiveState(currentConversation);
-      setBackgroundWorking(llmActiveState !== 'idle');
+      if (llmActiveState) {
+        const isBackgroundWorking =
+          llmActiveState === 'invoking' || (resumeStreamFailed && llmActiveState === 'streaming');
+        setBackgroundWorking(isBackgroundWorking);
+        if (isBackgroundWorking) {
+          setResponseLoading(true);
+        }
+
+        if (llmActiveState === 'idle' && resumeStreamFailed) {
+          setResumeStreamFailed(false);
+          setResponseLoading(false);
+        }
+      }
     }
-  }, [currentConversation, getConversationLLMActiveState, setBackgroundWorking]);
+  }, [
+    currentConversation,
+    getConversationLLMActiveState,
+    resumeStreamFailed,
+    setBackgroundWorking,
+    setResponseLoading,
+    setResumeStreamFailed,
+  ]);
 
   const refreshMessages = useCallback(async () => {
     if (currentConversation) {
