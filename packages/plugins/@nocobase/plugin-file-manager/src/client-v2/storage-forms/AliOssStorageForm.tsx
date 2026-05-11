@@ -23,7 +23,7 @@ import {
 } from '../components';
 import { useT } from '../locale';
 
-export function AliOssStorageForm() {
+export default function AliOssStorageForm() {
   const t = useT();
   const requiredRule = [{ required: true, message: t('The field value is required') }];
   return (

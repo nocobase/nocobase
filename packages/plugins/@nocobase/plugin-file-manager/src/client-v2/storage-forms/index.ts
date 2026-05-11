@@ -14,11 +14,7 @@ import {
   STORAGE_TYPE_S3,
   STORAGE_TYPE_TX_COS,
 } from '../../constants';
-import { AliOssStorageForm } from './AliOssStorageForm';
-import { LocalStorageForm } from './LocalStorageForm';
 import { storageFormRegistry } from './registry';
-import { S3StorageForm } from './S3StorageForm';
-import { TxCosStorageForm } from './TxCosStorageForm';
 
 const commonDefaults = {
   renameMode: 'appendRandomID',
@@ -28,7 +24,7 @@ const commonDefaults = {
 storageFormRegistry.register({
   name: STORAGE_TYPE_LOCAL,
   title: 'Local storage',
-  Form: LocalStorageForm,
+  formLoader: () => import('./LocalStorageForm'),
   defaultValues: {
     ...commonDefaults,
     baseUrl: '/storage/uploads',
@@ -39,7 +35,7 @@ storageFormRegistry.register({
 storageFormRegistry.register({
   name: STORAGE_TYPE_ALI_OSS,
   title: 'Aliyun OSS',
-  Form: AliOssStorageForm,
+  formLoader: () => import('./AliOssStorageForm'),
   defaultValues: {
     ...commonDefaults,
     options: { timeout: 600_000 },
@@ -50,14 +46,14 @@ storageFormRegistry.register({
 storageFormRegistry.register({
   name: STORAGE_TYPE_S3,
   title: 'Amazon S3',
-  Form: S3StorageForm,
+  formLoader: () => import('./S3StorageForm'),
   defaultValues: commonDefaults,
 });
 
 storageFormRegistry.register({
   name: STORAGE_TYPE_TX_COS,
   title: 'Tencent COS',
-  Form: TxCosStorageForm,
+  formLoader: () => import('./TxCosStorageForm'),
   defaultValues: commonDefaults,
 });
 

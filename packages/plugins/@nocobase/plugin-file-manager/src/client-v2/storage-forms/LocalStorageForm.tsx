@@ -20,7 +20,7 @@ import {
   TitleField,
 } from '../components';
 
-export function LocalStorageForm() {
+export default function LocalStorageForm() {
   return (
     <>
       <TitleField />

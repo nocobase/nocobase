@@ -23,7 +23,7 @@ import {
 } from '../components';
 import { useT } from '../locale';
 
-export function S3StorageForm() {
+export default function S3StorageForm() {
   const t = useT();
   const requiredRule = [{ required: true, message: t('The field value is required') }];
   return (

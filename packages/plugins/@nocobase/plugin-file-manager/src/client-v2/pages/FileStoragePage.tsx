@@ -18,24 +18,6 @@ import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from
 import { useT } from '../locale';
 import { storageFormRegistry, type StorageFormDefinition } from '../storage-forms';
 
-// Cache `React.lazy()` wrappers per definition so re-renders reuse the same
-// component identity (and therefore the same cached module promise) instead
-// of triggering a re-fetch every time the drawer opens.
-const lazyFormCache = new WeakMap<StorageFormDefinition, React.ComponentType>();
-
-function resolveFormBody(def: StorageFormDefinition): React.ComponentType {
-  if (def.Form) return def.Form;
-  if (!def.formLoader) {
-    throw new Error(`[storageFormRegistry] storage "${def.name}" must declare either \`Form\` or \`formLoader\`.`);
-  }
-  let Cached = lazyFormCache.get(def);
-  if (!Cached) {
-    Cached = lazy(def.formLoader);
-    lazyFormCache.set(def, Cached);
-  }
-  return Cached;
-}
-
 type StorageRecord = {
   id: number | string;
   title?: string;
@@ -134,7 +116,7 @@ function StorageFormView(props: {
     }
   }, [form, props, resource, view]);
 
-  const StorageFormBody = useMemo(() => resolveFormBody(props.storageDef), [props.storageDef]);
+  const StorageFormBody = useMemo(() => lazy(props.storageDef.formLoader), [props.storageDef]);
   const title = `${props.mode === 'create' ? t('Add new') : t('Edit')} - ${t(props.storageDef.title)}`;
 
   return (

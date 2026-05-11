@@ -23,7 +23,7 @@ import {
 } from '../components';
 import { useT } from '../locale';
 
-export function TxCosStorageForm() {
+export default function TxCosStorageForm() {
   const t = useT();
   const requiredRule = [{ required: true, message: t('The field value is required') }];
   return (
