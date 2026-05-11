@@ -106,4 +106,52 @@ describe('subFormLinkageSetFieldProps action', () => {
     expect(getFork).toHaveBeenCalledWith('roles:0:field-2');
     expect(setProps).toHaveBeenCalledWith(formItemModel, { disabled: false });
   });
+
+  it('should support targetPath rules with per-field conditions', () => {
+    const setProps = vi.fn();
+    const formItemModel: any = {
+      uid: 'field-name',
+      fieldPath: 'name',
+    };
+
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        context: {},
+        subModels: {
+          grid: {
+            subModels: {
+              items: [formItemModel],
+            },
+          },
+        },
+      },
+      engine: {
+        getModel: vi.fn(),
+      },
+    };
+
+    subFormLinkageSetFieldProps.handler(ctx, {
+      value: [
+        {
+          key: 'rule-name',
+          enable: true,
+          targetPath: 'name',
+          state: 'disabled',
+          condition: {
+            logic: '$and',
+            items: [{ path: 'current', operator: '$eq', value: 'current' }],
+          },
+        },
+      ],
+      setProps,
+    });
+
+    expect(ctx.app.jsonLogic.apply).toHaveBeenCalledWith({ $eq: ['current', 'current'] });
+    expect(setProps).toHaveBeenCalledWith(formItemModel, { disabled: true });
+  });
 });

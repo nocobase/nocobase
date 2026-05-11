@@ -8,7 +8,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { getLatestSubTableRowRecord, buildRowPathFromFieldIndex } from '../SubTableColumnModel';
+import {
+  getLatestSubTableRowRecord,
+  buildRowPathFromFieldIndex,
+  getSubTableCellDisabled,
+  shouldReuseSubTableFieldRenderer,
+} from '../SubTableColumnModel';
 
 describe('SubTableColumnModel row record helpers', () => {
   it('builds the row path from fieldIndex entries', () => {
@@ -38,5 +43,39 @@ describe('SubTableColumnModel row record helpers', () => {
     const fallback = { uid: 'stale-role', __is_new__: false };
 
     expect(getLatestSubTableRowRecord(form, ['roles:0'], fallback)).toBe(fallback);
+  });
+
+  it('lets row runtime state override static disabled state while preserving ACL restrictions', () => {
+    expect(
+      getSubTableCellDisabled({
+        parentProps: { disabled: true },
+        rowProps: { disabled: false },
+        isNew: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      getSubTableCellDisabled({
+        parentProps: { disabled: false },
+        rowProps: { disabled: false, aclDisabled: true },
+        isNew: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('rerenders the field renderer when row state props change', () => {
+    const model = {};
+    expect(
+      shouldReuseSubTableFieldRenderer({ model, value: 'a', disabled: false }, { model, value: 'a', disabled: true }),
+    ).toBe(false);
+    expect(
+      shouldReuseSubTableFieldRenderer(
+        { model, value: 'a', hiddenModel: false },
+        { model, value: 'a', hiddenModel: true },
+      ),
+    ).toBe(false);
+    expect(
+      shouldReuseSubTableFieldRenderer({ model, value: 'a', disabled: true }, { model, value: 'a', disabled: true }),
+    ).toBe(true);
   });
 });

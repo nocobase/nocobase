@@ -17,7 +17,14 @@ vi.mock('../../components/fieldAssignOptions', () => ({
   collectFieldAssignCascaderOptions: vi.fn(() => []),
 }));
 
-import { linkageAssignField, setFieldsDefaultValue, subFormLinkageAssignField } from '../linkageRules';
+import {
+  linkageAssignField,
+  linkageSetDetailsFieldProps,
+  linkageSetFieldProps,
+  setFieldsDefaultValue,
+  subFormLinkageAssignField,
+  subFormLinkageSetFieldProps,
+} from '../linkageRules';
 
 function createModel() {
   const engine = new FlowEngine();
@@ -34,19 +41,22 @@ function renderAction(action: any, model: any) {
   );
 }
 
-describe('linkageRules assign actions - field options', () => {
+describe('linkageRules field action options', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('uses maxFormItemDepth=1 for assign actions', () => {
+  it('uses maxFormItemDepth=1 for assign and state actions', () => {
     const { model } = createModel();
 
     renderAction(linkageAssignField as any, model);
     renderAction(subFormLinkageAssignField as any, model);
     renderAction(setFieldsDefaultValue as any, model);
+    renderAction(linkageSetFieldProps as any, model);
+    renderAction(subFormLinkageSetFieldProps as any, model);
+    renderAction(linkageSetDetailsFieldProps as any, model);
 
-    expect(collectFieldAssignCascaderOptions).toHaveBeenCalledTimes(3);
+    expect(collectFieldAssignCascaderOptions).toHaveBeenCalledTimes(6);
     for (const [args] of (collectFieldAssignCascaderOptions as any).mock.calls) {
       expect(args).toMatchObject({
         maxFormItemDepth: 1,

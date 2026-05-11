@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { fieldLinkageRules } from '../linkageRules';
+import { fieldLinkageRules, linkageSetFieldProps } from '../linkageRules';
 
 describe('fieldLinkageRules action - linkage scope metadata', () => {
   const targetCollection: any = {
@@ -690,6 +690,228 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
         linkageScopeDepth: 0,
       }),
     );
+  });
+
+  it('runs row-scoped set field state rules with current item conditions', async () => {
+    const engine = new FlowEngine();
+    const nameColumn = new FlowModel({ uid: 'role-name-column', flowEngine: engine }) as any;
+    nameColumn.fieldPath = 'roles.name';
+    nameColumn.props = { title: 'Role name' };
+    nameColumn.getProps = () => nameColumn.props;
+    nameColumn.getStepParams = vi.fn((flowKey: string, stepKey: string) => {
+      if (flowKey === 'fieldSettings' && stepKey === 'init') {
+        return { fieldPath: 'roles.name' };
+      }
+    });
+
+    const jsonLogicApply = vi.fn((expression: any) => expression?.$eq?.[0] === 'role-uid-1');
+    const rowFork = nameColumn.createFork({}, 'role-state-row-fork') as any;
+    const otherRowFork = nameColumn.createFork({}, 'role-state-other-row-fork') as any;
+    rowFork.context.defineProperty('fieldIndex', {
+      value: ['roles:0'],
+    });
+    rowFork.context.defineProperty('subTableRowFork', {
+      value: true,
+    });
+    rowFork.context.defineProperty('item', {
+      value: {
+        index: 0,
+        value: {
+          uid: 'role-uid-1',
+        },
+      },
+    });
+    otherRowFork.context.defineProperty('fieldIndex', {
+      value: ['roles:1'],
+    });
+    otherRowFork.context.defineProperty('subTableRowFork', {
+      value: true,
+    });
+    otherRowFork.context.defineProperty('item', {
+      value: {
+        index: 1,
+        value: {
+          uid: 'role-uid-2',
+        },
+      },
+    });
+    rowFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: jsonLogicApply,
+        },
+      },
+    });
+    rowFork.getAction = vi.fn((name: string) => {
+      if (name === 'linkageSetFieldProps') {
+        return linkageSetFieldProps;
+      }
+    });
+
+    const masterModel: any = {
+      uid: 'master-role-state-grid',
+      forks: new Set([rowFork]),
+    };
+
+    const rolesField: any = {
+      type: 'hasMany',
+      isAssociationField: () => true,
+      targetCollection: {
+        getField: (name: string) => ({ name, isAssociationField: () => false }),
+      },
+    };
+
+    const gridModel: any = {
+      uid: 'grid-model-role-state-row',
+      context: {
+        blockModel: {
+          collection: {
+            getField: (name: string) => (name === 'roles' ? rolesField : null),
+          },
+          subModels: {
+            grid: {
+              subModels: {
+                items: [
+                  {
+                    uid: 'roles-item',
+                    fieldPath: 'roles',
+                    subModels: {
+                      field: {
+                        subModels: {
+                          columns: [nameColumn],
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'linkageSetFieldProps') {
+          return linkageSetFieldProps;
+        }
+      }),
+      __allModels: [],
+    };
+
+    const ctx: any = {
+      model: gridModel,
+      engine: {
+        forEachModel: (cb: (m: any) => void) => {
+          cb(masterModel);
+        },
+      },
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-role-state-row',
+        changedPaths: [['roles', 0, 'uid']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => v,
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-role-state-row',
+          title: 'rule-role-state-row',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageSetFieldProps',
+              params: {
+                value: [
+                  {
+                    key: 'state-role-name',
+                    enable: true,
+                    targetPath: 'roles.name',
+                    state: 'disabled',
+                    condition: {
+                      logic: '$and',
+                      items: [{ path: '{{ ctx.item.value.uid }}', operator: '$eq', value: 'role-uid-1' }],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(jsonLogicApply).toHaveBeenCalledWith({ $eq: ['role-uid-1', 'role-uid-1'] });
+    expect(rowFork.props.disabled).toBe(true);
+    expect(nameColumn.props.disabled).toBeUndefined();
+    expect(otherRowFork.props.disabled).toBeUndefined();
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-role-state-required',
+          title: 'rule-role-state-required',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageSetFieldProps',
+              params: {
+                value: [
+                  {
+                    key: 'state-role-name-required',
+                    enable: true,
+                    targetPath: 'roles.name',
+                    state: 'required',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(rowFork.props.required).toBe(true);
+    expect(rowFork.props.rules).toEqual([{ required: true, message: 'The field value is required' }]);
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-role-state-not-required',
+          title: 'rule-role-state-not-required',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageSetFieldProps',
+              params: {
+                value: [
+                  {
+                    key: 'state-role-name-not-required',
+                    enable: true,
+                    targetPath: 'roles.name',
+                    state: 'notRequired',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(rowFork.props.required).toBe(false);
+    expect(rowFork.props.rules).toEqual([]);
   });
 
   it('keeps row-scoped default patches following while current value is still the last default', async () => {
