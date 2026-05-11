@@ -23,13 +23,7 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import {
-  getWorkflowCallers,
-  createDocsSearchTool,
-  createReadDocEntryTool,
-  loadDocsIndexes,
-  describeDocModules,
-} from './tools';
+import { getWorkflowCallers, createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -41,10 +35,11 @@ import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { xaiProviderOptions } from './llm-providers/xai';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
-// import { tongyiProviderOptions } from './llm-providers/tongyi';
+import { mimoProviderOptions } from './llm-providers/mimo';
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -110,10 +105,12 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
-    // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
   }
 
   registerTools() {

@@ -28,8 +28,8 @@ pkg: "@nocobase/plugin-embed"
 
 ![](https://static-docs.nocobase.com/f11bd6d5e88d38731d7cd3cb149022c8.png)
 
-После нажатия вы получите ссылку, которую можно открыть отдельно, например, `https://xxx.com/embed/qs087rz4o2b`.
+После нажатия вы получите ссылку, которую можно открыть отдельно, например, `https://example.com/embed/qs087rz4o2b`.
 
 ![](https://static-docs.nocobase.com/9d847805a00fd07372a474665ec0e968.png)
 
-Если вы хотите встроить страницы NocoBase в другие веб-сайты или приложения, потребуется аутентификация пользователя, а `token` необходимо добавить к ссылке, например, `https://xxx.com/embed/qs087rz4o2b?token=xxx`.
+Если вы хотите встроить страницы NocoBase в другие веб-сайты или приложения, потребуется аутентификация пользователя, а `token` необходимо добавить к ссылке, например, `https://example.com/embed/qs087rz4o2b?token=xxx`.

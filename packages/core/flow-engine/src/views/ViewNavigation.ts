@@ -26,6 +26,10 @@ function encodeFilterByTk(val: SharedViewParam['filterByTk']): string {
   return encodeURIComponent(String(val));
 }
 
+function hasUsableSourceId(sourceId: unknown): sourceId is string | number {
+  return sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
+}
+
 /**
  * 将 ViewParam 数组转换为 pathname
  *
@@ -65,8 +69,8 @@ export function generatePathnameFromViewParams(viewParams: ViewParams[]): string
         segments.push('filterbytk', encoded);
       }
     }
-    if (viewParam.sourceId) {
-      segments.push('sourceid', viewParam.sourceId);
+    if (hasUsableSourceId(viewParam.sourceId)) {
+      segments.push('sourceid', String(viewParam.sourceId));
     }
   });
 

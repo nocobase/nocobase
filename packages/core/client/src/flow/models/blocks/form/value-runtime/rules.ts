@@ -17,6 +17,7 @@ import { namePathToPathKey, parsePathString, pathKeyToNamePath } from './path';
 import type { FormAssignRuleItem, FormValueWriteMeta, NamePath, Patch, SetOptions, ValueSource } from './types';
 import { createTxId, isEmptyValue } from './utils';
 import { isToManyAssociationField } from '../../../../internal/utils/modelUtils';
+import { getSubTableRowIdentity } from '../../../fields/AssociationFieldModel/SubTableFieldModel/rowIdentity';
 
 /** Symbol to indicate rule value resolution should be skipped */
 const SKIP_RULE_VALUE = Symbol('SKIP_RULE_VALUE');
@@ -51,6 +52,7 @@ type RuntimeRule = {
 
 type ObservableBinding = {
   source: ValueSource;
+  pathKey: string;
   dispose: () => void;
 };
 
@@ -1071,6 +1073,18 @@ export class RuleEngine {
     }
   }
 
+  rescheduleAllRules() {
+    if (this.options.isDisposed()) return;
+
+    this.lastRuleWriteByTargetKey.clear();
+    for (const entry of this.rules.values()) {
+      entry.state.runSeq += 1;
+    }
+    for (const id of this.rules.keys()) {
+      this.scheduleRule(id);
+    }
+  }
+
   private scheduleRule(id: string) {
     if (this.options.isDisposed()) return;
     const entry = this.rules.get(id);
@@ -1160,7 +1174,6 @@ export class RuleEngine {
 
     const ruleContext = this.prepareRuleContext(rule);
     const { baseCtx, targetNamePath, targetKey, clearDeps, disposeBinding } = ruleContext;
-
     if (!this.shouldRunRule(rule, targetNamePath, targetKey, baseCtx)) {
       clearDeps(state);
       disposeBinding();
@@ -1231,11 +1244,10 @@ export class RuleEngine {
     if (this.shouldSkipToManyAssociationWriteWithoutIndex(baseCtx, ensuredTargetNamePath)) return;
 
     const nextSnapshot = normalizedResolvedForTarget;
-    const currentValue = this.options.getFormValueAtPath(ensuredTargetNamePath);
     const semanticallyEqual = this.isAssociationTargetSemanticallyEqual(
       baseCtx,
       ensuredTargetNamePath,
-      currentValue,
+      this.options.getFormValueAtPath(ensuredTargetNamePath),
       nextSnapshot,
     );
     if (semanticallyEqual) return;
@@ -1476,18 +1488,59 @@ export class RuleEngine {
     // 编辑态默认值规则：
     // - 顶层编辑表单：不应用默认值
     // - 子表单：仅对“新增行/新增对象”（__is_new__ = true）应用默认值
-    let item: any;
+    return this.getItemContext(baseCtx)?.__is_new__ === true;
+  }
+
+  private isStaleToManyItemContext(baseCtx: any): boolean {
+    const item = this.getItemContext(baseCtx);
+    if (!Number.isFinite(item?.index) || !Number.isFinite(item?.length)) return false;
+    return item.index < 0 || item.index >= item.length;
+  }
+
+  private getItemContext(baseCtx: any) {
     try {
-      item = baseCtx?.item;
+      return baseCtx?.item;
     } catch {
-      item = undefined;
+      return undefined;
+    }
+  }
+
+  private getRowTargetKey(baseCtx: any, rowPath: NamePath): string | string[] {
+    let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    let field: any;
+    for (const seg of rowPath) {
+      if (typeof seg === 'number') continue;
+      if (typeof seg !== 'string' || !seg || !collection?.getField) break;
+
+      field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+      collection = field?.targetCollection;
     }
 
-    if (!item || typeof item !== 'object') {
-      return false;
+    const raw = field?.targetCollection?.filterTargetKey ?? field?.targetCollection?.filterByTk ?? field?.targetKey;
+    if (Array.isArray(raw)) {
+      const keys = raw.filter((key): key is string => typeof key === 'string' && !!key);
+      return keys.length ? keys : 'id';
+    }
+    return typeof raw === 'string' && raw ? raw : 'id';
+  }
+
+  private isMismatchedToManyItemContext(baseCtx: any, targetNamePath: NamePath): boolean {
+    const item = this.getItemContext(baseCtx);
+    if (!item) return false;
+
+    for (let i = targetNamePath.length - 1; i >= 0; i--) {
+      if (typeof targetNamePath[i] !== 'number') continue;
+
+      const rowPath = targetNamePath.slice(0, i + 1);
+      const targetKey = this.getRowTargetKey(baseCtx, rowPath);
+      const currentRow = this.options.getFormValueAtPath(rowPath);
+      const currentIdentity = getSubTableRowIdentity(currentRow, targetKey);
+      const itemIdentity = getSubTableRowIdentity(item.value, targetKey);
+      return !!currentIdentity && !!itemIdentity && currentIdentity !== itemIdentity;
     }
 
-    return item.__is_new__ === true;
+    return false;
   }
 
   private shouldRunRule(
@@ -1498,6 +1551,8 @@ export class RuleEngine {
   ): boolean {
     if (!rule.getEnabled()) return false;
     if (!targetNamePath || !targetKey) return false;
+    if (this.isStaleToManyItemContext(baseCtx)) return false;
+    if (this.isMismatchedToManyItemContext(baseCtx, targetNamePath)) return false;
     if (rule.source === 'default') {
       if (!this.shouldApplyDefaultRuleInCurrentState(baseCtx)) return false;
       if (this.options.findExplicitHit(targetKey)) return false;
@@ -1670,8 +1725,7 @@ export class RuleEngine {
     } catch {
       // ignore
     }
-    const baseOptions =
-      typeof baseCtx?.getPropertyOptions === 'function' ? baseCtx.getPropertyOptions('formValues') : null;
+    const baseOptions = baseCtx?.getPropertyOptions?.('formValues');
     if (baseOptions && typeof baseOptions === 'object') {
       ctx.defineProperty('formValues', {
         ...baseOptions,
@@ -1694,17 +1748,10 @@ export class RuleEngine {
     //    （如 PopupSubTable 新增弹窗传入的 parentItem 链）
     let itemCached: any;
     let itemCachedReady = false;
-    const getFallbackItem = () => {
-      try {
-        return baseCtx?.item;
-      } catch {
-        return undefined;
-      }
-    };
     const getItem = () => {
       if (!itemCachedReady) {
         const chainItem = this.buildItemChainValue(baseCtx, trackingFormValues, targetNamePath);
-        itemCached = typeof chainItem === 'undefined' ? getFallbackItem() : chainItem;
+        itemCached = chainItem ?? baseCtx?.item;
         itemCachedReady = true;
       }
       return itemCached;
@@ -1805,6 +1852,19 @@ export class RuleEngine {
       }
     })();
 
+    // Row/grid rules resolve target paths through fieldIndex (for example `roles.title`
+    // -> `roles[1].title`). When a row is deleted or reordered, the rule must reschedule
+    // even if its value/condition does not reference ctx.item directly.
+    const fieldIndex = baseCtx?.model?.context?.fieldIndex ?? baseCtx?.fieldIndex;
+    const shouldWatchFieldIndex = Array.isArray(fieldIndex) && fieldIndex.some((it) => typeof it === 'string');
+    if (shouldWatchFieldIndex) {
+      const fieldIndexDisposer = reaction(
+        () => this.getFieldIndexSignature(baseCtx),
+        () => this.scheduleRule(rule.id),
+      );
+      state.depDisposers.push(fieldIndexDisposer);
+    }
+
     for (const depKey of deps) {
       if (depKey === 'fv:*') {
         continue;
@@ -1836,18 +1896,27 @@ export class RuleEngine {
       const sep = rest.indexOf(':');
       const varName = sep >= 0 ? rest.slice(0, sep) : rest;
       const subPath = sep >= 0 ? rest.slice(sep + 1) : '';
+      const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
 
-      // 特殊变量：item 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上），其 parentItem/index 链依赖 fieldIndex。
+      // 特殊变量：item 为 RuleEngine 注入的计算属性（不直接存在于 baseCtx 上）。
+      // fieldIndex 的变化已统一在上面监听，这里只补 item 自身取值的依赖。
       if (varName === 'item') {
-        const disposer = reaction(
-          () => this.getFieldIndexSignature(baseCtx),
-          () => this.scheduleRule(rule.id),
-        );
-        state.depDisposers.push(disposer);
+        if (depPath.length) {
+          const trackingFormValues = this.options.createTrackingFormValues({ deps: new Set(), wildcard: false });
+          const itemValueDisposer = reaction(
+            () => {
+              const targetPath = rule.getTarget?.();
+              const targetNamePath = targetPath ? this.options.tryResolveNamePath(baseCtx, targetPath) : null;
+              const itemRoot = this.buildItemChainValue(baseCtx, trackingFormValues, targetNamePath) ?? baseCtx?.item;
+              return _.get(itemRoot, depPath);
+            },
+            () => this.scheduleRule(rule.id),
+          );
+          state.depDisposers.push(itemValueDisposer);
+        }
         continue;
       }
 
-      const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
       const disposer = reaction(
         () => {
           const root = baseCtx ? baseCtx[varName] : undefined;

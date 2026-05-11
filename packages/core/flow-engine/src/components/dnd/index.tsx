@@ -74,16 +74,19 @@ export const Droppable: FC<{ model: FlowModel<any>; children: React.ReactNode }>
 export const DndProvider: FC<DndContextProps & PersistOptions> = ({
   persist = true,
   children,
+  onDragStart,
   onDragEnd,
+  onDragCancel,
   ...restProps
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const flowEngine = useFlowEngine();
   return (
     <DndContext
+      {...restProps}
       onDragStart={(event) => {
         setActiveId(event.active.id as string);
-        restProps.onDragStart?.(event);
+        onDragStart?.(event);
       }}
       onDragEnd={(event) => {
         setActiveId(null);
@@ -97,13 +100,17 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
           onDragEnd(event);
         }
       }}
-      {...restProps}
+      onDragCancel={(event) => {
+        setActiveId(null);
+        onDragCancel?.(event);
+      }}
     >
       {children}
       {createPortal(
         <DragOverlay dropAnimation={null} zIndex={2000}>
           {activeId && (
             <span
+              data-testid="flow-drag-preview"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -113,7 +120,6 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
                 borderRadius: 4,
                 padding: '4px 12px',
                 color: '#1890ff',
-                // fontSize: 18,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               }}
             >

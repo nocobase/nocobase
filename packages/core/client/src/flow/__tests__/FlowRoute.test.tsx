@@ -131,4 +131,113 @@ describe('FlowRoute', () => {
     const viewParams = mockResolveViewParamsToViewList.mock.calls[0][1];
     expect(removeSpy).toHaveBeenCalledWith(viewParams[0].viewUid);
   });
+
+  it('drops configured associationName during route replay when sourceId is absent', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const routeName = 'test-route';
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: routeName },
+        pathname: '/admin/popup/filterbytk/member',
+      },
+    });
+
+    const dispatchEvent = vi.fn(() => Promise.resolve());
+    const viewItem = {
+      params: { viewUid: 'popup', filterByTk: 'member' },
+      modelUid: 'popup',
+      model: { uid: 'popup', dispatchEvent } as any,
+      hidden: { value: false },
+      index: 0,
+    };
+
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      dataSourceKey: 'main',
+    } as any);
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={[`/flow/${routeName}`]}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(dispatchEvent).toHaveBeenCalled();
+    });
+
+    expect(dispatchEvent.mock.calls[0][1]).toMatchObject({
+      collectionName: 'roles',
+      associationName: null,
+      dataSourceKey: 'main',
+      filterByTk: 'member',
+      triggerByRouter: true,
+    });
+  });
+
+  it('keeps configured associationName during route replay when sourceId is present', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const routeName = 'test-route';
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: routeName },
+        pathname: '/admin/popup/filterbytk/member/sourceid/1',
+      },
+    });
+
+    const dispatchEvent = vi.fn(() => Promise.resolve());
+    const viewItem = {
+      params: { viewUid: 'popup', filterByTk: 'member', sourceId: '1' },
+      modelUid: 'popup',
+      model: { uid: 'popup', dispatchEvent } as any,
+      hidden: { value: false },
+      index: 0,
+    };
+
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      dataSourceKey: 'main',
+    } as any);
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={[`/flow/${routeName}`]}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(dispatchEvent).toHaveBeenCalled();
+    });
+
+    expect(dispatchEvent.mock.calls[0][1]).toMatchObject({
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      dataSourceKey: 'main',
+      filterByTk: 'member',
+      sourceId: '1',
+      triggerByRouter: true,
+    });
+  });
 });

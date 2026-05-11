@@ -21,7 +21,12 @@ import {
   observer,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
-import { enumToOptions, normalizeSelectRenderValue, translateOptions } from '../../internal/utils/enumOptionsUtils';
+import {
+  enumToOptions,
+  normalizeSelectRenderValue,
+  translateOptions,
+  UiSchemaEnumItem,
+} from '../../internal/utils/enumOptionsUtils';
 import { lazy } from '../../../lazy-helper';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
@@ -323,6 +328,11 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     [mergedSchema, leftFieldMeta, stableT],
   );
 
+  const enumOptions = useMemo(
+    () => enumToOptions(mergedSchema?.enum as UiSchemaEnumItem[], stableT) || [],
+    [mergedSchema, stableT],
+  );
+
   const constantInputRenderer = useMemo(() => {
     const resolved = resolveOperatorComponent(model.context.app, selectedOperator, operatorMetadataList);
     const shouldUseKeywordComponent = KEYWORD_OPERATOR_VALUES.has(selectedOperator);
@@ -333,6 +343,10 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     const { Comp, props: componentProps } = resolved;
     return (inputProps: { value?: any; onChange?: (v: any) => void } & Record<string, any>) => {
       const { value: inputValue, onChange, ...rest } = inputProps || {};
+      const nextProps = { ...componentProps };
+      if ((!nextProps?.options || nextProps?.options.length === 0) && enumOptions.length > 0) {
+        nextProps.options = enumOptions;
+      }
       const normalizedValue = Array.isArray(inputValue)
         ? inputValue
         : typeof inputValue === 'string'
@@ -344,11 +358,11 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
       return (
         <Comp
-          {...componentProps}
+          {...nextProps}
           {...rest}
           value={normalizedValue}
           onChange={onChange}
-          style={{ width: 200, ...(componentProps?.style || {}), ...(rest?.style || {}) }}
+          style={{ width: 200, ...(nextProps?.style || {}), ...(rest?.style || {}) }}
         />
       );
 
@@ -358,7 +372,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
         onChange,
       });
     };
-  }, [model.context.app, operatorMetadataList, selectedOperator, staticInputRenderer]);
+  }, [enumOptions, model.context.app, operatorMetadataList, selectedOperator, staticInputRenderer]);
 
   const NullComponent = useMemo(() => {
     return function NullValue() {

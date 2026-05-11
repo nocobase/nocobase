@@ -65,10 +65,12 @@ export const linkageRulesRefresh = defineAction({
 
     const run = (async () => {
       const raw = model?.getStepParams?.(flowKey, stepKey);
-      const resolved = await ctx.resolveJsonTemplate({ value: [], ...(raw || {}) });
       const action = ctx.getAction?.(actionName);
+      const paramsForAction = action?.useRawParams
+        ? { value: [], ...(raw || {}) }
+        : await ctx.resolveJsonTemplate({ value: [], ...(raw || {}) });
       if (action?.handler) {
-        await action.handler(ctx, resolved);
+        await action.handler(ctx, paramsForAction);
       }
     })();
 

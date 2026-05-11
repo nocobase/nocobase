@@ -316,7 +316,7 @@ describe('PageModel', () => {
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
     });
 
-    it('should apply tabs root className in flow settings mode', () => {
+    it('should not apply tabs root className in flow settings mode anymore', () => {
       // @ts-ignore
       pageModel.context = {
         t: (str: string) => str,
@@ -327,8 +327,7 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
 
-      expect(typeof tabsElement.props.className).toBe('string');
-      expect(tabsElement.props.className.length).toBeGreaterThan(0);
+      expect(tabsElement.props.className).toBeUndefined();
     });
 
     it('should not apply tabs root className in normal mode', () => {
@@ -388,11 +387,32 @@ describe('PageModel', () => {
 
       expect(tabsElement.props.tabBarExtraContent.right).toBe('custom-right');
     });
+
+    it('should inject default right spacing via tabBarExtraContent', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+        themeToken: { paddingLG: 24 },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+      const rightExtraContent = tabsElement.props.tabBarExtraContent.right;
+
+      expect(rightExtraContent).toBeTruthy();
+      expect(rightExtraContent.props.style).toMatchObject({
+        display: 'inline-flex',
+        marginInlineEnd: 24,
+      });
+    });
   });
 
   describe('render header spacing with tabs', () => {
     it('should compact page header bottom spacing when tabs are enabled', () => {
       pageModel.props = {
+        routeId: 'route-1',
         displayTitle: true,
         enableTabs: true,
         title: 'Title',
@@ -411,6 +431,7 @@ describe('PageModel', () => {
 
     it('should keep original header style when tabs are disabled', () => {
       pageModel.props = {
+        routeId: 'route-1',
         displayTitle: true,
         enableTabs: false,
         title: 'Title',
@@ -422,6 +443,57 @@ describe('PageModel', () => {
       const header = result.props.children[0];
 
       expect(header.props.style).toEqual({ backgroundColor: 'var(--colorBgLayout)' });
+    });
+
+    it('should use desktop route enableTabs=false before flow model props', () => {
+      pageModel.props = {
+        routeId: 'route-1',
+        displayTitle: true,
+        enableTabs: true,
+        title: 'Title',
+        headerStyle: { backgroundColor: 'var(--colorBgLayout)' },
+      } as any;
+      (pageModel as any).context = {
+        currentRoute: {
+          enableTabs: false,
+        },
+      };
+      pageModel.renderTabs = vi.fn(() => null);
+      pageModel.renderFirstTab = vi.fn(() => null);
+
+      const result = pageModel.render() as any;
+      const header = result.props.children[0];
+
+      expect(pageModel.renderTabs).not.toHaveBeenCalled();
+      expect(pageModel.renderFirstTab).toHaveBeenCalled();
+      expect(header.props.style).toEqual({ backgroundColor: 'var(--colorBgLayout)' });
+    });
+
+    it('should use desktop route enableTabs=true before flow model props', () => {
+      pageModel.props = {
+        routeId: 'route-1',
+        displayTitle: true,
+        enableTabs: false,
+        title: 'Title',
+        headerStyle: { backgroundColor: 'var(--colorBgLayout)' },
+      } as any;
+      (pageModel as any).context = {
+        currentRoute: {
+          enableTabs: true,
+        },
+      };
+      pageModel.renderTabs = vi.fn(() => null);
+      pageModel.renderFirstTab = vi.fn(() => null);
+
+      const result = pageModel.render() as any;
+      const header = result.props.children[0];
+
+      expect(pageModel.renderTabs).toHaveBeenCalled();
+      expect(pageModel.renderFirstTab).not.toHaveBeenCalled();
+      expect(header.props.style).toMatchObject({
+        backgroundColor: 'var(--colorBgLayout)',
+        paddingBottom: 0,
+      });
     });
   });
 
@@ -553,6 +625,26 @@ describe('PageModel', () => {
       await (pageModel as any).updateDocumentTitle();
 
       expect(document.title).toBe('Resolved tab doc title');
+    });
+
+    it('should use page documentTitle when desktop route disables tabs even if flow model enables tabs', async () => {
+      pageModel.props = { routeId: 'route-1', enableTabs: true, title: 'Route page title' } as any;
+      (pageModel as any).context.currentRoute = {
+        enableTabs: false,
+      };
+      (pageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            documentTitle: 'Route page doc title',
+          },
+        },
+      };
+      (pageModel as any).context.resolveJsonTemplate = vi.fn(async () => 'Resolved route page doc title');
+
+      await (pageModel as any).updateDocumentTitle();
+
+      expect((pageModel as any).context.resolveJsonTemplate).toHaveBeenCalledWith('Route page doc title');
+      expect(document.title).toBe('Resolved route page doc title');
     });
 
     it('should fallback to tab title when active tab documentTitle is empty', async () => {

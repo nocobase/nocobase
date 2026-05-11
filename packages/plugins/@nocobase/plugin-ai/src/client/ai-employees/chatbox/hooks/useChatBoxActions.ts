@@ -54,7 +54,7 @@ export const useChatBoxActions = () => {
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
 
   const { conversationsService } = useChatConversationActions();
-  const { sendMessages } = useChatMessageActions();
+  const { sendMessages, syncContextAttachments } = useChatMessageActions();
 
   const clear = () => {
     setSenderValue('');
@@ -219,6 +219,7 @@ export const useChatBoxActions = () => {
         }
         if (workContext) {
           setContextItems(workContext);
+          syncContextAttachments(workContext);
         }
         if (systemMessage) {
           setSystemMessage(systemMessage);

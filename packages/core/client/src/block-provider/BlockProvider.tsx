@@ -288,6 +288,20 @@ export const useBlockAssociationContext = () => {
   return useContext(BlockAssociationContext) || association;
 };
 
+export const getFilterByTkByCollection = (collection: any, recordData: Record<string, any>) => {
+  const filterTargetKey = collection?.filterTargetKey || collection?.getPrimaryKey?.() || 'id';
+
+  if (isArray(filterTargetKey)) {
+    const filterByTk = {};
+    for (const key of filterTargetKey) {
+      filterByTk[key] = recordData?.[key];
+    }
+    return filterByTk;
+  }
+
+  return recordData?.[filterTargetKey];
+};
+
 export const useFilterByTk = (blockProps?: any) => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
@@ -306,17 +320,13 @@ export const useFilterByTk = (blockProps?: any) => {
 
   if (assoc) {
     const association = cm.getCollectionField(assoc);
+    const filterByTk = getFilterByTkByCollection(collection, recordData);
+    if (filterByTk !== undefined) {
+      return filterByTk;
+    }
     return recordData?.[association.targetKey || association.sourceKey || 'id'];
   }
-  if (isArray(collection.filterTargetKey)) {
-    const filterByTk = {};
-    for (const key of collection.filterTargetKey) {
-      filterByTk[key] = recordData?.[key];
-    }
-    return filterByTk;
-  } else {
-    return recordData?.[collection.filterTargetKey || 'id'];
-  }
+  return getFilterByTkByCollection(collection, recordData);
 };
 
 /**

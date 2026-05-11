@@ -16,6 +16,7 @@ import { createFormValuesProxy } from './deps';
 import { createFormPatcher } from './form-patch';
 import { namePathToPathKey, pathKeyToNamePath, resolveDynamicNamePath } from './path';
 import { RuleEngine } from './rules';
+import { getSubTableRowIdentity } from '../../../fields/AssociationFieldModel/SubTableFieldModel/rowIdentity';
 import type {
   FormAssignRuleItem,
   FormValueWriteMeta,
@@ -25,10 +26,11 @@ import type {
   SetOptions,
   ValueSource,
 } from './types';
-import { createTxId, MAX_WRITES_PER_PATH_PER_TX } from './utils';
+import { createTxId, isEmptyValue, MAX_WRITES_PER_PATH_PER_TX } from './utils';
 
 type ObservableBinding = {
   source: ValueSource;
+  pathKey: string;
   dispose: () => void;
 };
 
@@ -135,6 +137,42 @@ export class FormValueRuntime {
     return this.getForm().getFieldsValue(true);
   }
 
+  canApplyDefaultValuePatch(namePath: NamePath, resolved: any) {
+    if (!namePath?.length) return false;
+    if (typeof resolved === 'undefined') return false;
+
+    const pathKey = namePathToPathKey(namePath);
+    const current = this.getFormValueAtPath(namePath);
+    const last = this.lastDefaultValueByPathKey.get(pathKey);
+    const nextSnapshot = isObservable(resolved) ? toJS(resolved) : resolved;
+    const currentSnapshot = isObservable(current) ? toJS(current) : current;
+    const currentEqualsLastDefault = typeof last !== 'undefined' && _.isEqual(currentSnapshot, last);
+    const explicitHit = this.findExplicitHit(pathKey);
+
+    if (explicitHit && !currentEqualsLastDefault) return false;
+
+    const canOverwrite = isEmptyValue(current) || currentEqualsLastDefault;
+    if (!canOverwrite && _.isEqual(current, nextSnapshot)) {
+      this.lastDefaultValueByPathKey.set(pathKey, nextSnapshot);
+      return false;
+    }
+
+    return canOverwrite;
+  }
+
+  recordDefaultValuePatch(namePath: NamePath, value?: any) {
+    if (!namePath?.length) return;
+    const pathKey = namePathToPathKey(namePath);
+    const snapshot =
+      arguments.length >= 2 ? (isObservable(value) ? toJS(value) : value) : this.getFormValueAtPath(namePath);
+    this.lastDefaultValueByPathKey.set(pathKey, snapshot);
+    const current = this.getFormValueAtPath(namePath);
+    const currentSnapshot = isObservable(current) ? toJS(current) : current;
+    if (_.isEqual(currentSnapshot, snapshot)) {
+      this.clearExplicitForDefaultPatch(pathKey);
+    }
+  }
+
   private getFormValueAtPath(namePath: NamePath) {
     const form: any = this.getForm?.();
     if (form && typeof form.getFieldValue === 'function') {
@@ -199,6 +237,35 @@ export class FormValueRuntime {
     this.txWriteCounts.clear();
   }
 
+  resetAfterFormReset() {
+    if (this.disposed) return;
+
+    this.explicitSet.clear();
+    this.lastDefaultValueByPathKey.clear();
+    this.lastWriteMetaByPathKey.clear();
+    this.txWriteCounts.clear();
+    this.lastObservedChangedPaths = null;
+    this.lastObservedSource = null;
+    this.lastObservedToken += 1;
+
+    for (const binding of this.observableBindings.values()) {
+      binding.dispose();
+    }
+    this.observableBindings.clear();
+
+    const snapshot = this.getFormValuesSnapshot();
+    for (const key of Object.keys(this.valuesMirror)) {
+      delete (this.valuesMirror as Record<string, any>)[key];
+    }
+    if (snapshot && typeof snapshot === 'object') {
+      _.merge(this.valuesMirror, snapshot);
+    }
+
+    this.writeSeq += 1;
+    this.bumpChangeTick();
+    this.ruleEngine.rescheduleAllRules();
+  }
+
   isSuppressed() {
     return this.suppressFormCallbackDepth > 0;
   }
@@ -212,14 +279,11 @@ export class FormValueRuntime {
 
     const changedPaths: NamePath[] = [];
     const touchedChangedPathKeys = new Set<string>();
+    let hasMeaningfulTouchedChange = false;
     let bumpedWriteSeq = false;
     for (const field of changedFields || []) {
       const name = field?.name;
-      const namePath: NamePath | null = Array.isArray(name)
-        ? (name as NamePath)
-        : typeof name === 'string' || typeof name === 'number'
-          ? ([name] as NamePath)
-          : null;
+      const namePath = this.normalizeObservedNamePath(name);
       if (!namePath?.length) continue;
       const nextValue = form.getFieldValue(namePath as any);
       const prevValue = _.get(this.valuesMirror, namePath);
@@ -230,8 +294,14 @@ export class FormValueRuntime {
       }
       _.set(this.valuesMirror, namePath, nextValue);
       changedPaths.push(namePath);
-      if (field?.touched === true) {
-        touchedChangedPathKeys.add(namePathToPathKey(namePath));
+      const isMeaningfulTouched =
+        field?.touched === true && !this.shouldIgnoreSyntheticTouchedInit(namePath, prevValue, nextValue);
+      if (isMeaningfulTouched) {
+        const pathKey = namePathToPathKey(namePath);
+        if (!this.shouldKeepDefaultPathValueEnabled(namePath, nextValue)) {
+          touchedChangedPathKeys.add(pathKey);
+          hasMeaningfulTouchedChange = true;
+        }
       }
     }
 
@@ -250,7 +320,7 @@ export class FormValueRuntime {
       return;
     }
 
-    const isUser = changedFields.some((f) => f?.touched === true);
+    const isUser = hasMeaningfulTouchedChange;
     const source: ValueSource = isUser ? 'user' : 'system';
 
     const writeSeq = this.writeSeq;
@@ -270,16 +340,272 @@ export class FormValueRuntime {
     });
   }
 
+  private shouldIgnoreSyntheticTouchedInit(namePath: NamePath, prevValue: any, nextValue: any) {
+    if (!namePath?.length) return false;
+    if (typeof prevValue !== 'undefined') return false;
+    if (!isEmptyValue(nextValue)) return false;
+
+    for (let i = namePath.length - 1; i >= 0; i--) {
+      if (typeof namePath[i] !== 'number') continue;
+      const rowPath = namePath.slice(0, i + 1);
+      const rowValue = this.getFormValueAtPath(rowPath);
+      return !!rowValue?.__is_new__;
+    }
+
+    return false;
+  }
+
+  private isDeletedArrayItemPath(path: NamePath | string, snapshot: any) {
+    const namePath = Array.isArray(path) ? path : pathKeyToNamePath(path);
+    if (!namePath?.length) return false;
+
+    for (let i = namePath.length - 1; i >= 0; i--) {
+      if (typeof namePath[i] !== 'number') continue;
+      const rowPath = namePath.slice(0, i + 1);
+      return typeof _.get(snapshot, rowPath as any) === 'undefined';
+    }
+
+    return false;
+  }
+
+  private pruneDeletedArrayItemState(snapshot: any) {
+    for (const key of Array.from(this.explicitSet)) {
+      if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
+      this.explicitSet.delete(key);
+    }
+
+    for (const key of Array.from(this.lastDefaultValueByPathKey.keys())) {
+      if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
+      this.lastDefaultValueByPathKey.delete(key);
+    }
+
+    for (const key of Array.from(this.lastWriteMetaByPathKey.keys())) {
+      if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
+      this.lastWriteMetaByPathKey.delete(key);
+    }
+
+    for (const [key, binding] of Array.from(this.observableBindings.entries())) {
+      if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
+      binding.dispose();
+      this.observableBindings.delete(key);
+    }
+  }
+
+  private getArrayItemTargetKey(arrayPath?: NamePath): string | string[] {
+    let collection = this.model?.context?.collection;
+    let field: any;
+    for (const seg of arrayPath || []) {
+      if (typeof seg === 'number') continue;
+      if (typeof seg !== 'string' || !collection?.getField) break;
+
+      field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) break;
+      collection = field?.targetCollection;
+    }
+
+    const raw = field?.targetCollection?.filterTargetKey ?? field?.targetCollection?.filterByTk ?? field?.targetKey;
+    if (Array.isArray(raw)) {
+      const keys = raw.filter((key): key is string => typeof key === 'string' && !!key);
+      return keys.length ? keys : 'id';
+    }
+    return typeof raw === 'string' && raw ? raw : 'id';
+  }
+
+  private getArrayItemIdentity(item: any, arrayPath?: NamePath) {
+    return getSubTableRowIdentity(item, this.getArrayItemTargetKey(arrayPath));
+  }
+
+  private reconcileArrayItemState(rawChangedPaths: NamePath[], changedValues: any, snapshot: any) {
+    const seenPathKeys = new Set<string>();
+
+    for (const path of rawChangedPaths || []) {
+      if (!path?.length) continue;
+      const pathKey = namePathToPathKey(path);
+      if (seenPathKeys.has(pathKey)) continue;
+      seenPathKeys.add(pathKey);
+
+      const prevValue = _.get(this.valuesMirror, path as any);
+      const nextValue = this.getObservedChangedValue(path, changedValues, snapshot);
+      if (!Array.isArray(prevValue) || !Array.isArray(nextValue)) continue;
+
+      const nextIndexByIdentity = new Map<string, number>();
+      nextValue.forEach((item, index) => {
+        const identity = this.getArrayItemIdentity(item, path);
+        if (identity) {
+          nextIndexByIdentity.set(identity, index);
+        }
+      });
+
+      if (!nextIndexByIdentity.size) continue;
+
+      this.reconcileArrayItemSet(this.explicitSet, path, prevValue, nextIndexByIdentity);
+      this.reconcileArrayItemMap(this.lastDefaultValueByPathKey, path, prevValue, nextIndexByIdentity);
+      this.reconcileArrayItemMap(this.lastWriteMetaByPathKey, path, prevValue, nextIndexByIdentity);
+      this.reconcileObservableBindings(path, prevValue, nextIndexByIdentity);
+    }
+  }
+
+  private getReconciledArrayItemPath(
+    pathKey: string,
+    arrayPath: NamePath,
+    prevItems: any[],
+    nextIndexByIdentity: Map<string, number>,
+  ) {
+    const namePath = pathKeyToNamePath(pathKey);
+    if (namePath.length <= arrayPath.length) return { action: 'keep' as const };
+
+    for (let i = 0; i < arrayPath.length; i++) {
+      if (namePath[i] !== arrayPath[i]) return { action: 'keep' as const };
+    }
+
+    const oldIndex = namePath[arrayPath.length];
+    if (typeof oldIndex !== 'number') return { action: 'keep' as const };
+
+    const identity = this.getArrayItemIdentity(prevItems[oldIndex], arrayPath);
+    if (!identity) return { action: 'keep' as const };
+
+    const nextIndex = nextIndexByIdentity.get(identity);
+    if (nextIndex == null) return { action: 'delete' as const };
+    if (nextIndex === oldIndex) return { action: 'keep' as const };
+
+    const nextPath = [...namePath];
+    nextPath[arrayPath.length] = nextIndex;
+    return { action: 'move' as const, key: namePathToPathKey(nextPath) };
+  }
+
+  private reconcileArrayItemSet(
+    target: Set<string>,
+    arrayPath: NamePath,
+    prevItems: any[],
+    nextIndexByIdentity: Map<string, number>,
+  ) {
+    const nextEntries = new Set<string>();
+    let changed = false;
+
+    for (const key of target) {
+      const result = this.getReconciledArrayItemPath(key, arrayPath, prevItems, nextIndexByIdentity);
+      if (result.action === 'delete') {
+        changed = true;
+        continue;
+      }
+      if (result.action === 'move') {
+        changed = true;
+        nextEntries.add(result.key);
+        continue;
+      }
+      nextEntries.add(key);
+    }
+
+    if (!changed) return;
+    target.clear();
+    for (const key of nextEntries) {
+      target.add(key);
+    }
+  }
+
+  private reconcileArrayItemMap<T>(
+    target: Map<string, T>,
+    arrayPath: NamePath,
+    prevItems: any[],
+    nextIndexByIdentity: Map<string, number>,
+  ) {
+    const nextEntries = new Map<string, T>();
+    let changed = false;
+
+    for (const [key, value] of target) {
+      const result = this.getReconciledArrayItemPath(key, arrayPath, prevItems, nextIndexByIdentity);
+      if (result.action === 'delete') {
+        changed = true;
+        continue;
+      }
+      if (result.action === 'move') {
+        changed = true;
+        nextEntries.set(result.key, value);
+        continue;
+      }
+      nextEntries.set(key, value);
+    }
+
+    if (!changed) return;
+    target.clear();
+    for (const [key, value] of nextEntries) {
+      target.set(key, value);
+    }
+  }
+
+  private reconcileObservableBindings(arrayPath: NamePath, prevItems: any[], nextIndexByIdentity: Map<string, number>) {
+    const nextEntries = new Map<string, ObservableBinding>();
+    let changed = false;
+
+    for (const [key, binding] of this.observableBindings) {
+      const result = this.getReconciledArrayItemPath(key, arrayPath, prevItems, nextIndexByIdentity);
+      if (result.action === 'delete') {
+        changed = true;
+        binding.dispose();
+        continue;
+      }
+      if (result.action === 'move') {
+        changed = true;
+        binding.pathKey = result.key;
+        nextEntries.set(result.key, binding);
+        continue;
+      }
+      nextEntries.set(key, binding);
+    }
+
+    if (!changed) return;
+    this.observableBindings.clear();
+    for (const [key, binding] of nextEntries) {
+      this.observableBindings.set(key, binding);
+    }
+  }
+
+  private getObservedChangedValue(path: NamePath, changedValues: any, snapshot: any) {
+    if (_.has(snapshot, path as any)) {
+      return _.get(snapshot, path as any);
+    }
+
+    if (path?.length === 1) {
+      const key = path[0];
+      if (
+        (typeof key === 'string' || typeof key === 'number') &&
+        changedValues &&
+        Object.prototype.hasOwnProperty.call(changedValues, key)
+      ) {
+        return changedValues[key];
+      }
+    }
+
+    return _.get(snapshot, path as any);
+  }
+
+  private getObservedSnapshot(changedValues: any, snapshot: any) {
+    if (!changedValues || typeof changedValues !== 'object') return snapshot;
+    if (!snapshot || typeof snapshot !== 'object') return changedValues;
+
+    let observed = snapshot;
+    for (const key of Object.keys(changedValues)) {
+      if (_.has(observed, [key])) continue;
+      if (observed === snapshot) {
+        observed = Array.isArray(snapshot) ? [...snapshot] : { ...snapshot };
+      }
+      _.set(observed, [key], changedValues[key]);
+    }
+
+    return observed;
+  }
+
   handleFormValuesChange(changedValues: any, allValues: any) {
     if (this.disposed) return;
     if (this.isSuppressed()) {
       return;
     }
 
+    const changedValuePaths: NamePath[] = Object.keys(changedValues || {}).map((k) => [k]);
     const rawChangedPaths: NamePath[] =
       this.lastObservedChangedPaths && this.lastObservedChangedPaths.length
         ? this.lastObservedChangedPaths
-        : Object.keys(changedValues || {}).map((k) => [k]);
+        : changedValuePaths;
 
     const source: ValueSource = this.lastObservedSource ?? 'user';
 
@@ -287,16 +613,29 @@ export class FormValueRuntime {
     this.lastObservedChangedPaths = null;
     this.lastObservedSource = null;
 
-    const snapshot = allValues && typeof allValues === 'object' ? allValues : this.getFormValuesSnapshot();
+    // 子表格的 changedValues 可能只包含局部行对象，diff 必须以 form 当前完整快照为准，
+    // 否则缺失的 sibling 字段会被误判为用户清空。
+    const formSnapshot = this.getFormValuesSnapshot();
+    const rawSnapshot =
+      formSnapshot && typeof formSnapshot === 'object'
+        ? formSnapshot
+        : allValues && typeof allValues === 'object'
+          ? allValues
+          : changedValues;
+    const snapshot = this.getObservedSnapshot(changedValues, rawSnapshot);
+    this.reconcileArrayItemState([...rawChangedPaths, ...changedValuePaths], changedValues, snapshot);
+    this.pruneDeletedArrayItemState(snapshot);
 
-    const explicitPaths = this.deriveExplicitPaths(rawChangedPaths, snapshot, this.valuesMirror);
+    const explicitPaths = this.deriveExplicitPaths(rawChangedPaths, changedValues, snapshot, this.valuesMirror).filter(
+      (path) => !this.isDeletedArrayItemPath(path, snapshot),
+    );
 
     let hasMirrorChange = false;
     let bumpedWriteSeq = false;
     const actuallyChangedPaths: NamePath[] = [];
     for (const p of rawChangedPaths) {
       if (!p?.length) continue;
-      const nextValue = _.get(snapshot, p);
+      const nextValue = this.getObservedChangedValue(p, changedValues, snapshot);
       const prevValue = _.get(this.valuesMirror, p);
       if (_.isEqual(prevValue, nextValue)) continue;
       if (!bumpedWriteSeq) {
@@ -311,8 +650,16 @@ export class FormValueRuntime {
       this.bumpChangeTick();
     }
 
-    // 非 default 来源写入：需要使默认值永久失效（explicit）
+    const explicitPathsToMark: NamePath[] = [];
     for (const p of explicitPaths) {
+      if (this.shouldKeepDefaultPathEnabled(p, snapshot)) {
+        continue;
+      }
+      explicitPathsToMark.push(p);
+    }
+
+    // 非 default 来源写入：需要使默认值永久失效（explicit）
+    for (const p of explicitPathsToMark) {
       this.markExplicit(namePathToPathKey(p));
     }
 
@@ -335,14 +682,14 @@ export class FormValueRuntime {
     });
   }
 
-  private deriveExplicitPaths(rawChangedPaths: NamePath[], snapshot: any, valuesMirrorBefore: any): NamePath[] {
+  private deriveExplicitPaths(rawChangedPaths: NamePath[], changedValues: any, snapshot: any, valuesMirrorBefore: any) {
     const explicitPaths: NamePath[] = [];
     const seen = new Set<string>();
 
     for (const path of rawChangedPaths || []) {
       if (!path?.length) continue;
       const prevValue = _.get(valuesMirrorBefore, path as any);
-      const nextValue = _.get(snapshot, path as any);
+      const nextValue = this.getObservedChangedValue(path, changedValues, snapshot);
       this.collectExplicitDiffPaths(prevValue, nextValue, path, explicitPaths, seen);
     }
 
@@ -442,7 +789,7 @@ export class FormValueRuntime {
     const source: ValueSource = options?.source ?? 'system';
     const triggerEvent = options?.triggerEvent !== false;
     const txId = options?.txId ?? createTxId();
-    const markExplicit = options?.markExplicit ?? source !== 'default';
+    const markExplicit = options?.markExplicit ?? (source !== 'default' && source !== 'linkage');
     const ownsTxId = typeof options?.txId === 'undefined';
 
     const linkageScopeDepth =
@@ -505,8 +852,17 @@ export class FormValueRuntime {
         }
         this.suppressFormCallbackDepth++;
         try {
-          form.setFieldsValue?.(patchToApply);
-          _.merge(this.valuesMirror, patchToApply);
+          for (const [pathKey, rawValue] of patchEntries) {
+            const value = isObservable(rawValue) ? toJS(rawValue) : rawValue;
+            if (typeof form.setFieldValue === 'function') {
+              form.setFieldValue(pathKey, value);
+            } else if (typeof (form as any).setFields === 'function') {
+              (form as any).setFields([{ name: pathKey, value }]);
+            } else {
+              form.setFieldsValue?.({ [pathKey]: value });
+            }
+            _.set(this.valuesMirror, [pathKey], value);
+          }
           this.bumpChangeTick();
         } finally {
           this.suppressFormCallbackDepth--;
@@ -629,19 +985,30 @@ export class FormValueRuntime {
         }
       }
 
-      for (const { namePath, rawValue, pathKey } of filteredToWrite) {
+      for (const { rawValue, pathKey } of filteredToWrite) {
         if (!isObservable(rawValue)) continue;
         const obs = rawValue;
 
+        const binding: ObservableBinding = { source, pathKey, dispose: () => {} };
         const disposer = observe(obs, () => {
-          this.applyBoundValue(callerCtx, namePath, pathKey, toJS(obs), source, linkageScopeDepth, linkageTxId);
+          const currentPathKey = binding.pathKey;
+          this.applyBoundValue(
+            callerCtx,
+            pathKeyToNamePath(currentPathKey),
+            currentPathKey,
+            toJS(obs),
+            source,
+            linkageScopeDepth,
+            linkageTxId,
+          );
         });
+        binding.dispose = disposer;
 
         const existing = this.observableBindings.get(pathKey);
         if (existing) {
           existing.dispose();
         }
-        this.observableBindings.set(pathKey, { source, dispose: disposer });
+        this.observableBindings.set(pathKey, binding);
       }
 
       if (triggerEvent) {
@@ -760,10 +1127,12 @@ export class FormValueRuntime {
   private markExplicit(pathKey: string) {
     if (this.explicitSet.has(pathKey)) return;
     this.explicitSet.add(pathKey);
+    const preserveDescendantDefaults = this.shouldPreserveDescendantDefaultsOnExplicit(pathKey);
 
     // explicit 后默认值永远失效：清理该路径及其子路径的 lastDefault 记录，避免误判“仍是默认值”
     for (const k of Array.from(this.lastDefaultValueByPathKey.keys())) {
-      if (k === pathKey || k.startsWith(`${pathKey}.`) || k.startsWith(`${pathKey}[`)) {
+      const isDescendant = k.startsWith(`${pathKey}.`) || k.startsWith(`${pathKey}[`);
+      if (k === pathKey || (!preserveDescendantDefaults && isDescendant)) {
         this.lastDefaultValueByPathKey.delete(k);
       }
     }
@@ -774,6 +1143,40 @@ export class FormValueRuntime {
       binding.dispose();
       this.observableBindings.delete(k);
     }
+  }
+
+  private normalizeObservedNamePath(name: NamePath | string | number | undefined): NamePath | null {
+    if (Array.isArray(name)) return name as NamePath;
+    if (typeof name === 'number') return [name];
+    if (typeof name !== 'string' || !name) return null;
+    const parsed = pathKeyToNamePath(name);
+    return parsed.length ? parsed : [name];
+  }
+
+  private clearExplicitForDefaultPatch(pathKey: string) {
+    for (const key of Array.from(this.explicitSet)) {
+      if (key === pathKey || key.startsWith(`${pathKey}.`) || key.startsWith(`${pathKey}[`)) {
+        this.explicitSet.delete(key);
+      }
+    }
+  }
+
+  private shouldPreserveDescendantDefaultsOnExplicit(pathKey: string) {
+    const value = this.getFormValueAtPath(pathKeyToNamePath(pathKey));
+    return Array.isArray(value);
+  }
+
+  private shouldKeepDefaultPathEnabled(namePath: NamePath, snapshot: any) {
+    return this.shouldKeepDefaultPathValueEnabled(namePath, _.get(snapshot, namePath as any));
+  }
+
+  private shouldKeepDefaultPathValueEnabled(namePath: NamePath, value: any) {
+    const pathKey = namePathToPathKey(namePath);
+    const last = this.lastDefaultValueByPathKey.get(pathKey);
+    if (typeof last === 'undefined') return false;
+
+    const nextSnapshot = isObservable(value) ? toJS(value) : value;
+    return _.isEqual(nextSnapshot, last);
   }
 
   private isExplicit(pathKey: string) {

@@ -7,8 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect } from 'vitest';
-import { getRecommendedModels } from '../../common/recommended-models';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getRecommendedModels, recommendedModels } from '../../common/recommended-models';
+
+const testRecommendedModels: Record<string, { label: string; value: string }[]> = {
+  'google-genai': [
+    { label: 'Gemini 3 Pro Preview', value: 'models/gemini-3-pro-preview' },
+    { label: 'Gemini 3 Flash Preview', value: 'models/gemini-3-flash-preview' },
+  ],
+  openai: [
+    { label: 'GPT-5.3-Codex', value: 'gpt-5.3-codex' },
+    { label: 'GPT-5.2', value: 'gpt-5.2' },
+  ],
+  anthropic: [
+    { label: 'Claude Opus 4.6', value: 'claude-opus-4-6' },
+    { label: 'Claude Sonnet 4.5', value: 'claude-sonnet-4-5' },
+  ],
+  dashscope: [{ label: 'Qwen3 Max', value: 'qwen3-max-2026-01-23' }],
+  deepseek: [
+    { label: 'DeepSeek Chat', value: 'deepseek-chat' },
+    { label: 'DeepSeek Reasoner', value: 'deepseek-reasoner' },
+  ],
+  kimi: [
+    { label: 'Kimi K2.5', value: 'kimi-k2.5' },
+    { label: 'Kimi K2', value: 'kimi-k2-0905-Preview' },
+    { label: 'Kimi K2 Turbo', value: 'kimi-k2-turbo-preview' },
+  ],
+  ollama: [],
+};
+
+const originalRecommendedModels = Object.fromEntries(
+  Object.entries(recommendedModels).map(([provider, models]) => [provider, [...models]]),
+);
 
 /**
  * LLM Services API Logic Tests
@@ -70,6 +100,16 @@ const filterModelsBySearch = (models: { id: string }[], searchTerm: string) => {
 };
 
 describe('LLM Services API Logic', () => {
+  beforeAll(() => {
+    Object.keys(recommendedModels).forEach((provider) => delete recommendedModels[provider]);
+    Object.assign(recommendedModels, testRecommendedModels);
+  });
+
+  afterAll(() => {
+    Object.keys(recommendedModels).forEach((provider) => delete recommendedModels[provider]);
+    Object.assign(recommendedModels, originalRecommendedModels);
+  });
+
   describe('P0: New format - recommended mode', () => {
     it('should use recommended models for recommended mode', () => {
       const result = transformService({

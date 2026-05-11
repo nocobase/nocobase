@@ -79,4 +79,38 @@ describe('DataSource & Collection APIs', () => {
       ]),
     ).toThrow(/circular/);
   });
+
+  it('translates validation messages from data-source-main in component rules', async () => {
+    const { m, engine } = makeManager();
+    engine.context.i18n = {
+      t: (key: string, options?: Record<string, any>) => {
+        if (key === 'string.length' && options?.ns === 'data-source-main') {
+          return `${options.label} 长度必须为 ${options.limit} 个字符`;
+        }
+        return key;
+      },
+    } as any;
+
+    const ds = new DataSource({ key: 'main' });
+    m.addDataSource(ds);
+    ds.addCollection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+          interface: 'text',
+          title: '单行文本',
+          validation: {
+            type: 'string',
+            rules: [{ name: 'length', args: { limit: 18 } }],
+          },
+        },
+      ],
+    });
+
+    const rules = ds.getCollection('posts')!.getField('title')!.getComponentProps().rules;
+
+    await expect(rules[0].validator({}, '123')).rejects.toBe('单行文本 长度必须为 18 个字符');
+  });
 });

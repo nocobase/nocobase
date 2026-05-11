@@ -29,11 +29,17 @@ import { KanbanCardContext } from './context';
 
 const cardCss = css`
   text-wrap: wrap;
-  word-break: break-all;
-  word-wrap: break-word;
+  word-break: normal;
+  overflow-wrap: normal;
+  word-wrap: normal;
 
   .ant-card-body {
     padding: 16px;
+  }
+  .ant-description-textarea {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    word-wrap: normal !important;
   }
   .nb-row-divider {
     height: 16px;
@@ -54,10 +60,11 @@ const cardCss = css`
       }
     }
   }
-  .ant-formily-item-control .ant-space-item: {
-    whitespace: normal;
-    wordbreak: break-all;
-    wordwrap: break-word;
+  .ant-formily-item-control .ant-space-item {
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+    word-wrap: normal;
   }
   // .ant-formily-item-label {
   //   color: #8c8c8c;

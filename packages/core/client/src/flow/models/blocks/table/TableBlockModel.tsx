@@ -35,6 +35,7 @@ import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
+import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import {
   applyMobilePaginationProps,
@@ -311,7 +312,14 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   onSuccess: (values) => {
                     const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
-                    setNestedValue(this.resource.getData(), recordIndex, record);
+                    if (typeof recordIndex === 'number') {
+                      this.resource.setItem(recordIndex, record);
+                    } else {
+                      const nextData = _.cloneDeep(this.resource.getData());
+                      setNestedValue(nextData, recordIndex, record);
+                      this.resource.setData(nextData);
+                    }
+                    this.resource.emit('refresh');
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.createFork({}, `${recordIndex}`);
                     // Provide expandable meta for current row record based on the collection in context
@@ -553,6 +561,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           columns={this.columns.value}
           pagination={this.pagination()}
           highlightedRowKey={highlightedRowKey}
+          selectedRowKeysFromResource={this.resource
+            .getSelectedRows()
+            .map((row) => getRowKey(row, this.collection.filterTargetKey))}
           defaultExpandAllRows={this.props.defaultExpandAllRows}
           expandedRowKeys={this.props.expandedRowKeys}
           heightMode={heightMode}
@@ -571,6 +582,7 @@ const TableBlockContent = (props: {
   columns: any;
   pagination: any;
   highlightedRowKey: string;
+  selectedRowKeysFromResource: string[];
   defaultExpandAllRows?: boolean;
   expandedRowKeys?: any[];
   heightMode?: string;
@@ -584,6 +596,7 @@ const TableBlockContent = (props: {
     columns,
     pagination,
     highlightedRowKey,
+    selectedRowKeysFromResource,
     defaultExpandAllRows,
     expandedRowKeys,
     heightMode,
@@ -610,6 +623,7 @@ const TableBlockContent = (props: {
           columns={columns}
           pagination={pagination}
           highlightedRowKey={highlightedRowKey}
+          selectedRowKeysFromResource={selectedRowKeysFromResource}
           defaultExpandAllRows={defaultExpandAllRows}
           expandedRowKeys={expandedRowKeys}
           tableScroll={tableScroll}
@@ -819,6 +833,7 @@ const HighPerformanceTable = React.memo(
     columns: any;
     pagination: any;
     highlightedRowKey: string;
+    selectedRowKeysFromResource: string[];
     defaultExpandAllRows?: boolean;
     expandedRowKeys?: any[];
     tableScroll;
@@ -831,6 +846,7 @@ const HighPerformanceTable = React.memo(
       columns,
       pagination: _pagination,
       highlightedRowKey,
+      selectedRowKeysFromResource,
       defaultExpandAllRows,
       expandedRowKeys,
       tableScroll,
@@ -838,9 +854,17 @@ const HighPerformanceTable = React.memo(
     const dataSourceRef = useRef(dataSource);
     dataSourceRef.current = dataSource;
 
-    const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
-      model.resource.getSelectedRows().map((row) => getRowKey(row, model.collection.filterTargetKey)),
-    );
+    const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(selectedRowKeysFromResource || []);
+
+    useEffect(() => {
+      const nextSelectedRowKeys = selectedRowKeysFromResource || [];
+      setSelectedRowKeys((prev) => {
+        if (_.isEqual(prev, nextSelectedRowKeys)) {
+          return prev;
+        }
+        return nextSelectedRowKeys;
+      });
+    }, [selectedRowKeysFromResource]);
 
     const getRowKeyFunc = useCallback(
       (record) => {
@@ -868,7 +892,9 @@ const HighPerformanceTable = React.memo(
         const globalSort = model.props.globalSort;
         const resourceSort = model.resource.getSort();
         const currentSort = resourceSort?.length ? resourceSort : globalSort;
-        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : currentSort;
+        const sorterField = resolveTableSorterField(sorter);
+        const sort =
+          sorter.order && sorterField ? (sorter.order === `ascend` ? [sorterField] : [`-${sorterField}`]) : currentSort;
         if (sorter) {
           model.resource.setSort(sort);
         }

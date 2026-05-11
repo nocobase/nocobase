@@ -26,7 +26,7 @@ En la interfaz de configuración del flujo de trabajo, haga clic en el botón de
 
 ## Configuración del Nodo
 
-![Configuración del Nodo SQL](https://static-docs.nocobase.com/20240904002334.png)
+![Configuración del Nodo SQL](https://static-docs.nocobase.com/20260414235136.png)
 
 ### Fuente de Datos
 
@@ -38,7 +38,19 @@ La fuente de datos debe ser de tipo base de datos, como la fuente de datos princ
 
 Edite la sentencia SQL. Actualmente, solo se admite una sentencia SQL.
 
-Puede insertar las variables necesarias utilizando el botón de variables en la esquina superior derecha del editor. Antes de la ejecución, estas variables se reemplazarán con sus valores correspondientes mediante una sustitución de texto. El texto resultante se utilizará como la sentencia SQL final y se enviará a la base de datos para realizar la consulta.
+:::info
+Desde `v2.0.30`, por razones de seguridad, la sustitución directa de variables por texto en las sentencias SQL ya no está soportada. En su lugar, deben usarse consultas parametrizadas.
+:::
+
+Las variables del contexto del proceso se pueden usar en las sentencias SQL, pero deben especificarse con el formato `:variableName`, por ejemplo:
+
+```sql
+SELECT * FROM users WHERE id = :userId;
+```
+
+### Lista de Parámetros
+
+En la sentencia SQL anterior, `:userId` es un marcador de posición. La sustitución de los marcadores debe configurarse en la "Lista de Parámetros". El nombre de la variable usa el nombre del marcador, por ejemplo `userId`, y el valor se puede seleccionar del contexto del proceso mediante el selector de variables.
 
 ## Resultado de la Ejecución del Nodo
 

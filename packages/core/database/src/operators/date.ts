@@ -15,6 +15,14 @@ function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
 }
 
+function isDatetimeNoTzField(field) {
+  return field?.type === 'datetimeNoTz' || field?.constructor.name === 'DatetimeNoTzField';
+}
+
+function isDateOnlyField(field) {
+  return field?.type === 'dateOnly' || field?.constructor.name === 'DateOnlyField';
+}
+
 const toDate = (date, options: any = {}) => {
   const { ctx } = options;
   let val = isDate(date) ? date : new Date(date);
@@ -28,11 +36,11 @@ const toDate = (date, options: any = {}) => {
     val = field.dateToValue(val);
   }
 
-  if (field.constructor.name === 'DatetimeNoTzField') {
+  if (isDatetimeNoTzField(field)) {
     val = moment(val).utcOffset('+00:00').format('YYYY-MM-DD HH:mm:ss');
   }
 
-  if (field.constructor.name === 'DateOnlyField') {
+  if (isDateOnlyField(field)) {
     val = moment.utc(val).format('YYYY-MM-DD HH:mm:ss');
   }
 
@@ -53,11 +61,11 @@ function parseDateTimezone(ctx) {
     return ctx.db.options.timezone;
   }
 
-  if (field.constructor.name === 'DatetimeNoTzField') {
+  if (isDatetimeNoTzField(field)) {
     return '+00:00';
   }
 
-  if (field.constructor.name === 'DateOnlyField') {
+  if (isDateOnlyField(field)) {
     return '+00:00';
   }
 

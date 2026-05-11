@@ -8,6 +8,7 @@
  */
 
 import * as operators from '../../../../collection-manager/interfaces/properties/operators';
+import { isArrayLikeField } from '../shared/filterOperators';
 
 type OperatorMeta = {
   label: string;
@@ -186,12 +187,22 @@ function resolveByModelOrSource(params: ResolveOperatorParams): { operatorList: 
     return resolveByRecordSelect(params);
   }
 
+  const sourceField = getSourceField(flowEngine, source);
+  if (fieldModel === 'SelectFieldModel' && fieldModelProps?.mode === 'multiple' && sourceField) {
+    const sourceOperators = getFieldOperators(sourceField);
+    return {
+      operatorList: isArrayLikeField(sourceField)
+        ? getOperatorListByModel(fieldModel, fieldModelProps)
+        : toMultiValueOperators(sourceOperators),
+      meta: sourceField,
+    };
+  }
+
   const modelOperators = getOperatorListByModel(fieldModel, fieldModelProps);
   if (modelOperators.length > 0) {
     return { operatorList: modelOperators, meta: { fieldModel } };
   }
 
-  const sourceField = getSourceField(flowEngine, source);
   return {
     operatorList: getFieldOperators(sourceField),
     meta: sourceField,
