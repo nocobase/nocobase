@@ -32,6 +32,7 @@ nb api resource <command>
 | `--api-base-url` | string | NocoBase API アドレス（例：`http://localhost:13000/api`） |
 | `--verbose` | boolean | 詳細な進捗を表示します |
 | `--env`, `-e` | string | 環境名 |
+| `--yes`, `-y` | boolean | 明示的に指定した `--env` が現在の env と異なる場合、対話確認をスキップします |
 | `--role` | string | ロールのオーバーライド。`X-Role` リクエストヘッダーとして送信されます |
 | `--token`, `-t` | string | API key のオーバーライド |
 | `--json-output`, `-j` / `--no-json-output` | boolean | 生の JSON を出力するかどうか。デフォルトは有効です |
@@ -48,6 +49,8 @@ nb api resource get --resource users --filter-by-tk 1
 nb api resource create --resource users --values '{"nickname":"Ada"}'
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 ```
+
+`--env` を明示的に指定し、その値が現在の env と異なる場合、CLI は最初に確認を求めます。非対話端末や AI エージェントのセッションでは、自分で `--yes` を追加するか、先に `nb env use <name>` を実行してから再試行してください。
 
 ## 関連コマンド
 

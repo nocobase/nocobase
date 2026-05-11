@@ -19,6 +19,7 @@ nb app logs [flags]
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nome do env do CLI cujos logs serão visualizados; usa o env atual quando omitido |
+| `--yes`, `-y` | boolean | Quando `--env` é passado explicitamente e aponta para uma env diferente da env atual, pula a confirmação interativa |
 | `--tail` | integer | Número de linhas recentes exibidas antes de seguir os logs; padrão `100` |
 | `--follow`, `-f` / `--no-follow` | boolean | Define se novos logs serão acompanhados continuamente |
 
@@ -30,6 +31,8 @@ nb app logs --env app1
 nb app logs --env app1 --tail 200
 nb app logs --env app1 --no-follow
 ```
+
+Se você passar `--env` explicitamente e ele for diferente da env atual, a CLI pedirá confirmação primeiro. Em terminais não interativos ou sessões de agentes de IA, adicione `--yes` manualmente ou execute primeiro `nb env use <name>` e tente novamente.
 
 ## Comandos relacionados
 

@@ -20,7 +20,7 @@ nb env remove <name> [flags]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `<name>` | string | Tên môi trường muốn xóa |
+| `<name>` | string | Tên env đã cấu hình để xoá |
 | `--force`, `-f` | boolean | Bỏ qua xác nhận và xóa luôn |
 | `--verbose` | boolean | Hiển thị tiến trình chi tiết |
 

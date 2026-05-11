@@ -45,6 +45,10 @@ import {
   resolveDockerNetworkName,
 } from '../lib/cli-config.js';
 import {
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from '../lib/docker-image.ts';
+import {
   findAvailableTcpPort,
   validateAvailableTcpPort,
   validateTcpPort,
@@ -2093,7 +2097,11 @@ export default class Install extends Command {
     const dockerRegistry =
       String(downloadResultsValue(params.downloadResults, 'dockerRegistry') ?? '').trim()
       || defaultDockerRegistryForLang(process.env.NB_LOCALE);
-    const version = String(downloadResultsValue(params.downloadResults, 'version') ?? '').trim() || 'latest';
+    const version = String(downloadResultsValue(params.downloadResults, 'version') ?? '').trim() || DEFAULT_DOCKER_VERSION;
+    const imageRef = resolveDockerImageRef(dockerRegistry, version, {
+      defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      defaultVersion: DEFAULT_DOCKER_VERSION,
+    });
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
     const storagePath =
       resolveConfiguredEnvPath(
@@ -2155,14 +2163,14 @@ export default class Install extends Command {
       `TZ=${timeZone}`,
       '-v',
       `${storagePath}:/app/nocobase/storage`,
-      `${dockerRegistry}:${version}`,
+      imageRef,
     );
 
     return {
       source: 'docker',
       networkName: params.networkName,
       containerName,
-      imageRef: `${dockerRegistry}:${version}`,
+      imageRef,
       appPort,
       storagePath,
       appKey,

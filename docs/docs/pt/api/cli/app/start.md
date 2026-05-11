@@ -19,6 +19,7 @@ nb app start [flags]
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nome do env do CLI a ser iniciado; usa o env atual quando omitido |
+| `--yes`, `-y` | boolean | Quando `--env` é passado explicitamente e aponta para uma env diferente da env atual, pula a confirmação interativa |
 | `--quickstart` | boolean | Inicia rapidamente a aplicação |
 | `--port`, `-p` | string | Sobrescreve o `appPort` na configuração do env |
 | `--daemon`, `-d` / `--no-daemon` | boolean | Define se a aplicação será executada como daemon; habilitado por padrão |
@@ -37,8 +38,11 @@ nb app start --env local --daemon
 nb app start --env local --no-daemon
 nb app start --env local --instances 2
 nb app start --env local --launch-mode pm2
+nb app start --env local --verbose
 nb app start --env local-docker
 ```
+
+Se você passar `--env` explicitamente e ele for diferente da env atual, a CLI pedirá confirmação primeiro. Em terminais não interativos ou sessões de agentes de IA, adicione `--yes` manualmente ou execute primeiro `nb env use <name>` e tente novamente.
 
 ## Comandos relacionados
 

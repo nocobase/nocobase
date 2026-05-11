@@ -18,7 +18,7 @@ nb env update [name] [flags]
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Env name; uses the current env if omitted |
+| `[name]` | string | Configured environment name to refresh; uses the current env if omitted |
 | `--verbose` | boolean | Show detailed progress |
 | `--api-base-url` | string | Override the NocoBase API URL and persist it to the target env |
 | `--role` | string | Role override sent as the `X-Role` request header |

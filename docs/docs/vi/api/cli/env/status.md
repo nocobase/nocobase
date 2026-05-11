@@ -19,11 +19,11 @@ nb env status [name] [flags]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| [name] | string | Env name to inspect; uses the current env if omitted |
-| --all | boolean | Show status for all configured envs |
-| --json-output | boolean | Output the result as JSON |
+| `[name]` | string | Tên env đã cấu hình để xem; nếu bỏ qua, dùng env hiện tại và không thể dùng cùng `--all` |
+| `--all` | boolean | Hiển thị trạng thái của tất cả env đã cấu hình |
+| `--json-output` | boolean | Xuất kết quả dưới dạng JSON |
 
-`[name]` and `--all` cannot be used together.
+`[name]` và `--all` không thể dùng cùng lúc.
 
 ## Status values
 

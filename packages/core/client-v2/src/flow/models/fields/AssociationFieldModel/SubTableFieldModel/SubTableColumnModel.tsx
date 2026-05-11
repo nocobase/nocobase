@@ -36,6 +36,12 @@ import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/Table
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getSubTableRowIdentity } from './rowIdentity';
 
+export const SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT = 'subTableColumn';
+
+export function isSubTableColumnFieldComponentContext(ctx) {
+  return (ctx?.model?.constructor as any)?.fieldComponentContext === SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT;
+}
+
 const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
   React.useEffect(() => {
     const emitter = model?.flowEngine?.emitter;
@@ -401,6 +407,7 @@ export class SubTableColumnModel<
   T extends SubTableColumnModelStructure = SubTableColumnModelStructure,
 > extends EditableItemModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
+  static fieldComponentContext = SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT;
 
   renderHiddenInConfig() {
     return <FieldWithoutPermissionPlaceholder targetModel={this} />;

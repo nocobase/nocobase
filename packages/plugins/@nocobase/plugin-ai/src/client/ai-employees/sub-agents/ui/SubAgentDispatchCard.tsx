@@ -15,7 +15,8 @@ import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { avatars } from '../../avatars';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { AIEmployee } from '../../types';
 
 export const SubAgentDispatchCard: React.FC<
@@ -27,8 +28,10 @@ export const SubAgentDispatchCard: React.FC<
   const t = useT();
   const { token } = useToken();
   const aiConfigRepository = useAIConfigRepository();
-  const responseLoading = useChatMessagesStore.use.responseLoading();
-  const messages = useChatMessagesStore.use.messages();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const responseLoading = chat.use.responseLoading();
+  const messages = chat.use.messages();
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {

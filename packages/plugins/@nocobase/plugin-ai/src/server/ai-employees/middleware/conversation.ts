@@ -118,6 +118,9 @@ export const conversationMiddleware = (
         }
       });
     },
+    afterAgent: async () => {
+      aiEmployee.removeAbortController();
+    },
     beforeModel: async (state, runtime) => {
       const { messageId } = state;
       const lastToolMessageIndex = state.lastMessageIndex.lastToolMessageIndex;
@@ -172,7 +175,6 @@ export const conversationMiddleware = (
           return newState;
         }
 
-        aiEmployee.removeAbortController();
         if (runtime.signal?.aborted) {
           return newState;
         }
@@ -195,16 +197,17 @@ export const conversationMiddleware = (
             }
           });
 
+          if (toolCalls?.length) {
+            runtime.writer?.({
+              action: 'initToolCalls',
+              body: { toolCalls },
+              currentConversation,
+            });
+          }
+
           runtime.writer?.({
             action: 'AfterAIMessageSaved',
             body: { id: aiMessage.id, messageId: newState.messageId },
-            currentConversation,
-          });
-        }
-        if (toolCalls?.length) {
-          runtime.writer?.({
-            action: 'initToolCalls',
-            body: { toolCalls },
             currentConversation,
           });
         }

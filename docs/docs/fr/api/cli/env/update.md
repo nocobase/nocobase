@@ -18,7 +18,7 @@ nb env update [name] [flags]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Nom de l'environnement ; utilise l'env courant si omis |
+| `[name]` | string | Nom de l'environnement configuré à actualiser ; utilise l'env courante s'il est omis |
 | `--verbose` | boolean | Afficher la progression détaillée |
 | `--api-base-url` | string | Surcharger l'adresse de l'API NocoBase et la persister dans l'env cible |
 | `--role` | string | Substitution du rôle, envoyée dans l'en-tête `X-Role` |

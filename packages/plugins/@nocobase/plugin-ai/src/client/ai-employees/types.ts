@@ -64,6 +64,7 @@ export type Conversation = {
   title: string;
   updatedAt: string;
   aiEmployee: AIEmployee;
+  read: boolean;
   options?: {
     modelSettings?: {
       llmService?: string;

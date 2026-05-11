@@ -10,7 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Model, Op } from '@nocobase/database';
-import { parseResponseMessage, sendSSEError } from '../utils';
+import { sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 import { AIMessageInput } from '../types';
 
@@ -40,8 +40,38 @@ function sendErrorResponse(ctx: Context, errorMessage: string) {
   sendSSEError(ctx, errorMessage);
 }
 
+async function parallelConversationsLimit(ctx: Context, next: Next) {
+  const userId = ctx.auth?.user.id;
+  if (!userId) {
+    return ctx.throw(403);
+  }
+
+  const activeStreamCount = await ctx.db.getModel('aiConversations').count({
+    where: {
+      userId,
+      llmActiveState: 'streaming',
+      updatedAt: {
+        [Op.gte]: new Date(Date.now() - 10 * 60 * 1000),
+      },
+    },
+  });
+
+  if (activeStreamCount > 2) {
+    sendErrorResponse(ctx, ctx.t('There are conversations in progress. Please try again later.'));
+    return;
+  }
+
+  await next();
+}
+
 export default {
   name: 'aiConversations',
+  middlewares: [
+    {
+      only: ['sendMessages', 'resendMessages', 'resumeStream'],
+      handler: parallelConversationsLimit,
+    },
+  ],
   actions: {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
@@ -58,6 +88,59 @@ export default {
         },
       });
       return actions.list(ctx, next);
+    },
+
+    async unreadCount(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const count = await ctx.db.getModel('aiConversations').count({
+        where: {
+          userId,
+          read: false,
+          from: 'main-agent',
+          category: 'chat',
+        },
+      });
+
+      ctx.body = {
+        count,
+      };
+
+      await next();
+    },
+
+    async unreadCounts(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const [conversationUnreadCount, workflowTaskUnreadCount] = await Promise.all([
+        ctx.db.getModel('aiConversations').count({
+          where: {
+            userId,
+            read: false,
+            from: 'main-agent',
+            category: 'chat',
+          },
+        }),
+        ctx.db.getModel('usersAiWorkflowTasks').count({
+          where: {
+            userId,
+            read: false,
+          },
+        }),
+      ]);
+
+      ctx.body = {
+        conversationUnreadCount,
+        workflowTaskUnreadCount,
+      };
+
+      await next();
     },
 
     async create(ctx: Context, next: Next) {
@@ -158,18 +241,20 @@ export default {
         return ctx.throw(403);
       }
 
-      const { sessionId, cursor } = ctx.action.params || {};
+      const { sessionId, cursor, updateRead: originalUpdateRead } = ctx.action.params || {};
       if (!sessionId) {
         ctx.throw(400);
       }
 
       const paginate = ctx.action.params?.paginate === 'false' ? false : true;
+      const updateRead = originalUpdateRead === 'true' || originalUpdateRead === true;
       try {
         ctx.body = await plugin.aiConversationsManager.getMessages({
           userId,
           sessionId,
           cursor,
           paginate,
+          updateRead,
         });
       } catch (error) {
         if (error.message === 'invalid sessionId') {
@@ -390,6 +475,61 @@ export default {
 
       plugin.aiEmployeesManager.abortConversation(sessionId);
       await next();
+    },
+
+    async resumeStream(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      setupSSEHeaders(ctx);
+
+      const sessionId =
+        ctx.action.params?.sessionId || ctx.action.params?.values?.sessionId || ctx.action.params?.filterByTk;
+      if (!sessionId) {
+        sendErrorResponse(ctx, 'sessionId is required');
+        return;
+      }
+
+      try {
+        const conversation = await plugin.aiConversationsManager.getConversation({
+          sessionId,
+          userId,
+        });
+
+        if (!conversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return;
+        }
+
+        let hasChunks = false;
+        for await (const chunk of plugin.llmStreamCachedManager.getCached(sessionId).stream()) {
+          hasChunks = true;
+          ctx.res.write(chunk);
+        }
+
+        if (!hasChunks) {
+          const currentConversation = await plugin.aiConversationsManager.getConversation({
+            sessionId,
+            userId,
+          });
+          const llmActiveState = currentConversation?.llmActiveState;
+          if (llmActiveState && llmActiveState !== 'idle') {
+            ctx.res.write(`data: ${JSON.stringify({ type: 'chunks_cache_missing', body: { llmActiveState } })}\n\n`);
+          }
+        }
+      } catch (err) {
+        ctx.log.error(err);
+        sendErrorResponse(ctx, err.message || 'Resume stream error');
+        return;
+      } finally {
+        if (!ctx.res.writableEnded) {
+          ctx.res.end();
+        }
+        await next();
+      }
     },
 
     async resendMessages(ctx: Context, next: Next) {

@@ -18,7 +18,7 @@ nb env update [name] [flags]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `[name]` | string | Nama lingkungan, jika dilewati menggunakan env saat ini |
+| `[name]` | string | Nama env yang sudah dikonfigurasi untuk diperbarui; jika dihilangkan, menggunakan env saat ini |
 | `--verbose` | boolean | Menampilkan progress detail |
 | `--api-base-url` | string | Mengganti alamat API NocoBase, dan menyimpannya secara persisten ke env target |
 | `--role` | string | Override role, dikirim sebagai header `X-Role` |

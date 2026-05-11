@@ -18,7 +18,7 @@ nb env update [name] [flags]
 
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
-| `[name]` | string | 環境名。省略時は現在の env を使用します |
+| `[name]` | string | 更新する設定済み環境名。省略時は現在の env を使用します |
 | `--verbose` | boolean | 詳細な進捗を表示します |
 | `--api-base-url` | string | NocoBase API アドレスのオーバーライド。対象 env に永続化されます |
 | `--role` | string | ロールのオーバーライド。`X-Role` リクエストヘッダーとして送信されます |

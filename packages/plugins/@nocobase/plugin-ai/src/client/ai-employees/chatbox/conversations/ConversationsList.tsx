@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { App, Spin } from 'antd';
+import { App, Badge, Space, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Conversations as AntConversations, ConversationsProps } from '@ant-design/x';
 import { css } from '@emotion/css';
@@ -23,10 +23,6 @@ import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { ListEmpty } from './common';
 import { Conversation } from '../../types';
-
-type UseConversationsListOptions = {
-  onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
-};
 
 const getConversationModel = (conversation?: Conversation) => {
   const modelSettings = conversation?.options?.modelSettings;
@@ -66,7 +62,7 @@ const useSubmitActionProps = (conversationKey: string) => {
   const { setVisible } = useActionContext();
   const api = useAPIClient();
   const form = useForm();
-  const { conversationsService } = useChatConversationActions();
+  const { refresh } = useChatConversationActions();
   return {
     onClick: async () => {
       await form.submit();
@@ -78,7 +74,7 @@ const useSubmitActionProps = (conversationKey: string) => {
       });
       setVisible(false);
       form.reset();
-      conversationsService.run();
+      refresh();
     },
   };
 };
@@ -153,46 +149,22 @@ const Rename: React.FC<{
   );
 };
 
-export const useConversationsList = ({ onOpenConversation }: UseConversationsListOptions) => {
+export const ConversationsList: React.FC<{
+  onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
+}> = ({ onOpenConversation }) => {
   const t = useT();
+  const listRef = useRef<HTMLDivElement>(null);
   const api = useAPIClient();
   const { modal, message } = App.useApp();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
   const conversations = useChatConversationsStore.use.conversations();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation?.();
+  const currentEmployee = useChatBoxStore.use.currentEmployee?.();
   const setReadonly = useChatBoxStore.use.setReadonly();
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
   const { startNewConversation } = useChatBoxActions();
-  const { conversationsService, lastConversationRef } = useChatConversationActions();
-  const { loading: conversationsLoading } = conversationsService;
-
-  const items = useMemo(() => {
-    const result: ConversationsProps['items'] = conversations.map((item) => {
-      const title = item.title || t('New conversation');
-      return {
-        key: item.sessionId,
-        title,
-        timestamp: new Date(item.updatedAt).getTime(),
-        label: title,
-      };
-    });
-    if (conversationsLoading) {
-      result.push({
-        key: 'loading',
-        label: (
-          <Spin
-            style={{
-              display: 'block',
-              margin: '8px auto',
-            }}
-          />
-        ),
-      });
-    }
-    return result;
-  }, [conversations, conversationsLoading, t]);
+  const { refresh, lastConversationRef } = useChatConversationActions();
 
   const onSelectConversation = useCallback(
     (sessionId: string) => {
@@ -221,12 +193,12 @@ export const useConversationsList = ({ onOpenConversation }: UseConversationsLis
         filterByTk: sessionId,
       });
       message.success(t('Deleted successfully'));
-      conversationsService.run();
+      refresh();
       if (currentEmployee) {
         startNewConversation();
       }
     },
-    [api, message, t, conversationsService, currentEmployee, startNewConversation],
+    [api, message, t, refresh, currentEmployee, startNewConversation],
   );
 
   const openDeleteConfirm = useCallback(
@@ -240,28 +212,26 @@ export const useConversationsList = ({ onOpenConversation }: UseConversationsLis
     [modal, t, deleteConversation],
   );
 
-  return {
-    currentConversation,
-    items,
-    onSelectConversation,
-    attachLastConversationObserver,
-    openDeleteConfirm,
-    runSearch: (keyword = '') => conversationsService.run(1, keyword),
-    refresh: () => conversationsService.run(),
-  };
-};
+  const items = useMemo(() => {
+    const result: ConversationsProps['items'] = conversations.map((item) => {
+      const title = item.title || t('New conversation');
+      return {
+        key: item.sessionId,
+        title,
+        icon: !item.read ? <Badge dot offset={[-3, 0]} /> : undefined,
+        timestamp: new Date(item.updatedAt).getTime(),
+        label: title,
+      };
+    });
 
-export type ConversationsListController = ReturnType<typeof useConversationsList>;
-
-export const ConversationsList: React.FC<{ controller: ConversationsListController }> = ({ controller }) => {
-  const t = useT();
-  const listRef = useRef<HTMLDivElement>(null);
+    return result;
+  }, [conversations, t]);
 
   useEffect(() => {
-    controller.attachLastConversationObserver(listRef.current);
-  }, [controller]);
+    attachLastConversationObserver(listRef.current);
+  }, [attachLastConversationObserver]);
 
-  if (!controller.items.length) {
+  if (!items.length) {
     return <ListEmpty />;
   }
 
@@ -269,9 +239,9 @@ export const ConversationsList: React.FC<{ controller: ConversationsListControll
     <div ref={listRef} style={{ height: '100%' }}>
       <AntConversations
         className={conversationItemClassName}
-        activeKey={controller.currentConversation}
-        onActiveChange={controller.onSelectConversation}
-        items={controller.items}
+        activeKey={currentConversation}
+        onActiveChange={onSelectConversation}
+        items={items}
         menu={(conversation) => ({
           items: [
             {
@@ -289,7 +259,7 @@ export const ConversationsList: React.FC<{ controller: ConversationsListControll
           onClick: ({ key, domEvent }) => {
             domEvent.stopPropagation();
             if (key === 'delete') {
-              controller.openDeleteConfirm(conversation.key);
+              openDeleteConfirm(conversation.key);
             }
           },
         })}

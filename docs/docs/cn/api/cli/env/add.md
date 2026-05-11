@@ -25,7 +25,7 @@ nb env add [name] [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `[name]` | string | 环境名称；TTY 中省略会提示填写，非 TTY 中必填 |
+| `[name]` | string | 要保存的环境名称；在 TTY 中省略时会提示，非 TTY 模式下必填 |
 | `--verbose` | boolean | 写入配置时显示详细进度 |
 | `--locale` | string | CLI 提示语言：`en-US` 或 `zh-CN` |
 | `--api-base-url`, `-u` | string | NocoBase API 地址，包含 `/api` 前缀 |

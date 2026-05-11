@@ -12,8 +12,8 @@ import { Bubble } from '@ant-design/x';
 import { Spin, Layout, Divider, Button, Space, Typography } from 'antd';
 import { RightOutlined, DownOutlined, LoadingOutlined } from '@ant-design/icons';
 import { namespace, useT } from '../../locale';
-import { useAPIClient, useApp, useToken } from '@nocobase/client';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useApp, useToken } from '@nocobase/client';
+import { useChat } from './hooks/useChat';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
@@ -50,14 +50,17 @@ const MemoBubble = React.memo(Bubble, (prevProps: any, nextProps: any) => {
 export const Messages: React.FC = () => {
   const t = useT();
   const { token } = useToken();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
   const roles = useChatBoxStore.use.roles();
 
-  const messages = useChatMessagesStore.use.messages();
+  const messages = chat.use.messages();
+  const messagesLoading = chat.use.messagesLoading();
 
   const updateTools = useChatToolsStore.use.updateTools();
 
-  const { messagesService, lastMessageRef } = useChatMessageActions();
+  const { loadMessages, lastMessageRef } = useChatMessageActions();
   const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const firstMessageIndex = renderedMessages.findIndex(
@@ -213,21 +216,20 @@ export const Messages: React.FC = () => {
   };
 
   const app = useApp();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const setResponseLoading = chat.setResponseLoading;
   const { updateReadonly } = useWorkflowTasks();
   const onAIEmployeeTaskStatusUpdate = useCallback(
     (e: any) => {
       const { sessionId, status } = e.detail;
       if (currentConversation && currentConversation === sessionId) {
         if (status !== 'processing') {
-          messagesService.run(sessionId);
+          loadMessages(sessionId);
           setResponseLoading(false);
           updateReadonly(sessionId).catch(console.log);
         }
       }
     },
-    [messagesService, updateReadonly, setResponseLoading, currentConversation],
+    [loadMessages, updateReadonly, setResponseLoading, currentConversation],
   );
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
@@ -246,7 +248,7 @@ export const Messages: React.FC = () => {
         position: 'relative',
       }}
     >
-      {messagesService.loading && (
+      {messagesLoading && (
         <Spin
           style={{
             display: 'block',
@@ -277,40 +279,56 @@ export const Messages: React.FC = () => {
 };
 
 const BackgroundWorkingHint: React.FC = () => {
-  const api = useAPIClient();
   const t = useT();
-  const { messagesService } = useChatMessageActions();
+  const { loadMessages, getConversationLLMActiveState } = useChatMessageActions();
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
+  const chat = useChat(currentConversation);
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
-  const messagesLength = useChatMessagesStore((state) => state.messages.length);
-  const [show, setShow] = useState(false);
-  const messageCount = useRef(0);
-
-  const refreshMessages = useCallback(() => {
-    if (currentConversation) {
-      messagesService.run(currentConversation);
-    }
-  }, [messagesService, currentConversation]);
+  const messages = chat.use.messages();
+  const backgroundWorking = chat.use.backgroundWorking();
+  const resumeStreamFailed = chat.use.resumeStreamFailed();
+  const setBackgroundWorking = chat.setBackgroundWorking;
+  const setResponseLoading = chat.setResponseLoading;
+  const setResumeStreamFailed = chat.setResumeStreamFailed;
 
   const doStateCheck = useCallback(async () => {
     if (currentConversation) {
-      const res = await api.resource('aiConversations').get({
-        filter: { sessionId: currentConversation },
-      });
-      if (res.data?.data?.llmActiveState === 'invoking') {
-        setShow(true);
-      } else {
-        setShow(false);
+      const llmActiveState = await getConversationLLMActiveState(currentConversation);
+      if (llmActiveState) {
+        const isBackgroundWorking =
+          llmActiveState === 'invoking' || (resumeStreamFailed && llmActiveState === 'streaming');
+        setBackgroundWorking(isBackgroundWorking);
+        if (isBackgroundWorking) {
+          setResponseLoading(true);
+        }
+
+        if (llmActiveState === 'idle' && resumeStreamFailed) {
+          setResumeStreamFailed(false);
+          setResponseLoading(false);
+        }
       }
     }
-  }, [api, currentConversation]);
+  }, [
+    currentConversation,
+    getConversationLLMActiveState,
+    resumeStreamFailed,
+    setBackgroundWorking,
+    setResponseLoading,
+    setResumeStreamFailed,
+  ]);
+
+  const refreshMessages = useCallback(async () => {
+    if (currentConversation) {
+      await loadMessages(currentConversation);
+      await doStateCheck();
+    }
+  }, [doStateCheck, loadMessages, currentConversation]);
 
   useEffect(() => {
-    if (messagesLength !== messageCount.current) {
-      messageCount.current = messagesLength;
+    if (currentConversation) {
       doStateCheck().catch(console.error);
     }
-  }, [messagesLength, doStateCheck]);
+  }, [currentConversation, messages.length, doStateCheck]);
 
   if (!currentConversation) {
     return null;
@@ -330,7 +348,7 @@ const BackgroundWorkingHint: React.FC = () => {
   );
 
   return (
-    show && (
+    backgroundWorking && (
       <Bubble
         placement="start"
         variant="borderless"
