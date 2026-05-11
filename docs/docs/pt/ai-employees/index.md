@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/ai-employees/index).
-:::
-
 # Visão Geral
 
 ![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
@@ -34,7 +30,7 @@ Veja primeiro o [Início Rápido](/ai-employees/quick-start) e complete a config
 - [Configurar serviço de LLM](/ai-employees/features/llm-service): conecte provedores, configure e gerencie modelos disponíveis.
 - [Ativar Funcionários de IA](/ai-employees/features/enable-ai-employee): ative ou desative funcionários integrados e controle o escopo de uso.
 - [Novo Funcionário de IA](/ai-employees/features/new-ai-employees): defina funções, persona, mensagem de boas-vindas e limites de capacidade.
-- [Usar habilidades](/ai-employees/features/tool): configure permissões de habilidades (`Ask` / `Allow`) para controlar riscos de execução.
+- [Usar habilidades](./features/tools.md): configure permissões de habilidades (`Ask` / `Allow`) para controlar riscos de execução.
 
 ### B. Colaboração Diária (Usuários de Negócios)
 

@@ -37,6 +37,14 @@ import {
   resolveEnvRelativePath,
 } from '../lib/cli-home.js';
 import {
+  defaultDockerContainerPrefix,
+  defaultDockerNetworkName,
+} from '../lib/app-runtime.js';
+import {
+  resolveDockerContainerPrefix,
+  resolveDockerNetworkName,
+} from '../lib/cli-config.js';
+import {
   findAvailableTcpPort,
   validateAvailableTcpPort,
   validateTcpPort,
@@ -46,7 +54,7 @@ import { validateExternalDbConfig } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { startTask, stopTask, updateTask } from '../lib/ui.js';
-import { ensureWorkspaceName, getEnv, loadAuthConfig, type Env, upsertEnv } from '../lib/auth-store.js';
+import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import Download, {
   DownloadParsedFlags,
@@ -434,7 +442,8 @@ type ResumePresetValues = {
 
 type ResumePortValidationContext = {
   envName: string;
-  workspaceName?: string;
+  dockerNetworkName?: string;
+  dockerContainerPrefix?: string;
   source?: string;
   builtinDb?: boolean;
   dbDialect?: string;
@@ -1075,13 +1084,13 @@ export default class Install extends Command {
       values.builtinDb === undefined ? undefined : Boolean(values.builtinDb);
     const dbDialect = Install.toOptionalPromptString(values.dbDialect);
     const appRootPath = Install.toOptionalPromptString(values.appRootPath);
-    const workspaceName =
-      Install.toOptionalPromptString(values.workspaceName)
-      ?? await Install.resolveResumeWorkspaceName(envName);
+    const dockerNetworkName = await Install.resolveResumeDockerNetworkName();
+    const dockerContainerPrefix = await Install.resolveResumeDockerContainerPrefix();
 
     return {
       envName,
-      ...(workspaceName ? { workspaceName } : {}),
+      ...(dockerNetworkName ? { dockerNetworkName } : {}),
+      ...(dockerContainerPrefix ? { dockerContainerPrefix } : {}),
       ...(source ? { source } : {}),
       ...(builtinDb !== undefined ? { builtinDb } : {}),
       ...(dbDialect ? { dbDialect } : {}),
@@ -1089,16 +1098,12 @@ export default class Install extends Command {
     };
   }
 
-  private static async resolveResumeWorkspaceName(
-    envName: string,
-  ): Promise<string | undefined> {
-    if (!envName) {
-      return undefined;
-    }
+  private static async resolveResumeDockerNetworkName(): Promise<string | undefined> {
+    return await resolveDockerNetworkName({ scope: resolveDefaultConfigScope() });
+  }
 
-    const config = await loadAuthConfig({ scope: resolveDefaultConfigScope() });
-    const stored = String(config.name ?? '').trim();
-    return stored || Install.defaultWorkspaceName();
+  private static async resolveResumeDockerContainerPrefix(): Promise<string | undefined> {
+    return await resolveDockerContainerPrefix({ scope: resolveDefaultConfigScope() });
   }
 
   private static async isResumeManagedPortReuse(params: {
@@ -1119,7 +1124,7 @@ export default class Install extends Command {
 
       const containerName = Install.buildDockerAppContainerName(
         params.context.envName,
-        params.context.workspaceName,
+        params.context.dockerContainerPrefix,
       );
       return await Install.isDockerContainerPublishingPort(
         containerName,
@@ -1134,7 +1139,7 @@ export default class Install extends Command {
     const containerName = Install.buildBuiltinDbContainerName(
       params.context.envName,
       params.context.dbDialect ?? 'postgres',
-      params.context.workspaceName,
+      params.context.dockerContainerPrefix,
     );
     return await Install.isDockerContainerPublishingPort(
       containerName,
@@ -1579,51 +1584,54 @@ export default class Install extends Command {
     return normalized || 'nocobase';
   }
 
-  private static defaultWorkspaceName(): string {
-    return Install.sanitizeDockerResourceName(`nb-${path.basename(resolveEnvRoot(resolveDefaultConfigScope()))}`);
+  private static defaultDockerNetworkName(): string {
+    return Install.sanitizeDockerResourceName(defaultDockerNetworkName());
   }
 
-  private static buildBuiltinDbResourcePrefix(
-    envName: string,
-    workspaceName?: PromptValue,
-  ): string {
-    void envName;
-    const storedName = String(workspaceName ?? '').trim();
+  private static defaultDockerContainerPrefix(): string {
+    return Install.sanitizeDockerResourceName(
+      defaultDockerContainerPrefix(resolveEnvRoot(resolveDefaultConfigScope())),
+    );
+  }
+
+  private static buildBuiltinDbContainerPrefix(containerPrefix?: PromptValue): string {
+    const storedName = String(containerPrefix ?? '').trim();
     return storedName
       ? Install.sanitizeDockerResourceName(storedName)
-      : Install.defaultWorkspaceName();
+      : Install.defaultDockerContainerPrefix();
   }
 
-  private static async ensureWorkspaceName(): Promise<string> {
-    return await ensureWorkspaceName(
-      Install.defaultWorkspaceName(),
-      { scope: resolveDefaultConfigScope() },
-    );
+  private static buildManagedDockerNetworkName(networkName?: PromptValue): string {
+    const storedName = String(networkName ?? '').trim();
+    return storedName
+      ? Install.sanitizeDockerResourceName(storedName)
+      : Install.defaultDockerNetworkName();
   }
 
   private static buildBuiltinDbNetworkName(
     envName: string,
-    workspaceName?: PromptValue,
+    networkName?: PromptValue,
   ): string {
-    return Install.buildBuiltinDbResourcePrefix(envName, workspaceName);
+    void envName;
+    return Install.buildManagedDockerNetworkName(networkName);
   }
 
   private static buildBuiltinDbContainerName(
     envName: string,
     dbDialect: string,
-    workspaceName?: PromptValue,
+    containerPrefix?: PromptValue,
   ): string {
     return Install.sanitizeDockerResourceName(
-      `${Install.buildBuiltinDbResourcePrefix(envName, workspaceName)}-${envName}-${dbDialect}`,
+      `${Install.buildBuiltinDbContainerPrefix(containerPrefix)}-${envName}-${dbDialect}`,
     );
   }
 
   private static buildDockerAppContainerName(
     envName: string,
-    workspaceName?: PromptValue,
+    containerPrefix?: PromptValue,
   ): string {
     return Install.sanitizeDockerResourceName(
-      `${Install.buildBuiltinDbResourcePrefix(envName, workspaceName)}-${envName}-app`,
+      `${Install.buildBuiltinDbContainerPrefix(containerPrefix)}-${envName}-app`,
     );
   }
 
@@ -1656,6 +1664,8 @@ export default class Install extends Command {
   static buildBuiltinDbPlan(params: {
     envName: string;
     workspaceName?: PromptValue;
+    dockerNetworkName?: PromptValue;
+    dockerContainerPrefix?: PromptValue;
     storagePath: string;
     source?: PromptValue;
     dbDialect?: PromptValue;
@@ -1672,12 +1682,12 @@ export default class Install extends Command {
     const defaultDbDatabase = defaultDbDatabaseForDialect(dbDialect);
     const networkName = Install.buildBuiltinDbNetworkName(
       params.envName,
-      params.workspaceName,
+      params.dockerNetworkName ?? params.workspaceName,
     );
     const containerName = Install.buildBuiltinDbContainerName(
       params.envName,
       dbDialect,
-      params.workspaceName,
+      params.dockerContainerPrefix ?? params.workspaceName,
     );
     const dbHostInput = String(params.dbHost ?? '').trim();
     const dbHost = Install.shouldPublishBuiltinDbPort(params.source)
@@ -2016,6 +2026,8 @@ export default class Install extends Command {
   private async startBuiltinDb(params: {
     envName: string;
     workspaceName?: PromptValue;
+    dockerNetworkName?: PromptValue;
+    dockerContainerPrefix?: PromptValue;
     appResults: Record<string, PromptValue>;
     downloadResults: Record<string, PromptValue>;
     dbResults: Record<string, PromptValue>;
@@ -2028,6 +2040,8 @@ export default class Install extends Command {
     const plan = Install.buildBuiltinDbPlan({
       envName: params.envName,
       workspaceName: params.workspaceName,
+      dockerNetworkName: params.dockerNetworkName,
+      dockerContainerPrefix: params.dockerContainerPrefix,
       storagePath,
       source: params.downloadResults.source,
       dbDialect: params.dbResults.dbDialect,
@@ -2069,6 +2083,7 @@ export default class Install extends Command {
   private static buildDockerAppPlan(params: {
     envName: string;
     workspaceName?: PromptValue;
+    dockerContainerPrefix?: PromptValue;
     appResults: Record<string, PromptValue>;
     downloadResults: Record<string, PromptValue>;
     dbResults: Record<string, PromptValue>;
@@ -2098,7 +2113,7 @@ export default class Install extends Command {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
-      params.workspaceName,
+      params.dockerContainerPrefix ?? params.workspaceName,
     );
     const initEnvVars = Install.buildInitAppEnvVars({
       appResults: params.appResults,
@@ -2177,6 +2192,8 @@ export default class Install extends Command {
   private async installDockerApp(params: {
     envName: string;
     workspaceName?: PromptValue;
+    dockerNetworkName?: PromptValue;
+    dockerContainerPrefix?: PromptValue;
     appResults: Record<string, PromptValue>;
     downloadResults: Record<string, PromptValue>;
     dbResults: Record<string, PromptValue>;
@@ -2189,12 +2206,13 @@ export default class Install extends Command {
       params.builtinDbPlan?.networkName
       ?? Install.buildBuiltinDbNetworkName(
         params.envName,
-        params.workspaceName,
+        params.dockerNetworkName ?? params.workspaceName,
       );
     await this.ensureDockerNetwork(networkName);
     const plan = Install.buildDockerAppPlan({
       envName: params.envName,
       workspaceName: params.workspaceName,
+      dockerContainerPrefix: params.dockerContainerPrefix,
       appResults: params.appResults,
       downloadResults: params.downloadResults,
       dbResults: params.dbResults,
@@ -2611,6 +2629,7 @@ export default class Install extends Command {
       Install.buildSavedEnvConfig(params),
       { scope: resolveDefaultConfigScope() },
     );
+    await setCurrentEnv(params.envName, { scope: resolveDefaultConfigScope() });
   }
 
   private async syncInstalledEnvConnection(params: {
@@ -2837,8 +2856,11 @@ export default class Install extends Command {
     const usesDockerResources =
       Boolean(dbResults.builtinDb)
       || (Boolean(appResults.fetchSource) && source === 'docker');
-    const workspaceName = usesDockerResources
-      ? await Install.ensureWorkspaceName()
+    const dockerNetworkName = usesDockerResources
+      ? await resolveDockerNetworkName({ scope: resolveDefaultConfigScope() })
+      : undefined;
+    const dockerContainerPrefix = usesDockerResources
+      ? await resolveDockerContainerPrefix({ scope: resolveDefaultConfigScope() })
       : undefined;
 
     await Install.ensureExternalDbReadyForInstall(dbResults);
@@ -2859,7 +2881,8 @@ export default class Install extends Command {
     if (Boolean(dbResults.builtinDb)) {
       builtinDbPlan = await this.startBuiltinDb({
         envName,
-        workspaceName,
+        dockerNetworkName,
+        dockerContainerPrefix,
         appResults,
         downloadResults,
         dbResults,
@@ -2884,7 +2907,8 @@ export default class Install extends Command {
         });
         dockerAppPlan = await this.installDockerApp({
           envName,
-          workspaceName,
+          dockerNetworkName,
+          dockerContainerPrefix,
           appResults,
           downloadResults,
           dbResults,

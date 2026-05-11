@@ -5,10 +5,6 @@ description: "Cluster-Betrieb: Startreihenfolge beim ersten Start, Versionsupgra
 keywords: "Cluster Betrieb,Upgrade,In-App-Wartung,Plugin-Verwaltung,Backup,Rolling-Upgrade,NocoBase"
 ---
 
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Wartungsabläufe
 
 ## Erster Start der Anwendung

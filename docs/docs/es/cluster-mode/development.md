@@ -5,10 +5,6 @@ description: "Desarrollo de plugins en modo clúster: Cache, SyncMessageManager,
 keywords: "desarrollo plugins clúster,Cache,SyncMessageManager,PubSubManager,cola,bloqueo distribuido,WORKER_MODE,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Desarrollo de plugins
 
 ## Problema de fondo

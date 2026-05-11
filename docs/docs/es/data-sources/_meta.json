@@ -134,7 +134,7 @@
       {
         "type": "custom-link",
         "label": "Visión general",
-        "link": "/data-sources/data-modeling/collection-fields"
+        "link": "/data-sources/data-modeling/collection-fields/"
       },
       {
         "type": "custom-link",
@@ -261,6 +261,11 @@
             "type": "custom-link",
             "label": "Adjunto (URL)",
             "link": "/data-sources/field-attachment-url/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Firma manuscrita",
+            "link": "/data-sources/field-signature/"
           }
         ]
       },
@@ -271,7 +276,7 @@
           {
             "type": "custom-link",
             "label": "Visión general",
-            "link": "/data-sources/data-modeling/collection-fields/datetime"
+            "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
             "type": "custom-link",
@@ -332,6 +337,11 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "Snowflake ID (53-bit)",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/snowflake-id"
+          },
+          {
+            "type": "custom-link",
             "label": "UUID",
             "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
           },
@@ -369,6 +379,11 @@
             "type": "custom-link",
             "label": "Cifrado",
             "link": "/data-sources/field-encryption/"
+          },
+          {
+            "type": "custom-link",
+            "label": "División administrativa de China",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/china-region"
           }
         ]
       },
@@ -415,27 +430,27 @@
           {
             "type": "custom-link",
             "label": "Visión general",
-            "link": "/data-sources/data-modeling/collection-fields/associations"
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
           },
           {
             "type": "custom-link",
             "label": "Uno a uno",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
           },
           {
             "type": "custom-link",
             "label": "Uno a muchos",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
           },
           {
             "type": "custom-link",
             "label": "Muchos a uno",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
           },
           {
             "type": "custom-link",
             "label": "Muchos a muchos",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
           },
           {
             "type": "custom-link",
@@ -453,7 +468,7 @@
       {
         "type": "custom-link",
         "label": "Visión general",
-        "link": "/data-sources/development"
+        "link": "/data-sources/development/"
       }
     ]
   }

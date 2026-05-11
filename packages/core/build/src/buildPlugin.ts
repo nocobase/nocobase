@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
@@ -24,7 +33,7 @@ import {
   checkRequire,
   getExcludePackages,
   getIncludePackages,
-  getPackagesFromFiles,
+  getPluginBrowserSourcePackages,
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
@@ -307,10 +316,10 @@ export function deleteServerFiles(cwd: string, log: PkgLog) {
     onlyDirectories: true,
   });
   [...files, ...dirs.filter((item) => !extraClientDirs.includes(item)), ...extraClientDirs].forEach((item) => {
-    if (item.endsWith(`${path.sep}client-v2`)) {
+    if (item.endsWith(`${path.sep}client-v2`) || item.endsWith(`/client-v2`)) {
       return;
     }
-    if (item.endsWith(`${path.sep}client`)) {
+    if (item.endsWith(`${path.sep}client`) || item.endsWith(`/client`)) {
       return;
     }
     fs.removeSync(item);
@@ -621,8 +630,11 @@ export async function buildPluginClient(
     });
     clientFiles.push(...commercialFiles);
   }
-  const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
-  const sourcePackages = getPackagesFromFiles(clientFileSource);
+  const sourceCwds = [cwd];
+  if (isCommercial) {
+    sourceCwds.push(path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL));
+  }
+  const sourcePackages = getPluginBrowserSourcePackages(sourceCwds, globExcludeFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
   checkRequire(clientFiles, log);

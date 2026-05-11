@@ -22,6 +22,7 @@ import { deepseekProviderOptions } from './llm-providers/deepseek';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { ollamaProviderOptions } from './llm-providers/ollama';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { xaiProviderOptions } from './llm-providers/xai';
 import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
 import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
@@ -46,6 +47,9 @@ import {
   getContextEnvsTool,
   getContextVarsTool,
   lintAndTestJSTool,
+  patchJSCodeTool,
+  readJSCodeTool,
+  writeJSCodeTool,
 } from './ai-employees/ai-coding/tools/context-tools';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
@@ -54,6 +58,7 @@ import { aiEmployeeWorkflowTaskOutputTool } from './ai-employees/workflow-tasks/
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
+import { mimoProviderOptions } from './llm-providers/mimo';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -161,7 +166,8 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
-    // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
+    this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
       Component: MessagesSettings,
@@ -191,6 +197,9 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);
+    this.ai.toolsManager.registerTools(...readJSCodeTool);
+    this.ai.toolsManager.registerTools(...writeJSCodeTool);
+    this.ai.toolsManager.registerTools(...patchJSCodeTool);
     this.ai.toolsManager.registerTools(...lintAndTestJSTool);
   }
 

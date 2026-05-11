@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-lock-adapter-redis/index)をご参照ください。
-:::
-
 # Redis 分布式ロックアダプター

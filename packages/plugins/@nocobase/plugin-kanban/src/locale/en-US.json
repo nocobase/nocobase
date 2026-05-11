@@ -50,7 +50,7 @@
   "Select group values": "Select group values",
   "The order of the selected values determines the kanban column order": "The order of the selected values determines the kanban column order",
   "Set column width": "Set column width",
-  "Single select and many-to-one fields can be used as the grouping field": "Single select and many-to-one fields can be used as the grouping field",
+  "Single select and many-to-one fields can be used as the grouping field": "Single select, radio group, and many-to-one fields can be used as the grouping field",
   "Small": "Small",
   "Sort": "Sort",
   "Sorting field": "Sorting field",

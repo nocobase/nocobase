@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Sammlungsübersicht
 
 NocoBase bietet eine einzigartige DSL (Domain-Specific Language) zur Beschreibung von Datenstrukturen, die als *Sammlung* bezeichnet wird. Diese vereinheitlicht Datenstrukturen aus verschiedenen Quellen und schafft so eine zuverlässige Grundlage für Datenmanagement, -analyse und -anwendungen.

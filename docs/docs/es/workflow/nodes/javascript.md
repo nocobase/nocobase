@@ -2,17 +2,13 @@
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/workflow/nodes/javascript).
-:::
-
 # Script de JavaScript
 
 ## Introducción
 
 El nodo de script de JavaScript le permite ejecutar un script de JavaScript personalizado en el servidor dentro de un flujo de trabajo. El script puede usar variables de pasos anteriores del flujo de trabajo como parámetros, y su valor de retorno puede ser utilizado por los nodos siguientes.
 
-El script se ejecuta en un hilo de trabajo en el servidor de la aplicación NocoBase. De forma predeterminada, utiliza un sandbox seguro (isolated-vm) que no soporta `require` ni las API integradas de Node.js. Para más detalles, consulte [Motor de ejecución](#motor-de-ejecución) y [Lista de características](#lista-de-características).
+El script se ejecuta en un hilo de trabajo en el servidor de la aplicación NocoBase. De forma predeterminada, utiliza un sandbox seguro (QuickJS, basado en WebAssembly) que no soporta `require` ni las API integradas de Node.js. Para más detalles, consulte [Motor de ejecución](#motor-de-ejecución) y [Lista de características](#lista-de-características).
 
 ## Crear nodo
 
@@ -54,7 +50,7 @@ El nodo de script de JavaScript soporta dos motores de ejecución, seleccionados
 
 ### Modo seguro (predeterminado)
 
-Cuando `WORKFLOW_SCRIPT_MODULES` **no está configurada**, los scripts se ejecutan usando el motor [isolated-vm](https://github.com/laverdet/isolated-vm). Este motor ejecuta el código en un entorno V8 aislado con las siguientes características:
+Cuando `WORKFLOW_SCRIPT_MODULES` **no está configurada**, los scripts se ejecutan usando el motor [QuickJS](https://bellard.org/quickjs/) basado en WebAssembly. Este motor ejecuta el código en un entorno de ejecución JavaScript aislado con las siguientes características:
 
 - **No soporta** `require` — no se pueden importar módulos
 - **No soporta** las API integradas de Node.js (como `process`, `Buffer`, `global`, etc.)

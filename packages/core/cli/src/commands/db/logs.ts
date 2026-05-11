@@ -54,7 +54,7 @@ export default class DbLogs extends Command {
     follow: Flags.boolean({
       char: 'f',
       description: 'Keep streaming new log lines',
-      default: true,
+      default: false,
       allowNo: true,
     }),
   };
@@ -73,7 +73,7 @@ export default class DbLogs extends Command {
     }
 
     const tail = String(flags.tail ?? 100);
-    const follow = flags.follow !== false;
+    const follow = flags.follow === true;
     printInfo(
       follow
         ? `Showing built-in database logs for "${runtime.envName}" (press Ctrl+C to stop).`

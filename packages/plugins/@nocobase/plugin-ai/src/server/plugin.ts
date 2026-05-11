@@ -26,7 +26,7 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { getWorkflowCallers, createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes } from './tools';
+import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -39,9 +39,11 @@ import aiMcpClients from './resource/aiMcpClients';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { xaiProviderOptions } from './llm-providers/xai';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
+import { mimoProviderOptions } from './llm-providers/mimo';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import {
   AIEmployeeInstruction,
@@ -63,6 +65,7 @@ export class PluginAIServer extends Plugin {
   documentLoaders = new DocumentLoaders(this);
   subAgentsDispatcher = new SubAgentsDispatcher(this);
   knowledgeBaseManager = new KnowledgeBaseManager(this);
+  docsFsCache: DocsFsCache = null;
   snowflake: Snowflake;
 
   /**
@@ -104,7 +107,6 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
-    await loadDocsIndexes();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
@@ -121,15 +123,18 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
   }
 
   registerTools() {
     const toolsManager = this.ai.toolsManager;
 
-    toolsManager.registerTools([createDocsSearchTool(), createReadDocEntryTool()]);
+    toolsManager.registerTools([createDocsSearchTool(this)]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
     toolsManager.registerDynamicTools(getWorkflowTasks(this));

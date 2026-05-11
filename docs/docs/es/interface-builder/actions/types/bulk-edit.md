@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-action-bulk-edit"
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/actions/types/bulk-edit).
-:::
-
 # Edición masiva
 
 ## Introducción

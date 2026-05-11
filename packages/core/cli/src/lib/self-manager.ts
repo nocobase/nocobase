@@ -8,12 +8,15 @@
  */
 
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveCliHomeDir } from './cli-home.js';
 import { commandOutput, run } from './run-npm.js';
 
 const DEFAULT_PACKAGE_NAME = '@nocobase/cli';
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const INSTALL_METHOD_CACHE_FILE = 'self-install-methods.json';
 
 export type SelfChannel = 'latest' | 'beta' | 'alpha';
 export type SelfInstallMethod = 'npm-global' | 'package-local' | 'source' | 'unknown';
@@ -30,6 +33,12 @@ export type SelfStatus = {
   updateBlockedReason?: string;
   globalPrefix?: string;
   registryError?: string;
+};
+
+export type SelfInstallInfo = {
+  packageRoot: string;
+  installMethod: SelfInstallMethod;
+  globalPrefix?: string;
 };
 
 type SelfManagerOptions = {
@@ -51,6 +60,15 @@ type ParsedVersion = {
   minor: number;
   patch: number;
   prerelease: string[];
+};
+
+type InstallMethodCacheEntry = {
+  installMethod: SelfInstallMethod;
+  globalPrefix?: string;
+};
+
+type InstallMethodCacheState = {
+  entries?: Record<string, InstallMethodCacheEntry>;
 };
 
 function normalizePath(value: string): string {
@@ -188,6 +206,43 @@ function detectInstallMethod(packageRoot: string, globalPrefix?: string): SelfIn
   return 'unknown';
 }
 
+function getInstallMethodCacheFile(): string {
+  return path.join(resolveCliHomeDir('global'), INSTALL_METHOD_CACHE_FILE);
+}
+
+function getInstallMethodCacheKey(packageRoot: string): string {
+  return normalizePath(path.join(packageRoot, 'bin', 'run.js'));
+}
+
+async function readInstallMethodCache(): Promise<InstallMethodCacheState> {
+  try {
+    const raw = await fsp.readFile(getInstallMethodCacheFile(), 'utf8');
+    return JSON.parse(raw) as InstallMethodCacheState;
+  } catch {
+    return {};
+  }
+}
+
+async function writeInstallMethodCache(state: InstallMethodCacheState): Promise<void> {
+  const filePath = getInstallMethodCacheFile();
+  await fsp.mkdir(path.dirname(filePath), { recursive: true });
+  await fsp.writeFile(filePath, JSON.stringify(state, null, 2));
+}
+
+async function readCachedInstallMethod(packageRoot: string): Promise<InstallMethodCacheEntry | undefined> {
+  const state = await readInstallMethodCache();
+  return state.entries?.[getInstallMethodCacheKey(packageRoot)];
+}
+
+async function writeCachedInstallMethod(packageRoot: string, entry: InstallMethodCacheEntry): Promise<void> {
+  const state = await readInstallMethodCache();
+  const entries = {
+    ...(state.entries ?? {}),
+    [getInstallMethodCacheKey(packageRoot)]: entry,
+  };
+  await writeInstallMethodCache({ entries });
+}
+
 async function readGlobalPrefix(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
   try {
     return (await commandOutputFn('npm', ['prefix', '-g'], {
@@ -263,14 +318,37 @@ export function getSelfUpdatePackageSpec(status: Pick<SelfStatus, 'packageName' 
   return `${status.packageName}@${status.channel}`;
 }
 
+export async function inspectSelfInstall(options: Pick<SelfManagerOptions, 'packageRoot' | 'commandOutputFn'> = {}): Promise<SelfInstallInfo> {
+  const packageRoot = options.packageRoot ? normalizePath(options.packageRoot) : PACKAGE_ROOT;
+  const commandOutputFn = options.commandOutputFn ?? commandOutput;
+  const cachedInstallMethod = await readCachedInstallMethod(packageRoot);
+  const globalPrefix = cachedInstallMethod?.globalPrefix ?? await readGlobalPrefix(commandOutputFn);
+  const installMethod = cachedInstallMethod?.installMethod ?? detectInstallMethod(packageRoot, globalPrefix);
+
+  if (!cachedInstallMethod) {
+    await writeCachedInstallMethod(packageRoot, {
+      installMethod,
+      globalPrefix,
+    });
+  }
+
+  return {
+    packageRoot,
+    installMethod,
+    globalPrefix,
+  };
+}
+
 export async function inspectSelfStatus(options: SelfManagerOptions = {}): Promise<SelfStatus> {
   const packageRoot = options.packageRoot ? normalizePath(options.packageRoot) : PACKAGE_ROOT;
   const packageName = options.packageName ?? DEFAULT_PACKAGE_NAME;
   const currentVersion = options.currentVersion ?? readCurrentVersion(packageRoot);
   const channel = options.channel && options.channel !== 'auto' ? options.channel : detectChannel(currentVersion);
   const commandOutputFn = options.commandOutputFn ?? commandOutput;
-  const globalPrefix = await readGlobalPrefix(commandOutputFn);
-  const installMethod = detectInstallMethod(packageRoot, globalPrefix);
+  const { installMethod, globalPrefix } = await inspectSelfInstall({
+    packageRoot,
+    commandOutputFn,
+  });
 
   let latestVersion: string | undefined;
   let registryError: string | undefined;

@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Umgebungsvariablen
 
 ## Wie richte ich Umgebungsvariablen ein?
@@ -244,14 +240,6 @@ Die Methode zur Protokollausgabe. Mehrere Werte werden durch Kommas getrennt. De
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
-```
-
-### LOGGER_BASE_PATH
-
-Der Speicherpfad für dateibasierte Protokolle. Der Standardwert ist `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
 ```
 
 ### LOGGER_LEVEL

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-parallel'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Branche parallèle
 

@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/resource/single-record-resource).
-:::
-
 # SingleRecordResource
 
 Resource orientado a un **único registro**: los datos consisten en un objeto individual, permitiendo la obtención por clave primaria, creación/actualización (save) y eliminación. Es adecuado para escenarios de "registro único" como bloques de detalles y formularios. A diferencia de [MultiRecordResource](./multi-record-resource.md), el método `getData()` de `SingleRecordResource` devuelve un solo objeto. Usted especifica la clave primaria mediante `setFilterByTk(id)`, y `save()` llamará automáticamente a `create` o `update` basándose en el estado de `isNewRecord`.

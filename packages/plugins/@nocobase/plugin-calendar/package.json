@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "2.1.0-beta.24",
+  "version": "2.1.0-beta.29",
   "displayName": "Calendar",
   "displayName.ru-RU": "Календарь",
   "displayName.zh-CN": "日历",
@@ -31,6 +31,7 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/server": "2.x"
   },

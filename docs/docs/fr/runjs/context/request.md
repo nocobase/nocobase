@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/request).
-:::
-
 # ctx.request()
 
 Initiez une requête HTTP authentifiée au sein de RunJS. La requête transporte automatiquement l'URL de base (`baseURL`), le jeton (`Token`), la langue (`locale`), le rôle (`role`), etc., de l'application actuelle, et suit la logique d'interception des requêtes et de gestion des erreurs de l'application.

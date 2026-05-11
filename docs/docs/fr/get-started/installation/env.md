@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Variables d'environnement
 
 ## Comment définir les variables d'environnement ?
@@ -245,14 +241,6 @@ Options :
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
-```
-
-### LOGGER_BASE_PATH
-
-Chemin de stockage des logs basés sur des fichiers. La valeur par défaut est `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
 ```
 
 ### LOGGER_LEVEL

@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-workflow-cc'
 ---
 
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/workflow/nodes/cc).
-:::
-
 # CC <Badge>v1.8.2+</Badge>
 
 ## Einführung

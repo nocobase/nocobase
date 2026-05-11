@@ -12,7 +12,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { test, expect, vi } from 'vitest';
 import {
-  ensureWorkspaceName,
   getEnv,
   getCurrentEnvName,
   loadAuthConfig,
@@ -23,22 +22,32 @@ import {
   updateEnvConnection,
   upsertEnv,
 } from '../lib/auth-store.js';
+import {
+  deleteCliConfigValue,
+  getCliConfigValue,
+  listExplicitCliConfigValues,
+  setCliConfigValue,
+} from '../lib/cli-config.js';
 import { resolveCliHomeDir, resolveCliHomeRoot } from '../lib/cli-home.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NB_CLI_ROOT;
   const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-test-'));
+  const tempWorkspace = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-root-'));
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempWorkspace);
   process.env.NB_CLI_ROOT = tempHome;
 
   try {
     await run();
   } finally {
+    cwdSpy.mockRestore();
     if (previous === undefined) {
       delete process.env.NB_CLI_ROOT;
     } else {
       process.env.NB_CLI_ROOT = previous;
     }
     await rm(tempHome, { recursive: true, force: true });
+    await rm(tempWorkspace, { recursive: true, force: true });
   }
 }
 
@@ -46,7 +55,7 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -73,15 +82,121 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
   });
 });
 
-test('ensureWorkspaceName stores one workspace-level name outside env entries', async () => {
+test('getCurrentEnvName prefers the current session env over lastEnv', async () => {
   await withTempCliHome(async () => {
-    const first = await ensureWorkspaceName('nb-workspace', { scope: 'global' });
-    const second = await ensureWorkspaceName('nb-other', { scope: 'global' });
+    process.env.NB_SESSION_ID = 'test-session';
+    try {
+      await saveAuthConfig(
+        {
+          lastEnv: 'app2',
+          envs: {
+            app1: {
+              baseUrl: 'http://localhost:13001/api',
+            },
+            app2: {
+              baseUrl: 'http://localhost:13002/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      await setCurrentEnv('app1', { scope: 'global' });
+
+      expect(await getCurrentEnvName({ scope: 'global' })).toBe('app1');
+
+      const config = await loadAuthConfig({ scope: 'global' });
+      expect(config.lastEnv).toBe('app1');
+    } finally {
+      delete process.env.NB_SESSION_ID;
+    }
+  });
+});
+
+test('removeEnv repairs the current session env when removing the active env', async () => {
+  await withTempCliHome(async () => {
+    process.env.NB_SESSION_ID = 'test-session';
+    try {
+      await saveAuthConfig(
+        {
+          lastEnv: 'legacy',
+          envs: {
+            legacy: {
+              baseUrl: 'http://localhost:13001/api',
+            },
+            next: {
+              baseUrl: 'http://localhost:13002/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      await setCurrentEnv('legacy', { scope: 'global' });
+      const removal = await removeEnv('legacy', { scope: 'global' });
+
+      expect(removal).toMatchObject({
+        removed: 'legacy',
+        lastEnv: 'next',
+        hasEnvs: true,
+      });
+      expect(await getCurrentEnvName({ scope: 'global' })).toBe('next');
+    } finally {
+      delete process.env.NB_SESSION_ID;
+    }
+  });
+});
+
+test('getCurrentEnvName lazily repairs an invalid session env by falling back to lastEnv', async () => {
+  await withTempCliHome(async () => {
+    process.env.NB_SESSION_ID = 'test-session';
+    try {
+      await saveAuthConfig(
+        {
+          lastEnv: 'next',
+          envs: {
+            next: {
+              baseUrl: 'http://localhost:13002/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const sessionsDir = path.join(resolveCliHomeDir('global'), 'sessions');
+      await mkdir(sessionsDir, { recursive: true });
+      await writeFile(
+        path.join(sessionsDir, 'test-session.json'),
+        JSON.stringify({
+          currentEnv: 'missing-env',
+          updatedAt: '2026-05-09T00:00:00.000Z',
+        }, null, 2),
+      );
+
+      expect(await getCurrentEnvName({ scope: 'global' })).toBe('next');
+      expect(JSON.parse(await readFile(path.join(sessionsDir, 'test-session.json'), 'utf8'))).toMatchObject({
+        currentEnv: 'next',
+      });
+    } finally {
+      delete process.env.NB_SESSION_ID;
+    }
+  });
+});
+
+test('cli config stores explicit settings under settings', async () => {
+  await withTempCliHome(async () => {
+    const first = await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
+    const second = await setCliConfigValue('docker.container-prefix', 'nb-team', { scope: 'global' });
     const config = await loadAuthConfig({ scope: 'global' });
 
-    expect(first).toBe('nb-workspace');
-    expect(second).toBe('nb-workspace');
-    expect(config.name).toBe('nb-workspace');
+    expect(first).toBe('nocobase-team');
+    expect(second).toBe('nb-team');
+    expect(config.settings).toEqual({
+      docker: {
+        network: 'nocobase-team',
+        containerPrefix: 'nb-team',
+      },
+    });
     expect(config.envs).toEqual({});
   });
 });
@@ -91,7 +206,7 @@ test('loadAuthConfig maps the legacy dockerResourcePrefix field to workspace nam
     await saveAuthConfig(
       {
         dockerResourcePrefix: 'nb-legacy',
-        currentEnv: 'default',
+        lastEnv: 'default',
         envs: {},
       } as Parameters<typeof saveAuthConfig>[0] & { dockerResourcePrefix: string },
       { scope: 'global' },
@@ -102,11 +217,110 @@ test('loadAuthConfig maps the legacy dockerResourcePrefix field to workspace nam
   });
 });
 
+test('cli config reads docker defaults from legacy name when explicit settings are missing', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        name: 'nb-legacy',
+        lastEnv: 'default',
+        envs: {},
+      },
+      { scope: 'global' },
+    );
+
+    expect(await getCliConfigValue('docker.network', { scope: 'global' })).toBe('nb-legacy');
+    expect(await getCliConfigValue('docker.container-prefix', { scope: 'global' })).toBe('nb-legacy');
+  });
+});
+
+test('cli config list and delete only affect explicit settings', async () => {
+  await withTempCliHome(async () => {
+    await setCliConfigValue('license.pkg-url', 'https://pkg.example.com', { scope: 'global' });
+    await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
+
+    expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
+      'license.pkg-url': 'https://pkg.example.com/',
+      'docker.network': 'nocobase-team',
+    });
+
+    expect(await deleteCliConfigValue('docker.container-prefix', { scope: 'global' })).toBe(false);
+    expect(await deleteCliConfigValue('docker.network', { scope: 'global' })).toBe(true);
+    expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
+      'license.pkg-url': 'https://pkg.example.com/',
+    });
+  });
+});
+
+test('loadAuthConfig ignores legacy project envs and keeps global settings only', async () => {
+  const previousRoot = process.env.NB_CLI_ROOT;
+  const globalHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-global-home-'));
+  const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-'));
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(workspaceDir);
+  const homedirSpy = vi.spyOn(os, 'homedir').mockReturnValue(globalHome);
+
+  delete process.env.NB_CLI_ROOT;
+
+  try {
+    const legacyConfigFile = path.join(workspaceDir, '.nocobase', 'config.json');
+    await mkdir(path.dirname(legacyConfigFile), { recursive: true });
+    await writeFile(legacyConfigFile, JSON.stringify({
+      currentEnv: 'legacy',
+      envs: {
+        legacy: {
+          source: 'docker',
+        },
+      },
+    }, null, 2));
+    await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
+    await setCliConfigValue('docker.container-prefix', 'nb-team', { scope: 'global' });
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    const globalConfigFile = path.join(globalHome, '.nocobase', 'config.json');
+
+    expect(config.lastEnv).toBe('default');
+    expect(config.envs).toEqual({});
+    expect(config.settings).toEqual({
+      docker: {
+        network: 'nocobase-team',
+        containerPrefix: 'nb-team',
+      },
+    });
+    expect(JSON.parse(await readFile(globalConfigFile, 'utf8'))).toMatchObject({
+      lastEnv: 'default',
+      envs: {},
+      settings: {
+        docker: {
+          network: 'nocobase-team',
+          containerPrefix: 'nb-team',
+        },
+      },
+    });
+    expect(JSON.parse(await readFile(legacyConfigFile, 'utf8'))).toMatchObject({
+      currentEnv: 'legacy',
+      envs: {
+        legacy: {
+          source: 'docker',
+        },
+      },
+    });
+  } finally {
+    cwdSpy.mockRestore();
+    homedirSpy.mockRestore();
+    if (previousRoot === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previousRoot;
+    }
+    await rm(globalHome, { recursive: true, force: true });
+    await rm(workspaceDir, { recursive: true, force: true });
+  }
+});
+
 test('upsertEnv preserves runtime metadata when connection settings are unchanged', async () => {
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -156,7 +370,7 @@ test('env relative paths resolve from NB_CLI_ROOT when provided', async () => {
     try {
       await saveAuthConfig(
         {
-          currentEnv: 'test',
+          lastEnv: 'test',
           envs: {
             test: {
               appRootPath: './apps/test',
@@ -180,7 +394,7 @@ test('legacy remote kind is normalized to http when loading env config', async (
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'remote',
+        lastEnv: 'remote',
         envs: {
           remote: {
             kind: 'remote' as any,
@@ -222,7 +436,7 @@ test('upsertEnv clears an OAuth session when the base URL changes', async () => 
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -252,7 +466,7 @@ test('updateEnvConnection updates only the token and preserves the current base 
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -284,7 +498,7 @@ test('updateEnvConnection preserves runtime metadata when connection settings ar
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -318,7 +532,7 @@ test('setEnvOauthSession can preserve runtime metadata during token refresh', as
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -369,7 +583,7 @@ test('setEnvOauthSession can preserve runtime metadata during token refresh', as
   });
 });
 
-test('loadAuthConfig and getEnv fall back to legacy project config when global is empty', async () => {
+test('loadAuthConfig ignores legacy project config when global config is empty', async () => {
   const previousRoot = process.env.NB_CLI_ROOT;
   const globalHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-global-home-'));
   const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-'));
@@ -379,29 +593,34 @@ test('loadAuthConfig and getEnv fall back to legacy project config when global i
   delete process.env.NB_CLI_ROOT;
 
   try {
-    await mkdir(path.join(workspaceDir, '.nocobase'), { recursive: true });
-
-    await saveAuthConfig(
-      {
-        currentEnv: 'legacy',
-        envs: {
-          legacy: {
-            baseUrl: 'http://localhost:13000/api',
-          },
+    const legacyConfigFile = path.join(workspaceDir, '.nocobase', 'config.json');
+    await mkdir(path.dirname(legacyConfigFile), { recursive: true });
+    await writeFile(legacyConfigFile, JSON.stringify({
+      currentEnv: 'legacy',
+      envs: {
+        legacy: {
+          baseUrl: 'http://localhost:13000/api',
         },
       },
-      { scope: 'project' },
-    );
+    }, null, 2));
 
     const config = await loadAuthConfig({ scope: 'global' });
     const currentEnv = await getCurrentEnvName({ scope: 'global' });
     const env = await getEnv(undefined, { scope: 'global' });
 
-    expect(config.currentEnv).toBe('legacy');
-    expect(config.envs.legacy?.apiBaseUrl).toBe('http://localhost:13000/api');
-    expect(currentEnv).toBe('legacy');
-    expect(env?.name).toBe('legacy');
-    expect(env?.baseUrl).toBe('http://localhost:13000/api');
+    expect(config.lastEnv).toBe('default');
+    expect(config.envs).toEqual({});
+    expect(currentEnv).toBe('default');
+    expect(env).toBe(undefined);
+    await expect(readFile(path.join(globalHome, '.nocobase', 'config.json'), 'utf8')).rejects.toThrow();
+    expect(JSON.parse(await readFile(legacyConfigFile, 'utf8'))).toMatchObject({
+      currentEnv: 'legacy',
+      envs: {
+        legacy: {
+          baseUrl: 'http://localhost:13000/api',
+        },
+      },
+    });
   } finally {
     cwdSpy.mockRestore();
     homedirSpy.mockRestore();
@@ -438,47 +657,53 @@ test('legacy baseUrl key is still readable but normalized to apiBaseUrl when loa
   });
 });
 
-test('write operations keep using legacy project config when env only exists there', async () => {
+test('write operations only affect global config and ignore legacy project envs', async () => {
   await withTempCliHome(async () => {
     const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-ctl-workspace-'));
     const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(workspaceDir);
 
     try {
-      await mkdir(path.join(workspaceDir, '.nocobase'), { recursive: true });
-
-      await saveAuthConfig(
-        {
-          currentEnv: 'legacy',
-          envs: {
-            legacy: {
-              baseUrl: 'http://localhost:13000/api',
-              auth: {
-                type: 'token',
-                accessToken: 'old-token',
-              },
+      const legacyConfigPath = path.join(workspaceDir, '.nocobase', 'config.json');
+      await mkdir(path.dirname(legacyConfigPath), { recursive: true });
+      await writeFile(legacyConfigPath, JSON.stringify({
+        currentEnv: 'legacy',
+        envs: {
+          legacy: {
+            baseUrl: 'http://localhost:13000/api',
+            auth: {
+              type: 'token',
+              accessToken: 'old-token',
             },
           },
         },
-        { scope: 'project' },
-      );
+      }, null, 2));
 
-      await updateEnvConnection('legacy', { accessToken: 'new-token' }, { scope: 'global' });
-      await setCurrentEnv('legacy', { scope: 'global' });
+      await expect(updateEnvConnection('legacy', { accessToken: 'new-token' }, { scope: 'global' })).resolves.toBeUndefined();
+      await expect(setCurrentEnv('legacy', { scope: 'global' })).resolves.toBeUndefined();
 
-      const projectConfig = await loadAuthConfig({ scope: 'project' });
-      const globalConfigPath = path.join(process.env.NB_CLI_ROOT!, '.nocobase', 'config.json');
-
-      expect(projectConfig.currentEnv).toBe('legacy');
-      expect(projectConfig.envs.legacy?.auth).toEqual({
-        type: 'token',
-        accessToken: 'new-token',
+      const globalConfig = await loadAuthConfig({ scope: 'global' });
+      expect(globalConfig.lastEnv).toBe('legacy');
+      expect(globalConfig.envs.legacy).toEqual({
+        auth: {
+          type: 'token',
+          accessToken: 'new-token',
+        },
+        kind: 'http',
       });
-      await expect(readFile(globalConfigPath, 'utf8')).rejects.toThrow();
+      expect(JSON.parse(await readFile(legacyConfigPath, 'utf8'))).toMatchObject({
+        currentEnv: 'legacy',
+        envs: {
+          legacy: {
+            auth: {
+              type: 'token',
+              accessToken: 'old-token',
+            },
+          },
+        },
+      });
 
       const removal = await removeEnv('legacy', { scope: 'global' });
-      const afterProjectConfig = await loadAuthConfig({ scope: 'project' });
       expect(removal.removed).toBe('legacy');
-      expect(afterProjectConfig.envs.legacy).toBe(undefined);
     } finally {
       cwdSpy.mockRestore();
       await rm(workspaceDir, { recursive: true, force: true });

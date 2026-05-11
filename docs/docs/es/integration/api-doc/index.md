@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-api-doc"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 
 # Documentación de la API

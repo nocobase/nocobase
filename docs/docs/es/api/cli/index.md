@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "Referencia de NocoBase CLI (comando nb): inicialización, gestión de entornos, ejecución de aplicaciones, código fuente, base de datos, plugins, API, autoactualización del CLI y gestión de Skills."
-keywords: "NocoBase CLI,nb,línea de comandos,referencia de comandos,gestión de entornos,gestión de plugins,API"
+description: "Referencia de NocoBase CLI (comando nb): inicialización, configuración, gestión de entornos, ejecución de aplicaciones, código fuente, base de datos, plugins, licencias comerciales, API, autoactualización del CLI y gestión de Skills."
+keywords: "NocoBase CLI,nb,línea de comandos,referencia de comandos,configuración,gestión de entornos,gestión de plugins,licencias comerciales,API"
 ---
 
 # NocoBase CLI
@@ -33,11 +33,14 @@ El comando raíz se utiliza principalmente para mostrar la ayuda y para distribu
 | --- | --- |
 | [`nb api`](./api/index.md) | Invocar la API de NocoBase a través del CLI. |
 | [`nb app`](./app/index.md) | Gestionar el estado de ejecución de la aplicación: iniciar, detener, reiniciar, registros y actualización. |
+| [`nb config`](./config/index.md) | Gestionar la configuración predeterminada del CLI. |
 | [`nb db`](./db/index.md) | Gestionar la base de datos integrada del env seleccionado. |
-| [`nb env`](./env/index.md) | Gestionar entornos, estado, detalles y comandos de tiempo de ejecución de proyectos NocoBase. |
+| [`nb env`](./env/index.md) | Gestiona entornos de proyecto de NocoBase, env actual, estado, detalles y runtimes de comandos. |
+| [`nb license`](./license/index.md) | Gestionar la licencia comercial y los plugins licenciados. |
 | [`nb plugin`](./plugin/index.md) | Gestionar los plugins del env de NocoBase seleccionado. |
 | [`nb scaffold`](./scaffold/index.md) | Generar andamiaje para el desarrollo de plugins de NocoBase. |
 | [`nb self`](./self/index.md) | Comprobar o actualizar el propio NocoBase CLI. |
+| [`nb session`](./session/index.md) | Configura `NB_SESSION_ID` para aislar el env actual por shell o runtime de agente. |
 | [`nb skills`](./skills/index.md) | Comprobar o sincronizar las NocoBase AI coding skills del espacio de trabajo actual. |
 | [`nb source`](./source/index.md) | Gestionar el proyecto de código fuente local: descarga, desarrollo, compilación y pruebas. |
 
@@ -62,7 +65,9 @@ Ver la ayuda de un comando o grupo de comandos:
 ```bash
 nb init --help
 nb app --help
+nb config --help
 nb api resource --help
+nb license --help
 ```
 
 ## Ejemplos
@@ -89,6 +94,8 @@ Conectar con una aplicación existente:
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Iniciar la aplicación y refrescar los comandos de tiempo de ejecución:
@@ -102,6 +109,20 @@ Invocar la API:
 
 ```bash
 nb api resource list --resource users -e app1
+```
+
+Ver la configuración predeterminada del CLI:
+
+```bash
+nb config list
+nb config get docker.network
+```
+
+Ver el estado de la licencia comercial:
+
+```bash
+nb license status -e app1
+nb license plugins list -e app1
 ```
 
 ## Variables de entorno

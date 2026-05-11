@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/calculation-engine/index).
-:::
-
 # Moteurs de calcul
 
 Dans NocoBase, les moteurs de calcul font partie intégrante des champs de formule, des règles de liaison et des flux de travail, offrant aux utilisateurs des outils de calcul polyvalents.

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-manual'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Traitement manuel
 

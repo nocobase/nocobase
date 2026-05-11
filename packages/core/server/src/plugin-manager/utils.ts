@@ -40,6 +40,40 @@ export async function getTempDir() {
   return path.join(temporaryDirectory, APP_NAME);
 }
 
+export function assertSafePluginPackageName(packageName: string) {
+  if (!packageName || typeof packageName !== 'string') {
+    throw new Error('Invalid plugin package name');
+  }
+
+  if (packageName.includes('\0')) {
+    throw new Error('Invalid plugin package name');
+  }
+
+  if (path.isAbsolute(packageName)) {
+    throw new Error('Invalid plugin package name');
+  }
+
+  if (packageName.includes('..') || packageName.includes('\\')) {
+    throw new Error('Invalid plugin package name');
+  }
+
+  const valid = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(packageName);
+  if (!valid) {
+    throw new Error('Invalid plugin package name');
+  }
+}
+
+export function resolveSafeChildPath(baseDir: string, child: string) {
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(baseDir, child);
+
+  if (resolvedTarget !== resolvedBase && !resolvedTarget.startsWith(`${resolvedBase}${path.sep}`)) {
+    throw new Error('Path traversal detected');
+  }
+
+  return resolvedTarget;
+}
+
 export function getLocalPluginPackagesPathArr(): string[] {
   const pluginPackagesPathArr = process.env.PLUGIN_PATH || DEFAULT_PLUGIN_PATH;
   return pluginPackagesPathArr.split(',').map((pluginPackagesPath) => {
@@ -50,7 +84,8 @@ export function getLocalPluginPackagesPathArr(): string[] {
 
 export function getStoragePluginDir(packageName: string) {
   const pluginStoragePath = resolvePluginStoragePath();
-  return path.join(pluginStoragePath, packageName);
+  assertSafePluginPackageName(packageName);
+  return resolveSafeChildPath(pluginStoragePath, packageName);
 }
 
 export function getLocalPluginDir(packageDirBasename: string) {
@@ -66,7 +101,8 @@ export function getLocalPluginDir(packageDirBasename: string) {
 }
 
 export function getNodeModulesPluginDir(packageName: string) {
-  return path.join(process.env.NODE_MODULES_PATH, packageName);
+  assertSafePluginPackageName(packageName);
+  return resolveSafeChildPath(process.env.NODE_MODULES_PATH, packageName);
 }
 
 export function getAuthorizationHeaders(registry?: string, authToken?: string) {

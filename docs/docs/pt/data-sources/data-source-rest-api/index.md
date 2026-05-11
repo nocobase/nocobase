@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-data-source-rest-api"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 # Fonte de Dados REST API

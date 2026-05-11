@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/resource/api-resource).
-:::
-
 # APIResource
 
 Eine **allgemeine API-Ressource** für Anfragen basierend auf URLs, die für beliebige HTTP-Schnittstellen geeignet ist. Sie erbt von der Basisklasse `FlowResource` und erweitert diese um die Konfiguration von Anfragen sowie die Methode `refresh()`. Im Gegensatz zu [MultiRecordResource](./multi-record-resource.md) und [SingleRecordResource](./single-record-resource.md) hängt die `APIResource` nicht von einem Ressourcennamen ab, sondern stellt Anfragen direkt über die URL. Dies eignet sich für benutzerdefinierte Schnittstellen, Drittanbieter-APIs und andere Szenarien.

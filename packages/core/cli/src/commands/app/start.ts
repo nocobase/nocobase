@@ -8,6 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -26,7 +27,7 @@ import {
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
-import { failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
@@ -95,6 +96,11 @@ export default class AppStart extends Command {
       char: 'e',
       description: 'CLI env name to start. Defaults to the current env when omitted',
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
     quickstart: Flags.boolean({ description: 'Quickstart the application', required: false }),
     port: Flags.string({ description: 'Port (overrides appPort from env config when set)', char: 'p', required: false }),
     daemon: Flags.boolean({
@@ -115,6 +121,17 @@ export default class AppStart extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppStart);
     const requestedEnv = flags.env?.trim() || undefined;
+    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
 
     const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
     const runtime = await resolveManagedAppRuntime(requestedEnv);
@@ -142,6 +159,8 @@ export default class AppStart extends Command {
         ].join('\n'),
       );
     }
+
+    announceTargetEnv(runtime.envName);
 
     if (runtime.kind === 'docker') {
       const unsupportedFlags = [

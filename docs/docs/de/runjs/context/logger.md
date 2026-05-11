@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/logger).
-:::
-
 # ctx.logger
 
 Eine auf [pino](https://github.com/pinojs/pino) basierende Logging-Kapselung, die hochperformante strukturierte JSON-Logs bereitstellt. Es wird empfohlen, `ctx.logger` anstelle von `console` zu verwenden, um die Log-Erfassung und -Analyse zu erleichtern.

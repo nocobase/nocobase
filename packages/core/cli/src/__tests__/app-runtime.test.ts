@@ -10,7 +10,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { test, expect } from 'vitest';
+import { test, expect, vi } from 'vitest';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import { buildDockerAppContainerName, resolveManagedAppRuntime } from '../lib/app-runtime.js';
 import { resolveCliHomeRoot } from '../lib/cli-home.js';
@@ -18,17 +18,21 @@ import { resolveCliHomeRoot } from '../lib/cli-home.js';
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NB_CLI_ROOT;
   const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-runtime-'));
+  const tempWorkspace = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-runtime-cwd-'));
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempWorkspace);
   process.env.NB_CLI_ROOT = tempHome;
 
   try {
     await run();
   } finally {
+    cwdSpy.mockRestore();
     if (previous === undefined) {
       delete process.env.NB_CLI_ROOT;
     } else {
       process.env.NB_CLI_ROOT = previous;
     }
     await rm(tempHome, { recursive: true, force: true });
+    await rm(tempWorkspace, { recursive: true, force: true });
   }
 }
 
@@ -41,7 +45,13 @@ test('resolveManagedAppRuntime detects local, docker, and http envs', async () =
     await saveAuthConfig(
       {
         name: 'nb-demo',
-        currentEnv: 'docker-env',
+        settings: {
+          docker: {
+            network: 'nocobase-team',
+            containerPrefix: 'nb-team',
+          },
+        },
+        lastEnv: 'docker-env',
         envs: {
           'docker-env': {
             source: 'docker',
@@ -65,13 +75,17 @@ test('resolveManagedAppRuntime detects local, docker, and http envs', async () =
       kind: 'docker',
       source: 'docker',
     });
-    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.containerName : '').toBe('nb-demo-docker-env-app');
+    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.containerName : '').toBe('nb-team-docker-env-app');
+    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.dockerNetworkName : '').toBe('nocobase-team');
+    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.workspaceName : '').toBe('nocobase-team');
 
     const localRuntime = await resolveManagedAppRuntime('git-env');
     expect(localRuntime && { kind: localRuntime.kind, source: localRuntime.source }).toEqual({
       kind: 'local',
       source: 'git',
     });
+    expect(localRuntime?.kind === 'local' ? localRuntime.dockerContainerPrefix : '').toBe('nb-team');
+    expect(localRuntime?.kind === 'local' ? localRuntime.dockerNetworkName : '').toBe('nocobase-team');
     expect(localRuntime?.kind === 'local' ? localRuntime.projectRoot : '').toBe(
       path.resolve(resolveCliHomeRoot(), './apps/git-env'),
     );
@@ -81,5 +95,27 @@ test('resolveManagedAppRuntime detects local, docker, and http envs', async () =
       kind: 'http',
       source: undefined,
     });
+  });
+});
+
+test('resolveManagedAppRuntime falls back to legacy name for docker defaults', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        name: 'nb-legacy',
+        lastEnv: 'docker-env',
+        envs: {
+          'docker-env': {
+            source: 'docker',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const dockerRuntime = await resolveManagedAppRuntime('docker-env');
+    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.dockerNetworkName : '').toBe('nb-legacy');
+    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.dockerContainerPrefix : '').toBe('nb-legacy');
+    expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.containerName : '').toBe('nb-legacy-docker-env-app');
   });
 });

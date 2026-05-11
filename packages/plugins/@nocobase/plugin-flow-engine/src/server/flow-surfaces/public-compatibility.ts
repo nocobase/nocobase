@@ -12,6 +12,8 @@ import { getConfigureOptionKeysForUse } from './configure-options';
 import { throwBadRequest } from './errors';
 import { FLOW_SURFACE_BLOCK_SUPPORT_BY_KEY, FLOW_SURFACE_BLOCK_SUPPORT_BY_USE } from './support-matrix';
 
+export const FLOW_SURFACE_DEFAULT_SORTING = [{ field: 'createdAt', direction: 'desc' }];
+
 type NormalizeSortingAliasInput = {
   context: string;
   type?: string;
@@ -90,6 +92,23 @@ function normalizeSortingArray(input: any, context: string) {
   return input.map((item, index) => normalizeSortingEntry(item, `${context}[${index}]`));
 }
 
+export function normalizeFlowSurfaceDefaultSorting(input: any, context: string) {
+  if (Array.isArray(input)) {
+    return normalizeSortingArray(input, context);
+  }
+  if (_.isUndefined(input) || _.isNull(input)) {
+    return _.cloneDeep(FLOW_SURFACE_DEFAULT_SORTING);
+  }
+  throwBadRequest(`${context} must be an array`);
+}
+
+export function normalizeFlowSurfaceEmptySortingAsDefault(input: any, context: string) {
+  if (Array.isArray(input) && !input.length) {
+    return _.cloneDeep(FLOW_SURFACE_DEFAULT_SORTING);
+  }
+  return normalizeFlowSurfaceDefaultSorting(input, context);
+}
+
 export function normalizeFlowSurfacePublicSortingAlias(input: NormalizeSortingAliasInput) {
   if (_.isUndefined(input.settings)) {
     return input.settings;
@@ -107,9 +126,9 @@ export function normalizeFlowSurfacePublicSortingAlias(input: NormalizeSortingAl
   }
 
   const nextSettings = _.cloneDeep(input.settings);
-  const sortingFromSort = normalizeSortingArray(nextSettings.sort, `${input.context}.sort`);
+  const sortingFromSort = normalizeFlowSurfaceDefaultSorting(nextSettings.sort, `${input.context}.sort`);
   if (Object.prototype.hasOwnProperty.call(nextSettings, 'sorting')) {
-    const canonicalSorting = normalizeSortingArray(nextSettings.sorting, `${input.context}.sorting`);
+    const canonicalSorting = normalizeFlowSurfaceDefaultSorting(nextSettings.sorting, `${input.context}.sorting`);
     if (!_.isEqual(sortingFromSort, canonicalSorting)) {
       throwBadRequest(`${input.context}.sort conflicts with ${input.context}.sorting; use canonical sorting`);
     }

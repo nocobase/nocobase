@@ -14,6 +14,7 @@ import { Result, theme as antdTheme } from 'antd';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
+import { isV2AdminRuntime, isV2MenuRoute } from './resolveAdminRouteRuntimeTarget';
 
 type AdminLayoutContentProps = {
   onContentElementChange?: (element: HTMLDivElement | null) => void;
@@ -67,9 +68,12 @@ const ShowTipWhenNoPages = observer(() => {
   const { t } = useTranslation();
   const location = useLocation();
   const allAccessRoutes = flowEngine.context.routeRepository?.listAccessible?.() || [];
+  const visibleRoutes = isV2AdminRuntime(flowEngine.context.app)
+    ? allAccessRoutes.filter((route) => isV2MenuRoute(route))
+    : allAccessRoutes;
   const designable = !!flowEngine.context.flowSettingsEnabled;
 
-  if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
+  if (visibleRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
     return (
       <Result
         icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}

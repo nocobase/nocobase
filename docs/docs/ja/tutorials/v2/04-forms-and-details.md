@@ -1,6 +1,6 @@
 # 第 4 章：フォームと詳細 — 入力・表示を一気に完成
 
-前の章ではチケット一覧を構築し、簡易フォームでテストデータを入力しました。この章では**フォーム体験を改善**します。[フォームブロック](/interface-builder/blocks/data-blocks/form)のフィールドレイアウトの最適化、[詳細ブロック](/interface-builder/blocks/data-blocks/details)の追加、[連動ルール](/interface-builder/linkage-rules)の設定を行い、さらに[変更履歴](https://docs.nocobase.com/cn/record-history/)でチケットの変更を追跡できるようにします。
+前の章ではチケット一覧を構築し、簡易フォームでテストデータを入力しました。この章では**フォーム体験を改善**します。[フォームブロック](/interface-builder/blocks/data-blocks/form)のフィールドレイアウトの最適化、[詳細ブロック](/interface-builder/blocks/data-blocks/details)の追加、[連動ルール](../../interface-builder/linkage-rule.md)の設定を行い、さらに[変更履歴](https://docs.nocobase.com/cn/record-history/)でチケットの変更を追跡できるようにします。
 
 :::tip
 本章 4.4 節「[変更履歴](https://docs.nocobase.com/cn/record-history/)」機能は[プロフェッショナル版](https://www.nocobase.com/cn/commercial)に含まれています。この節をスキップしても、後続の章の学習には影響しません。
@@ -15,7 +15,7 @@
 1. UI エディターモードになっていることを確認します（右上のスイッチをオン）。
 2. 「チケット一覧」ページに入り、テーブルブロック上部の **「[アクション](/interface-builder/actions)（Actions）」** をクリックします。
 3. **「追加」** アクションボタンにチェックを入れます。
-4. テーブル上部に「追加」ボタンが表示されます。クリックすると[ポップアップ](/interface-builder/actions/pop-up)が開きます。
+4. テーブル上部に「追加」ボタンが表示されます。クリックすると[ポップアップ](../../interface-builder/actions/types/pop-up.md)が開きます。
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
@@ -283,4 +283,4 @@
 
 - [フォームブロック](/interface-builder/blocks/data-blocks/form) — フォームブロックの詳細設定
 - [詳細ブロック](/interface-builder/blocks/data-blocks/details) — 詳細ブロックの設定
-- [連動ルール](/interface-builder/linkage-rules) — フィールド連動ルールの説明
+- [連動ルール](../../interface-builder/linkage-rule.md) — フィールド連動ルールの説明

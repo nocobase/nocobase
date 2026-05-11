@@ -1,7 +1,3 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 # Переменные среды
 
 ## Как настроить переменные среды?
@@ -245,14 +241,6 @@ DB_LOGGING=on
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
-```
-
-### LOGGER_BASE_PATH
-
-Путь для хранения файловых логов. Значение по умолчанию `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
 ```
 
 ### LOGGER_LEVEL

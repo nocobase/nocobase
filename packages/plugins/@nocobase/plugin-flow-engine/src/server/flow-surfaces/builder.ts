@@ -13,7 +13,9 @@ import type { FlowSurfaceCatalogItem, FlowSurfaceNodeDefaults, FlowSurfaceNodeSp
 import { resolveSupportedActionCatalogItem, resolveSupportedBlockCatalogItem } from './catalog';
 import { CHART_DEFAULT_DATA_SOURCE_KEY } from './chart-config';
 import { buildApprovalActionDefaults, buildApprovalBlockDefaults, buildApprovalFieldTree } from './approval';
-import { getSingleNodeSubModel } from './service-utils';
+import { buildDefinedPayload, getSingleNodeSubModel } from './service-utils';
+import { FLOW_SURFACE_DEFAULT_SORTING } from './public-compatibility';
+import { buildHiddenPopupOpenView, normalizeHiddenPopupSettings } from './hidden-popup-contract';
 
 type BuildFieldParams = {
   wrapperUse: string;
@@ -101,11 +103,103 @@ const CALENDAR_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
 const CALENDAR_EVENT_VIEW_ACTION_KEY = 'eventViewAction';
 const KANBAN_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
 const KANBAN_CARD_VIEW_ACTION_KEY = 'cardViewAction';
+const KANBAN_LEGACY_PARENT_CARD_POPUP_PROP_KEYS = [
+  'cardOpenMode',
+  'cardPopupSize',
+  'cardPopupTemplateUid',
+  'cardPopupPageModelClass',
+  'cardPopupTargetUid',
+];
+const KANBAN_LEGACY_QUICK_CREATE_POPUP_PROP_KEYS = [
+  'popupMode',
+  'popupSize',
+  'popupTemplateUid',
+  'popupPageModelClass',
+  'popupTargetUid',
+];
+const KANBAN_BLOCK_CARD_POPUP_STEP_PARAMS_PATH = ['cardSettings', 'popup'];
 const CALENDAR_READONLY_ACTION_MODEL_USES = new Set([
   'CalendarNavActionModel',
   'CalendarTitleActionModel',
   'CalendarViewSelectActionModel',
 ]);
+
+function resolveModelStepParamsOrLegacyObject(
+  model: FlowSurfaceNodeSpec,
+  path: Array<string>,
+  legacyValue?: Record<string, any>,
+) {
+  if (_.has(model.stepParams, path)) {
+    const value = _.get(model.stepParams, path);
+    return _.isPlainObject(value) ? value : {};
+  }
+  return _.isPlainObject(legacyValue) ? legacyValue : undefined;
+}
+
+function resolvePersistableModelStepParamsOrLegacyObject(
+  model: FlowSurfaceNodeSpec,
+  path: Array<string>,
+  legacyValue?: Record<string, any>,
+) {
+  const value = resolveModelStepParamsOrLegacyObject(model, path, legacyValue);
+  if (!_.isPlainObject(value)) {
+    return undefined;
+  }
+  const normalized = normalizeInitialKanbanPopupSettings(value);
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function extractPersistableModelStepParamsOrLegacyObject(
+  model: FlowSurfaceNodeSpec,
+  path: Array<string>,
+  legacyValue?: Record<string, any>,
+) {
+  const value = resolvePersistableModelStepParamsOrLegacyObject(model, path, legacyValue);
+  _.unset(model.stepParams, path);
+  return value;
+}
+
+function persistModelPopupStepParams(
+  model: FlowSurfaceNodeSpec,
+  path: Array<string>,
+  popupSettings?: Record<string, any>,
+) {
+  if (!_.isPlainObject(popupSettings)) {
+    return;
+  }
+  _.set(model.stepParams, path, _.cloneDeep(popupSettings));
+}
+
+function normalizeInitialKanbanPopupSettings(popupSettings?: Record<string, any>) {
+  return normalizeHiddenPopupSettings(popupSettings);
+}
+
+function normalizeInitialKanbanPopupSettingsFromProps(
+  actionKey: typeof KANBAN_QUICK_CREATE_ACTION_KEY | typeof KANBAN_CARD_VIEW_ACTION_KEY,
+  props?: Record<string, any>,
+) {
+  if (!_.isPlainObject(props)) {
+    return undefined;
+  }
+  const rawSettings =
+    actionKey === KANBAN_QUICK_CREATE_ACTION_KEY
+      ? buildDefinedPayload({
+          mode: props.popupMode,
+          size: props.popupSize,
+          popupTemplateUid: props.popupTemplateUid,
+          pageModelClass: props.popupPageModelClass,
+          uid: props.popupTargetUid,
+        })
+      : buildDefinedPayload({
+          mode: props.cardOpenMode,
+          size: props.cardPopupSize,
+          popupTemplateUid: props.cardPopupTemplateUid,
+          pageModelClass: props.cardPopupPageModelClass,
+          uid: props.cardPopupTargetUid,
+        });
+  const normalized = normalizeInitialKanbanPopupSettings(rawSettings);
+  return Object.keys(normalized).length ? normalized : undefined;
+}
 
 const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   JSCollectionActionModel: [
@@ -227,6 +321,7 @@ export function buildBlockTree(options: {
   use?: string;
   containerUse?: string;
   resourceInit?: Record<string, any>;
+  enableDefaultSorting?: boolean;
   props?: Record<string, any>;
   decoratorProps?: Record<string, any>;
   stepParams?: Record<string, any>;
@@ -279,6 +374,9 @@ export function buildBlockTree(options: {
     _.set(baseStepParams, ['chartSettings', 'configure'], nextConfigure);
   } else if (Object.keys(normalizedResourceInit).length) {
     _.set(baseStepParams, ['resourceSettings', 'init'], normalizedResourceInit);
+  }
+  if (options.enableDefaultSorting) {
+    applyDefaultSortingIfMissing(baseStepParams, use);
   }
 
   const model: FlowSurfaceNodeSpec = {
@@ -381,10 +479,42 @@ export function buildBlockTree(options: {
   } else if (use === 'KanbanBlockModel') {
     const blockUid = model.uid || uid();
     model.uid = blockUid;
+    const quickCreatePopupSettings =
+      resolvePersistableModelStepParamsOrLegacyObject(
+        model,
+        ['kanbanSettings', 'popup'],
+        (model.props as any)?.quickCreatePopupSettings,
+      ) || normalizeInitialKanbanPopupSettingsFromProps(KANBAN_QUICK_CREATE_ACTION_KEY, model.props as any);
+    const cardPopupSettings =
+      extractPersistableModelStepParamsOrLegacyObject(
+        model,
+        KANBAN_BLOCK_CARD_POPUP_STEP_PARAMS_PATH,
+        (model.props as any)?.cardPopupSettings,
+      ) || normalizeInitialKanbanPopupSettingsFromProps(KANBAN_CARD_VIEW_ACTION_KEY, model.props as any);
+    persistModelPopupStepParams(model, ['kanbanSettings', 'popup'], quickCreatePopupSettings);
+    if (model.props) {
+      delete (model.props as any).quickCreatePopupSettings;
+      delete (model.props as any).cardPopupSettings;
+      for (const propKey of KANBAN_LEGACY_QUICK_CREATE_POPUP_PROP_KEYS) {
+        delete (model.props as any)[propKey];
+      }
+      for (const propKey of KANBAN_LEGACY_PARENT_CARD_POPUP_PROP_KEYS) {
+        delete (model.props as any)[propKey];
+      }
+    }
     model.subModels = {
       item: {
         uid: uid(),
         use: 'KanbanCardItemModel',
+        ...(cardPopupSettings && _.isPlainObject(cardPopupSettings)
+          ? {
+              stepParams: {
+                cardSettings: {
+                  popup: _.cloneDeep(cardPopupSettings),
+                },
+              },
+            }
+          : {}),
         subModels: {
           grid: {
             uid: uid(),
@@ -396,28 +526,46 @@ export function buildBlockTree(options: {
         actionKey: KANBAN_QUICK_CREATE_ACTION_KEY,
         blockUid,
         resourceInit: normalizedResourceInit,
+        popupSettings: quickCreatePopupSettings,
       }),
       [KANBAN_CARD_VIEW_ACTION_KEY]: buildKanbanPopupActionNode({
         actionKey: KANBAN_CARD_VIEW_ACTION_KEY,
         blockUid,
         resourceInit: normalizedResourceInit,
+        popupSettings: cardPopupSettings,
       }),
     };
   } else if (use === 'CalendarBlockModel') {
     const blockUid = model.uid || uid();
     model.uid = blockUid;
+    const quickCreatePopupSettings = resolveModelStepParamsOrLegacyObject(
+      model,
+      ['calendarSettings', 'quickCreatePopupSettings'],
+      model.props?.quickCreatePopupSettings,
+    );
+    const eventPopupSettings = resolveModelStepParamsOrLegacyObject(
+      model,
+      ['calendarSettings', 'eventPopupSettings'],
+      model.props?.eventPopupSettings,
+    );
+    persistModelPopupStepParams(model, ['calendarSettings', 'quickCreatePopupSettings'], quickCreatePopupSettings);
+    persistModelPopupStepParams(model, ['calendarSettings', 'eventPopupSettings'], eventPopupSettings);
+    if (model.props) {
+      delete model.props.quickCreatePopupSettings;
+      delete model.props.eventPopupSettings;
+    }
     model.subModels = {
       [CALENDAR_QUICK_CREATE_ACTION_KEY]: buildCalendarPopupActionNode({
         actionKey: CALENDAR_QUICK_CREATE_ACTION_KEY,
         blockUid,
         resourceInit: normalizedResourceInit,
-        popupSettings: model.props?.quickCreatePopupSettings,
+        popupSettings: quickCreatePopupSettings,
       }),
       [CALENDAR_EVENT_VIEW_ACTION_KEY]: buildCalendarPopupActionNode({
         actionKey: CALENDAR_EVENT_VIEW_ACTION_KEY,
         blockUid,
         resourceInit: normalizedResourceInit,
-        popupSettings: model.props?.eventPopupSettings,
+        popupSettings: eventPopupSettings,
       }),
     };
   }
@@ -458,28 +606,12 @@ function buildKanbanPopupOpenView(options: {
   resourceInit?: Record<string, any>;
   popupSettings?: Record<string, any>;
 }) {
-  const defaults = _.pickBy(
-    {
-      mode: 'drawer',
-      size: 'medium',
-      pageModelClass: 'ChildPageModel',
-      uid: options.actionUid,
-      collectionName: options.resourceInit?.collectionName,
-      dataSourceKey: options.resourceInit?.dataSourceKey || (options.resourceInit?.collectionName ? 'main' : undefined),
-    },
-    (value) => !_.isUndefined(value),
-  );
-  const current = _.cloneDeep(options.popupSettings || {});
-  return _.pickBy(
-    {
-      ...defaults,
-      ...current,
-      uid: current.uid || defaults.uid,
-      collectionName: current.collectionName || defaults.collectionName,
-      dataSourceKey: current.dataSourceKey || defaults.dataSourceKey,
-    },
-    (value) => !_.isUndefined(value),
-  );
+  return buildHiddenPopupOpenView({
+    actionUid: options.actionUid,
+    resourceInit: options.resourceInit,
+    popupSettings: options.popupSettings,
+    normalizePopupSettings: normalizeInitialKanbanPopupSettings,
+  });
 }
 
 function buildCalendarPopupActionNode(options: {
@@ -512,28 +644,7 @@ function buildCalendarPopupOpenView(options: {
   resourceInit?: Record<string, any>;
   popupSettings?: Record<string, any>;
 }) {
-  const defaults = _.pickBy(
-    {
-      mode: 'drawer',
-      size: 'medium',
-      pageModelClass: 'ChildPageModel',
-      uid: options.actionUid,
-      collectionName: options.resourceInit?.collectionName,
-      dataSourceKey: options.resourceInit?.dataSourceKey || (options.resourceInit?.collectionName ? 'main' : undefined),
-    },
-    (value) => !_.isUndefined(value),
-  );
-  const current = _.cloneDeep(options.popupSettings || {});
-  return _.pickBy(
-    {
-      ...defaults,
-      ...current,
-      uid: current.uid || defaults.uid,
-      collectionName: current.collectionName || defaults.collectionName,
-      dataSourceKey: current.dataSourceKey || defaults.dataSourceKey,
-    },
-    (value) => !_.isUndefined(value),
-  );
+  return buildHiddenPopupOpenView(options);
 }
 
 export function buildPopupPageTree(options: {
@@ -963,8 +1074,10 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       icon: 'DownOutlined',
     },
     BulkDeleteActionModel: {
-      title: '{{t("Delete")}}',
+      title: '',
+      tooltip: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
+      position: 'right',
     },
     BulkEditActionModel: {
       title: '{{t("Bulk edit")}}',
@@ -1108,6 +1221,29 @@ function applyContainerActionStyle(props: Record<string, any>, containerUse?: st
   return props;
 }
 
+const BLOCK_DEFAULT_SORTING_PATH_BY_USE: Partial<Record<string, string[]>> = {
+  KanbanBlockModel: ['kanbanSettings', 'defaultSorting', 'sort'],
+  TreeBlockModel: ['treeSettings', 'defaultSorting', 'sort'],
+  TableBlockModel: ['tableSettings', 'defaultSorting', 'sort'],
+  DetailsBlockModel: ['detailsSettings', 'defaultSorting', 'sort'],
+  ListBlockModel: ['listSettings', 'defaultSorting', 'sort'],
+  GridCardBlockModel: ['GridCardSettings', 'defaultSorting', 'sort'],
+  MapBlockModel: ['createMapBlock', 'lineSort', 'sort'],
+};
+
+function applyDefaultSortingIfMissing(stepParams: Record<string, any>, use: string) {
+  const path = BLOCK_DEFAULT_SORTING_PATH_BY_USE[use];
+  if (!path) {
+    return;
+  }
+  const currentSorting = _.get(stepParams, path);
+  if (Array.isArray(currentSorting) || _.isNull(currentSorting) || _.isUndefined(currentSorting)) {
+    if (!_.has(stepParams, path) || _.isNull(currentSorting) || _.isUndefined(currentSorting)) {
+      _.set(stepParams, path, _.cloneDeep(FLOW_SURFACE_DEFAULT_SORTING));
+    }
+  }
+}
+
 function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
   if (use === 'JSBlockModel') {
     return {
@@ -1172,6 +1308,21 @@ function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
         includeDescendants: true,
       },
     };
+  }
+  if (use === 'TableBlockModel') {
+    return {};
+  }
+  if (use === 'DetailsBlockModel') {
+    return {};
+  }
+  if (use === 'ListBlockModel') {
+    return {};
+  }
+  if (use === 'GridCardBlockModel') {
+    return {};
+  }
+  if (use === 'MapBlockModel') {
+    return {};
   }
   return {};
 }

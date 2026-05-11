@@ -7,9 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {Command, Flags} from '@oclif/core';
 import type {Interfaces} from '@oclif/core';
 import {executeApiRequest} from './api-client.js';
+import {ensureCrossEnvConfirmed} from './env-guard.js';
 import {applyPostProcessor} from './post-processors.js';
 import {registerPostProcessors} from '../post-processors/index.js';
 
@@ -20,7 +30,9 @@ export interface GeneratedParameter {
   required?: boolean;
   description?: string;
   type?: string;
+  format?: string;
   isArray?: boolean;
+  isFile?: boolean;
   jsonEncoded?: boolean;
   jsonShape?: string;
 }
@@ -44,11 +56,15 @@ export interface GeneratedOperation {
   parameters: GeneratedParameter[];
   hasBody?: boolean;
   bodyRequired?: boolean;
+  requestContentType?: 'application/json' | 'multipart/form-data';
+  responseType?: 'json' | 'binary';
 }
 
 function buildParameterFlag(parameter: GeneratedParameter, options?: { required?: boolean }) {
   const hints: string[] = [parameter.in];
-  if (parameter.type === 'object' || parameter.type === 'array' || parameter.jsonEncoded) {
+  if (parameter.isFile) {
+    hints.push('file path');
+  } else if (parameter.type === 'object' || parameter.type === 'array' || parameter.jsonEncoded) {
     hints.push('JSON');
   } else if (parameter.isArray) {
     hints.push('repeatable');
@@ -80,6 +96,7 @@ function buildParameterFlag(parameter: GeneratedParameter, options?: { required?
   if (parameter.type === 'boolean') {
     return Flags.boolean({
       description,
+      allowNo: true,
       ...(helpGroup ? {helpGroup} : {}),
       ...(required ? {required: true as const} : {}),
     });
@@ -109,11 +126,11 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
       // Body flags are an alternative authoring path to --body/--body-file.
       // Enforce required body semantics later in parseBody(), after we know
       // which input mode the user chose.
-      required: parameter.in === 'body' ? false : parameter.required,
+      required: parameter.in === 'body' && !parameter.isFile ? false : parameter.required,
     });
   }
 
-  if (operation.hasBody) {
+  if (operation.hasBody && operation.requestContentType !== 'multipart/form-data') {
     flags.body = Flags.string({
       description: 'Full JSON request body string. Do not combine with body field flags.',
       helpGroup: 'Raw JSON Body',
@@ -126,12 +143,26 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
     });
   }
 
+  if (operation.responseType === 'binary') {
+    flags.output = Flags.string({
+      description: 'Path where the downloaded response should be written.',
+      helpGroup: 'Output',
+      required: true,
+    });
+  }
+
   flags['api-base-url'] = Flags.string({
     description: 'NocoBase API base URL, for example http://localhost:13000/api',
     helpGroup: 'Global',
   });
   flags.verbose = Flags.boolean({
     description: 'Show detailed progress output',
+    default: false,
+    helpGroup: 'Global',
+  });
+  flags.yes = Flags.boolean({
+    char: 'y',
+    description: 'Confirm using --env when it targets a different env than the current env',
     default: false,
     helpGroup: 'Global',
   });
@@ -168,6 +199,15 @@ export abstract class GeneratedApiCommand extends Command {
 
     const ctor = this.constructor as typeof GeneratedApiCommand;
     const {flags} = await this.parse(ctor);
+    const confirmed = await ensureCrossEnvConfirmed({
+      command: this,
+      requestedEnv: flags.env,
+      yes: flags.yes,
+    });
+    if (!confirmed) {
+      this.log('Canceled.');
+      return;
+    }
 
     const response = await executeApiRequest({
       envName: flags.env,
@@ -181,6 +221,8 @@ export abstract class GeneratedApiCommand extends Command {
         parameters: ctor.operation.parameters,
         hasBody: ctor.operation.hasBody,
         bodyRequired: ctor.operation.bodyRequired,
+        requestContentType: ctor.operation.requestContentType,
+        responseType: ctor.operation.responseType,
       },
     });
 

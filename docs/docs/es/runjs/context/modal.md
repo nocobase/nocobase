@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/modal).
-:::
-
 # ctx.modal
 
 Una API de acceso rápido basada en Ant Design Modal, utilizada para abrir activamente cuadros modales (avisos de información, ventanas emergentes de confirmación, etc.) en RunJS. Es implementada por `ctx.viewer` / el sistema de vistas.

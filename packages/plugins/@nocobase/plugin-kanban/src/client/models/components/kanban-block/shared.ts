@@ -354,6 +354,18 @@ export const reuseKanbanRecordReferences = (options: {
   });
 };
 
+const hasKanbanResourceValue = (value: any) => value !== undefined && value !== null && value !== '';
+
+const isKanbanRuntimeTemplateValue = (value: any) => typeof value === 'string' && /\{\{[\s\S]*?\}\}/.test(value);
+
+const resolveKanbanRuntimeResourceValue = (runtimeValue: any, initValue: any) => {
+  if (hasKanbanResourceValue(runtimeValue)) {
+    return runtimeValue;
+  }
+
+  return isKanbanRuntimeTemplateValue(initValue) ? undefined : initValue;
+};
+
 export const createColumnResource = (
   model: KanbanBlockModel,
   column: RuntimeColumn,
@@ -366,11 +378,13 @@ export const createColumnResource = (
 
   resource.setDataSourceKey(params.dataSourceKey);
   resource.setResourceName(params.associationName || params.collectionName);
-  if (params.sourceId !== undefined && params.sourceId !== null) {
-    resource.setSourceId(params.sourceId as any);
+  const sourceId = resolveKanbanRuntimeResourceValue(baseResource.getSourceId(), params.sourceId);
+  if (hasKanbanResourceValue(sourceId)) {
+    resource.setSourceId(sourceId as any);
   }
-  if (baseResource.getFilterByTk() !== undefined && baseResource.getFilterByTk() !== null) {
-    resource.setFilterByTk(baseResource.getFilterByTk());
+  const filterByTk = resolveKanbanRuntimeResourceValue(baseResource.getFilterByTk(), params.filterByTk);
+  if (hasKanbanResourceValue(filterByTk)) {
+    resource.setFilterByTk(filterByTk);
   }
   if (baseResource.getAppends()?.length) {
     resource.setAppends([...baseResource.getAppends()]);

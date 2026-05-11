@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/integration/fdw/enable-federated).
-:::
-
 # So aktivieren Sie die Federated-Engine in MySQL
 
 Die MySQL-Datenbank hat das Federated-Modul standardmäßig nicht aktiviert. Sie müssen die Konfiguration in der Datei `my.cnf` anpassen. Wenn Sie die Docker-Version verwenden, können Sie die Erweiterung über Volumes handhaben:

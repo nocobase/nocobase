@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # 環境変数
 
 ## 環境変数の設定方法
@@ -245,14 +241,6 @@ DB_LOGGING=on
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
-```
-
-### LOGGER_BASE_PATH
-
-ファイルベースのログの保存パスです。デフォルトは `storage/logs` です。
-
-```bash
-LOGGER_BASE_PATH=storage/logs
 ```
 
 ### LOGGER_LEVEL

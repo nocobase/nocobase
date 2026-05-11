@@ -16,6 +16,7 @@ export const FLOW_SURFACE_POPUP_HOST_USES = new Set([
   'ViewActionModel',
   'EditActionModel',
   'PopupCollectionActionModel',
+  'AddChildActionModel',
   'CalendarQuickCreateActionModel',
   'CalendarEventViewActionModel',
   'KanbanQuickCreateActionModel',

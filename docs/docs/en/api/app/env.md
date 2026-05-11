@@ -183,14 +183,6 @@ Log output transport, multiple values are separated by `,`. The default value in
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-## LOGGER_BASE_PATH
-
-File-based log storage path, defaults to `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ## LOGGER_LEVEL
 
 Output log level. The default value in development environment is `debug`, and in production environment is `info`. Options:

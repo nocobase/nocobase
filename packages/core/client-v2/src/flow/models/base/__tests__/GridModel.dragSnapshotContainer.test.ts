@@ -283,4 +283,102 @@ describe('GridModel drag snapshot container', () => {
       type: 'column',
     });
   });
+
+  it('clears persisted drag overlay on init', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-hidden-stale-overlay',
+      props: {
+        dragOverlayRect: {
+          top: 10,
+          left: 20,
+          width: 100,
+          height: 40,
+          type: 'column',
+        },
+      },
+      structure: {} as any,
+    });
+
+    expect(model.props.dragOverlayRect).toBeNull();
+  });
+
+  it('omits drag overlay rect from serialized props', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-serialize-overlay',
+      props: {
+        rowGap: 24,
+        dragOverlayRect: {
+          top: 10,
+          left: 20,
+          width: 100,
+          height: 40,
+          type: 'column',
+        },
+      },
+      structure: {} as any,
+    });
+
+    const serialized = model.serialize();
+
+    expect(serialized.props).toMatchObject({ rowGap: 24 });
+    expect(serialized.props).not.toHaveProperty('dragOverlayRect');
+  });
+
+  it('recomputes the final slot from drag end position before saving layout', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-drag-final-slot',
+      props: {},
+      structure: {} as any,
+    });
+    const applyPreview = vi.fn((slot) => {
+      (model as any).dragState.previewLayout = slot
+        ? {
+            rows: { 'row-final': [['item-1']] },
+            sizes: { 'row-final': [24] },
+          }
+        : undefined;
+    });
+    const resolveDragSlot = vi.fn(() => ({
+      type: 'row-gap',
+      targetRowId: 'row-final',
+      position: 'below',
+      rect: { top: 200, left: 20, width: 440, height: 32 },
+    }));
+    const saveGridLayout = vi.fn();
+    const syncLayoutProps = vi.fn();
+    const finishDrag = vi.fn();
+
+    (model as any).applyPreview = applyPreview;
+    (model as any).resolveDragSlot = resolveDragSlot;
+    (model as any).saveGridLayout = saveGridLayout;
+    (model as any).syncLayoutProps = syncLayoutProps;
+    (model as any).finishDrag = finishDrag;
+    (model as any).dragState = {
+      sourceUid: 'item-1',
+      snapshot: { rows: {}, sizes: {} },
+      slots: [],
+      containerEl: null,
+      containerRect: { top: 0, left: 0, width: 0, height: 0 },
+      pointerOrigin: { x: 100, y: 100 },
+      activeSlotKey: null,
+      previewLayout: undefined,
+      refreshTimer: null,
+      generatedIds: new Map(),
+    };
+
+    model.handleDragEnd({
+      delta: { x: 30, y: 220 },
+    } as any);
+
+    expect(resolveDragSlot).toHaveBeenCalledWith({ x: 130, y: 320 });
+    expect(applyPreview).toHaveBeenCalledOnce();
+    expect(saveGridLayout).toHaveBeenCalledWith({
+      rows: { 'row-final': [['item-1']] },
+      sizes: { 'row-final': [24] },
+    });
+    expect(finishDrag).toHaveBeenCalledOnce();
+  });
 });

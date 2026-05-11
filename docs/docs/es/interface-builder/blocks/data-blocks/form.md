@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/blocks/data-blocks/form).
-:::
-
 # Bloque de formulario
 
 ## Introducción
@@ -77,7 +73,7 @@ El bloque de formulario admite dos modos de diseño, que se configuran mediante 
 
 ### Plantilla de campos
 
-Las plantillas de campos se utilizan para reutilizar la configuración del área de campos en los bloques de formulario. Para más detalles, consulte [Plantilla de campos](/interface-builder/fields/field-template).
+Las plantillas de campos se utilizan para reutilizar la configuración del área de campos en los bloques de formulario. Para más detalles, consulte [Plantilla de campos](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

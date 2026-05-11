@@ -58,7 +58,3 @@ features:
         link: /file-manager/development
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/development/index)をご参照ください。
-:::
-

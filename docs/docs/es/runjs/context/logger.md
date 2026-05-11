@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/logger).
-:::
-
 # ctx.logger
 
 Un envoltorio de registro basado en [pino](https://github.com/pinojs/pino), que proporciona registros JSON estructurados de alto rendimiento. Se recomienda utilizar `ctx.logger` en lugar de `console` para facilitar la recopilación y el análisis de registros.

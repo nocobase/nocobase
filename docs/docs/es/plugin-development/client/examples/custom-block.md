@@ -107,7 +107,7 @@ Puntos clave:
 
 - **`renderComponent()`**: renderiza la UI del bloque y lee el HTML desde `this.props.html`.
 - **`define()`**: nombre del bloque en el menú "Añadir bloque". `tExpr()` se utiliza para traducción diferida porque `define()` se ejecuta al cargar el módulo, momento en el que i18n aún no está inicializado.
-- **`registerFlow()`**: añade el panel de configuración. `uiSchema` describe el formulario (sintaxis: [UI Schema](../../../../flow-engine/ui-schema)); `handler` traslada lo que el usuario escribe a `ctx.model.props`, donde `renderComponent()` lo lee.
+- **`registerFlow()`**: añade el panel de configuración. `uiSchema` describe el formulario (sintaxis: [UI Schema](../../../flow-engine/ui-schema.md)); `handler` traslada lo que el usuario escribe a `ctx.model.props`, donde `renderComponent()` lo lee.
 
 ## Paso 3: añadir los archivos de traducción
 
@@ -194,7 +194,7 @@ Capacidades utilizadas en este ejemplo:
 - [Crear el primer plugin](../../write-your-first-plugin): crear el esqueleto desde cero.
 - [Visión general de FlowEngine](../flow-engine/index.md): uso básico de FlowModel y `registerFlow`.
 - [FlowEngine → Extensión de bloques](../flow-engine/block): BlockModel, DataBlockModel, CollectionBlockModel.
-- [UI Schema](../../../../flow-engine/ui-schema): referencia de la sintaxis de `uiSchema`.
+- [UI Schema](../../../flow-engine/ui-schema.md): referencia de la sintaxis de `uiSchema`.
 - [Component vs FlowModel](../component-vs-flow-model): cuándo usar FlowModel.
 - [Plugin](../plugin): entrada del plugin y ciclo de vida.
 - [Internacionalización (i18n)](../component/i18n): archivos de traducción y `tExpr`.

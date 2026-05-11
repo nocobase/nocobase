@@ -11,9 +11,10 @@ import _ from 'lodash';
 import { throwBadRequest } from '../errors';
 import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-utils';
 import {
+  FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY,
   mergeFlowSurfaceDefaultBlockActions,
-  type FlowSurfaceDefaultBlockActionDescriptor,
 } from '../default-block-actions';
+import type { FlowSurfaceDefaultBlockActionDescriptor } from '../default-block-actions';
 import {
   assertFlowSurfaceConcreteDefaultFilterItem,
   backfillFlowSurfaceFilterActionDefaultFilter,
@@ -24,10 +25,13 @@ import {
   FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
   attachFlowSurfaceApplyBlueprintPopupDefaults,
   buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
-  type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
 } from './defaults';
+import type { FlowSurfaceApplyBlueprintPopupDefaultsMetadata } from './defaults';
+import { normalizeBlockHiddenPopupSettings } from '../hidden-popup-contract';
 import type { FlowSurfaceResourceBindingKey } from '../types';
+import { getCollectionFields, getFieldName } from '../service-helpers';
 import type {
+  FlowSurfaceApplyBlueprintCollectionResolver,
   FlowSurfaceApplyBlueprintActionSpec,
   FlowSurfaceApplyBlueprintAssets,
   FlowSurfaceApplyBlueprintBlockResource,
@@ -176,7 +180,7 @@ const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
   'updateRecord',
   'duplicate',
 ]);
-const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES = new Set(['addNew', 'view', 'edit']);
+const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES = new Set(['addNew', 'addChild', 'view', 'edit']);
 const APPLY_BLUEPRINT_BLOCK_TYPES = new Set<string>(APPLY_BLUEPRINT_BLOCK_TYPE_ENUM);
 const APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR =
   "type 'addChild' must be authored under recordActions and is only valid when the live target catalog.recordActions exposes it for a tree collection table with treeTable enabled";
@@ -185,6 +189,34 @@ function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
     throwBadRequest(`${context}.layout is not supported; layout is only allowed on tabs[] and popup`);
   }
+}
+
+function normalizeApplyBlueprintCalendarPopupSettings(
+  settings: Record<string, any>,
+  blockContext: string,
+  defaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+) {
+  return normalizeBlockHiddenPopupSettings(
+    settings,
+    blockContext,
+    ['quickCreatePopup', 'eventPopup'],
+    defaultsMetadata,
+    throwBadRequest,
+  );
+}
+
+function normalizeApplyBlueprintKanbanPopupSettings(
+  settings: Record<string, any>,
+  blockContext: string,
+  defaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+) {
+  return normalizeBlockHiddenPopupSettings(
+    settings,
+    blockContext,
+    ['quickCreatePopup', 'cardPopup'],
+    defaultsMetadata,
+    throwBadRequest,
+  );
 }
 
 function assertApplyBlueprintFieldsLayoutHost(block: Record<string, any>, context: string) {
@@ -871,6 +903,15 @@ function attachCompiledPopupDefaults(
   return attachFlowSurfaceApplyBlueprintPopupDefaults(popup, metadata);
 }
 
+function attachDefaultActionPopupMetadata(
+  popup: Record<string, any> | undefined,
+  actionType: string | undefined,
+  metadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+) {
+  const defaultPopup = actionType === 'addChild' && _.isUndefined(popup) ? {} : popup;
+  return attachCompiledPopupDefaults(defaultPopup, metadata);
+}
+
 function compilePopup(
   popup: FlowSurfaceApplyBlueprintPopup | undefined,
   scopePrefix: string,
@@ -879,6 +920,7 @@ function compilePopup(
   defaults?: FlowSurfaceApplyBlueprintDefaults,
   options: {
     ownerActionType?: string;
+    getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
   } = {},
 ): FlowSurfaceCompiledPopup {
   if (_.isUndefined(popup)) {
@@ -941,6 +983,7 @@ function compilePopup(
         `${context}.blocks`,
         defaults,
         collectReferencedBlockKeys(popup.layout, `${context}.layout`),
+        options.getCollection,
       )
     : { blocks: [], blockKeysByLocalKey: new Map<string, string>() };
   const layout =
@@ -1052,6 +1095,7 @@ function compileField(
   context: string,
   popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   defaults?: FlowSurfaceApplyBlueprintDefaults,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
 ) {
   if (typeof input === 'string') {
     const fieldPath = assertNonEmptyString(input, `${context}[${index}]`);
@@ -1090,7 +1134,9 @@ function compileField(
   if (readOptionalString(input.label) && _.isUndefined(settings.label)) {
     settings.label = readOptionalString(input.label);
   }
-  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults);
+  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
+    getCollection,
+  });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   const popup = shouldAttachDefaultPopupMetadata(input.popup, undefined)
     ? attachCompiledPopupDefaults(popupResult.popup, popupDefaultsMetadata)
@@ -1122,6 +1168,7 @@ function compileAction(
   context: string,
   popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   defaults?: FlowSurfaceApplyBlueprintDefaults,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
 ) {
   if (typeof input === 'string') {
     const type = assertNonEmptyString(input, `${context}[${index}]`);
@@ -1129,7 +1176,7 @@ function compileAction(
       key: normalizeFlowSurfaceComposeKey(buildScopedKey(scopePrefix, `${type}_${index + 1}`), `${context}[${index}]`),
       type,
       ...(APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES.has(type)
-        ? { popup: attachCompiledPopupDefaults(undefined, popupDefaultsMetadata) }
+        ? { popup: attachDefaultActionPopupMetadata(undefined, type, popupDefaultsMetadata) }
         : {}),
     };
   }
@@ -1146,10 +1193,11 @@ function compileAction(
   }
   const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
     ownerActionType: type,
+    getCollection,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   const popup = shouldAttachDefaultPopupMetadata(input.popup, type)
-    ? attachCompiledPopupDefaults(popupResult.popup, popupDefaultsMetadata)
+    ? attachDefaultActionPopupMetadata(popupResult.popup, type, popupDefaultsMetadata)
     : popupResult.popup;
   return buildDefinedPayload({
     key,
@@ -1180,6 +1228,73 @@ function compileInjectedDefaultAction(
   });
 }
 
+function isTreeCollection(collection?: any) {
+  return collection?.template === 'tree' || collection?.options?.template === 'tree' || collection?.tree === true;
+}
+
+function resolveTreeChildrenFieldName(collection?: any) {
+  const field = getCollectionFields(collection).find(
+    (candidate) => candidate?.treeChildren === true || candidate?.options?.treeChildren === true,
+  );
+  return getFieldName(field);
+}
+
+function canInjectTreeTableAddChildDefault(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+) {
+  if (!getCollection) {
+    return false;
+  }
+  const resource = _.isPlainObject(block.resource) ? block.resource : undefined;
+  const dataSourceKey =
+    readOptionalString(block.dataSourceKey) || readOptionalString(resource?.dataSourceKey) || 'main';
+  const collectionName = readOptionalString(block.collection) || readOptionalString(resource?.collectionName);
+  if (!collectionName) {
+    return false;
+  }
+  const collection = getCollection(dataSourceKey, collectionName);
+  if (!collection) {
+    return false;
+  }
+  if (!isTreeCollection(collection)) {
+    return false;
+  }
+  return !!resolveTreeChildrenFieldName(collection);
+}
+
+function hasExplicitAddChildRecordAction(recordActions: any[]) {
+  return recordActions.some((action) => {
+    if (typeof action === 'string') {
+      return action.trim() === 'addChild';
+    }
+    return readOptionalString(action?.type) === 'addChild';
+  });
+}
+
+function buildTreeTableAddChildDefaultAction(
+  scopePrefix: string,
+  context: string,
+  index: number,
+  popupDefaultsMetadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+) {
+  const descriptorPopup = {
+    tryTemplate: true,
+    [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
+  };
+  return compileInjectedDefaultAction(
+    {
+      type: 'addChild',
+      scope: 'recordActions',
+      popup: descriptorPopup,
+    },
+    scopePrefix,
+    context,
+    index,
+    popupDefaultsMetadata,
+  );
+}
+
 function compileBlocks(
   input: FlowSurfaceApplyBlueprintBlockSpec[],
   scopePrefix: string,
@@ -1187,6 +1302,7 @@ function compileBlocks(
   context: string,
   defaults?: FlowSurfaceApplyBlueprintDefaults,
   requiredExplicitBlockKeys: Set<string> = new Set(),
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
 ): FlowSurfaceCompiledBlocks {
   const blockKeysByLocalKey = new Map<string, string>();
   const referencedBlockKeys = new Set<string>(requiredExplicitBlockKeys);
@@ -1261,6 +1377,11 @@ function compileBlocks(
       type: blockType,
       settings,
     });
+    if (blockType === 'calendar') {
+      settings = normalizeApplyBlueprintCalendarPopupSettings(settings, blockContext, popupDefaultsMetadata);
+    } else if (blockType === 'kanban') {
+      settings = normalizeApplyBlueprintKanbanPopupSettings(settings, blockContext, popupDefaultsMetadata);
+    }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('applyBlueprint', block.defaultFilter, {
       blockType,
@@ -1283,6 +1404,7 @@ function compileBlocks(
         `${blockContext}.fields`,
         popupDefaultsMetadata,
         defaults,
+        getCollection,
       ),
     );
     const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
@@ -1299,11 +1421,34 @@ function compileBlocks(
       : buildAutoCompiledFieldsLayout(fields, readOptionalString(block.type));
     const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
     const explicitActions = actions.map((action, actionIndex) =>
-      compileAction(action, actionIndex, key, assets, `${blockContext}.actions`, popupDefaultsMetadata, defaults),
+      compileAction(
+        action,
+        actionIndex,
+        key,
+        assets,
+        `${blockContext}.actions`,
+        popupDefaultsMetadata,
+        defaults,
+        getCollection,
+      ),
     );
     const explicitRecordActions = recordActions.map((action, actionIndex) =>
-      compileAction(action, actionIndex, key, assets, `${blockContext}.recordActions`, popupDefaultsMetadata, defaults),
+      compileAction(
+        action,
+        actionIndex,
+        key,
+        assets,
+        `${blockContext}.recordActions`,
+        popupDefaultsMetadata,
+        defaults,
+        getCollection,
+      ),
     );
+    const shouldInjectAddChild =
+      blockType === 'table' &&
+      _.isUndefined(template) &&
+      settings?.treeTable === true &&
+      canInjectTreeTableAddChildDefault(block, getCollection);
     const injectedActionIndexes = {
       actions: explicitActions.length,
       recordActions: explicitRecordActions.length,
@@ -1322,6 +1467,18 @@ function compileBlocks(
           popupDefaultsMetadata,
         ),
     });
+    const finalRecordActions =
+      blockType === 'table' && shouldInjectAddChild && !hasExplicitAddChildRecordAction(mergedActions.recordActions)
+        ? [
+            ...mergedActions.recordActions,
+            buildTreeTableAddChildDefaultAction(
+              key,
+              `${blockContext}.recordActions`,
+              injectedActionIndexes.recordActions++,
+              popupDefaultsMetadata,
+            ),
+          ]
+        : mergedActions.recordActions;
     const actionsWithDefaultFilter = backfillFlowSurfaceFilterActionDefaultFilter(
       mergedActions.actions,
       blockDefaultFilter,
@@ -1339,9 +1496,7 @@ function compileBlocks(
         blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree' ? undefined : fieldsLayout,
       actions: blockType === 'tree' ? undefined : actionsWithDefaultFilter,
       recordActions:
-        blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree'
-          ? undefined
-          : mergedActions.recordActions,
+        blockType === 'calendar' || blockType === 'kanban' || blockType === 'tree' ? undefined : finalRecordActions,
     });
   });
 
@@ -1357,6 +1512,7 @@ export function compileTabComposeValues(
   tabIndex: number,
   options: {
     mode: 'append' | 'replace';
+    getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
   },
 ) {
   const tabPublicPath = buildApplyBlueprintTabPublicPath(tabIndex);
@@ -1369,6 +1525,7 @@ export function compileTabComposeValues(
     blocksPath,
     document.defaults,
     collectReferencedBlockKeys(tab.layout, layoutPath),
+    options.getCollection,
   );
   const layout = compileLayout(
     tab.layout || autoLayoutFromBlockKeys(compiledBlocks.blocks.map((block) => block.key)),

@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Konfigurasi",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Sintaks Template"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Fitur Lanjutan"
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/template-print/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Skenario Penggunaan",
+    "link": "/template-print/scenes"
+  }
+]

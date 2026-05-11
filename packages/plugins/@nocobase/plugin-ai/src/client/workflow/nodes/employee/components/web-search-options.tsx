@@ -31,19 +31,19 @@ const WebSearchSwitch: React.FC = observer(() => {
 
   const formDisabled =
     form.disabled || field.disabled || field.pattern === 'disabled' || field.pattern === 'readPretty';
-  const showWebSearchNotSupportedWarning = !!modelField.value && selectedService?.supportWebSearch === false;
-  const isDisabled = formDisabled || showWebSearchNotSupportedWarning;
+  const isWebSearchNotSupported = !!modelField.value && selectedService?.supportWebSearch === false;
+  const isDisabled = formDisabled || isWebSearchNotSupported;
 
   useEffect(() => {
-    if (isDisabled && field.value) {
+    if (isWebSearchNotSupported && field.value) {
       field.value = false;
     }
-  }, [isDisabled, field]);
+  }, [isWebSearchNotSupported, field]);
 
   return (
     <div>
       <Switch checked={!!field.value} disabled={isDisabled} onChange={(checked) => (field.value = checked)} />
-      {showWebSearchNotSupportedWarning && (
+      {isWebSearchNotSupported && (
         <div style={{ marginTop: 8, color: 'rgba(0, 0, 0, 0.45)' }}>{t('Web search not supported')}</div>
       )}
     </div>

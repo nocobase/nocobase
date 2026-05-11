@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/get-started/translations).
-:::
-
 # Beitrag zur Übersetzung
 
 Die Standardsprache von NocoBase ist Englisch. Derzeit unterstützt die Hauptanwendung Englisch, Italienisch, Niederländisch, vereinfachtes Chinesisch und Japanisch. Wir laden Sie herzlich ein, Übersetzungen für weitere Sprachen beizutragen, damit Benutzer weltweit eine noch komfortablere NocoBase-Erfahrung genießen können.

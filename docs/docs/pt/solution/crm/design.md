@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/solution/crm/design).
-:::
-
 # Design Detalhado do Sistema CRM 2.0
 
 ## 1. Visão Geral do Sistema e Filosofia de Design

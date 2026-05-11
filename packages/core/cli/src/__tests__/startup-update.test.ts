@@ -10,6 +10,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  inspectSelfInstall: vi.fn(),
   inspectSelfStatus: vi.fn(),
   inspectSkillsStatus: vi.fn(),
   confirm: vi.fn(),
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../lib/self-manager.js', () => ({
+  inspectSelfInstall: mocks.inspectSelfInstall,
   inspectSelfStatus: mocks.inspectSelfStatus,
 }));
 
@@ -54,6 +56,10 @@ describe('startup update prompt', () => {
     process.env.NB_CLI_ROOT = temp;
     delete process.env.NB_SKIP_STARTUP_UPDATE;
     mocks.isInteractiveTerminal.mockReturnValue(true);
+    mocks.inspectSelfInstall.mockResolvedValue({
+      installMethod: 'npm-global',
+      packageRoot: '/tmp/cli',
+    });
   });
 
   afterEach(async () => {
@@ -75,20 +81,22 @@ describe('startup update prompt', () => {
     }
   });
 
-  test('skips prompt for non-global installs', async () => {
+  test('non-global installs skip startup update checks', async () => {
     const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
-    mocks.inspectSelfStatus.mockResolvedValue({
+    mocks.inspectSelfInstall.mockResolvedValue({
       installMethod: 'source',
-      updatable: false,
-      updateAvailable: true,
+      packageRoot: '/tmp/cli',
     });
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
 
     const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
 
     expect(result).toEqual({ kind: 'skipped' });
+    expect(mocks.inspectSelfStatus).not.toHaveBeenCalled();
     expect(mocks.inspectSkillsStatus).not.toHaveBeenCalled();
     expect(mocks.confirm).not.toHaveBeenCalled();
-    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
   });
 
   test('startup update check still runs in non-interactive sessions', async () => {
@@ -244,5 +252,23 @@ describe('startup update prompt', () => {
 
     expect(second).toEqual({ kind: 'skipped' });
     expect(mocks.confirm).toHaveBeenCalledTimes(1);
+  });
+
+  test('global installs only check once per day in shouldRunStartupUpdateCheck', async () => {
+    const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    mocks.inspectSelfStatus.mockResolvedValue({
+      installMethod: 'npm-global',
+      updatable: true,
+      updateAvailable: false,
+      currentVersion: '2.1.0-beta.20',
+      latestVersion: '2.1.0-beta.20',
+    });
+    mocks.inspectSkillsStatus.mockResolvedValue({
+      updateAvailable: false,
+    });
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
+    await maybeRunStartupUpdatePrompt(['env', 'list']);
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
   });
 });

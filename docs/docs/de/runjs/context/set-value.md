@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/set-value).
-:::
-
 # ctx.setValue()
 
 Setzt den Wert des aktuellen Feldes in Szenarien mit bearbeitbaren Feldern wie JSField und JSItem. In Kombination mit `ctx.getValue()` ermöglicht dies eine bidirektionale Bindung mit dem Formular.

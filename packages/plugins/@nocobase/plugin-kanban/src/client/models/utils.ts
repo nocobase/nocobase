@@ -9,7 +9,7 @@
 
 export const KANBAN_UNKNOWN_COLUMN_KEY = '__unknown__';
 export const DEFAULT_KANBAN_PAGE_SIZE = 10;
-export const DEFAULT_KANBAN_COLUMN_WIDTH = 300;
+export const DEFAULT_KANBAN_COLUMN_WIDTH = 250;
 
 export const KANBAN_COLOR_OPTIONS = [
   'default',
@@ -75,7 +75,7 @@ type KanbanCollectionIdentity = {
   getFilterByTK?: (record: any) => any;
 };
 
-export const KANBAN_GROUP_FIELD_INTERFACES = ['select', 'm2o'] as const;
+export const KANBAN_GROUP_FIELD_INTERFACES = ['select', 'radioGroup', 'm2o'] as const;
 
 const MULTIPLE_GROUP_FIELD_INTERFACES = new Set(['m2m', 'o2m']);
 const ASSOCIATION_GROUP_FIELD_INTERFACES = new Set(['m2o', 'm2m', 'o2m', 'obo', 'oho']);

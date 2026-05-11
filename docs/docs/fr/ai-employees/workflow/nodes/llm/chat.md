@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/workflow/nodes/llm/chat).
-:::
-
 # Conversation textuelle
 
 ## Introduction

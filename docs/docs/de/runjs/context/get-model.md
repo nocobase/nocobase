@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/get-model).
-:::
-
 # ctx.getModel()
 
 Ruft eine Modellinstanz (wie `BlockModel`, `PageModel`, `ActionModel` usw.) basierend auf der Modell-`uid` aus der aktuellen Engine oder dem View-Stack ab. Dies wird in RunJS verwendet, um block-, seiten- oder popup-übergreifend auf andere Modelle zuzugreifen.

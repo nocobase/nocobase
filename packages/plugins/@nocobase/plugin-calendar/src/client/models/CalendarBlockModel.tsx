@@ -106,6 +106,24 @@ const getWeekStartOptions = (translate: (key: string, options?: Record<string, a
   { label: translate('Sunday', { ns: 'calendar' }), value: 0 },
 ];
 
+const applyCalendarFieldNames = (model: CalendarBlockModel, params: Record<string, any>) => {
+  model.setProps({
+    fieldNames: {
+      ...(model.props?.fieldNames || {}),
+      ...(Object.prototype.hasOwnProperty.call(params, 'titleField') ? { title: params.titleField } : {}),
+      ...(Object.prototype.hasOwnProperty.call(params, 'start') ? { start: params.start } : {}),
+      ...(Object.prototype.hasOwnProperty.call(params, 'end') ? { end: params.end || null } : {}),
+    },
+  });
+};
+
+const applyCalendarPresetFieldNames = (model: CalendarBlockModel, params: Record<string, any>) => {
+  applyCalendarFieldNames(model, {
+    ...params,
+    end: params.end || null,
+  });
+};
+
 export class CalendarBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.many;
 
@@ -211,12 +229,13 @@ export class CalendarBlockModel extends CollectionBlockModel {
 
   getFieldNames() {
     const fieldNames = this.props?.fieldNames || {};
+    const hasEndFieldName = Object.prototype.hasOwnProperty.call(fieldNames, 'end');
 
     return {
       id: 'id',
       title: fieldNames.title || this.getDefaultTitleFieldName(),
       start: fieldNames.start || this.getDefaultStartFieldName(),
-      end: fieldNames.end || this.getDefaultEndFieldName(),
+      end: hasEndFieldName ? fieldNames.end || undefined : this.getDefaultEndFieldName(),
       colorFieldName: fieldNames.colorFieldName,
     };
   }
@@ -579,6 +598,61 @@ CalendarBlockModel.registerFlow({
   sort: 500,
   title: tExpr('Calendar', { ns: 'calendar' }),
   steps: {
+    fields: {
+      title: tExpr('Calendar fields', { ns: 'calendar' }),
+      preset: true,
+      hideInSettings: true,
+      uiSchema(ctx) {
+        const model = ctx.model as CalendarBlockModel;
+        const titleFieldOptions = model.getTitleFieldOptions();
+        const dateFieldOptions = model.getDateFieldOptions();
+
+        return {
+          titleField: {
+            type: 'string',
+            title: tExpr('Title field', { ns: 'calendar' }),
+            required: true,
+            enum: titleFieldOptions,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              options: titleFieldOptions,
+            },
+          },
+          start: {
+            type: 'string',
+            title: tExpr('Start date field', { ns: 'calendar' }),
+            required: true,
+            enum: dateFieldOptions,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              options: dateFieldOptions,
+            },
+          },
+          end: {
+            type: 'string',
+            title: tExpr('End date field', { ns: 'calendar' }),
+            enum: dateFieldOptions,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              options: dateFieldOptions,
+              allowClear: true,
+            },
+          },
+        };
+      },
+      defaultParams() {
+        return {};
+      },
+      handler(ctx, params) {
+        applyCalendarPresetFieldNames(ctx.model as CalendarBlockModel, params);
+      },
+      beforeParamsSave(ctx, params) {
+        applyCalendarPresetFieldNames(ctx.model as CalendarBlockModel, params);
+      },
+    },
     titleField: {
       title: tExpr('Title field', { ns: 'calendar' }),
       uiMode(ctx) {
@@ -596,13 +670,10 @@ CalendarBlockModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const model = ctx.model as CalendarBlockModel;
-        model.setProps({
-          fieldNames: {
-            ...(model.props?.fieldNames || {}),
-            title: params.titleField,
-          },
-        });
+        applyCalendarFieldNames(ctx.model as CalendarBlockModel, params);
+      },
+      beforeParamsSave(ctx, params) {
+        applyCalendarFieldNames(ctx.model as CalendarBlockModel, params);
       },
     },
     colorField: {
@@ -649,13 +720,10 @@ CalendarBlockModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const model = ctx.model as CalendarBlockModel;
-        model.setProps({
-          fieldNames: {
-            ...(model.props?.fieldNames || {}),
-            start: params.start,
-          },
-        });
+        applyCalendarFieldNames(ctx.model as CalendarBlockModel, params);
+      },
+      beforeParamsSave(ctx, params) {
+        applyCalendarFieldNames(ctx.model as CalendarBlockModel, params);
       },
     },
     endDateField: {
@@ -678,13 +746,10 @@ CalendarBlockModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const model = ctx.model as CalendarBlockModel;
-        model.setProps({
-          fieldNames: {
-            ...(model.props?.fieldNames || {}),
-            end: params.end || undefined,
-          },
-        });
+        applyCalendarFieldNames(ctx.model as CalendarBlockModel, params);
+      },
+      beforeParamsSave(ctx, params) {
+        applyCalendarFieldNames(ctx.model as CalendarBlockModel, params);
       },
     },
     defaultView: {

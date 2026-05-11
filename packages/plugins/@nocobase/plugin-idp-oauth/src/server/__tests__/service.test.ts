@@ -107,6 +107,44 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(service.getSupportedScopes()).toEqual(['openid', 'offline_access', 'profile', 'email']);
   });
 
+  test('should use system token policy for OAuth token TTLs', async () => {
+    const getConfig = vi.fn().mockResolvedValue({
+      tokenExpirationTime: 60 * 60 * 1000,
+      sessionExpirationTime: 7 * 24 * 60 * 60 * 1000,
+    });
+    const service = new IdpOauthService(
+      {
+        name: 'main',
+        logger: {
+          warn: vi.fn(),
+        },
+        authManager: {
+          jwt: {
+            getSecret: vi.fn().mockReturnValue('test-secret'),
+          },
+          tokenController: {
+            getConfig,
+          },
+        },
+      } as any,
+      {} as any,
+    );
+    vi.spyOn(service as any, 'getProviderSigningJwks').mockResolvedValue({ keys: [{}] });
+
+    const configuration = await (service as any).createConfiguration({
+      appName: 'main',
+      issuer: 'http://127.0.0.1:13000/api',
+      issuerPath: '/api',
+      origin: 'http://127.0.0.1:13000',
+    });
+
+    expect(configuration.ttl.AccessToken).toBe(60 * 60);
+    expect(configuration.ttl.Grant).toBe(7 * 24 * 60 * 60);
+    expect(configuration.ttl.RefreshToken).toBe(7 * 24 * 60 * 60);
+    expect(configuration.ttl.Session).toBe(7 * 24 * 60 * 60);
+    expect(configuration.ttl.AuthorizationCode).toBe(60);
+  });
+
   test('should prefer the most specific resource config for nested paths', () => {
     const service = new IdpOauthService({} as any, {} as any);
 

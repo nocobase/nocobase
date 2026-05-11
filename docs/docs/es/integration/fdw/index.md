@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/integration/fdw/index).
-:::
-
 # Conectar tablas de datos externas (FDW)
 
 ## Introducción

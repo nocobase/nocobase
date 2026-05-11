@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/fields/specific/js-column)をご参照ください。
-:::
-
 # JS Column
 
 ## はじめに

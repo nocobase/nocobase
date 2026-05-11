@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -43,11 +52,34 @@ const testApiOperation: GeneratedOperation = {
   examples: [],
 };
 
+const testListOperation: GeneratedOperation = {
+  commandId: 'test list',
+  method: 'get',
+  pathTemplate: '/test:list',
+  parameters: [
+    {
+      name: 'paginate',
+      flagName: 'paginate',
+      in: 'query',
+      type: 'boolean',
+    },
+  ],
+  examples: [],
+};
+
 class ParseOnlyTestApiCommand extends Command {
   static override flags = createGeneratedFlags(testApiOperation);
 
   async run() {
     return this.parse(ParseOnlyTestApiCommand);
+  }
+}
+
+class ParseOnlyTestListCommand extends Command {
+  static override flags = createGeneratedFlags(testListOperation);
+
+  async run() {
+    return this.parse(ParseOnlyTestListCommand);
   }
 }
 
@@ -57,6 +89,7 @@ test('body JSON path should not require body field flags at parse time', async (
     body: '{"primaryValue":"ok","items":[]}',
     'json-output': true,
     verbose: false,
+    yes: false,
   });
 });
 
@@ -64,6 +97,12 @@ test('body-file path should not require inline body or body field flags at parse
   const result = await ParseOnlyTestApiCommand.run(['--body-file', '/tmp/test-api.json']);
   expect(result.flags['body-file']).toBe('/tmp/test-api.json');
   expect(result.flags.body).toBe(undefined);
+});
+
+test('generated boolean flags should accept --no-* form', async () => {
+  const result = await ParseOnlyTestListCommand.run(['--no-paginate']);
+
+  expect(result.flags.paginate).toBe(false);
 });
 
 test('parseBody should still enforce required body fields when flag mode is used', async () => {
@@ -147,6 +186,27 @@ test('buildExamples should not mix required body flags with --body examples', ()
   ]);
 });
 
+test('buildExamples should include output and file flags for binary multipart operations', () => {
+  const examples = buildExamples('test upload', {
+    parameters: [
+      {
+        name: 'file',
+        flagName: 'file',
+        in: 'body',
+        required: true,
+        type: 'string',
+        format: 'binary',
+        isFile: true,
+      },
+    ],
+    hasBody: true,
+    requestContentType: 'multipart/form-data',
+    responseType: 'binary',
+  });
+
+  expect(examples).toEqual(['nb api test upload --file <path> --output <path>']);
+});
+
 test('createGeneratedFlags should group body, raw JSON body, and global flags separately for help output', () => {
   const flags = createGeneratedFlags(testApiOperation);
 
@@ -156,4 +216,39 @@ test('createGeneratedFlags should group body, raw JSON body, and global flags se
   expect(flags['body-file'].helpGroup).toBe('Raw JSON Body');
   expect(flags.env.helpGroup).toBe('Global');
   expect(flags['api-base-url'].helpGroup).toBe('Global');
+  expect(flags.yes.helpGroup).toBe('Global');
+  expect(flags.yes.default).toBe(false);
+});
+
+test('createGeneratedFlags should expose output for binary responses and omit raw JSON flags for multipart bodies', () => {
+  const operation: GeneratedOperation = {
+    commandId: 'test upload',
+    method: 'post',
+    pathTemplate: '/test:upload',
+    parameters: [
+      {
+        name: 'file',
+        flagName: 'file',
+        in: 'body',
+        required: true,
+        type: 'string',
+        format: 'binary',
+        isFile: true,
+      },
+    ],
+    hasBody: true,
+    bodyRequired: true,
+    requestContentType: 'multipart/form-data',
+    responseType: 'binary',
+    examples: [],
+  };
+
+  const flags = createGeneratedFlags(operation);
+
+  expect(flags.file.required).toBe(true);
+  expect(flags.file.helpGroup).toBe('Body Field');
+  expect(flags.output.required).toBe(true);
+  expect(flags.output.helpGroup).toBe('Output');
+  expect(flags.body).toBe(undefined);
+  expect(flags['body-file']).toBe(undefined);
 });

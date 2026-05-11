@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-data-visualization"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Descripción general
 

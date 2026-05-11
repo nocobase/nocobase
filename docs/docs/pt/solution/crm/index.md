@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/solution/crm/index).
-:::
-
 # Solução NocoBase CRM 2.0
 
 > Sistema de gestão de vendas modular baseado na plataforma low-code NocoBase, com tomada de decisão assistida por funcionários de IA

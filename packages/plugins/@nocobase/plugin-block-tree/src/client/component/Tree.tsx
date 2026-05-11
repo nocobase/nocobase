@@ -10,14 +10,15 @@
 import { useCompile, withDynamicSchemaProps } from '@nocobase/client';
 import { useDebounceFn } from 'ahooks';
 import { Tree as AntdTree, Empty, Input, Spin, theme } from 'antd';
-import { cloneDeep } from 'lodash';
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { FC, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { TreeProps as AntdTreeProps, TreeDataNode } from 'antd';
 import type { BasicDataNode, DataNode } from 'rc-tree/lib/interface';
 
 import { BlockName } from '../constants';
 import { useTreeTranslation } from '../locale';
+
+const INTERNAL_TITLE_KEY = '__tree_node_title__';
 
 const getParentKey = (
   key: React.Key,
@@ -30,11 +31,15 @@ const getParentKey = (
 
   for (let i = 0; i < tree.length; i++) {
     const node = tree[i];
-    if (node[nodeChildren]) {
-      if (node[nodeChildren].some((item) => item[nodeKey] === key)) {
+    const children = node[nodeChildren];
+    if (Array.isArray(children)) {
+      if (children.some((item) => item[nodeKey] === key)) {
         parentKey = node[nodeKey];
-      } else if (getParentKey(key, node[nodeChildren], fieldNames)) {
-        parentKey = getParentKey(key, node[nodeChildren], fieldNames);
+      } else {
+        const matchedParentKey = getParentKey(key, children, fieldNames);
+        if (matchedParentKey) {
+          parentKey = matchedParentKey;
+        }
       }
     }
   }
@@ -43,12 +48,20 @@ const getParentKey = (
 
 const flatTreeData = (data: TreeDataNode[] = [], fieldNames?: AntdTreeProps['fieldNames']): TreeDataNode[] => {
   const nodeChildren = fieldNames?.children || 'children';
+  const result: TreeDataNode[] = [];
 
-  return data.reduce((prev, item) => {
-    const children = item[nodeChildren];
-    const flatChildren = children ? flatTreeData(children) : [];
-    return [...prev, item, ...flatChildren];
-  }, []);
+  const loop = (items: TreeDataNode[] = []) => {
+    for (const item of items) {
+      result.push(item);
+      const children = item[nodeChildren];
+      if (Array.isArray(children)) {
+        loop(children);
+      }
+    }
+  };
+
+  loop(data);
+  return result;
 };
 
 export interface FilterComponentProps {
@@ -64,7 +77,8 @@ export interface TreeProps<T extends BasicDataNode = DataNode> extends AntdTreeP
   onSearch?: (value: string) => void;
   loading?: boolean;
   FilterComponent?: React.ComponentType<FilterComponentProps>;
-  renderNodeTitle?: (value: any, node: T) => React.ReactNode;
+  renderNodeTitle?: (value: any, node: T, fallbackTitle?: React.ReactNode) => React.ReactNode;
+  searchExtra?: React.ReactNode;
 }
 
 const DefaultFilterComponent: FC<FilterComponentProps> = ({ value, onChange }) => {
@@ -87,26 +101,63 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
       expandedKeys: propsExpandedKeys,
       autoExpandParent: propsAutoExpandParent = true,
       renderNodeTitle,
+      searchExtra,
       ...treeProps
     } = props;
-
-    const clonedTreeData = useMemo(() => cloneDeep(treeData), [treeData]);
 
     const compile = useCompile();
     const fieldKeyName = useMemo(() => fieldNames?.key || 'key', [fieldNames?.key]);
     const fieldChildrenName = useMemo(() => fieldNames?.children || 'children', [fieldNames?.children]);
     const fieldTitleName = useMemo(() => fieldNames?.title || 'title', [fieldNames?.title]);
-    const dataList = useMemo(
-      () => (searchable || defaultExpandAll ? flatTreeData(clonedTreeData, fieldNames) : null),
-      [clonedTreeData, defaultExpandAll, fieldNames, searchable],
+    const renderedFieldNames = useMemo(
+      () => ({
+        ...fieldNames,
+        title: INTERNAL_TITLE_KEY,
+      }),
+      [fieldNames],
     );
+    const resolvedTreeData = useMemo(() => treeData || [], [treeData]);
+    const dataList = useMemo(() => flatTreeData(resolvedTreeData, fieldNames), [fieldNames, resolvedTreeData]);
     const allKeys = useMemo(() => dataList?.map((item) => item[fieldKeyName]), [dataList, fieldKeyName]);
-    const [expandedKeys, setExpandedKeys] = useState<React.Key[]>(propsExpandedKeys);
+    const allKeySet = useMemo(() => new Set(allKeys), [allKeys]);
+    const normalizeExpandedKeys = useCallback(
+      (keys?: readonly React.Key[]) => {
+        if (!keys) {
+          return [];
+        }
+        if (!allKeySet.size) {
+          return [...keys];
+        }
+        return keys.filter((key) => allKeySet.has(key));
+      },
+      [allKeySet],
+    );
+    const getInitialExpandedKeys = useCallback(
+      () => normalizeExpandedKeys(propsExpandedKeys ?? propsDefaultExpandedKeys),
+      [normalizeExpandedKeys, propsDefaultExpandedKeys, propsExpandedKeys],
+    );
+    const [expandedKeys, setExpandedKeysState] = useState<React.Key[]>(getInitialExpandedKeys);
+    const expandedKeysRef = useRef(expandedKeys);
+    const expandedKeysInitializedRef = useRef(false);
+    const expandedKeysBeforeSearchRef = useRef<React.Key[] | null>(null);
+    const hasUserExpandedRef = useRef(false);
+    const previousDefaultExpandAllRef = useRef(defaultExpandAll);
+    const isExpandedKeysControlled = propsExpandedKeys !== undefined;
 
+    const [inputValue, setInputValue] = useState('');
     const [searchValue, setSearchValue] = useState('');
+    const deferredSearchValue = useDeferredValue(searchValue);
     const [autoExpandParent, setAutoExpandParent] = useState(propsAutoExpandParent);
     const { token } = theme.useToken();
     const hasCustomTitleHandling = Boolean(renderNodeTitle);
+    const setExpandedKeys = useCallback(
+      (keys?: readonly React.Key[]) => {
+        const normalizedKeys = normalizeExpandedKeys(keys);
+        expandedKeysRef.current = normalizedKeys;
+        setExpandedKeysState(normalizedKeys);
+      },
+      [normalizeExpandedKeys],
+    );
 
     const resolveNodeTitleText = useCallback(
       (item: TreeDataNode) => {
@@ -142,57 +193,65 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
       const loop = (data: TreeDataNode[]): any[] =>
         data.map((item) => {
           const strTitle = resolveNodeTitleText(item);
-          const hasSearchValue = searchValue !== '' && searchValue !== null && searchValue !== undefined;
-          const index = hasSearchValue ? strTitle.indexOf(String(searchValue)) : -1;
+          const hasSearchValue =
+            deferredSearchValue !== '' && deferredSearchValue !== null && deferredSearchValue !== undefined;
+          const index = hasSearchValue ? strTitle.indexOf(String(deferredSearchValue)) : -1;
           const beforeStr = strTitle.substring(0, index);
-          const afterStr = strTitle.slice(index + String(searchValue).length);
+          const afterStr = strTitle.slice(index + String(deferredSearchValue).length);
           let title: React.ReactNode;
 
-          if (index > -1) {
-            title = (
+          const highlightedTitle =
+            index > -1 ? (
               <span>
                 {beforeStr}
-                <span style={{ color: token.colorPrimary }}>{searchValue}</span>
+                <span style={{ color: token.colorPrimary }}>{deferredSearchValue}</span>
                 {afterStr}
               </span>
-            );
+            ) : null;
+
+          if (index > -1) {
+            title = hasCustomTitleHandling
+              ? renderNodeTitle?.(item[fieldTitleName], item as DataNode, highlightedTitle) || highlightedTitle
+              : highlightedTitle;
           } else {
             title = hasCustomTitleHandling ? resolveNodeTitle(item) : <span>{strTitle}</span>;
           }
 
           if (item[fieldChildrenName]) {
             return {
-              [fieldTitleName]: title,
+              [INTERNAL_TITLE_KEY]: title,
               [fieldKeyName]: item[fieldKeyName],
-              [fieldChildrenName]: loop(cloneDeep(item[fieldChildrenName])),
+              [fieldChildrenName]: loop(item[fieldChildrenName]),
             };
           }
 
           return {
-            [fieldTitleName]: title,
+            [INTERNAL_TITLE_KEY]: title,
             [fieldKeyName]: item[fieldKeyName],
           };
         });
 
-      return loop(clonedTreeData || []);
+      return loop(resolvedTreeData);
     }, [
-      searchValue,
-      clonedTreeData,
+      deferredSearchValue,
+      resolvedTreeData,
       fieldTitleName,
       fieldKeyName,
       fieldChildrenName,
       hasCustomTitleHandling,
+      renderNodeTitle,
       resolveNodeTitle,
       resolveNodeTitleText,
       token.colorPrimary,
     ]);
     const onExpand: TreeProps['onExpand'] = useCallback(
       (newExpandedKeys, info) => {
+        hasUserExpandedRef.current = true;
         setExpandedKeys(newExpandedKeys);
         setAutoExpandParent(false);
         propsOnExpand?.(newExpandedKeys, info);
       },
-      [propsOnExpand],
+      [propsOnExpand, setExpandedKeys],
     );
 
     const onSearch = useDebounceFn(
@@ -205,44 +264,98 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
       },
     );
 
+    const onFilterChange = useCallback(
+      (value) => {
+        setInputValue(value);
+        onSearch.run(value);
+      },
+      [onSearch],
+    );
+
     useEffect(() => {
-      if (searchValue) {
+      if (deferredSearchValue) {
+        if (!expandedKeysBeforeSearchRef.current) {
+          expandedKeysBeforeSearchRef.current = expandedKeysRef.current;
+        }
+
         const newExpandedKeys = dataList
           .map((item) => {
-            if (String(item[fieldTitleName]).indexOf(searchValue) > -1) {
-              return getParentKey(item[fieldKeyName], treeData, fieldNames);
+            if (String(item[fieldTitleName]).indexOf(deferredSearchValue) > -1) {
+              return getParentKey(item[fieldKeyName], resolvedTreeData, fieldNames);
             }
             return null;
           })
           .filter((item, i, self): item is React.Key => !!(item && self.indexOf(item) === i));
         setExpandedKeys(newExpandedKeys);
-      } else {
-        if (defaultExpandAll) {
-          setExpandedKeys(allKeys);
-        } else {
-          setExpandedKeys(propsExpandedKeys || propsDefaultExpandedKeys);
-        }
+        setAutoExpandParent(true);
+        return;
       }
-      setAutoExpandParent(true);
+
+      if (expandedKeysBeforeSearchRef.current) {
+        setExpandedKeys(expandedKeysBeforeSearchRef.current);
+        expandedKeysBeforeSearchRef.current = null;
+        setAutoExpandParent(false);
+        return;
+      }
+
+      if (isExpandedKeysControlled) {
+        setExpandedKeys(propsExpandedKeys);
+        setAutoExpandParent(propsAutoExpandParent);
+        expandedKeysInitializedRef.current = true;
+        return;
+      }
+
+      const defaultExpandAllChanged = previousDefaultExpandAllRef.current !== defaultExpandAll;
+      previousDefaultExpandAllRef.current = defaultExpandAll;
+
+      if (!expandedKeysInitializedRef.current || defaultExpandAllChanged) {
+        setExpandedKeys(defaultExpandAll ? allKeys : propsDefaultExpandedKeys);
+        setAutoExpandParent(true);
+        expandedKeysInitializedRef.current = true;
+        hasUserExpandedRef.current = false;
+        return;
+      }
+
+      if (defaultExpandAll && !hasUserExpandedRef.current) {
+        setExpandedKeys(allKeys);
+        setAutoExpandParent(true);
+      } else {
+        setExpandedKeys(expandedKeysRef.current);
+        setAutoExpandParent(false);
+      }
     }, [
-      searchValue,
-      treeData,
+      deferredSearchValue,
       fieldTitleName,
       fieldKeyName,
-      fieldChildrenName,
       dataList,
       defaultExpandAll,
       fieldNames,
       allKeys,
       propsExpandedKeys,
+      propsAutoExpandParent,
       propsDefaultExpandedKeys,
+      resolvedTreeData,
+      isExpandedKeysControlled,
+      setExpandedKeys,
     ]);
 
     return (
       <div>
-        {searchable && (
-          <div style={{ marginBottom: token.marginXS }}>
-            <FilterComponent value={searchValue} onChange={onSearch.run} />
+        {(searchable || searchExtra) && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: token.marginXS,
+              marginBottom: token.marginXS,
+            }}
+          >
+            {searchable && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <FilterComponent value={inputValue} onChange={onFilterChange} />
+              </div>
+            )}
+            {searchExtra && <div style={{ flexShrink: 0 }}>{searchExtra}</div>}
           </div>
         )}
         {!loading ? (
@@ -250,7 +363,7 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
             <AntdTree
               {...treeProps}
               onExpand={onExpand}
-              fieldNames={fieldNames}
+              fieldNames={renderedFieldNames}
               expandedKeys={expandedKeys}
               autoExpandParent={autoExpandParent}
               treeData={searchedTreeData}

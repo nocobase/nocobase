@@ -200,7 +200,7 @@ test('init appName validates global env name uniqueness', async () => {
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'local',
+        lastEnv: 'local',
         envs: {
           local: {
             baseUrl: 'http://localhost:13000/api',
@@ -221,7 +221,7 @@ test('init appName allows reusing a global env name when --force is set', async 
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'local',
+        lastEnv: 'local',
         envs: {
           local: {
             baseUrl: 'http://localhost:13000/api',
@@ -247,7 +247,7 @@ test('init --yes --env validates global env name uniqueness through preset value
   await withTempProjectCwd(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'local',
+        lastEnv: 'local',
         envs: {
           local: {
             baseUrl: 'http://localhost:13000/api',

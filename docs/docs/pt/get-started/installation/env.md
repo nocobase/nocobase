@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Variáveis de Ambiente
 
 ## Como configurar variáveis de ambiente?
@@ -244,14 +240,6 @@ Método de saída de log. Múltiplos valores são separados por `,`. O padrão �
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
-```
-
-### LOGGER_BASE_PATH
-
-Caminho de armazenamento dos logs baseados em arquivo. O valor padrão é `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
 ```
 
 ### LOGGER_LEVEL

@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/index).
-:::
-
 # RunJS Übersicht
 
 RunJS ist die JavaScript-Ausführungsumgebung in NocoBase für Szenarien wie **JS-Blöcke**, **JS-Felder** und **JS-Aktionen**. Der Code wird in einer eingeschränkten Sandbox ausgeführt, bietet sicheren Zugriff auf die `ctx` (Kontext-API) und verfügt über die folgenden Funktionen:

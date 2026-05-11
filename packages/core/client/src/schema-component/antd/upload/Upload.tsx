@@ -38,6 +38,7 @@ import { useProps } from '../../hooks/useProps';
 import {
   FILE_SIZE_LIMIT_DEFAULT,
   attachmentFileTypes,
+  getFileDownloadName,
   getThumbnailPlaceholderURL,
   matchMimetype,
   normalizeFile,
@@ -96,7 +97,7 @@ attachmentFileTypes.add({
       (e) => {
         e.preventDefault();
         const file = list[index];
-        saveAs(file.url, `${file.title}${file.extname}`);
+        saveAs(file.url, getFileDownloadName(file));
       },
       [index, list],
     );
@@ -203,9 +204,9 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      saveAs(url, `${file.title}${file.extname}`);
+      saveAs(url, getFileDownloadName(file));
     },
-    [file.extname, file.title, url],
+    [file, url],
   );
   const onClose = useCallback(() => {
     onSwitchIndex(null);
@@ -356,7 +357,7 @@ function AttachmentListItem(props) {
     propsOnDelete?.(file);
   }, [file, propsOnDelete]);
   const onDownload = useCallback(() => {
-    saveAs(file.url, `${file.title}${file.extname}`);
+    saveAs(file.url, getFileDownloadName(file));
   }, [file]);
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const item = [

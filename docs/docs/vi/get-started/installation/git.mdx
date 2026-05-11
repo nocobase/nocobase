@@ -1,0 +1,118 @@
+---
+title: "Cài đặt từ mã nguồn Git"
+description: "Bắt đầu nhanh với NocoBase: Cài đặt từ mã nguồn Git"
+keywords: "git, NocoBase"
+---
+
+# Cài đặt từ mã nguồn Git
+
+:::tip Điều kiện tiên quyết
+
+- Đã cài Git, Node.js >= 22, Yarn 1.22.x
+- Đã cấu hình và khởi động một trong các database cần thiết: MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+
+- Do điều kiện mạng tại Trung Quốc, khuyến nghị bạn đổi sang npm mirror nội địa (không bắt buộc)
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. Tải NocoBase về máy
+
+Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)), thực thi lệnh tương ứng.
+
+<Tabs>
+<Tab label="Phiên bản Latest">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Phiên bản Beta">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Phiên bản Alpha">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. Chuyển vào thư mục
+
+```bash
+cd my-nocobase
+```
+
+## 3. Cài đặt phụ thuộc
+
+Lưu ý: Do điều kiện mạng và cấu hình hệ thống, bước tiếp theo này có thể mất khoảng mười mấy phút.
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. Thiết lập biến môi trường
+
+Các biến môi trường cần thiết cho NocoBase được lưu trong tệp `.env` ở thư mục gốc, sửa biến môi trường theo tình hình thực tế.
+
+```bash
+TZ=Asia/Shanghai
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning Hướng dẫn biến môi trường
+
+- `TZ` dùng để cài đặt múi giờ của ứng dụng, mặc định là múi giờ hệ điều hành;
+- `APP_KEY` là khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v. (Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu). Có thể là chuỗi ngẫu nhiên bất kỳ. Vui lòng sửa thành khóa bí mật của riêng bạn và đảm bảo không tiết lộ ra ngoài;
+- `DB_*` liên quan đến database, nếu không phải database mặc định trong ví dụ, vui lòng sửa theo tình hình thực tế.
+
+:::
+
+## 5. Cài đặt NocoBase
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+## 6. Khởi động NocoBase
+
+
+**Môi trường phát triển**
+
+```bash
+yarn dev
+```
+
+**Môi trường sản xuất (không khuyến nghị)**
+
+Không khuyến nghị triển khai trực tiếp từ mã nguồn ở môi trường sản xuất, với môi trường sản xuất vui lòng tham khảo [Triển khai môi trường sản xuất](../deployment/production.md).
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. Đăng nhập NocoBase
+
+Mở trình duyệt và truy cập [http://localhost:13000](http://localhost:13000), tài khoản và mật khẩu khởi tạo là `admin@nocobase.com` và `admin123`.
+
+:::warning Lưu ý bảo mật tài khoản
+
+Sau khi đăng nhập lần đầu, vui lòng đổi mật khẩu mặc định ngay để đảm bảo an toàn hệ thống.
+
+:::

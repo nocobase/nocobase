@@ -57,10 +57,6 @@ const model = await this.flowEngine.createModelAsync({
 ```
 
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 ## Deuxième étape : Ajouter un PropsFlow pour rendre les propriétés du bouton configurables
 

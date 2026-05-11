@@ -10,7 +10,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import FlowRoute from '../components/FlowRoute';
 
@@ -219,7 +219,7 @@ describe('FlowRoute', () => {
     });
   });
 
-  it('should replace to legacy page when current route is page', async () => {
+  it('should show 404 when current route is a legacy page in v2 runtime', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();
     Object.defineProperty(window, 'location', {
@@ -271,9 +271,8 @@ describe('FlowRoute', () => {
         </FlowEngineProvider>,
       );
 
-      await waitFor(() => {
-        expect(replace).toHaveBeenCalledWith('/admin/test-page/tabs/tab-1?from=direct#dialog');
-      });
+      expect(await screen.findByText('404')).toBeInTheDocument();
+      expect(replace).not.toHaveBeenCalled();
       expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
       expect(adminLayoutModel.updateRoutePage).not.toHaveBeenCalled();
     } finally {

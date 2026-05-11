@@ -8,6 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -41,6 +42,11 @@ export default class AppLogs extends Command {
       char: 'e',
       description: 'CLI env name to inspect logs for. Defaults to the current env when omitted',
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
     tail: Flags.integer({
       description: 'Number of recent log lines to show before following',
       default: 100,
@@ -49,7 +55,7 @@ export default class AppLogs extends Command {
     follow: Flags.boolean({
       char: 'f',
       description: 'Keep streaming new log lines',
-      default: true,
+      default: false,
       allowNo: true,
     }),
   };
@@ -57,6 +63,17 @@ export default class AppLogs extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppLogs);
     const requestedEnv = flags.env?.trim() || undefined;
+    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
     if (!runtime) {
@@ -84,7 +101,7 @@ export default class AppLogs extends Command {
     }
 
     const tail = String(flags.tail ?? 100);
-    const follow = flags.follow !== false;
+    const follow = flags.follow === true;
     printInfo(
       follow
         ? `Showing logs for "${runtime.envName}" (press Ctrl+C to stop).`

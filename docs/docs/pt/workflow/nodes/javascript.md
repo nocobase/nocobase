@@ -2,17 +2,13 @@
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/workflow/nodes/javascript).
-:::
-
 # Script JavaScript
 
 ## Introdução
 
 O nó de script JavaScript permite que os usuários executem um script JavaScript personalizado no lado do servidor dentro de um fluxo de trabalho. O script pode usar variáveis de etapas anteriores do fluxo como parâmetros, e o valor de retorno do script pode ser fornecido para nós subsequentes.
 
-O script é executado em uma *worker thread* no servidor da aplicação NocoBase. Por padrão, utiliza um sandbox seguro (isolated-vm) que não suporta `require` nem APIs nativas do Node.js. Para mais detalhes, consulte [Motor de execução](#motor-de-execução) e [Lista de recursos](#lista-de-recursos).
+O script é executado em uma *worker thread* no servidor da aplicação NocoBase. Por padrão, utiliza um sandbox seguro (QuickJS baseado em WebAssembly) que não suporta `require` nem APIs nativas do Node.js. Para mais detalhes, consulte [Motor de execução](#motor-de-execução) e [Lista de recursos](#lista-de-recursos).
 
 ## Criar nó
 
@@ -54,7 +50,7 @@ O nó de script JavaScript suporta dois motores de execução, selecionados auto
 
 ### Modo seguro (padrão)
 
-Quando `WORKFLOW_SCRIPT_MODULES` **não está configurada**, os scripts são executados usando o motor [isolated-vm](https://github.com/laverdet/isolated-vm). Este motor executa o código em um ambiente V8 isolado com as seguintes características:
+Quando `WORKFLOW_SCRIPT_MODULES` **não está configurada**, os scripts são executados usando o motor [QuickJS](https://bellard.org/quickjs/) baseado em WebAssembly. Este motor executa o código em um runtime JavaScript isolado com as seguintes características:
 
 - **Não suporta** `require` — nenhum módulo pode ser importado
 - **Não suporta** APIs nativas do Node.js (como `process`, `Buffer`, `global`, etc.)

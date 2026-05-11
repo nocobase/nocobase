@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/form).
-:::
-
 # ctx.form
 
 L'instance Ant Design Form au sein du bloc actuel, utilisée pour lire/écrire les champs du formulaire, déclencher la validation et la soumission. Équivalent à `ctx.blockModel?.form`, elle peut être utilisée directement dans les blocs liés aux formulaires (Formulaire, Formulaire d'édition, Sous-formulaire, etc.).

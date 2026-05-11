@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-workflow-approval'
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/workflow/nodes/approval).
-:::
-
 # Approbation
 
 ## Introduction

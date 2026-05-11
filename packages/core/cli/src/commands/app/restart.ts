@@ -8,6 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
@@ -41,6 +42,11 @@ export default class AppRestart extends Command {
       char: 'e',
       description: 'CLI env name to restart. Defaults to the current env when omitted',
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
     quickstart: Flags.boolean({ description: 'Quickstart the application after stopping it', required: false }),
     port: Flags.string({ description: 'Port (overrides appPort from env config when set)', char: 'p', required: false }),
     daemon: Flags.boolean({
@@ -60,10 +66,26 @@ export default class AppRestart extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppRestart);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
     const stopArgv: string[] = [];
     const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
 
-    pushFlag(stopArgv, '--env', flags.env?.trim() || undefined);
+    pushFlag(stopArgv, '--env', requestedEnv);
+    if (flags.yes || explicitEnvSelection) {
+      stopArgv.push('--yes');
+    }
     if (flags.verbose) {
       stopArgv.push('--verbose');
     }

@@ -16,6 +16,7 @@ import {
   KanbanQuickCreateActionModel,
   KanbanGroupOptionsTable,
   KanbanGroupingSelector,
+  KanbanCreateSortFieldSelect,
 } from '../models';
 
 describe('plugin-kanban v2 registration', () => {
@@ -47,10 +48,15 @@ describe('plugin-kanban v2 registration', () => {
 
     await PluginKanbanClient.prototype.load.call({ app, flowEngine });
 
-    expect(app.addComponents).toHaveBeenCalledWith({ KanbanGroupingSelector, KanbanGroupOptionsTable });
+    expect(app.addComponents).toHaveBeenCalledWith({
+      KanbanGroupingSelector,
+      KanbanGroupOptionsTable,
+      KanbanCreateSortFieldSelect,
+    });
     expect(flowEngine.flowSettings.registerComponents).toHaveBeenCalledWith({
       KanbanGroupingSelector,
       KanbanGroupOptionsTable,
+      KanbanCreateSortFieldSelect,
     });
     expect(flowEngine.registerModels).toHaveBeenCalledWith({
       KanbanBlockModel,

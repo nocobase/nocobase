@@ -12,7 +12,7 @@ import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from 
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { observer } from '@formily/react';
-import { useAPIClient, useCollectionManager_deprecated } from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
 import { MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -159,10 +159,10 @@ export const KanbanGroupOptionsTable = observer(
 
     const api = useAPIClient();
     const resolvedModel = model || settingsContext?.model;
+    const token = resolvedModel?.context?.themeToken || {};
     const resolvedCollection = resolvedModel?.collection || collection || settingsContext?.collection;
     const resolvedDataSourceKey =
       resolvedCollection?.dataSourceKey || dataSourceKey || settingsContext?.dataSource?.key;
-    useCollectionManager_deprecated(resolvedDataSourceKey);
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
     const translate = useCallback((key: string) => resolvedModel?.translate?.(key) || key, [resolvedModel]);
     const [optionsLoading, setOptionsLoading] = useState(false);
@@ -331,7 +331,7 @@ export const KanbanGroupOptionsTable = observer(
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          gap: optionsError ? 8 : 0,
+          gap: optionsError ? token.marginXS ?? 8 : 0,
         }}
       >
         {optionsError ? <Alert type="error" message={optionsError} showIcon /> : null}

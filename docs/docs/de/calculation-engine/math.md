@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/calculation-engine/math).
-:::
-
 # Mathjs
 
 [Math.js](https://mathjs.org/) ist eine funktionsreiche Mathematik-Bibliothek für JavaScript und Node.js.

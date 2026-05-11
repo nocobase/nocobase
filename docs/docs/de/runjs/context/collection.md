@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/collection).
-:::
-
 # ctx.collection
 
 Die Instanz der Sammlung (Collection), die mit dem aktuellen RunJS-Ausführungskontext verknüpft ist. Sie wird verwendet, um auf Metadaten der Sammlung, Felddefinitionen, Primärschlüssel und andere Konfigurationen zuzugreifen. Sie stammt normalerweise von `ctx.blockModel.collection` oder `ctx.collectionField?.collection`.

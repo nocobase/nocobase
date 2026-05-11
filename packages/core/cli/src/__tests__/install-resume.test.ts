@@ -12,6 +12,8 @@ import { beforeEach, test, vi, expect } from 'vitest';
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
   getEnv: vi.fn(),
+  upsertEnv: vi.fn(),
+  setCurrentEnv: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
   promptInfo: vi.fn(),
   promptStep: vi.fn(),
@@ -23,6 +25,8 @@ const mocks = vi.hoisted(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.setCurrentEnv.mockResolvedValue(undefined);
   mocks.validateExternalDbConfig.mockReset();
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
 });
@@ -45,6 +49,18 @@ vi.mock('../lib/auth-store.js', async (importOriginal) => {
         return mocks.getEnv(...args);
       }
       return actual.getEnv(...args);
+    },
+    upsertEnv: (...args: Parameters<typeof actual.upsertEnv>) => {
+      if (mocks.upsertEnv.mock.calls.length || mocks.upsertEnv.getMockImplementation()) {
+        return mocks.upsertEnv(...args);
+      }
+      return actual.upsertEnv(...args);
+    },
+    setCurrentEnv: (...args: Parameters<typeof actual.setCurrentEnv>) => {
+      if (mocks.setCurrentEnv.mock.calls.length || mocks.setCurrentEnv.getMockImplementation()) {
+        return mocks.setCurrentEnv(...args);
+      }
+      return actual.setCurrentEnv(...args);
     },
   };
 });
@@ -549,6 +565,11 @@ test('install --resume --yes requires only setup-only flags that are not saved i
 test('install --resume allows reusing the saved docker app port when occupied by the same env container', async () => {
   const { default: Install } = await import('../commands/install.js');
 
+  const prefixSpy = vi
+    .spyOn(Install as unknown as {
+      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+    }, 'resolveResumeDockerContainerPrefix')
+    .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
     .spyOn(Install as unknown as {
       isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
@@ -562,18 +583,23 @@ test('install --resume allows reusing the saved docker app port when occupied by
   const error = await validate('53414', {
     resume: true,
     env: 'app25121',
-    workspaceName: 'nb-chen',
     source: 'docker',
   });
 
   expect(error).toBe(undefined);
   expect(commandSucceedsSpy).toHaveBeenCalledWith('nb-chen-app25121-app', '53414');
   commandSucceedsSpy.mockRestore();
+  prefixSpy.mockRestore();
 });
 
 test('install --resume keeps rejecting a port occupied by another resource', async () => {
   const { default: Install } = await import('../commands/install.js');
 
+  const prefixSpy = vi
+    .spyOn(Install as unknown as {
+      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+    }, 'resolveResumeDockerContainerPrefix')
+    .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
     .spyOn(Install as unknown as {
       isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
@@ -587,17 +613,22 @@ test('install --resume keeps rejecting a port occupied by another resource', asy
   const error = await validate('53414', {
     resume: true,
     env: 'app25121',
-    workspaceName: 'nb-chen',
     source: 'docker',
   });
 
   expect(error ?? '').toMatch(/already in use/i);
   commandSucceedsSpy.mockRestore();
+  prefixSpy.mockRestore();
 });
 
 test('install --resume allows reusing the saved built-in db port when occupied by the same env container', async () => {
   const { default: Install } = await import('../commands/install.js');
 
+  const prefixSpy = vi
+    .spyOn(Install as unknown as {
+      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+    }, 'resolveResumeDockerContainerPrefix')
+    .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
     .spyOn(Install as unknown as {
       isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
@@ -611,7 +642,6 @@ test('install --resume allows reusing the saved built-in db port when occupied b
   const error = await validate('53414', {
     resume: true,
     env: 'app25121',
-    workspaceName: 'nb-chen',
     source: 'git',
     builtinDb: true,
     dbDialect: 'postgres',
@@ -620,16 +650,12 @@ test('install --resume allows reusing the saved built-in db port when occupied b
   expect(error).toBe(undefined);
   expect(commandSucceedsSpy).toHaveBeenCalledWith('nb-chen-app25121-postgres', '53414');
   commandSucceedsSpy.mockRestore();
+  prefixSpy.mockRestore();
 });
 
 test('install --resume allows reusing the saved local app port when occupied by the same pm2 process', async () => {
   const { default: Install } = await import('../commands/install.js');
 
-  const workspaceSpy = vi
-    .spyOn(Install as unknown as {
-      resolveResumeWorkspaceName: (envName: string) => Promise<string | undefined>;
-    }, 'resolveResumeWorkspaceName')
-    .mockResolvedValue('nb-chen');
   const localPortSpy = vi
     .spyOn(Install as unknown as {
       isLocalPm2ProcessUsingPort: (appRootPath: string, port: string) => Promise<boolean>;
@@ -650,7 +676,6 @@ test('install --resume allows reusing the saved local app port when occupied by 
   expect(error).toBe(undefined);
   expect(localPortSpy).toHaveBeenCalledWith('./app25121/source/', '53414');
   localPortSpy.mockRestore();
-  workspaceSpy.mockRestore();
 });
 
 test('install app prompt catalog seeds resume=true when resuming', async () => {
@@ -666,4 +691,34 @@ test('install app prompt catalog seeds resume=true when resuming', async () => {
   await (catalog.seedResume as { run: (values: Record<string, string | boolean>) => Promise<void> | void }).run(values);
 
   expect(values.resume).toBe(true);
+});
+
+test('saveInstalledEnv switches current env after persisting the final env config', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  const command = Object.create(Install.prototype) as InstanceType<typeof Install>;
+
+  await (Install.prototype as unknown as {
+    saveInstalledEnv: (params: {
+      envName: string;
+      appResults: Record<string, unknown>;
+      downloadResults: Record<string, unknown>;
+      dbResults: Record<string, unknown>;
+      rootResults: Record<string, unknown>;
+      envAddResults: Record<string, unknown>;
+    }) => Promise<void>;
+  }).saveInstalledEnv.call(command, {
+    envName: 'app1',
+    appResults: {},
+    downloadResults: {},
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {},
+  });
+
+  expect(mocks.upsertEnv).toHaveBeenCalledTimes(1);
+  expect(mocks.setCurrentEnv).toHaveBeenCalledWith('app1', { scope: 'global' });
+  expect(mocks.upsertEnv.mock.invocationCallOrder[0]).toBeLessThan(
+    mocks.setCurrentEnv.mock.invocationCallOrder[0],
+  );
 });

@@ -1,109 +1,95 @@
 ---
 title: "Release-Verwaltung"
-description: "Der Release-Verwaltungs-Skill dient der Ausführung auditierbarer Release-Operationen zwischen mehreren Umgebungen."
-keywords: "KI-Builder,Release-Verwaltung,umgebungsübergreifende Veröffentlichung,Backup und Wiederherstellung,Migration"
+description: "Der Release-Verwaltungs-Skill dient zur Ausführung auditierbarer Release-Operationen zwischen mehreren Umgebungen und unterstützt Backup-Wiederherstellung und Migration."
+keywords: "KI-Builder,Release-Verwaltung,umgebungsübergreifende Veröffentlichung,Backup-Wiederherstellung,Migration"
 ---
 
 # Release-Verwaltung
 
 :::tip Voraussetzung
 
-- Bevor Sie diese Seite lesen, stellen Sie bitte sicher, dass Sie NocoBase CLI gemäß dem [Schnellstart KI-Builder](./index.md) installiert und initialisiert haben.
-- Sie benötigen mindestens eine Lizenz der Professional Edition oder höher der [NocoBase Commercial Edition](https://www.nocobase.com/cn/commercial).
-- Stellen Sie sicher, dass die Plugins „Backup-Verwaltung" und „Migrationsverwaltung" aktiviert und auf die neueste Version aktualisiert sind.
+- Bevor Sie diese Seite lesen, installieren Sie NocoBase CLI und schließen Sie die Initialisierung gemäß dem [Schnellstart KI-Builder](./index.md) ab
+- Erforderlich ist eine Lizenz der Professional Edition oder höher. Details finden Sie unter [NocoBase Commercial Edition](https://www.nocobase.com/cn/commercial)
+- Aktivieren Sie die Plugins "Backup-Verwaltung" und "Migrationsverwaltung" und aktualisieren Sie sie auf die neueste Version
 
 :::
 
-:::warning Hinweis
-Die zur Release-Verwaltung gehörige CLI befindet sich noch in der Entwicklung und wird derzeit noch nicht unterstützt.
-:::
 ## Einführung
 
-Der Release-Verwaltungs-Skill dient der Ausführung von Release-Operationen zwischen mehreren Umgebungen – er unterstützt zwei Release-Methoden: Backup-Wiederherstellung und Migration.
+Der Release-Verwaltungs-Skill dient zur Ausführung von Release-Operationen zwischen mehreren NocoBase-Umgebungen. Er unterstützt zwei Verfahren: Backup-Wiederherstellung und Migration.
 
+Wenn Sie eine Umgebung nur vollständig mit einer anderen überschreiben möchten, reicht normalerweise die Backup-Wiederherstellung aus. Wenn Sie per Regeln steuern müssen, welche Inhalte synchronisiert werden, etwa nur die Struktur ohne Geschäftsdaten, ist die Migration besser geeignet.
 
 ## Funktionsumfang
 
-- Backup-Wiederherstellung in einer Umgebung: vollständige Wiederherstellung lokaler Daten anhand eines Backup-Pakets.
-- Umgebungsübergreifende Backup-Wiederherstellung: vollständige Wiederherstellung der Daten der Zielumgebung anhand eines Backup-Pakets.
-- Umgebungsübergreifende Migration: differenzielle Aktualisierung der Daten der Zielumgebung anhand eines neu erzeugten Migrationspakets.
+- Backup-Wiederherstellung in einer Umgebung: stellt die aktuelle Umgebung mit einem vorhandenen Backup-Paket wieder her
+- Sofortige Backup-Wiederherstellung in einer Umgebung: erstellt zuerst ein Backup der aktuellen Umgebung und stellt die aktuelle Umgebung dann mit diesem Backup wieder her
+- Umgebungsübergreifende Backup-Wiederherstellung: stellt das Backup-Paket der Quellumgebung in der Zielumgebung wieder her
+- Umgebungsübergreifende Migration: aktualisiert die Zielumgebung differenziell mit einem Migrationspaket
 
 ## Beispiel-Prompts
 
-### Szenario A: Backup-Wiederherstellung in einer Umgebung
-:::tip Voraussetzung
-
-In der aktuellen Umgebung muss ein Backup-Paket vorhanden sein, oder Sie sichern zuerst und stellen anschließend wieder her.
-
-:::
-
-Prompt-Modus
-```
-Stelle mit <file-name> die Sicherung wieder her.
-```
-CLI-Modus
-```
-// Verfügbare Backup-Pakete anzeigen; falls keines vorhanden ist, führen Sie nb backup <file-name> aus.
-nb backup list 
-nb restore <file-name> 
-```
-![Backup-Wiederherstellung](https://static-docs.nocobase.com/20260417150854.png)
-
-### Szenario B: Umgebungsübergreifende Backup-Wiederherstellung
+### Szenario A: Backup-Wiederherstellung in einer Umgebung mit angegebener Datei
 
 :::tip Voraussetzung
 
-Sie benötigen zwei Umgebungen, etwa eine lokale Dev-Umgebung und eine Remote-Test-Umgebung, oder zwei lokal installierte Umgebungen.
+In der aktuellen Umgebung muss bereits eine gleichnamige Backup-Datei vorhanden sein.
 
 :::
 
-Prompt-Modus
+```text
+Mit dem Backup <file-name.nbdata> wiederherstellen
 ```
-Stelle dev nach test wieder her.
-```
-CLI-Modus
-```
-// Verfügbare Backup-Pakete anzeigen; falls keines vorhanden ist, führen Sie nb backup <file-name> --env dev aus.
-nb backup list --env dev
-// Wiederherstellung mit dem Backup-Paket
-nb restore <file-name> --env test
-```
-![Backup-Wiederherstellung](https://static-docs.nocobase.com/20260417150854.png)
 
-### Szenario C: Umgebungsübergreifende Migration
+Der Skill verwendet die gleichnamige Backup-Datei, die bereits auf dem Server der aktuellen Umgebung vorhanden ist, für die Wiederherstellung.
+
+### Szenario B: Backup-Wiederherstellung in einer Umgebung ohne angegebene Datei
+
+```text
+Die aktuelle Umgebung sichern und wiederherstellen
+```
+
+Der Skill erstellt zuerst ein Backup der aktuellen Umgebung und stellt die aktuelle Umgebung dann mit diesem Backup wieder her.
+
+### Szenario C: Umgebungsübergreifende Backup-Wiederherstellung
 
 :::tip Voraussetzung
 
-Wie in Szenario B benötigen Sie zwei Umgebungen, etwa eine lokale Dev-Umgebung und eine Remote-Test-Umgebung, oder zwei lokal installierte Umgebungen.
+Bereiten Sie zwei Umgebungen vor, zum Beispiel eine lokale dev-Umgebung und eine entfernte test-Umgebung, oder zwei lokale Umgebungen. Sie können eine konkrete Backup-Datei angeben oder keine Datei angeben.
 
 :::
 
-Prompt-Modus
+```text
+dev nach test wiederherstellen
 ```
-Migriere dev nach test.
+
+Der Skill erstellt in der dev-Umgebung ein Backup-Paket und stellt dieses Backup-Paket anschließend in der test-Umgebung wieder her.
+
+### Szenario D: Umgebungsübergreifende Migration
+
+:::tip Voraussetzung
+
+Bereiten Sie wie in Szenario C zwei Umgebungen vor. Sie können eine konkrete Migrationsdatei angeben oder keine Datei angeben.
+
+:::
+
+```text
+dev nach test migrieren
 ```
-CLI-Modus
-```
-// Eine neue Migrationsregel anlegen, dabei wird eine neue ruleId erzeugt; alternativ mit nb migration rule list --env dev historische ruleIds abrufen
-nb migration rule add --env dev 
-// Migrationspaket über die ruleId erzeugen
-nb migration generate <ruleId> --env dev 
-// Migration mit dem Migrationspaket durchführen
-nb migration run <file-name> --env test
-```
-![Migrations-Release](https://static-docs.nocobase.com/20260417151022.png)
+
+Der Skill erstellt in der dev-Umgebung ein Migrationspaket und verwendet dieses Migrationspaket anschließend, um die test-Umgebung zu aktualisieren.
 
 ## Häufige Fragen
 
-**Backup-Wiederherstellung oder Migration – was wählen?**
+**Soll ich Backup-Wiederherstellung oder Migration wählen?**
 
-Wenn Sie bereits ein verwendbares Backup-Paket haben, wählen Sie die Backup-Wiederherstellung. Wenn Sie nach einer Strategie steuern möchten, welche Daten synchronisiert werden (z. B. nur Strukturen, keine Daten), wählen Sie die Migration.
+Standardmäßig reicht die Backup-Wiederherstellung aus, besonders wenn Sie bereits ein verwendbares Backup-Paket haben oder die Zielumgebung vollständig mit dem Zustand der Quellumgebung überschreiben möchten. Verwenden Sie Migration nur, wenn Sie den Synchronisierungsumfang per Regeln steuern müssen, etwa nur die Struktur ohne Daten zu synchronisieren.
 
-**Was tun, wenn das Migrations-Plugin nicht verfügbar ist?**
+**Was bedeutet es, wenn das Migrations-Plugin fehlt?**
 
-Das Plugin „Migrationsverwaltung" erfordert mindestens die Professional Edition. Details siehe [NocoBase Commercial Edition](https://www.nocobase.com/cn/commercial).
+Das Plugin "Migrationsverwaltung" erfordert eine Lizenz der Professional Edition oder höher. Details finden Sie unter [NocoBase Commercial Edition](https://www.nocobase.com/cn/commercial).
 
 ## Verwandte Links
 
-- [Übersicht KI-Builder](./index.md) – Überblick über alle KI-Builder-Skills und deren Installation
-- [Umgebungsverwaltung](./env-bootstrap) – Umgebungsprüfung, Installation, Bereitstellung und Fehlerdiagnose
+- [Übersicht KI-Builder](./index.md) — Überblick über alle KI-Builder-Skills und deren Installation
+- [Umgebungsverwaltung](./env-bootstrap) — Umgebungsprüfung, Installation, Bereitstellung und Fehlerdiagnose

@@ -9,6 +9,7 @@
 
 import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
+import { resolveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import { renderTable } from '../../lib/ui.js';
 import { appRootPath, dbStatus, runtimeStatus, storagePath } from './shared.js';
 
@@ -112,6 +113,10 @@ export default class EnvInfo extends Command {
     }
 
     const auth = runtime.env.auth;
+    const builtinDbConnection =
+      (runtime.kind === 'local' || runtime.kind === 'docker') && runtime.env.config.builtinDb
+        ? await resolveBuiltinDbConnection(runtime)
+        : undefined;
     const appGroup: EnvInfoGroup = {
       appRootPath: appRootPath(runtime),
       storagePath: storagePath(runtime),
@@ -129,8 +134,8 @@ export default class EnvInfo extends Command {
       builtinDb: runtime.env.config.builtinDb,
       dbDialect: runtime.env.config.dbDialect,
       builtinDbImage: runtime.env.config.builtinDbImage,
-      dbHost: runtime.env.config.dbHost,
-      dbPort: runtime.env.config.dbPort,
+      dbHost: builtinDbConnection?.dbHost ?? runtime.env.config.dbHost,
+      dbPort: builtinDbConnection?.dbPort ?? runtime.env.config.dbPort,
       dbDatabase: runtime.env.config.dbDatabase,
       dbUser: runtime.env.config.dbUser,
       dbPassword: maskSecret(runtime.env.config.dbPassword, showSecrets),

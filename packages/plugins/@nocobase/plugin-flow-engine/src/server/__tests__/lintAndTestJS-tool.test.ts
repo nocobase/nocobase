@@ -9,6 +9,9 @@
 
 import { describe, it, expect } from 'vitest';
 import lintAndTestJS from '../../ai/ai-employees/nathan/skills/frontend-developer/tools/lintAndTestJS';
+import patchJSCode from '../../ai/ai-employees/nathan/skills/frontend-developer/tools/patchJSCode';
+import readJSCode from '../../ai/ai-employees/nathan/skills/frontend-developer/tools/readJSCode';
+import writeJSCode from '../../ai/ai-employees/nathan/skills/frontend-developer/tools/writeJSCode';
 
 describe('lintAndTestJS Tool', () => {
   it('should have correct tool metadata', () => {
@@ -107,11 +110,109 @@ describe('lintAndTestJS Tool', () => {
     expect(content.message).toContain('issues');
   });
 
-  it('schema should require code parameter', () => {
+  it('schema should allow omitting code parameter', () => {
     const schema = lintAndTestJS.definition.schema;
     expect(schema).toBeDefined();
-    // Check that schema has 'code' field
+    expect(schema.safeParse({}).success).toBe(true);
+    expect(schema.safeParse({ code: 'return 1;' }).success).toBe(true);
     const jsonSchema = schema.toJSONSchema ? schema.toJSONSchema() : schema;
     expect(jsonSchema).toBeDefined();
+  });
+});
+
+describe('Nathan editor code tools', () => {
+  it('readJSCode should have correct metadata', () => {
+    expect(readJSCode.definition.name).toBe('readJSCode');
+    expect(readJSCode.execution).toBe('frontend');
+    expect(readJSCode.definition.schema.safeParse({}).success).toBe(true);
+  });
+
+  it('writeJSCode should have correct metadata', () => {
+    expect(writeJSCode.definition.name).toBe('writeJSCode');
+    expect(writeJSCode.execution).toBe('frontend');
+    expect(writeJSCode.definition.schema.safeParse({ code: 'return 1;' }).success).toBe(true);
+  });
+
+  it('patchJSCode should have correct metadata', () => {
+    expect(patchJSCode.definition.name).toBe('patchJSCode');
+    expect(patchJSCode.execution).toBe('frontend');
+    expect(
+      patchJSCode.definition.schema.safeParse({
+        patch: '@@ -1 +1 @@\n-return 1;\n+return 2;\n',
+        baseHash: 'fnv1a:00000000',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('readJSCode should return frontend result by toolCallId', async () => {
+    const mockCtx = {
+      action: {
+        params: {
+          values: {
+            toolCallResults: [
+              {
+                id: 'read-id',
+                result: {
+                  status: 'success',
+                  content: { success: true, code: 'return 1;', lineCount: 1 },
+                },
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+
+    const result = await readJSCode.invoke(mockCtx, {}, { toolCallId: 'read-id' });
+    expect(result.status).toBe('success');
+    expect(JSON.parse(result.content).code).toBe('return 1;');
+  });
+
+  it('writeJSCode should return frontend result by toolCallId', async () => {
+    const mockCtx = {
+      action: {
+        params: {
+          values: {
+            toolCallResults: [
+              {
+                id: 'write-id',
+                result: {
+                  status: 'success',
+                  content: { success: true, hash: 'fnv1a:12345678' },
+                },
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+
+    const result = await writeJSCode.invoke(mockCtx, {}, { toolCallId: 'write-id' });
+    expect(result.status).toBe('success');
+    expect(JSON.parse(result.content).hash).toBe('fnv1a:12345678');
+  });
+
+  it('patchJSCode should return frontend result by toolCallId', async () => {
+    const mockCtx = {
+      action: {
+        params: {
+          values: {
+            toolCallResults: [
+              {
+                id: 'patch-id',
+                result: {
+                  status: 'success',
+                  content: { success: true, hash: 'fnv1a:87654321' },
+                },
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+
+    const result = await patchJSCode.invoke(mockCtx, {}, { toolCallId: 'patch-id' });
+    expect(result.status).toBe('success');
+    expect(JSON.parse(result.content).hash).toBe('fnv1a:87654321');
   });
 });

@@ -17,8 +17,7 @@ import {
   FlowSettingsButton,
   observer,
 } from '@nocobase/flow-engine';
-import { App, Badge, Tooltip } from 'antd';
-import type { HookAPI } from 'antd/es/modal/useModal';
+import { Badge, Tooltip } from 'antd';
 import qs from 'qs';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
@@ -285,33 +284,6 @@ const translateByModel = (model: FlowModel, value: any) => {
   return typeof model.context.t === 'function' ? model.context.t(value) : value;
 };
 
-const translateMenuNode = (item: AdminLayoutMenuNode, value: any) => {
-  return item._model ? translateByModel(item._model, value) : value;
-};
-
-/**
- * 经典页面需要整页跳回 v1，先给用户一个明确确认，避免误离开当前 v2 上下文。
- */
-const confirmLegacyPageNavigation = async (options: { item: AdminLayoutMenuNode; confirm?: HookAPI['confirm'] }) => {
-  const { item, confirm } = options;
-
-  if (!item._isLegacy || typeof confirm !== 'function') {
-    return true;
-  }
-
-  const confirmed = await confirm({
-    title: translateMenuNode(item, 'Open classic page access'),
-    content: translateMenuNode(
-      item,
-      'This page requires the classic version to open properly. Do you want to go there now?',
-    ),
-    okText: translateMenuNode(item, 'Yes'),
-    cancelText: translateMenuNode(item, 'Cancel'),
-  });
-
-  return !!confirmed;
-};
-
 const MENU_TYPE_ITEMS: Array<{ key: string; label: string; menuType: AdminLayoutMenuCreationType }> = [
   { key: 'group', label: 'Group', menuType: 'group' },
   { key: 'flow-page', label: 'Page', menuType: 'flowPage' },
@@ -521,7 +493,6 @@ export function resolveAdminLayoutMenuDragMoveOptionsFromEvent(
 const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }> = (props) => {
   const { item } = props;
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
-  const { modal } = App.useApp();
   const navigate = useNavigateNoUpdate();
   const routerBasename = useRouterBasename();
   const { closeMobileMenu } = useContext(MobileMenuControlContext);
@@ -557,23 +528,13 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRender
 
         event.preventDefault();
         event.stopPropagation();
-        void (async () => {
-          const confirmed = await confirmLegacyPageNavigation({
-            item,
-            confirm: item._model?.context?.modal?.confirm || modal?.confirm,
-          });
-          if (!confirmed) {
-            return;
-          }
-
-          runAfterMobileMenuClosed({
-            isMobile: !!props.options?.isMobile,
-            closeMobileMenu,
-            callback: () => {
-              window.location.assign(runtimePath);
-            },
-          });
-        })();
+        runAfterMobileMenuClosed({
+          isMobile: !!props.options?.isMobile,
+          closeMobileMenu,
+          callback: () => {
+            window.location.assign(runtimePath);
+          },
+        });
         return;
       }
 
@@ -590,16 +551,7 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRender
         },
       });
     },
-    [
-      closeMobileMenu,
-      item,
-      item._navigationMode,
-      modal,
-      navigate,
-      props.options?.isMobile,
-      runtimePath,
-      spaRuntimePath,
-    ],
+    [closeMobileMenu, item, item._navigationMode, navigate, props.options?.isMobile, runtimePath, spaRuntimePath],
   );
 
   const landingEntryAriaLabel = ariaLabel ? `${ariaLabel}-landing-entry` : 'group-landing-entry';
@@ -657,7 +609,6 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
   const { item } = props;
   const location = useLocation();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
-  const { modal } = App.useApp();
   const navigate = useNavigateNoUpdate();
   const basenameOfCurrentRouter = useRouterBasename();
   const { closeMobileMenu } = useContext(MobileMenuControlContext);
@@ -718,23 +669,13 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
 
         event.preventDefault();
         event.stopPropagation();
-        void (async () => {
-          const confirmed = await confirmLegacyPageNavigation({
-            item,
-            confirm: item._model?.context?.modal?.confirm || modal?.confirm,
-          });
-          if (!confirmed) {
-            return;
-          }
-
-          runAfterMobileMenuClosed({
-            isMobile: !!props.options?.isMobile,
-            closeMobileMenu,
-            callback: () => {
-              window.location.assign(runtimePath);
-            },
-          });
-        })();
+        runAfterMobileMenuClosed({
+          isMobile: !!props.options?.isMobile,
+          closeMobileMenu,
+          callback: () => {
+            window.location.assign(runtimePath);
+          },
+        });
         return;
       }
 
@@ -758,16 +699,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
         },
       });
     },
-    [
-      props.options?.isMobile,
-      closeMobileMenu,
-      isDocumentNavigation,
-      item,
-      modal,
-      navigate,
-      runtimePath,
-      spaRuntimePath,
-    ],
+    [props.options?.isMobile, closeMobileMenu, isDocumentNavigation, item, navigate, runtimePath, spaRuntimePath],
   );
 
   if (item._route?.type === NocoBaseDesktopRouteType.link) {

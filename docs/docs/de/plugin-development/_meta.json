@@ -6,12 +6,17 @@
       {
         "type": "custom-link",
         "label": "Plugin-Entwicklung: Überblick",
-        "link": "/plugin-development"
+        "link": "/plugin-development/"
       },
       {
         "type": "custom-link",
         "label": "Erstes Plugin schreiben",
         "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin-Entwicklung mit KI",
+        "link": "/plugin-development/ai-development"
       },
       {
         "type": "custom-link",
@@ -27,7 +32,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/plugin-development/server"
+        "link": "/plugin-development/server/"
       },
       {
         "type": "custom-link",
@@ -41,22 +46,22 @@
       },
       {
         "type": "custom-link",
-        "label": "Datenbankoperationen",
+        "label": "Database (Datenbankoperationen)",
         "link": "/plugin-development/server/database"
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager",
+        "label": "DataSourceManager (Datenquellen-Verwaltung)",
         "link": "/plugin-development/server/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "ResourceManager",
+        "label": "ResourceManager (Ressourcen-Verwaltung)",
         "link": "/plugin-development/server/resource-manager"
       },
       {
         "type": "custom-link",
-        "label": "ACL-Zugriffskontrolle",
+        "label": "ACL (Zugriffskontrolle)",
         "link": "/plugin-development/server/acl"
       },
       {
@@ -71,12 +76,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Events",
+        "label": "Event (Ereignisse)",
         "link": "/plugin-development/server/event"
       },
       {
         "type": "custom-link",
-        "label": "Request-Kontext",
+        "label": "Context (Request-Kontext)",
         "link": "/plugin-development/server/context"
       },
       {
@@ -91,7 +96,12 @@
       },
       {
         "type": "custom-link",
-        "label": "I18n (Internationalisierung)",
+        "label": "Telemetry (Telemetrie)",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "i18n (Internationalisierung)",
         "link": "/plugin-development/server/i18n"
       },
       {
@@ -101,12 +111,12 @@
       },
       {
         "type": "custom-link",
-        "label": "CronJobManager",
+        "label": "CronJobManager (Verwaltung geplanter Aufgaben)",
         "link": "/plugin-development/server/cron-job-manager"
       },
       {
         "type": "custom-link",
-        "label": "Tests",
+        "label": "Test (Tests)",
         "link": "/plugin-development/server/test"
       }
     ]
@@ -118,7 +128,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/plugin-development/client"
+        "link": "/plugin-development/client/"
       },
       {
         "type": "custom-link",
@@ -127,53 +137,128 @@
       },
       {
         "type": "custom-link",
-        "label": "Kontext",
-        "link": "/plugin-development/client/context"
-      },
-      {
-        "type": "custom-link",
-        "label": "Router",
+        "label": "Router (Routing)",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "ACL-Zugriffskontrolle",
-        "link": "/plugin-development/client/acl"
+        "label": "Component (Komponentenentwicklung)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/component/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes (Stile und Themes)",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n (Internationalisierung)",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager",
-        "link": "/plugin-development/client/data-source-manager"
+        "label": "Context (Kontext)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/ctx/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Häufig genutzte Fähigkeiten",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Ressourcen",
-        "link": "/plugin-development/client/resource"
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/flow-engine/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Block-Erweiterung",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Feld-Erweiterung",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aktions-Erweiterung",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Requests",
-        "link": "/plugin-development/client/request"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Stile & Themes",
-        "link": "/plugin-development/client/styles-themes"
+        "label": "Praxisbeispiele für Plugins",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/examples/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Eine Plugin-Einstellungsseite erstellen",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "Einen benutzerdefinierten Anzeigeblock erstellen",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Eine benutzerdefinierte Feld-Komponente erstellen",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Eine benutzerdefinierte Aktions-Schaltfläche erstellen",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ein Datenverwaltungs-Plugin mit Frontend-Backend-Verknüpfung erstellen",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Logger (Protokollierung)",
-        "link": "/plugin-development/client/logger"
-      },
-      {
-        "type": "custom-link",
-        "label": "I18n (Internationalisierung)",
-        "link": "/plugin-development/client/i18n"
-      },
-      {
-        "type": "custom-link",
-        "label": "Tests",
-        "link": "/plugin-development/client/test"
+        "label": "Anhang",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "FAQ & Fehlerbehebungs-Leitfaden",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "Plugin-Entwicklungs-Spickzettel",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
       }
     ]
   },
@@ -181,11 +266,6 @@
     "type": "custom-link",
     "label": "Sonstiges",
     "items": [
-      {
-        "type": "custom-link",
-        "label": "Plugin-Update-Leitfaden",
-        "link": "/plugin-development/plugin-upgrade-guide"
-      },
       {
         "type": "custom-link",
         "label": "Sprachenliste",
@@ -198,7 +278,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Build",
+        "label": "Build und Paketierung",
         "link": "/plugin-development/build"
       }
     ]
