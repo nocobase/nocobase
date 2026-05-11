@@ -363,6 +363,7 @@ describe('linkageSetFieldProps action', () => {
         label: 'Status',
       },
       collectionField: {
+        interface: 'select',
         uiSchema: {
           enum: [
             { label: 'Draft', value: 'draft' },
@@ -392,21 +393,192 @@ describe('linkageSetFieldProps action', () => {
       state: 'limitOptions',
       selectedOptions: [{ label: 'Draft', value: 'draft' }],
     };
-    const renderEditor = () =>
+    const view = render(
       React.createElement(
         FlowSettingsContextProvider,
         { value: ctx },
         React.createElement(Comp, { value, onChange: () => {} }),
-      );
-    render(renderEditor());
+      ),
+    );
 
-    expect(fieldComponentModel._originalOptionsFallback).toEqual([
-      { label: 'Draft', value: 'draft' },
-      { label: 'Published', value: 'published' },
-    ]);
-
-    fireEvent.mouseDown(screen.getByText('Draft'));
-
+    const selectors = view.container.querySelectorAll('.ant-select-selector');
+    fireEvent.mouseDown(selectors[2] as Element);
     expect(await screen.findByText('Published')).toBeTruthy();
+  });
+
+  it('should only show options state for supported single field selection', () => {
+    const supportedField: any = {
+      uid: 'status-field',
+      props: {
+        label: 'Status',
+      },
+      collectionField: {
+        interface: 'select',
+        uiSchema: {
+          enum: [{ label: 'Draft', value: 'draft' }],
+        },
+      },
+      subModels: {
+        field: {
+          uid: 'status-field-component',
+          props: {
+            options: [{ label: 'Draft', value: 'draft' }],
+          },
+        },
+      },
+    };
+    const unsupportedField: any = {
+      uid: 'note-field',
+      props: {
+        label: 'Note',
+      },
+      collectionField: {
+        interface: 'input',
+      },
+      subModels: {
+        field: {
+          uid: 'note-field-component',
+          props: {},
+        },
+      },
+    };
+    const ctx: any = {
+      model: {
+        translate: (text: string) => text,
+        subModels: {
+          grid: {
+            subModels: {
+              items: [supportedField, unsupportedField],
+            },
+          },
+        },
+      },
+    };
+    const Comp: any = linkageSetFieldProps.uiSchema.value['x-component'];
+
+    const { rerender } = render(
+      React.createElement(
+        FlowSettingsContextProvider,
+        { value: ctx },
+        React.createElement(Comp, {
+          value: {
+            fields: ['status-field'],
+            state: 'limitOptions',
+          },
+          onChange: () => {},
+        }),
+      ),
+    );
+
+    expect(screen.getAllByText('Options')).toHaveLength(2);
+
+    rerender(
+      React.createElement(
+        FlowSettingsContextProvider,
+        { value: ctx },
+        React.createElement(Comp, {
+          value: {
+            fields: ['status-field', 'note-field'],
+            state: 'limitOptions',
+          },
+          onChange: () => {},
+        }),
+      ),
+    );
+
+    expect(screen.queryAllByText('Options')).toHaveLength(1);
+  });
+
+  it('should clear selected options when changing fields under limit options', () => {
+    const statusField: any = {
+      uid: 'status-field',
+      props: {
+        label: 'Status',
+      },
+      collectionField: {
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { label: 'Draft', value: 'draft' },
+            { label: 'Published', value: 'published' },
+          ],
+        },
+      },
+      subModels: {
+        field: {
+          uid: 'status-field-component',
+          props: {
+            options: [
+              { label: 'Draft', value: 'draft' },
+              { label: 'Published', value: 'published' },
+            ],
+          },
+        },
+      },
+    };
+    const categoryField: any = {
+      uid: 'category-field',
+      props: {
+        label: 'Category',
+      },
+      collectionField: {
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' },
+          ],
+        },
+      },
+      subModels: {
+        field: {
+          uid: 'category-field-component',
+          props: {
+            options: [
+              { label: 'A', value: 'a' },
+              { label: 'B', value: 'b' },
+            ],
+          },
+        },
+      },
+    };
+    const ctx: any = {
+      model: {
+        translate: (text: string) => text,
+        subModels: {
+          grid: {
+            subModels: {
+              items: [statusField, categoryField],
+            },
+          },
+        },
+      },
+    };
+    const onChange = vi.fn();
+    const Comp: any = linkageSetFieldProps.uiSchema.value['x-component'];
+    const view = render(
+      React.createElement(
+        FlowSettingsContextProvider,
+        { value: ctx },
+        React.createElement(Comp, {
+          value: {
+            fields: ['status-field'],
+            state: 'limitOptions',
+            selectedOptions: [{ label: 'Draft', value: 'draft' }],
+          },
+          onChange,
+        }),
+      ),
+    );
+
+    const selectors = view.container.querySelectorAll('.ant-select-selector');
+    fireEvent.mouseDown(selectors[0] as Element);
+    fireEvent.click(screen.getByText('Category'));
+
+    expect(onChange).toHaveBeenLastCalledWith({
+      fields: ['status-field', 'category-field'],
+      state: undefined,
+      selectedOptions: [],
+    });
   });
 });

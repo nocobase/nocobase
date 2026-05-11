@@ -124,6 +124,16 @@ const getFormFields = (ctx: any) => {
 const cloneOptions = (options: any[]) =>
   options.map((option) => (option && typeof option === 'object' ? { ...option } : option));
 
+const LIMIT_OPTIONS_INTERFACES = new Set(['select', 'multipleSelect', 'radioGroup', 'checkboxGroup']);
+
+const getFieldInterface = (fieldModel: any) => {
+  return fieldModel?.collectionField?.interface || fieldModel?.subModels?.field?.context?.collectionField?.interface;
+};
+
+const supportsLimitOptions = (fieldModel: any) => {
+  return LIMIT_OPTIONS_INTERFACES.has(getFieldInterface(fieldModel));
+};
+
 const getOriginalFieldOptions = (fieldModel: any) => {
   const field = fieldModel?.subModels?.field || fieldModel;
   const enumOptions = enumToOptions(fieldModel?.collectionField?.uiSchema?.enum, (text) => text) || [];
@@ -156,6 +166,7 @@ const getFieldModelOptions = (fieldModel: any, t: (s: string) => string) => {
 const getFieldOptionsBySelectedFields = (fieldOptions: any[], fields: string[] = [], t: (s: string) => string) => {
   const selected = fields
     .map((fieldUid) => fieldOptions.find((option) => option.value === fieldUid)?.model)
+    .filter((model) => supportsLimitOptions(model))
     .filter(Boolean);
 
   const options = selected.flatMap((model) => getFieldModelOptions(model, t));
@@ -214,6 +225,11 @@ const FieldStateEditor = ({
   const t = ctx.model.translate.bind(ctx.model);
 
   const fieldOptions = fieldOptionsGetter(ctx);
+  const selectedFieldModels = (value.fields || [])
+    .map((fieldUid) => fieldOptions.find((option) => option.value === fieldUid)?.model)
+    .filter(Boolean);
+  const canConfigureLimitOptions =
+    selectedFieldModels.length === 1 && selectedFieldModels.every((model: any) => supportsLimitOptions(model));
   const stateOptions = [
     { label: t('Visible'), value: 'visible' },
     { label: t('Hidden'), value: 'hidden' },
@@ -222,15 +238,25 @@ const FieldStateEditor = ({
     includeFormStates && { label: t('Not required'), value: 'notRequired' },
     includeFormStates && { label: t('Disabled'), value: 'disabled' },
     includeFormStates && { label: t('Enabled'), value: 'enabled' },
-    includeFormStates && { label: t('Options'), value: 'limitOptions' },
+    includeFormStates && canConfigureLimitOptions && { label: t('Options'), value: 'limitOptions' },
   ].filter(Boolean);
   const selectableOptions = getFieldOptionsBySelectedFields(fieldOptions, value.fields, t);
 
   const handleFieldsChange = (selectedFields: string[]) => {
+    const nextSelectedFieldModels = selectedFields
+      .map((fieldUid) => fieldOptions.find((option) => option.value === fieldUid)?.model)
+      .filter(Boolean);
+    const nextCanConfigureLimitOptions =
+      nextSelectedFieldModels.length === 1 &&
+      nextSelectedFieldModels.every((model: any) => supportsLimitOptions(model));
+    const nextState = value.state === 'limitOptions' && !nextCanConfigureLimitOptions ? undefined : value.state;
+    const nextSelectedOptions =
+      value.state === 'limitOptions' || nextState === 'limitOptions' ? [] : value.selectedOptions;
     onChange({
       ...value,
       fields: selectedFields,
-      selectedOptions: value.state === 'limitOptions' ? [] : value.selectedOptions,
+      state: nextState,
+      selectedOptions: nextSelectedOptions,
     });
   };
 
@@ -277,7 +303,7 @@ const FieldStateEditor = ({
           allowClear
         />
       </div>
-      {value.state === 'limitOptions' && (
+      {value.state === 'limitOptions' && canConfigureLimitOptions && (
         <div>
           <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Options')}</div>
           <Select
