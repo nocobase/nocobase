@@ -555,7 +555,7 @@ export default class SourceDownload extends Command {
         defaultVersion: 'latest',
       },
     );
-    const safeBase = imageRef.replace(/[/:]/g, '-');
+    const safeBase = imageRef.replace(/[\\/:]/g, '-');
     return path.join(outputAbs, `${safeBase}.tar`);
   }
 
