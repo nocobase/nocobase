@@ -41,7 +41,11 @@ import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
-import { FieldStateRulesEditor, isFieldStateTargetPathAllowed } from '../components/FieldStateRulesEditor';
+import {
+  FieldStateRulesEditor,
+  isFieldStateTargetPathAllowed,
+  isVisibilityFieldState,
+} from '../components/FieldStateRulesEditor';
 import type { FieldStateOption, FieldStateRuleItem, FieldStateValue } from '../components/FieldStateRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
@@ -519,6 +523,9 @@ function applyFieldStateRules(
     }
 
     const targetPath = item?.targetPath || (item?.fieldUid ? resolveTargetPath(item.fieldUid) : undefined);
+    if (isVisibilityFieldState(item?.state) && item?.fieldUid && !targetPath) {
+      continue;
+    }
     if (!isFieldStateTargetPathAllowed(item?.state, targetPath)) {
       continue;
     }
