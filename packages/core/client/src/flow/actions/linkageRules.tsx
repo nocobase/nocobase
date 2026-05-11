@@ -1755,6 +1755,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
   const linkageRules: LinkageRule[] = params.value as LinkageRule[];
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
+  const modelsToApply = new Set<FlowModel>(allModels);
+  const patchPropsByModel = new Map<FlowModel, any>();
   const directValuePatches: Array<{ path: Array<string | number>; value: any; whenEmpty?: boolean }> = [];
   const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
   const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
@@ -1906,11 +1908,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     return null;
   };
 
-  allModels.forEach((model: any) => {
-    // 重置临时属性
-    model.__props = {};
-  });
-
   // 1. 运行所有的联动规则
   for (const rule of linkageRules.filter((r) => r.enable)) {
     const { condition: conditions, actions } = rule;
@@ -1919,10 +1916,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     if (!matched) continue;
 
     for (const action of actions) {
-      const setProps = (
-        model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
-        props: any,
-      ) => {
+      const setProps = (model: FlowModel & { __originalProps?: any; __shouldReset?: boolean }, props: any) => {
         // 存储原始值，用于恢复
         if (!model.__originalProps) {
           model.__originalProps = {
@@ -1935,19 +1929,16 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           };
         }
 
-        if (!model.__props) {
-          model.__props = {};
-        }
-
         // 临时存起来，遍历完所有规则后，再统一处理
-        model.__props = {
-          ...model.__props,
+        patchPropsByModel.set(model, {
+          ...(patchPropsByModel.get(model) || {}),
           ...props,
-        };
+        });
 
         if (allModels.indexOf(model) === -1) {
           allModels.push(model);
         }
+        modelsToApply.add(model);
       };
 
       // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
@@ -1956,15 +1947,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   }
 
   // 2. 合并去重（按 uid）后再实际更改相关 model 的状态，避免重复项把“已设置的临时属性”覆盖掉
-  const mergedByUid = new Map<
-    string,
-    FlowModel & { __originalProps?: any; __props?: any; isFork?: boolean; forkId?: number }
-  >();
+  const mergedByUid = new Map<string, FlowModel & { __originalProps?: any; isFork?: boolean; forkId?: number }>();
   const mergedPropsByUid = new Map<string, any>();
 
-  allModels.forEach((m: any) => {
+  modelsToApply.forEach((m: any) => {
     const uid = m?.uid || String(m);
-    const curProps = m.__props || {};
+    const curProps = patchPropsByModel.get(m) || {};
     if (!mergedByUid.has(uid)) {
       mergedByUid.set(uid, m);
       mergedPropsByUid.set(uid, { ...curProps });
