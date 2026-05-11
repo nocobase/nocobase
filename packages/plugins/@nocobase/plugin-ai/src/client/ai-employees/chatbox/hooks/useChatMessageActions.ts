@@ -149,6 +149,22 @@ export const useChatMessageActions = () => {
               }
             }
           }
+          if (msg.content?.subAgentConversations?.length) {
+            for (const conversation of msg.content.subAgentConversations) {
+              for (const subMessage of conversation.messages ?? []) {
+                const subMessageId = subMessage.content?.messageId;
+                const subToolCalls = subMessage.content?.tool_calls;
+                if (!subMessageId || !subToolCalls?.length) {
+                  continue;
+                }
+                for (const tc of subToolCalls) {
+                  if (tc.willInterrupt) {
+                    updateToolCallInvokeStatus(sessionId, subMessageId, tc.id, tc.invokeStatus);
+                  }
+                }
+              }
+            }
+          }
         }
 
         sessionChat.setMessages((prev) => {
