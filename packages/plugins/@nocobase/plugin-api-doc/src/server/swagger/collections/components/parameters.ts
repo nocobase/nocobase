@@ -37,7 +37,7 @@ export default (collection: Collection) => {
       },
 
       filterByTks: {
-        name: 'filterByTk',
+        name: 'filterByTks',
         in: 'query',
         description: 'filter by TKs(default by ID), example: `1,2,3`',
         schema: {
@@ -53,12 +53,11 @@ export default (collection: Collection) => {
       name: 'filter',
       in: 'query',
       description: 'filter items',
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-          },
-        },
+      style: 'deepObject',
+      explode: true,
+      schema: {
+        type: 'object',
+        additionalProperties: true,
       },
     },
     sort: {
