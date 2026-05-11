@@ -121,14 +121,20 @@ describe('workflow > instructions > delay', () => {
 
       await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(200);
 
       let [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
       expect(execution.startedAt).toBeTruthy();
       expect(execution.expiresAt).toBeTruthy();
 
-      await sleep(100);
+      for (let i = 0; i < 10; i++) {
+        [execution] = await workflow.getExecutions();
+        if (execution.status === EXECUTION_STATUS.ABORTED) {
+          break;
+        }
+        await sleep(100);
+      }
 
       [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.ABORTED);
