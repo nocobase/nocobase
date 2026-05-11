@@ -215,8 +215,14 @@ const syncFieldOptionsToForks = (model: any, props: any) => {
   });
 };
 
+type FieldStateEditorValue = {
+  fields: string[];
+  state?: string;
+  selectedOptions?: any[];
+};
+
 const FieldStateEditor = ({
-  value = { fields: [] },
+  value = { fields: [] } as FieldStateEditorValue,
   onChange,
   includeFormStates = true,
   fieldOptionsGetter = getFormFields,
