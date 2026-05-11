@@ -91,6 +91,9 @@ export const DepartmentTree: React.FC & {
         .ant-tree-switcher {
           line-height: 32px;
         }
+        .ant-tree-switcher::before {
+          height: 32px;
+        }
         .ant-tree-node-content-wrapper {
           flex: 1;
           min-width: 0;
