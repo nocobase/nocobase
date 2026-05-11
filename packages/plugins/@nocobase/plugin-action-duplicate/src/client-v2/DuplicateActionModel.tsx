@@ -21,8 +21,8 @@ import { useRequest } from 'ahooks';
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
-import { NAMESPACE } from '../shared/locale';
-import { getCollectionState, getSyncFromForm } from '../shared/utils';
+import { NAMESPACE } from './locale';
+import { getCollectionState, getSyncFromForm } from './utils';
 
 const Tree = connect(
   AntdTree,

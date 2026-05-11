@@ -15,7 +15,7 @@ import {
   CHINA_REGION_INTERFACE_NAME,
   CHINA_REGION_LEVEL_OPTIONS,
   initializeChinaRegionValues,
-} from '../shared/chinaRegion';
+} from '../client-v2/chinaRegionConstants';
 
 export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   name = CHINA_REGION_INTERFACE_NAME;

@@ -13,11 +13,11 @@ import { ISchema, Plugin, SchemaSettings, useColumnSchema, useDesignable } from 
 import { CodeFieldInterface } from './interface';
 import { NAMESPACE } from '../common/constants';
 import { lang } from './lang';
-import { normalizeHeight, normalizeIndentUnit } from '../shared/codeFieldSettings';
+import { normalizeHeight, normalizeIndentUnit } from '../client-v2/codeFieldSettings';
 import { CodeFieldModel } from '../client-v2/models/CodeFieldModel';
 import { DisplayCodeFieldModel } from '../client-v2/models/DisplayCodeFieldModel';
 
-const CodeEditor = lazy(() => import('../shared/CodeEditor'));
+const CodeEditor = lazy(() => import('../client-v2/CodeEditor'));
 
 export const codeComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:CodeEditor',

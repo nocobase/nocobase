@@ -17,7 +17,7 @@ import {
 } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import React, { useEffect, useRef } from 'react';
-import { NAMESPACE } from '../shared/locale';
+import { NAMESPACE } from './locale';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
 

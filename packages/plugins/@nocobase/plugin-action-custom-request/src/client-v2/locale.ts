@@ -8,9 +8,8 @@
  */
 
 import { useTranslation as useT } from 'react-i18next';
-import { NAMESPACE } from '../shared/locale';
 
-export { NAMESPACE };
+export const NAMESPACE = 'action-custom-request';
 
 export function lang(key: string) {
   const runtimeI18n = (globalThis as any)?.window?.__nocobase_i18n__;

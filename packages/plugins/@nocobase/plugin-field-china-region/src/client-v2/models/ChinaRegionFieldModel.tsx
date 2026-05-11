@@ -15,7 +15,7 @@ import { FieldModel } from '@nocobase/client-v2';
 import { EditableItemModel, useFlowContext } from '@nocobase/flow-engine';
 import { error } from '@nocobase/utils/client';
 import { tExpr } from '../locale';
-import { CHINA_REGION_FIELD_NAMES, CHINA_REGION_TARGET } from '../../shared/chinaRegion';
+import { CHINA_REGION_FIELD_NAMES, CHINA_REGION_TARGET } from '../chinaRegionConstants';
 
 const ChinaRegionCascader: React.FC<any> = (props) => {
   const {

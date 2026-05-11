@@ -15,7 +15,7 @@ import {
   CHINA_REGION_INTERFACE_NAME,
   CHINA_REGION_LEVEL_OPTIONS,
   initializeChinaRegionValues,
-} from '../shared/chinaRegion';
+} from './chinaRegionConstants';
 
 const stringOperators = [
   { label: '{{t("contains")}}', value: '$includes', selected: true },

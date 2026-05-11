@@ -10,7 +10,7 @@
 import { useFlowContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React from 'react';
-import { normalizeRoleNames } from '../../shared/customRequestUtils';
+import { normalizeRoleNames } from '../customRequestUtils';
 
 type RoleOption = {
   label: string;

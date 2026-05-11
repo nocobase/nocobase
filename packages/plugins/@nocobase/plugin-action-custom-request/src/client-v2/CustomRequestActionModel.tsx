@@ -10,7 +10,7 @@
 import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { NAMESPACE } from '../shared/locale';
+import { NAMESPACE } from './locale';
 import { CUSTOM_REQUEST_ACTION_NAME } from './customRequestFlowAction';
 
 export class CustomRequestActionModel extends ActionModel {

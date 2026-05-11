@@ -9,7 +9,7 @@
 
 import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
 import { NAMESPACE } from '../common/constants';
-import { LANGUAGES_LIST } from '../shared/languages';
+import { LANGUAGES_LIST } from '../client-v2/languages';
 
 const { defaultProps, operators } = interfacesProperties;
 

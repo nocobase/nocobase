@@ -9,7 +9,7 @@
 
 import { CollectionFieldInterface } from '@nocobase/client-v2';
 import { NAMESPACE } from '../common/constants';
-import { LANGUAGES_LIST } from '../shared/languages';
+import { LANGUAGES_LIST } from './languages';
 
 const bigFieldOperators = [
   {

@@ -15,7 +15,7 @@ import {
   loadCustomRequestRecord,
   makeRequestKey,
   toCustomRequestConfigurationInitialValues,
-} from '../../shared/customRequestUtils';
+} from '../customRequestUtils';
 
 const requestConfigInFlight = new Map<string, Promise<any>>();
 

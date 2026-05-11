@@ -10,7 +10,7 @@
 import React from 'react';
 import { FieldModel } from '@nocobase/client-v2';
 import { DisplayItemModel, largeField } from '@nocobase/flow-engine';
-import CodeEditor from '../../shared/CodeEditor';
+import CodeEditor from '../CodeEditor';
 import {
   getHeightOptions,
   INDENT_UNIT_OPTIONS,
@@ -18,7 +18,7 @@ import {
   normalizeIndentUnit,
   renderHeightDropdown,
   renderIndentDropdown,
-} from '../../shared/codeFieldSettings';
+} from '../codeFieldSettings';
 import { tExpr } from '../locale';
 
 @largeField()

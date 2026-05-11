@@ -9,7 +9,7 @@
 
 import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
-import { NAMESPACE } from '../../shared/locale';
+import { NAMESPACE } from '../../client-v2/locale';
 
 export { NAMESPACE };
 
