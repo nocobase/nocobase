@@ -4,3 +4,4 @@ export declare function createStoragePluginSymLink(pluginName: any): Promise<voi
 export declare function createStoragePluginsSymlink(): Promise<void>;
 export declare function createDevPluginSymLink(pluginName: any): Promise<void>;
 export declare function createDevPluginsSymlink(): Promise<void>;
+export declare function syncPluginSymlinks(): Promise<void>;
