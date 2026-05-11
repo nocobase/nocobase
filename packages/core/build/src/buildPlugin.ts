@@ -59,7 +59,7 @@ const pluginClientLaneConfig: Record<
     distDir: 'client',
     entryDir: 'client',
     rootEntryFile: 'client.js',
-    externalSubpaths: ['client'],
+    externalSubpaths: ['client', 'client-v2'],
   },
   'client-v2': {
     distDir: 'client-v2',
