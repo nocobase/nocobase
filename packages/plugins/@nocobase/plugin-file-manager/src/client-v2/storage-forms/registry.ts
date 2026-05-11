@@ -23,12 +23,28 @@ export interface StorageFormDefinition {
    */
   title: string;
   /**
-   * Renders the body of the storage drawer — i.e. the list of `<Form.Item>`
-   * fields. The wrapping `<Form>`, drawer header, footer, submit logic, and
-   * `initialValues` injection are owned by `FileStoragePage` so each storage
-   * implementation only needs to declare its fields.
+   * Synchronous form component. Renders the body of the storage drawer —
+   * i.e. the list of `<Form.Item>` fields. The wrapping `<Form>`, drawer
+   * header, footer, submit logic, and `initialValues` injection are owned
+   * by `FileStoragePage`, so each storage implementation only needs to
+   * declare its fields.
+   *
+   * Mutually exclusive with `formLoader`. Prefer `formLoader` for large
+   * forms that should be code-split.
    */
-  Form: React.ComponentType;
+  Form?: React.ComponentType;
+  /**
+   * Async form loader for code-splitting large or rarely-used storage
+   * forms. The loaded module's default export is used as the form
+   * component, matching the convention of `componentLoader` and
+   * `registerModelLoaders` elsewhere in the codebase.
+   *
+   * Mutually exclusive with `Form`.
+   *
+   * @example
+   * formLoader: () => import('./S3CompatibleStorageForm'),
+   */
+  formLoader?: () => Promise<{ default: React.ComponentType }>;
   /**
    * Optional per-storage initial values, merged on top of the page-level
    * defaults (`type` + generated `name`) when creating a new record. Useful
