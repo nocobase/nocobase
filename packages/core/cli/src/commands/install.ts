@@ -54,7 +54,7 @@ import { validateExternalDbConfig } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { startTask, stopTask, updateTask } from '../lib/ui.js';
-import { getEnv, loadAuthConfig, type Env, upsertEnv } from '../lib/auth-store.js';
+import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import Download, {
   DownloadParsedFlags,
@@ -2629,6 +2629,7 @@ export default class Install extends Command {
       Install.buildSavedEnvConfig(params),
       { scope: resolveDefaultConfigScope() },
     );
+    await setCurrentEnv(params.envName, { scope: resolveDefaultConfigScope() });
   }
 
   private async syncInstalledEnvConnection(params: {

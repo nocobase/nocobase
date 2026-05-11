@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "Référence de la commande nb env add : enregistrer une adresse d'API NocoBase et sa méthode d'authentification, puis la définir comme env courant."
-keywords: "nb env add,NocoBase CLI,ajouter un environnement,adresse de l'API,authentification"
+description: "Référence de la commande nb env add : enregistrer une URL d’API NocoBase et une méthode d’authentification, puis basculer vers cet env."
+keywords: "nb env add,NocoBase CLI,ajouter un environnement,API Base URL,authentification"
 ---
 
 # nb env add

@@ -35,11 +35,12 @@ nb [command]
 | [`nb app`](./app/index.md) | Управление состоянием приложения: запуск, остановка, перезапуск, логи и обновление. |
 | [`nb config`](./config/index.md) | Управление настройками CLI по умолчанию. |
 | [`nb db`](./db/index.md) | Управление встроенной базой данных выбранного env. |
-| [`nb env`](./env/index.md) | Управление окружениями проектов NocoBase, состоянием, деталями и runtime-командами. |
+| [`nb env`](./env/index.md) | Управляет окружениями проекта NocoBase, текущим env, статусом, деталями и runtime-командами. |
 | [`nb license`](./license/index.md) | Управление коммерческими лицензиями и лицензированными плагинами. |
 | [`nb plugin`](./plugin/index.md) | Управление плагинами выбранного env NocoBase. |
 | [`nb scaffold`](./scaffold/index.md) | Генерация шаблона разработки плагинов NocoBase. |
 | [`nb self`](./self/index.md) | Проверка или обновление самого NocoBase CLI. |
+| [`nb session`](./session/index.md) | Настраивает `NB_SESSION_ID`, чтобы изолировать текущий env по shell или runtime агента. |
 | [`nb skills`](./skills/index.md) | Проверка или синхронизация NocoBase AI coding skills в текущей рабочей области. |
 | [`nb source`](./source/index.md) | Управление локальными исходниками: загрузка, разработка, сборка и тестирование. |
 
@@ -93,6 +94,8 @@ nb init --env app1 --yes --source docker --version alpha
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Запуск приложения и обновление runtime-команд:

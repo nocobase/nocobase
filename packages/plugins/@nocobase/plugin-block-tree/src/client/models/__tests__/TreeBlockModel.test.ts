@@ -10,11 +10,117 @@
 import { DisplayItemModel, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { AddChildActionModel, PopupActionModel } from '@nocobase/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TreeBlockModel } from '../TreeBlockModel';
+import { TreeBlockModel, TreeTitleFieldSettingsModel } from '../TreeBlockModel';
 
 describe('TreeBlockModel', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('hides single relation entries from associated records in tree filter block menu', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TreeBlockModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'categories',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+    ds.addCollection({
+      name: 'profiles',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+    ds.addCollection({
+      name: 'products',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        {
+          name: 'category',
+          title: 'Category',
+          type: 'belongsTo',
+          target: 'categories',
+          interface: 'm2o',
+        },
+        {
+          name: 'profile',
+          title: 'Profile',
+          type: 'hasOne',
+          target: 'profiles',
+          interface: 'o2o',
+        },
+      ],
+    });
+
+    const designerCtx = {
+      dataSourceManager: engine.dataSourceManager,
+      view: { inputArgs: { dataSourceKey: 'main', collectionName: 'products', filterByTk: 1 } },
+    } as any;
+
+    const children = (await TreeBlockModel.defineChildren(designerCtx)) as any[];
+    expect(children.some((item) => String(item?.key).includes('associated'))).toBe(false);
+  });
+
+  it('keeps multi relation entries in associated records for tree filter block menu', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TreeBlockModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'categories',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+    ds.addCollection({
+      name: 'tags',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+    ds.addCollection({
+      name: 'products',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        {
+          name: 'categories',
+          title: 'Categories',
+          type: 'hasMany',
+          target: 'categories',
+          interface: 'o2m',
+        },
+        {
+          name: 'tags',
+          title: 'Tags',
+          type: 'belongsToMany',
+          target: 'tags',
+          interface: 'm2m',
+        },
+        {
+          name: 'category',
+          title: 'Category',
+          type: 'belongsTo',
+          target: 'categories',
+          interface: 'm2o',
+        },
+      ],
+    });
+
+    const designerCtx = {
+      dataSourceManager: engine.dataSourceManager,
+      view: { inputArgs: { dataSourceKey: 'main', collectionName: 'products', filterByTk: 1 } },
+    } as any;
+
+    const children = (await TreeBlockModel.defineChildren(designerCtx)) as any[];
+    const associated = children.find((item) => String(item?.key).includes('associated'));
+
+    expect(associated).toBeTruthy();
+
+    const associatedChildren = (associated.children?.() || []) as any[];
+    expect(associatedChildren.some((item) => String(item?.key).includes('associated-categories'))).toBe(true);
+    expect(associatedChildren.some((item) => String(item?.key).includes('associated-tags'))).toBe(true);
+    expect(associatedChildren.some((item) => String(item?.key).includes('associated-category'))).toBe(false);
   });
 
   it('creates title field sub model with the matched display field model', async () => {
@@ -402,6 +508,17 @@ describe('TreeBlockModel', () => {
 
     expect(destroyModel).toHaveBeenCalledWith('field-model-uid');
     expect(removeModelWithSubModels).not.toHaveBeenCalled();
+  });
+
+  it('disables click-to-open in tree title field settings context', () => {
+    const engine = new FlowEngine();
+    const model = new TreeTitleFieldSettingsModel({
+      uid: 'tree-title-field-settings',
+      flowEngine: engine,
+    });
+    model.onInit({} as any);
+
+    expect(model.context.disableFieldClickToOpen).toBe(true);
   });
 
   it('injects cached add-child formData before the popup opens during route replay', async () => {

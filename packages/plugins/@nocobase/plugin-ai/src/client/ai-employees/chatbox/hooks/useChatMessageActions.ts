@@ -26,6 +26,8 @@ import { ContextItem } from '../../types';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
+const STREAM_UPDATE_INTERVAL = 50;
+
 export const useChatMessageActions = () => {
   const app = useApp();
   const t = useT();
@@ -212,6 +214,93 @@ export const useChatMessageActions = () => {
       updateLast: (updater: (msg: Message) => Message) => void;
     };
 
+    type PendingStreamUpdate = {
+      updateLast: MessagesStore['updateLast'];
+      content: string;
+      reasoningContent: string;
+      reasoningStatus?: string;
+      from?: Message['content']['from'];
+      timer?: ReturnType<typeof setTimeout>;
+    };
+
+    const pendingStreamUpdates = new Map<string, PendingStreamUpdate>();
+
+    const flushPendingStreamUpdate = (key: string) => {
+      const pending = pendingStreamUpdates.get(key);
+      if (!pending) {
+        return;
+      }
+      pendingStreamUpdates.delete(key);
+      pending.updateLast((last) => {
+        const nextContent = { ...last.content };
+        if (pending.from) {
+          nextContent.from = pending.from;
+        }
+        if (pending.content) {
+          nextContent.content = `${(last.content as any).content ?? ''}${pending.content}`;
+        }
+        if (pending.reasoningContent) {
+          nextContent.reasoning = {
+            status: pending.reasoningStatus,
+            content: `${last.content.reasoning?.content ?? ''}${pending.reasoningContent}`,
+          };
+        }
+        return {
+          ...last,
+          createdAt: new Date().toISOString(),
+          content: nextContent,
+          loading: false,
+        };
+      });
+    };
+
+    const flushAllPendingStreamUpdates = () => {
+      for (const key of Array.from(pendingStreamUpdates.keys())) {
+        const pending = pendingStreamUpdates.get(key);
+        if (pending?.timer) {
+          clearTimeout(pending.timer);
+        }
+        flushPendingStreamUpdate(key);
+      }
+    };
+
+    const clearAllPendingStreamUpdates = () => {
+      for (const pending of pendingStreamUpdates.values()) {
+        if (pending.timer) {
+          clearTimeout(pending.timer);
+        }
+      }
+      pendingStreamUpdates.clear();
+    };
+
+    const enqueueStreamUpdate = (
+      key: string,
+      store: MessagesStore,
+      update: Pick<PendingStreamUpdate, 'content' | 'reasoningContent' | 'reasoningStatus' | 'from'>,
+    ) => {
+      const pending = pendingStreamUpdates.get(key) ?? {
+        updateLast: store.updateLast,
+        content: '',
+        reasoningContent: '',
+      };
+      pending.updateLast = store.updateLast;
+      if (update.from === 'main-agent' || update.from === 'sub-agent') {
+        pending.from = update.from;
+      }
+      pending.content += update.content ?? '';
+      pending.reasoningContent += update.reasoningContent ?? '';
+      pending.reasoningStatus = update.reasoningStatus ?? pending.reasoningStatus;
+      if (!pending.timer) {
+        pending.timer = setTimeout(() => {
+          flushPendingStreamUpdate(key);
+        }, STREAM_UPDATE_INTERVAL);
+      }
+      pendingStreamUpdates.set(key, pending);
+    };
+
+    const getStreamUpdateKey = (data: any) =>
+      `${data.from || 'main-agent'}:${data.sessionId || sessionId}:${data.username || ''}`;
+
     const processStreamStart = (data: any) => {
       if (data.type === 'stream_start') {
         console.debug('stream_start', data.from, data.sessionId);
@@ -231,17 +320,12 @@ export const useChatMessageActions = () => {
           phase: 'delta',
           preview: data.body.content?.slice?.(0, 120) || '',
         });
-        store.updateLast((last) => ({
-          ...last,
-          content: {
-            ...last.content,
-            reasoning: {
-              status: data.body.status,
-              content: `${last.content.reasoning?.content ?? ''}${data.body.content}`,
-            },
-          },
-          loading: false,
-        }));
+        enqueueStreamUpdate(getStreamUpdateKey(data), store, {
+          from: data.from,
+          content: '',
+          reasoningContent: data.body.content,
+          reasoningStatus: data.body.status,
+        });
       }
     };
 
@@ -251,16 +335,11 @@ export const useChatMessageActions = () => {
         aiDebugLogger.log(data.sessionId, 'stream_text', {
           preview: data.body?.slice?.(0, 100) || '',
         });
-        store.updateLast((last) => ({
-          ...last,
-          createdAt: new Date().toISOString(),
-          content: {
-            ...last.content,
-            from: data.from,
-            content: (last.content as any).content + data.body,
-          },
-          loading: false,
-        }));
+        enqueueStreamUpdate(getStreamUpdateKey(data), store, {
+          from: data.from,
+          content: data.body,
+          reasoningContent: '',
+        });
       }
     };
 
@@ -273,10 +352,18 @@ export const useChatMessageActions = () => {
         store.updateLast((last) => {
           const toolCalls = last.content.tool_calls || [];
           const toolCallChunk = data.body[0];
+          let nextToolCalls = toolCalls;
           if (toolCallChunk.name) {
-            toolCalls.push(toolCallChunk);
+            nextToolCalls = [...toolCalls, toolCallChunk];
           } else if (toolCalls.length > 0) {
-            toolCalls[toolCalls.length - 1].args += data.body[0].args;
+            const lastToolCall = toolCalls[toolCalls.length - 1];
+            nextToolCalls = [
+              ...toolCalls.slice(0, -1),
+              {
+                ...lastToolCall,
+                args: `${lastToolCall.args ?? ''}${data.body[0].args ?? ''}`,
+              },
+            ];
           }
           return {
             ...last,
@@ -284,7 +371,7 @@ export const useChatMessageActions = () => {
             content: {
               ...last.content,
               from: data.from,
-              tool_calls: toolCalls,
+              tool_calls: nextToolCalls,
             },
             loading: false,
           };
@@ -391,6 +478,7 @@ export const useChatMessageActions = () => {
       while (true) {
         const { done, value } = await reader.read();
         if (done || error) {
+          flushAllPendingStreamUpdates();
           setResponseLoading(false);
           setWebSearching(null);
           break;
@@ -447,7 +535,12 @@ export const useChatMessageActions = () => {
       }
     } catch (err) {
       console.error(err);
-      if (err.name !== 'AbortError') {
+      if (err.name === 'AbortError') {
+        clearAllPendingStreamUpdates();
+        setResponseLoading(false);
+        setWebSearching(null);
+        return;
+      } else {
         error = true;
         result = err.message;
 
@@ -461,6 +554,7 @@ export const useChatMessageActions = () => {
     }
 
     if (error) {
+      flushAllPendingStreamUpdates();
       updateLastMessage((last) => ({
         ...last,
         role: 'error',
@@ -511,11 +605,12 @@ export const useChatMessageActions = () => {
       { employeeId: aiEmployee?.username, employeeName: aiEmployee?.nickname },
     );
 
-    const last = messages[messages.length - 1];
+    const currentMessages = useChatMessagesStore.getState().messages;
+    const last = currentMessages[currentMessages.length - 1];
     if (last?.role === 'error') {
       setMessages((prev) => prev.slice(0, -1));
     }
-    const lastRenderedMessage = renderedMessages.at(-1);
+    const lastRenderedMessage = flattenMessages(currentMessages).at(-1);
 
     const parsedWorkContext = await parseWorkContext(app, workContext);
     const msgs = sendMsgs.map((msg, index) => ({
@@ -572,6 +667,7 @@ export const useChatMessageActions = () => {
       onConversationCreate?.(sessionId);
     }
 
+    setWebSearching(null);
     setResponseLoading(true);
 
     if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
@@ -620,6 +716,8 @@ export const useChatMessageActions = () => {
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
     } catch (err) {
       if (err.name === 'CanceledError') {
+        setResponseLoading(false);
+        setWebSearching(null);
         return;
       }
       setResponseLoading(false);
@@ -630,7 +728,9 @@ export const useChatMessageActions = () => {
   };
 
   const resendMessages = async ({ sessionId, messageId, aiEmployee, important }: ResendOptions) => {
-    const index = messages.findIndex((msg) => msg.key === messageId);
+    const currentMessages = useChatMessagesStore.getState().messages;
+    const index = currentMessages.findIndex((msg) => msg.key === messageId);
+    setWebSearching(null);
     setResponseLoading(true);
     setMessages((prev) => [
       ...prev.slice(0, index),
@@ -674,6 +774,8 @@ export const useChatMessageActions = () => {
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
     } catch (err) {
       if (err.name === 'CanceledError') {
+        setResponseLoading(false);
+        setWebSearching(null);
         return;
       }
       setResponseLoading(false);
@@ -716,6 +818,7 @@ export const useChatMessageActions = () => {
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
+      setWebSearching(null);
       // Read model from store at call time to avoid stale closure.
       // If not ready yet, resolve it through shared model rules.
       let model = useChatBoxStore.getState().model;
@@ -743,6 +846,8 @@ export const useChatMessageActions = () => {
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       } catch (err) {
         if (err.name === 'CanceledError') {
+          setResponseLoading(false);
+          setWebSearching(null);
           return;
         }
         setResponseLoading(false);
@@ -776,10 +881,11 @@ export const useChatMessageActions = () => {
   }, []);
 
   const startEditingMessage = useCallback((msg: any) => {
-    const index = messages.findIndex((m) => m.key === msg.messageId);
+    const currentMessages = useChatMessagesStore.getState().messages;
+    const index = currentMessages.findIndex((m) => m.key === msg.messageId);
     setIsEditingMessage(true);
     setEditingMessageId(msg.messageId);
-    setMessages(messages.slice(0, index));
+    setMessages(currentMessages.slice(0, index));
     if (msg.attachments) {
       setAttachments(msg.attachments);
     }

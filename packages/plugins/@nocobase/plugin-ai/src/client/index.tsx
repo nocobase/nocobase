@@ -47,6 +47,9 @@ import {
   getContextEnvsTool,
   getContextVarsTool,
   lintAndTestJSTool,
+  patchJSCodeTool,
+  readJSCodeTool,
+  writeJSCodeTool,
 } from './ai-employees/ai-coding/tools/context-tools';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
@@ -163,7 +166,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
-    this.aiManager.registerLLMProvider('xai', xaiProviderOptions)
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
@@ -194,6 +197,9 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);
+    this.ai.toolsManager.registerTools(...readJSCodeTool);
+    this.ai.toolsManager.registerTools(...writeJSCodeTool);
+    this.ai.toolsManager.registerTools(...patchJSCodeTool);
     this.ai.toolsManager.registerTools(...lintAndTestJSTool);
   }
 

@@ -47,6 +47,8 @@ interface RouteLike {
   pathname?: string;
 }
 
+const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
+
 /**
  * 管理 admin 场景下每个 page 的 v2 视图栈编排。
  * 该协调器只负责状态机和开关视图，不直接绑定 React 生命周期。
@@ -264,6 +266,10 @@ export class AdminLayoutRouteCoordinator {
     const destroyRef = React.createRef<(result?: any, force?: boolean) => void>();
     const updateRef = React.createRef<(value: any) => void>();
     const openViewParams = getOpenViewStepParams(viewItem.model);
+    const associationName =
+      openViewParams?.associationName && !hasUsableSourceId(viewItem.params.sourceId)
+        ? null
+        : openViewParams?.associationName;
     const openerUids = viewList.slice(0, viewItem.index).map((item) => item.params.viewUid);
     const navigation = new ViewNavigation(
       this.flowEngine.context,
@@ -273,7 +279,7 @@ export class AdminLayoutRouteCoordinator {
     viewItem.model.dispatchEvent('click', {
       target: runtime.meta.layoutContentElement || this.layoutContentElement,
       collectionName: openViewParams?.collectionName,
-      associationName: openViewParams?.associationName,
+      associationName,
       dataSourceKey: openViewParams?.dataSourceKey,
       destroyRef,
       updateRef,

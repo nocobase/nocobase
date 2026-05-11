@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
+import { ensureCrossEnvConfirmed } from './env-guard.js';
 import { executeResourceRequest, type ResourceAction, type ResourceRequestArgs } from './resource-request.js';
 import { setVerboseMode } from './ui.js';
 
@@ -116,6 +117,11 @@ export const resourceBaseFlags = {
   }),
   verbose: Flags.boolean({
     description: 'Show detailed progress output',
+    default: false,
+  }),
+  yes: Flags.boolean({
+    char: 'y',
+    description: 'Confirm using --env when it targets a different env than the current env',
     default: false,
   }),
   env: Flags.string({
@@ -386,6 +392,15 @@ export async function runResourceCommand(
   args: ResourceRequestArgs,
 ) {
   setVerboseMode(Boolean(flags.verbose));
+  const confirmed = await ensureCrossEnvConfirmed({
+    command,
+    requestedEnv: flags.env,
+    yes: flags.yes,
+  });
+  if (!confirmed) {
+    command.log('Canceled.');
+    return;
+  }
 
   const response = await executeResourceRequest({
     envName: flags.env,

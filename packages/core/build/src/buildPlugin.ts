@@ -33,7 +33,7 @@ import {
   checkRequire,
   getExcludePackages,
   getIncludePackages,
-  getPackagesFromFiles,
+  getPluginBrowserSourcePackages,
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
@@ -59,7 +59,7 @@ const pluginClientLaneConfig: Record<
     distDir: 'client',
     entryDir: 'client',
     rootEntryFile: 'client.js',
-    externalSubpaths: ['client'],
+    externalSubpaths: ['client', 'client-v2'],
   },
   'client-v2': {
     distDir: 'client-v2',
@@ -630,8 +630,11 @@ export async function buildPluginClient(
     });
     clientFiles.push(...commercialFiles);
   }
-  const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
-  const sourcePackages = getPackagesFromFiles(clientFileSource);
+  const sourceCwds = [cwd];
+  if (isCommercial) {
+    sourceCwds.push(path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL));
+  }
+  const sourcePackages = getPluginBrowserSourcePackages(sourceCwds, globExcludeFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
   checkRequire(clientFiles, log);

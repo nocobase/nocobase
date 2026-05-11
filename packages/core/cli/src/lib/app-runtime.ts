@@ -117,7 +117,7 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
     return undefined;
   }
 
-  const resolvedName = env.name || envName?.trim() || config.currentEnv || 'default';
+  const resolvedName = env.name || envName?.trim() || config.lastEnv || 'default';
   const source = normalizeEnvSource(env);
   const dockerNetworkName = sanitizeDockerResourceName(
     getEffectiveCliConfigValue(config, 'docker.network') || defaultDockerNetworkName(),

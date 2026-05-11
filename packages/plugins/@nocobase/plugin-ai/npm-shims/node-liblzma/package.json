@@ -1,0 +1,9 @@
+{
+  "name": "node-liblzma",
+  "version": "2.2.0",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

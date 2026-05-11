@@ -22,5 +22,9 @@ DateTimeFieldModel.registerFlow({
       use: 'dateDisplayFormat',
       title: tExpr('Date display format'),
     },
+    dateRangeLimit: {
+      use: 'dateRangeLimit',
+      title: tExpr('Date range limit'),
+    },
   },
 });

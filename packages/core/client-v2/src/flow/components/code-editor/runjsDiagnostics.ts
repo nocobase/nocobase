@@ -27,6 +27,50 @@ import {
   shouldPreprocessRunJSTemplates,
 } from '@nocobase/flow-engine';
 
+const acornWalkBase = {
+  ...(acornWalk as any).base,
+  JSXElement(node: any, state: any, callback: any) {
+    callback(node.openingElement, state);
+    for (const child of node.children || []) callback(child, state);
+    if (node.closingElement) callback(node.closingElement, state);
+  },
+  JSXFragment(node: any, state: any, callback: any) {
+    callback(node.openingFragment, state);
+    for (const child of node.children || []) callback(child, state);
+    callback(node.closingFragment, state);
+  },
+  JSXOpeningElement(node: any, state: any, callback: any) {
+    callback(node.name, state);
+    for (const attribute of node.attributes || []) callback(attribute, state);
+  },
+  JSXClosingElement(node: any, state: any, callback: any) {
+    callback(node.name, state);
+  },
+  JSXAttribute(node: any, state: any, callback: any) {
+    callback(node.name, state);
+    if (node.value) callback(node.value, state);
+  },
+  JSXExpressionContainer(node: any, state: any, callback: any) {
+    callback(node.expression, state);
+  },
+  JSXSpreadAttribute(node: any, state: any, callback: any) {
+    callback(node.argument, state);
+  },
+  JSXMemberExpression(node: any, state: any, callback: any) {
+    callback(node.object, state);
+    callback(node.property, state);
+  },
+  JSXNamespacedName(node: any, state: any, callback: any) {
+    callback(node.namespace, state);
+    callback(node.name, state);
+  },
+  JSXIdentifier() {},
+  JSXText() {},
+  JSXEmptyExpression() {},
+  JSXOpeningFragment() {},
+  JSXClosingFragment() {},
+};
+
 export type RunJSIssue = {
   type: 'lint' | 'runtime';
   message: string;
@@ -615,55 +659,63 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
 
   // Collect declared identifiers (very coarse, best-effort).
   try {
-    acornWalk.full(ast, (node: any) => {
-      switch (node?.type) {
-        case 'VariableDeclarator':
-          addPatternIds(node.id);
-          break;
-        case 'FunctionDeclaration':
-          addId(node.id);
-          (node.params || []).forEach(addPatternIds);
-          break;
-        case 'FunctionExpression':
-          addId(node.id);
-          (node.params || []).forEach(addPatternIds);
-          break;
-        case 'ArrowFunctionExpression':
-          (node.params || []).forEach(addPatternIds);
-          break;
-        case 'CatchClause':
-          addPatternIds((node as any).param);
-          break;
-        case 'ClassDeclaration':
-          addId(node.id);
-          break;
-        default:
-          break;
-      }
-    });
+    acornWalk.full(
+      ast,
+      (node: any) => {
+        switch (node?.type) {
+          case 'VariableDeclarator':
+            addPatternIds(node.id);
+            break;
+          case 'FunctionDeclaration':
+            addId(node.id);
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'FunctionExpression':
+            addId(node.id);
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'ArrowFunctionExpression':
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'CatchClause':
+            addPatternIds((node as any).param);
+            break;
+          case 'ClassDeclaration':
+            addId(node.id);
+            break;
+          default:
+            break;
+        }
+      },
+      acornWalkBase,
+    );
   } catch (_) {
     // ignore
   }
 
   // 1) Non-callable call: 123(), 'x'(), (1+2)(), ({})()
   try {
-    acornWalk.full(ast, (node: any) => {
-      if (!node || typeof node.type !== 'string') return;
-      if (node.type !== 'CallExpression') return;
-      const callee = node.callee;
-      const isCallableLike =
-        callee &&
-        (callee.type === 'Identifier' ||
-          callee.type === 'MemberExpression' ||
-          callee.type === 'FunctionExpression' ||
-          callee.type === 'ArrowFunctionExpression' ||
-          callee.type === 'CallExpression' ||
-          callee.type === 'ChainExpression');
-      if (!isCallableLike) {
-        const pos = (callee as any)?.start ?? node.start ?? 0;
-        pushAtPos(pos, 'no-noncallable-call', 'This expression is not callable.');
-      }
-    });
+    acornWalk.full(
+      ast,
+      (node: any) => {
+        if (!node || typeof node.type !== 'string') return;
+        if (node.type !== 'CallExpression') return;
+        const callee = node.callee;
+        const isCallableLike =
+          callee &&
+          (callee.type === 'Identifier' ||
+            callee.type === 'MemberExpression' ||
+            callee.type === 'FunctionExpression' ||
+            callee.type === 'ArrowFunctionExpression' ||
+            callee.type === 'CallExpression' ||
+            callee.type === 'ChainExpression');
+        if (!isCallableLike) {
+          const pos = (callee as any)?.start ?? node.start ?? 0;
+          pushAtPos(pos, 'no-noncallable-call', 'This expression is not callable.');
+        }
+      },
+      acornWalkBase,
+    );
   } catch (_) {
     // ignore
   }
@@ -673,37 +725,45 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
   try {
     const reported = new Set<string>();
     const allowedShort = new Set<string>(['t']);
-    acornWalk.full(ast, (node: any) => {
-      if (!node || typeof node.type !== 'string') return;
-      if (node.type !== 'CallExpression') return;
-      let callee = node.callee;
-      if (callee?.type === 'ChainExpression') callee = callee.expression;
-      if (!callee || callee.type !== 'MemberExpression') return;
-      const obj = callee.object;
-      if (!obj || obj.type !== 'Identifier' || obj.name !== 'ctx') return;
+    acornWalk.full(
+      ast,
+      (node: any) => {
+        if (!node || typeof node.type !== 'string') return;
+        if (node.type !== 'CallExpression') return;
+        let callee = node.callee;
+        if (callee?.type === 'ChainExpression') callee = callee.expression;
+        if (!callee || callee.type !== 'MemberExpression') return;
+        const obj = callee.object;
+        if (!obj || obj.type !== 'Identifier' || obj.name !== 'ctx') return;
 
-      let name: string | null = null;
-      if (!callee.computed && callee.property?.type === 'Identifier') {
-        name = callee.property.name;
-      } else if (callee.computed && callee.property?.type === 'Literal' && typeof callee.property.value === 'string') {
-        name = callee.property.value;
-      }
+        let name: string | null = null;
+        if (!callee.computed && callee.property?.type === 'Identifier') {
+          name = callee.property.name;
+        } else if (
+          callee.computed &&
+          callee.property?.type === 'Literal' &&
+          typeof callee.property.value === 'string'
+        ) {
+          name = callee.property.value;
+        }
 
-      if (!name || typeof name !== 'string') return;
-      const normalized = name.trim();
-      if (!normalized || normalized.startsWith('_')) return;
-      if (normalized.length > 2) return;
-      if (allowedShort.has(normalized)) return;
-      if (reported.has(normalized)) return;
+        if (!name || typeof name !== 'string') return;
+        const normalized = name.trim();
+        if (!normalized || normalized.startsWith('_')) return;
+        if (normalized.length > 2) return;
+        if (allowedShort.has(normalized)) return;
+        if (reported.has(normalized)) return;
 
-      const pos = (callee.property as any)?.start ?? callee.start ?? node.start ?? 0;
-      pushAtPos(
-        pos,
-        'possible-undefined-ctx-member-call',
-        `Possible undefined ctx method call: ctx.${normalized}(). This may be a typo or not available in the current ctx API.`,
-      );
-      reported.add(normalized);
-    });
+        const pos = (callee.property as any)?.start ?? callee.start ?? node.start ?? 0;
+        pushAtPos(
+          pos,
+          'possible-undefined-ctx-member-call',
+          `Possible undefined ctx method call: ctx.${normalized}(). This may be a typo or not available in the current ctx API.`,
+        );
+        reported.add(normalized);
+      },
+      acornWalkBase,
+    );
   } catch (_) {
     // ignore
   }
@@ -711,31 +771,35 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
   // 2) Possible undefined variable (exclude declarations and property keys)
   try {
     const reported = new Set<string>();
-    acornWalk.ancestor(ast, {
-      Identifier(node: any, ancestors: any[]) {
-        const name = node?.name;
-        if (!name || declared.has(name) || reported.has(name)) return;
-        const parent = ancestors[ancestors.length - 2];
-        if (!parent) return;
-        if (
-          (parent.type === 'VariableDeclarator' && parent.id === node) ||
-          (parent.type === 'FunctionDeclaration' && parent.id === node) ||
-          (parent.type === 'FunctionExpression' && parent.id === node) ||
-          (parent.type === 'ClassDeclaration' && parent.id === node) ||
-          (parent.type === 'ClassExpression' && parent.id === node) ||
-          (parent.type === 'Property' && parent.key === node && parent.computed !== true) ||
-          (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
-          (parent.type === 'LabeledStatement' && parent.label === node) ||
-          (parent.type === 'BreakStatement' && parent.label === node) ||
-          (parent.type === 'ContinueStatement' && parent.label === node)
-        ) {
-          return;
-        }
-        const pos = (node as any).start ?? 0;
-        pushAtPos(pos, 'possible-undefined-variable', `Possible undefined variable: ${name}`);
-        reported.add(name);
+    acornWalk.ancestor(
+      ast,
+      {
+        Identifier(node: any, ancestors: any[]) {
+          const name = node?.name;
+          if (!name || declared.has(name) || reported.has(name)) return;
+          const parent = ancestors[ancestors.length - 2];
+          if (!parent) return;
+          if (
+            (parent.type === 'VariableDeclarator' && parent.id === node) ||
+            (parent.type === 'FunctionDeclaration' && parent.id === node) ||
+            (parent.type === 'FunctionExpression' && parent.id === node) ||
+            (parent.type === 'ClassDeclaration' && parent.id === node) ||
+            (parent.type === 'ClassExpression' && parent.id === node) ||
+            (parent.type === 'Property' && parent.key === node && parent.computed !== true) ||
+            (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
+            (parent.type === 'LabeledStatement' && parent.label === node) ||
+            (parent.type === 'BreakStatement' && parent.label === node) ||
+            (parent.type === 'ContinueStatement' && parent.label === node)
+          ) {
+            return;
+          }
+          const pos = (node as any).start ?? 0;
+          pushAtPos(pos, 'possible-undefined-variable', `Possible undefined variable: ${name}`);
+          reported.add(name);
+        },
       },
-    });
+      acornWalkBase,
+    );
   } catch (_) {
     // ignore
   }

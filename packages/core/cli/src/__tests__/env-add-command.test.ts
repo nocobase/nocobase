@@ -12,6 +12,7 @@ import { beforeEach, test, vi, expect } from 'vitest';
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
   upsertEnv: vi.fn(),
+  setCurrentEnv: vi.fn(),
   setVerboseMode: vi.fn(),
   printVerbose: vi.fn(),
   intro: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock('../lib/prompt-catalog.js', async (importOriginal) => {
 
 vi.mock('../lib/auth-store.js', () => ({
   upsertEnv: mocks.upsertEnv,
+  setCurrentEnv: mocks.setCurrentEnv,
 }));
 
 vi.mock('../lib/ui.js', () => ({
@@ -53,6 +55,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     accessToken: 'token-123',
   });
   mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.setCurrentEnv.mockResolvedValue(undefined);
 
   const runCommand = vi.fn(async () => undefined);
   const command = Object.assign(Object.create(EnvAdd.prototype), {
@@ -114,6 +117,7 @@ test('env add saves builtinDb into env config when provided by install', async (
   expect(runCommand.mock.calls).toEqual([
     ['env:update', ['local']],
   ]);
+  expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
 });
 
 test('env add stores config globally by default', async () => {
@@ -124,6 +128,7 @@ test('env add stores config globally by default', async () => {
     authType: 'oauth',
   });
   mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.setCurrentEnv.mockResolvedValue(undefined);
 
   const runCommand = vi.fn(async () => undefined);
   const command = Object.assign(Object.create(EnvAdd.prototype), {
@@ -154,4 +159,5 @@ test('env add stores config globally by default', async () => {
     ['env:auth', ['local']],
     ['env:update', ['local']],
   ]);
+  expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
 });

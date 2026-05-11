@@ -119,7 +119,7 @@ test('resolveAccessToken refreshes expired OAuth sessions', async () => {
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -188,7 +188,7 @@ test('resolveAccessToken retries transient OAuth metadata network failures', asy
     await withTempCliHome(async () => {
       await saveAuthConfig(
         {
-          currentEnv: 'test',
+          lastEnv: 'test',
           envs: {
             test: {
               baseUrl: 'http://localhost:13000/api',
@@ -259,7 +259,7 @@ test('resolveAccessToken explains OAuth metadata network failures clearly', asyn
     await withTempCliHome(async () => {
       await saveAuthConfig(
         {
-          currentEnv: 'test',
+          lastEnv: 'test',
           envs: {
             test: {
               baseUrl: 'http://localhost:13000/api',

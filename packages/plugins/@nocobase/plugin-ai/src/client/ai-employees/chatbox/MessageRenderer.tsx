@@ -54,7 +54,7 @@ const MessageWrapper = React.forwardRef<
 const AITextMessageRenderer: React.FC<{
   msg: Message['content'];
   toolInlineActions?: React.ReactNode;
-}> = ({ msg, toolInlineActions }) => {
+}> = React.memo(({ msg, toolInlineActions }) => {
   const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
@@ -109,12 +109,12 @@ const AITextMessageRenderer: React.FC<{
   }
   const M = provider.components.MessageRenderer;
   return <M msg={msg} />;
-};
+});
 
 const AIMessageRenderer: React.FC<{
   msg: Message['content'];
   toolInlineActions?: React.ReactNode;
-}> = ({ msg, toolInlineActions }) => {
+}> = React.memo(({ msg, toolInlineActions }) => {
   switch (msg.type) {
     case 'greeting':
       return (
@@ -139,7 +139,7 @@ const AIMessageRenderer: React.FC<{
         />
       );
   }
-};
+});
 
 export const AIMessage: React.FC<{
   msg: Message['content'];
@@ -378,8 +378,6 @@ export const ErrorMessage: React.FC<{
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
 
-  const messages = useChatMessagesStore.use.messages();
-
   const { resendMessages } = useChatMessageActions();
 
   const showAlert = msg.content !== 'GraphRecursionError';
@@ -401,6 +399,7 @@ export const ErrorMessage: React.FC<{
           <Button
             onClick={() => {
               let messageId: string;
+              const messages = useChatMessagesStore.getState().messages;
               const prev = messages[messages.length - 2];
               if (prev && prev.role !== 'user') {
                 messageId = prev.key as string;

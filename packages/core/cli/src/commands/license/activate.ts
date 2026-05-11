@@ -10,6 +10,7 @@
 import * as p from '@clack/prompts';
 import { Command, Flags } from '@oclif/core';
 import { readFile } from 'node:fs/promises';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   ensureInstanceId,
   licenseEnvFlag,
@@ -31,7 +32,6 @@ type OnlineActivationAnswers = {
   account: string;
   password: string;
   appName: string;
-  confirmed: boolean;
   serviceUrl: string;
 };
 
@@ -147,22 +147,10 @@ async function promptOnlineActivationInput(
     return;
   }
 
-  const confirmedAnswer = typeof initial.confirmed === 'boolean'
-    ? initial.confirmed
-    : await p.confirm({
-      message: 'Confirm that the submitted license information is true and accurate?',
-      initialValue: false,
-    });
-  if (p.isCancel(confirmedAnswer)) {
-    p.cancel('License activation cancelled.');
-    return;
-  }
-
   return {
     account,
     password,
     appName,
-    confirmed: Boolean(confirmedAnswer),
     serviceUrl: await resolveLicenseServiceUrl(initial.serviceUrl),
   };
 }
@@ -225,6 +213,7 @@ export default class LicenseActivate extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --key <licenseKey>',
     '<%= config.bin %> <%= command.id %> --env app1 --key-file ./license.txt',
     '<%= config.bin %> <%= command.id %> --env app1 --online',
+    '<%= config.bin %> <%= command.id %> --env app1 --online --account aa --password bb --desc test24',
     '<%= config.bin %> <%= command.id %> --env app1 --online --account aa --password bb --desc test24 --yes',
     '<%= config.bin %> <%= command.id %> --env app1 --json --key-file ./license.txt',
   ];
@@ -252,13 +241,27 @@ export default class LicenseActivate extends Command {
     }),
     'pkg-url': licensePkgUrlFlag,
     yes: Flags.boolean({
-      description: 'Confirm that the submitted application information is true and accurate',
+      description: 'Skip the interactive cross-env confirmation prompt',
       default: false,
     }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicenseActivate);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv ?? []));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
+
     const runtime = await requireLicenseRuntime(flags.env);
     if (!flags.json) {
       announceTargetEnv(runtime.envName);
@@ -300,7 +303,6 @@ export default class LicenseActivate extends Command {
         account: resolveOnlineInputValue(flags.account),
         password: resolveOnlineInputValue(flags.password),
         appName: resolveOnlineInputValue(flags.desc),
-        confirmed: flags.yes ? true : undefined,
         serviceUrl: resolvedServiceUrl,
       };
 
@@ -309,10 +311,9 @@ export default class LicenseActivate extends Command {
         !onlineInput.account
         || !onlineInput.password
         || !onlineInput.appName
-        || !onlineInput.confirmed
       ) {
         if (!isInteractiveTerminal()) {
-          this.error('Online activation requires --account, --password, --desc, and --yes when not using a TTY.');
+          this.error('Online activation requires --account, --password, and --desc when not using a TTY.');
         }
 
         const prompted = await promptOnlineActivationInput(initialOnline);
@@ -321,10 +322,6 @@ export default class LicenseActivate extends Command {
           return;
         }
         onlineInput = prompted;
-      }
-
-      if (!onlineInput.confirmed) {
-        this.error('Online activation requires confirmation that the submitted application information is true and accurate.');
       }
 
       const instanceId = await ensureInstanceId(runtime);

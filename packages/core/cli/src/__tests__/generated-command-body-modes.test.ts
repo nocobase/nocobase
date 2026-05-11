@@ -89,6 +89,7 @@ test('body JSON path should not require body field flags at parse time', async (
     body: '{"primaryValue":"ok","items":[]}',
     'json-output': true,
     verbose: false,
+    yes: false,
   });
 });
 
@@ -215,6 +216,8 @@ test('createGeneratedFlags should group body, raw JSON body, and global flags se
   expect(flags['body-file'].helpGroup).toBe('Raw JSON Body');
   expect(flags.env.helpGroup).toBe('Global');
   expect(flags['api-base-url'].helpGroup).toBe('Global');
+  expect(flags.yes.helpGroup).toBe('Global');
+  expect(flags.yes.default).toBe(false);
 });
 
 test('createGeneratedFlags should expose output for binary responses and omit raw JSON flags for multipart bodies', () => {

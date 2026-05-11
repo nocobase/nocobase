@@ -110,12 +110,16 @@ test('startBuiltinDb removes the existing db container before docker run when --
 
 test('startBuiltinDb reuses an existing db container without rechecking its published port', async () => {
   const storagePath = await useTempStorageDir();
-  const dbPort = await findAvailableTcpPort();
   const server = await new Promise<net.Server>((resolve, reject) => {
     const listener = net.createServer();
     listener.once('error', reject);
-    listener.listen(Number(dbPort), '127.0.0.1', () => resolve(listener));
+    listener.listen(0, '127.0.0.1', () => resolve(listener));
   });
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('Expected TCP server address info');
+  }
+  const dbPort = String(address.port);
   const command = Object.assign(Object.create(Install.prototype), {
     ensureDockerNetwork: vi.fn(async () => undefined),
     dockerContainerExists: vi.fn(async () => true),

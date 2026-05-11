@@ -60,6 +60,7 @@ function createMockTarGz(files: Array<{ name: string; content: string }>): Uint8
 }
 
 const mocks = vi.hoisted(() => ({
+  getCurrentEnvName: vi.fn(),
   resolveManagedAppRuntime: vi.fn(),
   getInstanceIdAsync: vi.fn(),
   getEnvAsync: vi.fn(),
@@ -79,6 +80,14 @@ const mocks = vi.hoisted(() => ({
   createStoragePluginsSymlink: vi.fn(),
   renderTable: vi.fn(() => 'TABLE'),
 }));
+
+vi.mock('../lib/auth-store.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/auth-store.js')>();
+  return {
+    ...actual,
+    getCurrentEnvName: mocks.getCurrentEnvName,
+  };
+});
 
 vi.mock('../lib/app-runtime.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/app-runtime.js')>();
@@ -140,6 +149,7 @@ vi.mock('../lib/plugin-storage.js', async (importOriginal) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getCurrentEnvName.mockResolvedValue('dev');
   mocks.isInteractiveTerminal.mockReturnValue(false);
   mocks.promptIsCancel.mockReturnValue(false);
   mocks.promptPassword.mockResolvedValue('bb');
@@ -248,11 +258,35 @@ beforeEach(() => {
   });
 });
 
+function setTerminalInteractivity(value: boolean) {
+  const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+  const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
+
+  Object.defineProperty(process.stdin, 'isTTY', {
+    configurable: true,
+    value,
+  });
+  Object.defineProperty(process.stdout, 'isTTY', {
+    configurable: true,
+    value,
+  });
+
+  return () => {
+    if (stdinDescriptor) {
+      Object.defineProperty(process.stdin, 'isTTY', stdinDescriptor);
+    }
+    if (stdoutDescriptor) {
+      Object.defineProperty(process.stdout, 'isTTY', stdoutDescriptor);
+    }
+  };
+}
+
 test('license id generates and saves the instance id for the selected env', async () => {
   const { default: LicenseId } = await import('../commands/license/id.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
       envName: 'app1',
@@ -277,10 +311,12 @@ test('license id generates and saves the instance id for the selected env', asyn
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseId.prototype), {
+      argv: ['--env', 'app1', '--yes'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
           force: false,
         },
       })),
@@ -304,6 +340,7 @@ test('license id generates and saves the instance id for the selected env', asyn
       password: 'secret',
     });
     expect(mocks.getInstanceIdAsync).toHaveBeenCalledTimes(1);
+    restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
@@ -315,6 +352,7 @@ test('license id reuses the saved instance id when force is not set', async () =
   const licenseDir = path.join(storagePath, '.license');
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     await mkdir(licenseDir, { recursive: true });
     await writeFile(path.join(licenseDir, 'instance-id'), 'ins_saved\n');
 
@@ -335,10 +373,12 @@ test('license id reuses the saved instance id when force is not set', async () =
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseId.prototype), {
+      argv: ['--env', 'app1', '--yes'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
           force: false,
         },
       })),
@@ -353,6 +393,7 @@ test('license id reuses the saved instance id when force is not set', async () =
     expect(log.mock.calls[0]?.[0]).toContain('ins_saved');
     expect(mocks.getInstanceIdAsync).not.toHaveBeenCalled();
     expect(mocks.checkExternalDbConnection).not.toHaveBeenCalled();
+    restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
@@ -364,6 +405,7 @@ test('license id regenerates and overwrites the saved instance id when force is 
   const licenseDir = path.join(storagePath, '.license');
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     await mkdir(licenseDir, { recursive: true });
     await writeFile(path.join(licenseDir, 'instance-id'), 'ins_saved\n');
     mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -389,10 +431,12 @@ test('license id regenerates and overwrites the saved instance id when force is 
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseId.prototype), {
+      argv: ['--env', 'app1', '--yes', '--force'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
           force: true,
         },
       })),
@@ -407,6 +451,7 @@ test('license id regenerates and overwrites the saved instance id when force is 
     await expect(readFile(path.join(licenseDir, 'instance-id'), 'utf8')).resolves.toBe('ins_regenerated\n');
     expect(log.mock.calls[1]?.[0]).toContain('Saved instance ID');
     expect(mocks.checkExternalDbConnection).toHaveBeenCalledTimes(1);
+    restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
@@ -417,6 +462,7 @@ test('license id generates through docker when the selected env uses docker sour
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'docker',
       envName: 'app1',
@@ -444,10 +490,12 @@ test('license id generates through docker when the selected env uses docker sour
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseId.prototype), {
+      argv: ['--env', 'app1', '--yes'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
           force: false,
         },
       })),
@@ -492,8 +540,39 @@ test('license id generates through docker when the selected env uses docker sour
     );
     expect(mocks.checkExternalDbConnection).not.toHaveBeenCalled();
     expect(mocks.getInstanceIdAsync).not.toHaveBeenCalled();
+    restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('license id rejects cross-env requests in non-interactive agent sessions without --yes even when --force is set', async () => {
+  const { default: LicenseId } = await import('../commands/license/id.js');
+  const restoreTerminal = setTerminalInteractivity(false);
+
+  try {
+    const command = Object.assign(Object.create(LicenseId.prototype), {
+      argv: ['--env', 'prod', '--force'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'prod',
+          json: false,
+          yes: false,
+          force: true,
+        },
+      })),
+      log: vi.fn(),
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await expect((() => LicenseId.prototype.run.call(command))()).rejects.toThrow(
+      /Refusing to run against env "prod" because the current env is "dev"/,
+    );
+    expect(mocks.resolveManagedAppRuntime).not.toHaveBeenCalled();
+  } finally {
+    restoreTerminal();
   }
 });
 
@@ -502,6 +581,7 @@ test('license activate validates docker envs through docker license env inspecti
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'docker',
       envName: 'app1',
@@ -558,10 +638,12 @@ test('license activate validates docker envs through docker license env inspecti
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1', '--yes', '--key', 'license-key-raw'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
           key: 'license-key-raw',
           'key-file': undefined,
           online: false,
@@ -607,6 +689,7 @@ test('license activate validates docker envs through docker license env inspecti
       { errorName: 'docker run' },
     );
     expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
+    restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
@@ -740,6 +823,7 @@ test('license activate validates and saves a matching license key', async () => 
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
       envName: 'app1',
@@ -781,10 +865,12 @@ test('license activate validates and saves a matching license key', async () => 
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1', '--yes', '--key', 'license-key-raw'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
           key: 'license-key-raw',
           'key-file': undefined,
           online: false,
@@ -802,6 +888,7 @@ test('license activate validates and saves a matching license key', async () => 
     const saved = await readFile(path.join(storagePath, '.license', 'license-key'), 'utf8');
     expect(saved).toBe('license-key-raw');
     expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
+    restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
@@ -812,6 +899,7 @@ test('license activate rejects a key that does not match the current domain', as
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
       envName: 'app1',
@@ -845,10 +933,12 @@ test('license activate rejects a key that does not match the current domain', as
     }));
 
     const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1', '--yes', '--key', 'license-key-raw'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
           key: 'license-key-raw',
           'key-file': undefined,
           online: false,
@@ -861,6 +951,7 @@ test('license activate rejects a key that does not match the current domain', as
     });
 
     await expect((() => LicenseActivate.prototype.run.call(command))()).rejects.toThrow(/does not match the current app domain/);
+    restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
@@ -910,10 +1001,12 @@ test('license activate supports interactive pasted key input', async () => {
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: false,
           key: undefined,
           'key-file': undefined,
           online: false,
@@ -981,6 +1074,7 @@ test('license activate supports online activation with explicit flags', async ()
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1', '--online', '--account', 'aa', '--password', 'bb', '--desc', 'test app'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
@@ -992,7 +1086,7 @@ test('license activate supports online activation with explicit flags', async ()
           password: 'bb',
           desc: 'test app',
           'pkg-url': `${serviceUrl()}/`,
-          yes: true,
+          yes: false,
         },
       })),
       log,
@@ -1080,6 +1174,7 @@ test('license activate supports online activation json output and redacts valida
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1', '--online', '--account', 'env-account', '--password', 'env-password', '--desc', 'env-desc', '--json'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
@@ -1091,7 +1186,7 @@ test('license activate supports online activation json output and redacts valida
           password: 'env-password',
           desc: 'env-desc',
           'pkg-url': `${serviceUrl()}/`,
-          yes: true,
+          yes: false,
         },
       })),
       log,
@@ -1183,6 +1278,7 @@ test('license activate supports interactive online activation', async () => {
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
@@ -1211,9 +1307,124 @@ test('license activate supports interactive online activation', async () => {
     expect(String(mocks.promptPassword.mock.calls[0]?.[0]?.message)).toContain('Service password');
     expect(String(mocks.promptText.mock.calls[1]?.[0]?.message)).toContain('Application name');
     expect(mocks.promptConfirm).toHaveBeenCalledTimes(1);
+    expect(mocks.promptConfirm).toHaveBeenCalledWith({
+      message:
+        'Current env is "dev", but this command targets "app1" via --env. Continue without switching the current env?',
+      initialValue: false,
+    });
     expect(log.mock.calls[0]?.[0]).toContain('Activated the online license');
   } finally {
     await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('license activate online no longer requires --yes in non-interactive sessions when parameters are complete', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+
+  try {
+    const restoreTerminal = setTerminalInteractivity(false);
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'dev',
+      source: 'npm',
+      projectRoot: '/tmp/app1',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {
+          appPort: '13000',
+        },
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          DB_DIALECT: 'postgres',
+          DB_HOST: '127.0.0.1',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'secret',
+        },
+      },
+    });
+    mocks.getInstanceIdAsync.mockResolvedValue('ins_12345');
+    mocks.keyDecrypt.mockReturnValue(JSON.stringify({
+      licenseKey: {
+        domain: '127.0.0.1:13000',
+        licenseStatus: 'active',
+      },
+      instanceData: {
+        sys: 'darwin',
+        osVer: '24',
+        db: {
+          id: 'db-1',
+          type: 'postgres',
+          name: 'nocobase',
+        },
+      },
+    }));
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--online', '--account', 'aa', '--password', 'bb', '--desc', 'test app'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: undefined,
+          json: false,
+          key: undefined,
+          'key-file': undefined,
+          online: true,
+          account: 'aa',
+          password: 'bb',
+          desc: 'test app',
+          'pkg-url': `${serviceUrl()}/`,
+          yes: false,
+        },
+      })),
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+      exit: vi.fn(),
+    });
+
+    await LicenseActivate.prototype.run.call(command);
+
+    expect(log.mock.calls[0]?.[0]).toContain('Activated the online license');
+    restoreTerminal();
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('license activate rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+  const restoreTerminal = setTerminalInteractivity(false);
+
+  try {
+    const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'prod', '--key', 'license-key-raw'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'prod',
+          json: false,
+          yes: false,
+          key: 'license-key-raw',
+          'key-file': undefined,
+          online: false,
+        },
+      })),
+      log: vi.fn(),
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await expect((() => LicenseActivate.prototype.run.call(command))()).rejects.toThrow(
+      /Refusing to run against env "prod" because the current env is "dev"/,
+    );
+    expect(mocks.resolveManagedAppRuntime).not.toHaveBeenCalled();
+  } finally {
+    restoreTerminal();
   }
 });
 
@@ -1265,10 +1476,12 @@ test('license activate supports interactive cancellation', async () => {
 
   const log = vi.fn();
   const command = Object.assign(Object.create(LicenseActivate.prototype), {
+    argv: ['--env', 'app1'],
     parse: vi.fn(async () => ({
       flags: {
         env: 'app1',
         json: false,
+        yes: false,
         key: undefined,
         'key-file': undefined,
         online: false,
@@ -1291,6 +1504,7 @@ test('license plugins list shows licensed and unlicensed commercial plugins', as
   const licenseDir = path.join(storagePath, '.license');
 
   try {
+    const restoreTerminal = setTerminalInteractivity(true);
     await mkdir(licenseDir, { recursive: true });
     await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
     mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -1317,10 +1531,12 @@ test('license plugins list shows licensed and unlicensed commercial plugins', as
 
     const log = vi.fn();
     const command = Object.assign(Object.create(LicensePluginsList.prototype), {
+      argv: ['--env', 'app1', '--yes'],
       parse: vi.fn(async () => ({
         flags: {
           env: 'app1',
           json: false,
+          yes: true,
         },
       })),
       log,
@@ -1333,7 +1549,123 @@ test('license plugins list shows licensed and unlicensed commercial plugins', as
 
     expect(log.mock.calls[0]?.[0]).toContain('Commercial plugins for env "app1"');
     expect(log.mock.calls[1]?.[0]).toBe('TABLE');
+    restoreTerminal();
   } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('license status asks for confirmation before cross-env requests in interactive sessions', async () => {
+  const { default: LicenseStatus } = await import('../commands/license/status.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+
+  try {
+    mocks.promptConfirm.mockResolvedValue(true);
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'prod',
+      source: 'npm',
+      projectRoot: '/tmp/prod',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {},
+        storagePath: '/tmp/prod-storage',
+        envVars: {
+          STORAGE_PATH: '/tmp/prod-storage',
+          DB_DIALECT: 'postgres',
+          DB_HOST: '127.0.0.1',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'secret',
+        },
+      },
+    });
+    mocks.getInstanceIdAsync.mockResolvedValue('ins_12345');
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicenseStatus.prototype), {
+      argv: ['--env', 'prod'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'prod',
+          json: false,
+          yes: false,
+          doctor: false,
+        },
+      })),
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicenseStatus.prototype.run.call(command);
+
+    expect(mocks.promptConfirm).toHaveBeenCalledWith({
+      message:
+        'Current env is "dev", but this command targets "prod" via --env. Continue without switching the current env?',
+      initialValue: false,
+    });
+    expect(log.mock.calls[0]?.[0]).toContain('License status for env "prod"');
+  } finally {
+    restoreTerminal();
+  }
+});
+
+test('license plugins list lets --yes skip the interactive cross-env confirmation prompt', async () => {
+  const { default: LicensePluginsList } = await import('../commands/license/plugins/list.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+  const licenseDir = path.join(storagePath, '.license');
+  const restoreTerminal = setTerminalInteractivity(true);
+
+  try {
+    await mkdir(licenseDir, { recursive: true });
+    await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'prod',
+      source: 'npm',
+      projectRoot: '/tmp/prod',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {},
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+        },
+      },
+    });
+    mocks.keyDecrypt.mockReturnValue(JSON.stringify({
+      accessKeyId: 'ak',
+      accessKeySecret: 'sk',
+      service: {
+        domain: 'https://pkg.example.com/',
+      },
+    }));
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicensePluginsList.prototype), {
+      argv: ['--env', 'prod', '--yes'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'prod',
+          json: false,
+          yes: true,
+        },
+      })),
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicensePluginsList.prototype.run.call(command);
+
+    expect(mocks.promptConfirm).not.toHaveBeenCalled();
+    expect(log.mock.calls[0]?.[0]).toContain('Commercial plugins for env "prod"');
+  } finally {
+    restoreTerminal();
     await rm(storagePath, { recursive: true, force: true });
   }
 });

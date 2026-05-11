@@ -15,10 +15,12 @@ import { useParams } from 'react-router-dom';
 import { useApp } from '../../hooks/useApp';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
 import { resolveAdminRouteRuntimeTarget } from '../admin-shell/admin-layout/resolveAdminRouteRuntimeTarget';
+import { AppNotFound } from '../../components';
 
 type FlowRouteGuardState = {
   pending: boolean;
   allowBridge: boolean;
+  notFound: boolean;
 };
 
 const BridgeFlowRoute = ({ pageUid }: { pageUid: string }) => {
@@ -91,6 +93,7 @@ const FlowRoute = () => {
   const [guardState, setGuardState] = useState<FlowRouteGuardState>({
     pending: true,
     allowBridge: false,
+    notFound: false,
   });
   const replaceTriggeredRef = useRef(false);
   const requestIdRef = useRef(0);
@@ -104,14 +107,14 @@ const FlowRoute = () => {
     const requestId = ++requestIdRef.current;
 
     const run = async () => {
-      setGuardState({ pending: true, allowBridge: false });
+      setGuardState({ pending: true, allowBridge: false, notFound: false });
 
       if (!routeRepository?.isAccessibleLoaded?.()) {
         try {
           await routeRepository?.ensureAccessibleLoaded?.();
         } catch (_error) {
           if (active && requestId === requestIdRef.current) {
-            setGuardState({ pending: false, allowBridge: true });
+            setGuardState({ pending: false, allowBridge: true, notFound: false });
           }
           return;
         }
@@ -139,10 +142,17 @@ const FlowRoute = () => {
           window.location.replace(target.runtimePath);
           return;
         }
+
+        if (target.reason === 'unsupportedV2Runtime') {
+          if (active && requestId === requestIdRef.current) {
+            setGuardState({ pending: false, allowBridge: false, notFound: true });
+          }
+          return;
+        }
       }
 
       if (active && requestId === requestIdRef.current) {
-        setGuardState({ pending: false, allowBridge: true });
+        setGuardState({ pending: false, allowBridge: true, notFound: false });
       }
     };
 
@@ -159,11 +169,14 @@ const FlowRoute = () => {
     }
 
     if (!guardState.allowBridge) {
+      if (guardState.notFound) {
+        return <AppNotFound />;
+      }
       return null;
     }
 
     return <BridgeFlowRoute pageUid={pageUid} />;
-  }, [guardState.allowBridge, guardState.pending, pageUid]);
+  }, [guardState.allowBridge, guardState.notFound, guardState.pending, pageUid]);
 
   return content;
 };
