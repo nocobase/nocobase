@@ -70,4 +70,22 @@ describe('plugin symlink sync', () => {
     );
     expect(fs.realpathSync(path.join(root, 'node_modules', '@scope', 'linked'))).not.toBe(proPluginDir);
   });
+
+  it('skips invalid source directories when resolving plugin targets', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-plugin-symlink-'));
+    vi.spyOn(process, 'cwd').mockReturnValue(root);
+    process.env.NODE_MODULES_PATH = path.join(root, 'node_modules');
+    process.env.PLUGIN_STORAGE_PATH = path.join(root, 'storage', 'plugins');
+    process.env.STORAGE_PATH = path.join(root, 'storage');
+
+    fs.ensureDirSync(process.env.NODE_MODULES_PATH);
+
+    const pluginName = '@scope/linked';
+    fs.ensureDirSync(path.join(root, 'packages/plugins', pluginName));
+    const storagePluginDir = writePlugin(root, 'storage/plugins', pluginName);
+
+    await syncPluginSymlinks();
+
+    expect(fs.realpathSync(path.join(root, 'node_modules', pluginName))).toBe(fs.realpathSync(storagePluginDir));
+  });
 });

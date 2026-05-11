@@ -10,6 +10,7 @@
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 import { Registry, resolveStorageRoot, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
+import { syncPluginSymlinks } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { randomUUID } from 'crypto';
@@ -614,6 +615,10 @@ export class Gateway extends EventEmitter {
           return;
         }
       }
+    }
+
+    if (isStart || !ipcClient) {
+      await syncPluginSymlinks();
     }
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
