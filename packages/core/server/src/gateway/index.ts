@@ -338,6 +338,7 @@ export class Gateway extends EventEmitter {
   private getV2RuntimeConfig() {
     return {
       __nocobase_public_path__: this.getV2PublicPath(),
+      __webpack_public_path__: process.env.CDN_BASE_URL ? `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/` : '',
       __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
       __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
       __nocobase_api_client_storage_type__: process.env.API_CLIENT_STORAGE_TYPE,
