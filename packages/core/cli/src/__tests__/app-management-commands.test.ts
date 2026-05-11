@@ -1435,7 +1435,14 @@ test('env info shows grouped app details with secrets masked by default', async 
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('auth.accessToken');
 });
 
-test('env info supports json output with grouped sections', async () => {
+test('env info keeps --env as a hidden deprecated compatibility alias', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+
+  expect(EnvInfo.flags.env.hidden).toBe(true);
+  expect(EnvInfo.flags.env.deprecated).toBe(true);
+});
+
+test('env info supports the deprecated --env alias with grouped json output', async () => {
   const { default: EnvInfo } = await import('../commands/env/info.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'http',
@@ -1504,6 +1511,23 @@ test('env info supports json output with grouped sections', async () => {
       },
     },
   });
+});
+
+test('env info rejects conflicting environment names from the argument and deprecated --env', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+
+  const command = createCommandHarness({
+    args: {
+      name: 'prod',
+    },
+    flags: {
+      env: 'staging',
+      json: false,
+      'show-secrets': false,
+    },
+  });
+
+  await expect((() => EnvInfo.prototype.run.call(command))()).rejects.toThrow(/Please use only one/);
 });
 
 test('env info supports positional env name and shows grouped details', async () => {
@@ -3898,6 +3922,40 @@ test('dev explains when the requested env does not exist', async () => {
   });
 
   await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(/Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s);
+});
+
+test('dev rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
+  const { default: Dev } = await import('../commands/source/dev.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'prod',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: {},
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: false,
+      text: async () => 'not ok',
+    })),
+  );
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prod',
+      yes: false,
+    },
+  });
+  command.argv = ['--env', 'prod'];
+
+  await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(
+    /Refusing to run against env "prod".*interactive confirmation is unavailable.*re-run the same command with `--env prod --yes` to confirm this one-off cross-env operation\./s,
+  );
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
 test('pm list keeps API fallback for http envs', async () => {

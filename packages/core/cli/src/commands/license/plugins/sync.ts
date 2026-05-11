@@ -18,7 +18,13 @@ import {
   resolveDockerImageRef,
 } from '../../../lib/docker-image.ts';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
-import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
+import {
+  createLicenseEnvFlag,
+  licenseJsonFlag,
+  licensePkgUrlFlag,
+  licenseYesFlag,
+  requireLicenseRuntime,
+} from '../shared.js';
 import { syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
 import { commandOutput } from '../../../lib/run-npm.js';
@@ -161,7 +167,7 @@ export default class LicensePluginsSync extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --json',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to sync licensed plugins for. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
     'pkg-url': licensePkgUrlFlag,
     'dry-run': Flags.boolean({
@@ -175,10 +181,7 @@ export default class LicensePluginsSync extends Command {
       description: 'Show detailed per-plugin sync logs',
       default: false,
     }),
-    yes: Flags.boolean({
-      description: 'Skip the interactive cross-env confirmation prompt',
-      default: false,
-    }),
+    yes: licenseYesFlag,
   };
 
   public async run(): Promise<void> {

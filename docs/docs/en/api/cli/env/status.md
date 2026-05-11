@@ -20,7 +20,7 @@ nb env status [name] [flags]
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Env name to inspect; uses the current env if omitted |
+| `[name]` | string | Configured environment name to inspect; uses the current env if omitted; cannot be used with `--all` |
 | `--all` | boolean | Show status for all configured envs |
 | `--json-output` | boolean | Output the result as JSON |
 

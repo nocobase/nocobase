@@ -18,7 +18,7 @@ nb env update [name] [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `[name]` | string | 环境名称，省略时使用当前 env |
+| `[name]` | string | 要刷新的已配置环境名称；省略时使用当前 env |
 | `--verbose` | boolean | 显示详细进度 |
 | `--api-base-url` | string | 覆盖 NocoBase API 地址，并持久化到目标 env |
 | `--role` | string | 角色覆盖，作为 `X-Role` 请求头发送 |

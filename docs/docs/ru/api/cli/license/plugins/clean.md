@@ -19,8 +19,9 @@ nb license plugins clean [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `--env`, `-e` | string | Имя CLI env; если не указано, используется текущий env |
+| `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на env, отличающуюся от текущей env, пропускает интерактивное подтверждение |
 | `--dry-run` | boolean | Предварительно показать, какие плагины будут удалены, ничего не удаляя |
-| `--verbose`, `-V` | boolean | Показывать подробные логи по каждому плагину |
+| `--verbose` | boolean | Показывать подробные логи по каждому плагину |
 | `--json` | boolean | Вывод JSON |
 
 ## Примеры
@@ -28,10 +29,13 @@ nb license plugins clean [flags]
 ```bash
 nb license plugins clean
 nb license plugins clean --env app1
+nb license plugins clean --env app1 --yes
 nb license plugins clean --env app1 --dry-run
 nb license plugins clean --env app1 --verbose
 nb license plugins clean --env app1 --json
 ```
+
+Если вы явно передаёте `--env`, и она отличается от текущей env, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях AI-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
 
 ## Связанные команды
 

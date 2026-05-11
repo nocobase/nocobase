@@ -94,7 +94,10 @@ test('setupSessionIntegration writes managed shell file and zsh profile block', 
   expect(result.profileFile).toBe(profilePath);
   expect(managedContent).toContain('NB_SESSION_ID');
   expect(managedContent).not.toContain('nb()');
-  expect(managedContent).toContain('CODEX_THREAD_ID');
+  expect(managedContent).not.toContain('CODEX_THREAD_ID');
+  expect(managedContent).not.toContain('OPENCODE_RUN_ID');
+  expect(managedContent).not.toContain('COPILOT_AGENT_SESSION_ID');
+  expect(managedContent).not.toContain('CLAUDE_CODE_SESSION_ID');
   expect(managedContent).not.toContain('[ -z "${NB_SESSION_ID:-}" ]');
   expect(managedContent).toContain(`node -e 'console.log(require("node:crypto").randomUUID())'`);
   expect(result.agentConfigured).toBe(true);

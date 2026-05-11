@@ -32,6 +32,7 @@ nb api resource <command>
 | `--api-base-url` | string | Địa chỉ API NocoBase, ví dụ `http://localhost:13000/api` |
 | `--verbose` | boolean | Hiển thị tiến trình chi tiết |
 | `--env`, `-e` | string | Tên môi trường |
+| `--yes`, `-y` | boolean | Khi `--env` được truyền tường minh và trỏ tới env khác với env hiện tại, bỏ qua bước xác nhận tương tác |
 | `--role` | string | Ghi đè role, gửi đi qua header `X-Role` |
 | `--token`, `-t` | string | Ghi đè API key |
 | `--json-output`, `-j` / `--no-json-output` | boolean | Có output JSON gốc hay không, mặc định bật |
@@ -48,6 +49,8 @@ nb api resource get --resource users --filter-by-tk 1
 nb api resource create --resource users --values '{"nickname":"Ada"}'
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 ```
+
+Nếu bạn truyền `--env` một cách tường minh và nó khác env hiện tại, CLI sẽ yêu cầu xác nhận trước. Trong terminal không tương tác hoặc phiên AI agent, hãy tự thêm `--yes` hoặc chạy `nb env use <name>` trước rồi thử lại.
 
 ## Lệnh liên quan
 
