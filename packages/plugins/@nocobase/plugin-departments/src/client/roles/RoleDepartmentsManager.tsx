@@ -98,7 +98,7 @@ const useDataSource = (options?: any) => {
       //   parentId: null,
       // },
       appends: ['roles', 'parent(recursively=true)'],
-      sort: ['createdAt'],
+      sort: ['sort'],
     },
   };
   const service = useRequest(defaultRequest, options);

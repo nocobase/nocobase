@@ -501,6 +501,12 @@ export class Collection {
 
   get titleCollectionField() {
     const titleFieldName = this.options.titleField || this.filterTargetKey;
+    if (Array.isArray(titleFieldName)) {
+      if (titleFieldName.length !== 1) {
+        return undefined;
+      }
+      return this.getField(titleFieldName[0]);
+    }
     const titleCollectionField = this.getField(titleFieldName);
     return titleCollectionField;
   }
@@ -856,7 +862,21 @@ export class CollectionField {
           });
 
           if (error) {
-            const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+            const message = error.details
+              .map((d: any) => {
+                const translated = this.flowEngine.translate(d.type, {
+                  ...d.context,
+                  ns: 'data-source-main',
+                  label,
+                });
+
+                if (translated && translated !== d.type) {
+                  return translated;
+                }
+
+                return d.message.replace(/"value"/g, `"${label}"`);
+              })
+              .join(', ');
             return Promise.reject(message);
           }
 

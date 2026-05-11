@@ -18,6 +18,31 @@ export class RootPageModel extends PageModel {
   mounted = false;
 
   /**
+   * 打开页面设置前，把标签页开关表单值同步为路由表中的当前状态。
+   */
+  private syncPageSettingsEnableTabsFromRoute() {
+    const routeEnableTabs = (this.context as any)?.currentRoute?.enableTabs;
+    if (typeof routeEnableTabs !== 'boolean') {
+      return;
+    }
+    this.setStepParams('pageSettings', 'general', {
+      enableTabs: routeEnableTabs,
+    });
+  }
+
+  /**
+   * 保存页面设置后立即同步当前页面状态，让标签页显隐无需等路由列表刷新或页面重载。
+   */
+  private syncEnableTabsToCurrentPage(enableTabs: boolean) {
+    const currentRoute = (this.context as any)?.currentRoute;
+    const routeId = this.props.routeId;
+    if (currentRoute && (routeId == null || currentRoute.id == null || String(currentRoute.id) === String(routeId))) {
+      currentRoute.enableTabs = enableTabs;
+    }
+    this.setProps('enableTabs', enableTabs);
+  }
+
+  /**
    * 新建 tab 在首次保存完成前，前端 route 里可能还没有数据库 id。
    * 拖拽前兜底触发一次保存，确保 move 接口拿到真实主键。
    *
@@ -65,18 +90,28 @@ export class RootPageModel extends PageModel {
     );
   }
 
+  async openFlowSettings(options?: Parameters<PageModel['openFlowSettings']>[0]) {
+    if (options?.flowKey === 'pageSettings' && options?.stepKey === 'general') {
+      this.syncPageSettingsEnableTabsFromRoute();
+    }
+    return super.openFlowSettings(options);
+  }
+
   async saveStepParams() {
     await super.saveStepParams();
 
     if (this.stepParams.pageSettings) {
+      const enableTabs = !!this.stepParams.pageSettings.general.enableTabs;
       // 更新路由
-      this.context.api.request({
+      await this.context.api.request({
         url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
         method: 'post',
         data: {
-          enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
+          enableTabs,
         },
       });
+      this.syncEnableTabsToCurrentPage(enableTabs);
+      await this.context.refreshDesktopRoutes?.();
     }
   }
 

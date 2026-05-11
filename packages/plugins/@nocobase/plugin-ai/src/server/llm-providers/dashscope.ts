@@ -18,6 +18,7 @@ import _ from 'lodash';
 import PluginAIServer from '../plugin';
 import path from 'node:path';
 import { ReasoningChatOpenAI } from './common/reasoning';
+import { AttachmentModel } from '@nocobase/plugin-file-manager';
 
 const DASHSCOPE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
@@ -108,32 +109,8 @@ export class DashscopeProvider extends LLMProvider {
     return null;
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
-    if (!attachment?.mimetype || attachment.mimetype.startsWith('image/')) {
-      return super.parseAttachment(ctx, attachment);
-    }
-    const parsed = await this.aiPlugin.documentLoaders.cached.load(attachment);
-    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
-    if (!parsed.supported) {
-      return {
-        placement: 'system',
-        content: `File ${safeFilename} is not a supported document type for text parsing.`,
-      };
-    }
-    if (parsed.text.length === 0) {
-      return {
-        placement: 'system',
-        content: `The file provided by the user is an empty file, file name is "${safeFilename}"`,
-      };
-    }
-    return {
-      placement: 'system',
-      content: `<parsed_document filename="${safeFilename}">\n${parsed.text}\n</parsed_document>`,
-    };
-  }
-
-  private get aiPlugin(): PluginAIServer {
-    return this.app.pm.get('ai');
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    return attachment.mimetype?.startsWith('image/') ?? false;
   }
 }
 

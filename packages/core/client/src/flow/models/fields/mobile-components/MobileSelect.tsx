@@ -13,7 +13,7 @@ import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
 import React, { useEffect, useMemo, useState } from 'react';
 
 export function MobileSelect(props) {
-  const { value, onChange, disabled, options = [], mode } = props;
+  const { value, onChange, onChangeComplete, disabled, options = [], mode } = props;
   const ctx = useFlowModelContext();
   const t = ctx.t;
   const [visible, setVisible] = useState(false);
@@ -28,6 +28,7 @@ export function MobileSelect(props) {
 
   const handleConfirm = () => {
     onChange(selected);
+    onChangeComplete?.();
     setVisible(false);
   };
   useEffect(() => {
@@ -36,12 +37,18 @@ export function MobileSelect(props) {
     } else {
       setSearchText(null);
     }
-  }, [visible]);
+  }, [visible, value]);
 
   return (
     <>
       <div onClick={() => !disabled && setVisible(true)}>
-        <Select {...props} dropdownStyle={{ display: 'none' }} showSearch={false} />
+        <Select
+          {...props}
+          open={false}
+          dropdownStyle={{ display: 'none' }}
+          showSearch={false}
+          style={{ pointerEvents: 'none', width: '100%' }}
+        />
       </div>
       <Popup
         visible={visible}
@@ -71,6 +78,7 @@ export function MobileSelect(props) {
               } else {
                 setSelected(val[0]);
                 onChange(val[0]);
+                onChangeComplete?.();
                 setVisible(false);
               }
             }}

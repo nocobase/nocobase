@@ -574,21 +574,25 @@ export class AIEmployee {
       },
     });
 
-    let systemMessage = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
-    const dataSourceMessage = this.getEmployeeDataSourceContext();
-    if (dataSourceMessage) {
-      systemMessage = `${systemMessage}\n${dataSourceMessage}`;
-    }
+    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
 
     let background = '';
     if (this.systemMessage) {
       background = await parseVariables(this.ctx, this.systemMessage);
+    }
+    const dataSourceMessage = this.getEmployeeDataSourceContext();
+    if (dataSourceMessage) {
+      background = `${background}\n${dataSourceMessage}`;
     }
 
     const aiMessages = await this.aiChatConversation.listMessages();
     const workContextBackground = await this.plugin.workContextHandler.background(this.ctx, aiMessages);
     if (workContextBackground?.length) {
       background = `${background}\n${workContextBackground.join('\n')}`;
+    }
+    const addSystemPrompt = userMessages?.filter((it) => it.role == 'system');
+    if (addSystemPrompt.length) {
+      background = `${background}\n${addSystemPrompt.map((it) => it.content).join('\n')}`;
     }
 
     let knowledgeBase;
@@ -609,13 +613,12 @@ export class AIEmployee {
     const systemPrompt = getSystemPrompt({
       aiEmployee: {
         nickname: this.employee.nickname,
-        about: this.employee.about ?? this.employee.defaultPrompt,
+        about,
       },
       task: {
         background,
       },
       personal: userConfig?.prompt,
-      dataSources: dataSourceMessage,
       environment: {
         database: this.db.sequelize.getDialect(),
         locale: this.ctx.getCurrentLocale() || 'en-US',
@@ -1050,7 +1053,7 @@ If information is missing, clearly state it in the summary.</Important>`;
         const contentBlocks = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
-            const parsed = await provider.parseAttachment(this.ctx, attachment);
+            const parsed = await provider.parseAttachment(this.ctx, attachment as any);
             if (parsed.placement === 'system') {
               formattedMessages.push({
                 role: 'system',

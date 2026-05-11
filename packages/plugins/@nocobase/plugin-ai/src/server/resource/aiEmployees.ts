@@ -119,6 +119,9 @@ export const listByUser = async (ctx: Context, next: Next) => {
 
   ctx.body = rows.map((row) => {
     const skillSettings: { skills: { name: string; auto: boolean }[] } = row.skillSettings ?? { skills: [] };
+    if (!_.isArray(skillSettings.skills)) {
+      skillSettings.skills = [];
+    }
     for (const tool of tools) {
       skillSettings.skills.push({
         name: tool.definition.name,
@@ -137,6 +140,7 @@ export const listByUser = async (ctx: Context, next: Next) => {
       },
       skillSettings,
       builtIn: row.builtIn,
+      category: row.category,
     };
   });
   await next();

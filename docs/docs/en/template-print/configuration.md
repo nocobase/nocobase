@@ -50,6 +50,8 @@ Template printing currently supports detail blocks and table blocks. Below are t
   
 ![20241212152743-2024-12-12-15-27-45](https://static-docs.nocobase.com/20241212152743-2024-12-12-15-27-45.png)
 
+- Template printing now supports **attachment fields** and **handwritten signature fields**, and the **Field List** will automatically generate the corresponding template expressions.
+- If you want to render images in the template, it is recommended to always copy the variable directly from the **Field List** instead of writing `:attachment()` or `:signature()` expressions manually.
 - After filling in the details, click the "Save" button to complete the template addition.
 
 5. **Template Management**:

@@ -94,42 +94,69 @@ Se exceções previsíveis não forem capturadas, o motor do **fluxo de trabalho
 
 ### Nós Assíncronos
 
-Quando você precisa de controle de **fluxo de trabalho** ou operações de I/O assíncronas (demoradas), o método `run` pode retornar um objeto com um `status` de `JOB_STATUS.PENDING`, instruindo o executor a esperar (suspender) até que alguma operação assíncrona externa seja concluída. Em seguida, ele notifica o motor do **fluxo de trabalho** para continuar a execução. Se um valor de status pendente for retornado na função `run`, a instrução deve implementar o método `resume`; caso contrário, a execução do **fluxo de trabalho** não poderá ser retomada:
+Quando um nó precisa aguardar a conclusão de uma operação externa antes de continuar o fluxo de trabalho (como requisições HTTP, callbacks de pagamento de terceiros ou outras operações demoradas ou que não retornam resultados imediatamente), a tarefa deve ser salva primeiro com o status `JOB_STATUS.PENDING` para suspender a execução atual, e depois retomada via `resume` assim que a operação for concluída. Qualquer instrução que use lógica de suspensão também deve implementar o método `resume`; caso contrário, o fluxo de trabalho não pode ser retomado.
+
+O padrão de implementação recomendado é o seguinte:
 
 ```ts
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
-export class PayInstruction extends Instruction {
-  async run(node, input, processor) {
-    // job could be create first via processor
-    const job = await processor.saveJob({
+export class AsyncInstruction extends Instruction {
+  async run(node: FlowNodeModel, prevJob, processor) {
+    // 1. Save the pending task and record its id
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
+      nodeId: node.id,
+      nodeKey: node.key,
+      upstreamId: prevJob?.id ?? null,
     });
 
-    const { workflow } = processor;
-    // do payment asynchronously
-    paymentService.pay(node.config, (result) => {
-      // notify processor to resume the job
-      return workflow.resume(job.id, result);
-    });
+    // 2. Explicitly call exit() to flush the task to the database and commit the transaction
+    await processor.exit();
 
-    // return created job instance
-    return job;
+    // 3. Initiate the async operation (the transaction is now committed, no longer holding the database connection)
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      const result = await someAsyncOperation(node.config);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = result;
+    } catch (error) {
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = { message: error.message };
+    } finally {
+      // 4. Re-query the task from the database; do not use the cached in-memory object
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
+      });
+      job.set(jobDone);
+
+      // 5. Notify the workflow engine to resume execution, entering the resume flow
+      this.workflow.resume(job);
+    }
+    // 6. Return nothing (void); the executor will exit immediately
   }
 
-  resume(node, job, processor) {
-    // check payment status
-    job.set('status', job.result.status === 'ok' ? JOB_STATUS.RESOVLED : JOB_STATUS.REJECTED);
+  async resume(node: FlowNodeModel, job, processor) {
+    // The job already has its final status set in run(), just return it
     return job;
-  },
-};
+  }
+}
 ```
 
-Aqui, `paymentService` refere-se a um serviço de pagamento. No *callback* do serviço, o **fluxo de trabalho** é acionado para retomar a execução da tarefa correspondente, e o processo atual é encerrado primeiro. Posteriormente, o motor do **fluxo de trabalho** cria um novo processador e o passa para o método `resume` do nó para continuar executando o nó que estava suspenso.
+Há vários detalhes importantes a observar:
 
-:::info{title=Dica}
-A "operação assíncrona" mencionada aqui não se refere a funções `async` em JavaScript, mas sim a operações de retorno não instantâneo ao interagir com outros sistemas externos, como um serviço de pagamento que precisa aguardar outra notificação para saber o resultado.
-:::
+**Por que chamar `processor.exit()` explicitamente em vez de retornar o objeto de tarefa pendente?**
+`return { status: PENDING }` encerra imediatamente a função `run`, tornando impossível executar qualquer código posterior. Chamar `await processor.exit()` apenas confirma a transação e sai do contexto do banco de dados, enquanto a função continua sendo executada. Isso permite que você faça `await` de uma operação demorada dentro do mesmo corpo de função e depois chame `resume` quando ela for concluída. Se você ignorar `exit()` e diretamente fizer `await` de uma operação longa antes de retornar, isso mantém a transação do banco de dados aberta por muito tempo, causando contenção de bloqueios, e o registro da tarefa não será persistido até que a transação seja confirmada após a conclusão da operação.
+
+**Por que re-consultar a tarefa em vez de usar o objeto retornado por `saveJob`?**
+O objeto retornado por `saveJob` é uma instância de modelo em memória vinculada à transação original. Após a chamada de `processor.exit()`, essa transação foi confirmada e fechada. Modificar diretamente essa instância e chamar `resume` causará anomalias no estado do ORM (referências de transação obsoletas, inconsistências de estado, etc.). Re-consultar do banco de dados pelo `id` garante obter uma instância limpa não vinculada a nenhuma transação.
+
+**Por que a função `run` não retorna nada (`void`)?**
+`processor.exit()` já foi chamado manualmente. Quando o executor recebe `void`, ele chama `exit(true)` e sai imediatamente sem nenhum processamento redundante. Se um `IJob` fosse retornado neste ponto, o executor tentaria salvar e confirmar novamente, causando erros. Consulte a seção de tipos de valores de retorno de `run`/`resume` para mais detalhes.
+
+**Para cenários que requerem callbacks externos** (por exemplo, resultados de pagamento notificados via webhook), a mesma abordagem se aplica: chamar `processor.exit()` antes de registrar o callback para garantir que o registro da tarefa esteja no banco de dados antes que o sistema externo chame de volta. No callback, re-consultar a tarefa pelo `id` e depois chamar `this.workflow.resume(job)`.
+
+Para um exemplo completo do mundo real, consulte: [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (nó de requisição HTTP, que usa este padrão na ramificação de fluxo de trabalho assíncrono)
 
 ### Status de Resultado do Nó
 
@@ -147,15 +174,61 @@ Se qualquer nó retornar um status "pendente" após a execução, todo o process
 
 Para mais status de retorno de instrução, consulte a seção [Referência da API de **Fluxo de Trabalho**](#).
 
-### Saída Antecipada
+### Tipos de Valores de Retorno de `run`/`resume` e Comportamento do Executor
 
-Em alguns **fluxos de trabalho** especiais, pode ser necessário encerrar o **fluxo de trabalho** diretamente dentro de um nó. Você pode retornar `null` para indicar a saída do **fluxo de trabalho** atual, e os nós subsequentes não serão executados.
+A definição completa do tipo de retorno dos métodos `run` e `resume` é:
 
-Essa situação é comum em nós do tipo controle de **fluxo de trabalho**, como o Nó de Ramificação Paralela ([referência de código](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)), onde o **fluxo de trabalho** do nó atual é encerrado, mas novos **fluxos de trabalho** são iniciados para cada sub-ramificação e continuam a ser executados.
+```ts
+type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
+```
+
+Após o executor (`Processor`) chamar uma instrução, ele executa diferentes lógicas de processamento com base no tipo do valor de retorno. Existem três casos.
+
+#### 1. Retornar um Objeto de Tarefa `IJob`
+
+Este é o caso mais comum. Retorne um objeto contendo um campo `status` obrigatório e um campo `result` opcional. O executor o salva como o registro de tarefa do nó e determina o fluxo subsequente com base no valor de `status`:
+
+- `JOB_STATUS.RESOLVED`: Nó executado com sucesso; continua para o próximo nó se houver um, caso contrário o fluxo de trabalho encerra
+- `JOB_STATUS.PENDING`: Nó entra em estado suspenso; o contexto de execução atual para, aguardando um evento externo para acionar `resume`
+- Outros status de falha (`FAILED`, `ERROR`, etc.): Propagados para o nó pai da ramificação ou termina diretamente todo o fluxo de trabalho
+
+Este caminho é o caminho completo de confirmação de transação — o executor salva o registro de tarefa, escreve no banco de dados e confirma a transação.
+
+Exemplo: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (retorna um objeto `job` diretamente quando não há ramificação; veja o caso `void` abaixo quando há uma ramificação)
+
+#### 2. Retornar `null`
+
+Quando `null` é retornado, o executor chama `processor.exit()` (sem argumento), com o efeito de: **descarregar as tarefas pendentes no banco de dados e confirmar a transação, mas sem atualizar o status de execução geral**.
+
+Este uso é comum no método `resume` de nós de controle de ramificação: uma ramificação foi concluída e o status de tarefa do nó pai precisa ser atualizado e salvo (por exemplo, registrando "ramificação N concluída"), mas outras ramificações ainda estão em execução, e a execução geral deve permanecer no status `STARTED` aguardando as ramificações restantes — retornar `null` sai do contexto de resume atual sem afetar o status de execução geral.
+
+Exemplo: [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
+
+- Linha [117](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L117): O nó paralelo já foi concluído antecipadamente (resolved/rejected); ignora resumes de ramificações subsequentes e retorna `null` diretamente
+- Linha [135](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L135): Algumas ramificações ainda estão incompletas (`PENDING`); salva o progresso atual e retorna `null` para continuar aguardando outras ramificações
+
+#### 3. Retornar `void` (sem retorno, ou seja, `undefined` implícito)
+
+Quando `void` é retornado (a função não possui instrução de retorno explícita, ou o caminho de execução termina sem valor de retorno), o executor chama `processor.exit(true)`, com o efeito de **retornar imediatamente sem executar nenhuma operação no banco de dados**.
+
+Este padrão é exclusivamente para **cenários onde a instrução assumiu o controle do agendamento de execução**: a instrução inicia manualmente um subfluxo via `processor.run()`, e a cadeia de execução do subfluxo lidará com as gravações no banco de dados e as confirmações de transação quando for concluída. O executor não deve processar novamente.
+
+Exemplos típicos:
+
+- [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67): Quando existe uma ramificação, chama manualmente `processor.run(branchNode, savedJob)` e então a função termina, retornando `void` implicitamente
+- [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108): Itera por todas as ramificações e chama `processor.run(branch, job)` para cada uma, então a função termina, retornando `void` implicitamente
 
 :::warn{title=Atenção}
-O agendamento de **fluxos de trabalho** de ramificação com nós estendidos possui certa complexidade e requer manuseio cuidadoso e testes completos.
+Se `processor.saveJob()` foi chamado antes de retornar `void`, esses registros de tarefa não serão gravados no banco de dados pelo executor atual. Eles são armazenados temporariamente na lista de tarefas do executor (em memória) e serão descarregados no banco de dados pelo `exit()` acionado quando a sub-execução iniciada por `processor.run()` for concluída. Portanto, ao usar este padrão, você deve garantir que haja um caminho de sub-execução que seja concluído normalmente para persistir esses registros. O agendamento de fluxo de trabalho de ramificação tem certa complexidade; requer design cuidadoso e testes completos.
 :::
+
+Comparação resumida dos três valores de retorno:
+
+| Valor de Retorno | Comportamento do Executor | Caso de Uso Típico |
+|--------|-----------|------------|
+| `IJob` | Salva tarefa, continua/encerra/suspende o fluxo com base em `status` | Execução normal do nó com resultado e status |
+| `null` | Descarrega tarefas pendentes e confirma transação, não atualiza o status de execução | Ramificação ainda aguardando, sai temporariamente do contexto de execução atual |
+| `void` | Retorna imediatamente, sem operações no BD | Nó agendou um subfluxo, deixando o subfluxo assumir o processamento subsequente |
 
 ### Saiba Mais
 

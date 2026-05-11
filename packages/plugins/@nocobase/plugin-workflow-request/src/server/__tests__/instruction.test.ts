@@ -793,4 +793,96 @@ describe('workflow > instructions > request', () => {
       expect(result).not.toHaveProperty('config');
     });
   });
+
+  describe('SSRF protection via SERVER_REQUEST_WHITELIST', () => {
+    const ENV_KEY = 'SERVER_REQUEST_WHITELIST';
+    let savedEnv: string | undefined;
+
+    beforeEach(() => {
+      savedEnv = process.env[ENV_KEY];
+    });
+
+    afterEach(() => {
+      if (savedEnv === undefined) {
+        delete process.env[ENV_KEY];
+      } else {
+        process.env[ENV_KEY] = savedEnv;
+      }
+    });
+
+    it('no whitelist: allows request to any host', async () => {
+      delete process.env[ENV_KEY];
+      const { status } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+    });
+
+    it('whitelist set: blocks request to unlisted host', async () => {
+      process.env[ENV_KEY] = '192.0.2.1'; // TEST-NET, not localhost
+      const { status, result } = await instruction.test({
+        url: api.URL_DATA, // localhost:{port}
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.message).toMatch(/blocked/i);
+    });
+
+    it('whitelist set: allows request to whitelisted host', async () => {
+      // api.URL_DATA uses "localhost" as hostname
+      process.env[ENV_KEY] = `localhost`;
+      const { status } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+    });
+
+    it('whitelist set: ignoreFail still resolves when blocked', async () => {
+      process.env[ENV_KEY] = '192.0.2.1';
+      const { status, result } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'GET',
+        contentType: 'application/json',
+        ignoreFail: true,
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.message).toMatch(/blocked/i);
+    });
+
+    it('whitelist set: blocks metadata endpoint (SSRF attack target)', async () => {
+      process.env[ENV_KEY] = 'api.example.com';
+      const { status, result } = await instruction.test({
+        url: 'http://169.254.169.254/latest/meta-data/',
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.message).toMatch(/blocked/i);
+    });
+
+    it('whitelist set: async workflow node fails job when host is blocked', async () => {
+      process.env[ENV_KEY] = '192.0.2.1';
+
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'GET',
+        } as RequestInstructionConfig,
+      });
+
+      await PostRepo.create({ values: { title: 'ssrf-test' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.FAILED);
+      expect(job.result.message).toMatch(/blocked/i);
+    });
+  });
 });

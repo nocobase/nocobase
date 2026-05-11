@@ -12,9 +12,31 @@ import { RootPageModel } from '../RootPageModel';
 
 // Mock PageModel
 const mockPageModelSaveStepParams = vi.fn();
+const mockPageModelOpenFlowSettings = vi.fn();
 vi.mock('../PageModel', () => ({
   PageModel: class {
+    props: any = {};
+    stepParams: any = {};
+
     static registerFlow() {}
+
+    setProps(key: string, value: any) {
+      this.props[key] = value;
+    }
+
+    setStepParams(flowKey: string, stepKey: string, params: Record<string, any>) {
+      if (!this.stepParams[flowKey]) {
+        this.stepParams[flowKey] = {};
+      }
+      this.stepParams[flowKey][stepKey] = {
+        ...this.stepParams[flowKey][stepKey],
+        ...params,
+      };
+    }
+
+    async openFlowSettings(options?: any) {
+      return mockPageModelOpenFlowSettings(options);
+    }
 
     async saveStepParams() {
       return mockPageModelSaveStepParams();
@@ -26,6 +48,7 @@ describe('RootPageModel', () => {
   let rootPageModel: RootPageModel;
   let mockContext: any;
   let mockApi: any;
+  let mockRefreshDesktopRoutes: any;
   let mockFlowEngine: any;
 
   beforeEach(() => {
@@ -35,6 +58,7 @@ describe('RootPageModel', () => {
     mockApi = {
       request: vi.fn().mockResolvedValue({ data: { success: true } }),
     };
+    mockRefreshDesktopRoutes = vi.fn().mockResolvedValue(undefined);
 
     // Mock FlowEngine
     mockFlowEngine = {
@@ -45,6 +69,11 @@ describe('RootPageModel', () => {
     // Mock context
     mockContext = {
       api: mockApi,
+      refreshDesktopRoutes: mockRefreshDesktopRoutes,
+      currentRoute: {
+        id: 'route-123',
+        enableTabs: true,
+      },
     };
 
     // Create RootPageModel instance
@@ -61,6 +90,65 @@ describe('RootPageModel', () => {
         },
       },
     };
+  });
+
+  describe('openFlowSettings', () => {
+    it('should use desktop route enableTabs as settings dialog initial value', async () => {
+      mockContext.currentRoute.enableTabs = false;
+      (rootPageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            displayTitle: true,
+            enableTabs: true,
+          },
+        },
+      };
+
+      await rootPageModel.openFlowSettings({ flowKey: 'pageSettings', stepKey: 'general' } as any);
+
+      expect((rootPageModel as any).stepParams.pageSettings.general).toMatchObject({
+        displayTitle: true,
+        enableTabs: false,
+      });
+      expect(mockPageModelOpenFlowSettings).toHaveBeenCalledWith({
+        flowKey: 'pageSettings',
+        stepKey: 'general',
+      });
+    });
+
+    it('should keep flow model enableTabs when route status is unavailable', async () => {
+      mockContext.currentRoute = {};
+      (rootPageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            enableTabs: true,
+          },
+        },
+      };
+
+      await rootPageModel.openFlowSettings({ flowKey: 'pageSettings', stepKey: 'general' } as any);
+
+      expect((rootPageModel as any).stepParams.pageSettings.general.enableTabs).toBe(true);
+    });
+
+    it('should not sync enableTabs when opening other settings steps', async () => {
+      mockContext.currentRoute.enableTabs = false;
+      (rootPageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            enableTabs: true,
+          },
+        },
+      };
+
+      await rootPageModel.openFlowSettings({ flowKey: 'otherSettings', stepKey: 'general' } as any);
+
+      expect((rootPageModel as any).stepParams.pageSettings.general.enableTabs).toBe(true);
+      expect(mockPageModelOpenFlowSettings).toHaveBeenCalledWith({
+        flowKey: 'otherSettings',
+        stepKey: 'general',
+      });
+    });
   });
 
   describe('saveStepParams', () => {
@@ -88,6 +176,34 @@ describe('RootPageModel', () => {
           enableTabs: true,
         },
       });
+    });
+
+    it('should refresh desktop routes after route update is persisted', async () => {
+      await rootPageModel.saveStepParams();
+
+      expect(mockApi.request).toHaveBeenCalledTimes(1);
+      expect(mockRefreshDesktopRoutes).toHaveBeenCalledTimes(1);
+      expect(mockApi.request.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRefreshDesktopRoutes.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('should apply enableTabs to current page immediately after route update is persisted', async () => {
+      (rootPageModel as any).stepParams = {
+        pageSettings: {
+          general: {
+            enableTabs: false,
+          },
+        },
+      };
+
+      await rootPageModel.saveStepParams();
+
+      expect(mockContext.currentRoute.enableTabs).toBe(false);
+      expect((rootPageModel as any).props.enableTabs).toBe(false);
+      expect(mockApi.request.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRefreshDesktopRoutes.mock.invocationCallOrder[0],
+      );
     });
   });
 

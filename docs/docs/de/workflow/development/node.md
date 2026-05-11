@@ -95,42 +95,69 @@ Wenn vorhersehbare Ausnahmen nicht abgefangen werden, fängt die Workflow-Engine
 
 ### Asynchrone Knoten
 
-Wenn eine Ablaufsteuerung oder asynchrone (zeitaufwändige) I/O-Operationen erforderlich sind, kann die `run`-Methode ein Objekt mit dem Status `JOB_STATUS.PENDING` zurückgeben. Dies weist den Executor an, zu warten (anzuhalten), bis eine externe asynchrone Operation abgeschlossen ist, und anschließend die Workflow-Engine zur Fortsetzung der Ausführung zu benachrichtigen. Wird in der `run`-Funktion ein Statuswert für das Anhalten zurückgegeben, muss die Anweisung die `resume`-Methode implementieren, da sonst die Workflow-Ausführung nicht fortgesetzt werden kann:
+Wenn ein Knoten auf den Abschluss einer externen Operation warten muss, bevor der Workflow fortgesetzt werden kann (z. B. HTTP-Anfragen, Drittanbieter-Zahlungs-Callbacks oder andere zeitaufwändige bzw. nicht sofort zurückgebende Operationen), sollte der Task zunächst mit dem Status `JOB_STATUS.PENDING` gespeichert werden, um die aktuelle Ausführung anzuhalten, und anschließend nach Abschluss der Operation über `resume` fortgesetzt werden. Jede Anweisung, die Anhaltelogik verwendet, muss auch die `resume`-Methode implementieren; andernfalls kann der Workflow nicht fortgesetzt werden.
+
+Das empfohlene Implementierungsmuster lautet wie folgt:
 
 ```ts
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
-export class PayInstruction extends Instruction {
-  async run(node, input, processor) {
-    // job could be create first via processor
-    const job = await processor.saveJob({
+export class AsyncInstruction extends Instruction {
+  async run(node: FlowNodeModel, prevJob, processor) {
+    // 1. Save the pending task and record its id
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
+      nodeId: node.id,
+      nodeKey: node.key,
+      upstreamId: prevJob?.id ?? null,
     });
 
-    const { workflow } = processor;
-    // do payment asynchronously
-    paymentService.pay(node.config, (result) => {
-      // notify processor to resume the job
-      return workflow.resume(job.id, result);
-    });
+    // 2. Explicitly call exit() to flush the task to the database and commit the transaction
+    await processor.exit();
 
-    // return created job instance
-    return job;
+    // 3. Initiate the async operation (the transaction is now committed, no longer holding the database connection)
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      const result = await someAsyncOperation(node.config);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = result;
+    } catch (error) {
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = { message: error.message };
+    } finally {
+      // 4. Re-query the task from the database; do not use the cached in-memory object
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
+      });
+      job.set(jobDone);
+
+      // 5. Notify the workflow engine to resume execution, entering the resume flow
+      this.workflow.resume(job);
+    }
+    // 6. Return nothing (void); the executor will exit immediately
   }
 
-  resume(node, job, processor) {
-    // check payment status
-    job.set('status', job.result.status === 'ok' ? JOB_STATUS.RESOVLED : JOB_STATUS.REJECTED);
+  async resume(node: FlowNodeModel, job, processor) {
+    // The job already has its final status set in run(), just return it
     return job;
-  },
-};
+  }
+}
 ```
 
-Dabei bezieht sich `paymentService` auf einen Zahlungsdienst. Im Callback des Dienstes wird der Workflow ausgelöst, um die Ausführung des entsprechenden Jobs fortzusetzen, wobei der aktuelle Prozess zunächst beendet wird. Anschließend erstellt die Workflow-Engine einen neuen Prozessor und übergibt ihn an die `resume`-Methode des Knotens, um den zuvor angehaltenen Knoten weiter auszuführen.
+Es gibt mehrere wichtige Details zu beachten:
 
-:::info{title=Hinweis}
-Die hier erwähnte „asynchrone Operation“ bezieht sich nicht auf `async`-Funktionen in JavaScript, sondern auf Operationen, die bei der Interaktion mit externen Systemen keine sofortige Rückmeldung geben, wie z. B. ein Zahlungsdienst, der auf eine weitere Benachrichtigung warten muss, um das Ergebnis zu erfahren.
-:::
+**Warum `processor.exit()` explizit aufrufen, anstatt das ausstehende Task-Objekt zurückzugeben?**  
+`return { status: PENDING }` beendet die `run`-Funktion sofort, was es unmöglich macht, danach noch Code auszuführen. Der Aufruf von `await processor.exit()` schreibt lediglich die Transaktion fest und beendet den Datenbankkontext, während die Funktion selbst weiter ausgeführt wird. Dadurch können Sie im selben Funktionskörper eine zeitaufwändige Operation abwarten und anschließend `resume` aufrufen, wenn sie abgeschlossen ist. Wenn Sie `exit()` überspringen und direkt eine lange Operation abwarten, bevor Sie zurückgeben, hält dies sowohl die Datenbanktransaktion lange offen (was zu Sperrkonflikten führt) als auch wird der Task-Datensatz erst nach Abschluss der Operation beim Transaction-Commit persistiert.
+
+**Warum den Task erneut abfragen, anstatt das von `saveJob` zurückgegebene Objekt zu verwenden?**  
+Das von `saveJob` zurückgegebene Objekt ist eine In-Memory-Modellinstanz, die an die ursprüngliche Transaktion gebunden ist. Nachdem `processor.exit()` aufgerufen wurde, wurde diese Transaktion committet und geschlossen. Das direkte Ändern dieser Instanz und der Aufruf von `resume` führt zu ORM-Zustandsanomalien (veraltete Transaktionsreferenzen, Zustandsinkonsistenzen usw.). Die erneute Abfrage aus der Datenbank über `id` stellt sicher, dass eine saubere, an keine Transaktion gebundene Instanz vorliegt.
+
+**Warum gibt die `run`-Funktion nichts zurück (`void`)?**  
+`processor.exit()` wurde bereits manuell aufgerufen. Wenn der Executor `void` empfängt, ruft er `exit(true)` auf und beendet sofort ohne redundante Verarbeitung. Würde an dieser Stelle ein `IJob` zurückgegeben, würde der Executor versuchen, erneut zu speichern und zu committen, was zu Fehlern führt. Weitere Details finden Sie im Abschnitt zu den Rückgabewerttypen von `run`/`resume`.
+
+**Für Szenarien, die externe Callbacks erfordern** (z. B. Zahlungsergebnisse, die per Webhook gemeldet werden), gilt derselbe Ansatz: Rufen Sie `processor.exit()` auf, bevor Sie den Callback registrieren, um sicherzustellen, dass der Task-Datensatz in der Datenbank ist, bevor das externe System zurückruft. Im Callback fragen Sie den Task erneut über `id` ab und rufen dann `this.workflow.resume(job)` auf.
+
+Ein vollständiges Praxisbeispiel finden Sie unter: [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (HTTP-Anfrage-Knoten, der dieses Muster im asynchronen Workflow-Zweig verwendet)
 
 ### Knoten-Ergebnisstatus
 
@@ -148,15 +175,61 @@ Wenn ein Knoten nach der Ausführung den Status „angehalten“ zurückgibt, wi
 
 Weitere Informationen zu den Rückgabestatus von Anweisungen finden Sie im Abschnitt Workflow-API-Referenz.
 
-### Vorzeitiger Abbruch
+### Rückgabewerttypen von `run`/`resume` und Verhalten des Executors
 
-In einigen speziellen Workflows kann es erforderlich sein, den Workflow direkt innerhalb eines Knotens zu beenden. Sie können `null` zurückgeben, um den aktuellen Workflow zu verlassen, und nachfolgende Knoten werden nicht ausgeführt.
+Die vollständige Rückgabetypendefinition für die Methoden `run` und `resume` lautet:
 
-Diese Situation ist bei Knoten zur Ablaufsteuerung häufig anzutreffen, wie z. B. beim parallelen Verzweigungsknoten ([Code-Referenz](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)). Hier wird der Workflow des aktuellen Knotens beendet, aber für jede Unterverzweigung werden neue Workflows gestartet und weiter ausgeführt.
+```ts
+type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
+```
 
-:::warn{title=Warnung}
-Die Planung von Verzweigungs-Workflows mit erweiterten Knoten ist komplex und erfordert eine sorgfältige Handhabung sowie umfassende Tests.
+Nachdem der Executor (`Processor`) eine Anweisung aufgerufen hat, führt er je nach Rückgabewerttyp unterschiedliche Verarbeitungslogik aus. Es gibt drei Fälle.
+
+#### 1. Rückgabe eines Task-Objekts `IJob`
+
+Dies ist der häufigste Fall. Es wird ein Objekt zurückgegeben, das ein obligatorisches `status`-Feld und ein optionales `result`-Feld enthält. Der Executor speichert es als Task-Datensatz des Knotens und bestimmt den weiteren Verlauf basierend auf dem `status`-Wert:
+
+- `JOB_STATUS.RESOLVED`: Knoten erfolgreich ausgeführt; fährt mit dem nächsten Knoten fort, falls vorhanden, andernfalls endet der Workflow
+- `JOB_STATUS.PENDING`: Knoten tritt in einen angehaltenen Zustand ein; der aktuelle Ausführungskontext stoppt und wartet auf ein externes Ereignis, das `resume` auslöst
+- Andere Fehlerstatus (`FAILED`, `ERROR` usw.): Werden an den übergeordneten Verzweigungsknoten weitergegeben oder beenden den gesamten Workflow direkt
+
+Dieser Pfad ist der vollständige Transaktions-Commit-Pfad — der Executor speichert den Task-Datensatz, schreibt in die Datenbank und committet die Transaktion.
+
+Beispiel: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (gibt ein `job`-Objekt direkt zurück, wenn keine Verzweigung vorhanden ist; siehe den `void`-Fall weiter unten bei Verzweigungen)
+
+#### 2. Rückgabe von `null`
+
+Wenn `null` zurückgegeben wird, ruft der Executor `processor.exit()` (ohne Argument) auf, mit der Wirkung: **Ausstehende Tasks werden in die Datenbank geschrieben und die Transaktion wird committet, aber der Gesamtausführungsstatus wird nicht aktualisiert**.
+
+Diese Verwendung ist in der `resume`-Methode von Verzweigungssteuerungsknoten üblich: Eine Verzweigung wurde abgeschlossen und der Task-Status des übergeordneten Knotens muss aktualisiert und gespeichert werden (z. B. „Zweig N wurde abgeschlossen"), aber andere Zweige laufen noch, und die Gesamtausführung soll im Status `STARTED` bleiben und auf die verbleibenden Zweige warten — die Rückgabe von `null` beendet den aktuellen Resume-Kontext, ohne den Gesamtausführungsstatus zu beeinflussen.
+
+Beispiel: [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
+
+- Zeile [117](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L117): Der parallele Knoten hat bereits frühzeitig abgeschlossen (resolved/rejected); ignoriert nachfolgende Zweig-Resumes und gibt direkt `null` zurück
+- Zeile [135](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L135): Einige Zweige sind noch nicht abgeschlossen (`PENDING`); speichert den aktuellen Fortschritt und gibt `null` zurück, um weiter auf andere Zweige zu warten
+
+#### 3. Rückgabe von `void` (kein Rückgabewert, d. h. implizites `undefined`)
+
+Wenn `void` zurückgegeben wird (die Funktion hat keine explizite Return-Anweisung oder der Ausführungspfad endet ohne Rückgabewert), ruft der Executor `processor.exit(true)` auf, mit der Wirkung: **Sofortige Rückkehr ohne Datenbankoperationen**.
+
+Dieses Muster ist ausschließlich für **Szenarien, in denen die Anweisung die Ausführungsplanung übernommen hat**: Die Anweisung startet manuell einen Sub-Workflow über `processor.run()`, und die Ausführungskette des Sub-Workflows übernimmt Datenbankschreibvorgänge und Transaktions-Commits bei Abschluss. Der Executor sollte nicht erneut verarbeiten.
+
+Typische Beispiele:
+
+- [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67): Wenn eine Verzweigung vorhanden ist, wird `processor.run(branchNode, savedJob)` manuell aufgerufen, dann endet die Funktion und gibt implizit `void` zurück
+- [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108): Iteriert durch alle Zweige und ruft `processor.run(branch, job)` für jeden auf, dann endet die Funktion und gibt implizit `void` zurück
+
+:::warn{title=Hinweis}
+Wenn `processor.saveJob()` vor der Rückgabe von `void` aufgerufen wurde, werden diese Task-Datensätze nicht vom aktuellen Executor in die Datenbank geschrieben. Sie werden vorübergehend in der Task-Liste des Executors (im Arbeitsspeicher) gespeichert und beim `exit()` in die Datenbank geschrieben, das ausgelöst wird, wenn die von `processor.run()` gestartete Sub-Ausführung abgeschlossen wird. Daher müssen Sie bei Verwendung dieses Musters sicherstellen, dass es einen Sub-Ausführungspfad gibt, der normal abgeschlossen wird, um diese Datensätze zu persistieren. Die Planung von Verzweigungs-Workflows hat eine gewisse Komplexität; sie erfordert sorgfältiges Design und umfassende Tests.
 :::
+
+Zusammenfassende Gegenüberstellung der drei Rückgabewerte:
+
+| Rückgabewert | Verhalten des Executors | Typischer Anwendungsfall |
+|--------|-----------|------------|
+| `IJob` | Speichert Task, setzt/beendet/hält Fluss basierend auf `status` fort | Normale Knotenausführung mit Ergebnis und Status |
+| `null` | Schreibt ausstehende Tasks und committet Transaktion, aktualisiert Ausführungsstatus nicht | Zweig wartet noch, beendet vorübergehend den aktuellen Ausführungskontext |
+| `void` | Kehrt sofort zurück, keine Datenbankoperationen | Knoten hat einen Sub-Workflow gestartet und überlässt dem Sub-Workflow die weitere Verarbeitung |
 
 ### Weitere Informationen
 

@@ -156,6 +156,18 @@ export const getFileName = (file: any, url?: string) => {
   return file.name || file.filename || file.title || nameFromUrl;
 };
 
+export const getDownloadFileName = (file: any, url?: string) => {
+  const resolvedUrl = url || getFileUrl(file);
+  let filename = getFileName(file, resolvedUrl);
+  const ext = getFileExt(file, resolvedUrl);
+
+  if (filename && ext && !filename.toLowerCase().endsWith(`.${ext}`)) {
+    filename = `${filename}.${ext}`;
+  }
+
+  return `${Date.now()}_${filename || 'file'}`;
+};
+
 export const getFallbackIcon = (file: any, url?: string) => {
   const ext = getFileExt(file, url);
   return FALLBACK_ICON_MAP[ext] || FALLBACK_ICON_MAP.default;

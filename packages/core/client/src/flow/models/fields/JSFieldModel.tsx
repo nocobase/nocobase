@@ -8,7 +8,7 @@
  */
 
 import { ElementProxy, tExpr, createSafeWindow, createSafeDocument, createSafeNavigator } from '@nocobase/flow-engine';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { FieldModel } from '../base/FieldModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 import { CodeEditor } from '../../components/code-editor';
@@ -41,6 +41,10 @@ ctx.render(<JsReadonlyField />);
  */
 export class JSFieldModel extends FieldModel {
   private _mountedOnce = false; // prevent first-mount double-run
+  private _lastRenderedElement?: HTMLSpanElement | null;
+  private _pendingRenderedElement?: HTMLSpanElement | null;
+  private _lastRunJs?: { code: string; value: any; element: HTMLSpanElement | null };
+
   getInputArgs() {
     const field = this.context.collectionField;
     if (field?.isAssociationField?.()) {
@@ -75,19 +79,10 @@ export class JSFieldModel extends FieldModel {
    * 说明：fork 实例在表格逐行渲染时会复用该逻辑，确保按值更新。
    */
   useHooksBeforeRender() {
-    // 单一副作用：当 code 或 value 变化，且二者都已就绪时执行一次
-    // 通过记忆上次运行的输入，避免相同输入导致的重复执行
     const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const lastRunRef = useRef<{ code: string; value: any } | null>(null);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      const valueNow = this.props.value;
-      const codeNow = (typeof codeParam === 'string' && codeParam.trim().length ? codeParam : DEFAULT_CODE).trim();
-      const last = lastRunRef.current;
-      if (last && last.code === codeNow && last.value === valueNow) return;
-      lastRunRef.current = { code: codeNow, value: valueNow };
-      this.applyFlow('jsSettings');
+      this.refreshRenderedElement(this.context.ref?.current as HTMLSpanElement | null);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [codeParam, this.props.value]);
   }
@@ -95,8 +90,52 @@ export class JSFieldModel extends FieldModel {
   /**
    * 渲染一个占位容器，供 JS 脚本写入内容
    */
+  private getRunJsCode() {
+    const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+    return (typeof codeParam === 'string' && codeParam.trim().length ? codeParam : DEFAULT_CODE).trim();
+  }
+
+  private refreshRenderedElement(element: HTMLSpanElement | null) {
+    if (!element || this._pendingRenderedElement === element) {
+      return;
+    }
+
+    this._pendingRenderedElement = element;
+    const ref = this.context.ref as React.MutableRefObject<HTMLSpanElement | null>;
+
+    queueMicrotask(() => {
+      if (this._pendingRenderedElement === element) {
+        this._pendingRenderedElement = null;
+      }
+      if (ref.current !== element) {
+        return;
+      }
+      const code = this.getRunJsCode();
+      const value = this.props.value;
+      const last = this._lastRunJs;
+      if (last && last.element === element && last.code === code && Object.is(last.value, value)) {
+        return;
+      }
+      this._lastRunJs = { code, value, element };
+      void this.applyFlow('jsSettings');
+    });
+  }
+
   render() {
-    return <span ref={this.context.ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
+    const ref = this.context.ref as React.MutableRefObject<HTMLSpanElement | null>;
+    const assignRef = (element: HTMLSpanElement | null) => {
+      ref.current = element;
+      if (!element) {
+        return;
+      }
+
+      const elementChanged = this._lastRenderedElement && this._lastRenderedElement !== element;
+      this._lastRenderedElement = element;
+      if (elementChanged || !this._mountedOnce) {
+        this.refreshRenderedElement(element);
+      }
+    };
+    return <span ref={assignRef} style={{ display: 'inline-block', maxWidth: '100%' }} />;
   }
 
   /**
@@ -106,7 +145,7 @@ export class JSFieldModel extends FieldModel {
   protected onMount() {
     if (this._mountedOnce) {
       if (this.context.ref?.current) {
-        this.rerender();
+        this.refreshRenderedElement(this.context.ref.current as HTMLSpanElement);
       }
     }
     this._mountedOnce = true;
@@ -165,7 +204,8 @@ JSFieldModel.registerFlow({
         // 暴露 element 与 value 到运行上下文
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
+            get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
+            cache: false,
           });
           ctx.defineProperty('value', {
             get: () => ctx.model.props?.value,

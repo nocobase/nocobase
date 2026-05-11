@@ -11,7 +11,12 @@ import { describe, it, expect } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
 import { FormBlockModel } from '../../../..';
-import { getValidationNamePathsExcludingHiddenModels, omitHiddenModelValuesFromSubmit } from '../submitValues';
+import {
+  getValidationNamePathsExcludingHiddenModels,
+  omitHiddenModelValuesFromSubmit,
+  shouldSkipSubmitValidation,
+  validateSubmitForm,
+} from '../submitValues';
 
 class TestFormModel extends FormBlockModel {
   createResource(ctx: any, _params: any) {
@@ -161,5 +166,59 @@ describe('getValidationNamePathsExcludingHiddenModels', () => {
     });
 
     expect(getValidationNamePathsExcludingHiddenModels(blockModel)).toBeNull();
+  });
+});
+
+describe('submit validation helpers', () => {
+  it('detects skip validation switch from submitSettings', () => {
+    expect(
+      shouldSkipSubmitValidation({
+        getStepParams: (flowKey: string, stepKey: string) => {
+          if (flowKey === 'submitSettings' && stepKey === 'skipRequiredValidation') {
+            return { skipValidator: true };
+          }
+        },
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldSkipSubmitValidation({
+        getStepParams: () => ({ skipValidator: false }),
+      }),
+    ).toBe(false);
+  });
+
+  it('skips validateFields completely when skipValidator is enabled', async () => {
+    const validateFields = vi.fn(async () => undefined);
+
+    await validateSubmitForm({
+      form: { validateFields },
+      skipValidator: true,
+    });
+
+    expect(validateFields).not.toHaveBeenCalled();
+  });
+
+  it('validates only visible name paths in flow settings mode', async () => {
+    const engine = createEngine();
+    const blockModel = createFormBlock(engine, 'block-1');
+    createFieldModel(engine, 'field-hidden', blockModel, { hidden: true, fieldPathArray: ['b'] });
+
+    const validateFields = vi.fn(async () => undefined);
+    (blockModel.context as any).defineProperty('form', {
+      value: {
+        validateFields,
+        getFieldsError: () => [{ name: ['a'] }, { name: ['b'] }],
+      },
+    });
+
+    await validateSubmitForm({
+      form: blockModel.form as any,
+      blockModel,
+      flowSettingsEnabled: true,
+      skipValidator: false,
+    });
+
+    expect(validateFields).toHaveBeenCalledWith([['a']]);
   });
 });

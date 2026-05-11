@@ -97,42 +97,69 @@ export const errorInstruction = {
 
 ### 异步节点
 
-当需要进行流程控制或者异步（耗时）IO 操作时，`run` 方法可以返回一个 `status` 为 `JOB_STATUS.PENDING` 状态的对象，提示执行器进行等待（挂起），等待某些外部异步操作完成后，通知流程引擎继续执行。如果在 `run` 函数中返回了挂起的状态值，则该指令必须实现 `resume` 方法，否则无法恢复流程的执行：
+当节点需要等待外部操作完成后才能继续流程时（如 HTTP 请求、第三方支付回调等耗时或非即时返回的操作），应先将任务保存为 `JOB_STATUS.PENDING` 状态以挂起当前执行，待操作完成后再通过 `resume` 恢复。凡是使用了挂起逻辑的指令，必须同时实现 `resume` 方法，否则流程将无法恢复。
+
+推荐的实现模式如下：
 
 ```ts
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
-export class PayInstruction extends Instruction {
-  async run(node, input, processor) {
-    // job could be create first via processor
-    const job = await processor.saveJob({
+export class AsyncInstruction extends Instruction {
+  async run(node: FlowNodeModel, prevJob, processor) {
+    // 1. 保存挂起状态的任务，记录 id
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
+      nodeId: node.id,
+      nodeKey: node.key,
+      upstreamId: prevJob?.id ?? null,
     });
 
-    const { workflow } = processor;
-    // do payment asynchronously
-    paymentService.pay(node.config, (result) => {
-      // notify processor to resume the job
-      return workflow.resume(job.id, result);
-    });
+    // 2. 主动调用 exit()，立即将任务刷入数据库并提交事务
+    await processor.exit();
 
-    // return created job instance
-    return job;
+    // 3. 发起异步操作（此时事务已提交，不再占用数据库连接）
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      const result = await someAsyncOperation(node.config);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = result;
+    } catch (error) {
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = { message: error.message };
+    } finally {
+      // 4. 重新从数据库查询任务，不使用内存中的缓存对象
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
+      });
+      job.set(jobDone);
+
+      // 5. 通知工作流引擎恢复执行，进入 resume 流程
+      this.workflow.resume(job);
+    }
+    // 6. 不返回任何值（void），执行器收到后直接退出
   }
 
-  resume(node, job, processor) {
-    // check payment status
-    job.set('status', job.result.status === 'ok' ? JOB_STATUS.RESOVLED : JOB_STATUS.REJECTED);
+  async resume(node: FlowNodeModel, job, processor) {
+    // job 已在 run 中设置了最终状态，直接返回即可
     return job;
-  },
-};
+  }
+}
 ```
 
-其中 `paymentService` 指代某个支付服务，在服务的回调中再触发工作流恢复对应任务的执行流程，当前流程先退出。之后由工作流引擎创建新的处理器转交到节点的 `resume` 方法中，将之前已挂起的节点继续执行。
+这里有几个关键细节说明：
 
-:::info{title=提示}
-这里说的“异步操作”不是指 JavaScript 中的 `async` 函数，而是与其他外部系统交互时，某些非即时返回的操作，比如支付服务会需要等待另外的通知才能知道结果。
-:::
+**为什么要主动调用 `processor.exit()` 而不是返回挂起的任务对象？**  
+`return { status: PENDING }` 会立即结束 `run` 函数，之后无法再执行任何代码。主动调用 `await processor.exit()` 则只是提交事务并退出数据库上下文，函数本身仍在继续执行，这样才能在同一函数体内 `await` 耗时操作，完成后再调用 `resume`。如果不先调用 `exit()` 而是直接 `await` 长操作再返回，一方面会长时间持有数据库事务造成锁竞争，另一方面操作完成前事务始终未提交，任务记录不会入库。
+
+**为什么要重新查询任务，而不是直接使用 `saveJob` 返回的对象？**  
+`saveJob` 返回的是绑定在原事务上的内存模型实例，`processor.exit()` 调用后该事务已提交关闭。直接修改此实例并调用 `resume` 会导致 ORM 状态异常（事务引用失效、状态不一致等）。通过 `id` 重新从数据库查询可确保获得干净的、与任何事务无关的新实例。
+
+**为什么 `run` 函数不返回任何值（`void`）？**  
+`processor.exit()` 已被手动调用，执行器收到 `void` 后调用 `exit(true)` 立即退出，不做任何重复处理。若此时返回 `IJob`，执行器会再次尝试保存并提交，导致错误。详见 `run`/`resume` 返回值章节。
+
+**对于需要外部回调的场景**（如 webhook 通知的支付结果），同样应先调用 `processor.exit()` 再注册回调，确保任务记录在外部系统回调前已入库，在回调中再按 `id` 重新查询任务后调用 `this.workflow.resume(job)`。
+
+实际项目中的完整示例可参考：[RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts)（HTTP 请求节点，在非同步工作流中使用了此模式）
 
 ### 节点的结果状态
 
@@ -150,15 +177,61 @@ export class PayInstruction extends Instruction {
 
 更多的的指令返回状态可以参考工作流 API 参考部分。
 
-### 提前退出
+### `run`/`resume` 返回值类型与执行器行为
 
-在某些特殊的流程中，可能需要在某个节点中直接结束流程，可以返回 `null`，表示退出当前流程，并且不会继续执行后续节点。
+`run` 和 `resume` 方法的完整返回类型定义为：
 
-这种情况在一些流程控制类型的节点中比较常见，例如并行分支节点中（[代码参考](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)），当前节点的流程退出，但是会对子分支分别开启新的流程并继续执行。
+```ts
+type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
+```
+
+执行器（`Processor`）在调用指令后，根据返回值的类型执行不同的处理逻辑，共有三种情况。
+
+#### 1. 返回任务对象 `IJob`
+
+这是最常见的情况，返回一个包含 `status`（必须）和可选 `result` 字段的对象。执行器将其保存为节点的任务记录，并根据 `status` 值决定后续流向：
+
+- `JOB_STATUS.RESOLVED`：节点成功执行，若有下游节点则继续运行，否则流程结束
+- `JOB_STATUS.PENDING`：节点进入挂起状态，当前执行上下文中止，等待外部事件触发 `resume`
+- 其他失败状态（`FAILED`、`ERROR` 等）：向上传递给分支父节点或直接结束整个流程
+
+此路径是完整的事务提交路径——执行器会保存任务记录、写库并提交事务。
+
+示例参考：[ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts)（无分支时直接返回 `job` 对象，有分支时见下文 `void` 情况）
+
+#### 2. 返回 `null`
+
+返回 `null` 时，执行器调用 `processor.exit()`（不传参数），其效果是：**将当前待写入的任务刷入数据库并提交事务，但不更新整体执行的状态**。
+
+这种用法常见于分支控制节点的 `resume` 方法：某个分支已完成，需要更新并保存父节点的任务状态（例如记录"第 N 个分支已完成"），但其他分支仍在运行，整体执行应继续保持 `STARTED` 状态等待剩余分支——此时返回 `null` 退出当前 resume 上下文而不影响整体执行状态。
+
+示例参考：[ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
+
+- 第 [117](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L117) 行：并行节点已提前完成（resolved/rejected），忽略后续分支的 resume，直接返回 `null`
+- 第 [135](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L135) 行：仍有分支未完成（`PENDING`），保存当前进度后返回 `null`，继续等待其他分支
+
+#### 3. 返回 `void`（不返回，即隐式 `undefined`）
+
+返回 `void`（函数没有显式返回语句，或执行路径结束时无返回值）时，执行器调用 `processor.exit(true)`，效果是**立即返回，不执行任何数据库操作**。
+
+这种模式专用于**指令已自行接管执行调度**的场景：指令内部通过 `processor.run()` 手动启动了子流程，子流程的执行链自身会在完成时负责数据库写入和事务提交，执行器不应再重复处理。
+
+典型例子：
+
+- [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67)：有分支时手动调用 `processor.run(branchNode, savedJob)` 后函数结束，隐式返回 `void`
+- [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108)：遍历所有分支并依次调用 `processor.run(branch, job)` 后函数结束，隐式返回 `void`
 
 :::warn{title=提示}
-扩展节点进行分支流程的调度有一定复杂性，需要谨慎处理，并进行充分的测试。
+返回 `void` 之前如果调用了 `processor.saveJob()`，这些任务记录不会由当前执行器写库。它们被暂存在执行器任务列表（内存）中，将由后续手动调用的 `processor.run()` 完成执行时触发的 `exit()` 统一刷入数据库。因此使用此模式时，必须确保存在会正常结束的子执行路径来完成这些记录的持久化。分支流程的调度有一定复杂性，需要谨慎设计并进行充分的测试。
 :::
+
+三种返回值的对比汇总：
+
+| 返回值 | 执行器行为 | 典型适用场景 |
+|--------|-----------|------------|
+| `IJob` | 保存任务，根据 `status` 继续/结束/挂起流程 | 节点正常执行，含结果和状态 |
+| `null` | 保存待写任务并提交事务，不更新执行状态 | 分支仍在等待，暂时退出当前执行上下文 |
+| `void` | 立即返回，不做任何 DB 操作 | 节点已自行调度子流程，让子流程接管后续处理 |
 
 ### 了解更多
 

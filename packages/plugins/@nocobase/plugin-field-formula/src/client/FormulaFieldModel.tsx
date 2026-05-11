@@ -7,11 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useTranslation } from 'react-i18next';
 import { toJS } from '@formily/reactive';
 import { EditableItemModel, DisplayItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Form } from 'antd';
-import { Checkbox, DatePicker, FieldModel, InputNumber, Input as InputString } from '@nocobase/client';
+import {
+  Checkbox,
+  DatePicker,
+  FieldModel,
+  InputNumber,
+  Input as InputString,
+  resolveDynamicNamePath,
+} from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import _ from 'lodash';
@@ -54,18 +60,48 @@ function getValuesByPath(values, key, index?) {
 }
 
 function getValuesByFullPath(values, fieldPath) {
-  const fieldPaths = fieldPath.split('.');
+  const fieldPaths = Array.isArray(fieldPath)
+    ? fieldPath.map((part) => (typeof part === 'number' ? part : String(part)))
+    : String(fieldPath || '')
+        .split('.')
+        .filter(Boolean);
   let currentKeyIndex = 0;
   let value = values || {};
   //loop to get the last field
   while (currentKeyIndex < fieldPaths.length) {
     const fieldName = fieldPaths[currentKeyIndex];
-    const index = parseInt(fieldPaths?.[currentKeyIndex + 1]);
+    const nextPart = fieldPaths?.[currentKeyIndex + 1];
+    const index = typeof nextPart === 'number' ? nextPart : parseInt(nextPart);
     value = getValuesByPath(value, fieldName, index);
     //have index means an array, then jump 2; else 1
     currentKeyIndex = currentKeyIndex + (index >= 0 ? 2 : 1);
   }
   return value;
+}
+
+function normalizeIdPath(id) {
+  if (Array.isArray(id)) {
+    return id.map((part) => {
+      if (typeof part === 'number') {
+        return part;
+      }
+      const n = Number(part);
+      return Number.isInteger(n) && String(n) === String(part) ? n : part;
+    });
+  }
+  if (_.isString(id) && id.includes('.')) {
+    return id
+      .split('.')
+      .filter(Boolean)
+      .map((part) => {
+        const n = Number(part);
+        return Number.isInteger(n) && String(n) === part ? n : part;
+      });
+  }
+  if (id == null || id === '') {
+    return [];
+  }
+  return [id];
 }
 
 function areValuesEqual(value1, value2) {
@@ -99,8 +135,10 @@ export function FormulaResult(props) {
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const antdForm = typeof form?.getFieldsValue === 'function' ? form : undefined;
   const watchedValues = Form.useWatch([], antdForm);
-  const fieldPath = Array.isArray(id) ? id?.join('.') : id;
-  const { t } = useTranslation();
+  const fieldPath = React.useMemo(() => {
+    const resolved = resolveDynamicNamePath(context?.fieldPath || normalizeIdPath(id), context?.fieldIndex);
+    return (resolved?.length ? resolved : normalizeIdPath(id)) as Array<string | number>;
+  }, [context?.fieldIndex, context?.fieldPath, id]);
 
   const { flags, isFilterContext, isDefaultValueDialog } = resolveFormulaUsageFlags(form, context);
 
@@ -124,10 +162,7 @@ export function FormulaResult(props) {
     } catch (error) {
       v = null;
     }
-    if (v == null && editingValue == null) {
-      setEditingValue(v);
-    }
-    setEditingValue(v);
+    setEditingValue((prev) => (areValuesEqual(prev, v) ? prev : v));
   }, [watchedValues]);
 
   useEffect(() => {
@@ -138,7 +173,7 @@ export function FormulaResult(props) {
         }
       });
     }
-  }, [editingValue, isFilterContext, isDefaultValueDialog]);
+  }, [editingValue, fieldPath, form, isFilterContext, isDefaultValueDialog, value]);
 
   // 筛选/默认值等场景下需要可编辑组件
   if (isFilterContext || isDefaultValueDialog) {

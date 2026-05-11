@@ -612,6 +612,44 @@ describe('data source', async () => {
       expect(field.options.title).toBe('标题 Field');
     });
 
+    it('should clear scopeKey from external data source sort field', async () => {
+      const createResp = await app
+        .agent()
+        .resource('dataSourcesCollections.fields', 'mockInstance1.posts')
+        .create({
+          values: {
+            type: 'sort',
+            name: 'sort',
+            title: 'Sort field',
+            scopeKey: 'title',
+          },
+        });
+
+      expect(createResp.status).toBe(200);
+
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection = dataSource.collectionManager.getCollection('posts');
+      expect(collection.getField('sort').options.scopeKey).toBe('title');
+
+      const fieldUpdateResp = await app
+        .agent()
+        .resource('dataSourcesCollections.fields', 'mockInstance1.posts')
+        .update({
+          filterByTk: 'sort',
+          values: {
+            type: 'sort',
+            title: null,
+            scopeKey: null,
+          },
+        });
+
+      expect(fieldUpdateResp.status).toBe(200);
+      expect(fieldUpdateResp.body.data.scopeKey).toBeNull();
+      expect(fieldUpdateResp.body.data.title).toBe('Sort field');
+      expect(collection.getField('sort').options.scopeKey).toBeNull();
+      expect(collection.getField('sort').options.title).toBe('Sort field');
+    });
+
     it('should update fields through collection', async () => {
       const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
       const collection = dataSource.collectionManager.getCollection('posts');

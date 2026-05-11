@@ -42,6 +42,18 @@ export const departmentCollection = {
       },
     },
     {
+      name: 'parentId',
+      type: 'bigInt',
+      interface: 'integer',
+      isForeignKey: true,
+      uiSchema: {
+        type: 'number',
+        title: 'parentId',
+        'x-component': 'InputNumber',
+        'x-read-pretty': true,
+      },
+    },
+    {
       name: 'parent',
       type: 'belongsTo',
       interface: 'm2o',

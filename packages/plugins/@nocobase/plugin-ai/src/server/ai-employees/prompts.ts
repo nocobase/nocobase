@@ -12,14 +12,12 @@ export function getSystemPrompt({
   personal,
   task,
   environment,
-  dataSources,
   knowledgeBase,
 }: {
   aiEmployee: { nickname: string; about: string };
   personal?: string;
   task: { background: string; context?: string };
   environment: { database: string; locale: string };
-  dataSources?: string;
   knowledgeBase?: string;
 }) {
   // Helper function to get database-specific identifier quoting rules

@@ -496,6 +496,81 @@ describe('FilterManager', () => {
       expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
     });
 
+    it('should normalize array operators when the target field is scalar', async () => {
+      const filterConfigs = [
+        {
+          filterId: 'filter-1',
+          targetId: 'target-scalar',
+          filterPaths: ['status'],
+          operator: '$match',
+        },
+        {
+          filterId: 'filter-1',
+          targetId: 'target-array',
+          filterPaths: ['tags'],
+          operator: '$match',
+        },
+        {
+          filterId: 'filter-1',
+          targetId: 'target-deep-array',
+          filterPaths: ['org.company.tags'],
+          operator: '$match',
+        },
+      ];
+
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      const createTargetModel = (getCollectionField: any) => ({
+        collection: {
+          dataSourceKey: 'main',
+          name: 'users',
+        },
+        context: {
+          dataSourceManager: {
+            getCollectionField,
+          },
+        },
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
+      });
+      const mockScalarTargetModel = createTargetModel(vi.fn().mockReturnValue({ interface: 'select', type: 'string' }));
+      const mockArrayTargetModel = createTargetModel(
+        vi.fn().mockReturnValue({ interface: 'multipleSelect', type: 'array' }),
+      );
+      const mockDeepArrayTargetModel = createTargetModel(
+        vi.fn((key: string) => {
+          const fields = {
+            'main.users.org': { target: 'orgs' },
+            'main.orgs.company': { target: 'companies' },
+            'main.companies.tags': { interface: 'multipleSelect', type: 'array' },
+          };
+          return fields[key];
+        }),
+      );
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue(['a1']),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-scalar') return mockScalarTargetModel;
+        if (uid === 'target-array') return mockArrayTargetModel;
+        if (uid === 'target-deep-array') return mockDeepArrayTargetModel;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      await filterManager.refreshTargetsByFilter('filter-1');
+
+      expect(mockScalarTargetModel.resource.addFilterGroup.mock.calls[0][1].options.operator).toBe('$in');
+      expect(mockArrayTargetModel.resource.addFilterGroup.mock.calls[0][1].options.operator).toBe('$match');
+      expect(mockDeepArrayTargetModel.resource.addFilterGroup.mock.calls[0][1].options.operator).toBe('$match');
+    });
+
     it('should process multiple filterIds successfully', async () => {
       // Setup filter configs
       const filterConfigs = [
