@@ -13,7 +13,7 @@ import { EditOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 import { namespace, useT } from '../../locale';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatConversationsStore } from './stores/chat-conversations';
 
@@ -24,10 +24,11 @@ export const EditMessageHeader: React.FC = () => {
   const setSenderValue = useChatBoxStore.use.setSenderValue();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
-  const setMessages = useChatMessagesStore.use.setMessages();
+  const setMessages = chat.setMessages;
 
-  const { messagesService, finishEditingMessage } = useChatMessageActions();
+  const { loadMessages, finishEditingMessage } = useChatMessageActions();
 
   return (
     <Alert
@@ -45,7 +46,7 @@ export const EditMessageHeader: React.FC = () => {
         finishEditingMessage();
         setSenderValue('');
         setMessages([]);
-        messagesService.run(currentConversation);
+        loadMessages(currentConversation);
       }}
     />
   );

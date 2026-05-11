@@ -17,7 +17,8 @@ import { useT } from '../../locale';
 import { useTranslation } from 'react-i18next';
 import { Schema } from '@formily/react';
 import { Button } from 'antd';
-import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
+import { useChat } from '../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 
 const isAttachment = (value: any) => {
   let file = value;
@@ -130,7 +131,9 @@ export const ClassicPagesContext: WorkContextOptions = {
         icon: <SelectOutlined />,
         Component: ({ onAdd }) => {
           const t = useT();
-          const addAttachments = useChatMessagesStore.use.addAttachments();
+          const currentConversation = useChatConversationsStore.use.currentConversation();
+          const chat = useChat(currentConversation);
+          const addAttachments = chat.addAttachments;
 
           return <div onClick={() => {}}>{t('Select field values')}</div>;
         },
