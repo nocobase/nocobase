@@ -26,7 +26,7 @@ import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
 import ScheduleTrigger from './triggers/ScheduleTrigger';
-import { Instruction, InstructionInterface } from './instructions';
+import { InstructionInterface } from './instructions';
 import CalculationInstruction from './instructions/CalculationInstruction';
 import ConditionInstruction from './instructions/ConditionInstruction';
 import EndInstruction from './instructions/EndInstruction';
@@ -41,6 +41,13 @@ import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 
 type ID = number | string;
+
+type TriggerConstructor<T extends Trigger = Trigger> = new (workflow: PluginWorkflowServer) => T;
+type TriggerRegistration<T extends Trigger = Trigger> = T | TriggerConstructor<T>;
+type InstructionConstructor<T extends InstructionInterface = InstructionInterface> = new (
+  workflow: PluginWorkflowServer,
+) => T;
+type InstructionRegistration<T extends InstructionInterface = InstructionInterface> = T | InstructionConstructor<T>;
 
 export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
@@ -259,7 +266,7 @@ export default class PluginWorkflowServer extends Plugin {
     return trigger.sync ?? workflow.sync;
   }
 
-  public registerTrigger<T extends Trigger>(type: string, trigger: T | { new (p: Plugin): T }) {
+  public registerTrigger<T extends Trigger>(type: string, trigger: TriggerRegistration<T>) {
     if (typeof trigger === 'function') {
       this.triggers.register(type, new trigger(this));
     } else if (trigger) {
@@ -269,10 +276,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
-  public registerInstruction(
-    type: string,
-    instruction: InstructionInterface | { new (p: Plugin): InstructionInterface },
-  ) {
+  public registerInstruction<T extends InstructionInterface>(type: string, instruction: InstructionRegistration<T>) {
     if (typeof instruction === 'function') {
       this.instructions.register(type, new instruction(this));
     } else if (instruction) {
@@ -282,7 +286,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
-  private initTriggers<T extends Trigger>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
+  private initTriggers<T extends Trigger>(more: { [key: string]: TriggerRegistration<T> } = {}) {
     this.registerTrigger('collection', CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);
 
@@ -291,7 +295,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
-  private initInstructions<T extends Instruction>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
+  private initInstructions<T extends InstructionInterface>(more: { [key: string]: InstructionRegistration<T> } = {}) {
     this.registerInstruction('calculation', CalculationInstruction);
     this.registerInstruction('condition', ConditionInstruction);
     this.registerInstruction('multi-conditions', MultiConditionsInstruction);
