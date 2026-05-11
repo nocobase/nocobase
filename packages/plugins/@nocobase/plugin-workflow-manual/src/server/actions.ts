@@ -8,7 +8,7 @@
  */
 
 import actions, { Context, utils } from '@nocobase/actions';
-import WorkflowPlugin, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 
 import ManualInstruction from './ManualInstruction';
 
@@ -21,7 +21,7 @@ export async function submit(context: Context, next) {
     return context.throw(401);
   }
 
-  const plugin: WorkflowPlugin = context.app.getPlugin(WorkflowPlugin);
+  const plugin = context.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
   const instruction = plugin.instructions.get('manual') as ManualInstruction;
 
   const task = await repository.findOne({
@@ -44,7 +44,11 @@ export async function submit(context: Context, next) {
   if (!task.execution) {
     return context.throw(400);
   }
-  if (await plugin.abortExecutionIfExpired(task.execution)) {
+  if (
+    task.execution.status === EXECUTION_STATUS.STARTED &&
+    plugin.timeoutManager.isExpired(task.execution) &&
+    (await plugin.timeoutManager.abort(task.execution))
+  ) {
     return context.throw(400, context.t('Execution timed out', { ns: 'workflow' }));
   }
 
