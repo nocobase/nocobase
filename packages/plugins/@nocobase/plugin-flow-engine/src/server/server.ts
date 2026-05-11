@@ -66,20 +66,6 @@ export class PluginUISchemaStorageServer extends Plugin {
 
     this.app.localeManager.registerSource('flow-models', {
       title: tval('Flow models'),
-      sync: async (ctx) => {
-        const flowModels = await ctx.db.getRepository('flowModels').find({
-          raw: true,
-        });
-        const resources = {};
-        flowModels.forEach((model: any) => {
-          extractFields(model).forEach((field) => {
-            resources[compile(field)] = '';
-          });
-        });
-        return {
-          'ui-schema-storage': resources,
-        };
-      },
       collections: [
         {
           collection: 'flowModels',

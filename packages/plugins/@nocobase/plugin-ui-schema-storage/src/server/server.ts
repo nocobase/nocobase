@@ -157,23 +157,6 @@ export class PluginUISchemaStorageServer extends Plugin {
   registerLocalizationSource() {
     this.app.localeManager.registerSource('ui-schema-storage', {
       title: tval('UiSchema'),
-      sync: async (ctx) => {
-        const uiSchemas = await ctx.db.getRepository('uiSchemas').find({
-          raw: true,
-        });
-        const resources = {};
-        uiSchemas.forEach((route: { schema?: any }) => {
-          const changedFields = extractFields(route.schema);
-          if (changedFields.length) {
-            changedFields.forEach((field) => {
-              resources[field] = '';
-            });
-          }
-        });
-        return {
-          'ui-schema-storage': resources,
-        };
-      },
       collections: [
         {
           collection: 'uiSchemas',

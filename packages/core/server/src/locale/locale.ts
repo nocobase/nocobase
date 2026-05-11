@@ -28,7 +28,7 @@ export type LocaleSourceText = {
 
 export type LocaleSource = {
   title: string;
-  sync: (ctx: any) => Promise<{
+  sync?: (ctx: any) => Promise<{
     [module: string]: {
       [text: string]: string;
     };
@@ -105,7 +105,7 @@ export class Locale {
   async syncSources(ctx: any, types: string[]) {
     const resources: { [module: string]: any } = { client: {} };
     const sources = Array.from(this.sources.getKeys());
-    const syncSources = sources.filter((source) => types.includes(source));
+    const syncSources = sources.filter((source) => types.includes(source) && this.sources.get(source).sync);
     const promises = syncSources.map((source) => this.sources.get(source).sync(ctx));
     const results = await Promise.all(promises);
     return results.reduce((result, resource) => {

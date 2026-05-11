@@ -18,6 +18,9 @@ describe('locale source', () => {
       title: 'Test',
       sync: spy,
     });
+    app.localeManager.registerSource('passive', {
+      title: 'Passive',
+    });
 
     await app.localeManager.syncSources({} as any, []);
     expect(spy).toBeCalledTimes(0);
@@ -25,6 +28,9 @@ describe('locale source', () => {
     const resources = await app.localeManager.syncSources({} as any, ['test']);
     expect(spy).toBeCalledTimes(1);
     expect(resources).toEqual({ client: {}, test: { Test: '' } });
+
+    await app.localeManager.syncSources({} as any, ['passive']);
+    expect(spy).toBeCalledTimes(1);
 
     await app.destroy();
   });

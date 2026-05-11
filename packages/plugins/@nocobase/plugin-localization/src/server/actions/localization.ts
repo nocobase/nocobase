@@ -77,10 +77,12 @@ const publish = async (ctx: Context, next: Next) => {
 
 const getSources = async (ctx: Context, next: Next) => {
   const sources = Array.from(ctx.app.localeManager.sources.getEntities());
-  ctx.body = sources.map(([name, source]) => ({
-    name,
-    title: source.title,
-  }));
+  ctx.body = sources
+    .filter(([, source]) => source.sync)
+    .map(([name, source]) => ({
+      name,
+      title: source.title,
+    }));
   await next();
 };
 
