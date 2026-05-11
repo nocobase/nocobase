@@ -8,6 +8,8 @@ keywords: "nb env remove,NocoBase CLI,удаление окружения,уда
 
 Удаляет настроенный env. Эта команда удаляет только конфигурацию env CLI; для очистки локального приложения, контейнеров и storage используйте [`nb app down`](../app/down.md).
 
+Если удаляемый env одновременно является текущим env, CLI автоматически выбирает новый текущий env из оставшихся env. Если env больше не осталось, текущий env очищается.
+
 ## Использование
 
 ```bash
@@ -32,4 +34,5 @@ nb env remove staging -f
 ## Связанные команды
 
 - [`nb app down`](../app/down.md)
+- [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

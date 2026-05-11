@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "Tài liệu lệnh nb env add: lưu địa chỉ API NocoBase và phương thức xác thực, sau đó đặt làm env hiện tại."
-keywords: "nb env add,NocoBase CLI,Thêm môi trường,Địa chỉ API,Xác thực"
+description: "Tài liệu lệnh nb env add: lưu URL API NocoBase và phương thức xác thực, rồi chuyển sang env đó."
+keywords: "nb env add,NocoBase CLI,thêm môi trường,API Base URL,xác thực"
 ---
 
 # nb env add

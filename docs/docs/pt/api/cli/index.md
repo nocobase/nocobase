@@ -35,11 +35,12 @@ Os seguintes grupos de comandos são exibidos em `nb --help`:
 | [`nb app`](./app/index.md) | Gerenciar o estado de execução da aplicação: iniciar, parar, reiniciar, logs e upgrade. |
 | [`nb config`](./config/index.md) | Gerenciar a configuração padrão do CLI. |
 | [`nb db`](./db/index.md) | Gerenciar o banco de dados embutido do env selecionado. |
-| [`nb env`](./env/index.md) | Gerenciar ambientes, status, detalhes e comandos em tempo de execução do projeto NocoBase. |
+| [`nb env`](./env/index.md) | Gerencia ambientes de projeto do NocoBase, env atual, status, detalhes e runtimes de comandos. |
 | [`nb license`](./license/index.md) | Gerenciar o licenciamento comercial e os plugins licenciados. |
 | [`nb plugin`](./plugin/index.md) | Gerenciar os plugins do env NocoBase selecionado. |
 | [`nb scaffold`](./scaffold/index.md) | Gerar scaffolding de desenvolvimento de plugins NocoBase. |
 | [`nb self`](./self/index.md) | Verificar ou atualizar o próprio NocoBase CLI. |
+| [`nb session`](./session/index.md) | Configura `NB_SESSION_ID` para isolar o env atual por shell ou runtime de agente. |
 | [`nb skills`](./skills/index.md) | Verificar ou sincronizar as NocoBase AI coding skills do workspace atual. |
 | [`nb source`](./source/index.md) | Gerenciar projetos de código-fonte locais: download, desenvolvimento, build e testes. |
 
@@ -93,6 +94,8 @@ Conectar a uma aplicação existente:
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Iniciar a aplicação e atualizar os comandos em tempo de execução:

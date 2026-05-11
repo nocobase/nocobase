@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "nb env add コマンドリファレンス：NocoBase API アドレスと認証方式を保存し、現在の env に切り替えます。"
-keywords: "nb env add,NocoBase CLI,環境追加,API アドレス,認証"
+description: "nb env add コマンドリファレンス：NocoBase API URL と認証方式を保存し、その env に切り替えます。"
+keywords: "nb env add,NocoBase CLI,環境追加,API Base URL,認証"
 ---
 
 # nb env add

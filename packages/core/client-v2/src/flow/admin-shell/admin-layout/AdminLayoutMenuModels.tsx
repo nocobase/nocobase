@@ -28,7 +28,6 @@ import {
   reconcileAdminLayoutMenuItems,
   shouldRenderIconInTitle,
 } from './AdminLayoutMenuUtils';
-import { findFirstPageRoute } from './AdminLayoutCompat';
 import {
   buildMenuBasicSchema,
   buildLinkSettingSchema,
@@ -41,7 +40,13 @@ import {
   matchesRoutePath,
   toTreeSelectItems,
 } from './AdminLayoutMenuFlowUtils';
-import { resolveAdminRouteRuntimeTarget, toRouterNavigationPath } from './resolveAdminRouteRuntimeTarget';
+import {
+  findFirstAccessiblePageRoute,
+  findFirstV2LandingRoute,
+  isV2AdminRuntime,
+  resolveAdminRouteRuntimeTarget,
+  toRouterNavigationPath,
+} from './resolveAdminRouteRuntimeTarget';
 
 export * from './AdminLayoutMenuUtils';
 const insertPositionToMethod = {
@@ -546,6 +551,11 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         app: this.context.app,
         route,
       });
+
+      if (runtimeTarget.reason === 'unsupportedV2Runtime') {
+        return null;
+      }
+
       const path = route.schemaUid
         ? `/admin/${route.schemaUid}`
         : getAdminLayoutMenuVirtualPath('link', `${this.uid}-invalid`);
@@ -579,13 +589,20 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           )
           .filter(Boolean) || [];
 
+      if (isV2AdminRuntime(this.context.app) && children.length === 0) {
+        return null;
+      }
+
       if (options.designable && depth === 0) {
         children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', this, route));
       }
 
+      const landingRoute = isV2AdminRuntime(this.context.app)
+        ? findFirstV2LandingRoute(itemChildren)
+        : findFirstAccessiblePageRoute(itemChildren);
       const runtimeTarget = resolveAdminRouteRuntimeTarget({
         app: this.context.app,
-        route,
+        route: isV2AdminRuntime(this.context.app) && landingRoute ? landingRoute : route,
       });
 
       const groupRoute: AdminLayoutMenuNode = {
@@ -593,9 +610,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         icon,
         path: `/admin/${route.id}`,
         redirect:
-          children[0]?.key === 'x-designer-button'
-            ? undefined
-            : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || route.id}`,
+          children[0]?.key === 'x-designer-button' ? undefined : `/admin/${landingRoute?.schemaUid || route.id}`,
         hideInMenu: route.hideInMenu,
         _runtimePath: runtimeTarget.runtimePath,
         _navigationMode: runtimeTarget.navigationMode,

@@ -1,33 +1,36 @@
 ---
 title: "nb env list"
-description: "Referensi perintah nb env list: menampilkan daftar env NocoBase CLI yang sudah dikonfigurasi dan status autentikasi API."
-keywords: "nb env list,NocoBase CLI,daftar lingkungan,status autentikasi"
+description: "Referensi perintah nb env list: menampilkan env NocoBase CLI yang dikonfigurasi."
+keywords: "nb env list,NocoBase CLI,daftar environment,API Base URL"
 ---
 
 # nb env list
 
-Menampilkan daftar semua env yang sudah dikonfigurasi, dan menggunakan kredensial Token/OAuth yang tersimpan untuk memeriksa status autentikasi API aplikasi.
+Menampilkan semua env yang sudah dikonfigurasi.
+
+Perintah ini hanya menampilkan konfigurasi yang tersimpan. Gunakan [`nb env status`](./status.md) saat ingin memeriksa status.
 
 ## Penggunaan
 
-```bash
+
 nb env list
-```
 
 ## Output
 
-Tabel output berisi penanda lingkungan saat ini, nama, tipe, App Status, URL, metode autentikasi, dan versi runtime.
+Tabel output menampilkan penanda env saat ini, nama, jenis, `API Base URL`, tipe autentikasi, dan versi runtime.
 
-`App Status` menunjukkan status yang diperoleh CLI setelah mengakses API aplikasi menggunakan informasi autentikasi env saat ini, seperti `ok`, `auth failed`, `unreachable`, atau `unconfigured`. Untuk status runtime database, gunakan [`nb db ps`](../db/ps.md).
+- `Current` menandai env yang sedang efektif dengan `*`
+- `API Base URL` menampilkan alamat API mentah yang tersimpan
+- `Runtime` menampilkan informasi versi runtime yang tersimpan di cache
 
 ## Contoh
 
-```bash
+
 nb env list
-```
 
 ## Perintah Terkait
 
+- [`nb env current`](./current.md)
+- [`nb env status`](./status.md)
 - [`nb env info`](./info.md)
 - [`nb env use`](./use.md)
-- [`nb db ps`](../db/ps.md)

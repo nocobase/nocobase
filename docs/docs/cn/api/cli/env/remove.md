@@ -8,6 +8,8 @@ keywords: "nb env remove,NocoBase CLI,删除环境,移除配置"
 
 移除一个已配置的 env。该命令只删除 CLI env 配置；需要清理本地应用、容器和 storage 时，请使用 [`nb app down`](../app/down.md)。
 
+如果被移除的是当前 env，CLI 会在剩余 env 里自动选择一个新的 current env；如果已经没有可用 env，则 current env 会被清空。
+
 ## 用法
 
 ```bash
@@ -32,4 +34,5 @@ nb env remove staging -f
 ## 相关命令
 
 - [`nb app down`](../app/down.md)
+- [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

@@ -35,11 +35,12 @@ The root command mainly displays help and dispatches execution to command groups
 | [`nb app`](./app/index.md) | Manage NocoBase app runtimes: start, stop, restart, logs, and upgrades. |
 | [`nb config`](./config/index.md) | Manage CLI configuration defaults. |
 | [`nb db`](./db/index.md) | Manage the built-in database for the selected env. |
-| [`nb env`](./env/index.md) | Manage NocoBase project environments, status, details, and command runtimes. |
+| [`nb env`](./env/index.md) | Manage NocoBase project environments, current env, status, details, and command runtimes. |
 | [`nb license`](./license/index.md) | Manage commercial licensing and licensed plugins. |
 | [`nb plugin`](./plugin/index.md) | Manage plugins in the selected NocoBase env. |
 | [`nb scaffold`](./scaffold/index.md) | Generate NocoBase plugin development scaffolds. |
 | [`nb self`](./self/index.md) | Inspect or update the NocoBase CLI itself. |
+| [`nb session`](./session/index.md) | Configure `NB_SESSION_ID` so current env is isolated per shell or agent runtime. |
 | [`nb skills`](./skills/index.md) | Inspect or synchronize NocoBase AI coding skills for the current workspace. |
 | [`nb source`](./source/index.md) | Work with the local NocoBase source project: download, develop, build, and test. |
 
@@ -93,6 +94,8 @@ Connect an existing app:
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Start the app and refresh runtime commands:
@@ -130,6 +133,7 @@ The following environment variables affect CLI behavior:
 | --- | --- |
 | `NB_CLI_ROOT` | Root directory where the CLI stores `.nocobase` config and local app files. Defaults to the current user's home directory. |
 | `NB_LOCALE` | Language for CLI prompts and the local setup UI. Supported values are `en-US` and `zh-CN`. |
+| `NB_SESSION_ID` | Session ID for the current shell or agent runtime. When set, `nb env use` and `nb env current` are isolated per session. |
 
 Example:
 
@@ -153,6 +157,14 @@ After setting `NB_CLI_ROOT=/your/workspace`, the config file path becomes:
 ```
 
 The CLI also keeps compatibility with legacy project config under the current working directory.
+
+Current env session cache is stored in:
+
+```text
+.nocobase/sessions/<NB_SESSION_ID>.json
+```
+
+The globally last-used env is stored in the `lastEnv` field in `config.json`. When `NB_SESSION_ID` is not set, the CLI falls back to that global value.
 
 Runtime command cache is stored in:
 

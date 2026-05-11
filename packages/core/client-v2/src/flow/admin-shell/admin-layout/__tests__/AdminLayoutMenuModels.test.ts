@@ -211,7 +211,7 @@ describe('AdminLayoutModel menu items', () => {
             id: 11,
             title: 'Page 1',
             schemaUid: 'page-1',
-            type: NocoBaseDesktopRouteType.page,
+            type: NocoBaseDesktopRouteType.flowPage,
           },
         ],
       },
@@ -264,7 +264,7 @@ describe('AdminLayoutModel menu items', () => {
             id: 11,
             title: 'Page 1',
             schemaUid: 'page-1',
-            type: NocoBaseDesktopRouteType.page,
+            type: NocoBaseDesktopRouteType.flowPage,
           },
         ],
       },
@@ -285,21 +285,21 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children).toHaveLength(2);
     expect(route.children[0].path).toBe('/admin/1');
     expect(route.children[0].redirect).toBe('/admin/page-1');
-    expect(route.children[0]._runtimePath).toBe('/apps/demo/admin/page-1');
-    expect(route.children[0]._navigationMode).toBe('document');
-    expect(route.children[0]._isLegacy).toBe(true);
+    expect(route.children[0]._runtimePath).toBe('/apps/demo/v2/admin/page-1');
+    expect(route.children[0]._navigationMode).toBe('spa');
+    expect(route.children[0]._isLegacy).toBe(false);
     expect(route.children[0]._depth).toBe(0);
     expect(route.children[0]._route).toMatchObject({ id: 1, type: NocoBaseDesktopRouteType.group });
     expect(route.children[0]._model).toBe(adminLayoutModel.subModels.menuItems?.[0]);
     expect(route.children[0].routes).toHaveLength(1);
     expect(route.children[0].routes?.[0].path).toBe('/admin/page-1');
     expect(route.children[0].routes?.[0].redirect).toBe('/admin/page-1');
-    expect(route.children[0].routes?.[0]._runtimePath).toBe('/apps/demo/admin/page-1');
-    expect(route.children[0].routes?.[0]._navigationMode).toBe('document');
+    expect(route.children[0].routes?.[0]._runtimePath).toBe('/apps/demo/v2/admin/page-1');
+    expect(route.children[0].routes?.[0]._navigationMode).toBe('spa');
     expect(route.children[0].routes?.[0]._depth).toBe(1);
     expect(route.children[0].routes?.[0]._route).toMatchObject({
       schemaUid: 'page-1',
-      type: NocoBaseDesktopRouteType.page,
+      type: NocoBaseDesktopRouteType.flowPage,
     });
     expect(route.children[0].routes?.[0]._model).toBe(
       adminLayoutModel.subModels.menuItems?.[0].subModels.menuItems?.[0],
@@ -308,6 +308,84 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children[1]._depth).toBe(0);
     expect(route.children[1]._route).toMatchObject({ id: 2, type: NocoBaseDesktopRouteType.link });
     expect(route.children[1]._model).toBe(adminLayoutModel.subModels.menuItems?.[1]);
+  });
+
+  it('should filter legacy page menu routes in v2 admin layout', () => {
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'admin-layout-model',
+      use: AdminLayoutModel,
+    });
+
+    adminLayoutModel.syncMenuRoutes([
+      {
+        id: 1,
+        title: 'Legacy page',
+        schemaUid: 'legacy-page',
+        type: NocoBaseDesktopRouteType.page,
+      },
+      {
+        id: 2,
+        title: 'Legacy only group',
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            id: 21,
+            title: 'Nested legacy page',
+            schemaUid: 'nested-legacy-page',
+            type: NocoBaseDesktopRouteType.page,
+          },
+        ],
+      },
+      {
+        id: 3,
+        title: 'Mixed group',
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            id: 31,
+            title: 'Nested legacy page',
+            schemaUid: 'nested-legacy-page-2',
+            type: NocoBaseDesktopRouteType.page,
+          },
+          {
+            id: 32,
+            title: 'Nested flow page',
+            schemaUid: 'nested-flow-page',
+            type: NocoBaseDesktopRouteType.flowPage,
+          },
+        ],
+      },
+      {
+        id: 4,
+        title: 'Link',
+        type: NocoBaseDesktopRouteType.link,
+      },
+    ]);
+
+    const route = adminLayoutModel.toProLayoutRoute({
+      designable: false,
+      isMobile: false,
+      t: (title) => title,
+    });
+
+    expect(route.children).toHaveLength(2);
+    expect(route.children[0]).toMatchObject({
+      path: '/admin/3',
+      redirect: '/admin/nested-flow-page',
+      _runtimePath: '/apps/demo/v2/admin/nested-flow-page',
+      _navigationMode: 'spa',
+      _isLegacy: false,
+    });
+    expect(route.children[0].routes).toHaveLength(1);
+    expect(route.children[0].routes?.[0]).toMatchObject({
+      path: '/admin/nested-flow-page',
+      _runtimePath: '/apps/demo/v2/admin/nested-flow-page',
+      _navigationMode: 'spa',
+      _isLegacy: false,
+    });
+    expect(route.children[1]).toMatchObject({
+      path: '/admin/__admin_layout__/link/4',
+    });
   });
 
   it('should resolve modern flowPage menu runtime target to v2 path', () => {
@@ -406,7 +484,7 @@ describe('AdminLayoutModel menu items', () => {
     );
   });
 
-  it('should render legacy menu item as native anchor and use assign on left click', () => {
+  it('should render document menu item as native anchor and use assign on left click', () => {
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
       configurable: true,
@@ -452,15 +530,8 @@ describe('AdminLayoutModel menu items', () => {
     fireEvent.click(link, { button: 0 });
 
     return waitFor(() => {
-      expect(modalConfirmMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'Open classic page access',
-          content: 'This page requires the classic version to open properly. Do you want to go there now?',
-          okText: 'Yes',
-          cancelText: 'Cancel',
-        }),
-      );
       expect(assign).toHaveBeenCalledWith('/apps/demo/admin/legacy-page');
+      expect(modalConfirmMock).not.toHaveBeenCalled();
       expect(navigateMock).not.toHaveBeenCalled();
     });
   });
@@ -518,7 +589,7 @@ describe('AdminLayoutModel menu items', () => {
     }
   });
 
-  it('should not navigate to legacy page when user cancels confirm dialog', async () => {
+  it('should not ask for confirmation before document navigation', async () => {
     modalConfirmMock.mockResolvedValue(false);
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
@@ -562,9 +633,9 @@ describe('AdminLayoutModel menu items', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Legacy page' }), { button: 0 });
 
     await waitFor(() => {
-      expect(modalConfirmMock).toHaveBeenCalledTimes(1);
+      expect(assign).toHaveBeenCalledWith('/apps/demo/admin/legacy-page');
     });
-    expect(assign).not.toHaveBeenCalled();
+    expect(modalConfirmMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
@@ -684,8 +755,8 @@ describe('AdminLayoutModel menu items', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Legacy group-landing-entry' }), { button: 0 });
     return waitFor(() => {
-      expect(modalConfirmMock).toHaveBeenCalledTimes(1);
       expect(assign).toHaveBeenCalledWith('/apps/demo/admin/legacy-page');
+      expect(modalConfirmMock).not.toHaveBeenCalled();
     });
   });
 
@@ -741,7 +812,7 @@ describe('AdminLayoutModel menu items', () => {
             id: 11,
             title: 'Page 1',
             schemaUid: 'page-1',
-            type: NocoBaseDesktopRouteType.page,
+            type: NocoBaseDesktopRouteType.flowPage,
           },
         ],
       },
@@ -801,7 +872,7 @@ describe('AdminLayoutModel menu items', () => {
           id: 1,
           title: 'Page 1',
           schemaUid: 'page-1',
-          type: NocoBaseDesktopRouteType.page,
+          type: NocoBaseDesktopRouteType.flowPage,
         },
       ]);
     });
@@ -1630,7 +1701,7 @@ describe('AdminLayoutModel menu items', () => {
         id: 2,
         title: 'Next page',
         schemaUid: 'next-page',
-        type: NocoBaseDesktopRouteType.page,
+        type: NocoBaseDesktopRouteType.flowPage,
       },
     ];
     engine.context.api.resource = vi.fn(() => ({
@@ -1655,8 +1726,8 @@ describe('AdminLayoutModel menu items', () => {
 
     expect(deleteRoute).toHaveBeenCalledWith(1);
     expect(removeSchema).not.toHaveBeenCalled();
-    expect(assign).toHaveBeenCalledWith('/apps/demo/admin/next-page');
-    expect(navigate).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/apps/demo/v2/admin/next-page');
   });
 
   it('should match current route with router basename before navigating away after delete', async () => {
@@ -1684,16 +1755,16 @@ describe('AdminLayoutModel menu items', () => {
         id: 2,
         title: 'Next page',
         schemaUid: 'next-page',
-        type: NocoBaseDesktopRouteType.page,
+        type: NocoBaseDesktopRouteType.flowPage,
       },
     ];
     engine.context.api.resource = vi.fn(() => ({
       'remove/current-page': removeSchema,
     }));
-    engine.context.location.pathname = '/apps/demo/admin/current-page';
+    engine.context.location.pathname = '/apps/demo/v2/admin/current-page';
     engine.context.defineProperty('router', {
       value: {
-        basename: '/apps/demo',
+        basename: '/apps/demo/v2',
         navigate,
       },
     });
@@ -1715,8 +1786,8 @@ describe('AdminLayoutModel menu items', () => {
 
     expect(deleteRoute).toHaveBeenCalledWith(1);
     expect(removeSchema).not.toHaveBeenCalled();
-    expect(assign).toHaveBeenCalledWith('/apps/demo/admin/next-page');
-    expect(navigate).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/admin/next-page');
   });
 
   it('should reject inner move when target is not a group', async () => {
