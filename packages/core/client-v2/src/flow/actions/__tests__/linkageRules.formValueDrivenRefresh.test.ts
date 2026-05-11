@@ -26,7 +26,12 @@ function createRule(overrides: any = {}) {
 
 function createRuntime(
   params: any,
-  options: { fieldIndex?: string[]; fieldIndexRef?: { current: string[] }; actionHandler?: any; engineEmitter?: any } = {},
+  options: {
+    fieldIndex?: string[];
+    fieldIndexRef?: { current: string[] };
+    actionHandler?: any;
+    engineEmitter?: any;
+  } = {},
 ) {
   const formEmitter = new EventEmitter();
   const formBlock: any = {
