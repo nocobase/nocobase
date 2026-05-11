@@ -18,7 +18,7 @@ nb env auth [name]
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
-| `[name]` | string | Nome do ambiente; usa o env atual quando omitido |
+| `[name]` | string | Nome do ambiente configurado no qual fazer login; quando omitido, usa o env atual |
 
 ## Descrição
 

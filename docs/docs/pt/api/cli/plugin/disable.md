@@ -20,6 +20,7 @@ nb plugin disable <packages...> [flags]
 | --- | --- | --- |
 | `<packages...>` | string[] | Nome do pacote do plugin, obrigatório, suporta múltiplos valores |
 | `--env`, `-e` | string | Nome do env do CLI; quando omitido, usa o env atual |
+| `--yes`, `-y` | boolean | Quando `--env` é passado explicitamente e aponta para uma env diferente da env atual, pula a confirmação interativa |
 
 ## Exemplos
 
@@ -27,7 +28,10 @@ nb plugin disable <packages...> [flags]
 nb plugin disable @nocobase/plugin-sample
 nb plugin disable @nocobase/plugin-a @nocobase/plugin-b
 nb plugin disable -e local @nocobase/plugin-sample
+nb plugin disable -e local --yes @nocobase/plugin-sample
 ```
+
+Se você passar `--env` explicitamente e ele for diferente da env atual, a CLI pedirá confirmação primeiro. Em terminais não interativos ou sessões de agentes de IA, adicione `--yes` manualmente ou execute primeiro `nb env use <name>` e tente novamente.
 
 ## Comandos relacionados
 

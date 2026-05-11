@@ -19,9 +19,10 @@ nb license plugins sync [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `--env`, `-e` | string | Имя CLI env; если не указано, используется текущий env |
+| `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на env, отличающуюся от текущей env, пропускает интерактивное подтверждение |
 | `--dry-run` | boolean | Предварительный просмотр изменений без установки, обновления или удаления плагинов |
 | `--version` | string | Версия registry или dist-tag для синхронизации; по умолчанию используется текущая версия workspace |
-| `--verbose`, `-V` | boolean | Показывать подробные логи по каждому плагину |
+| `--verbose` | boolean | Показывать подробные логи по каждому плагину |
 | `--json` | boolean | Вывод JSON |
 
 ## Примеры
@@ -29,6 +30,7 @@ nb license plugins sync [flags]
 ```bash
 nb license plugins sync
 nb license plugins sync --env app1
+nb license plugins sync --env app1 --yes
 nb license plugins sync --env app1 --dry-run
 nb license plugins sync --env app1 --json
 ```
@@ -36,6 +38,8 @@ nb license plugins sync --env app1 --json
 ## Примечания
 
 Если `--version` не указан, CLI автоматически определяет текущую версию приложения и использует её, чтобы решить, какую версию registry коммерческих плагинов нужно загрузить.
+
+Если вы явно передаёте `--env`, и она отличается от текущей env, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях AI-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
 
 ## Связанные команды
 

@@ -19,6 +19,7 @@ nb app restart [flags]
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
 | `--env`, `-e` | string | 再起動する CLI env 名。省略時は現在の env を使用します |
+| `--yes`, `-y` | boolean | 明示的に指定した `--env` が現在の env と異なる場合、対話確認をスキップします |
 | `--quickstart` | boolean | 停止後にアプリケーションをクイックスタートします |
 | `--port`, `-p` | string | env 設定の `appPort` をオーバーライドします |
 | `--daemon`, `-d` / `--no-daemon` | boolean | 停止後にデーモンモードで実行するかどうか。デフォルトは有効です |
@@ -36,8 +37,11 @@ nb app restart --env local --port 12000
 nb app restart --env local --no-daemon
 nb app restart --env local --instances 2
 nb app restart --env local --launch-mode pm2
+nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
+
+`--env` を明示的に指定し、その値が現在の env と異なる場合、CLI は最初に確認を求めます。非対話端末や AI エージェントのセッションでは、自分で `--yes` を追加するか、先に `nb env use <name>` を実行してから再試行してください。
 
 ## 関連コマンド
 

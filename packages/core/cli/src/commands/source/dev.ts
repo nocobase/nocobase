@@ -8,6 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -86,7 +87,13 @@ export default class SourceDev extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description: 'CLI env name for dev mode. Defaults to the current env when omitted',
+      description: 'CLI env name to run dev mode for. Defaults to the current env when omitted',
+      required: false,
+    }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
       required: false,
     }),
     'db-sync': Flags.boolean({
@@ -118,6 +125,17 @@ export default class SourceDev extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(SourceDev);
     const requestedEnv = flags.env?.trim() || undefined;
+    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
 

@@ -303,7 +303,7 @@ export default class DbCheck extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description: 'CLI env name to read saved database settings from. Defaults to the current env when omitted.',
+      description: 'CLI env name to read saved database settings from. Defaults to the current env when omitted',
     }),
     'db-dialect': Flags.string({
       description: 'Database dialect: postgres, kingbase, mysql, or mariadb.',

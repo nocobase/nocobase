@@ -28,9 +28,17 @@ import { resolveLicensePkgUrlFromConfig } from '../../lib/cli-config.js';
 import { commandOutput } from '../../lib/run-npm.js';
 import { appUrl } from '../env/shared.js';
 
-export const licenseEnvFlag = Flags.string({
-  char: 'e',
-  description: 'CLI env name (from `nb env` / `nb init`). Defaults to the current env when omitted',
+export function createLicenseEnvFlag(description: string) {
+  return Flags.string({
+    char: 'e',
+    description,
+  });
+}
+
+export const licenseYesFlag = Flags.boolean({
+  char: 'y',
+  description: 'Confirm using --env when it targets a different env than the current env',
+  default: false,
 });
 
 export const licenseJsonFlag = Flags.boolean({

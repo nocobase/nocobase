@@ -18,7 +18,7 @@ nb env auth [name]
 
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
-| `[name]` | string | Umgebungsname; bei Auslassung wird die aktuelle env verwendet |
+| `[name]` | string | Name der konfigurierten Umgebung, bei der die Anmeldung durchgeführt wird; wird bei Weglassen aus der aktuellen env übernommen |
 
 ## Beschreibung
 

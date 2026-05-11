@@ -18,7 +18,7 @@ nb env auth [name]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Nom de l'environnement ; utilise l'env courant si omis |
+| `[name]` | string | Nom de l'environnement configuré auquel se connecter ; utilise l'env courante s'il est omis |
 
 ## Description
 

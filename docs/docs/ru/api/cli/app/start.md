@@ -19,6 +19,7 @@ nb app start [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `--env`, `-e` | string | Имя CLI env для запуска; если не указано, используется текущий env |
+| `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на env, отличающуюся от текущей env, пропускает интерактивное подтверждение |
 | `--quickstart` | boolean | Быстрый запуск приложения |
 | `--port`, `-p` | string | Переопределяет `appPort` в конфигурации env |
 | `--daemon`, `-d` / `--no-daemon` | boolean | Запускать ли в режиме демона, по умолчанию включено |
@@ -37,8 +38,11 @@ nb app start --env local --daemon
 nb app start --env local --no-daemon
 nb app start --env local --instances 2
 nb app start --env local --launch-mode pm2
+nb app start --env local --verbose
 nb app start --env local-docker
 ```
+
+Если вы явно передаёте `--env`, и она отличается от текущей env, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях AI-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
 
 ## Связанные команды
 

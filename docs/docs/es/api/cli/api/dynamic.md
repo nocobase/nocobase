@@ -41,6 +41,13 @@ Los comandos dinámicos con cuerpo de solicitud admiten:
 
 `--body` y `--body-file` son mutuamente excluyentes.
 
+Los comandos dinámicos de la API también admiten:
+
+- `--env`, `-e`: nombre de la env de CLI a la que se enviará la solicitud; si se omite, se usa la env actual
+- `--yes`, `-y`: cuando un `--env` pasado explícitamente apunta a una env distinta de la env actual, omite la confirmación interactiva
+
+Si pasa `--env` explícitamente y es diferente de la env actual, la CLI pedirá confirmación primero. En terminales no interactivos o sesiones de agentes de IA, agregue `--yes` usted mismo o ejecute antes `nb env use <name>` y vuelva a intentarlo.
+
 ## Comandos relacionados
 
 - [`nb env update`](../env/update.md)

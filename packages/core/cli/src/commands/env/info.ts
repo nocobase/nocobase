@@ -70,12 +70,11 @@ export default class EnvInfo extends Command {
     '<%= config.bin %> <%= command.id %> app1',
     '<%= config.bin %> <%= command.id %> app1 --json',
     '<%= config.bin %> <%= command.id %> app1 --show-secrets',
-    '<%= config.bin %> <%= command.id %> --env app1',
   ];
 
   static override args = {
     name: Args.string({
-      description: 'CLI env name to inspect. Defaults to the current env when omitted',
+      description: 'Configured environment name to inspect. Defaults to the current env when omitted',
       required: false,
     }),
   };
@@ -83,7 +82,10 @@ export default class EnvInfo extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description: 'CLI env name to inspect. Defaults to the current env when omitted',
+      hidden: true,
+      deprecated: true,
+      description:
+        'Environment name (same as the optional positional argument; for compatibility with -e/--env on other commands)',
     }),
     json: Flags.boolean({
       description: 'Output the result as JSON',

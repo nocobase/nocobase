@@ -20,7 +20,7 @@ nb env status [name] [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `[name]` | string | 要查看的 env 名称，省略时使用当前 env |
+| `[name]` | string | 要查看的已配置环境名称；省略时使用当前 env，且不能与 `--all` 一起使用 |
 | `--all` | boolean | 查看所有已配置 env 的状态 |
 | `--json-output` | boolean | 以 JSON 输出结果 |
 

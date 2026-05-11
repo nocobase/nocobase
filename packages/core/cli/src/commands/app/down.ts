@@ -215,7 +215,7 @@ export default class AppDown extends Command {
     }),
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip the interactive cross-env confirmation prompt',
+      description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
     }),
     force: Flags.boolean({

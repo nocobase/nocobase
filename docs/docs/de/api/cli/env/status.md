@@ -19,11 +19,11 @@ nb env status [name] [flags]
 
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
-| [name] | string | Env name to inspect; uses the current env if omitted |
-| --all | boolean | Show status for all configured envs |
-| --json-output | boolean | Output the result as JSON |
+| `[name]` | string | Name der konfigurierten Umgebung, die angezeigt werden soll; wird bei Weglassen aus der aktuellen env übernommen und kann nicht zusammen mit `--all` verwendet werden |
+| `--all` | boolean | Status aller konfigurierten envs anzeigen |
+| `--json-output` | boolean | Ergebnis als JSON ausgeben |
 
-`[name]` and `--all` cannot be used together.
+`[name]` und `--all` können nicht zusammen verwendet werden.
 
 ## Status values
 
