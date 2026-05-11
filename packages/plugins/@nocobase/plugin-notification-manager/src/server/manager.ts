@@ -21,7 +21,6 @@ import type {
   WriteLogOptions,
 } from './types';
 import { compile } from './utils/compile';
-import { Transactionable } from '@nocobase/database';
 
 export class NotificationManager implements NotificationManager {
   private static readonly SLOW_SEND_THRESHOLD_MS = 500;
@@ -82,6 +81,15 @@ export class NotificationManager implements NotificationManager {
     };
   }
 
+  private getDeferredResult(params: SendOptions) {
+    return {
+      status: 'success' as const,
+      triggerFrom: params.triggerFrom,
+      channelName: params.channelName,
+      receivers: params.receivers,
+    };
+  }
+
   private async shouldUseQueue(channelName: string) {
     const channel = await this.findChannel(channelName);
 
@@ -95,6 +103,17 @@ export class NotificationManager implements NotificationManager {
 
   private async enqueue(message: NotificationQueueMessage) {
     await this.plugin.app.eventQueue.publish(this.plugin.sendQueueChannel, message);
+  }
+
+  private async dispatchAfterCommit(message: NotificationQueueMessage) {
+    const useQueue = await this.shouldUseQueue(message.channelName);
+
+    if (useQueue) {
+      await this.enqueue(message);
+      return;
+    }
+
+    await this.sendNow(message);
   }
 
   async findChannel(name: string) {
@@ -121,37 +140,25 @@ export class NotificationManager implements NotificationManager {
   async send(params: SendOptions) {
     const queueMessage = this.toQueueMessage(params);
     const transaction = params.transaction;
-    const useQueue = await this.shouldUseQueue(params.channelName);
-
-    if (!useQueue) {
-      if (transaction?.afterCommit) {
-        transaction.afterCommit(() => {
-          void this.sendNow(queueMessage).catch((error) => {
-            this.plugin.logger.error('notification send failed after transaction committed', {
-              channelName: params.channelName,
-              triggerFrom: params.triggerFrom,
-              reason: error instanceof Error ? `${error.name}: ${error.message}` : JSON.stringify(error),
-            });
-          });
-        });
-        return this.getDirectResult(params, { status: 'success' });
-      }
-
-      const result = await this.sendNow(queueMessage);
-      return this.getDirectResult(params, result);
-    }
 
     if (transaction?.afterCommit) {
       transaction.afterCommit(() => {
-        void this.enqueue(queueMessage).catch((error) => {
-          this.plugin.logger.error('notification queue publish failed after transaction committed', {
+        this.dispatchAfterCommit(queueMessage).catch((error) => {
+          this.plugin.logger.error('notification dispatch failed after transaction committed', {
             channelName: params.channelName,
             triggerFrom: params.triggerFrom,
             reason: error instanceof Error ? `${error.name}: ${error.message}` : JSON.stringify(error),
           });
         });
       });
-      return this.getQueuedResult(params);
+      return this.getDeferredResult(params);
+    }
+
+    const useQueue = await this.shouldUseQueue(params.channelName);
+
+    if (!useQueue) {
+      const result = await this.sendNow(queueMessage);
+      return this.getDirectResult(params, result);
     }
 
     try {

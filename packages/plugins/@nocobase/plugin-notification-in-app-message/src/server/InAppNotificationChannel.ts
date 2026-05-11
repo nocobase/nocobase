@@ -85,32 +85,49 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   }) {
     const { userIds, title, content, channelName, receiveTimestamp, messageOptions, transaction } = options;
     const MessageModel = this.app.db.getModel(MessagesDefinition.name);
-    let persistedCount = 0;
+    const persist = async (activeTransaction?: Transaction) => {
+      let persistedCount = 0;
 
-    for (let index = 0; index < userIds.length; index += InAppNotificationChannel.MESSAGE_BATCH_SIZE) {
-      const batchUserIds = userIds.slice(index, index + InAppNotificationChannel.MESSAGE_BATCH_SIZE);
-      const messageBatch = batchUserIds.map((userId) => ({
-        id: uuidv4(),
-        title,
-        content,
-        status: 'unread',
-        userId,
-        channelName,
-        receiveTimestamp,
-        options: messageOptions,
-      }));
+      for (let index = 0; index < userIds.length; index += InAppNotificationChannel.MESSAGE_BATCH_SIZE) {
+        const batchUserIds = userIds.slice(index, index + InAppNotificationChannel.MESSAGE_BATCH_SIZE);
+        const messageBatch = batchUserIds.map((userId) => ({
+          id: uuidv4(),
+          title,
+          content,
+          status: 'unread',
+          userId,
+          channelName,
+          receiveTimestamp,
+          options: messageOptions,
+        }));
 
-      await MessageModel.bulkCreate(messageBatch, {
-        hooks: false,
-        transaction,
-        validate: false,
-        returning: false,
-      });
-      persistedCount += messageBatch.length;
-      this.scheduleMessageEvents('created', messageBatch, transaction);
+        await MessageModel.bulkCreate(messageBatch, {
+          hooks: false,
+          transaction: activeTransaction,
+          validate: false,
+          returning: false,
+        });
+        persistedCount += messageBatch.length;
+        this.scheduleMessageEvents('created', messageBatch, activeTransaction);
+      }
+
+      return persistedCount;
+    };
+
+    if (transaction) {
+      return persist(transaction);
     }
 
-    return persistedCount;
+    const internalTransaction = await this.app.db.sequelize.transaction();
+
+    try {
+      const persistedCount = await persist(internalTransaction);
+      await internalTransaction.commit();
+      return persistedCount;
+    } catch (error) {
+      await internalTransaction.rollback();
+      throw error;
+    }
   }
 
   async load() {

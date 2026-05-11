@@ -120,6 +120,7 @@ describe('notification manager server', () => {
 
   test('send should defer queue publish until after transaction committed', async () => {
     const publish = vi.fn().mockResolvedValue(undefined);
+    const getChannel = vi.fn().mockResolvedValue(null);
     let afterCommitCallback;
     const transaction = {
       afterCommit: vi.fn((callback) => {
@@ -130,7 +131,7 @@ describe('notification manager server', () => {
     notificationManager = new NotificationManager({
       plugin: {
         sendQueueChannel: 'notification-manager.send',
-        getChannel: vi.fn(),
+        getChannel,
         app: {
           eventQueue: {
             publish,
@@ -153,16 +154,20 @@ describe('notification manager server', () => {
 
     expect(transaction.afterCommit).toHaveBeenCalledTimes(1);
     expect(publish).not.toHaveBeenCalled();
+    expect(getChannel).not.toHaveBeenCalled();
     expect(result).toEqual(
       expect.objectContaining({
         status: 'success',
-        queued: true,
+        channelName: testChannelData.name,
+        triggerFrom: 'workflow',
       }),
     );
+    expect(result).not.toHaveProperty('queued');
 
-    afterCommitCallback();
+    await afterCommitCallback();
     await Promise.resolve();
 
+    expect(getChannel).toHaveBeenCalledWith(testChannelData.name);
     expect(publish).toHaveBeenCalledWith('notification-manager.send', {
       channelName: testChannelData.name,
       message: { content: 'test' },
@@ -443,6 +448,7 @@ describe('notification manager server', () => {
 
     expect(transaction.afterCommit).toHaveBeenCalledTimes(1);
     expect(publish).not.toHaveBeenCalled();
+    expect(getChannel).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
     expect(result).toEqual(
@@ -450,13 +456,14 @@ describe('notification manager server', () => {
         status: 'success',
         channelName: testChannelData.name,
         triggerFrom: 'workflow',
-        queued: false,
       }),
     );
+    expect(result).not.toHaveProperty('queued');
 
     await afterCommitCallback();
     await new Promise((resolve) => setImmediate(resolve));
 
+    expect(getChannel).toHaveBeenCalledWith(testChannelData.name);
     expect(send).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledTimes(1);
   });
