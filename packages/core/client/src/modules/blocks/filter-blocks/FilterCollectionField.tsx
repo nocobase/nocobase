@@ -52,8 +52,7 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { getInterface } = useCollectionManager_deprecated();
-  const collectionField = useCollectionField();
-  const { uiSchema: uiSchemaOrigin, defaultValue, interface: collectionInterface } = collectionField;
+  const { uiSchema: uiSchemaOrigin, defaultValue, interface: collectionInterface } = useCollectionField();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const targetInterface = getInterface(collectionInterface);
   const operator =
@@ -71,10 +70,6 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
   useEffect(() => {
     if (!uiSchemaOrigin) {
       return;
-    }
-    const isTreeCollection = !!collectionField?.collection?.tree;
-    if (isTreeCollection) {
-      field.componentProps = merge(field.componentProps || {}, { disableFieldClickToOpen: true });
     }
     const uiSchema = compile(uiSchemaOrigin);
     setFieldProps(field, 'content', uiSchema['x-content']);
