@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { useFlowContext, useFlowView } from '@nocobase/flow-engine';
+import { DrawerFormLayout } from '@nocobase/client-v2';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { App, Button, Card, Checkbox, Dropdown, Form, Input, Space, Spin, Table, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -48,13 +49,6 @@ function useStorageFormClassName() {
   );
 }
 
-const drawerTitleClassName = css`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: -8px;
-`;
-
 function createStorageName() {
   return `s_${Math.random().toString(36).slice(2, 12)}`;
 }
@@ -82,7 +76,6 @@ function StorageFormView(props: {
   onSubmitted: () => void;
 }) {
   const t = useT();
-  const view = useFlowView();
   const resource = useStorageResource();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -106,34 +99,22 @@ function StorageFormView(props: {
         await resource.update({ filterByTk: props.record?.id, values });
       }
       props.onSubmitted();
-      await view.close();
     } finally {
       setSubmitting(false);
     }
-  }, [form, props, resource, view]);
+  }, [form, props, resource]);
 
   const StorageFormBody = useMemo(() => lazy(props.storageType.formLoader), [props.storageType]);
   const title = `${props.mode === 'create' ? t('Add new') : t('Edit')} - ${t(props.storageType.title)}`;
 
   return (
-    <div>
-      {view.Header ? (
-        <view.Header
-          title={
-            <span className={drawerTitleClassName}>
-              <Button
-                type="text"
-                size="small"
-                icon={<CloseOutlined />}
-                onClick={async () => {
-                  await view.close();
-                }}
-              />
-              <span>{title}</span>
-            </span>
-          }
-        />
-      ) : null}
+    <DrawerFormLayout
+      title={title}
+      onSubmit={handleSubmit}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+    >
       <Form form={form} layout="vertical" initialValues={initialValues} className={storageFormClassName}>
         <Form.Item name="type" hidden>
           <Input />
@@ -142,23 +123,7 @@ function StorageFormView(props: {
           <StorageFormBody />
         </Suspense>
       </Form>
-      {view.Footer ? (
-        <view.Footer>
-          <Space>
-            <Button
-              onClick={async () => {
-                await view.close();
-              }}
-            >
-              {t('Cancel')}
-            </Button>
-            <Button type="primary" loading={submitting} onClick={handleSubmit}>
-              {t('Submit')}
-            </Button>
-          </Space>
-        </view.Footer>
-      ) : null}
-    </div>
+    </DrawerFormLayout>
   );
 }
 

@@ -8,6 +8,7 @@
  */
 
 export * from './createFormRegistry';
+export * from './DrawerFormLayout';
 export * from './EnvVariableInput';
 export * from './FileSizeInput';
 export * from './JsonTextArea';
