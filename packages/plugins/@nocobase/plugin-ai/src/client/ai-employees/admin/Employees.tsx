@@ -11,7 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { Avatar as AntdAvatar, Radio, Tabs } from 'antd';
 import { ExtendCollectionsProvider, SchemaComponent, useAPIClient, useTableBlockContext } from '@nocobase/client';
 import { useT } from '../../locale';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { avatars } from '../avatars';
 import { ProfileSettings } from './ProfileSettings';
@@ -38,7 +38,11 @@ const AIEmployeeForm: React.FC<{
 }> = ({ edit }) => {
   const t = useT();
   const api = useAPIClient();
+  const form = useForm();
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
+  const chatSettings = form.values?.chatSettings ?? {};
+  const showSkills = chatSettings.enableSkills !== false;
+  const showTools = chatSettings.enableTools !== false;
 
   useEffect(() => {
     api
@@ -71,16 +75,24 @@ const AIEmployeeForm: React.FC<{
           children: <ModelSettings />,
           forceRender: true,
         },
-        {
-          key: 'skills',
-          label: t('Skills'),
-          children: <SkillSettings />,
-        },
-        {
-          key: 'tools',
-          label: t('Tools'),
-          children: <ToolSettings />,
-        },
+        ...(showSkills
+          ? [
+              {
+                key: 'skills',
+                label: t('Skills'),
+                children: <SkillSettings />,
+              },
+            ]
+          : []),
+        ...(showTools
+          ? [
+              {
+                key: 'tools',
+                label: t('Tools'),
+                children: <ToolSettings />,
+              },
+            ]
+          : []),
         ...(knowledgeBaseEnabled
           ? [
               {

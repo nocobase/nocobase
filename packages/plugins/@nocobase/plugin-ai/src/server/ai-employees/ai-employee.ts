@@ -124,6 +124,26 @@ export class AIEmployee {
     this.protocol = ChatStreamProtocol.fromContext(ctx);
   }
 
+  private get chatSettings() {
+    return (this.employee.get?.('chatSettings') ?? (this.employee as any).chatSettings ?? {}) as {
+      systemPromptMode?: 'default' | 'raw' | 'none';
+      enableSkills?: boolean;
+      enableTools?: boolean;
+    };
+  }
+
+  private get systemPromptMode() {
+    return this.chatSettings.systemPromptMode ?? 'default';
+  }
+
+  private areSkillsEnabled() {
+    return this.chatSettings.enableSkills !== false;
+  }
+
+  private areToolsEnabled() {
+    return this.chatSettings.enableTools !== false;
+  }
+
   async getFormatMessages(userMessages: AIMessageInput[]) {
     const { provider } = await this.plugin.aiManager.getLLMService({
       ...this.model,
@@ -771,14 +791,21 @@ export class AIEmployee {
   }
 
   async getSystemPrompt(userMessages: AIMessageInput[]) {
+    if (this.systemPromptMode === 'none') {
+      return '';
+    }
+
+    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
+    if (this.systemPromptMode === 'raw') {
+      return about;
+    }
+
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id ?? 0,
         aiEmployee: this.employee.username,
       },
     });
-
-    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
 
     let background = '';
     if (this.systemMessage) {
@@ -1345,6 +1372,9 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getAIEmployeeTools() {
+    if (!this.areToolsEnabled()) {
+      return [];
+    }
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
     if (this.webSearch === true) {
       const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH);
@@ -1390,6 +1420,9 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getAvailableSkills(): Promise<SkillsEntry[]> {
+    if (!this.areSkillsEnabled()) {
+      return [];
+    }
     const { skillsManager } = this.plugin.ai;
     const aIEmployeeTools = await this.getAIEmployeeTools();
     const getSkill = aIEmployeeTools.find((it) => it.definition.name === 'getSkill');
@@ -1420,6 +1453,12 @@ If information is missing, clearly state it in the summary.</Important>`;
     tools: ToolsEntry[];
     baseToolNames: Set<string>;
   }> {
+    if (!this.areToolsEnabled()) {
+      return {
+        tools: [],
+        baseToolNames: new Set(),
+      };
+    }
     const baseTools = await this.getAIEmployeeTools();
     const toolMap = await this.getToolsMap();
     const availableSkills = await this.getAvailableSkills();

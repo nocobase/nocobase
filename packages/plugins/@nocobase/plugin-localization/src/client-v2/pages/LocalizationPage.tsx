@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SyncOutlined, UploadOutlined } from '@ant-design/icons';
+import { ReloadOutlined, SyncOutlined, UploadOutlined } from '@ant-design/icons';
 import { Schema } from '@formily/react';
 import { languageCodes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
@@ -22,6 +22,7 @@ import {
   Drawer,
   Form,
   Input,
+  Modal,
   Popover,
   Popconfirm,
   Radio,
@@ -63,7 +64,7 @@ type SourceOption = {
   title: string;
 };
 
-type TranslationMode = 'full' | 'incremental';
+type TranslationMode = 'full' | 'incremental' | 'selected';
 
 type LocalizationTask = Task & {
   mode: TranslationMode;
@@ -276,6 +277,8 @@ export function LocalizationPageContent() {
               </Typography>
               <Select
                 allowClear
+                showSearch
+                optionFilterProp="label"
                 placeholder={t('Module')}
                 style={{ minWidth: 220 }}
                 options={modules}
@@ -309,11 +312,14 @@ export function LocalizationPageContent() {
                   {t('Delete translation')}
                 </Button>
               </Popconfirm>
+              <Button icon={<ReloadOutlined />} loading={loading} onClick={refresh}>
+                {t('Refresh')}
+              </Button>
               <SyncResources sources={sources} loading={sourcesLoading} refresh={refresh} />
               <Button type="primary" icon={<UploadOutlined />} onClick={publish}>
                 {t('Publish')}
               </Button>
-              <LinaEmployee />
+              <LinaEmployee selectedRowKeys={selectedRowKeys} />
             </Space>
           </Col>
         </Row>
@@ -326,7 +332,6 @@ export function LocalizationPageContent() {
           rowSelection={{
             selectedRowKeys,
             onChange: setSelectedRowKeys,
-            getCheckboxProps: (record) => ({ disabled: !record.translationId }),
           }}
         />
       </Space>
@@ -376,7 +381,8 @@ export function LocalizationPageContent() {
   );
 }
 
-function LinaEmployee() {
+function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
+  const { selectedRowKeys } = props;
   const ctx = useFlowContext();
   const t = useT();
   const api = ctx.app.apiClient;
@@ -387,24 +393,62 @@ function LinaEmployee() {
   };
 
   const createTask = async (mode: TranslationMode) => {
+    if (mode === 'selected' && !selectedRowKeys.length) {
+      message.error(t('Please select the records you want to translate'));
+      return;
+    }
     setLoadingMode(mode);
     try {
+      const values = {
+        mode,
+        locale: currentLocale,
+        employeeUsername: 'lina',
+        textIds: mode === 'selected' ? selectedRowKeys : undefined,
+      };
+      const previewResponse = await api.resource(LOCALIZATION_RESOURCE).aiTranslatePreview({
+        values,
+      });
+      const preview = previewResponse?.data?.data || previewResponse?.data;
+      const confirmed = await new Promise<boolean>((resolve) => {
+        Modal.confirm({
+          title: t('Confirm translation task'),
+          content: (
+            <Space direction="vertical" size={8}>
+              <div>
+                {t('Entries to translate')}: {preview?.count ?? 0}
+              </div>
+              <div>
+                {t('Provider')}: {preview?.providerTitle || preview?.provider || '-'}
+              </div>
+              <div>
+                {t('Model')}: {preview?.model || '-'}
+              </div>
+            </Space>
+          ),
+          okText: t('Confirm'),
+          cancelText: t('Cancel'),
+          onOk: () => resolve(true),
+          onCancel: () => resolve(false),
+        });
+      });
+      if (!confirmed) {
+        return;
+      }
       await api.resource(LOCALIZATION_RESOURCE).aiTranslate({
-        values: {
-          mode,
-          locale: currentLocale,
-          employeeUsername: 'lina',
-        },
+        values,
       });
       message.success(t('Async task created'));
+    } catch (error) {
+      message.error(error?.message || t('Failed to create async task'));
     } finally {
       setLoadingMode(null);
     }
   };
 
   const tasks: LocalizationTask[] = [
-    { mode: 'full', title: t('Full translation') },
     { mode: 'incremental', title: t('Incremental translation') },
+    { mode: 'selected', title: t('Selected translation') },
+    { mode: 'full', title: t('Full translation') },
   ];
 
   return (
@@ -426,6 +470,7 @@ function SyncResources(props: { sources: SourceOption[]; loading?: boolean; refr
   const t = useT();
   const api = ctx.app.apiClient;
   const [checkedList, setCheckedList] = useState<string[]>([]);
+  const [resetTranslations, setResetTranslations] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const sourceNames = useMemo(() => sources.map((item) => item.name), [sources]);
 
@@ -462,6 +507,10 @@ function SyncResources(props: { sources: SourceOption[]; loading?: boolean; refr
           ))}
         </div>
       </Checkbox.Group>
+      <Divider style={{ margin: '5px 0' }} />
+      <Checkbox checked={resetTranslations} onChange={(event) => setResetTranslations(event.target.checked)}>
+        {t('Reset built-in translations')}
+      </Checkbox>
     </>
   );
 
@@ -475,13 +524,17 @@ function SyncResources(props: { sources: SourceOption[]; loading?: boolean; refr
             return message.error(t('Please select the resources you want to synchronize'));
           }
           setSyncing(true);
-          await api.resource(LOCALIZATION_RESOURCE).sync({
-            values: {
-              types: checkedList,
-            },
-          });
-          setSyncing(false);
-          refresh();
+          try {
+            await api.resource(LOCALIZATION_RESOURCE).sync({
+              values: {
+                types: checkedList,
+                resetTranslations,
+              },
+            });
+            refresh();
+          } finally {
+            setSyncing(false);
+          }
         }}
       >
         {t('Sync')}

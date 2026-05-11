@@ -126,7 +126,7 @@ export class PluginLocalizationServer extends Plugin {
     this.sourceManager.registerSource('local', {
       title: tval('System & Plugins', { ns: pkg.name }),
       sync: async (ctx) => {
-        const resources = await ctx.app.localeManager.getCacheResources(ctx.get('X-Locale') || 'en-US');
+        const resources = await ctx.app.localeManager.getBuiltInResources(ctx.get('X-Locale') || 'en-US');
         const result = {};
         Object.entries(resources).forEach(([module, resource]) => {
           if (module.startsWith(OFFICIAL_PLUGIN_PREFIX)) {

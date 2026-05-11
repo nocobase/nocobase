@@ -9,9 +9,19 @@
 
 import { Plugin } from '@nocobase/client';
 import { lazy } from '@nocobase/client';
+import { Typography } from 'antd';
+import React from 'react';
 const Localization = lazy(() => import('../client-v2/pages/LocalizationPage'));
 import { NAMESPACE } from './locale';
 import { MissingKeyHandler } from './i18n-missing-handler';
+
+const LocalizationAITranslateResult = ({ payload }) => {
+  return (
+    <Typography.Text>
+      {payload?.translated ?? 0} / {payload?.total ?? 0}
+    </Typography.Text>
+  );
+};
 
 export class PluginLocalizationClient extends Plugin {
   async load() {
@@ -23,6 +33,11 @@ export class PluginLocalizationClient extends Plugin {
       icon: 'GlobalOutlined',
       Component: Localization,
       aclSnippet: 'pm.localization.localization',
+    });
+
+    this.app.pm.get('async-task-manager')?.taskOrigins.register('localization', {
+      Result: LocalizationAITranslateResult,
+      namespace: NAMESPACE,
     });
   }
 }

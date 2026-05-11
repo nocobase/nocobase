@@ -114,7 +114,7 @@ export class Locale {
     return await this.wrapCache(`resources:${lang}`, () => this.getResources(lang));
   }
 
-  async getResources(lang: string) {
+  async getBuiltInResources(lang: string) {
     const resources = {};
     const names = this.app.pm.getPlugins().keys();
     for (const name of names) {
@@ -140,6 +140,12 @@ export class Locale {
         // empty
       }
     }
+
+    return resources;
+  }
+
+  async getResources(lang: string) {
+    const resources = await this.getBuiltInResources(lang);
 
     // handle custom resources
     const storers = this.resourceStorers.getValues();

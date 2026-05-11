@@ -46,7 +46,7 @@ describe('sync', () => {
   });
 
   it('should sync local resources', async () => {
-    vi.spyOn(app.localeManager, 'getResources').mockResolvedValue({
+    vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
       test: {
         'sync.local.test1': 'Test1',
         'sync.local.test2': 'Test2',
@@ -71,6 +71,51 @@ describe('sync', () => {
     expect(texts.length).toBe(2);
     expect(texts[0].translations[0].translation).toBe('Test1');
     expect(texts[1].translations[0].translation).toBe('Test2');
+  });
+
+  it('should reset existing local resource translations', async () => {
+    vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
+      test: {
+        'sync.local.test1': 'Test1',
+      },
+    });
+    await agent.resource('localization').sync({
+      values: {
+        types: ['local'],
+      },
+    });
+    const text = await repo.findOne({
+      filter: {
+        text: 'sync.local.test1',
+        module: 'resources.test',
+      },
+    });
+    const translationRepo = app.db.getRepository('localizationTranslations');
+    await translationRepo.update({
+      filter: {
+        locale: 'en-US',
+        textId: text.id,
+      },
+      values: {
+        translation: 'Custom Test1',
+      },
+    });
+
+    await agent.resource('localization').sync({
+      values: {
+        types: ['local'],
+        resetTranslations: true,
+      },
+    });
+
+    const translation = await translationRepo.findOne({
+      filter: {
+        locale: 'en-US',
+        textId: text.id,
+      },
+    });
+    expect(translation.translation).toBe('Test1');
+    expect(app.localeManager.getBuiltInResources).toBeCalledWith('en-US');
   });
 
   it('should get texts from db', async () => {

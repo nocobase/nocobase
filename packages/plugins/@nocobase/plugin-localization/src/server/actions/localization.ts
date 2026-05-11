@@ -17,7 +17,7 @@ const sync = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('localization') as PluginLocalizationServer;
   const resourcesInstance = plugin.resources;
   const locale = ctx.get('X-Locale') || 'en-US';
-  const { types = [] } = ctx.action.params.values || {};
+  const { types = [], resetTranslations = false } = ctx.action.params.values || {};
   if (!types.length) {
     ctx.throw(400, ctx.t('Please provide synchronization source.'));
   }
@@ -36,7 +36,7 @@ const sync = async (ctx: Context, next: Next) => {
     });
     const texts = await ctx.db.getModel('localizationTexts').findAll({
       include: [{ association: 'translations', where: { locale }, required: false }],
-      where: { '$translations.id$': null },
+      where: resetTranslations ? undefined : { '$translations.id$': null },
       transaction: t,
     });
     const translationValues = texts
@@ -53,10 +53,18 @@ const sync = async (ctx: Context, next: Next) => {
         };
       });
 
-    await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
-      transaction: t,
-    });
+    if (resetTranslations) {
+      await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
+        updateOnDuplicate: ['translation'],
+        transaction: t,
+      });
+    } else {
+      await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
+        transaction: t,
+      });
+    }
     await resourcesInstance.updateCacheTexts(newTexts);
+    await resourcesInstance.reset();
   });
   ctx.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
   await next();

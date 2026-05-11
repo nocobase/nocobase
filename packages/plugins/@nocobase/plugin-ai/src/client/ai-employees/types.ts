@@ -30,6 +30,12 @@ export type AIEmployee = {
     tools?: { name: string; autoCall?: boolean }[];
     skills?: string[];
   };
+  chatSettings?: {
+    systemPromptMode?: 'default' | 'raw' | 'none';
+    enableSkills?: boolean;
+    enableTools?: boolean;
+    [key: string]: unknown;
+  };
   builtIn?: boolean;
   webSearch?: boolean;
   toolsConflict?: boolean;
