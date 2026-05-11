@@ -28,7 +28,7 @@ export const DepartmentManagement: React.FC = () => {
   return (
     <SchemaComponentOptions components={{ SuperiorDepartmentSelect, DepartmentSelect }}>
       <Row gutter={24} style={{ flexWrap: 'nowrap' }}>
-        <Col flex="280px" style={{ borderRight: '1px solid #eee', minWidth: '350px' }}>
+        <Col flex="280px" style={{ borderRight: '1px solid #eee', minWidth: '300px' }}>
           <DepartmentsListProvider>
             <Department />
           </DepartmentsListProvider>
