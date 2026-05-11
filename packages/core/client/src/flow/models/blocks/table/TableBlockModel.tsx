@@ -930,12 +930,12 @@ const HighPerformanceTable = React.memo(
 
         return {
           onClick: async (event) => {
-            if (highlightedRowKey !== rowKey) {
-              defineClickedRowRecordVariable(model, record);
-              await model.dispatchEvent('rowClick', { record, rowIndex, event });
+            const selected = highlightedRowKey !== rowKey;
+            defineClickedRowRecordVariable(model, selected ? record : null);
+            try {
+              await model.dispatchEvent('rowClick', { record, rowIndex, event, selected });
+            } finally {
               removeClickedRowRecordVariable(model);
-            } else {
-              await model.dispatchEvent('rowClick', { record, rowIndex, event });
             }
           },
           rowIndex,
@@ -1070,7 +1070,12 @@ TableBlockModel.registerEvents({
 
       const model = ctx.model as TableBlockModel;
       const rowKey = getRowKey(ctx.inputArgs.record, model.collection.filterTargetKey);
-      if (model.props.highlightedRowKey !== rowKey) {
+      const selected = ctx.inputArgs.selected;
+      if (selected === true) {
+        model.highlightRow(ctx.inputArgs.record);
+      } else if (selected === false) {
+        model.clearHighlight();
+      } else if (model.props.highlightedRowKey !== rowKey) {
         model.highlightRow(ctx.inputArgs.record);
       } else {
         model.clearHighlight();

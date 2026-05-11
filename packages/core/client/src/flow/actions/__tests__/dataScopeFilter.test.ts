@@ -155,4 +155,84 @@ describe('normalizeDataScopeFilter', () => {
     });
     expect(resource.removeFilterGroup).not.toHaveBeenCalled();
   });
+
+  it('setTargetDataScope handler removes clicked-row data scope when row click deselects', async () => {
+    const resource = {
+      addFilterGroup: vi.fn(),
+      removeFilterGroup: vi.fn(),
+      hasData: vi.fn(() => true),
+      refresh: vi.fn(),
+    };
+    const targetModel = { resource };
+    const ctx = {
+      inputArgs: {
+        selected: false,
+      },
+      model: {
+        uid: 'action-1',
+        scheduleModelOperation: vi.fn((_uid, callback) => callback(targetModel)),
+      },
+      resolveJsonTemplate: vi.fn(async (template) => ({
+        ...template,
+        filter: {
+          ...template.filter,
+          items: [{ ...template.filter.items[0], value: null }],
+        },
+      })),
+    };
+    const params = {
+      targetBlockUid: 'target-1',
+      filter: {
+        logic: '$and',
+        items: [{ path: 'id', operator: '$eq', value: '{{ ctx.clickedRowRecord.id }}' }],
+      },
+    };
+
+    await (setTargetDataScope as any).handler(ctx, params);
+
+    expect(ctx.model.scheduleModelOperation).toHaveBeenCalledWith('target-1', expect.any(Function));
+    expect(resource.removeFilterGroup).toHaveBeenCalledWith('setTargetDataScope_action-1');
+    expect(resource.addFilterGroup).not.toHaveBeenCalled();
+    expect(resource.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('setTargetDataScope handler keeps null clicked-row field values while row is selected', async () => {
+    const resource = {
+      addFilterGroup: vi.fn(),
+      removeFilterGroup: vi.fn(),
+      hasData: vi.fn(() => false),
+      refresh: vi.fn(),
+    };
+    const targetModel = { resource };
+    const ctx = {
+      inputArgs: {
+        selected: true,
+      },
+      model: {
+        uid: 'action-1',
+        scheduleModelOperation: vi.fn((_uid, callback) => callback(targetModel)),
+      },
+      resolveJsonTemplate: vi.fn(async (template) => ({
+        ...template,
+        filter: {
+          ...template.filter,
+          items: [{ ...template.filter.items[0], value: null }],
+        },
+      })),
+    };
+    const params = {
+      targetBlockUid: 'target-1',
+      filter: {
+        logic: '$and',
+        items: [{ path: 'departmentId', operator: '$eq', value: '{{ ctx.clickedRowRecord.departmentId }}' }],
+      },
+    };
+
+    await (setTargetDataScope as any).handler(ctx, params);
+
+    expect(resource.addFilterGroup).toHaveBeenCalledWith('setTargetDataScope_action-1', {
+      $and: [{ departmentId: { $eq: null } }],
+    });
+    expect(resource.removeFilterGroup).not.toHaveBeenCalled();
+  });
 });

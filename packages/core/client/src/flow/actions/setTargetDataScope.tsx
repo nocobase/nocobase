@@ -10,6 +10,7 @@
 import {
   ActionScene,
   defineAction,
+  extractUsedVariablePaths,
   FlowModel,
   MultiRecordResource,
   useFlowContext,
@@ -19,6 +20,14 @@ import { isEmptyFilter } from '@nocobase/utils/client';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';
 import { normalizeDataScopeFilter } from './dataScopeFilter';
+
+function usesClickedRowRecord(filter: any) {
+  if (!filter) {
+    return false;
+  }
+  const used = extractUsedVariablePaths(filter) || {};
+  return Object.prototype.hasOwnProperty.call(used, 'clickedRowRecord');
+}
 
 export const setTargetDataScope = defineAction({
   name: 'setTargetDataScope',
@@ -69,13 +78,18 @@ export const setTargetDataScope = defineAction({
       return;
     }
     const model: FlowModel = ctx.model;
+    const shouldClearClickedRowRecordDataScope =
+      ctx.inputArgs?.selected === false && usesClickedRowRecord(params.filter);
+
     model.scheduleModelOperation(targetBlockUid, (targetModel) => {
       const resource = targetModel['resource'] as MultiRecordResource;
       if (!resource) {
         return;
       }
 
-      const filter = normalizeDataScopeFilter(params.filter, resolvedParams.filter);
+      const filter = shouldClearClickedRowRecordDataScope
+        ? undefined
+        : normalizeDataScopeFilter(params.filter, resolvedParams.filter);
 
       if (isEmptyFilter(filter)) {
         resource.removeFilterGroup(`setTargetDataScope_${ctx.model.uid}`);
