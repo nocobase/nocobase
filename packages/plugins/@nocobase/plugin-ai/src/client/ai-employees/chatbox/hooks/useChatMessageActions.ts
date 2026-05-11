@@ -132,7 +132,7 @@ export const useChatMessageActions = () => {
           if (toolCalls?.length) {
             for (const tc of toolCalls) {
               if (tc.willInterrupt) {
-                updateToolCallInvokeStatus(msg.content.messageId, tc.id, tc.invokeStatus);
+                updateToolCallInvokeStatus(sessionId, msg.content.messageId, tc.id, tc.invokeStatus);
               }
               if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
                 const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
@@ -383,7 +383,7 @@ export const useChatMessageActions = () => {
           if (data.body?.toolCall) {
             const { toolCall, invokeStatus } = data.body;
             if (toolCall.willInterrupt) {
-              updateToolCallInvokeStatus(toolCall.messageId, toolCall.id, invokeStatus);
+              updateToolCallInvokeStatus(sessionId, toolCall.messageId, toolCall.id, invokeStatus);
             }
           }
           store.updateLast((last) => {
@@ -647,6 +647,9 @@ export const useChatMessageActions = () => {
       sessionId = conversation.sessionId;
       targetSessionId = sessionId;
       chat.for(draftSessionId).migrateSessionState(sessionId);
+      if (draftSessionId) {
+        useChatToolCallStore.getState().migrateSessionState(draftSessionId, sessionId);
+      }
       sessionChat = getSessionChat(sessionId);
       onConversationCreate?.(sessionId);
     }
