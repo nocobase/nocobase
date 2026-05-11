@@ -22,7 +22,10 @@ export const useChatConversationActions = () => {
   const setUnreadCount = useChatConversationsStore.use.setUnreadCount();
   const setWorkflowTaskUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
 
-  const conversationsService = useRequest<Conversation[]>(
+  const conversationsService = useRequest<{
+    data: Conversation[];
+    meta: { count: number; page: number; pageSize: number; totalPage: number };
+  }>(
     (page = 1, keyword = '') => {
       const filter: any = {};
 
