@@ -7,4 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
+export * from './createFormRegistry';
+export * from './EnvVariableInput';
+export * from './FileSizeInput';
+export * from './JsonTextArea';

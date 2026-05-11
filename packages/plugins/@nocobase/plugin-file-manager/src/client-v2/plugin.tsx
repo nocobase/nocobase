@@ -11,9 +11,11 @@ import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { NAMESPACE } from '../common/constants';
-import { DisplayPreviewFieldModel, UploadActionModel, UploadFieldModel } from './models';
-import { storageTypes } from './storageTypes';
-import type { StorageTypeMeta } from './storageTypes/types';
+// Side-effect import: registers the four built-in storage forms into
+// `storageFormRegistry`. Commercial / third-party plugins that ship their own
+// storage types call `storageFormRegistry.register(...)` from their own
+// plugin entry to extend the dropdown.
+import './storage-forms';
 
 type UploadFileResult = {
   errorMessage?: string;
@@ -33,9 +35,18 @@ type StorageUploadOptions = {
   query?: Record<string, string | number | boolean>;
 };
 
-type StorageTypeRuntime = StorageTypeMeta & {
+/**
+ * Runtime extension point for storage types — separate from the settings-page
+ * `storageFormRegistry`. Plugins providing a custom upload pipeline (e.g.
+ * S3 Pro's direct-to-bucket presigned-URL flow) register an entry here so
+ * `UploadFieldModel` / `UploadActionModel` can bypass the default
+ * `apiClient.request` upload path.
+ */
+export interface StorageTypeRuntime {
+  name: string;
   upload?: (options: StorageUploadOptions) => Promise<UploadFileResult>;
-};
+  createUploadCustomRequest?: (options: any) => (option: any) => void;
+}
 
 export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, Application> {
   // refer by plugin-field-attachment-url
@@ -60,11 +71,17 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       componentLoader: () => import('./pages/FileStoragePage'),
     });
 
-    Object.values(storageTypes).forEach((storageType) => {
-      this.registerStorageType(storageType.name, storageType);
+    this.flowEngine.registerModelLoaders({
+      DisplayPreviewFieldModel: {
+        loader: () => import('./models/DisplayPreviewFieldModel'),
+      },
+      UploadActionModel: {
+        loader: () => import('./models/UploadActionModel'),
+      },
+      UploadFieldModel: {
+        loader: () => import('./models/UploadFieldModel'),
+      },
     });
-
-    this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel, UploadFieldModel });
   }
 
   registerStorageType(name: string, options: StorageTypeRuntime) {
