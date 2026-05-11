@@ -1435,11 +1435,8 @@ describe('AddSubModelButton toggleable behavior', () => {
     // click leaf toggle to add
     await user.click(screen.getByText('Leaf Toggle'));
 
-    // menu should remain visible; submenu parent still visible
+    // menu and submenu should remain visible after toggling a submenu leaf
     expect(screen.getByText('Fields')).toBeInTheDocument();
-
-    // 由于点击叶子项后二级子菜单可能被收起，这里先重新展开再断言开关状态
-    await user.hover(screen.getByText('Fields'));
     await waitFor(() => expect(screen.getByText('Leaf Toggle')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
   });

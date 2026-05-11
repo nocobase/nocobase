@@ -357,27 +357,15 @@ const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) 
 // ==================== Utility Functions ====================
 
 const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
-const getAncestorKeyPath = (path: string[]) => path.filter(Boolean).join('/');
 
-const toOpenKeyChain = (keyPath: string) => {
-  const parts = keyPath.split('/').filter(Boolean);
-  return parts.map((_, index) => parts.slice(0, index + 1).join('/'));
-};
+const normalizeOpenKeys = (nextOpenKeys: string[]) => {
+  const latestKey = nextOpenKeys[nextOpenKeys.length - 1];
 
-const normalizeOpenKeyChain = (nextOpenKeys: string[], preferredKeyPath?: string | null) => {
-  if (!nextOpenKeys.length) {
+  if (!latestKey) {
     return [];
   }
 
-  const chooseKey =
-    (preferredKeyPath &&
-      nextOpenKeys.find(
-        (key) =>
-          key === preferredKeyPath || key.startsWith(`${preferredKeyPath}/`) || preferredKeyPath.startsWith(`${key}/`),
-      )) ||
-    nextOpenKeys.sort((a, b) => b.split('/').length - a.split('/').length)[0];
-
-  return chooseKey ? toOpenKeyChain(chooseKey) : [];
+  return nextOpenKeys.filter((key) => latestKey === key || latestKey.startsWith(`${key}/`));
 };
 
 const createSearchItem = (
@@ -428,6 +416,11 @@ const createEmptyItem = (itemKey: string, t: (key: string) => string) => ({
   disabled: true,
 });
 
+const KEEP_OPEN_LABEL_STYLE: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+};
+
 // ==================== Main Component ====================
 
 // 短暂保持打开状态的注册表（用于跨父节点快速重建时的恢复）
@@ -442,7 +435,6 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [rootLoading, setRootLoading] = useState(false);
   const dropdownMaxHeight = useNiceDropdownMaxHeight();
   const t = engine.translate.bind(engine);
-  const lastHoveredKeyPathRef = useRef<string | null>(null);
 
   // 解构 menu，避免在 effect 中直接依赖整个对象，减少不必要的重跑并满足 exhaustive-deps
   const { items: menuItems, keepDropdownOpen, persistKey, stateVersion, refreshKeys, ...dropdownMenuProps } = menu;
@@ -460,17 +452,16 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
   const handleMenuOpenChange = useCallback(
     (nextOpenKeys: string[]) => {
-      if (!nextOpenKeys.length && shouldPreventClose() && lastHoveredKeyPathRef.current) {
-        const preserved = toOpenKeyChain(lastHoveredKeyPathRef.current);
-        setOpenKeys(new Set(preserved));
-        dropdownMenuProps.onOpenChange?.(preserved);
+      if (!nextOpenKeys.length && shouldPreventClose()) {
+        dropdownMenuProps.onOpenChange?.(Array.from(openKeys));
         return;
       }
 
-      setOpenKeys(new Set(normalizeOpenKeyChain(nextOpenKeys, lastHoveredKeyPathRef.current)));
-      dropdownMenuProps.onOpenChange?.(nextOpenKeys);
+      const normalized = normalizeOpenKeys(nextOpenKeys);
+      setOpenKeys(new Set(normalized));
+      dropdownMenuProps.onOpenChange?.(normalized);
     },
-    [dropdownMenuProps, shouldPreventClose],
+    [dropdownMenuProps, openKeys, shouldPreventClose],
   );
 
   // 在挂载时，若存在 persistKey 且仍在持久期内，则尝试恢复打开状态
@@ -499,7 +490,6 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
   useEffect(() => {
     if (!menuVisible) {
-      lastHoveredKeyPathRef.current = null;
       setOpenKeys(new Set());
     }
   }, [menuVisible]);
@@ -632,55 +622,73 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         return { type: 'divider', key: keyPath };
       }
 
+      const label = typeof item.label === 'string' ? t(item.label) : item.label;
+
       // 非 group 的“子菜单”也支持本层级搜索：当 item.searchable = true 且存在 children 时
       if (item.searchable && children) {
         return {
           key: keyPath,
-          label: typeof item.label === 'string' ? t(item.label) : item.label,
+          label,
           onClick: (info: any) => {},
-          onMouseEnter: () => {
-            lastHoveredKeyPathRef.current = keyPath;
-            setOpenKeys(new Set(toOpenKeyChain(keyPath)));
-          },
           children: buildSearchChildren(children, item, keyPath, path, menuVisible, resolveItems),
         };
       }
 
+      const itemShouldKeepOpen = !children && (item.keepDropdownOpen ?? keepDropdownOpen ?? false);
+      const handleLeafClick = (info: any) => {
+        if (children) {
+          return;
+        }
+
+        if (itemShouldKeepOpen) {
+          requestKeepOpen();
+        }
+
+        const extendedInfo: ExtendedMenuInfo = {
+          ...info,
+          key: info?.key ?? keyPath,
+          keyPath: info?.keyPath ?? [keyPath],
+          item: info?.item || item,
+          originalItem: item,
+          keepDropdownOpen: itemShouldKeepOpen,
+        };
+
+        menu.onClick?.(extendedInfo);
+      };
+
       return {
         key: keyPath,
-        label: typeof item.label === 'string' ? t(item.label) : item.label,
+        label: itemShouldKeepOpen ? (
+          <div
+            style={KEEP_OPEN_LABEL_STYLE}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+              requestKeepOpen();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleLeafClick({
+                key: keyPath,
+                keyPath: [keyPath],
+                item,
+                domEvent: event,
+              });
+            }}
+          >
+            {label}
+          </div>
+        ) : (
+          label
+        ),
         onClick: (info: any) => {
-          if (children) {
+          if (!itemShouldKeepOpen) handleLeafClick(info);
+        },
+        onMouseDown: () => {
+          if (!itemShouldKeepOpen) {
             return;
           }
 
-          // 检查是否应该保持下拉菜单打开
-          const itemShouldKeepOpen = item.keepDropdownOpen ?? keepDropdownOpen ?? false;
-          const ancestorKeyPath = getAncestorKeyPath(path);
-
-          // 如果需要保持菜单打开，请求保持打开状态
-          if (itemShouldKeepOpen) {
-            if (ancestorKeyPath) {
-              lastHoveredKeyPathRef.current = ancestorKeyPath;
-              setOpenKeys(new Set(toOpenKeyChain(ancestorKeyPath)));
-            }
-            requestKeepOpen();
-          }
-
-          const extendedInfo: ExtendedMenuInfo = {
-            ...info,
-            item: info.item || item,
-            originalItem: item,
-            keepDropdownOpen: itemShouldKeepOpen,
-          };
-
-          menu.onClick?.(extendedInfo);
-        },
-        onMouseEnter: () => {
-          if (children) {
-            lastHoveredKeyPathRef.current = keyPath;
-            setOpenKeys(new Set(toOpenKeyChain(keyPath)));
-          }
+          requestKeepOpen();
         },
         children:
           children && children.length > 0
