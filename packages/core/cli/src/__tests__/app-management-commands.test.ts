@@ -862,7 +862,7 @@ test('start recreates missing docker app containers through docker run', async (
       'TZ=Asia/Shanghai',
       '-v',
       `${path.resolve(resolveCliHomeRoot(), './docker-local/storage')}:/app/nocobase/storage`,
-      'nocobase/nocobase:next',
+      'nocobase/nocobase:next-full',
     ],
     {
       errorName: 'docker run',
@@ -3446,7 +3446,7 @@ test('upgrade refreshes docker envs by pulling the image and recreating the cont
         'TZ=Asia/Shanghai',
         '-v',
         '/tmp/storage/local:/app/nocobase/storage',
-        'nocobase/nocobase:alpha',
+        'nocobase/nocobase:alpha-full',
       ],
       { errorName: 'docker run', stdio: 'ignore' },
     ],

@@ -17,6 +17,11 @@ import {
   formatDbCheckAddress,
   readExternalDbConnectionConfig,
 } from '../../lib/db-connection-check.ts';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from '../../lib/docker-image.ts';
 import { commandOutput } from '../../lib/run-npm.js';
 import { validateTcpPort } from '../../lib/prompt-validators.ts';
 
@@ -45,9 +50,6 @@ type ResolvedDbCheckInput = {
   };
   runtime?: ManagedAppRuntime;
 };
-
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
-const DEFAULT_DOCKER_VERSION = 'alpha';
 
 function trimValue(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -203,7 +205,10 @@ async function runDockerDbCheck(
 ) {
   const connectionConfig = buildConnectionConfigOrThrow(command, dbConfig);
   const config = runtime.env.config ?? {};
-  const imageRef = `${trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY}:${trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION}`;
+  const imageRef = resolveDockerImageRef(config.dockerRegistry, config.downloadVersion, {
+    defaultRegistry: DEFAULT_DOCKER_REGISTRY,
+    defaultVersion: DEFAULT_DOCKER_VERSION,
+  });
   const args = [
     'run',
     '--rm',
