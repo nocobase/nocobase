@@ -11,12 +11,13 @@ import { Model, Transaction } from '@nocobase/database';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 import type { DataSourceManager } from '@nocobase/data-source-manager';
 import type PluginWorkflowServer from './Plugin';
-import { EXECUTION_STATUS, JOB_STATUS } from './constants';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import Processor from './Processor';
 
 type AbortOptions = {
   transaction?: Transaction;
+  reason?: (typeof EXECUTION_REASON)[keyof typeof EXECUTION_REASON];
 };
 
 export function validateCollectionField(
@@ -79,29 +80,36 @@ export async function abortExecution(
   const logger = plugin.getLogger(execution.workflowId);
   const ownTransaction = !options.transaction;
   const transaction = options.transaction ?? (await plugin.useDataSourceTransaction('main', null, true));
-  const ExecutionModelClass = plugin.db.getModel('executions');
+  const ExecutionRepo = plugin.db.getRepository('executions');
   const JobRepo = plugin.db.getRepository('jobs');
 
   try {
-    const [affected] = await ExecutionModelClass.update(
-      {
-        status: EXECUTION_STATUS.ABORTED,
-      },
-      {
-        where: {
-          id: execution.id,
-          status: EXECUTION_STATUS.STARTED,
-        },
-        transaction,
-      },
-    );
+    const lockedExecution = await ExecutionRepo.findOne({
+      filterByTk: execution.id,
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
 
-    if (!affected) {
+    if (!lockedExecution || lockedExecution.status !== EXECUTION_STATUS.STARTED) {
       if (ownTransaction) {
         await transaction.commit();
       }
       return false;
     }
+
+    await lockedExecution.update(
+      {
+        status: EXECUTION_STATUS.ABORTED,
+        ...(options.reason
+          ? {
+              reason: options.reason,
+            }
+          : {}),
+      },
+      {
+        transaction,
+      },
+    );
 
     const pendingJobs = await JobRepo.find({
       filter: {
@@ -133,10 +141,11 @@ export async function abortExecution(
     });
 
     for (const child of childExecutions) {
-      await abortExecution(plugin, child, { transaction });
+      await abortExecution(plugin, child, { transaction, reason: EXECUTION_REASON.PARENT_ABORTED });
     }
 
     execution.set('status', EXECUTION_STATUS.ABORTED);
+    execution.set('reason', options.reason ?? null);
     plugin.timeoutManager.clear(execution.id);
     plugin.abortRunningExecution(execution.id);
 

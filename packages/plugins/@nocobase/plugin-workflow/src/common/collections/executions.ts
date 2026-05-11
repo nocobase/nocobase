@@ -93,6 +93,17 @@ export default {
       },
     },
     {
+      type: 'string',
+      name: 'reason',
+      uiSchema: {
+        title: `{{t("Reason", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        enum: '{{ExecutionReasonOptions}}',
+      },
+    },
+    {
       type: 'boolean',
       name: 'dispatched',
       defaultValue: false,

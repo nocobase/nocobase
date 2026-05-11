@@ -18,6 +18,7 @@ export default class ExecutionModel extends Model {
   declare title: string;
   declare context: any;
   declare status: number;
+  declare reason?: string | null;
   declare dispatched: boolean;
   declare parentExecutionId?: number | null;
   declare stack?: Array<number | string>;

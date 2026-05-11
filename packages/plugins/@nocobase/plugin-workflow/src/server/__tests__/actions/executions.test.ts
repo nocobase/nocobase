@@ -10,7 +10,7 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 describe('workflow > actions > executions', () => {
   let app: MockServer;
@@ -164,6 +164,7 @@ describe('workflow > actions > executions', () => {
       const e2 = await workflow.getExecutions();
       expect(e2.length).toBe(1);
       expect(e2[0].get('status')).toBe(EXECUTION_STATUS.ABORTED);
+      expect(e2[0].get('reason')).toBe(EXECUTION_REASON.MANUAL_CANCEL);
       const jobs = await e2[0].getJobs();
       expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
     });

@@ -62,7 +62,7 @@ import { useMobilePage } from '@nocobase/plugin-mobile/client';
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
   const labelUnprocessed = useLang('Unprocessed');
-  if (recordData?.execution?.status && !recordData?.status) {
+  if (recordData?.execution?.status && recordData?.status == null) {
     return <Tag>{labelUnprocessed}</Tag>;
   }
   return props.children;
@@ -667,7 +667,7 @@ const StatusFilterMap = {
     'execution.status': EXECUTION_STATUS.STARTED,
   },
   completed: {
-    status: [TASK_STATUS.RESOLVED, TASK_STATUS.REJECTED],
+    status: [TASK_STATUS.RESOLVED, TASK_STATUS.ABORTED, TASK_STATUS.REJECTED],
   },
 };
 

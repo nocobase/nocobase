@@ -10,7 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 import PluginWorkflowServer from '../Plugin';
-import { EXECUTION_STATUS } from '../constants';
+import { EXECUTION_REASON, EXECUTION_STATUS } from '../constants';
 import { abortExecution } from '../utils';
 
 export async function destroy(context: Context, next: Next) {
@@ -40,7 +40,7 @@ export async function cancel(context: Context, next: Next) {
     return context.throw(400);
   }
 
-  await abortExecution(workflowPlugin, execution);
+  await abortExecution(workflowPlugin, execution, { reason: EXECUTION_REASON.MANUAL_CANCEL });
 
   context.body = execution;
   await next();

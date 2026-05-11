@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -26,12 +26,18 @@ import {
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
-import { DownOutlined, ExclamationCircleFilled, StopOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  DownOutlined,
+  ExclamationCircleFilled,
+  StopOutlined,
+  ReloadOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
 import { StatusButton } from './components/StatusButton';
-import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
+import { ExecutionReasonOptionsMap, ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { LogCollapse } from './nodes';
@@ -373,7 +379,19 @@ export function ExecutionCanvas() {
           />
         </header>
         <aside>
-          <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
+          <Tag color={statusOption.color}>
+            <Space>
+              {compile(statusOption.label)}
+              {execution.reason ? (
+                <Tooltip
+                  title={compile(ExecutionReasonOptionsMap[execution.reason]?.label ?? execution.reason)}
+                  placement="bottom"
+                >
+                  <QuestionCircleOutlined />
+                </Tooltip>
+              ) : null}
+            </Space>
+          </Tag>
           {execution.status ? null : (
             <Tooltip title={lang('Cancel the execution')}>
               <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />

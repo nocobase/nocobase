@@ -9,7 +9,7 @@
 
 import { Op, type Transaction } from '@nocobase/database';
 import type PluginWorkflowServer from './Plugin';
-import { EXECUTION_STATUS } from './constants';
+import { EXECUTION_REASON, EXECUTION_STATUS } from './constants';
 import type { ExecutionModel } from './types';
 import { abortExecution } from './utils';
 import { WorkflowTimeoutError } from './timeout-errors';
@@ -153,7 +153,10 @@ export default class ExecutionTimeoutManager {
   }
 
   async abort(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
-    const aborted = await abortExecution(this.plugin, execution, options);
+    const aborted = await abortExecution(this.plugin, execution, {
+      ...options,
+      reason: EXECUTION_REASON.TIMEOUT,
+    });
     if (aborted) {
       this.clearExecutionTimeout(execution.id);
     }
