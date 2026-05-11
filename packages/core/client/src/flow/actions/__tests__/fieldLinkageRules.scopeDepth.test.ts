@@ -21,6 +21,70 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
     targetCollection,
   };
 
+  it('ignores visibility state rules targeting relation sub-fields', () => {
+    const setProps = vi.fn();
+    const rolesItem: any = {
+      uid: 'roles-item',
+      fieldPath: 'roles',
+    };
+    const roleNameItem: any = {
+      uid: 'role-name-item',
+      fieldPath: 'roles.name',
+    };
+    const ctx: any = {
+      model: {
+        subModels: {
+          grid: {
+            subModels: {
+              items: [rolesItem, roleNameItem],
+            },
+          },
+        },
+      },
+      engine: {
+        getModel: vi.fn(),
+      },
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+    };
+
+    for (const state of ['visible', 'hidden', 'hiddenReservedValue'] as const) {
+      linkageSetFieldProps.handler(ctx, {
+        value: [
+          {
+            key: `rule-${state}`,
+            enable: true,
+            targetPath: 'roles.name',
+            state,
+            condition: { logic: '$and', items: [] },
+          },
+        ],
+        setProps,
+      });
+    }
+
+    expect(setProps).not.toHaveBeenCalled();
+
+    linkageSetFieldProps.handler(ctx, {
+      value: [
+        {
+          key: 'rule-hidden-root',
+          enable: true,
+          targetPath: 'roles',
+          state: 'hidden',
+          condition: { logic: '$and', items: [] },
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledTimes(1);
+    expect(setProps).toHaveBeenCalledWith(rolesItem, { hiddenModel: true });
+  });
+
   it('passes linkageTxId and scope depth to row-scoped setFormValues', async () => {
     const setFormValues = vi.fn(async () => undefined);
     const linkageAssignHandler = vi.fn((actionCtx: any, { addFormValuePatch }: any) => {

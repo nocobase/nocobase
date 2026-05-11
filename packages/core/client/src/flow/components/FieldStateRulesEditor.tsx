@@ -71,6 +71,44 @@ function parseTargetPathToSegments(targetPath?: string): string[] {
     .filter(Boolean);
 }
 
+export function isVisibilityFieldState(state?: FieldStateValue): boolean {
+  return state === 'visible' || state === 'hidden' || state === 'hiddenReservedValue';
+}
+
+export function isTopLevelFieldStateTargetPath(targetPath?: string): boolean {
+  return parseTargetPathToSegments(targetPath).length <= 1;
+}
+
+function getTopLevelTargetPath(targetPath?: string): string | undefined {
+  const [root] = parseTargetPathToSegments(targetPath);
+  return root || undefined;
+}
+
+function normalizeRuleTargetForState(item: FieldStateRuleItem): FieldStateRuleItem {
+  if (!isVisibilityFieldState(item?.state) || isTopLevelFieldStateTargetPath(item?.targetPath)) {
+    return item;
+  }
+
+  return {
+    ...item,
+    targetPath: getTopLevelTargetPath(item?.targetPath),
+    fieldUid: undefined,
+  };
+}
+
+export function getFieldStateCascaderOptionsForState(
+  options: FieldAssignCascaderOption[],
+  state?: FieldStateValue,
+): FieldAssignCascaderOption[] {
+  if (!isVisibilityFieldState(state)) return options;
+  return (Array.isArray(options) ? options : []).map((option) => ({
+    ...option,
+    children: undefined,
+    loading: false,
+    isLeaf: true,
+  }));
+}
+
 export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (props) => {
   const {
     t,
@@ -83,7 +121,10 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
     showEnable = true,
   } = props;
 
-  const value = Array.isArray(rawValue) ? rawValue : [];
+  const value = React.useMemo(
+    () => (Array.isArray(rawValue) ? rawValue : []).map((item) => normalizeRuleTargetForState(item)),
+    [rawValue],
+  );
   const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
     Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
   );
@@ -207,7 +248,7 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
   );
 
   const patchItem = (index: number, patch: Partial<FieldStateRuleItem>) => {
-    const next = value.map((it, i) => (i === index ? { ...it, ...patch } : it));
+    const next = value.map((it, i) => (i === index ? normalizeRuleTargetForState({ ...it, ...patch }) : it));
     onChange?.(next);
   };
 
@@ -363,6 +404,11 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
     return out;
   }, [value]);
 
+  const topLevelCascaderOptions = React.useMemo(
+    () => getFieldStateCascaderOptionsForState(cascaderOptions, 'hidden'),
+    [cascaderOptions],
+  );
+
   React.useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -437,7 +483,9 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
   };
 
   const collapseItems: CollapseProps['items'] = value.map((item, index) => {
-    const extraMetaTree = buildItemMetaTree(item.targetPath);
+    const isVisibilityState = isVisibilityFieldState(item.state);
+    const extraMetaTree = isVisibilityState ? undefined : buildItemMetaTree(item.targetPath);
+    const fieldOptionsForState = isVisibilityState ? topLevelCascaderOptions : cascaderOptions;
 
     return {
       key: getRuleKey(item, index),
@@ -456,8 +504,8 @@ export const FieldStateRulesEditor: React.FC<FieldStateRulesEditorProps> = (prop
               value={parseTargetPathToSegments(item.targetPath)}
               placeholder={t('Please select field')}
               style={{ width: '100%' }}
-              options={cascaderOptions}
-              loadData={loadCascaderData}
+              options={fieldOptionsForState}
+              loadData={isVisibilityState ? undefined : loadCascaderData}
               changeOnSelect
               showSearch={{
                 filter: (inputValue, path) => {

@@ -41,7 +41,11 @@ import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
-import { FieldStateRulesEditor } from '../components/FieldStateRulesEditor';
+import {
+  FieldStateRulesEditor,
+  isTopLevelFieldStateTargetPath,
+  isVisibilityFieldState,
+} from '../components/FieldStateRulesEditor';
 import type { FieldStateOption, FieldStateRuleItem, FieldStateValue } from '../components/FieldStateRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
@@ -514,6 +518,10 @@ function applyFieldStateRules(
     const props = getFieldStatePatchProps(item?.state, options.allowedStates);
     if (!props) {
       if (item?.state) console.warn(`Unknown state: ${item.state}`);
+      continue;
+    }
+
+    if (isVisibilityFieldState(item?.state) && item?.targetPath && !isTopLevelFieldStateTargetPath(item.targetPath)) {
       continue;
     }
 
