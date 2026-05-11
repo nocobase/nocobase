@@ -12,15 +12,18 @@ import { AttachmentsHeader } from './AttachmentsHeader';
 import { ContextItemsHeader } from './ContextItemsHeader';
 import { EditMessageHeader } from './EditMessageHeader';
 import { useChatBoxStore } from './stores/chat-box';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { HintMessageHeader } from './HintMessageHeader';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const SenderHeader: React.FC = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
   const isShowSenderHint = useChatBoxStore.use.isShowSenderHint();
-  const contextItems = useChatMessagesStore.use.contextItems();
-  const attachments = useChatMessagesStore.use.attachments();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const contextItems = chat.use.contextItems();
+  const attachments = chat.use.attachments();
 
   const hasContextItems = !!contextItems?.length;
   const hasAttachments = !!attachments?.length;

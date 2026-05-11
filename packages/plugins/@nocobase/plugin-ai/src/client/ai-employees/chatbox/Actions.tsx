@@ -14,8 +14,9 @@ import { Schema } from '@formily/react';
 import PluginAIClient from '../..';
 import { useT } from '../../locale';
 import { ActionOptions, ContextItem, Message } from '../types';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxStore } from './stores/chat-box';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const Actions: React.FC<{
   message: Message & { messageId: string };
@@ -24,28 +25,30 @@ export const Actions: React.FC<{
 }> = ({ responseType, message, value }) => {
   const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
-
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const responseLoading = chat.use.responseLoading();
+  const messages = chat.use.messages();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
 
-  const lastEmployeeMessageKey = useChatMessagesStore((state) => {
-    for (let i = state.messages.length - 1; i >= 0; i--) {
-      const msg = state.messages[i];
+  const lastEmployeeMessageKey = React.useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
       if (msg.role === currentEmployee?.username) {
         return msg.key;
       }
     }
-  });
-  const workContext = useChatMessagesStore((state) => {
-    for (let i = state.messages.length - 1; i >= 0; i--) {
-      const workContext = state.messages[i].content.workContext;
+  }, [messages, currentEmployee?.username]);
+  const workContext = React.useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const workContext = messages[i].content.workContext;
       if (workContext?.length) {
         return workContext;
       }
     }
     return null;
-  });
+  }, [messages]);
   const actions: (ActionOptions & { context: ContextItem })[] = useMemo(() => {
     if (!workContext?.length) {
       return [];

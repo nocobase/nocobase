@@ -49,6 +49,7 @@ export type Conversation = {
   title: string;
   updatedAt: string;
   aiEmployee: AIEmployee;
+  read: boolean;
 };
 
 export type ContextItem = {

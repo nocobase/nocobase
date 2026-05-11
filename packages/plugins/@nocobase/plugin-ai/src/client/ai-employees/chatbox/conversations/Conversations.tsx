@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
 import { Badge, Input, Segmented, Space } from 'antd';
 import { css } from '@emotion/css';
 import { useRequest } from '@nocobase/client';
@@ -15,12 +15,14 @@ import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { AIEmployee } from '../../types';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
+import { useChat } from '../hooks/useChat';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatMessagesStore } from '../stores/chat-messages';
-import { ConversationsList, useConversationsList } from './ConversationsList';
-import { WorkflowTasksList, useWorkflowTasksList } from './WorkflowTasksList';
+import { ConversationsList } from './ConversationsList';
+import { WorkflowTasksList } from './WorkflowTasksList';
+import { useChatConversationActions } from '../hooks/useChatConversationActions';
+import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 
 const segmentedClassName = css`
   .ant-segmented-item,
@@ -39,22 +41,74 @@ export const Conversations: React.FC = memo(() => {
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
 
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
+  const showConversations = useChatBoxStore.use.showConversations();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
   const setModel = useChatBoxStore.use.setModel();
   const expanded = useChatBoxStore.use.expanded();
 
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const conversationSegmented = useChatConversationsStore.use.conversationSegmented();
   const setConversationSegmented = useChatConversationsStore.use.setConversationSegmented();
   const keyword = useChatConversationsStore.use.keyword();
   const setKeyword = useChatConversationsStore.use.setKeyword();
 
-  const setMessages = useChatMessagesStore.use.setMessages();
+  const {
+    unreadCount: unreadConversationCount,
+    loadUnreadCounts,
+    runSearch: runSearchConversations,
+    refresh: refreshConversations,
+  } = useChatConversationActions();
+  const {
+    unreadCount: unreadWorkTaskCount,
+    runSearch: runSearchWorkflowTasks,
+    refresh: refreshWorkflowTasks,
+  } = useWorkflowTasks();
 
-  const { messagesService } = useChatMessageActions();
+  const { loadMessages, getConversationLLMActiveState, resumeStream } = useChatMessageActions();
+  const chat = useChat(currentConversation);
 
   const { clear } = useChatBoxActions();
+  const latestOpenVersionRef = useRef(0);
+  const hasActiveStream = useCallback(
+    (sessionId: string) => {
+      const sessionState = chat.for(sessionId).getState();
+      return sessionState.responseLoading || !!sessionState.abortController;
+    },
+    [chat],
+  );
+  const resumeAfterLoad = useCallback(
+    async (sessionId: string, aiEmployee?: AIEmployee) => {
+      const openVersion = latestOpenVersionRef.current + 1;
+      latestOpenVersionRef.current = openVersion;
+
+      await loadMessages(sessionId);
+      if (
+        !aiEmployee ||
+        hasActiveStream(sessionId) ||
+        latestOpenVersionRef.current !== openVersion ||
+        useChatConversationsStore.getState().currentConversation !== sessionId
+      ) {
+        return;
+      }
+
+      const llmActiveState = await getConversationLLMActiveState(sessionId);
+      if (
+        hasActiveStream(sessionId) ||
+        latestOpenVersionRef.current !== openVersion ||
+        useChatConversationsStore.getState().currentConversation !== sessionId ||
+        llmActiveState !== 'streaming'
+      ) {
+        return;
+      }
+
+      await resumeStream({
+        sessionId,
+        aiEmployee,
+      });
+    },
+    [getConversationLLMActiveState, hasActiveStream, loadMessages, resumeStream],
+  );
 
   const openConversation = useCallback(
     (sessionId: string, username?: string, model?: ModelRef) => {
@@ -63,19 +117,37 @@ export const Conversations: React.FC = memo(() => {
         return;
       }
       setCurrentConversation(sessionId);
+      const aiEmployee = username ? aiEmployeesMap[username] : undefined;
       if (username) {
-        setCurrentEmployee(aiEmployeesMap[username]);
+        setCurrentEmployee(aiEmployee);
       } else {
         setCurrentEmployee(undefined);
       }
-      setMessages([]);
-      clear();
+      const sessionChat = chat.for(sessionId);
+      const sessionState = sessionChat.getState();
+      const shouldReuseLocalSession = hasActiveStream(sessionId) && sessionState.messages.length > 0;
+      if (shouldReuseLocalSession) {
+        clear(
+          {
+            systemMessage: false,
+            attachments: false,
+            contextItems: false,
+            skillSettings: false,
+          },
+          sessionId,
+        );
+      } else {
+        sessionChat.setMessages([]);
+        clear(undefined, sessionId);
+      }
       if (model) {
         setModel(model);
       } else {
         setModel(null);
       }
-      messagesService.run(sessionId);
+      if (!shouldReuseLocalSession) {
+        resumeAfterLoad(sessionId, aiEmployee).catch(console.error);
+      }
       if (!expanded) {
         setShowConversations(false);
       }
@@ -85,22 +157,29 @@ export const Conversations: React.FC = memo(() => {
       setCurrentConversation,
       setCurrentEmployee,
       aiEmployeesMap,
-      setMessages,
+      chat,
       clear,
+      hasActiveStream,
       setModel,
-      messagesService,
+      resumeAfterLoad,
       expanded,
       setShowConversations,
     ],
   );
 
-  const conversationsController = useConversationsList({
-    onOpenConversation: openConversation,
-  });
+  useEffect(() => {
+    void loadUnreadCounts();
+  }, [loadUnreadCounts]);
 
-  const workflowTasksController = useWorkflowTasksList({
-    onOpenConversation: openConversation,
-  });
+  useEffect(() => {
+    if (showConversations) {
+      if (conversationSegmented === 'conversations') {
+        refreshConversations();
+      } else {
+        refreshWorkflowTasks();
+      }
+    }
+  }, [showConversations, conversationSegmented, refreshConversations, refreshWorkflowTasks]);
 
   return (
     <div
@@ -124,16 +203,16 @@ export const Conversations: React.FC = memo(() => {
           placeholder={t('Search')}
           onSearch={(val) => {
             if (conversationSegmented === 'conversations') {
-              conversationsController.runSearch(val);
+              runSearchConversations(val);
             } else {
-              workflowTasksController.runSearch(val);
+              runSearchWorkflowTasks(val);
             }
           }}
           onClear={() => {
             if (conversationSegmented === 'conversations') {
-              conversationsController.runSearch('');
+              runSearchConversations('');
             } else {
-              workflowTasksController.runSearch('');
+              runSearchWorkflowTasks('');
             }
           }}
           allowClear={true}
@@ -142,26 +221,27 @@ export const Conversations: React.FC = memo(() => {
           style={{ width: '100%', marginTop: 8 }}
           className={segmentedClassName}
           options={[
-            { label: t('Conversations'), value: 'conversations' },
+            {
+              label: (
+                <Space>
+                  {t('Conversations')}
+                  <Badge count={unreadConversationCount} size="small" />
+                </Space>
+              ),
+              value: 'conversations',
+            },
             {
               label: (
                 <Space>
                   {t('Workflow tasks')}
-                  <Badge count={workflowTasksController.unreadCount} size="small" />
+                  <Badge count={unreadWorkTaskCount} size="small" />
                 </Space>
               ),
               value: 'workflowTasks',
             },
           ]}
           value={conversationSegmented}
-          onChange={(value) => {
-            setConversationSegmented(value);
-            if (value === 'conversations') {
-              conversationsController.refresh();
-            } else {
-              workflowTasksController.refresh();
-            }
-          }}
+          onChange={setConversationSegmented}
         />
       </div>
       <div
@@ -173,9 +253,9 @@ export const Conversations: React.FC = memo(() => {
         }}
       >
         {conversationSegmented === 'conversations' ? (
-          <ConversationsList controller={conversationsController} />
+          <ConversationsList onOpenConversation={openConversation} />
         ) : (
-          <WorkflowTasksList controller={workflowTasksController} />
+          <WorkflowTasksList onOpenConversation={openConversation} />
         )}
       </div>
     </div>
