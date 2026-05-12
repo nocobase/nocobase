@@ -14,7 +14,7 @@ import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
 import set from 'lodash/set';
 import type Plugin from './Plugin';
-import { EXECUTION_STATUS, JOB_STATUS } from './constants';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { IJob, InstructionResult, Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel, WorkflowModel } from './types';
 import { isWorkflowTimeoutError, WorkflowTimeoutError } from './timeout-errors';
@@ -403,7 +403,11 @@ export default class Processor {
       const status =
         (<typeof Processor>this.constructor).StatusMap[s as keyof typeof Processor.StatusMap] ?? Math.sign(s);
       if (this.execution.status !== EXECUTION_STATUS.ABORTED) {
-        await this.execution.update({ status }, { transaction: this.mainTransaction });
+        const values: { status: number; reason?: string } = { status };
+        if (status === EXECUTION_STATUS.ABORTED && this.isTimeoutAborted()) {
+          values.reason = EXECUTION_REASON.TIMEOUT;
+        }
+        await this.execution.update(values, { transaction: this.mainTransaction });
       }
     }
     if (this.mainTransaction && this.mainTransaction !== this.transaction) {
