@@ -268,9 +268,9 @@ export function LocalizationPageContent() {
   return (
     <Card bordered={false}>
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Row justify="space-between" gutter={[16, 16]}>
+        <Row justify="space-between" align="middle" gutter={[16, 16]}>
           <Col flex="auto">
-            <Space wrap>
+            <Space wrap align="center">
               <Typography>
                 <Text strong>{t('Current language')}</Text>
                 <Tag style={{ marginLeft: 10 }}>{localeLabel}</Tag>
@@ -302,7 +302,7 @@ export function LocalizationPageContent() {
             </Space>
           </Col>
           <Col>
-            <Space wrap>
+            <Space wrap align="center">
               <Popconfirm
                 title={t('Delete translation')}
                 description={t('Are you sure you want to delete it?')}
@@ -455,7 +455,7 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
     <AIEmployeeShortcut
       aiEmployee={lina}
       tasks={tasks}
-      size={40}
+      size={32}
       mask={false}
       onTaskClick={(task) => createTask((task as LocalizationTask).mode)}
       loadingTaskTitle={tasks.find((task) => task.mode === loadingMode)?.title}
