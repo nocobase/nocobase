@@ -22,7 +22,7 @@ import {
   getPreviewThumbnailUrl,
   getPreviewFileUrl,
   normalizePreviewFile,
-} from '../previewer/filePreviewTypes';
+} from '../../shared/previewer/filePreviewTypes';
 
 const FilePreview = ({
   file,

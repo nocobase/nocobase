@@ -16,7 +16,7 @@ import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow
 import React, { useLayoutEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel, RecordPickerContent } from '@nocobase/client-v2';
-import { FilePreviewRenderer, getDownloadFileName } from '../previewer/filePreviewTypes';
+import { FilePreviewRenderer, getDownloadFileName } from '../../shared/previewer/filePreviewTypes';
 import {
   getUploadFieldPreviewIndex,
   normalizeUploadFieldFileList,
