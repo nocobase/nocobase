@@ -30,8 +30,7 @@ export default class PluginList extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb init`). Defaults to the current env when omitted',
+      description: 'CLI env name to inspect plugins for. Defaults to the current env when omitted',
     }),
     yes: Flags.boolean({
       char: 'y',

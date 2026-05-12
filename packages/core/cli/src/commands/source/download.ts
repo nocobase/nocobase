@@ -27,14 +27,17 @@ import {
   resolveCliLocale,
   translateCli,
 } from '../../lib/cli-locale.ts';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_REGISTRY_ZH_CN,
+  resolveDockerImageRef,
+} from '../../lib/docker-image.ts';
 import { run } from '../../lib/run-npm.ts';
 import { printVerbose, setVerboseMode, startTask, stopTask, updateTask } from '../../lib/ui.js';
 
 type DownloadSource = 'docker' | 'npm' | 'git';
 type DockerPlatform = 'auto' | 'linux/amd64' | 'linux/arm64';
 type DownloadVersionPreset = 'latest' | 'beta' | 'alpha' | 'other';
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
-const DEFAULT_DOCKER_REGISTRY_ZH_CN = 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase';
 const DEFAULT_DOCKER_PLATFORM: DockerPlatform = 'auto';
 const DEFAULT_DOWNLOAD_VERSION: DownloadVersionPreset = 'beta';
 const downloadText = (key: string, values?: Record<string, unknown>) =>
@@ -544,9 +547,15 @@ export default class SourceDownload extends Command {
   }
 
   private dockerTarPath(flags: DownloadResolvedFlags, outputAbs: string): string {
-    const image = String(flags['docker-registry'] ?? '').trim() || defaultDockerRegistryForLang(process.env.NB_LOCALE);
-    const tag = flags.version ?? 'latest';
-    const safeBase = `${image.replace(/[/:]/g, '-')}-${tag.replace(/[/\\]/g, '-')}`;
+    const imageRef = resolveDockerImageRef(
+      flags['docker-registry'],
+      flags.version,
+      {
+        defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+        defaultVersion: 'latest',
+      },
+    );
+    const safeBase = imageRef.replace(/[\\/:]/g, '-');
     return path.join(outputAbs, `${safeBase}.tar`);
   }
 
@@ -927,9 +936,14 @@ export default class SourceDownload extends Command {
   }
 
   async downloadFromDocker(flags: DownloadResolvedFlags): Promise<void> {
-    const image = String(flags['docker-registry'] ?? '').trim() || defaultDockerRegistryForLang(process.env.NB_LOCALE);
-    const tag = flags.version ?? 'latest';
-    const imageRef = `${image}:${tag}`;
+    const imageRef = resolveDockerImageRef(
+      flags['docker-registry'],
+      flags.version,
+      {
+        defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+        defaultVersion: 'latest',
+      },
+    );
     const platform = dockerPlatformArg(flags['docker-platform']);
     const pullArgs = ['pull'];
     if (platform) {

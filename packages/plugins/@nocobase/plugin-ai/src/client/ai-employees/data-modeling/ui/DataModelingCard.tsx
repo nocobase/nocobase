@@ -15,7 +15,8 @@ import { ToolsUIProperties, useToken } from '@nocobase/client';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { ToolCall } from '../../types';
 import { CollectionDataType } from '../types';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 
 export const DataModelingCard: React.FC<
   ToolsUIProperties<{
@@ -24,9 +25,11 @@ export const DataModelingCard: React.FC<
 > = ({ messageId, toolCall }) => {
   const t = useT();
   const { token } = useToken();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
-  const responseLoading = useChatMessagesStore.use.responseLoading();
-  const messages = useChatMessagesStore.use.messages();
+  const responseLoading = chat.use.responseLoading();
+  const messages = chat.use.messages();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();

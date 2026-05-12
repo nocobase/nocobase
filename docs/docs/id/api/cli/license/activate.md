@@ -25,7 +25,7 @@ nb license activate [flags]
 | `--account` | string | Akun layanan lisensi untuk aktivasi online |
 | `--password` | string | Kata sandi layanan lisensi untuk aktivasi online |
 | `--desc` | string | Nama aplikasi untuk aktivasi online |
-| `--yes` | boolean | Mengonfirmasi bahwa informasi yang dikirim benar dan akurat |
+| `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
 | `--json` | boolean | Output JSON |
 
 ## Contoh
@@ -34,6 +34,7 @@ nb license activate [flags]
 nb license activate --env app1 --key <licenseKey>
 nb license activate --env app1 --key-file ./license.txt
 nb license activate --env app1 --online
+nb license activate --env app1 --online --account aa --password bb --desc test24
 nb license activate --env app1 --online --account aa --password bb --desc test24 --yes
 nb license activate --env app1 --json --key-file ./license.txt
 ```
@@ -41,6 +42,8 @@ nb license activate --env app1 --json --key-file ./license.txt
 ## Catatan
 
 Saat aktivasi online digunakan, CLI meminta license key ke layanan lisensi dengan instance ID dan URL aplikasi dari env saat ini.
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
 ## Perintah Terkait
 

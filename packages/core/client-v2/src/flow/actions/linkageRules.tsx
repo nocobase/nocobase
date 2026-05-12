@@ -479,6 +479,41 @@ export const linkageSetActionProps = defineAction({
   },
 });
 
+export const linkageSetMenuItemProps = defineAction({
+  name: 'linkageSetMenuItemProps',
+  title: tExpr('Set menu item state'),
+  scene: ActionScene.MENU_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder={t('Please select state')}
+            style={{ width: '100%' }}
+            options={[
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
+            ]}
+            allowClear
+          />
+        );
+      },
+    },
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hidden' });
+  },
+});
+
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
   title: tExpr('Set field state'),
@@ -1288,6 +1323,7 @@ export const linkageRunjs = defineAction({
     ActionScene.BLOCK_LINKAGE_RULES,
     ActionScene.FIELD_LINKAGE_RULES,
     ActionScene.ACTION_LINKAGE_RULES,
+    ActionScene.MENU_LINKAGE_RULES,
     ActionScene.DETAILS_FIELD_LINKAGE_RULES,
     ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
@@ -1755,6 +1791,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
   const linkageRules: LinkageRule[] = params.value as LinkageRule[];
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
+  const modelsToApply = new Set<FlowModel>(allModels);
+  const patchPropsByModel = new Map<FlowModel, any>();
   const directValuePatches: Array<{ path: Array<string | number>; value: any; whenEmpty?: boolean }> = [];
   const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
   const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
@@ -1906,11 +1944,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     return null;
   };
 
-  allModels.forEach((model: any) => {
-    // 重置临时属性
-    model.__props = {};
-  });
-
   // 1. 运行所有的联动规则
   for (const rule of linkageRules.filter((r) => r.enable)) {
     const { condition: conditions, actions } = rule;
@@ -1919,10 +1952,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     if (!matched) continue;
 
     for (const action of actions) {
-      const setProps = (
-        model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
-        props: any,
-      ) => {
+      const setProps = (model: FlowModel & { __originalProps?: any; __shouldReset?: boolean }, props: any) => {
         // 存储原始值，用于恢复
         if (!model.__originalProps) {
           model.__originalProps = {
@@ -1935,19 +1965,16 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           };
         }
 
-        if (!model.__props) {
-          model.__props = {};
-        }
-
         // 临时存起来，遍历完所有规则后，再统一处理
-        model.__props = {
-          ...model.__props,
+        patchPropsByModel.set(model, {
+          ...(patchPropsByModel.get(model) || {}),
           ...props,
-        };
+        });
 
         if (allModels.indexOf(model) === -1) {
           allModels.push(model);
         }
+        modelsToApply.add(model);
       };
 
       // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
@@ -1956,15 +1983,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   }
 
   // 2. 合并去重（按 uid）后再实际更改相关 model 的状态，避免重复项把“已设置的临时属性”覆盖掉
-  const mergedByUid = new Map<
-    string,
-    FlowModel & { __originalProps?: any; __props?: any; isFork?: boolean; forkId?: number }
-  >();
+  const mergedByUid = new Map<string, FlowModel & { __originalProps?: any; isFork?: boolean; forkId?: number }>();
   const mergedPropsByUid = new Map<string, any>();
 
-  allModels.forEach((m: any) => {
+  modelsToApply.forEach((m: any) => {
     const uid = m?.uid || String(m);
-    const curProps = m.__props || {};
+    const curProps = patchPropsByModel.get(m) || {};
     if (!mergedByUid.has(uid)) {
       mergedByUid.set(uid, m);
       mergedPropsByUid.set(uid, { ...curProps });
@@ -1983,7 +2007,11 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
-    model.hidden = !!newProps.hiddenModel;
+    if (typeof model.setHidden === 'function') {
+      model.setHidden(!!newProps.hiddenModel);
+    } else {
+      model.hidden = !!newProps.hiddenModel;
+    }
 
     if (newProps.required === true) {
       const rules = (model.props.rules || []).filter((rule) => !rule.required);
@@ -2144,6 +2172,32 @@ export const actionLinkageRules = defineAction({
   useRawParams: true,
   handler: async (ctx, params) => {
     ensureFormValueDrivenLinkageRefresh(ctx, params, 'actionLinkageRules');
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
+});
+
+export const menuLinkageRules = defineAction({
+  name: 'menuLinkageRules',
+  title: tExpr('Menu linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.MENU_LINKAGE_RULES),
+          title: tExpr('Menu linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  useRawParams: true,
+  handler: async (ctx, params) => {
     const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
     return commonLinkageRulesHandler(ctx, resolved);
   },

@@ -23,7 +23,8 @@ import { ContextItem } from '../../chatbox/ContextItem';
 import { dialogController } from '../../stores/dialog-controller';
 import { namespace } from '../../../locale';
 import { ContextItem as WorkContextItem } from '../../types';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useLLMServiceCatalog } from '../../../llm-services/hooks/useLLMServiceCatalog';
 import { useLLMProviders } from '../../../llm-services/llm-providers';
 import { useT } from '../../../locale';
@@ -66,9 +67,11 @@ const Shortcut: React.FC<ShortcutProps> = ({
   });
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
   const aiEmployee = aiEmployeesMap[username];
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
   const { triggerTask } = useChatBoxActions();
-  const addContextItems = useChatMessagesStore.use.addContextItems();
+  const addContextItems = chat.addContextItems;
   const { syncContextAttachments } = useChatMessageActions();
 
   const currentAvatar = useMemo(() => {

@@ -18,12 +18,9 @@ nb env info [name] [flags]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `[name]` | string | Tên CLI env muốn xem, bỏ qua thì dùng env hiện tại |
-| `--env`, `-e` | string | Tên CLI env muốn xem, dùng thay cho positional argument |
+| `[name]` | string | Tên env đã cấu hình để xem; nếu bỏ qua, dùng env hiện tại |
 | `--json` | boolean | Output dạng JSON |
 | `--show-secrets` | boolean | Hiển thị token, mật khẩu và các giá trị bí mật ở dạng plaintext |
-
-Nếu truyền cả `[name]` và `--env`, hai giá trị phải khớp nhau.
 
 ## Ví dụ
 
@@ -31,7 +28,6 @@ Nếu truyền cả `[name]` và `--env`, hai giá trị phải khớp nhau.
 nb env info app1
 nb env info app1 --json
 nb env info app1 --show-secrets
-nb env info --env app1
 ```
 
 ## Lệnh liên quan

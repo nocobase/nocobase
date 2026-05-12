@@ -20,10 +20,13 @@ import {
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
 import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from '../../lib/docker-image.ts';
 import { commandSucceeds, run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
-
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
@@ -484,7 +487,10 @@ export default class AppUpgrade extends Command {
       );
     }
 
-    const imageRef = `${dockerRegistry}:${downloadVersion}`;
+    const imageRef = resolveDockerImageRef(dockerRegistry, downloadVersion, {
+      defaultRegistry: DEFAULT_DOCKER_REGISTRY,
+      defaultVersion: DEFAULT_DOCKER_VERSION,
+    });
     const args = [
       'run',
       '-d',

@@ -21,7 +21,7 @@ import { ToolCard } from './generative-ui/ToolCard';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
@@ -375,9 +375,9 @@ export const ErrorMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
   const currentConversation = useChatConversationsStore.use.currentConversation();
-
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
   const { resendMessages } = useChatMessageActions();
 
   const showAlert = msg.content !== 'GraphRecursionError';
@@ -399,7 +399,6 @@ export const ErrorMessage: React.FC<{
           <Button
             onClick={() => {
               let messageId: string;
-              const messages = useChatMessagesStore.getState().messages;
               const prev = messages[messages.length - 2];
               if (prev && prev.role !== 'user') {
                 messageId = prev.key as string;

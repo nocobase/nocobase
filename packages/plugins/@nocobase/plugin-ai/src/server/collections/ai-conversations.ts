@@ -75,5 +75,11 @@ export default defineCollection({
       type: 'string', // chat, task
       defaultValue: 'chat',
     },
+    {
+      name: 'read',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: true,
+    },
   ],
 });

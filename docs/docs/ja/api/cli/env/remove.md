@@ -20,7 +20,7 @@ nb env remove <name> [flags]
 
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
-| `<name>` | string | 削除する環境名 |
+| `<name>` | string | 削除する設定済み環境名 |
 | `--force`, `-f` | boolean | 確認をスキップして直接削除します |
 | `--verbose` | boolean | 詳細な進捗を表示します |
 

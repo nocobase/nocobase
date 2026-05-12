@@ -12,11 +12,13 @@ import type { ManagedAppRuntime } from './app-runtime.js';
 import { dockerContainerExists, startDockerContainer } from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
 import { resolveConfiguredEnvPath } from './cli-home.js';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from './docker-image.ts';
 import { commandSucceeds, run } from './run-npm.js';
 import Install from '../commands/install.js';
-
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
-const DEFAULT_DOCKER_VERSION = 'alpha';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
 type ManagedDownloadableLocalRuntime = Extract<ManagedAppRuntime, { kind: 'local' }> & {
   source: 'npm' | 'git';
@@ -129,7 +131,10 @@ export function buildSavedDockerRunArgs(
   const dbPassword = trimValue(config.dbPassword);
   const dockerRegistry = trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY;
   const version = trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION;
-  const imageRef = `${dockerRegistry}:${version}`;
+  const imageRef = resolveDockerImageRef(dockerRegistry, version, {
+    defaultRegistry: DEFAULT_DOCKER_REGISTRY,
+    defaultVersion: DEFAULT_DOCKER_VERSION,
+  });
 
   const missing: string[] = [];
   if (!storagePath) {

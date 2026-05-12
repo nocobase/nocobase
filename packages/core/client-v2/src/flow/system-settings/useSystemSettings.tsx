@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFlowEngine } from '@nocobase/flow-engine';
 import { useApp } from '../../flow-compat';
-import { useEffect, useState } from 'react';
+import languageCodes from '../../locale/languageCodes';
+import { useEffect, useMemo, useState } from 'react';
 
 /**
  * 读取系统设置并兼容旧 hook 的返回结构。
@@ -25,7 +27,19 @@ import { useEffect, useState } from 'react';
 export const useSystemSettings = () => {
   const app = useApp();
   const source = app.systemSettings;
+  const flowEngine = useFlowEngine({ throwError: false });
   const [, forceUpdate] = useState(0);
+  const enabledLanguages = source.data?.data?.enabledLanguages;
+  const languageOptions = useMemo(
+    () =>
+      (Array.isArray(enabledLanguages) ? enabledLanguages : [])
+        .filter((code) => languageCodes[code])
+        .map((code) => ({
+          label: languageCodes[code].label,
+          value: code,
+        })),
+    [enabledLanguages],
+  );
 
   useEffect(() => {
     void source.load();
@@ -33,6 +47,27 @@ export const useSystemSettings = () => {
       forceUpdate((value) => value + 1);
     });
   }, [source]);
+
+  useEffect(() => {
+    if (!flowEngine) {
+      return;
+    }
+
+    flowEngine.context.defineProperty('locale', {
+      get: (ctx) => ctx.api?.auth?.locale || ctx.i18n?.language,
+      cache: false,
+      meta: {
+        type: 'string',
+        title: '{{t("Current language")}}',
+        sort: 970,
+        interface: 'select',
+        uiSchema: {
+          enum: languageOptions,
+          'x-component': 'Select',
+        },
+      },
+    });
+  }, [flowEngine, languageOptions]);
 
   return {
     loading: source.loading,

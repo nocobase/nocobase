@@ -41,6 +41,13 @@ Lệnh động có request body hỗ trợ:
 
 `--body` và `--body-file` loại trừ lẫn nhau.
 
+Các lệnh API động cũng hỗ trợ:
+
+- `--env`, `-e`: tên env CLI để gửi yêu cầu tới; nếu bỏ qua thì env hiện tại sẽ được dùng
+- `--yes`, `-y`: khi `--env` được truyền tường minh và trỏ tới env khác với env hiện tại, bỏ qua bước xác nhận tương tác
+
+Nếu bạn truyền `--env` một cách tường minh và nó khác env hiện tại, CLI sẽ yêu cầu xác nhận trước. Trong terminal không tương tác hoặc phiên AI agent, hãy tự thêm `--yes` hoặc chạy `nb env use <name>` trước rồi thử lại.
+
 ## Lệnh liên quan
 
 - [`nb env update`](../env/update.md)
