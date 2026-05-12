@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css, useAPIClient, useApp, useCurrentAppInfo, useRequest } from '@nocobase/client';
-import { getSubAppName } from '@nocobase/sdk';
+import { css, useAPIClient, useCurrentAppInfo, useRequest } from '@nocobase/client';
 import { Select, Space, Spin, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
 import 'swagger-ui-dist/swagger-ui.css';
 import { useTranslation } from '../locale';
+import { createSwaggerParameterValuePersistence } from './swaggerParameterValuePersistence';
 
 const DESTINATION_URL_KEY = 'API_DOC:DESTINATION_URL_KEY';
 const getUrl = () => localStorage.getItem(DESTINATION_URL_KEY);
@@ -21,9 +21,8 @@ const getUrl = () => localStorage.getItem(DESTINATION_URL_KEY);
 const Documentation = () => {
   const apiClient = useAPIClient();
   const appInfo = useCurrentAppInfo();
-  console.log('appInfo', appInfo);
   const { t } = useTranslation();
-  const swaggerUIRef = useRef();
+  const swaggerUIRef = useRef<HTMLDivElement>(null);
   const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
   const requestInterceptor = (req) => {
     if (!req.headers['Authorization']) {
@@ -53,11 +52,20 @@ const Documentation = () => {
   }, [destination, urls]);
 
   useEffect(() => {
+    if (!swaggerUIRef.current) return;
+
     SwaggerUIBundle({
       requestInterceptor,
       url: destination,
       domNode: swaggerUIRef.current,
     });
+
+    const disposeValuePersistence = createSwaggerParameterValuePersistence(swaggerUIRef.current);
+
+    return () => {
+      disposeValuePersistence();
+      swaggerUIRef.current?.replaceChildren();
+    };
   }, [destination]);
 
   if (!destination) {
