@@ -55,6 +55,7 @@ const mocks = vi.hoisted(() => ({
   printInfo: vi.fn(),
   announceTargetEnv: vi.fn((envName: string) => mocks.printInfo(`Target env: ${envName}`)),
   isInteractiveTerminal: vi.fn(),
+  crossEnvConfirm: vi.fn(),
   promptConfirm: vi.fn(),
   promptIsCancel: vi.fn((value: unknown) => value === Symbol.for('cancel')),
   promptCancel: vi.fn(),
@@ -155,6 +156,10 @@ vi.mock('@clack/prompts', () => ({
   cancel: mocks.promptCancel,
 }));
 
+vi.mock('@inquirer/prompts', () => ({
+  confirm: mocks.crossEnvConfirm,
+}));
+
 vi.mock('../lib/run-npm.js', () => ({
   run: mocks.run,
   runNocoBaseCommand: mocks.runNocoBaseCommand,
@@ -250,6 +255,7 @@ beforeEach(() => {
   mocks.fsMkdir.mockResolvedValue(undefined);
   mocks.fsReaddir.mockResolvedValue(['package.json']);
   mocks.promptIsCancel.mockImplementation((value: unknown) => value === Symbol.for('cancel'));
+  mocks.crossEnvConfirm.mockResolvedValue(true);
   mocks.childSpawnCalls.length = 0;
   mocks.childOnceHandlers.length = 0;
   vi.mocked(spawn).mockImplementation(
@@ -2927,8 +2933,8 @@ test('down --all confirms before removing everything in interactive mode', async
   expect(mocks.promptConfirm.mock.calls).toEqual([[
     {
       message: 'Delete everything for "docker-local"? This removes the app, managed containers, storage data, and the saved CLI env config.',
-      active: 'yes',
-      inactive: 'no',
+      active: 'Yes',
+      inactive: 'No',
       initialValue: false,
     },
   ]]);
@@ -3001,8 +3007,8 @@ test('down --all confirmation calls out current env when --env is omitted', asyn
   expect(mocks.promptConfirm.mock.calls).toEqual([[
     {
       message: 'Delete everything for current env "docker-local"? This removes the app, managed containers, storage data, and the saved CLI env config.',
-      active: 'yes',
-      inactive: 'no',
+      active: 'Yes',
+      inactive: 'No',
       initialValue: false,
     },
   ]]);

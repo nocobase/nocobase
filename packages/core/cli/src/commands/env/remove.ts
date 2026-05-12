@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as p from '@clack/prompts';
+import { confirm } from '@inquirer/prompts';
 import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName, loadAuthConfig, removeEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
@@ -66,18 +66,16 @@ export default class EnvRemove extends Command {
       }
 
       const subject = args.name === currentEnv ? `current env "${args.name}"` : `env "${args.name}"`;
-      const confirmed = await p.confirm({
-        message: `Remove ${subject}? This only removes the saved CLI env config. It does not clean local app files, containers, or storage data.`,
-        active: 'Yes',
-        inactive: 'No',
-        initialValue: false,
-      });
-      if (p.isCancel(confirmed)) {
-        p.cancel('Canceled.');
+      let confirmed = false;
+      try {
+        confirmed = await confirm({
+          message: `Remove ${subject}? Only the saved CLI env config will be removed.`,
+          default: false,
+        });
+      } catch {
         return;
       }
       if (!confirmed) {
-        p.cancel('Canceled.');
         return;
       }
     }
@@ -87,13 +85,13 @@ export default class EnvRemove extends Command {
 
     if (result.hasEnvs) {
       if (args.name === currentEnv) {
-        p.outro(`Removed env "${result.removed}". Switched current env to "${await getCurrentEnvName({ scope })}".`);
+        this.log(`Removed env "${result.removed}". Switched current env to "${await getCurrentEnvName({ scope })}".`);
         return;
       }
-      p.outro(`Removed env "${result.removed}".`);
+      this.log(`Removed env "${result.removed}".`);
       return;
     }
 
-    p.outro(`Removed env "${result.removed}". No envs configured.`);
+    this.log(`Removed env "${result.removed}". No envs configured.`);
   }
 }

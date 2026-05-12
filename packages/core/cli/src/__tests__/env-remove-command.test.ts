@@ -14,19 +14,13 @@ const mocks = vi.hoisted(() => ({
   loadAuthConfig: vi.fn(),
   removeEnv: vi.fn(),
   confirm: vi.fn(),
-  outro: vi.fn(),
-  isCancel: vi.fn(),
-  cancel: vi.fn(),
   isInteractiveTerminal: vi.fn(),
   printVerbose: vi.fn(),
   setVerboseMode: vi.fn(),
 }));
 
-vi.mock('@clack/prompts', () => ({
+vi.mock('@inquirer/prompts', () => ({
   confirm: mocks.confirm,
-  outro: mocks.outro,
-  isCancel: mocks.isCancel,
-  cancel: mocks.cancel,
 }));
 
 vi.mock('../lib/auth-store.ts', () => ({
@@ -43,7 +37,6 @@ vi.mock('../lib/ui.ts', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.isCancel.mockReturnValue(false);
   mocks.loadAuthConfig.mockResolvedValue({
     envs: {
       legacy: {},
@@ -66,12 +59,13 @@ test('env remove reports the new current env after removing the current env', as
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.confirm.mockResolvedValue(true);
 
+  const log = vi.fn();
   const command = Object.assign(Object.create(EnvRemove.prototype), {
     parse: vi.fn(async () => ({
       args: { name: 'legacy' },
       flags: { yes: false, force: false, verbose: false },
     })),
-    log: vi.fn(),
+    log,
     error: (message: string) => {
       throw new Error(message);
     },
@@ -79,7 +73,7 @@ test('env remove reports the new current env after removing the current env', as
 
   await EnvRemove.prototype.run.call(command);
 
-  expect(mocks.outro).toHaveBeenCalledWith('Removed env "legacy". Switched current env to "next".');
+  expect(log).toHaveBeenCalledWith('Removed env "legacy". Switched current env to "next".');
 });
 
 test('env remove confirms before removing a non-current env', async () => {
@@ -93,12 +87,13 @@ test('env remove confirms before removing a non-current env', async () => {
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.confirm.mockResolvedValue(true);
 
+  const log = vi.fn();
   const command = Object.assign(Object.create(EnvRemove.prototype), {
     parse: vi.fn(async () => ({
       args: { name: 'staging' },
       flags: { yes: false, force: false, verbose: false },
     })),
-    log: vi.fn(),
+    log,
     error: (message: string) => {
       throw new Error(message);
     },
@@ -107,27 +102,26 @@ test('env remove confirms before removing a non-current env', async () => {
   await EnvRemove.prototype.run.call(command);
 
   expect(mocks.confirm).toHaveBeenCalledWith({
-    message: 'Remove env "staging"? This only removes the saved CLI env config. It does not clean local app files, containers, or storage data.',
-    active: 'Yes',
-    inactive: 'No',
-    initialValue: false,
+    message: 'Remove env "staging"? Only the saved CLI env config will be removed.',
+    default: false,
   });
   expect(mocks.removeEnv).toHaveBeenCalledWith('staging', expect.any(Object));
-  expect(mocks.outro).toHaveBeenCalledWith('Removed env "staging".');
+  expect(log).toHaveBeenCalledWith('Removed env "staging".');
 });
 
-test('env remove uses p.cancel when the user answers No', async () => {
+test('env remove exits quietly when the user answers No', async () => {
   const { default: EnvRemove } = await import('../commands/env/remove.js');
   mocks.getCurrentEnvName.mockResolvedValue('current');
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.confirm.mockResolvedValue(false);
 
+  const log = vi.fn();
   const command = Object.assign(Object.create(EnvRemove.prototype), {
     parse: vi.fn(async () => ({
       args: { name: 'staging' },
       flags: { yes: false, force: false, verbose: false },
     })),
-    log: vi.fn(),
+    log,
     error: (message: string) => {
       throw new Error(message);
     },
@@ -135,9 +129,8 @@ test('env remove uses p.cancel when the user answers No', async () => {
 
   await EnvRemove.prototype.run.call(command);
 
-  expect(mocks.cancel).toHaveBeenCalledWith('Canceled.');
   expect(mocks.removeEnv).not.toHaveBeenCalled();
-  expect(mocks.outro).not.toHaveBeenCalled();
+  expect(log).not.toHaveBeenCalled();
 });
 
 test('env remove uses current env wording when removing the current env', async () => {
@@ -167,10 +160,8 @@ test('env remove uses current env wording when removing the current env', async 
   await EnvRemove.prototype.run.call(command);
 
   expect(mocks.confirm).toHaveBeenCalledWith({
-    message: 'Remove current env "legacy"? This only removes the saved CLI env config. It does not clean local app files, containers, or storage data.',
-    active: 'Yes',
-    inactive: 'No',
-    initialValue: false,
+    message: 'Remove current env "legacy"? Only the saved CLI env config will be removed.',
+    default: false,
   });
 });
 
@@ -198,7 +189,7 @@ test('env remove skips confirmation with --yes', async () => {
 
   expect(mocks.confirm).not.toHaveBeenCalled();
   expect(mocks.removeEnv).toHaveBeenCalledWith('staging', expect.any(Object));
-  expect(mocks.outro).toHaveBeenCalledWith('Removed env "staging".');
+  expect(command.log).toHaveBeenCalledWith('Removed env "staging".');
 });
 
 test('env remove keeps --force as a hidden compatibility alias', async () => {
@@ -225,7 +216,7 @@ test('env remove keeps --force as a hidden compatibility alias', async () => {
 
   expect(mocks.confirm).not.toHaveBeenCalled();
   expect(mocks.removeEnv).toHaveBeenCalledWith('staging', expect.any(Object));
-  expect(mocks.outro).toHaveBeenCalledWith('Removed env "staging".');
+  expect(command.log).toHaveBeenCalledWith('Removed env "staging".');
 });
 
 test('env remove refuses non-interactive removal without --yes', async () => {
@@ -248,6 +239,7 @@ test('env remove refuses non-interactive removal without --yes', async () => {
     'Refusing to remove env "staging" without confirmation in non-interactive mode. Re-run with `--yes` to remove only the saved CLI env config.',
   );
   expect(mocks.removeEnv).not.toHaveBeenCalled();
+  expect(mocks.confirm).not.toHaveBeenCalled();
 });
 
 test('env remove fails before prompting when the env is missing', async () => {
@@ -289,12 +281,13 @@ test('env remove reports when no envs remain', async () => {
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.confirm.mockResolvedValue(true);
 
+  const log = vi.fn();
   const command = Object.assign(Object.create(EnvRemove.prototype), {
     parse: vi.fn(async () => ({
       args: { name: 'legacy' },
       flags: { yes: false, force: false, verbose: false },
     })),
-    log: vi.fn(),
+    log,
     error: (message: string) => {
       throw new Error(message);
     },
@@ -302,5 +295,5 @@ test('env remove reports when no envs remain', async () => {
 
   await EnvRemove.prototype.run.call(command);
 
-  expect(mocks.outro).toHaveBeenCalledWith('Removed env "legacy". No envs configured.');
+  expect(log).toHaveBeenCalledWith('Removed env "legacy". No envs configured.');
 });

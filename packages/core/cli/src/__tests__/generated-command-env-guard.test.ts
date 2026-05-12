@@ -15,7 +15,6 @@ const mocks = vi.hoisted(() => ({
   applyPostProcessor: vi.fn(),
   registerPostProcessors: vi.fn(),
   confirm: vi.fn(),
-  isCancel: vi.fn(),
 }));
 
 vi.mock('../lib/auth-store.js', () => ({
@@ -34,9 +33,8 @@ vi.mock('../post-processors/index.js', () => ({
   registerPostProcessors: mocks.registerPostProcessors,
 }));
 
-vi.mock('@clack/prompts', () => ({
+vi.mock('@inquirer/prompts', () => ({
   confirm: mocks.confirm,
-  isCancel: mocks.isCancel,
 }));
 
 import { GeneratedApiCommand, createGeneratedFlags, type GeneratedOperation } from '../lib/generated-command.js';
@@ -100,7 +98,6 @@ beforeEach(() => {
     data: { ok: true },
   });
   mocks.applyPostProcessor.mockResolvedValue({ ok: true });
-  mocks.isCancel.mockReturnValue(false);
 });
 
 test('generated API commands reject cross-env requests in non-interactive agent sessions without --yes', async () => {
@@ -137,7 +134,7 @@ test('generated API commands ask for confirmation before cross-env requests in i
     expect(mocks.confirm).toHaveBeenCalledWith({
       message:
         'Current env is "dev", but this command targets "prod" via --env. Continue without switching the current env?',
-      initialValue: false,
+      default: false,
     });
     expect(mocks.executeApiRequest).toHaveBeenCalledOnce();
     expect(log).toHaveBeenCalledWith(JSON.stringify({ ok: true }, null, 2));
@@ -154,8 +151,7 @@ test('generated API commands treat a canceled confirmation as a no-op', async ()
     verbose: false,
     'json-output': true,
   });
-  mocks.confirm.mockResolvedValue(Symbol.for('cancel'));
-  mocks.isCancel.mockReturnValue(true);
+  mocks.confirm.mockRejectedValue(new Error('canceled'));
 
   try {
     await TestGeneratedCommand.prototype.run.call(command);

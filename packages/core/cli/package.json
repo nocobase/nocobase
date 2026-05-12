@@ -83,6 +83,7 @@
     "@clack/prompts": "^0.9.1",
     "@nocobase/license-kit": "^0.3.8",
     "@oclif/core": "^4.10.4",
+    "@inquirer/prompts": "^8.4.3",
     "cross-spawn": "^7.0.6",
     "lodash": "^4.17.21",
     "mariadb": "^2.5.6",

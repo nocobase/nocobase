@@ -70,12 +70,10 @@ const mocks = vi.hoisted(() => ({
   commandOutput: vi.fn(),
   isInteractiveTerminal: vi.fn(),
   announceTargetEnv: vi.fn(),
-  promptSelect: vi.fn(),
-  promptText: vi.fn(),
-  promptPassword: vi.fn(),
-  promptConfirm: vi.fn(),
-  promptCancel: vi.fn(),
-  promptIsCancel: vi.fn(),
+  activateSelect: vi.fn(),
+  activateInput: vi.fn(),
+  activatePassword: vi.fn(),
+  crossEnvConfirm: vi.fn(),
   fetch: vi.fn(),
   createStoragePluginsSymlink: vi.fn(),
   renderTable: vi.fn(() => 'TABLE'),
@@ -130,13 +128,11 @@ vi.mock('../lib/ui.js', async (importOriginal) => {
   };
 });
 
-vi.mock('@clack/prompts', () => ({
-  select: mocks.promptSelect,
-  text: mocks.promptText,
-  password: mocks.promptPassword,
-  confirm: mocks.promptConfirm,
-  cancel: mocks.promptCancel,
-  isCancel: mocks.promptIsCancel,
+vi.mock('@inquirer/prompts', () => ({
+  select: mocks.activateSelect,
+  input: mocks.activateInput,
+  password: mocks.activatePassword,
+  confirm: mocks.crossEnvConfirm,
 }));
 
 vi.mock('../lib/plugin-storage.js', async (importOriginal) => {
@@ -151,9 +147,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.getCurrentEnvName.mockResolvedValue('dev');
   mocks.isInteractiveTerminal.mockReturnValue(false);
-  mocks.promptIsCancel.mockReturnValue(false);
-  mocks.promptPassword.mockResolvedValue('bb');
-  mocks.promptConfirm.mockResolvedValue(true);
+  mocks.activatePassword.mockResolvedValue('bb');
+  mocks.crossEnvConfirm.mockResolvedValue(true);
   mocks.createStoragePluginsSymlink.mockResolvedValue(undefined);
   mocks.checkExternalDbConnection.mockResolvedValue(undefined);
   mocks.readExternalDbConnectionConfig.mockImplementation((values: Record<string, unknown>) => ({
@@ -993,10 +988,10 @@ test('license activate supports interactive pasted key input', async () => {
 
   try {
     mocks.isInteractiveTerminal.mockReturnValue(true);
-    mocks.promptSelect
+    mocks.activateSelect
       .mockResolvedValueOnce('key')
       .mockResolvedValueOnce('key');
-    mocks.promptText.mockResolvedValue('license-key-raw');
+    mocks.activateInput.mockResolvedValue('license-key-raw');
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
       envName: 'app1',
@@ -1050,8 +1045,8 @@ test('license activate supports interactive pasted key input', async () => {
 
     await LicenseActivate.prototype.run.call(command);
 
-    expect(String(mocks.promptSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
-    expect(String(mocks.promptText.mock.calls[0]?.[0]?.message)).toContain('License key');
+    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
+    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toContain('License key');
     expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
   } finally {
     await rm(storagePath, { recursive: true, force: true });
@@ -1262,11 +1257,12 @@ test('license activate supports interactive online activation', async () => {
 
   try {
     mocks.isInteractiveTerminal.mockReturnValue(true);
-    mocks.promptSelect.mockResolvedValueOnce('online');
-    mocks.promptText
+    mocks.activateSelect.mockResolvedValueOnce('online');
+    mocks.activateInput
       .mockResolvedValueOnce('aa')
       .mockResolvedValueOnce('test app');
-    mocks.promptPassword.mockResolvedValueOnce('bb');
+    mocks.activatePassword.mockReset();
+    mocks.activatePassword.mockResolvedValueOnce('bb');
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
       envName: 'app1',
@@ -1332,15 +1328,15 @@ test('license activate supports interactive online activation', async () => {
 
     await LicenseActivate.prototype.run.call(command);
 
-    expect(String(mocks.promptSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
-    expect(String(mocks.promptText.mock.calls[0]?.[0]?.message)).toContain('Service account');
-    expect(String(mocks.promptPassword.mock.calls[0]?.[0]?.message)).toContain('Service password');
-    expect(String(mocks.promptText.mock.calls[1]?.[0]?.message)).toContain('Application name');
-    expect(mocks.promptConfirm).toHaveBeenCalledTimes(1);
-    expect(mocks.promptConfirm).toHaveBeenCalledWith({
+    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
+    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toContain('Service account');
+    expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toContain('Service password');
+    expect(String(mocks.activateInput.mock.calls[1]?.[0]?.message)).toContain('Application name');
+    expect(mocks.crossEnvConfirm).toHaveBeenCalledTimes(1);
+    expect(mocks.crossEnvConfirm).toHaveBeenCalledWith({
       message:
         'Current env is "dev", but this command targets "app1" via --env. Continue without switching the current env?',
-      initialValue: false,
+      default: false,
     });
     expect(log.mock.calls[0]?.[0]).toContain('Activated the online license');
   } finally {
@@ -1488,7 +1484,7 @@ test('license activate supports interactive cancellation', async () => {
   const { default: LicenseActivate } = await import('../commands/license/activate.js');
 
   mocks.isInteractiveTerminal.mockReturnValue(true);
-  mocks.promptSelect.mockResolvedValueOnce('cancel');
+  mocks.activateSelect.mockResolvedValueOnce('cancel');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
     envName: 'app1',
@@ -1525,7 +1521,7 @@ test('license activate supports interactive cancellation', async () => {
 
   await LicenseActivate.prototype.run.call(command);
 
-  expect(log.mock.calls[0]?.[0]).toBe('Cancelled license activation.');
+  expect(log).not.toHaveBeenCalled();
 });
 
 test('license plugins list shows licensed and unlicensed commercial plugins', async () => {
@@ -1590,7 +1586,7 @@ test('license status asks for confirmation before cross-env requests in interact
   const restoreTerminal = setTerminalInteractivity(true);
 
   try {
-    mocks.promptConfirm.mockResolvedValue(true);
+    mocks.crossEnvConfirm.mockResolvedValue(true);
     mocks.resolveManagedAppRuntime.mockResolvedValue({
       kind: 'local',
       envName: 'prod',
@@ -1632,10 +1628,10 @@ test('license status asks for confirmation before cross-env requests in interact
 
     await LicenseStatus.prototype.run.call(command);
 
-    expect(mocks.promptConfirm).toHaveBeenCalledWith({
+    expect(mocks.crossEnvConfirm).toHaveBeenCalledWith({
       message:
         'Current env is "dev", but this command targets "prod" via --env. Continue without switching the current env?',
-      initialValue: false,
+      default: false,
     });
     expect(log.mock.calls[0]?.[0]).toContain('License status for env "prod"');
   } finally {
@@ -1692,7 +1688,7 @@ test('license plugins list lets --yes skip the interactive cross-env confirmatio
 
     await LicensePluginsList.prototype.run.call(command);
 
-    expect(mocks.promptConfirm).not.toHaveBeenCalled();
+    expect(mocks.crossEnvConfirm).not.toHaveBeenCalled();
     expect(log.mock.calls[0]?.[0]).toContain('Commercial plugins for env "prod"');
   } finally {
     restoreTerminal();
