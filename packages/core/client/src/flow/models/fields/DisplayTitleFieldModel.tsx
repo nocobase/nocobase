@@ -13,7 +13,7 @@ import { castArray } from 'lodash';
 import { css } from '@emotion/css';
 import React from 'react';
 import { FieldModel } from '../base';
-import { hasDisplayValue, normalizeDisplayValue } from './displayValueUtils';
+import { hasDisplayValue, normalizeDisplayValue } from '../utils/displayValueUtils';
 
 export class DisplayTitleFieldModel extends FieldModel {
   get collectionField(): CollectionField {

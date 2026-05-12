@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import { isValidElement } from 'react';
 
 export function hasDisplayValue(value: any) {
   return value !== undefined && value !== null && value !== '';
@@ -31,14 +31,14 @@ function getTitleCollectionField(collectionField: any, titleFieldName: string) {
 }
 
 export function normalizeDisplayValue(value: any, options: { collectionField?: any } = {}): any {
-  if (!hasDisplayValue(value) || React.isValidElement(value)) {
+  if (!hasDisplayValue(value) || isValidElement(value)) {
     return value;
   }
   if (['string', 'number', 'boolean'].includes(typeof value)) {
     return value;
   }
   if (Array.isArray(value)) {
-    const parts = value.map(normalizeDisplayValue).filter(hasDisplayValue);
+    const parts = value.map((item) => normalizeDisplayValue(item, options)).filter(hasDisplayValue);
     return parts.length ? parts.map(String).join(', ') : undefined;
   }
   if (value instanceof Date) {

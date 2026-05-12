@@ -14,7 +14,7 @@ import React from 'react';
 import { EllipsisWithTooltip } from '../../components/EllipsisWithTooltip';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base/FieldModel';
-import { hasDisplayValue, normalizeDisplayValue } from './displayValueUtils';
+import { hasDisplayValue, normalizeDisplayValue } from '../utils/displayValueUtils';
 
 export function transformNestedData(inputData) {
   const resultArray = [];
