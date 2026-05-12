@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as p from '@clack/prompts';
+import { confirm } from '@inquirer/prompts';
 import { getCurrentEnvName, getEnv, setEnvRuntime, updateEnvConnection } from './auth-store.js';
 import type { CliHomeScope } from './cli-home.js';
 import { resolveAccessToken } from './env-auth.js';
@@ -231,17 +231,14 @@ async function waitForSwaggerSchema(baseUrl: string, token?: string, role?: stri
 }
 
 async function confirmEnableApiDoc() {
-  const answer = await p.confirm({
-    message: 'Enable the API documentation plugin now?',
-    active: 'Yes',
-    inactive: 'No',
-    initialValue: false,
-  });
-  if (p.isCancel(answer)) {
-    p.cancel('Canceled.');
+  try {
+    return await confirm({
+      message: 'Enable the API documentation plugin now?',
+      default: false,
+    });
+  } catch {
     return false;
   }
-  return answer;
 }
 
 async function fetchSwaggerSchema(

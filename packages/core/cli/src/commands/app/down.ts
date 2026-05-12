@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as p from '@clack/prompts';
+import { confirm } from '@inquirer/prompts';
 import { Command, Flags } from '@oclif/core';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
@@ -155,22 +155,17 @@ async function confirmDownAll(envName: string, force: boolean, options?: { expli
     );
   }
 
-  const answer = await p.confirm({
-    message:
-      usedCurrentEnv
-        ? `Delete everything for current env "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`
-        : `Delete everything for "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`,
-    active: 'Yes',
-    inactive: 'No',
-    initialValue: false,
-  });
-
-  if (p.isCancel(answer)) {
-    p.cancel('Down cancelled.');
+  try {
+    return await confirm({
+      message:
+        usedCurrentEnv
+          ? `Delete everything for current env "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`
+          : `Delete everything for "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`,
+      default: false,
+    });
+  } catch {
     return false;
   }
-
-  return answer;
 }
 
 function formatDownCrossEnvForceRequiredMessage(currentEnv: string, requestedEnv: string): string {
