@@ -219,7 +219,7 @@ export function usePage() {
             hidden={config.inputArgs?.hidden?.value}
             {...restConfig}
             onClose={() => {
-              currentPage.close(config.result);
+              return currentPage.close(config.result);
             }}
           >
             {pageContent}

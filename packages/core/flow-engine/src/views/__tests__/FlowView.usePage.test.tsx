@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, act, waitFor, screen } from '@testing-library/react';
 import { FlowEngine } from '../../flowEngine';
 import { FlowEngineProvider } from '../../provider';
@@ -167,20 +167,65 @@ describe('FlowViewer zIndex with usePage', () => {
     );
 
     await waitFor(() => expect(api).toBeDefined());
+    const pageApi = api as NonNullable<typeof api>;
 
     await act(async () => {
-      api!.open({ target, content: <div data-testid="page1">Page 1</div> }, engine.context);
+      pageApi.open({ target, content: <div data-testid="page1">Page 1</div> }, engine.context);
     });
     await waitFor(() => expect(screen.getByTestId('page1')).toBeInTheDocument());
 
     // Opening page2 into the global embed container should destroy page1 (replace behavior).
     await act(async () => {
-      api!.open({ target, content: <div data-testid="page2">Page 2</div> }, engine.context);
+      pageApi.open({ target, content: <div data-testid="page2">Page 2</div> }, engine.context);
     });
     await waitFor(() => expect(screen.getByTestId('page2')).toBeInTheDocument());
     expect(screen.queryByTestId('page1')).not.toBeInTheDocument();
 
     unmount();
     document.body.removeChild(target);
+  });
+
+  it('keeps the embed close button usable after beforeClose blocks closing', async () => {
+    let getViewer: () => FlowViewer;
+    const beforeClose = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(fn) => {
+          getViewer = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(getViewer).toBeDefined());
+
+    await act(async () => {
+      getViewer().embed({
+        title: 'Draft editor',
+        content: (currentPage) => {
+          currentPage.beforeClose = beforeClose;
+          return <div data-testid="draft-editor">Draft editor</div>;
+        },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('draft-editor')).toBeInTheDocument());
+    const closeButton = screen.getByRole('button');
+
+    await act(async () => {
+      closeButton.click();
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('draft-editor')).toBeInTheDocument();
+
+    await act(async () => {
+      closeButton.click();
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(screen.queryByTestId('draft-editor')).not.toBeInTheDocument());
+
+    unmount();
   });
 });
