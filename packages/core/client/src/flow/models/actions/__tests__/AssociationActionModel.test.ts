@@ -114,6 +114,39 @@ describe('association action models', () => {
     expect(getAssociationSelectorContextInputArgs(ctx)).toEqual({
       collectionField: association,
       sourceId: 362872646860800,
+      associatedRecords: [],
+    });
+  });
+
+  it('passes current associated records to selector table blocks', () => {
+    const associatedRecords = [{ id: 11 }, { id: 12 }];
+    const association = {
+      name: 'tags',
+      interface: 'm2m',
+      target: 'tags',
+      sourceKey: 'id',
+      targetKey: 'id',
+    };
+    const ctx: any = {
+      blockModel: {
+        association,
+        resource: {
+          getSourceId: () => 1,
+          getData: () => associatedRecords,
+        },
+        getResourceSettingsInitParams: () => ({
+          dataSourceKey: 'main',
+          collectionName: 'tags',
+          associationName: 'posts.tags',
+          sourceId: '{{ctx.popup.record.id}}',
+        }),
+      },
+    };
+
+    expect(getAssociationSelectorContextInputArgs(ctx)).toEqual({
+      collectionField: association,
+      sourceId: 1,
+      associatedRecords,
     });
   });
 

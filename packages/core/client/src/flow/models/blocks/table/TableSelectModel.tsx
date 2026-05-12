@@ -25,6 +25,21 @@ export function getAssociationSelectForeignKeyFilter(collectionField: any) {
   };
 }
 
+export function getAssociationSelectAssociatedRecordsFilter(collection: any, associatedRecords: any[] = []) {
+  const targetKey = collection?.filterTargetKey || 'id';
+  const filterKeys = associatedRecords
+    .map((record) => record?.[targetKey])
+    .filter((value) => value !== undefined && value !== null && value !== '');
+
+  if (!filterKeys.length) {
+    return null;
+  }
+
+  return {
+    [`${targetKey}.$ne`]: filterKeys,
+  };
+}
+
 export class TableSelectModel extends TableBlockModel {
   static scene = BlockSceneEnum.select;
   rowSelectionProps: any = observable.deep({});
@@ -41,16 +56,10 @@ export class TableSelectModel extends TableBlockModel {
 
     const getSelectedRows = this.rowSelectionProps?.defaultSelectedRows;
     const selectData = typeof getSelectedRows === 'function' ? getSelectedRows() : getSelectedRows;
-    const data = (selectData && castArray(selectData)) || [];
-    const filterKeys = data
-      .map((v) => {
-        return v[this.collection.filterTargetKey];
-      })
-      .filter(Boolean);
-    if (filterKeys.length) {
-      this.resource.addFilterGroup(`${this.uid}-select`, {
-        [`${this.collection.filterTargetKey}.$ne`]: filterKeys,
-      });
+    const data = [...castArray(selectData || []), ...castArray(this.context.view.inputArgs.associatedRecords || [])];
+    const associatedRecordsFilter = getAssociationSelectAssociatedRecordsFilter(this.collection, data);
+    if (associatedRecordsFilter) {
+      this.resource.addFilterGroup(`${this.uid}-select`, associatedRecordsFilter);
     }
   }
 }

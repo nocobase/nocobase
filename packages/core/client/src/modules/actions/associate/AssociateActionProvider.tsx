@@ -44,7 +44,7 @@ export const AssociateActionProvider = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const record = useRecord();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const { resource, block, __parent, props: blockProps } = useBlockRequestContext();
+  const { resource, service, block, __parent, props: blockProps } = useBlockRequestContext();
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
   const collectionField = getCollectionJoinField(blockProps?.association);
@@ -77,7 +77,7 @@ export const AssociateActionProvider = (props) => {
     };
   };
   const getFilter = () => {
-    return buildToManyAssociationFilter(collectionField, record);
+    return buildToManyAssociationFilter(collectionField, record, service?.data?.data || []);
   };
 
   return (

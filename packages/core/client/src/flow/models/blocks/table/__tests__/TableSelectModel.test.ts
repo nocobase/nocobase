@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 import '@nocobase/client';
-import { getAssociationSelectForeignKeyFilter } from '../TableSelectModel';
+import { getAssociationSelectAssociatedRecordsFilter, getAssociationSelectForeignKeyFilter } from '../TableSelectModel';
 
 describe('TableSelectModel', () => {
   it('filters out already associated o2m records in association select table', () => {
@@ -23,6 +23,19 @@ describe('TableSelectModel', () => {
       f_y2quq75zibi: {
         $is: null,
       },
+    });
+  });
+
+  it('filters out already associated m2m records in association select table', () => {
+    expect(
+      getAssociationSelectAssociatedRecordsFilter(
+        {
+          filterTargetKey: 'id',
+        },
+        [{ id: 11 }, { id: 12 }],
+      ),
+    ).toEqual({
+      'id.$ne': [11, 12],
     });
   });
 });

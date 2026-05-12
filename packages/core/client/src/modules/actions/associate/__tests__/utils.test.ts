@@ -98,4 +98,21 @@ describe('associate action utils', () => {
       ),
     ).toEqual({});
   });
+
+  it('filters already associated many-to-many records', () => {
+    expect(
+      buildToManyAssociationFilter(
+        {
+          interface: 'm2m',
+          targetKey: 'id',
+        },
+        {
+          id: 1,
+        },
+        [{ id: 11 }, { id: 12 }],
+      ),
+    ).toEqual({
+      'id.$ne': [11, 12],
+    });
+  });
 });

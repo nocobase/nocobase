@@ -38,10 +38,12 @@ export const getAssociationSelectorContextInputArgs = (ctx: FlowModelContext | a
   const association = blockModel?.association;
   const resourceSettings = getAssociationBlockResourceSettings(ctx);
   const sourceId = blockModel?.resource?.getSourceId?.() ?? resourceSettings?.sourceId;
+  const associatedRecords = blockModel?.resource?.getData?.() || [];
 
   return {
     collectionField: association,
     sourceId,
+    associatedRecords,
   };
 };
 
