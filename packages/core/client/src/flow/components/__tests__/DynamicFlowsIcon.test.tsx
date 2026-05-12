@@ -30,13 +30,20 @@ vi.mock('antd', async (importOriginal) => {
   const actual = await importOriginal<typeof import('antd')>();
   return {
     ...actual,
-    Button: ({ children, onClick, ...props }: any) => (
+    Button: ({ children, onClick, icon: _icon, loading: _loading, ...props }: any) => (
       <button type="button" onClick={onClick} {...props}>
         {children}
       </button>
     ),
     Collapse: ({ items }: any) => (
-      <div data-testid="collapse">{items?.map((item: any) => <div key={item.key}>{item.children}</div>)}</div>
+      <div data-testid="collapse">
+        {items?.map((item: any) => (
+          <div key={item.key}>
+            {item.label}
+            {item.children}
+          </div>
+        ))}
+      </div>
     ),
     Dropdown: ({ children }: any) => <div>{children}</div>,
     Empty: ({ description }: any) => <div>{description}</div>,
@@ -245,6 +252,20 @@ describe('DynamicFlowsIcon', () => {
     expect(view.destroy).toHaveBeenCalledTimes(1);
     expect(model.flowRegistry.getFlows().size).toBe(1);
     expect(model.flowRegistry.hasFlow('flow1')).toBe(true);
+  });
+
+  it('discards existing event flow edits after confirmed cancel', async () => {
+    const model = createModel();
+    mockState.flowContextValue.modal.confirm.mockResolvedValue(true);
+    const { view } = await openDynamicFlowsEditor(model);
+
+    const titleInput = screen.getByPlaceholderText('Enter flow title');
+    await userEvent.clear(titleInput);
+    await userEvent.type(titleInput, 'Changed flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(view.destroy).toHaveBeenCalledTimes(1);
+    expect(model.flowRegistry.getFlow('flow1')?.title).toBe('Event flow');
   });
 
   it('saves draft event flows into the real registry', async () => {

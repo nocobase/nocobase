@@ -26,8 +26,9 @@ import {
   GLOBAL_EMBED_CONTAINER_ID,
   EMBED_REPLACING_DATA_KEY,
   shouldHideEventInSettings,
-  observable,
-  FlowDefinitionOptions,
+  DetachedFlowRegistry,
+  replaceFlowRegistry,
+  serializeFlowRegistry,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
@@ -35,91 +36,6 @@ import { useUpdate } from 'ahooks';
 import _ from 'lodash';
 
 type FlowOnObject = Exclude<FlowDefinition['on'], string | undefined>;
-type SerializedFlowRegistry = Record<string, Omit<FlowDefinitionOptions, 'key'> & { key?: string }>;
-type EditableFlowRegistry = {
-  addFlow(flowKey: string, flowOptions: Omit<FlowDefinitionOptions, 'key'> & { key?: string }): FlowDefinition;
-  addFlows(flows: SerializedFlowRegistry): void;
-  removeFlow(flowKey: string): void;
-  getFlows(): Map<string, FlowDefinition>;
-  mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[];
-  hasFlow(flowKey: string): boolean;
-  getFlow(flowKey: string): FlowDefinition | undefined;
-};
-
-class DraftFlowRegistry implements EditableFlowRegistry {
-  private flows = observable.shallow(new Map<string, FlowDefinition>());
-
-  constructor(flows: SerializedFlowRegistry) {
-    this.addFlows(flows);
-  }
-
-  addFlows(flows: SerializedFlowRegistry) {
-    for (const [flowKey, flowOptions] of Object.entries(flows || {})) {
-      this.addFlow(flowKey, flowOptions);
-    }
-  }
-
-  addFlow(flowKey: string, flowOptions: Omit<FlowDefinitionOptions, 'key'> & { key?: string }) {
-    const flow = new FlowDefinition(
-      {
-        ..._.cloneDeep(flowOptions),
-        key: flowKey,
-      },
-      this as any,
-    );
-    this.flows.set(flowKey, flow);
-    return flow;
-  }
-
-  removeFlow(flowKey: string) {
-    this.flows.delete(flowKey);
-  }
-
-  getFlows() {
-    return this.flows;
-  }
-
-  mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[] {
-    return [...this.flows.values()].map(callback);
-  }
-
-  hasFlow(flowKey: string) {
-    return this.flows.has(flowKey);
-  }
-
-  getFlow(flowKey: string) {
-    return this.flows.get(flowKey);
-  }
-
-  saveFlow(): void {}
-
-  destroyFlow(flowKey: string) {
-    this.removeFlow(flowKey);
-  }
-
-  moveStep(flowKey: string, sourceStepKey: string, targetStepKey: string) {
-    const flow = this.getFlow(flowKey);
-    if (!flow) {
-      throw new Error(`Flow '${flowKey}' not found`);
-    }
-    flow.moveStep(sourceStepKey, targetStepKey);
-  }
-}
-
-function serializeFlowRegistry(registry: Pick<EditableFlowRegistry, 'getFlows'>): SerializedFlowRegistry {
-  const flows: SerializedFlowRegistry = {};
-  for (const [key, flow] of registry.getFlows()) {
-    flows[key] = _.cloneDeep(flow.toData());
-  }
-  return flows;
-}
-
-function replaceFlowRegistry(registry: EditableFlowRegistry, flows: SerializedFlowRegistry) {
-  for (const key of Array.from(registry.getFlows().keys())) {
-    registry.removeFlow(key);
-  }
-  registry.addFlows(flows);
-}
 
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
   return !!on && typeof on === 'object';
@@ -284,7 +200,7 @@ const EventConfigSection = observer(
     flow: FlowDefinition;
     model: FlowModel;
     flowEngine: any;
-    flowRegistry: EditableFlowRegistry;
+    flowRegistry: Pick<DetachedFlowRegistry, 'hasFlow'>;
   }) => {
     const ctx = useFlowContext<FlowEngineContext>();
     const t = model.translate.bind(model);
@@ -543,7 +459,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const flowEngine = model.flowEngine;
   const initialFlows = React.useMemo(() => serializeFlowRegistry(model.flowRegistry), [model]);
   const initialFlowsRef = React.useRef(initialFlows);
-  const [draftFlowRegistry] = React.useState(() => new DraftFlowRegistry(initialFlows));
+  const [draftFlowRegistry] = React.useState(() => new DetachedFlowRegistry(initialFlows));
   const [submitLoading, setSubmitLoading] = React.useState(false);
   const t = React.useMemo(() => model.translate.bind(model), [model]);
   const hasUnsavedChanges = React.useCallback(() => {

@@ -185,6 +185,57 @@ describe('FlowViewer zIndex with usePage', () => {
     document.body.removeChild(target);
   });
 
+  it('keeps active global embed view when replacement beforeClose blocks closing', async () => {
+    let getViewer: () => FlowViewer;
+    const beforeClose = vi.fn().mockResolvedValue(false);
+
+    const target = document.createElement('div');
+    target.id = GLOBAL_EMBED_CONTAINER_ID;
+    document.body.appendChild(target);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(fn) => {
+          getViewer = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(getViewer).toBeDefined());
+    const initialZIndex = getViewer().getNextZIndex();
+
+    let page1: any;
+    await act(async () => {
+      page1 = getViewer().embed({
+        target,
+        content: (currentPage) => {
+          currentPage.beforeClose = beforeClose;
+          return <div data-testid="page1">Page 1</div>;
+        },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('page1')).toBeInTheDocument());
+    expect(getViewer().getNextZIndex()).toBe(initialZIndex + 1);
+
+    await act(async () => {
+      const page2 = getViewer().embed({ target, content: <div data-testid="page2">Page 2</div> });
+      await page2;
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('page1')).toBeInTheDocument();
+    expect(screen.queryByTestId('page2')).not.toBeInTheDocument();
+    expect(getViewer().getNextZIndex()).toBe(initialZIndex + 1);
+
+    await act(async () => {
+      page1.destroy();
+    });
+
+    unmount();
+    document.body.removeChild(target);
+  });
+
   it('keeps the embed close button usable after beforeClose blocks closing', async () => {
     let getViewer: () => FlowViewer;
     const beforeClose = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
