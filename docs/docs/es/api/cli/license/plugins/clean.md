@@ -19,8 +19,9 @@ nb license plugins clean [flags]
 | Parámetro | Tipo | Descripción |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nombre del env del CLI; si se omite, se usa el env actual |
+| `--yes`, `-y` | boolean | Cuando un `--env` pasado explícitamente apunta a una env distinta de la env actual, omite la confirmación interactiva |
 | `--dry-run` | boolean | Previsualizar qué plugins se eliminarían sin borrar nada |
-| `--verbose`, `-V` | boolean | Mostrar logs detallados por plugin |
+| `--verbose` | boolean | Mostrar logs detallados por plugin |
 | `--json` | boolean | Salida en JSON |
 
 ## Ejemplos
@@ -28,10 +29,13 @@ nb license plugins clean [flags]
 ```bash
 nb license plugins clean
 nb license plugins clean --env app1
+nb license plugins clean --env app1 --yes
 nb license plugins clean --env app1 --dry-run
 nb license plugins clean --env app1 --verbose
 nb license plugins clean --env app1 --json
 ```
+
+Si pasa `--env` explícitamente y es diferente de la env actual, la CLI pedirá confirmación primero. En terminales no interactivos o sesiones de agentes de IA, agregue `--yes` usted mismo o ejecute antes `nb env use <name>` y vuelva a intentarlo.
 
 ## Comandos relacionados
 

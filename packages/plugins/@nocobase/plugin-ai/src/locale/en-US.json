@@ -21,6 +21,7 @@
   "Restrict task tools": "Restrict task tools",
   "Use default model": "Use default model",
   "Search disables tools": "The current model does not support tool calls when web search is enabled, which may affect task results",
+  "There are conversations in progress. Please try again later.": "There are conversations in progress. Please try again later.",
   "Web search not supported": "The current model does not support calling the web search tool",
   "About me": "About me",
   "About me placeholder": "Define the AI employee’s role, guide its work, and instruct it complete user-assigned tasks. This will be part of the prompt of this AI employee.",

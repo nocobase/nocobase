@@ -258,6 +258,36 @@ beforeEach(() => {
   });
 });
 
+test('license commands expose -y as the cross-env confirmation short flag', async () => {
+  const [
+    { default: LicenseActivate },
+    { default: LicenseId },
+    { default: LicenseStatus },
+    { default: LicensePluginsList },
+    { default: LicensePluginsClean },
+    { default: LicensePluginsSync },
+  ] = await Promise.all([
+    import('../commands/license/activate.js'),
+    import('../commands/license/id.js'),
+    import('../commands/license/status.js'),
+    import('../commands/license/plugins/list.js'),
+    import('../commands/license/plugins/clean.js'),
+    import('../commands/license/plugins/sync.js'),
+  ]);
+
+  for (const command of [
+    LicenseActivate,
+    LicenseId,
+    LicenseStatus,
+    LicensePluginsList,
+    LicensePluginsClean,
+    LicensePluginsSync,
+  ]) {
+    expect(command.flags.yes.char).toBe('y');
+    expect(command.flags.yes.default).toBe(false);
+  }
+});
+
 function setTerminalInteractivity(value: boolean) {
   const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
   const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');

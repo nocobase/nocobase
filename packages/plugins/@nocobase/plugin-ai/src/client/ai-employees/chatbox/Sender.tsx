@@ -15,7 +15,7 @@ import { useT } from '../../locale';
 import { SenderFooter } from './SenderFooter';
 import { SenderHeader } from './SenderHeader';
 import { useChatConversationsStore } from './stores/chat-conversations';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
@@ -29,12 +29,13 @@ const useSendMessage = () => {
   const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const webSearch = useChatConversationsStore.use.webSearch();
 
-  const attachments = useChatMessagesStore.use.attachments();
-  const contextItems = useChatMessagesStore.use.contextItems();
-  const systemMessage = useChatMessagesStore.use.systemMessage();
-  const skillSettings = useChatMessagesStore.use.skillSettings();
+  const attachments = chat.use.attachments();
+  const contextItems = chat.use.contextItems();
+  const systemMessage = chat.use.systemMessage();
+  const skillSettings = chat.use.skillSettings();
 
   const { finishEditingMessage } = useChatMessageActions();
 
@@ -79,14 +80,16 @@ export const Sender: React.FC = () => {
   const senderValue = useChatBoxStore.use.senderValue();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
   const setSenderRef = useChatBoxStore.use.setSenderRef();
   const readonly = useChatBoxStore.use.readonly();
 
-  const setAttachments = useChatMessagesStore.use.setAttachments();
+  const setAttachments = chat.setAttachments;
   const uploadProps = useUploadFiles();
 
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const responseLoading = chat.use.responseLoading();
 
   const { cancelRequest } = useChatMessageActions();
 

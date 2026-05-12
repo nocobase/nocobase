@@ -25,7 +25,7 @@ nb license activate [flags]
 | `--account` | string | Conta do serviço de licenças para ativação online |
 | `--password` | string | Senha do serviço de licenças para ativação online |
 | `--desc` | string | Nome da aplicação para a ativação online |
-| `--yes` | boolean | Confirmar que as informações enviadas são verdadeiras e corretas |
+| `--yes`, `-y` | boolean | Quando `--env` é passado explicitamente e aponta para uma env diferente da env atual, pula a confirmação interativa |
 | `--json` | boolean | Saída JSON |
 
 ## Exemplos
@@ -34,6 +34,7 @@ nb license activate [flags]
 nb license activate --env app1 --key <licenseKey>
 nb license activate --env app1 --key-file ./license.txt
 nb license activate --env app1 --online
+nb license activate --env app1 --online --account aa --password bb --desc test24
 nb license activate --env app1 --online --account aa --password bb --desc test24 --yes
 nb license activate --env app1 --json --key-file ./license.txt
 ```
@@ -41,6 +42,8 @@ nb license activate --env app1 --json --key-file ./license.txt
 ## Observações
 
 Quando a ativação online é usada, o CLI solicita um license key ao serviço de licenças com o ID da instância e a URL da aplicação do env atual.
+
+Se você passar `--env` explicitamente e ele for diferente da env atual, a CLI pedirá confirmação primeiro. Em terminais não interativos ou sessões de agentes de IA, adicione `--yes` manualmente ou execute primeiro `nb env use <name>` e tente novamente.
 
 ## Comandos relacionados
 

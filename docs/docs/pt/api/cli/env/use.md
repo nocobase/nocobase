@@ -22,7 +22,7 @@ nb env use <name>
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
-| `<name>` | string | Nome de um ambiente já configurado |
+| `<name>` | string | Nome do ambiente configurado para o qual alternar |
 
 ## Exemplos
 

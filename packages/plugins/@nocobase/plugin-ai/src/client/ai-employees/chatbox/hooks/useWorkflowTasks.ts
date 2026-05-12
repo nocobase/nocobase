@@ -35,10 +35,13 @@ export const useWorkflowTasks = () => {
 
   const setWorkflowTasks = useWorkflowTasksStore.use.setWorkflowTasks();
   const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
-  const setUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
   const setLoading = useWorkflowTasksStore.use.setLoading();
   const setKeyword = useWorkflowTasksStore.use.setKeyword();
   const setSelectedJobStatus = useWorkflowTasksStore.use.setSelectedJobStatus();
+  const keywordRef = useRef(keyword);
+  keywordRef.current = keyword;
+  const selectedJobStatusRef = useRef(selectedJobStatus);
+  selectedJobStatusRef.current = selectedJobStatus;
 
   const workflowTasksService = useRequest<{ data: WorkflowTask[]; meta?: { page?: number; totalPage?: number } }>(
     async (page = 1, search = '', jobStatus?: number) => {
@@ -92,15 +95,8 @@ export const useWorkflowTasks = () => {
     },
   );
 
-  const unreadWorkflowTaskCountService = useRequest<{ count: number }>(
-    async () => {
-      const res = await workflowTasksResource.unreadCount();
-      setUnreadCount(res?.data?.data?.count || 0);
-    },
-    {
-      manual: true,
-    },
-  );
+  const workflowTasksServiceRef = useRef(workflowTasksService);
+  workflowTasksServiceRef.current = workflowTasksService;
 
   const runSearch = useCallback(
     (nextKeyword = '') => {
@@ -111,9 +107,8 @@ export const useWorkflowTasks = () => {
   );
 
   const refresh = useCallback(() => {
-    workflowTasksService.run(1, keyword || '', selectedJobStatus);
-    unreadWorkflowTaskCountService.run();
-  }, [keyword, selectedJobStatus, unreadWorkflowTaskCountService, workflowTasksService]);
+    workflowTasksServiceRef.current.run(1, keywordRef.current || '', selectedJobStatusRef.current);
+  }, []);
 
   const runJobStatusFilter = useCallback(
     (nextJobStatus?: number) => {
@@ -122,9 +117,6 @@ export const useWorkflowTasks = () => {
     },
     [keyword, setSelectedJobStatus, workflowTasksService],
   );
-
-  const workflowTasksServiceRef = useRef(workflowTasksService);
-  workflowTasksServiceRef.current = workflowTasksService;
 
   const loadMoreWorkflowTasks = useCallback(async () => {
     const currentWorkflowTasksService = workflowTasksServiceRef.current;

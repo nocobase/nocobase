@@ -22,7 +22,7 @@ nb env use <name>
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `<name>` | string | Nama lingkungan yang sudah dikonfigurasi |
+| `<name>` | string | Nama env yang sudah dikonfigurasi untuk dipakai |
 
 ## Contoh
 

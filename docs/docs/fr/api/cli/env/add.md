@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Nom de l'environnement ; demandé en TTY si omis, requis hors TTY |
+| `[name]` | string | Nom de l'environnement à enregistrer ; dans un TTY, une invite s'affiche s'il est omis ; en mode non TTY, il est obligatoire |
 | `--verbose` | boolean | Afficher la progression détaillée lors de l'écriture de la configuration |
 | `--locale` | string | Langue des messages CLI : `en-US` ou `zh-CN` |
 | `--api-base-url`, `-u` | string | Adresse de l'API NocoBase, incluant le préfixe `/api` |

@@ -12,7 +12,7 @@ const { run, isDev, isPackageValid, generatePlaywrightPath, generatePlugins } = 
 const { dirname, resolve } = require('path');
 const { existsSync, mkdirSync, readFileSync, appendFileSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
-const { createStoragePluginsSymlink, createDevPluginsSymlink } = require('@nocobase/utils/plugin-symlink');
+const { syncPluginSymlinks } = require('@nocobase/utils/plugin-symlink');
 
 function runPatchPackage() {
   // run yarn patch-package
@@ -59,11 +59,10 @@ module.exports = (cli) => {
       writeToExclude();
       generatePlugins();
       generatePlaywrightPath(true);
-      await createStoragePluginsSymlink();
+      await syncPluginSymlinks();
       if (!isDev()) {
         return;
       }
-      await createDevPluginsSymlink();
       const cwd = process.cwd();
       if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {
         const content = await readFile(resolve(cwd, '.env.example'), 'utf-8');

@@ -19,6 +19,7 @@ nb app restart [flags]
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nama env CLI yang akan di-restart, jika dilewati menggunakan env saat ini |
+| `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
 | `--quickstart` | boolean | Memulai aplikasi dengan cepat setelah dihentikan |
 | `--port`, `-p` | string | Mengganti `appPort` di konfigurasi env |
 | `--daemon`, `-d` / `--no-daemon` | boolean | Apakah dijalankan dalam mode daemon setelah dihentikan, default aktif |
@@ -36,8 +37,11 @@ nb app restart --env local --port 12000
 nb app restart --env local --no-daemon
 nb app restart --env local --instances 2
 nb app restart --env local --launch-mode pm2
+nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
 ## Perintah Terkait
 

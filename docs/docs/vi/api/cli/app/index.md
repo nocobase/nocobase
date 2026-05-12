@@ -32,7 +32,7 @@ nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 -s
-nb app down --env app1 --all --yes
+nb app down --env app1 --all --force
 ```
 
 ## Lệnh liên quan

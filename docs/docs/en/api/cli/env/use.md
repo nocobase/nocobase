@@ -22,7 +22,7 @@ nb env use <name>
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `<name>` | string | Configured env name |
+| `<name>` | string | Configured environment name to switch to |
 
 ## Examples
 

@@ -11,8 +11,9 @@ import React, { useEffect, useRef } from 'react';
 import { Button, Divider, Flex, GetRef } from 'antd';
 import { Upload } from './Upload';
 import { AddContextButton } from '../AddContextButton';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxStore } from './stores/chat-box';
+import { useChatConversationsStore } from './stores/chat-conversations';
 import _ from 'lodash';
 import { SearchSwitch } from './SearchSwitch';
 import { ModelSwitcher } from './ModelSwitcher';
@@ -25,14 +26,16 @@ export const SenderFooter: React.FC<{
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const readonly = useChatBoxStore.use.readonly();
 
-  const loading = useChatMessagesStore.use.responseLoading();
-  const addContextItems = useChatMessagesStore.use.addContextItems();
-  const removeContextItem = useChatMessagesStore.use.removeContextItem();
+  const loading = chat.use.responseLoading();
+  const addContextItems = chat.addContextItems;
+  const removeContextItem = chat.removeContextItem;
 
   const senderValue = useChatBoxStore.use.senderValue();
-  const contextItems = useChatMessagesStore.use.contextItems();
+  const contextItems = chat.use.contextItems();
   const handleEmptySubmit = () => {
     if (_.isEmpty(senderValue) && contextItems.length) {
       handleSubmit('');

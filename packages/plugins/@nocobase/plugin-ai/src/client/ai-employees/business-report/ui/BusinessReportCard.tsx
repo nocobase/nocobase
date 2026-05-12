@@ -15,7 +15,7 @@ import { ToolsUIProperties, useToken } from '@nocobase/client';
 import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
 import { BusinessReport, BusinessReportRenderState, normalizeBusinessReport } from './report-utils';
 
 class BoundedSet<T> {
@@ -58,8 +58,9 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   const t = useT();
   const { token } = useToken();
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const messages = useChatMessagesStore.use.messages();
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
+  const responseLoading = chat.use.responseLoading();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();

@@ -19,7 +19,9 @@ nb app upgrade [flags]
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nama env CLI yang akan diupgrade, jika dilewati menggunakan env saat ini |
+| `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
 | `--skip-code-update`, `-s` | boolean | Restart menggunakan source code lokal atau image Docker yang sudah tersimpan, tanpa mendownload pembaruan |
+| `--version` | string | Ganti `downloadVersion` yang tersimpan; ketika upgrade berhasil, versi baru akan ditulis kembali ke konfigurasi env |
 | `--verbose` | boolean | Menampilkan output perintah update dan restart yang mendasarinya |
 
 ## Contoh
@@ -28,9 +30,12 @@ nb app upgrade [flags]
 nb app upgrade
 nb app upgrade --env local
 nb app upgrade --env local -s
+nb app upgrade --env local --version beta
 nb app upgrade --env local --verbose
 nb app upgrade --env local-docker -s
 ```
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
 ## Perintah Terkait
 
