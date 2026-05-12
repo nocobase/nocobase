@@ -1,95 +1,90 @@
 ---
-title: 'Lina: Localization Engineer'
-description: 'Lina is the built-in AI Employee of the Localization plugin, used to translate NocoBase system localization entries and plugin UI text.'
+title: 'Lina：ローカライゼーションエンジニア'
+description: 'NocoBase AI 従業員ドキュメント。'
 keywords: 'Lina,Localization Engineer,AI translation,Localization Management,AI Employee,NocoBase'
 ---
 
-# Lina: Localization Engineer
+# Lina：ローカライゼーションエンジニア
 
-## Role
+## 役割
 
-Lina is the built-in AI Employee registered by the Localization plugin. It focuses on system localization translation, translating localization entries into the target language while preserving variables, placeholders, tags, formatting, and concise UI wording.
+Lina：ローカライゼーションエンジニア はこの NocoBase 組み込みシナリオに特化し、関連タスクを効率的に完了できるよう支援します。
 
 ![](https://static-docs.nocobase.com/202605121152196.png)
 
-:::info{title=Tip}
-Lina is a dedicated AI Employee for localization scenarios and does not use general Skills or Tools.
+:::info{title=ヒント}
+Lina はローカライゼーション専用で、一般的な Skills や Tools は使用しません。
 :::
 
-## Scenarios
+## シナリオ
 
-- Batch translate system and plugin entries.
-- Translate localization content for collections, fields, and menus.
-- Quickly generate an initial translation for a newly enabled language.
-- Incrementally translate entries that already exist but are not translated yet.
-- Translate only selected entries in the table.
+- システムとプラグインのエントリーを一括翻訳します。
+- コレクション、フィールド、メニューのローカライゼーション内容を翻訳します。
+- テーブルで選択したエントリーのみ翻訳します。
 
-## Prerequisites
+## 前提条件
 
-Before using Lina, complete the following setup:
+Lina を使用する前に、次の設定を完了してください。
 
-- Enable the **Localization Management** plugin.
-- Configure an available LLM service and assign a default model to Lina. See [Configure AI Employee Models](/ai-employees/features/model-settings) and [Model Recommendations](#model-recommendations).
-- Enable the target language in system settings.
-- Synchronize the entries to translate on the Localization Management page.
+- **ローカライゼーション管理** プラグインを有効化します。
+- 利用可能な LLM サービスを設定し、Lina にデフォルトモデルを割り当てます。参照： [AI 従業員モデルの設定](/ai-employees/features/model-settings) および [モデル選択の推奨](#モデル選択の推奨).
+- システム設定で対象言語を有効化します。
+- ローカライゼーション管理ページで翻訳対象のエントリーを同期します。
 
-:::info{title=Tip}
-Lina creates translation tasks for the current locale. For example, if the current UI locale is Thai, the task generates Thai translations.
+:::info{title=ヒント}
+Lina は現在のロケールに対して翻訳タスクを作成します。
 :::
 
-## Usage
+## 使用方法
 
-On the Localization Management page, click Lina's avatar and choose one of the AI translation task scopes.
+ローカライゼーション管理ページで Lina のアバターをクリックし、AI 翻訳タスクの範囲を選択します。
 
-### Incremental Translation
+### 差分翻訳
 
-Only translate entries that do not have a translation for the current language. This is suitable for daily maintenance after adding plugins, fields, or menus.
+現在の言語でまだ翻訳がないエントリーのみ翻訳します。
 
-### Selected Translation
+### 選択項目の翻訳
 
-Select records in the entries table first, then choose selected translation. This is suitable for retranslating a small set of entries or entries that need manual correction.
+先にテーブルでエントリーを選択し、選択した内容のみ翻訳します。
 
-If no entry is selected, the system prompts you to select records first.
+エントリーが選択されていない場合、システムは選択を促します。
 
-### Full Translation
+### 全量翻訳
 
-Translate all eligible entries in the current language. This is suitable when generating the first version of a newly enabled language.
+現在の言語で対象となるすべてのエントリーを翻訳します。
 
-:::warning{title=Note}
-Full translation may overwrite existing translations. Confirm the target language, entry count, and model service before starting.
+:::warning{title=注意}
+全量翻訳は既存の翻訳を上書きする可能性があります。開始前に対象言語、エントリー数、モデルサービスを確認してください。
 :::
 
-## Task Confirmation
+## タスク確認
 
-Before creating the task, the system displays a confirmation dialog with:
+タスク作成前に、システムは次の内容を含む確認ダイアログを表示します。
 
-- Number of entries to translate.
-- Provider to use.
-- Model to use.
+- 翻訳するエントリー数。
+- 使用するプロバイダー。
+- 使用するモデル。
 
-After confirmation, the system creates a background task. You can view progress in async tasks. When the task completes, translations are written to the corresponding language.
+確認後、システムはバックグラウンドタスクを作成します。進捗は非同期タスクで確認できます。完了後、翻訳は対応する言語に書き込まれます。
 
 ![](https://static-docs.nocobase.com/202605121233608.png)
 
-## Translation Strategy
+## 翻訳戦略
 
-Lina follows these rules when translating localization entries:
+Lina は翻訳時に次のルールに従います。
 
-- Return only the translated text without explanation, summary, Markdown, or extra content.
-- Preserve variables, placeholders, HTML tags, ICU syntax, code-like tokens, and formatting symbols.
-- Preserve meaningful line breaks.
-- Keep UI text concise and natural for buttons, fields, menus, and prompts.
-- Return text unchanged if it should not be translated.
+- 説明や追加内容なしで翻訳結果のみ返します。
+- 変数、プレースホルダー、HTML タグ、ICU 構文、書式を保持します。
+- UI テキストは簡潔で自然にします。
 
-## Reference Translations
+## 参照翻訳
 
-Some entries are short, such as field names, button labels, and statuses. Lina uses existing reference translations when possible to improve consistency.
+フィールド名、ボタン、ステータスなどの短いエントリーでは、既存の参照翻訳を使って一貫性を高めます。
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If the system default language is English, the English entry is used directly as the source.
+- 組み込みエントリーは中国語翻訳を優先して参照します。
+- 非組み込みエントリーはシステム既定言語を優先して参照します。
 
-When a reference is available, Lina uses a prompt with semantics similar to:
+参照がある場合、Lina は概ね次のようなプロンプトを使用します。
 
 ```text
 Refer to the following translation:
@@ -100,43 +95,39 @@ Translate the following text into {target_language}. Output only the translated 
 {source_text}
 ```
 
-## Model Recommendations
+## モデル選択の推奨
 
-Localization translation usually processes many entries in one task. If possible, use a locally deployed translation-specific small model first, because online models often have API rate limits, concurrency limits, or token-per-minute limits. When many entries are translated, rate limiting can make tasks much slower or cause some requests to wait or fail.
+ローカライゼーション翻訳では多くのエントリーを処理します。可能であれば、オンラインモデルのレート、並行数、トークン制限を避けるため、ローカルにデプロイした翻訳専用小型モデルを優先してください。
 
-If local deployment is not possible, use a translation-specific model rather than a general chat model. Translation models are usually better for short entries, UI text, and batch translation. If the model service supports dedicated translation parameters, the system passes source text, source language, target language, and terminology information according to the model rules.
+ローカルデプロイができない場合も、一般チャットモデルではなく翻訳専用モデルを選択してください。
 
-You can adjust request concurrency according to model capability to better control throughput, response time, and cost.
+モデル能力に応じて並行数を調整し、スループット、応答時間、コストを制御できます。
 
-For a complete practice using a locally deployed translation-specific small model, see [Use Lina and local HY-MT1.5-1.8B to translate localization entries](/ai-employees/scenarios/localization-hy-mt).
+ローカルにデプロイした翻訳専用小型モデルの完全な実践は次を参照してください [Lina とローカル HY-MT1.5-1.8B を使ってローカライゼーションエントリーを翻訳する](/ai-employees/scenarios/localization-hy-mt).
 
-:::info{title=Tip}
-The concurrency of localization translation tasks is controlled by `AI_LOCALIZATION_CONCURRENCY`. The default is `10`, the allowed range is `1` to `20`, and values outside the range use the default.
+:::info{title=ヒント}
+並行数は `AI_LOCALIZATION_CONCURRENCY` で制御します。既定値は `10`、範囲は `1` から `20`、範囲外は既定値を使用します。
 :::
 
-## Progress and Failure Handling
+## 進捗と失敗処理
 
-Lina translation tasks run as background async tasks. The task writes translation results entry by entry and updates progress.
+Lina の翻訳タスクはバックグラウンド非同期タスクとして実行され、エントリーごとに結果を書き込みます。
 
 ![](https://static-docs.nocobase.com/202605121235761.png)
 
-If an entry fails to translate, the task records the failure and stops to avoid continuing to write uncontrolled results when model calls, model output, or configuration is abnormal. Common causes include:
+エントリーが失敗した場合、エラーを記録してタスクを停止し、制御不能な結果の書き込みを防ぎます。
 
-- AI plugin or Async Task Manager plugin is not enabled.
-- Lina does not have an available model configured.
-- Model service is unavailable or times out.
-- Model service does not support the current request format.
-- Model returns empty content.
+- AI プラグインまたは Async Task Manager が有効化されていません。
+- Lina に利用可能なモデルが設定されていません。
+- モデルサービスが利用できないかタイムアウトしています。
 
-Check async task details and server logs for provider, model, target language, failed entry ID, and model call duration.
+非同期タスク詳細とサーバーログで、プロバイダー、モデル、対象言語、エントリー ID、所要時間を確認してください。
 
-## Review Before Publishing
+## 公開前の確認
 
-After AI translation finishes, review before publishing:
+AI 翻訳完了後、公開前に確認してください。
 
-- Check whether short entries such as menus, buttons, and field names fit the product context.
-- Check whether variables, placeholders, and HTML tags are preserved.
-- Check business terminology consistency.
-- Check important pages and user-facing text for natural wording.
-- If built-in entry translations are overwritten, return to Localization Management and select `Reset system built-in entry translations` during synchronization to restore defaults. To contribute default translations for the system and official plugins, see [Translation Contribution](/get-started/translations).
-- Publish translations after review.
+- メニュー、ボタン、フィールド名などの短いエントリーが製品文脈に合っていること。
+- 変数、プレースホルダー、HTML タグが保持されていること。
+- 業務用語に一貫性があること。
+- 確認後に公開します。

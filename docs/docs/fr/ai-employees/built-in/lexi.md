@@ -1,26 +1,26 @@
 ---
-title: 'Lexi: Translation Assistant'
-description: 'Lexi is the built-in translation assistant in NocoBase, used for conversational multilingual translation and communication assistance.'
-keywords: 'Lexi,translation assistant,multilingual,AI Employee,NocoBase'
+title: 'Lexi : Assistante de traduction'
+description: 'Documentation des employés IA NocoBase.'
+keywords: 'lexi,Translation Assistant,AI Employee,NocoBase'
 ---
 
-# Lexi: Translation Assistant
+# Lexi : Assistante de traduction
 
-## Role
+## Rôle
 
-Lexi focuses on daily communication and business text translation, helping users convert content between languages.
+Lexi : Assistante de traduction est spécialisé dans ce scénario intégré de NocoBase et aide à accomplir les tâches associées plus efficacement.
 
-## Scenarios
+## Scénarios
 
-- Translate text entered by users.
-- Translate foreign language content into the current user language.
-- Translate current language content into a specified target language.
+- Travailler avec le contenu ou les données du scénario correspondant.
+- Réduire les opérations manuelles répétitives.
+- Utiliser le panneau de chat ou le point d’entrée contextuel pour obtenir de l’aide.
 
-## Entry Points
+## Points d'entrée
 
-- AI Employee chat panel
-- Business pages where content needs translation
+- Panneau de chat des employés IA
+- Pages ou entrées de tâche associées
 
-## Difference from Lina
+## Différence avec Lina
 
-Lexi is mainly for user conversations and business communication translation; Lina is mainly for system localization entries and UI text translation.
+Lexi sert aux conversations utilisateur et à la traduction de communication métier ; Lina sert aux entrées de localisation système et aux textes d’interface.

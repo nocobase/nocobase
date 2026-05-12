@@ -1,25 +1,25 @@
 ---
-title: 'Built-in AI Employees'
-description: 'Overview of NocoBase built-in AI Employees: learn their roles, scenarios, and entry points.'
+title: 'AI Employee tích hợp sẵn'
+description: 'Tổng quan AI Employee tích hợp sẵn.'
 keywords: 'Built-in AI Employees,Atlas,Viz,Dara,Dex,Ellis,Lexi,Vera,Lina,Nathan,NocoBase'
 ---
 
-# Built-in AI Employees
+# AI Employee tích hợp sẵn
 
-NocoBase provides a set of built-in AI Employees for different scenarios. They can help with data analysis, data organization, email processing, translation, localization, frontend development, and more.
+NocoBase cung cấp AI Employee tích hợp sẵn cho nhiều kịch bản. Chúng hỗ trợ phân tích dữ liệu, sắp xếp dữ liệu, email, dịch thuật, bản địa hóa, phát triển frontend và nhiều việc khác.
 
 ![](https://static-docs.nocobase.com/202605121048555.png)
 
-## Employee List
+## Danh sách employee
 
-| Employee | Role | Typical Scenario | Type |
+| Employee | Vai trò | Kịch bản điển hình | Loại |
 | --- | --- | --- | --- |
-| [Atlas](./atlas.md) | Team Leader | Understand user intent and coordinate suitable AI Employees | Main Agent |
-| [Viz](./viz.md) | Insights Analyst | Query business data and generate insights or reports | Business Employee |
-| [Dex](./dex.md) | Data Organizer | Extract structured information from text and help fill forms | Business Employee |
-| [Ellis](./ellis.md) | Email Expert | Summarize email context and draft replies | Business Employee |
-| [Lexi](./lexi.md) | Translation Assistant | Conversational multilingual translation | Business Employee |
-| [Vera](./vera.md) | Research Analyst | Web search, information verification, and research summaries | Business Employee |
-| [Nathan](./nathan.md) | Frontend Engineer | Help write or modify frontend code in code editors | Developer Employee |
-| [Lina](./lina.md) | Localization Engineer | Translate system localization entries and plugin UI text | Developer Employee |
-| [Dara](./dara.md) | Data Visualization Expert | Generate charts and visualization configurations from data | Developer Employee |
+| [Atlas](./atlas.md) | Trưởng nhóm | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Agent chính |
+| [Viz](./viz.md) | Nhà phân tích insight | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Dex](./dex.md) | Chuyên gia sắp xếp dữ liệu | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Ellis](./ellis.md) | Chuyên gia email | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Lexi](./lexi.md) | Trợ lý dịch thuật | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Vera](./vera.md) | Nhà phân tích nghiên cứu | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Nathan](./nathan.md) | Kỹ sư Frontend | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Developer employee |
+| [Lina](./lina.md) | Kỹ sư bản địa hóa | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Developer employee |
+| [Dara](./dara.md) | Chuyên gia trực quan hóa dữ liệu | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Developer employee |

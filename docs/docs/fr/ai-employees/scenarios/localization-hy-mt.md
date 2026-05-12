@@ -1,55 +1,53 @@
 ---
 pkg: '@nocobase/plugin-ai'
-title: 'Use Lina and local HY-MT to translate localization entries'
-description: 'Deploy the HY-MT1.5 GGUF translation model with llama-server and configure it for Lina to batch translate NocoBase localization entries.'
+title: 'Utiliser Lina et HY-MT1.5-1.8B local pour traduire les entrées de localisation'
+description: 'Déployez le modèle de traduction HY-MT1.5 GGUF avec llama-server et configurez-le pour que Lina traduise en lot les entrées de localisation NocoBase.'
 keywords: 'Lina,localization,HY-MT,GGUF,llama-server,OpenAI compatible,AI translation,NocoBase'
 ---
 
-# Use Lina and local HY-MT1.5-1.8B to translate localization entries
+# Utiliser Lina et HY-MT1.5-1.8B local pour traduire les entrées de localisation
 
-This guide describes a localization translation practice: deploy a translation-specific small model locally, expose it as an OpenAI-compatible service, and configure it for Lina to translate localization entries in batches.
+Ce guide présente une pratique de traduction de localisation : déployer localement un petit modèle spécialisé en traduction, l’exposer comme service compatible OpenAI, puis le configurer pour que Lina traduise en lot les entrées de localisation NocoBase.
 
-This approach is suitable for translating many system entries, plugin text, menus, collection titles, and field labels. Compared with online models, local models are not affected by external API RPM, TPM, or concurrency limits, and concurrency can be tuned according to machine and model capability.
+Cette approche convient aux entrées système, textes de plugins, menus, titres de collections et libellés de champs. Par rapport aux modèles en ligne, les modèles locaux ne sont pas soumis aux limites externes de RPM, TPM ou concurrence, et la concurrence peut être ajustée selon la machine et le modèle.
 
-## Overview
+## Vue d’ensemble
 
-This guide uses:
+Ce guide utilise :
 
-- Model: `tencent/HY-MT1.5-1.8B-GGUF`
-- Inference service: `llama-server`
-- Integration: OpenAI-compatible API
-- AI Employee: Lina
-- Entry point: Localization Management page
+- Modèle: `tencent/HY-MT1.5-1.8B-GGUF`
+- Service d’inférence: `llama-server`
+- Intégration: OpenAI-compatible API
+- Employée IA: Lina
+- Point d’entrée: page Localization Management
 
-:::info{title=Note}
-HY-MT1.5-1.8B is a translation-specific small model. It is more suitable for short entries, UI text, and batch translation. General chat models are not recommended as the first choice for localization tasks.
+:::info{title=Remarque}
+HY-MT1.5-1.8B est un petit modèle spécialisé en traduction. Il convient mieux aux entrées courtes, aux textes d’interface et aux traductions en lot. Les modèles de discussion généraux ne sont pas recommandés comme premier choix pour les tâches de localisation.
 :::
 
-## Prerequisites
+## Prérequis
 
-Before starting, prepare:
+- Le plugin **Localization Management** est activé.
+- La langue cible est activée.
+- Les entrées de localisation ont été synchronisées.
+- La machine locale ou le serveur peut exécuter [`llama-server`](https://github.com/ggml-org/llama.cpp).
+- Le service NocoBase peut accéder à l’adresse HTTP de `llama-server`.
 
-- The **Localization Management** plugin is enabled.
-- Target language is enabled.
-- Localization entries have been synchronized.
-- The local machine or server can run [`llama-server`](https://github.com/ggml-org/llama.cpp).
-- The NocoBase service can access the HTTP address of `llama-server`.
+## Déployer HY-MT GGUF
 
-## Deploy HY-MT GGUF
+### Installer llama.cpp
 
-### Install llama.cpp
-
-On macOS, you can install it with Homebrew:
+Sur macOS, vous pouvez l’installer avec Homebrew:
 
 ```bash
 brew install llama.cpp
 ```
 
-You can also use a prebuilt llama.cpp binary or build it from source. The final requirement is that `llama-server` is available.
+Vous pouvez aussi utiliser un binaire llama.cpp précompilé ou le compiler depuis les sources. L’exigence finale est que `llama-server` soit disponible.
 
-### Start an OpenAI-compatible service
+### Démarrer un service compatible OpenAI
 
-Start the service with the GGUF model from Hugging Face:
+Démarrez le service avec le modèle GGUF depuis Hugging Face:
 
 ```bash
 llama-server \
@@ -60,27 +58,27 @@ llama-server \
   -np 4
 ```
 
-| Parameter | Description |
+| Paramètre | Description |
 | --- | --- |
-| `-hf` | Load the model from Hugging Face. |
-| `--host` | Listening address. Use `127.0.0.1` for local testing or `0.0.0.0` for container or remote access. |
-| `--port` | HTTP service port. |
-| `-c` | Context length. Localization entries are usually short, so `2048` is usually enough. |
-| `-np` | Number of parallel slots. Adjust according to machine performance. |
+| `-hf` | Charger le modèle depuis Hugging Face. |
+| `--host` | Adresse d’écoute. Utilisez `127.0.0.1` pour les tests locaux ou `0.0.0.0` pour un accès depuis un conteneur ou à distance. |
+| `--port` | Port du service HTTP. |
+| `-c` | Longueur de contexte. Les entrées de localisation sont généralement courtes, donc `2048` suffit en général. |
+| `-np` | Nombre de slots parallèles. Ajustez selon les performances de la machine. |
 
-:::info{title=Tip}
-If server resources are limited, start with `-np 1` or `-np 2`, then increase gradually after verifying stability.
+:::info{title=Astuce}
+Si les ressources serveur sont limitées, commencez avec `-np 1` ou `-np 2`, puis augmentez progressivement après avoir vérifié la stabilité.
 :::
 
-## Test the Model Service
+## Tester le service de modèle
 
-After `llama-server` starts, check service health:
+Après le démarrage de `llama-server`, vérifiez l’état du service:
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-Then test translation through the OpenAI-compatible API:
+Testez ensuite la traduction via l’API compatible OpenAI:
 
 ```bash
 curl http://127.0.0.1:8000/v1/chat/completions \
@@ -96,97 +94,95 @@ curl http://127.0.0.1:8000/v1/chat/completions \
   }'
 ```
 
-If you start from a local model file, change `model` to the actual model name returned or configured by the service.
+Si vous partez d’un fichier de modèle local, remplacez `model` par le nom réel retourné ou configuré par le service.
 
-:::warning{title=Note}
-If a request does not respond for a long time, the model may be too slow, concurrency may be too high, or context may be too large. Lower `-np` and NocoBase translation concurrency first, then observe response time.
+:::warning{title=Remarque}
+Si une requête ne répond pas longtemps, le modèle peut être trop lent, la concurrence trop élevée ou le contexte trop grand. Réduisez d’abord `-np` et la concurrence de traduction NocoBase, puis observez le temps de réponse.
 :::
 
-## Configure an LLM Service in NocoBase
+## Configurer un service LLM dans NocoBase
 
-Go to `System Settings -> AI Employees -> LLM service` and add an LLM service.
+Allez dans `System Settings -> AI Employees -> LLM service` et ajoutez un service LLM.
 
-Example configuration:
-
-| Setting | Example |
+| Paramètre | Exemple |
 | --- | --- |
 | Provider | OpenAI (completions) |
 | Title | HY-MT Local |
 | Base URL | `http://127.0.0.1:8000/v1` |
-| API Key | If llama-server has no authentication, use a placeholder such as `dummy`. |
-| Enabled Models | Select `tencent/HY-MT1.5-1.8B-GGUF:Q4_K_M`, or enter the actual model name. |
+| API Key | Si `llama-server` n’utilise pas d’authentification, utilisez une valeur factice comme `dummy`. |
+| Enabled Models | Sélectionnez `tencent/HY-MT1.5-1.8B-GGUF:Q4_K_M` ou saisissez le nom réel du modèle. |
 
-After configuration, use `Test flight` to verify the model.
+Après la configuration, utilisez `Test flight` pour vérifier le modèle.
 
-:::info{title=Tip}
-If NocoBase runs in Docker, `127.0.0.1` points to the container itself and may not access the host service. Use the host IP, container network address, or `host.docker.internal`.
+:::info{title=Astuce}
+Si NocoBase s’exécute dans Docker, `127.0.0.1` pointe vers le conteneur lui-même et peut ne pas accéder au service hôte. Utilisez l’IP de l’hôte, l’adresse réseau du conteneur ou `host.docker.internal`.
 :::
 
-## Configure Lina's Dedicated Model
+## Configurer le modèle dédié de Lina
 
-Go to `System Settings -> AI Employees -> AI employees`, open Lina, and switch to `Model settings`.
+Allez dans `System Settings -> AI Employees -> AI employees`, ouvrez Lina, puis passez à `Model settings`.
 
-1. Enable `Enable dedicated model configuration`.
-2. Select the HY-MT local model in `Models`.
-3. Save the configuration.
+1. Activez `Enable dedicated model configuration`.
+2. Sélectionnez le modèle HY-MT local dans `Models`.
+3. Enregistrez la configuration.
 
-After this, Lina uses this model for localization translation tasks, preventing users or tasks from switching to general chat models.
+Après cela, Lina utilisera ce modèle pour les tâches de traduction de localisation et évitera de basculer vers des modèles de discussion généraux.
 
-For details, see [Configure AI Employee Models](/ai-employees/features/model-settings).
+Pour plus de détails, consultez [Configurer les modèles des employés IA](/ai-employees/features/model-settings).
 
-## Configure Translation Concurrency
+## Configurer la concurrence de traduction
 
-Localization translation task concurrency is controlled by `AI_LOCALIZATION_CONCURRENCY`:
+La concurrence des tâches de traduction de localisation est contrôlée par `AI_LOCALIZATION_CONCURRENCY`:
 
 ```bash
 AI_LOCALIZATION_CONCURRENCY=10
 ```
 
-Rules:
+Règles:
 
-- Default: `10`
+- Valeur par défaut: `10`
 - Minimum: `1`
 - Maximum: `20`
-- Values outside the range use the default
+- Les valeurs hors plage utilisent la valeur par défaut
 
-The best concurrency depends on CPU, GPU, memory, model quantization, and `llama-server -np`. If the default concurrency causes issues:
+La meilleure concurrence dépend du CPU, du GPU, de la mémoire, de la quantification du modèle et de `llama-server -np`. Si la concurrence par défaut pose problème:
 
-1. Start with `AI_LOCALIZATION_CONCURRENCY=1` and verify single-entry translation.
-2. Set both `llama-server -np` and `AI_LOCALIZATION_CONCURRENCY` to `2` or `4`.
-3. Observe response time, CPU/GPU usage, and task progress.
-4. Increase concurrency gradually only if stable.
+1. Commencez avec `AI_LOCALIZATION_CONCURRENCY=1` et vérifiez la traduction d’une seule entrée.
+2. Définissez `llama-server -np` et `AI_LOCALIZATION_CONCURRENCY` sur `2` ou `4`.
+3. Observez le temps de réponse, l’utilisation CPU/GPU et la progression de la tâche.
+4. Augmentez progressivement seulement si tout reste stable.
 
-:::warning{title=Note}
-Do not set concurrency too high at the beginning. If concurrency exceeds actual model capacity, tasks may become slower due to queuing, timeout, or service stalls.
+:::warning{title=Remarque}
+Ne définissez pas une concurrence trop élevée au départ. Si elle dépasse la capacité réelle du modèle, les tâches peuvent ralentir à cause de files d’attente, de timeouts ou de blocages du service.
 :::
 
-## Execute Localization Translation
+## Exécuter la traduction de localisation
 
-Go to `System Management -> Localization Management`.
+Allez dans `System Management -> Localization Management`.
 
-1. Switch to the target language.
-2. Click `Synchronize` to ensure entries are synchronized.
-3. Click Lina's avatar.
-4. Choose a task scope:
-   - `Incremental translation`: translate entries without translations.
-   - `Selected translation`: translate selected entries in the table.
-   - `Full translation`: translate all entries in the current language.
-5. Check entry count, provider, and model in the confirmation dialog.
-6. Confirm to create the async task.
-7. Wait for completion, review translations, and publish.
+1. Passez à la langue cible.
+2. Cliquez sur `Synchronize` pour vous assurer que les entrées sont synchronisées.
+3. Cliquez sur l’avatar de Lina.
+4. Choisissez un périmètre de tâche:
+   - `Incremental translation`: traduit les entrées sans traduction.
+   - `Selected translation`: traduit les entrées sélectionnées dans le tableau.
+   - `Full translation`: traduit toutes les entrées de la langue actuelle.
+5. Vérifiez le nombre d’entrées, le fournisseur et le modèle dans la boîte de confirmation.
+6. Confirmez pour créer la tâche asynchrone.
+7. Attendez la fin, relisez les traductions, puis publiez.
 
-Start with `Selected translation` for a few entries to verify output style and speed before running incremental or full translation.
+Commencez par `Selected translation` sur quelques entrées pour vérifier le style de sortie et la vitesse avant de lancer une traduction incrémentale ou complète.
 
-## How Lina Builds Translation Requests
+## Comment Lina construit les requêtes de traduction
 
-Lina builds requests from entries and reference translations. For short entries, existing references are used to improve consistency:
+Lina construit les requêtes à partir des entrées et des traductions de référence. Pour les entrées courtes, les références existantes améliorent la cohérence:
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If an English reference exists, English is used as source text.
-- Translation results are written to the target language but are not published automatically.
+- Les entrées intégrées privilégient les traductions chinoises comme références.
+- Les entrées non intégrées privilégient la langue par défaut du système comme référence.
+- Si une référence anglaise existe, l’anglais est utilisé comme texte source.
+- Les résultats sont écrits dans la langue cible, mais ne sont pas publiés automatiquement.
 
-Prompt semantics are similar to:
+La sémantique du prompt est similaire à:
 
 ```text
 Refer to the following translation:
@@ -197,45 +193,43 @@ Translate the following text into {target_language}. Output only the translated 
 {source_text}
 ```
 
-## Troubleshooting
+## Dépannage
 
-### No progress after creating a task
+### Aucune progression après la création d’une tâche
 
-Check whether `llama-server` received requests. View service logs or call `/v1/chat/completions` with `curl`.
+Vérifiez si `llama-server` a reçu des requêtes. Consultez les logs du service ou appelez `/v1/chat/completions` avec `curl`.
 
-If the model receives requests but does not return, reduce:
+Si le modèle reçoit les requêtes mais ne répond pas, réduisez:
 
 - `AI_LOCALIZATION_CONCURRENCY`
 - `llama-server -np`
 - `llama-server -c`
 
-### The model returns explanations instead of translations
+### Le modèle renvoie des explications au lieu de traductions
 
-Local translation models are usually more stable than general chat models. If explanations still appear, test the same prompt with `curl` first to verify the model's output style.
+Les modèles de traduction locaux sont généralement plus stables que les modèles de discussion généraux. Si des explications apparaissent encore, testez d’abord le même prompt avec `curl` pour vérifier le style de sortie du modèle. Vous pouvez aussi traduire d’abord des entrées plus courtes ou réduire des paramètres d’échantillonnage comme temperature.
 
-You can also translate shorter entries first or reduce sampling parameters such as temperature.
+### NocoBase ne peut pas se connecter au service de modèle
 
-### NocoBase cannot connect to the model service
+Vérifiez:
 
-Check:
+- Que Base URL inclut `/v1`.
+- Que l’environnement d’exécution NocoBase peut accéder à l’adresse.
+- Que le pare-feu ou le réseau de conteneurs ne bloque pas le port.
+- Que `llama-server` est toujours en cours d’exécution.
 
-- Whether Base URL includes `/v1`.
-- Whether the NocoBase runtime environment can access the address.
-- Whether firewall or container networking blocks the port.
-- Whether `llama-server` is still running.
+## Relire avant publication
 
-## Review Before Publishing
+Après la traduction par IA, relisez avant de publier:
 
-After AI translation finishes, review before publishing:
+- Filtrez par module et vérifiez les entrées courtes comme les menus, boutons, noms de champs et statuts.
+- Vérifiez les variables, placeholders, balises HTML et symboles de formatage.
+- Vérifiez la cohérence des termes métier importants.
+- Si les traductions d’entrées intégrées sont écrasées, resynchronisez dans Localization Management et sélectionnez `Reset system built-in entry translations` pour restaurer les valeurs par défaut. Pour contribuer aux traductions par défaut du système et des plugins officiels, consultez [Translation Contribution](/get-started/translations).
+- Publiez d’abord dans un environnement de test, puis synchronisez vers la production.
 
-- Filter by module and check short entries such as menus, buttons, field names, and statuses.
-- Check variables, placeholders, HTML tags, and formatting symbols.
-- Check key business terminology consistency.
-- If built-in entry translations are overwritten, resynchronize in Localization Management and select `Reset system built-in entry translations` to restore defaults. To contribute default translations for the system and official plugins, see [Translation Contribution](/get-started/translations).
-- Publish in a test environment first, then sync to production.
-
-## References
+## Références
 
 - [tencent/HY-MT1.5-1.8B-GGUF](https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF)
-- [llama-server documentation](https://www.mintlify.com/ggml-org/llama.cpp/inference/server)
-- [Lina: Localization Engineer](/ai-employees/built-in/lina)
+- [Documentation llama-server](https://www.mintlify.com/ggml-org/llama.cpp/inference/server)
+- [Lina: ingénieure localisation](/ai-employees/built-in/lina)

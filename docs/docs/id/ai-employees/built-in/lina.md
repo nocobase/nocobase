@@ -1,95 +1,90 @@
 ---
-title: 'Lina: Localization Engineer'
-description: 'Lina is the built-in AI Employee of the Localization plugin, used to translate NocoBase system localization entries and plugin UI text.'
+title: 'Lina: Engineer Lokalisasi'
+description: 'Dokumentasi AI Employee NocoBase.'
 keywords: 'Lina,Localization Engineer,AI translation,Localization Management,AI Employee,NocoBase'
 ---
 
-# Lina: Localization Engineer
+# Lina: Engineer Lokalisasi
 
-## Role
+## Peran
 
-Lina is the built-in AI Employee registered by the Localization plugin. It focuses on system localization translation, translating localization entries into the target language while preserving variables, placeholders, tags, formatting, and concise UI wording.
+Lina: Engineer Lokalisasi berfokus pada skenario bawaan NocoBase ini dan membantu menyelesaikan tugas terkait dengan lebih efisien.
 
 ![](https://static-docs.nocobase.com/202605121152196.png)
 
-:::info{title=Tip}
-Lina is a dedicated AI Employee for localization scenarios and does not use general Skills or Tools.
+:::info{title=Tips}
+Lina khusus untuk skenario lokalisasi dan tidak menggunakan Skills atau Tools umum.
 :::
 
-## Scenarios
+## Skenario
 
-- Batch translate system and plugin entries.
-- Translate localization content for collections, fields, and menus.
-- Quickly generate an initial translation for a newly enabled language.
-- Incrementally translate entries that already exist but are not translated yet.
-- Translate only selected entries in the table.
+- Menerjemahkan entry sistem dan plugin secara batch.
+- Menerjemahkan konten collection, field, dan menu.
+- Menerjemahkan hanya entry yang dipilih di tabel.
 
-## Prerequisites
+## Prasyarat
 
-Before using Lina, complete the following setup:
+Sebelum menggunakan Lina, selesaikan konfigurasi berikut:
 
-- Enable the **Localization Management** plugin.
-- Configure an available LLM service and assign a default model to Lina. See [Configure AI Employee Models](/ai-employees/features/model-settings) and [Model Recommendations](#model-recommendations).
-- Enable the target language in system settings.
-- Synchronize the entries to translate on the Localization Management page.
+- Aktifkan plugin **Manajemen Lokalisasi**.
+- Konfigurasikan service LLM yang tersedia dan tetapkan model default untuk Lina. Lihat [Konfigurasi Model AI Employee](/ai-employees/features/model-settings) dan [Rekomendasi model](#rekomendasi-model).
+- Aktifkan bahasa target di pengaturan sistem.
+- Sinkronkan entry yang akan diterjemahkan di halaman Manajemen Lokalisasi.
 
-:::info{title=Tip}
-Lina creates translation tasks for the current locale. For example, if the current UI locale is Thai, the task generates Thai translations.
+:::info{title=Tips}
+Lina membuat tugas terjemahan untuk locale saat ini.
 :::
 
-## Usage
+## Penggunaan
 
-On the Localization Management page, click Lina's avatar and choose one of the AI translation task scopes.
+Di halaman Manajemen Lokalisasi, klik avatar Lina dan pilih cakupan tugas terjemahan AI.
 
-### Incremental Translation
+### Terjemahan incremental
 
-Only translate entries that do not have a translation for the current language. This is suitable for daily maintenance after adding plugins, fields, or menus.
+Hanya menerjemahkan entry yang belum memiliki terjemahan pada bahasa saat ini.
 
-### Selected Translation
+### Terjemahan item terpilih
 
-Select records in the entries table first, then choose selected translation. This is suitable for retranslating a small set of entries or entries that need manual correction.
+Pilih entry di tabel terlebih dahulu, lalu terjemahkan hanya konten yang dipilih.
 
-If no entry is selected, the system prompts you to select records first.
+Jika tidak ada entry dipilih, sistem akan meminta Anda memilih record terlebih dahulu.
 
-### Full Translation
+### Terjemahan penuh
 
-Translate all eligible entries in the current language. This is suitable when generating the first version of a newly enabled language.
+Menerjemahkan semua entry yang memenuhi syarat pada bahasa saat ini.
 
-:::warning{title=Note}
-Full translation may overwrite existing translations. Confirm the target language, entry count, and model service before starting.
+:::warning{title=Catatan}
+Terjemahan penuh dapat menimpa terjemahan yang sudah ada. Pastikan bahasa target, jumlah entry, dan service model sebelum mulai.
 :::
 
-## Task Confirmation
+## Konfirmasi tugas
 
-Before creating the task, the system displays a confirmation dialog with:
+Sebelum membuat tugas, sistem menampilkan dialog konfirmasi berisi:
 
-- Number of entries to translate.
-- Provider to use.
-- Model to use.
+- Jumlah entry yang akan diterjemahkan.
+- Provider yang digunakan.
+- Model yang digunakan.
 
-After confirmation, the system creates a background task. You can view progress in async tasks. When the task completes, translations are written to the corresponding language.
+Setelah dikonfirmasi, sistem membuat background task. Progres dapat dilihat di async tasks. Setelah selesai, terjemahan ditulis ke bahasa terkait.
 
 ![](https://static-docs.nocobase.com/202605121233608.png)
 
-## Translation Strategy
+## Strategi terjemahan
 
-Lina follows these rules when translating localization entries:
+Lina mengikuti aturan berikut saat menerjemahkan:
 
-- Return only the translated text without explanation, summary, Markdown, or extra content.
-- Preserve variables, placeholders, HTML tags, ICU syntax, code-like tokens, and formatting symbols.
-- Preserve meaningful line breaks.
-- Keep UI text concise and natural for buttons, fields, menus, and prompts.
-- Return text unchanged if it should not be translated.
+- Hanya mengembalikan teks terjemahan tanpa penjelasan atau konten tambahan.
+- Mempertahankan variabel, placeholder, tag HTML, sintaks ICU, dan format.
+- Menjaga teks UI tetap ringkas dan natural.
 
-## Reference Translations
+## Terjemahan referensi
 
-Some entries are short, such as field names, button labels, and statuses. Lina uses existing reference translations when possible to improve consistency.
+Entry pendek seperti nama field, tombol, dan status menggunakan terjemahan referensi untuk meningkatkan konsistensi.
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If the system default language is English, the English entry is used directly as the source.
+- Entry bawaan mengutamakan terjemahan bahasa Mandarin sebagai referensi.
+- Entry non-bawaan mengutamakan bahasa default sistem.
 
-When a reference is available, Lina uses a prompt with semantics similar to:
+Jika referensi tersedia, Lina menggunakan prompt dengan semantik seperti berikut:
 
 ```text
 Refer to the following translation:
@@ -100,43 +95,39 @@ Translate the following text into {target_language}. Output only the translated 
 {source_text}
 ```
 
-## Model Recommendations
+## Rekomendasi model
 
-Localization translation usually processes many entries in one task. If possible, use a locally deployed translation-specific small model first, because online models often have API rate limits, concurrency limits, or token-per-minute limits. When many entries are translated, rate limiting can make tasks much slower or cause some requests to wait or fail.
+Terjemahan lokalisasi biasanya memproses banyak entry. Jika memungkinkan, gunakan model kecil khusus terjemahan yang di-deploy lokal karena model online sering memiliki limit rate, concurrency, atau token.
 
-If local deployment is not possible, use a translation-specific model rather than a general chat model. Translation models are usually better for short entries, UI text, and batch translation. If the model service supports dedicated translation parameters, the system passes source text, source language, target language, and terminology information according to the model rules.
+Jika tidak bisa deploy lokal, pilih model khusus terjemahan daripada model chat umum.
 
-You can adjust request concurrency according to model capability to better control throughput, response time, and cost.
+Concurrency dapat disesuaikan dengan kemampuan model untuk mengontrol throughput, waktu respons, dan biaya.
 
-For a complete practice using a locally deployed translation-specific small model, see [Use Lina and local HY-MT1.5-1.8B to translate localization entries](/ai-employees/scenarios/localization-hy-mt).
+Untuk praktik lengkap dengan model kecil khusus terjemahan yang di-deploy lokal, lihat [Menggunakan Lina dan HY-MT1.5-1.8B lokal untuk menerjemahkan entry lokalisasi](/ai-employees/scenarios/localization-hy-mt).
 
-:::info{title=Tip}
-The concurrency of localization translation tasks is controlled by `AI_LOCALIZATION_CONCURRENCY`. The default is `10`, the allowed range is `1` to `20`, and values outside the range use the default.
+:::info{title=Tips}
+Concurrency dikontrol oleh `AI_LOCALIZATION_CONCURRENCY`. Default `10`, rentang `1` sampai `20`; nilai di luar rentang memakai default.
 :::
 
-## Progress and Failure Handling
+## Progres dan penanganan kegagalan
 
-Lina translation tasks run as background async tasks. The task writes translation results entry by entry and updates progress.
+Tugas terjemahan Lina berjalan sebagai background async task dan menulis hasil per entry.
 
 ![](https://static-docs.nocobase.com/202605121235761.png)
 
-If an entry fails to translate, the task records the failure and stops to avoid continuing to write uncontrolled results when model calls, model output, or configuration is abnormal. Common causes include:
+Jika satu entry gagal, error dicatat dan task dihentikan untuk menghindari hasil yang tidak terkendali.
 
-- AI plugin or Async Task Manager plugin is not enabled.
-- Lina does not have an available model configured.
-- Model service is unavailable or times out.
-- Model service does not support the current request format.
-- Model returns empty content.
+- Plugin AI atau Async Task Manager belum diaktifkan.
+- Lina belum memiliki model yang tersedia.
+- Service model tidak tersedia atau timeout.
 
-Check async task details and server logs for provider, model, target language, failed entry ID, and model call duration.
+Periksa detail async task dan log server untuk provider, model, bahasa target, ID entry, dan durasi.
 
-## Review Before Publishing
+## Review sebelum publish
 
-After AI translation finishes, review before publishing:
+Setelah terjemahan AI selesai, review sebelum publish:
 
-- Check whether short entries such as menus, buttons, and field names fit the product context.
-- Check whether variables, placeholders, and HTML tags are preserved.
-- Check business terminology consistency.
-- Check important pages and user-facing text for natural wording.
-- If built-in entry translations are overwritten, return to Localization Management and select `Reset system built-in entry translations` during synchronization to restore defaults. To contribute default translations for the system and official plugins, see [Translation Contribution](/get-started/translations).
-- Publish translations after review.
+- Entry pendek seperti menu, tombol, dan nama field sesuai konteks produk.
+- Variabel, placeholder, dan tag HTML tetap terjaga.
+- Terminologi bisnis konsisten.
+- Publish setelah review.

@@ -1,25 +1,25 @@
 ---
-title: 'Built-in AI Employees'
-description: 'Overview of NocoBase built-in AI Employees: learn their roles, scenarios, and entry points.'
+title: 'Встроенные AI-сотрудники'
+description: 'Обзор встроенных AI-сотрудников.'
 keywords: 'Built-in AI Employees,Atlas,Viz,Dara,Dex,Ellis,Lexi,Vera,Lina,Nathan,NocoBase'
 ---
 
-# Built-in AI Employees
+# Встроенные AI-сотрудники
 
-NocoBase provides a set of built-in AI Employees for different scenarios. They can help with data analysis, data organization, email processing, translation, localization, frontend development, and more.
+NocoBase предоставляет встроенных AI-сотрудников для разных сценариев. Они помогают с анализом и организацией данных, электронной почтой, переводом, локализацией, фронтенд-разработкой и другими задачами.
 
 ![](https://static-docs.nocobase.com/202605121048555.png)
 
-## Employee List
+## Список сотрудников
 
-| Employee | Role | Typical Scenario | Type |
+| Сотрудник | Роль | Типичный сценарий | Тип |
 | --- | --- | --- | --- |
-| [Atlas](./atlas.md) | Team Leader | Understand user intent and coordinate suitable AI Employees | Main Agent |
-| [Viz](./viz.md) | Insights Analyst | Query business data and generate insights or reports | Business Employee |
-| [Dex](./dex.md) | Data Organizer | Extract structured information from text and help fill forms | Business Employee |
-| [Ellis](./ellis.md) | Email Expert | Summarize email context and draft replies | Business Employee |
-| [Lexi](./lexi.md) | Translation Assistant | Conversational multilingual translation | Business Employee |
-| [Vera](./vera.md) | Research Analyst | Web search, information verification, and research summaries | Business Employee |
-| [Nathan](./nathan.md) | Frontend Engineer | Help write or modify frontend code in code editors | Developer Employee |
-| [Lina](./lina.md) | Localization Engineer | Translate system localization entries and plugin UI text | Developer Employee |
-| [Dara](./dara.md) | Data Visualization Expert | Generate charts and visualization configurations from data | Developer Employee |
+| [Atlas](./atlas.md) | Руководитель команды | Работа с содержимым или данными соответствующего сценария. | Главный агент |
+| [Viz](./viz.md) | Аналитик инсайтов | Работа с содержимым или данными соответствующего сценария. | Бизнес-сотрудник |
+| [Dex](./dex.md) | Организатор данных | Работа с содержимым или данными соответствующего сценария. | Бизнес-сотрудник |
+| [Ellis](./ellis.md) | Эксперт по электронной почте | Работа с содержимым или данными соответствующего сценария. | Бизнес-сотрудник |
+| [Lexi](./lexi.md) | Помощник по переводу | Работа с содержимым или данными соответствующего сценария. | Бизнес-сотрудник |
+| [Vera](./vera.md) | Исследователь-аналитик | Работа с содержимым или данными соответствующего сценария. | Бизнес-сотрудник |
+| [Nathan](./nathan.md) | Фронтенд-инженер | Работа с содержимым или данными соответствующего сценария. | Сотрудник-разработчик |
+| [Lina](./lina.md) | Инженер локализации | Работа с содержимым или данными соответствующего сценария. | Сотрудник-разработчик |
+| [Dara](./dara.md) | Эксперт по визуализации данных | Работа с содержимым или данными соответствующего сценария. | Сотрудник-разработчик |

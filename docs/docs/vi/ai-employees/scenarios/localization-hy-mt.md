@@ -1,55 +1,53 @@
 ---
 pkg: '@nocobase/plugin-ai'
-title: 'Use Lina and local HY-MT to translate localization entries'
-description: 'Deploy the HY-MT1.5 GGUF translation model with llama-server and configure it for Lina to batch translate NocoBase localization entries.'
+title: 'Dùng Lina và HY-MT1.5-1.8B cục bộ để dịch mục bản địa hóa'
+description: 'Triển khai mô hình dịch HY-MT1.5 GGUF bằng llama-server và cấu hình cho Lina dịch hàng loạt các mục bản địa hóa của NocoBase.'
 keywords: 'Lina,localization,HY-MT,GGUF,llama-server,OpenAI compatible,AI translation,NocoBase'
 ---
 
-# Use Lina and local HY-MT1.5-1.8B to translate localization entries
+# Dùng Lina và HY-MT1.5-1.8B cục bộ để dịch mục bản địa hóa
 
-This guide describes a localization translation practice: deploy a translation-specific small model locally, expose it as an OpenAI-compatible service, and configure it for Lina to translate localization entries in batches.
+Tài liệu này mô tả một thực hành dịch bản địa hóa: triển khai cục bộ một mô hình nhỏ chuyên cho dịch thuật, cung cấp nó như dịch vụ tương thích OpenAI, rồi cấu hình cho Lina dịch hàng loạt các mục bản địa hóa của NocoBase.
 
-This approach is suitable for translating many system entries, plugin text, menus, collection titles, and field labels. Compared with online models, local models are not affected by external API RPM, TPM, or concurrency limits, and concurrency can be tuned according to machine and model capability.
+Cách này phù hợp để dịch nhiều mục hệ thống, văn bản plugin, menu, tiêu đề collection và nhãn field. So với mô hình trực tuyến, mô hình cục bộ không bị ảnh hưởng bởi giới hạn RPM, TPM hay đồng thời của API bên ngoài, và có thể điều chỉnh số lượng đồng thời theo năng lực máy và mô hình.
 
-## Overview
+## Tổng quan
 
-This guide uses:
+Tài liệu này sử dụng:
 
-- Model: `tencent/HY-MT1.5-1.8B-GGUF`
-- Inference service: `llama-server`
-- Integration: OpenAI-compatible API
-- AI Employee: Lina
-- Entry point: Localization Management page
+- Mô hình: `tencent/HY-MT1.5-1.8B-GGUF`
+- Dịch vụ suy luận: `llama-server`
+- Tích hợp: OpenAI-compatible API
+- Nhân viên AI: Lina
+- Điểm vào: trang Localization Management
 
-:::info{title=Note}
-HY-MT1.5-1.8B is a translation-specific small model. It is more suitable for short entries, UI text, and batch translation. General chat models are not recommended as the first choice for localization tasks.
+:::info{title=Ghi chú}
+HY-MT1.5-1.8B là mô hình nhỏ chuyên cho dịch thuật. Nó phù hợp hơn với mục ngắn, văn bản UI và dịch hàng loạt. Không nên ưu tiên dùng mô hình chat tổng quát cho tác vụ bản địa hóa.
 :::
 
-## Prerequisites
+## Điều kiện chuẩn bị
 
-Before starting, prepare:
+- Plugin **Localization Management** đã được bật.
+- Ngôn ngữ đích đã được bật.
+- Các mục bản địa hóa đã được đồng bộ.
+- Máy cục bộ hoặc máy chủ có thể chạy [`llama-server`](https://github.com/ggml-org/llama.cpp).
+- Dịch vụ NocoBase có thể truy cập địa chỉ HTTP của `llama-server`.
 
-- The **Localization Management** plugin is enabled.
-- Target language is enabled.
-- Localization entries have been synchronized.
-- The local machine or server can run [`llama-server`](https://github.com/ggml-org/llama.cpp).
-- The NocoBase service can access the HTTP address of `llama-server`.
+## Triển khai HY-MT GGUF
 
-## Deploy HY-MT GGUF
+### Cài đặt llama.cpp
 
-### Install llama.cpp
-
-On macOS, you can install it with Homebrew:
+Trên macOS, bạn có thể cài bằng Homebrew:
 
 ```bash
 brew install llama.cpp
 ```
 
-You can also use a prebuilt llama.cpp binary or build it from source. The final requirement is that `llama-server` is available.
+Bạn cũng có thể dùng binary llama.cpp dựng sẵn hoặc biên dịch từ mã nguồn. Yêu cầu cuối cùng là `llama-server` khả dụng.
 
-### Start an OpenAI-compatible service
+### Khởi động dịch vụ tương thích OpenAI
 
-Start the service with the GGUF model from Hugging Face:
+Khởi động dịch vụ với mô hình GGUF từ Hugging Face:
 
 ```bash
 llama-server \
@@ -60,27 +58,27 @@ llama-server \
   -np 4
 ```
 
-| Parameter | Description |
+| Tham số | Mô tả |
 | --- | --- |
-| `-hf` | Load the model from Hugging Face. |
-| `--host` | Listening address. Use `127.0.0.1` for local testing or `0.0.0.0` for container or remote access. |
-| `--port` | HTTP service port. |
-| `-c` | Context length. Localization entries are usually short, so `2048` is usually enough. |
-| `-np` | Number of parallel slots. Adjust according to machine performance. |
+| `-hf` | Tải mô hình từ Hugging Face. |
+| `--host` | Địa chỉ lắng nghe. Dùng `127.0.0.1` để kiểm thử cục bộ hoặc `0.0.0.0` cho truy cập từ container hoặc từ xa. |
+| `--port` | Cổng dịch vụ HTTP. |
+| `-c` | Độ dài ngữ cảnh. Các mục bản địa hóa thường ngắn, vì vậy `2048` thường là đủ. |
+| `-np` | Số slot song song. Điều chỉnh theo hiệu năng máy. |
 
-:::info{title=Tip}
-If server resources are limited, start with `-np 1` or `-np 2`, then increase gradually after verifying stability.
+:::info{title=Mẹo}
+Nếu tài nguyên máy chủ hạn chế, bắt đầu với `-np 1` hoặc `-np 2`, rồi tăng dần sau khi xác nhận ổn định.
 :::
 
-## Test the Model Service
+## Kiểm thử dịch vụ mô hình
 
-After `llama-server` starts, check service health:
+Sau khi `llama-server` khởi động, kiểm tra trạng thái dịch vụ:
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-Then test translation through the OpenAI-compatible API:
+Sau đó kiểm thử dịch qua API tương thích OpenAI:
 
 ```bash
 curl http://127.0.0.1:8000/v1/chat/completions \
@@ -96,97 +94,95 @@ curl http://127.0.0.1:8000/v1/chat/completions \
   }'
 ```
 
-If you start from a local model file, change `model` to the actual model name returned or configured by the service.
+Nếu bạn khởi động từ file mô hình cục bộ, hãy đổi `model` thành tên mô hình thực tế do dịch vụ trả về hoặc đã cấu hình.
 
-:::warning{title=Note}
-If a request does not respond for a long time, the model may be too slow, concurrency may be too high, or context may be too large. Lower `-np` and NocoBase translation concurrency first, then observe response time.
+:::warning{title=Ghi chú}
+Nếu request không phản hồi trong thời gian dài, mô hình có thể quá chậm, số lượng đồng thời quá cao hoặc ngữ cảnh quá lớn. Trước tiên giảm `-np` và số lượng đồng thời dịch của NocoBase, rồi quan sát thời gian phản hồi.
 :::
 
-## Configure an LLM Service in NocoBase
+## Cấu hình dịch vụ LLM trong NocoBase
 
-Go to `System Settings -> AI Employees -> LLM service` and add an LLM service.
+Vào `System Settings -> AI Employees -> LLM service` và thêm một dịch vụ LLM.
 
-Example configuration:
-
-| Setting | Example |
+| Thiết lập | Ví dụ |
 | --- | --- |
 | Provider | OpenAI (completions) |
 | Title | HY-MT Local |
 | Base URL | `http://127.0.0.1:8000/v1` |
-| API Key | If llama-server has no authentication, use a placeholder such as `dummy`. |
-| Enabled Models | Select `tencent/HY-MT1.5-1.8B-GGUF:Q4_K_M`, or enter the actual model name. |
+| API Key | Nếu `llama-server` không có xác thực, dùng giá trị placeholder như `dummy`. |
+| Enabled Models | Chọn `tencent/HY-MT1.5-1.8B-GGUF:Q4_K_M` hoặc nhập tên mô hình thực tế. |
 
-After configuration, use `Test flight` to verify the model.
+Sau khi cấu hình, dùng `Test flight` để kiểm tra mô hình.
 
-:::info{title=Tip}
-If NocoBase runs in Docker, `127.0.0.1` points to the container itself and may not access the host service. Use the host IP, container network address, or `host.docker.internal`.
+:::info{title=Mẹo}
+Nếu NocoBase chạy trong Docker, `127.0.0.1` trỏ tới chính container và có thể không truy cập được dịch vụ trên host. Hãy dùng IP host, địa chỉ mạng container hoặc `host.docker.internal`.
 :::
 
-## Configure Lina's Dedicated Model
+## Cấu hình mô hình chuyên dụng cho Lina
 
-Go to `System Settings -> AI Employees -> AI employees`, open Lina, and switch to `Model settings`.
+Vào `System Settings -> AI Employees -> AI employees`, mở Lina và chuyển sang `Model settings`.
 
-1. Enable `Enable dedicated model configuration`.
-2. Select the HY-MT local model in `Models`.
-3. Save the configuration.
+1. Bật `Enable dedicated model configuration`.
+2. Chọn mô hình HY-MT cục bộ trong `Models`.
+3. Lưu cấu hình.
 
-After this, Lina uses this model for localization translation tasks, preventing users or tasks from switching to general chat models.
+Sau đó, Lina sẽ dùng mô hình này cho tác vụ dịch bản địa hóa và tránh chuyển sang mô hình chat tổng quát.
 
-For details, see [Configure AI Employee Models](/ai-employees/features/model-settings).
+Xem chi tiết tại [Cấu hình mô hình cho nhân viên AI](/ai-employees/features/model-settings).
 
-## Configure Translation Concurrency
+## Cấu hình số lượng đồng thời dịch
 
-Localization translation task concurrency is controlled by `AI_LOCALIZATION_CONCURRENCY`:
+Số lượng đồng thời của tác vụ dịch bản địa hóa được kiểm soát bằng `AI_LOCALIZATION_CONCURRENCY`:
 
 ```bash
 AI_LOCALIZATION_CONCURRENCY=10
 ```
 
-Rules:
+Quy tắc:
 
-- Default: `10`
-- Minimum: `1`
-- Maximum: `20`
-- Values outside the range use the default
+- Mặc định: `10`
+- Tối thiểu: `1`
+- Tối đa: `20`
+- Giá trị ngoài phạm vi dùng mặc định
 
-The best concurrency depends on CPU, GPU, memory, model quantization, and `llama-server -np`. If the default concurrency causes issues:
+Số lượng đồng thời phù hợp phụ thuộc vào CPU, GPU, bộ nhớ, lượng tử hóa mô hình và `llama-server -np`. Nếu giá trị mặc định gây vấn đề:
 
-1. Start with `AI_LOCALIZATION_CONCURRENCY=1` and verify single-entry translation.
-2. Set both `llama-server -np` and `AI_LOCALIZATION_CONCURRENCY` to `2` or `4`.
-3. Observe response time, CPU/GPU usage, and task progress.
-4. Increase concurrency gradually only if stable.
+1. Bắt đầu với `AI_LOCALIZATION_CONCURRENCY=1` và kiểm tra dịch một mục.
+2. Đặt cả `llama-server -np` và `AI_LOCALIZATION_CONCURRENCY` thành `2` hoặc `4`.
+3. Quan sát thời gian phản hồi, mức dùng CPU/GPU và tiến độ tác vụ.
+4. Chỉ tăng dần khi hệ thống ổn định.
 
-:::warning{title=Note}
-Do not set concurrency too high at the beginning. If concurrency exceeds actual model capacity, tasks may become slower due to queuing, timeout, or service stalls.
+:::warning{title=Ghi chú}
+Không đặt số lượng đồng thời quá cao ngay từ đầu. Nếu vượt quá năng lực thực tế của mô hình, tác vụ có thể chậm hơn do hàng đợi, timeout hoặc dịch vụ bị treo.
 :::
 
-## Execute Localization Translation
+## Thực hiện dịch bản địa hóa
 
-Go to `System Management -> Localization Management`.
+Vào `System Management -> Localization Management`.
 
-1. Switch to the target language.
-2. Click `Synchronize` to ensure entries are synchronized.
-3. Click Lina's avatar.
-4. Choose a task scope:
-   - `Incremental translation`: translate entries without translations.
-   - `Selected translation`: translate selected entries in the table.
-   - `Full translation`: translate all entries in the current language.
-5. Check entry count, provider, and model in the confirmation dialog.
-6. Confirm to create the async task.
-7. Wait for completion, review translations, and publish.
+1. Chuyển sang ngôn ngữ đích.
+2. Bấm `Synchronize` để đảm bảo các mục đã được đồng bộ.
+3. Bấm avatar của Lina.
+4. Chọn phạm vi tác vụ:
+   - `Incremental translation`: dịch các mục chưa có bản dịch.
+   - `Selected translation`: dịch các mục được chọn trong bảng.
+   - `Full translation`: dịch toàn bộ mục của ngôn ngữ hiện tại.
+5. Kiểm tra số lượng mục, provider và model trong hộp thoại xác nhận.
+6. Xác nhận để tạo tác vụ bất đồng bộ.
+7. Chờ hoàn tất, rà soát bản dịch và publish.
 
-Start with `Selected translation` for a few entries to verify output style and speed before running incremental or full translation.
+Hãy bắt đầu bằng `Selected translation` với vài mục để kiểm tra phong cách đầu ra và tốc độ trước khi chạy dịch tăng dần hoặc toàn bộ.
 
-## How Lina Builds Translation Requests
+## Cách Lina tạo request dịch
 
-Lina builds requests from entries and reference translations. For short entries, existing references are used to improve consistency:
+Lina tạo request từ mục và bản dịch tham chiếu. Với các mục ngắn, tham chiếu hiện có giúp tăng tính nhất quán:
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If an English reference exists, English is used as source text.
-- Translation results are written to the target language but are not published automatically.
+- Mục tích hợp ưu tiên dùng bản dịch tiếng Trung làm tham chiếu.
+- Mục không tích hợp ưu tiên dùng ngôn ngữ mặc định của hệ thống làm tham chiếu.
+- Nếu có tham chiếu tiếng Anh, tiếng Anh được dùng làm văn bản nguồn.
+- Kết quả được ghi vào ngôn ngữ đích nhưng không tự động publish.
 
-Prompt semantics are similar to:
+Ngữ nghĩa của prompt tương tự như sau:
 
 ```text
 Refer to the following translation:
@@ -197,45 +193,43 @@ Translate the following text into {target_language}. Output only the translated 
 {source_text}
 ```
 
-## Troubleshooting
+## Khắc phục sự cố
 
-### No progress after creating a task
+### Không có tiến độ sau khi tạo tác vụ
 
-Check whether `llama-server` received requests. View service logs or call `/v1/chat/completions` with `curl`.
+Kiểm tra `llama-server` có nhận request hay không. Xem log dịch vụ hoặc gọi `/v1/chat/completions` bằng `curl`.
 
-If the model receives requests but does not return, reduce:
+Nếu mô hình nhận request nhưng không trả kết quả, hãy giảm:
 
 - `AI_LOCALIZATION_CONCURRENCY`
 - `llama-server -np`
 - `llama-server -c`
 
-### The model returns explanations instead of translations
+### Mô hình trả về giải thích thay vì bản dịch
 
-Local translation models are usually more stable than general chat models. If explanations still appear, test the same prompt with `curl` first to verify the model's output style.
+Mô hình dịch cục bộ thường ổn định hơn mô hình chat tổng quát. Nếu vẫn có giải thích, trước tiên thử cùng prompt bằng `curl` để kiểm tra kiểu đầu ra của mô hình. Bạn cũng có thể dịch các mục ngắn hơn trước hoặc giảm tham số sampling như temperature.
 
-You can also translate shorter entries first or reduce sampling parameters such as temperature.
+### NocoBase không kết nối được dịch vụ mô hình
 
-### NocoBase cannot connect to the model service
+Kiểm tra:
 
-Check:
+- Base URL có bao gồm `/v1` hay không.
+- Môi trường chạy NocoBase có truy cập được địa chỉ đó hay không.
+- Firewall hoặc mạng container có chặn cổng hay không.
+- `llama-server` còn đang chạy hay không.
 
-- Whether Base URL includes `/v1`.
-- Whether the NocoBase runtime environment can access the address.
-- Whether firewall or container networking blocks the port.
-- Whether `llama-server` is still running.
+## Rà soát trước khi publish
 
-## Review Before Publishing
+Sau khi AI dịch xong, hãy rà soát trước khi publish:
 
-After AI translation finishes, review before publishing:
+- Lọc theo module và kiểm tra mục ngắn như menu, nút, tên field và trạng thái.
+- Kiểm tra biến, placeholder, thẻ HTML và ký hiệu định dạng.
+- Kiểm tra tính nhất quán của thuật ngữ nghiệp vụ quan trọng.
+- Nếu bản dịch mục tích hợp bị ghi đè, đồng bộ lại trong Localization Management và chọn `Reset system built-in entry translations` để khôi phục mặc định. Để đóng góp bản dịch mặc định cho hệ thống và plugin chính thức, xem [Translation Contribution](/get-started/translations).
+- Publish trong môi trường kiểm thử trước, sau đó đồng bộ lên production.
 
-- Filter by module and check short entries such as menus, buttons, field names, and statuses.
-- Check variables, placeholders, HTML tags, and formatting symbols.
-- Check key business terminology consistency.
-- If built-in entry translations are overwritten, resynchronize in Localization Management and select `Reset system built-in entry translations` to restore defaults. To contribute default translations for the system and official plugins, see [Translation Contribution](/get-started/translations).
-- Publish in a test environment first, then sync to production.
-
-## References
+## Tham khảo
 
 - [tencent/HY-MT1.5-1.8B-GGUF](https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF)
-- [llama-server documentation](https://www.mintlify.com/ggml-org/llama.cpp/inference/server)
-- [Lina: Localization Engineer](/ai-employees/built-in/lina)
+- [Tài liệu llama-server](https://www.mintlify.com/ggml-org/llama.cpp/inference/server)
+- [Lina: kỹ sư bản địa hóa](/ai-employees/built-in/lina)

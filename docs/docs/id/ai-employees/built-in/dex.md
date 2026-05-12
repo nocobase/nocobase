@@ -1,25 +1,25 @@
 ---
-title: 'Dex: Data Organizer'
-description: 'Dex is the built-in data organization expert in NocoBase, used to extract information from unstructured text and help fill forms.'
-keywords: 'Dex,data organization,information extraction,form filling,AI Employee,NocoBase'
+title: 'Dex: Pengelola Data'
+description: 'Dokumentasi AI Employee NocoBase.'
+keywords: 'dex,Data Organizer,AI Employee,NocoBase'
 ---
 
-# Dex: Data Organizer
+# Dex: Pengelola Data
 
-## Role
+## Peran
 
-Dex is good at extracting key information from emails, chat records, document snippets, and other unstructured content, then organizing it into structured results.
+Dex: Pengelola Data berfokus pada skenario bawaan NocoBase ini dan membantu menyelesaikan tugas terkait dengan lebih efisien.
 
-## Scenarios
+## Skenario
 
-- Extract contacts, dates, tasks, requirements, and other information from text.
-- Organize messy content into tables or lists.
-- Fill forms based on extracted results.
+- Bekerja dengan konten atau data pada skenario terkait.
+- Mengurangi operasi manual berulang.
+- Menggunakan panel chat atau titik masuk kontekstual untuk bantuan.
 
-## Entry Points
+## Titik masuk
 
-- AI Employee chat panel
-- Form pages after selecting block context
+- Panel chat AI Employee
+- Halaman atau task entry terkait
 
 ![20251022155316](https://static-docs.nocobase.com/20251022155316.png)
 

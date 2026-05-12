@@ -1,95 +1,90 @@
 ---
-title: 'Lina: Localization Engineer'
-description: 'Lina is the built-in AI Employee of the Localization plugin, used to translate NocoBase system localization entries and plugin UI text.'
+title: 'Lina: Kỹ sư bản địa hóa'
+description: 'Tài liệu AI Employee của NocoBase.'
 keywords: 'Lina,Localization Engineer,AI translation,Localization Management,AI Employee,NocoBase'
 ---
 
-# Lina: Localization Engineer
+# Lina: Kỹ sư bản địa hóa
 
-## Role
+## Vai trò
 
-Lina is the built-in AI Employee registered by the Localization plugin. It focuses on system localization translation, translating localization entries into the target language while preserving variables, placeholders, tags, formatting, and concise UI wording.
+Lina: Kỹ sư bản địa hóa tập trung vào kịch bản tích hợp sẵn này của NocoBase và giúp hoàn thành tác vụ liên quan hiệu quả hơn.
 
 ![](https://static-docs.nocobase.com/202605121152196.png)
 
-:::info{title=Tip}
-Lina is a dedicated AI Employee for localization scenarios and does not use general Skills or Tools.
+:::info{title=Mẹo}
+Lina chuyên cho kịch bản bản địa hóa và không dùng Skills hoặc Tools chung.
 :::
 
-## Scenarios
+## Kịch bản
 
-- Batch translate system and plugin entries.
-- Translate localization content for collections, fields, and menus.
-- Quickly generate an initial translation for a newly enabled language.
-- Incrementally translate entries that already exist but are not translated yet.
-- Translate only selected entries in the table.
+- Dịch hàng loạt từ vựng hệ thống và plugin.
+- Dịch nội dung collection, field và menu.
+- Chỉ dịch các từ vựng được chọn trong bảng.
 
-## Prerequisites
+## Điều kiện tiên quyết
 
-Before using Lina, complete the following setup:
+Trước khi dùng Lina, hãy hoàn tất cấu hình sau:
 
-- Enable the **Localization Management** plugin.
-- Configure an available LLM service and assign a default model to Lina. See [Configure AI Employee Models](/ai-employees/features/model-settings) and [Model Recommendations](#model-recommendations).
-- Enable the target language in system settings.
-- Synchronize the entries to translate on the Localization Management page.
+- Bật plugin **Quản lý bản địa hóa**.
+- Cấu hình dịch vụ LLM khả dụng và gán mô hình mặc định cho Lina. Xem [Cấu hình mô hình cho AI Employee](/ai-employees/features/model-settings) và [Khuyến nghị chọn mô hình](#khuyến-nghị-chọn-mô-hình).
+- Bật ngôn ngữ đích trong cài đặt hệ thống.
+- Đồng bộ các từ vựng cần dịch trên trang Quản lý bản địa hóa.
 
-:::info{title=Tip}
-Lina creates translation tasks for the current locale. For example, if the current UI locale is Thai, the task generates Thai translations.
+:::info{title=Mẹo}
+Lina tạo tác vụ dịch cho locale hiện tại.
 :::
 
-## Usage
+## Cách sử dụng
 
-On the Localization Management page, click Lina's avatar and choose one of the AI translation task scopes.
+Trên trang Quản lý bản địa hóa, click avatar của Lina và chọn phạm vi tác vụ dịch bằng AI.
 
-### Incremental Translation
+### Dịch tăng dần
 
-Only translate entries that do not have a translation for the current language. This is suitable for daily maintenance after adding plugins, fields, or menus.
+Chỉ dịch các từ vựng chưa có bản dịch trong ngôn ngữ hiện tại.
 
-### Selected Translation
+### Dịch mục đã chọn
 
-Select records in the entries table first, then choose selected translation. This is suitable for retranslating a small set of entries or entries that need manual correction.
+Trước tiên chọn các từ vựng trong bảng, rồi chỉ dịch nội dung đã chọn.
 
-If no entry is selected, the system prompts you to select records first.
+Nếu chưa chọn từ vựng nào, hệ thống sẽ yêu cầu chọn bản ghi trước.
 
-### Full Translation
+### Dịch toàn bộ
 
-Translate all eligible entries in the current language. This is suitable when generating the first version of a newly enabled language.
+Dịch tất cả từ vựng đủ điều kiện trong ngôn ngữ hiện tại.
 
-:::warning{title=Note}
-Full translation may overwrite existing translations. Confirm the target language, entry count, and model service before starting.
+:::warning{title=Lưu ý}
+Dịch toàn bộ có thể ghi đè bản dịch hiện có. Hãy xác nhận ngôn ngữ đích, số lượng từ vựng và dịch vụ mô hình trước khi bắt đầu.
 :::
 
-## Task Confirmation
+## Xác nhận tác vụ
 
-Before creating the task, the system displays a confirmation dialog with:
+Trước khi tạo tác vụ, hệ thống hiển thị hộp thoại xác nhận gồm:
 
-- Number of entries to translate.
-- Provider to use.
-- Model to use.
+- Số lượng từ vựng cần dịch.
+- Provider sẽ sử dụng.
+- Mô hình sẽ sử dụng.
 
-After confirmation, the system creates a background task. You can view progress in async tasks. When the task completes, translations are written to the corresponding language.
+Sau khi xác nhận, hệ thống tạo tác vụ chạy nền. Có thể xem tiến độ trong async tasks. Khi hoàn tất, bản dịch được ghi vào ngôn ngữ tương ứng.
 
 ![](https://static-docs.nocobase.com/202605121233608.png)
 
-## Translation Strategy
+## Chiến lược dịch
 
-Lina follows these rules when translating localization entries:
+Lina tuân theo các quy tắc sau khi dịch:
 
-- Return only the translated text without explanation, summary, Markdown, or extra content.
-- Preserve variables, placeholders, HTML tags, ICU syntax, code-like tokens, and formatting symbols.
-- Preserve meaningful line breaks.
-- Keep UI text concise and natural for buttons, fields, menus, and prompts.
-- Return text unchanged if it should not be translated.
+- Chỉ trả về nội dung đã dịch, không giải thích hoặc thêm nội dung khác.
+- Giữ nguyên biến, placeholder, tag HTML, cú pháp ICU và định dạng.
+- Giữ văn bản UI ngắn gọn và tự nhiên.
 
-## Reference Translations
+## Bản dịch tham chiếu
 
-Some entries are short, such as field names, button labels, and statuses. Lina uses existing reference translations when possible to improve consistency.
+Các từ vựng ngắn như tên field, nút và trạng thái dùng bản dịch tham chiếu để tăng tính nhất quán.
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If the system default language is English, the English entry is used directly as the source.
+- Từ vựng tích hợp ưu tiên dùng bản dịch tiếng Trung làm tham chiếu.
+- Từ vựng không tích hợp ưu tiên dùng ngôn ngữ mặc định của hệ thống.
 
-When a reference is available, Lina uses a prompt with semantics similar to:
+Khi có tham chiếu, Lina dùng prompt có ngữ nghĩa tương tự:
 
 ```text
 Refer to the following translation:
@@ -100,43 +95,39 @@ Translate the following text into {target_language}. Output only the translated 
 {source_text}
 ```
 
-## Model Recommendations
+## Khuyến nghị chọn mô hình
 
-Localization translation usually processes many entries in one task. If possible, use a locally deployed translation-specific small model first, because online models often have API rate limits, concurrency limits, or token-per-minute limits. When many entries are translated, rate limiting can make tasks much slower or cause some requests to wait or fail.
+Dịch bản địa hóa thường xử lý nhiều từ vựng. Nếu có thể, ưu tiên dùng mô hình nhỏ chuyên dịch triển khai cục bộ vì mô hình online thường có giới hạn tần suất, concurrency hoặc token.
 
-If local deployment is not possible, use a translation-specific model rather than a general chat model. Translation models are usually better for short entries, UI text, and batch translation. If the model service supports dedicated translation parameters, the system passes source text, source language, target language, and terminology information according to the model rules.
+Nếu không thể triển khai cục bộ, hãy chọn mô hình chuyên dịch thay vì mô hình chat thông thường.
 
-You can adjust request concurrency according to model capability to better control throughput, response time, and cost.
+Có thể điều chỉnh concurrency theo năng lực mô hình để kiểm soát thông lượng, thời gian phản hồi và chi phí.
 
-For a complete practice using a locally deployed translation-specific small model, see [Use Lina and local HY-MT1.5-1.8B to translate localization entries](/ai-employees/scenarios/localization-hy-mt).
+Để xem thực hành đầy đủ với mô hình nhỏ chuyên dịch được triển khai cục bộ, xem [Dùng Lina và HY-MT1.5-1.8B cục bộ để dịch từ vựng bản địa hóa](/ai-employees/scenarios/localization-hy-mt).
 
-:::info{title=Tip}
-The concurrency of localization translation tasks is controlled by `AI_LOCALIZATION_CONCURRENCY`. The default is `10`, the allowed range is `1` to `20`, and values outside the range use the default.
+:::info{title=Mẹo}
+Concurrency được điều khiển bằng `AI_LOCALIZATION_CONCURRENCY`. Mặc định `10`, phạm vi `1` đến `20`; ngoài phạm vi sẽ dùng mặc định.
 :::
 
-## Progress and Failure Handling
+## Tiến độ và xử lý lỗi
 
-Lina translation tasks run as background async tasks. The task writes translation results entry by entry and updates progress.
+Tác vụ dịch của Lina chạy nền dưới dạng async task và ghi kết quả theo từng từ vựng.
 
 ![](https://static-docs.nocobase.com/202605121235761.png)
 
-If an entry fails to translate, the task records the failure and stops to avoid continuing to write uncontrolled results when model calls, model output, or configuration is abnormal. Common causes include:
+Nếu một từ vựng dịch lỗi, lỗi sẽ được ghi lại và tác vụ dừng để tránh kết quả không kiểm soát.
 
-- AI plugin or Async Task Manager plugin is not enabled.
-- Lina does not have an available model configured.
-- Model service is unavailable or times out.
-- Model service does not support the current request format.
-- Model returns empty content.
+- Plugin AI hoặc Async Task Manager chưa được bật.
+- Lina chưa được cấu hình mô hình khả dụng.
+- Dịch vụ mô hình không khả dụng hoặc timeout.
 
-Check async task details and server logs for provider, model, target language, failed entry ID, and model call duration.
+Kiểm tra chi tiết async task và log server: provider, mô hình, ngôn ngữ đích, ID từ vựng và thời gian gọi.
 
-## Review Before Publishing
+## Kiểm tra trước khi phát hành
 
-After AI translation finishes, review before publishing:
+Sau khi dịch bằng AI xong, kiểm tra trước khi phát hành:
 
-- Check whether short entries such as menus, buttons, and field names fit the product context.
-- Check whether variables, placeholders, and HTML tags are preserved.
-- Check business terminology consistency.
-- Check important pages and user-facing text for natural wording.
-- If built-in entry translations are overwritten, return to Localization Management and select `Reset system built-in entry translations` during synchronization to restore defaults. To contribute default translations for the system and official plugins, see [Translation Contribution](/get-started/translations).
-- Publish translations after review.
+- Từ vựng ngắn như menu, nút và tên field phù hợp ngữ cảnh sản phẩm.
+- Biến, placeholder và tag HTML được giữ nguyên.
+- Thuật ngữ nghiệp vụ nhất quán.
+- Phát hành sau khi kiểm tra.

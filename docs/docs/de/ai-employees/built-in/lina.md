@@ -1,95 +1,90 @@
 ---
-title: 'Lina: Localization Engineer'
-description: 'Lina is the built-in AI Employee of the Localization plugin, used to translate NocoBase system localization entries and plugin UI text.'
+title: 'Lina: Lokalisierungsingenieurin'
+description: 'NocoBase AI-Mitarbeiterdokumentation.'
 keywords: 'Lina,Localization Engineer,AI translation,Localization Management,AI Employee,NocoBase'
 ---
 
-# Lina: Localization Engineer
+# Lina: Lokalisierungsingenieurin
 
-## Role
+## Rolle
 
-Lina is the built-in AI Employee registered by the Localization plugin. It focuses on system localization translation, translating localization entries into the target language while preserving variables, placeholders, tags, formatting, and concise UI wording.
+Lina: Lokalisierungsingenieurin ist auf dieses integrierte NocoBase-Szenario spezialisiert und hilft, die entsprechenden Aufgaben effizienter zu erledigen.
 
 ![](https://static-docs.nocobase.com/202605121152196.png)
 
-:::info{title=Tip}
-Lina is a dedicated AI Employee for localization scenarios and does not use general Skills or Tools.
+:::info{title=Hinweis}
+Lina ist für Lokalisierungsszenarien dediziert und verwendet keine allgemeinen Skills oder Tools.
 :::
 
-## Scenarios
+## Szenarien
 
-- Batch translate system and plugin entries.
-- Translate localization content for collections, fields, and menus.
-- Quickly generate an initial translation for a newly enabled language.
-- Incrementally translate entries that already exist but are not translated yet.
-- Translate only selected entries in the table.
+- System- und Plugin-Einträge stapelweise übersetzen.
+- Lokalisierungsinhalte für Sammlungen, Felder und Menüs übersetzen.
+- Nur ausgewählte Einträge in der Tabelle übersetzen.
 
-## Prerequisites
+## Voraussetzungen
 
-Before using Lina, complete the following setup:
+Schließen Sie vor der Verwendung folgende Einrichtung ab:
 
-- Enable the **Localization Management** plugin.
-- Configure an available LLM service and assign a default model to Lina. See [Configure AI Employee Models](/ai-employees/features/model-settings) and [Model Recommendations](#model-recommendations).
-- Enable the target language in system settings.
-- Synchronize the entries to translate on the Localization Management page.
+- Aktivieren Sie das Plugin **Lokalisierungsverwaltung**.
+- Konfigurieren Sie einen verfügbaren LLM-Dienst und weisen Sie Lina ein Standardmodell zu. Siehe [AI-Mitarbeitermodelle konfigurieren](/ai-employees/features/model-settings) und [Modellauswahl-Empfehlungen](#modellauswahl-empfehlungen).
+- Aktivieren Sie die Zielsprache in den Systemeinstellungen.
+- Synchronisieren Sie die zu übersetzenden Einträge auf der Lokalisierungsverwaltungsseite.
 
-:::info{title=Tip}
-Lina creates translation tasks for the current locale. For example, if the current UI locale is Thai, the task generates Thai translations.
+:::info{title=Hinweis}
+Lina erstellt Übersetzungsaufgaben für die aktuelle Sprache.
 :::
 
-## Usage
+## Verwendung
 
-On the Localization Management page, click Lina's avatar and choose one of the AI translation task scopes.
+Klicken Sie auf der Lokalisierungsverwaltungsseite auf Linas Avatar und wählen Sie den Umfang der AI-Übersetzungsaufgabe.
 
-### Incremental Translation
+### Inkrementelle Übersetzung
 
-Only translate entries that do not have a translation for the current language. This is suitable for daily maintenance after adding plugins, fields, or menus.
+Übersetzt nur Einträge ohne Übersetzung in der aktuellen Sprache.
 
-### Selected Translation
+### Ausgewählte Übersetzung
 
-Select records in the entries table first, then choose selected translation. This is suitable for retranslating a small set of entries or entries that need manual correction.
+Wählen Sie zuerst Tabelleneinträge aus und übersetzen Sie dann nur die ausgewählten Inhalte.
 
-If no entry is selected, the system prompts you to select records first.
+Wenn kein Eintrag ausgewählt ist, fordert das System zur Auswahl auf.
 
-### Full Translation
+### Vollständige Übersetzung
 
-Translate all eligible entries in the current language. This is suitable when generating the first version of a newly enabled language.
+Übersetzt alle geeigneten Einträge der aktuellen Sprache.
 
-:::warning{title=Note}
-Full translation may overwrite existing translations. Confirm the target language, entry count, and model service before starting.
+:::warning{title=Hinweis}
+Die vollständige Übersetzung kann vorhandene Übersetzungen überschreiben. Prüfen Sie Zielsprache, Anzahl der Einträge und Modelldienst vor dem Start.
 :::
 
-## Task Confirmation
+## Aufgabenbestätigung
 
-Before creating the task, the system displays a confirmation dialog with:
+Vor dem Erstellen der Aufgabe zeigt das System einen Bestätigungsdialog mit:
 
-- Number of entries to translate.
-- Provider to use.
-- Model to use.
+- Anzahl der zu übersetzenden Einträge.
+- Zu verwendender Provider.
+- Zu verwendendes Modell.
 
-After confirmation, the system creates a background task. You can view progress in async tasks. When the task completes, translations are written to the corresponding language.
+Nach der Bestätigung erstellt das System eine Hintergrundaufgabe. Der Fortschritt ist in asynchronen Aufgaben sichtbar. Nach Abschluss werden die Übersetzungen in die entsprechende Sprache geschrieben.
 
 ![](https://static-docs.nocobase.com/202605121233608.png)
 
-## Translation Strategy
+## Übersetzungsstrategie
 
-Lina follows these rules when translating localization entries:
+Lina folgt beim Übersetzen diesen Regeln:
 
-- Return only the translated text without explanation, summary, Markdown, or extra content.
-- Preserve variables, placeholders, HTML tags, ICU syntax, code-like tokens, and formatting symbols.
-- Preserve meaningful line breaks.
-- Keep UI text concise and natural for buttons, fields, menus, and prompts.
-- Return text unchanged if it should not be translated.
+- Nur den übersetzten Text ohne Erklärung oder Zusatzinhalt zurückgeben.
+- Variablen, Platzhalter, HTML-Tags, ICU-Syntax und Formatierung beibehalten.
+- UI-Texte kurz und natürlich halten.
 
-## Reference Translations
+## Referenzübersetzungen
 
-Some entries are short, such as field names, button labels, and statuses. Lina uses existing reference translations when possible to improve consistency.
+Kurze Einträge wie Feldnamen, Buttons und Status nutzen vorhandene Referenzübersetzungen, um Konsistenz zu verbessern.
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If the system default language is English, the English entry is used directly as the source.
+- Integrierte Einträge verwenden bevorzugt chinesische Übersetzungen als Referenz.
+- Nicht integrierte Einträge verwenden bevorzugt die Standardsprache des Systems.
 
-When a reference is available, Lina uses a prompt with semantics similar to:
+Wenn eine Referenz vorhanden ist, verwendet Lina sinngemäß folgenden Prompt:
 
 ```text
 Refer to the following translation:
@@ -100,43 +95,39 @@ Translate the following text into {target_language}. Output only the translated 
 {source_text}
 ```
 
-## Model Recommendations
+## Modellauswahl-Empfehlungen
 
-Localization translation usually processes many entries in one task. If possible, use a locally deployed translation-specific small model first, because online models often have API rate limits, concurrency limits, or token-per-minute limits. When many entries are translated, rate limiting can make tasks much slower or cause some requests to wait or fail.
+Lokalisierungsübersetzungen verarbeiten oft viele Einträge. Wenn möglich, nutzen Sie zuerst ein lokal bereitgestelltes kleines Übersetzungsmodell, da Online-Modelle häufig Raten-, Parallelitäts- oder Token-Limits haben.
 
-If local deployment is not possible, use a translation-specific model rather than a general chat model. Translation models are usually better for short entries, UI text, and batch translation. If the model service supports dedicated translation parameters, the system passes source text, source language, target language, and terminology information according to the model rules.
+Wenn keine lokale Bereitstellung möglich ist, wählen Sie ein spezialisiertes Übersetzungsmodell statt eines allgemeinen Chatmodells.
 
-You can adjust request concurrency according to model capability to better control throughput, response time, and cost.
+Die Parallelität kann je nach Modellfähigkeit angepasst werden, um Durchsatz, Antwortzeit und Kosten zu steuern.
 
-For a complete practice using a locally deployed translation-specific small model, see [Use Lina and local HY-MT1.5-1.8B to translate localization entries](/ai-employees/scenarios/localization-hy-mt).
+Eine vollständige Praxis mit lokal bereitgestelltem Übersetzungsmodell finden Sie unter [Mit Lina und lokalem HY-MT1.5-1.8B Lokalisierungseinträge übersetzen](/ai-employees/scenarios/localization-hy-mt).
 
-:::info{title=Tip}
-The concurrency of localization translation tasks is controlled by `AI_LOCALIZATION_CONCURRENCY`. The default is `10`, the allowed range is `1` to `20`, and values outside the range use the default.
+:::info{title=Hinweis}
+Die Parallelität wird über `AI_LOCALIZATION_CONCURRENCY` gesteuert. Standard ist `10`, erlaubt sind `1` bis `20`; Werte außerhalb des Bereichs verwenden den Standard.
 :::
 
-## Progress and Failure Handling
+## Fortschritt und Fehlerbehandlung
 
-Lina translation tasks run as background async tasks. The task writes translation results entry by entry and updates progress.
+Lina-Übersetzungsaufgaben laufen als asynchrone Hintergrundaufgaben und schreiben Ergebnisse eintragsweise.
 
 ![](https://static-docs.nocobase.com/202605121235761.png)
 
-If an entry fails to translate, the task records the failure and stops to avoid continuing to write uncontrolled results when model calls, model output, or configuration is abnormal. Common causes include:
+Wenn ein Eintrag fehlschlägt, wird der Fehler aufgezeichnet und die Aufgabe gestoppt, um unkontrollierte Ergebnisse zu vermeiden.
 
-- AI plugin or Async Task Manager plugin is not enabled.
-- Lina does not have an available model configured.
-- Model service is unavailable or times out.
-- Model service does not support the current request format.
-- Model returns empty content.
+- AI-Plugin oder Async Task Manager ist nicht aktiviert.
+- Lina hat kein verfügbares Modell konfiguriert.
+- Der Modelldienst ist nicht verfügbar oder läuft in ein Timeout.
 
-Check async task details and server logs for provider, model, target language, failed entry ID, and model call duration.
+Prüfen Sie asynchrone Aufgabendetails und Serverlogs auf Provider, Modell, Zielsprache, Eintrags-ID und Dauer.
 
-## Review Before Publishing
+## Prüfung vor Veröffentlichung
 
-After AI translation finishes, review before publishing:
+Nach Abschluss der AI-Übersetzung vor der Veröffentlichung prüfen:
 
-- Check whether short entries such as menus, buttons, and field names fit the product context.
-- Check whether variables, placeholders, and HTML tags are preserved.
-- Check business terminology consistency.
-- Check important pages and user-facing text for natural wording.
-- If built-in entry translations are overwritten, return to Localization Management and select `Reset system built-in entry translations` during synchronization to restore defaults. To contribute default translations for the system and official plugins, see [Translation Contribution](/get-started/translations).
-- Publish translations after review.
+- Kurze Einträge wie Menüs, Buttons und Feldnamen passen zum Produktkontext.
+- Variablen, Platzhalter und HTML-Tags bleiben erhalten.
+- Geschäftsterminologie ist konsistent.
+- Nach der Prüfung veröffentlichen.

@@ -1,87 +1,70 @@
 ---
-pkg: '@nocobase/plugin-ai'
-title: 'Configure AI Employee Models'
-description: 'Restrict the model range for a single AI Employee, configure dedicated models, and understand model selection rules in chat, shortcut tasks, and workflows.'
+title: 'Настройка моделей AI-сотрудников'
+description: 'Настройка моделей AI-сотрудников.'
 keywords: 'AI Employee model settings,dedicated model,model scope,LLM service,NocoBase AI'
 ---
 
-# Configure AI Employee Models
+# Настройка моделей AI-сотрудников
 
-By default, AI Employees can use all enabled LLM services and models in the system. Administrators can also enable dedicated model settings for a specific AI Employee and restrict that employee to selected models.
+По умолчанию AI-сотрудники могут использовать все включенные LLM-сервисы и модели. Администраторы могут включить выделенные настройки модели для конкретного сотрудника и ограничить набор моделей.
 
-This is useful when you need stable model capability, cost control, or a task-specific model. For example, Lina can be fixed to a translation model, while Viz can be limited to models that are better at data analysis.
+## Предварительные условия
 
-## Prerequisites
+- Плагин **AI Employees** включен.
+- Настроен хотя бы один LLM-сервис.
+- Целевой AI-сотрудник включен.
 
-Before configuring models for an AI Employee, make sure that:
+Настройку LLM-сервиса см. [Настройка LLM-сервиса](/ai-employees/features/llm-service).
 
-- The **AI Employees** plugin is enabled.
-- At least one LLM service has been configured.
-- The LLM service has available `Enabled Models`.
-- The target AI Employee is enabled.
+## Точки входа
 
-For LLM service setup, see [Configure LLM Service](/ai-employees/features/llm-service).
-
-## Entry Point
-
-Go to `System Settings -> AI Employees -> AI employees`, open the AI Employee you want to configure, and switch to `Model settings`.
-
-You can enable or disable dedicated model settings for the current employee on this page.
+Перейдите в `System Settings -> AI Employees -> AI employees`, откройте нужного сотрудника и переключитесь на `Model settings`.
 
 ![](https://static-docs.nocobase.com/202605121216415.png)
 
-## Enable Dedicated Model Settings
+## Включение настроек выделенной модели
 
-After enabling `Enable dedicated model configuration`, select the models that this AI Employee is allowed to use in `Models`.
+После включения `Enable dedicated model configuration` выберите разрешенные модели в `Models`.
 
-Multiple models can be selected. The options come from enabled LLM services and their `Enabled Models`.
+- Переключатель модели в чате показывает только выбранные модели.
+- Быстрые задачи и workflow-узлы могут использовать только выбранные модели.
 
-After this option is enabled, the AI Employee can only use the selected models:
-
-- The model switcher in chat only shows selected models.
-- Shortcut tasks can only use selected models.
-- Workflow AI Employee nodes can only select selected models.
-- If a request passes a model outside the allowed range, the system uses the first allowed model instead.
-
-:::info{title=Tip}
-If dedicated model settings are enabled but no model is selected, the AI Employee cannot resolve an available model and will report that the model is not configured.
+:::info{title=Совет}
+Если выделенные настройки активны, но модель не выбрана, доступная модель не будет определена.
 :::
 
-## Disable Dedicated Model Settings
+## Отключение настроек выделенной модели
 
-After disabling `Enable dedicated model configuration`, the AI Employee returns to the default model rules:
+После отключения снова применяются правила по умолчанию:
 
-- It can use all enabled LLM service models.
-- Users can switch to any available model in chat.
-- If no model is selected manually, the system uses the global default model.
+- Можно использовать все включенные LLM-модели.
+- Без ручного выбора система использует глобальную модель по умолчанию.
 
-## Model Resolution Rules
+## Правила выбора модели
 
-When an AI Employee executes a task, the final model is resolved in this order:
+При выполнении задачи итоговая модель выбирается в таком порядке:
 
-1. If dedicated model settings are enabled, resolve within the selected model range first.
-2. If the request specifies a model and that model is allowed, use the specified model.
-3. If the specified model is not allowed, use the first allowed model.
-4. If dedicated model settings are not enabled, prefer the model specified by the request.
-5. If no model is specified, use the global default model.
+1. Если выделенные настройки модели включены, сначала выбирать модель в пределах выбранного диапазона.
+2. Если запрос указывает модель и она разрешена, использовать эту модель.
+3. Если указанная модель не разрешена, использовать первую разрешенную модель.
+4. Если выделенные настройки не включены, предпочитать модель, указанную в запросе.
+5. Если модель не указана, использовать глобальную модель по умолчанию.
 
-## Recommendations
+## Рекомендации
 
-- Configure task-specific models for specialized employees. Translation, localization, data analysis, and code generation may benefit from different models.
-- Use lower-cost models for cost-sensitive scenarios and prevent users from switching to expensive models.
-- For employees that need tool calling, web search, or structured output, choose models that support those capabilities.
-- Keep at least one stable model available for key built-in employees to avoid task failures.
+- Если локальное развертывание невозможно, выбирайте специализированную переводческую модель, а не обычную чат-модель.
+- Параллелизм можно настраивать по возможностям модели для управления пропускной способностью, временем ответа и стоимостью.
 
 ## FAQ
 
-### Why is the model list empty?
+### Почему список моделей пуст?
 
-Usually because no LLM service has been configured, or no model is enabled in the LLM service. Check `Enabled Models` in `LLM service` first.
+Обычно LLM-сервис не настроен или модель не включена. Проверьте `Enabled Models`.
 
-### Why can't users switch to other models?
+### Почему пользователи не могут переключаться на другие модели?
 
-If the AI Employee has dedicated model settings enabled, the chat window only allows switching within the selected model range. Add more models in `Model settings` or disable dedicated model settings if other models are needed.
+При включенных выделенных настройках доступен только выбранный диапазон моделей.
 
-### Which entries are affected after model settings are changed?
+### Какие записи затрагиваются?
 
-The change affects new chats, shortcut tasks, workflow AI Employee nodes, and plugin built-in tasks started by this AI Employee. Completed historical messages are not regenerated.
+Затрагивает новые чаты, быстрые задачи, workflow-узлы AI Employee и встроенные задачи плагина. Исторические сообщения не пересоздаются.

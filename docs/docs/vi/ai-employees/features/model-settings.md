@@ -1,87 +1,70 @@
 ---
-pkg: '@nocobase/plugin-ai'
-title: 'Configure AI Employee Models'
-description: 'Restrict the model range for a single AI Employee, configure dedicated models, and understand model selection rules in chat, shortcut tasks, and workflows.'
+title: 'Cấu hình mô hình cho AI Employee'
+description: 'Cấu hình mô hình cho AI Employee.'
 keywords: 'AI Employee model settings,dedicated model,model scope,LLM service,NocoBase AI'
 ---
 
-# Configure AI Employee Models
+# Cấu hình mô hình cho AI Employee
 
-By default, AI Employees can use all enabled LLM services and models in the system. Administrators can also enable dedicated model settings for a specific AI Employee and restrict that employee to selected models.
+Mặc định, AI Employee có thể dùng tất cả dịch vụ LLM và mô hình đã bật. Quản trị viên có thể bật cấu hình mô hình riêng cho từng employee và giới hạn phạm vi mô hình.
 
-This is useful when you need stable model capability, cost control, or a task-specific model. For example, Lina can be fixed to a translation model, while Viz can be limited to models that are better at data analysis.
+## Điều kiện tiên quyết
 
-## Prerequisites
+- Plugin **AI Employees** đã được bật.
+- Đã cấu hình ít nhất một dịch vụ LLM.
+- AI Employee mục tiêu đã được bật.
 
-Before configuring models for an AI Employee, make sure that:
+Để cấu hình dịch vụ LLM, xem [Cấu hình dịch vụ LLM](/ai-employees/features/llm-service).
 
-- The **AI Employees** plugin is enabled.
-- At least one LLM service has been configured.
-- The LLM service has available `Enabled Models`.
-- The target AI Employee is enabled.
+## Điểm vào
 
-For LLM service setup, see [Configure LLM Service](/ai-employees/features/llm-service).
-
-## Entry Point
-
-Go to `System Settings -> AI Employees -> AI employees`, open the AI Employee you want to configure, and switch to `Model settings`.
-
-You can enable or disable dedicated model settings for the current employee on this page.
+Vào `System Settings -> AI Employees -> AI employees`, mở employee cần cấu hình và chuyển sang `Model settings`.
 
 ![](https://static-docs.nocobase.com/202605121216415.png)
 
-## Enable Dedicated Model Settings
+## Bật cấu hình mô hình riêng
 
-After enabling `Enable dedicated model configuration`, select the models that this AI Employee is allowed to use in `Models`.
+Sau khi bật `Enable dedicated model configuration`, chọn các mô hình được phép trong `Models`.
 
-Multiple models can be selected. The options come from enabled LLM services and their `Enabled Models`.
+- Bộ chọn mô hình trong chat chỉ hiển thị mô hình đã chọn.
+- Shortcut task và node workflow chỉ có thể dùng mô hình đã chọn.
 
-After this option is enabled, the AI Employee can only use the selected models:
-
-- The model switcher in chat only shows selected models.
-- Shortcut tasks can only use selected models.
-- Workflow AI Employee nodes can only select selected models.
-- If a request passes a model outside the allowed range, the system uses the first allowed model instead.
-
-:::info{title=Tip}
-If dedicated model settings are enabled but no model is selected, the AI Employee cannot resolve an available model and will report that the model is not configured.
+:::info{title=Mẹo}
+Nếu cấu hình mô hình riêng bật nhưng chưa chọn mô hình, hệ thống không thể xác định mô hình khả dụng.
 :::
 
-## Disable Dedicated Model Settings
+## Tắt cấu hình mô hình riêng
 
-After disabling `Enable dedicated model configuration`, the AI Employee returns to the default model rules:
+Sau khi tắt, quy tắc mặc định được áp dụng lại:
 
-- It can use all enabled LLM service models.
-- Users can switch to any available model in chat.
-- If no model is selected manually, the system uses the global default model.
+- Có thể dùng tất cả mô hình LLM đã bật.
+- Nếu không chọn thủ công, hệ thống dùng mô hình mặc định toàn cục.
 
-## Model Resolution Rules
+## Quy tắc xác định mô hình
 
-When an AI Employee executes a task, the final model is resolved in this order:
+Khi chạy tác vụ, mô hình cuối cùng được xác định theo thứ tự sau:
 
-1. If dedicated model settings are enabled, resolve within the selected model range first.
-2. If the request specifies a model and that model is allowed, use the specified model.
-3. If the specified model is not allowed, use the first allowed model.
-4. If dedicated model settings are not enabled, prefer the model specified by the request.
-5. If no model is specified, use the global default model.
+1. Nếu cấu hình mô hình riêng được bật, trước tiên xác định trong phạm vi mô hình đã chọn.
+2. Nếu request chỉ định mô hình và mô hình đó được phép, dùng mô hình đó.
+3. Nếu mô hình được chỉ định không được phép, dùng mô hình được phép đầu tiên.
+4. Nếu cấu hình mô hình riêng chưa bật, ưu tiên mô hình được request chỉ định.
+5. Nếu không chỉ định mô hình, dùng mô hình mặc định toàn cục.
 
-## Recommendations
+## Khuyến nghị
 
-- Configure task-specific models for specialized employees. Translation, localization, data analysis, and code generation may benefit from different models.
-- Use lower-cost models for cost-sensitive scenarios and prevent users from switching to expensive models.
-- For employees that need tool calling, web search, or structured output, choose models that support those capabilities.
-- Keep at least one stable model available for key built-in employees to avoid task failures.
+- Nếu không thể triển khai cục bộ, hãy chọn mô hình chuyên dịch thay vì mô hình chat thông thường.
+- Có thể điều chỉnh concurrency theo năng lực mô hình để kiểm soát thông lượng, thời gian phản hồi và chi phí.
 
 ## FAQ
 
-### Why is the model list empty?
+### Vì sao danh sách mô hình trống?
 
-Usually because no LLM service has been configured, or no model is enabled in the LLM service. Check `Enabled Models` in `LLM service` first.
+Thường do chưa cấu hình LLM hoặc chưa bật mô hình. Kiểm tra `Enabled Models`.
 
-### Why can't users switch to other models?
+### Vì sao người dùng không thể chuyển sang mô hình khác?
 
-If the AI Employee has dedicated model settings enabled, the chat window only allows switching within the selected model range. Add more models in `Model settings` or disable dedicated model settings if other models are needed.
+Khi cấu hình riêng bật, chỉ phạm vi mô hình đã chọn khả dụng.
 
-### Which entries are affected after model settings are changed?
+### Những mục nào bị ảnh hưởng?
 
-The change affects new chats, shortcut tasks, workflow AI Employee nodes, and plugin built-in tasks started by this AI Employee. Completed historical messages are not regenerated.
+Ảnh hưởng đến chat mới, shortcut task, node AI Employee trong workflow và task tích hợp plugin. Tin nhắn lịch sử không được tạo lại.

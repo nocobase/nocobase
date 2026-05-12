@@ -1,25 +1,25 @@
 ---
-title: 'Built-in AI Employees'
-description: 'Overview of NocoBase built-in AI Employees: learn their roles, scenarios, and entry points.'
+title: 'Funcionários de IA integrados'
+description: 'Visão geral dos funcionários de IA integrados.'
 keywords: 'Built-in AI Employees,Atlas,Viz,Dara,Dex,Ellis,Lexi,Vera,Lina,Nathan,NocoBase'
 ---
 
-# Built-in AI Employees
+# Funcionários de IA integrados
 
-NocoBase provides a set of built-in AI Employees for different scenarios. They can help with data analysis, data organization, email processing, translation, localization, frontend development, and more.
+O NocoBase fornece funcionários de IA integrados para diferentes cenários. Eles ajudam com análise de dados, organização de dados, e-mails, tradução, localização, desenvolvimento frontend e mais.
 
 ![](https://static-docs.nocobase.com/202605121048555.png)
 
-## Employee List
+## Lista de funcionários
 
-| Employee | Role | Typical Scenario | Type |
+| Funcionário | Função | Cenário típico | Tipo |
 | --- | --- | --- | --- |
-| [Atlas](./atlas.md) | Team Leader | Understand user intent and coordinate suitable AI Employees | Main Agent |
-| [Viz](./viz.md) | Insights Analyst | Query business data and generate insights or reports | Business Employee |
-| [Dex](./dex.md) | Data Organizer | Extract structured information from text and help fill forms | Business Employee |
-| [Ellis](./ellis.md) | Email Expert | Summarize email context and draft replies | Business Employee |
-| [Lexi](./lexi.md) | Translation Assistant | Conversational multilingual translation | Business Employee |
-| [Vera](./vera.md) | Research Analyst | Web search, information verification, and research summaries | Business Employee |
-| [Nathan](./nathan.md) | Frontend Engineer | Help write or modify frontend code in code editors | Developer Employee |
-| [Lina](./lina.md) | Localization Engineer | Translate system localization entries and plugin UI text | Developer Employee |
-| [Dara](./dara.md) | Data Visualization Expert | Generate charts and visualization configurations from data | Developer Employee |
+| [Atlas](./atlas.md) | Líder de equipe | Trabalhar com conteúdo ou dados do cenário correspondente. | Agente principal |
+| [Viz](./viz.md) | Analista de insights | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Dex](./dex.md) | Organizador de dados | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Ellis](./ellis.md) | Especialista em e-mail | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Lexi](./lexi.md) | Assistente de tradução | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Vera](./vera.md) | Analista de pesquisa | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Nathan](./nathan.md) | Engenheiro Frontend | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário desenvolvedor |
+| [Lina](./lina.md) | Engenheira de localização | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário desenvolvedor |
+| [Dara](./dara.md) | Especialista em visualização de dados | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário desenvolvedor |

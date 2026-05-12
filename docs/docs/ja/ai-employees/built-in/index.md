@@ -1,25 +1,25 @@
 ---
-title: 'Built-in AI Employees'
-description: 'Overview of NocoBase built-in AI Employees: learn their roles, scenarios, and entry points.'
+title: '組み込み AI 従業員'
+description: '組み込み AI 従業員の概要。'
 keywords: 'Built-in AI Employees,Atlas,Viz,Dara,Dex,Ellis,Lexi,Vera,Lina,Nathan,NocoBase'
 ---
 
-# Built-in AI Employees
+# 組み込み AI 従業員
 
-NocoBase provides a set of built-in AI Employees for different scenarios. They can help with data analysis, data organization, email processing, translation, localization, frontend development, and more.
+NocoBase はさまざまなシナリオ向けに組み込み AI 従業員を提供しています。データ分析、データ整理、メール処理、翻訳、ローカライゼーション、フロントエンド開発などを支援します。
 
 ![](https://static-docs.nocobase.com/202605121048555.png)
 
-## Employee List
+## 従業員一覧
 
-| Employee | Role | Typical Scenario | Type |
+| 従業員 | 役割 | 典型的なシナリオ | タイプ |
 | --- | --- | --- | --- |
-| [Atlas](./atlas.md) | Team Leader | Understand user intent and coordinate suitable AI Employees | Main Agent |
-| [Viz](./viz.md) | Insights Analyst | Query business data and generate insights or reports | Business Employee |
-| [Dex](./dex.md) | Data Organizer | Extract structured information from text and help fill forms | Business Employee |
-| [Ellis](./ellis.md) | Email Expert | Summarize email context and draft replies | Business Employee |
-| [Lexi](./lexi.md) | Translation Assistant | Conversational multilingual translation | Business Employee |
-| [Vera](./vera.md) | Research Analyst | Web search, information verification, and research summaries | Business Employee |
-| [Nathan](./nathan.md) | Frontend Engineer | Help write or modify frontend code in code editors | Developer Employee |
-| [Lina](./lina.md) | Localization Engineer | Translate system localization entries and plugin UI text | Developer Employee |
-| [Dara](./dara.md) | Data Visualization Expert | Generate charts and visualization configurations from data | Developer Employee |
+| [Atlas](./atlas.md) | チームリーダー | 対応するシナリオのコンテンツやデータを処理します。 | メインエージェント |
+| [Viz](./viz.md) | インサイトアナリスト | 対応するシナリオのコンテンツやデータを処理します。 | 業務従業員 |
+| [Dex](./dex.md) | データ整理エキスパート | 対応するシナリオのコンテンツやデータを処理します。 | 業務従業員 |
+| [Ellis](./ellis.md) | メールエキスパート | 対応するシナリオのコンテンツやデータを処理します。 | 業務従業員 |
+| [Lexi](./lexi.md) | 翻訳アシスタント | 対応するシナリオのコンテンツやデータを処理します。 | 業務従業員 |
+| [Vera](./vera.md) | リサーチアナリスト | 対応するシナリオのコンテンツやデータを処理します。 | 業務従業員 |
+| [Nathan](./nathan.md) | フロントエンドエンジニア | 対応するシナリオのコンテンツやデータを処理します。 | 開発者従業員 |
+| [Lina](./lina.md) | ローカライゼーションエンジニア | 対応するシナリオのコンテンツやデータを処理します。 | 開発者従業員 |
+| [Dara](./dara.md) | データ可視化エキスパート | 対応するシナリオのコンテンツやデータを処理します。 | 開発者従業員 |

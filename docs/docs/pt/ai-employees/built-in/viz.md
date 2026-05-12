@@ -1,25 +1,24 @@
 ---
-title: 'Viz: Insights Analyst'
-description: 'Viz is the built-in insights analyst in NocoBase, used to query business data and generate analytical conclusions and business reports.'
-keywords: 'Viz,insights analyst,data analysis,AI Employee,NocoBase'
+title: 'Viz: Analista de insights'
+description: 'Documentação de funcionários de IA do NocoBase.'
+keywords: 'viz,Insights Analyst,AI Employee,NocoBase'
 ---
 
-# Viz: Insights Analyst
+# Viz: Analista de insights
 
-## Role
+## Função
 
-Viz focuses on data insights and business analysis. It can read specified data ranges and generate trend analysis, metric interpretation, and structured reports.
+Viz: Analista de insights é especializado neste cenário integrado do NocoBase e ajuda a concluir tarefas relacionadas com mais eficiência.
 
-## Scenarios
+## Cenários
 
-- Generate business analysis reports.
-- Analyze sales, customers, leads, orders, and other business data.
-- Interpret trends, comparisons, conversions, retention, and other metrics.
+- Trabalhar com conteúdo ou dados do cenário correspondente.
+- Reduzir operações manuais repetitivas.
+- Usar o painel de chat ou o ponto de entrada contextual para obter ajuda.
 
-## Entry Points
+## Pontos de entrada
 
-- AI Employee chat panel
-- AI Employee shortcut tasks configured on pages or blocks
-- Scenario entries related to business analysis reports
+- Painel de chat dos funcionários de IA
+- Páginas ou entradas de tarefa relacionadas
 
 ![clipboard-image-1771913319](https://static-docs.nocobase.com/clipboard-image-1771913319.png)

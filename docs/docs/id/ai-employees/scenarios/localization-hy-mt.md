@@ -1,55 +1,53 @@
 ---
 pkg: '@nocobase/plugin-ai'
-title: 'Use Lina and local HY-MT to translate localization entries'
-description: 'Deploy the HY-MT1.5 GGUF translation model with llama-server and configure it for Lina to batch translate NocoBase localization entries.'
+title: 'Menggunakan Lina dan HY-MT1.5-1.8B lokal untuk menerjemahkan entri lokalisasi'
+description: 'Deploy model terjemahan HY-MT1.5 GGUF dengan llama-server dan konfigurasikan agar Lina menerjemahkan entri lokalisasi NocoBase secara batch.'
 keywords: 'Lina,localization,HY-MT,GGUF,llama-server,OpenAI compatible,AI translation,NocoBase'
 ---
 
-# Use Lina and local HY-MT1.5-1.8B to translate localization entries
+# Menggunakan Lina dan HY-MT1.5-1.8B lokal untuk menerjemahkan entri lokalisasi
 
-This guide describes a localization translation practice: deploy a translation-specific small model locally, expose it as an OpenAI-compatible service, and configure it for Lina to translate localization entries in batches.
+Panduan ini menjelaskan praktik penerjemahan lokalisasi: deploy model kecil khusus terjemahan secara lokal, ekspos sebagai layanan yang kompatibel dengan OpenAI, lalu konfigurasikan untuk Lina agar dapat menerjemahkan entri lokalisasi NocoBase secara batch.
 
-This approach is suitable for translating many system entries, plugin text, menus, collection titles, and field labels. Compared with online models, local models are not affected by external API RPM, TPM, or concurrency limits, and concurrency can be tuned according to machine and model capability.
+Pendekatan ini cocok untuk menerjemahkan banyak entri sistem, teks plugin, menu, judul koleksi, dan label field. Dibandingkan model online, model lokal tidak terdampak batas RPM, TPM, atau konkurensi API eksternal, dan konkurensi dapat disesuaikan menurut kemampuan mesin dan model.
 
-## Overview
+## Gambaran umum
 
-This guide uses:
+Panduan ini menggunakan:
 
 - Model: `tencent/HY-MT1.5-1.8B-GGUF`
-- Inference service: `llama-server`
-- Integration: OpenAI-compatible API
+- Layanan inferensi: `llama-server`
+- Integrasi: OpenAI-compatible API
 - AI Employee: Lina
-- Entry point: Localization Management page
+- Titik masuk: halaman Localization Management
 
-:::info{title=Note}
-HY-MT1.5-1.8B is a translation-specific small model. It is more suitable for short entries, UI text, and batch translation. General chat models are not recommended as the first choice for localization tasks.
+:::info{title=Catatan}
+HY-MT1.5-1.8B adalah model kecil khusus terjemahan. Model ini lebih cocok untuk entri pendek, teks UI, dan terjemahan batch. Model chat umum tidak direkomendasikan sebagai pilihan pertama untuk tugas lokalisasi.
 :::
 
-## Prerequisites
+## Prasyarat
 
-Before starting, prepare:
-
-- The **Localization Management** plugin is enabled.
-- Target language is enabled.
-- Localization entries have been synchronized.
-- The local machine or server can run [`llama-server`](https://github.com/ggml-org/llama.cpp).
-- The NocoBase service can access the HTTP address of `llama-server`.
+- Plugin **Localization Management** sudah diaktifkan.
+- Bahasa target sudah diaktifkan.
+- Entri lokalisasi sudah disinkronkan.
+- Mesin lokal atau server dapat menjalankan [`llama-server`](https://github.com/ggml-org/llama.cpp).
+- Layanan NocoBase dapat mengakses alamat HTTP `llama-server`.
 
 ## Deploy HY-MT GGUF
 
-### Install llama.cpp
+### Instal llama.cpp
 
-On macOS, you can install it with Homebrew:
+Di macOS, Anda dapat menginstalnya dengan Homebrew:
 
 ```bash
 brew install llama.cpp
 ```
 
-You can also use a prebuilt llama.cpp binary or build it from source. The final requirement is that `llama-server` is available.
+Anda juga dapat memakai binary llama.cpp yang sudah dibangun atau membangunnya dari source. Syarat akhirnya adalah `llama-server` tersedia.
 
-### Start an OpenAI-compatible service
+### Mulai layanan kompatibel OpenAI
 
-Start the service with the GGUF model from Hugging Face:
+Mulai layanan dengan model GGUF dari Hugging Face:
 
 ```bash
 llama-server \
@@ -60,27 +58,27 @@ llama-server \
   -np 4
 ```
 
-| Parameter | Description |
+| Parameter | Deskripsi |
 | --- | --- |
-| `-hf` | Load the model from Hugging Face. |
-| `--host` | Listening address. Use `127.0.0.1` for local testing or `0.0.0.0` for container or remote access. |
-| `--port` | HTTP service port. |
-| `-c` | Context length. Localization entries are usually short, so `2048` is usually enough. |
-| `-np` | Number of parallel slots. Adjust according to machine performance. |
+| `-hf` | Memuat model dari Hugging Face. |
+| `--host` | Alamat listen. Gunakan `127.0.0.1` untuk pengujian lokal atau `0.0.0.0` untuk akses container atau remote. |
+| `--port` | Port layanan HTTP. |
+| `-c` | Panjang konteks. Entri lokalisasi biasanya pendek, sehingga `2048` biasanya cukup. |
+| `-np` | Jumlah slot paralel. Sesuaikan dengan performa mesin. |
 
-:::info{title=Tip}
-If server resources are limited, start with `-np 1` or `-np 2`, then increase gradually after verifying stability.
+:::info{title=Tips}
+Jika sumber daya server terbatas, mulai dari `-np 1` atau `-np 2`, lalu tingkatkan bertahap setelah stabilitas terverifikasi.
 :::
 
-## Test the Model Service
+## Uji layanan model
 
-After `llama-server` starts, check service health:
+Setelah `llama-server` berjalan, periksa kesehatan layanan:
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-Then test translation through the OpenAI-compatible API:
+Lalu uji terjemahan melalui API kompatibel OpenAI:
 
 ```bash
 curl http://127.0.0.1:8000/v1/chat/completions \
@@ -96,97 +94,95 @@ curl http://127.0.0.1:8000/v1/chat/completions \
   }'
 ```
 
-If you start from a local model file, change `model` to the actual model name returned or configured by the service.
+Jika menggunakan file model lokal, ubah `model` menjadi nama model sebenarnya yang dikembalikan atau dikonfigurasi oleh layanan.
 
-:::warning{title=Note}
-If a request does not respond for a long time, the model may be too slow, concurrency may be too high, or context may be too large. Lower `-np` and NocoBase translation concurrency first, then observe response time.
+:::warning{title=Catatan}
+Jika permintaan tidak merespons lama, model mungkin terlalu lambat, konkurensi terlalu tinggi, atau konteks terlalu besar. Turunkan `-np` dan konkurensi terjemahan NocoBase terlebih dahulu, lalu amati waktu respons.
 :::
 
-## Configure an LLM Service in NocoBase
+## Konfigurasi layanan LLM di NocoBase
 
-Go to `System Settings -> AI Employees -> LLM service` and add an LLM service.
+Buka `System Settings -> AI Employees -> LLM service` dan tambahkan layanan LLM.
 
-Example configuration:
-
-| Setting | Example |
+| Pengaturan | Contoh |
 | --- | --- |
 | Provider | OpenAI (completions) |
 | Title | HY-MT Local |
 | Base URL | `http://127.0.0.1:8000/v1` |
-| API Key | If llama-server has no authentication, use a placeholder such as `dummy`. |
-| Enabled Models | Select `tencent/HY-MT1.5-1.8B-GGUF:Q4_K_M`, or enter the actual model name. |
+| API Key | Jika `llama-server` tidak memakai autentikasi, gunakan placeholder seperti `dummy`. |
+| Enabled Models | Pilih `tencent/HY-MT1.5-1.8B-GGUF:Q4_K_M`, atau masukkan nama model sebenarnya. |
 
-After configuration, use `Test flight` to verify the model.
+Setelah konfigurasi, gunakan `Test flight` untuk memverifikasi model.
 
-:::info{title=Tip}
-If NocoBase runs in Docker, `127.0.0.1` points to the container itself and may not access the host service. Use the host IP, container network address, or `host.docker.internal`.
+:::info{title=Tips}
+Jika NocoBase berjalan di Docker, `127.0.0.1` menunjuk ke container itu sendiri dan mungkin tidak dapat mengakses layanan host. Gunakan IP host, alamat jaringan container, atau `host.docker.internal`.
 :::
 
-## Configure Lina's Dedicated Model
+## Konfigurasi model khusus Lina
 
-Go to `System Settings -> AI Employees -> AI employees`, open Lina, and switch to `Model settings`.
+Buka `System Settings -> AI Employees -> AI employees`, buka Lina, lalu pindah ke `Model settings`.
 
-1. Enable `Enable dedicated model configuration`.
-2. Select the HY-MT local model in `Models`.
-3. Save the configuration.
+1. Aktifkan `Enable dedicated model configuration`.
+2. Pilih model HY-MT lokal di `Models`.
+3. Simpan konfigurasi.
 
-After this, Lina uses this model for localization translation tasks, preventing users or tasks from switching to general chat models.
+Setelah itu, Lina akan menggunakan model ini untuk tugas terjemahan lokalisasi dan menghindari penggunaan model chat umum.
 
-For details, see [Configure AI Employee Models](/ai-employees/features/model-settings).
+Untuk detail, lihat [Mengonfigurasi model AI Employee](/ai-employees/features/model-settings).
 
-## Configure Translation Concurrency
+## Konfigurasi konkurensi terjemahan
 
-Localization translation task concurrency is controlled by `AI_LOCALIZATION_CONCURRENCY`:
+Konkurensi tugas terjemahan lokalisasi dikontrol oleh `AI_LOCALIZATION_CONCURRENCY`:
 
 ```bash
 AI_LOCALIZATION_CONCURRENCY=10
 ```
 
-Rules:
+Aturan:
 
 - Default: `10`
 - Minimum: `1`
-- Maximum: `20`
-- Values outside the range use the default
+- Maksimum: `20`
+- Nilai di luar rentang menggunakan default
 
-The best concurrency depends on CPU, GPU, memory, model quantization, and `llama-server -np`. If the default concurrency causes issues:
+Konkurensi terbaik bergantung pada CPU, GPU, memori, kuantisasi model, dan `llama-server -np`. Jika konkurensi default bermasalah:
 
-1. Start with `AI_LOCALIZATION_CONCURRENCY=1` and verify single-entry translation.
-2. Set both `llama-server -np` and `AI_LOCALIZATION_CONCURRENCY` to `2` or `4`.
-3. Observe response time, CPU/GPU usage, and task progress.
-4. Increase concurrency gradually only if stable.
+1. Mulai dengan `AI_LOCALIZATION_CONCURRENCY=1` dan verifikasi terjemahan satu entri.
+2. Setel `llama-server -np` dan `AI_LOCALIZATION_CONCURRENCY` ke `2` atau `4`.
+3. Amati waktu respons, penggunaan CPU/GPU, dan progres tugas.
+4. Naikkan bertahap hanya jika stabil.
 
-:::warning{title=Note}
-Do not set concurrency too high at the beginning. If concurrency exceeds actual model capacity, tasks may become slower due to queuing, timeout, or service stalls.
+:::warning{title=Catatan}
+Jangan menetapkan konkurensi terlalu tinggi di awal. Jika melebihi kapasitas model, tugas bisa melambat karena antrean, timeout, atau layanan macet.
 :::
 
-## Execute Localization Translation
+## Jalankan terjemahan lokalisasi
 
-Go to `System Management -> Localization Management`.
+Buka `System Management -> Localization Management`.
 
-1. Switch to the target language.
-2. Click `Synchronize` to ensure entries are synchronized.
-3. Click Lina's avatar.
-4. Choose a task scope:
-   - `Incremental translation`: translate entries without translations.
-   - `Selected translation`: translate selected entries in the table.
-   - `Full translation`: translate all entries in the current language.
-5. Check entry count, provider, and model in the confirmation dialog.
-6. Confirm to create the async task.
-7. Wait for completion, review translations, and publish.
+1. Pindah ke bahasa target.
+2. Klik `Synchronize` untuk memastikan entri tersinkron.
+3. Klik avatar Lina.
+4. Pilih cakupan tugas:
+   - `Incremental translation`: menerjemahkan entri yang belum memiliki terjemahan.
+   - `Selected translation`: menerjemahkan entri yang dipilih di tabel.
+   - `Full translation`: menerjemahkan semua entri pada bahasa saat ini.
+5. Periksa jumlah entri, provider, dan model di dialog konfirmasi.
+6. Konfirmasi untuk membuat tugas asinkron.
+7. Tunggu selesai, tinjau terjemahan, lalu publikasikan.
 
-Start with `Selected translation` for a few entries to verify output style and speed before running incremental or full translation.
+Mulai dari `Selected translation` untuk beberapa entri guna memeriksa gaya keluaran dan kecepatan sebelum menjalankan terjemahan incremental atau penuh.
 
-## How Lina Builds Translation Requests
+## Cara Lina membangun permintaan terjemahan
 
-Lina builds requests from entries and reference translations. For short entries, existing references are used to improve consistency:
+Lina membangun permintaan dari entri dan terjemahan referensi. Untuk entri pendek, referensi yang ada digunakan untuk meningkatkan konsistensi:
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If an English reference exists, English is used as source text.
-- Translation results are written to the target language but are not published automatically.
+- Entri bawaan lebih mengutamakan terjemahan bahasa Tionghoa sebagai referensi.
+- Entri non-bawaan lebih mengutamakan bahasa default sistem sebagai referensi.
+- Jika ada referensi bahasa Inggris, bahasa Inggris digunakan sebagai teks sumber.
+- Hasil terjemahan ditulis ke bahasa target, tetapi tidak dipublikasikan otomatis.
 
-Prompt semantics are similar to:
+Semantik prompt kira-kira seperti:
 
 ```text
 Refer to the following translation:
@@ -197,45 +193,43 @@ Translate the following text into {target_language}. Output only the translated 
 {source_text}
 ```
 
-## Troubleshooting
+## Pemecahan masalah
 
-### No progress after creating a task
+### Tidak ada progres setelah membuat tugas
 
-Check whether `llama-server` received requests. View service logs or call `/v1/chat/completions` with `curl`.
+Periksa apakah `llama-server` menerima permintaan. Lihat log layanan atau panggil `/v1/chat/completions` dengan `curl`.
 
-If the model receives requests but does not return, reduce:
+Jika model menerima permintaan tetapi tidak mengembalikan respons, turunkan:
 
 - `AI_LOCALIZATION_CONCURRENCY`
 - `llama-server -np`
 - `llama-server -c`
 
-### The model returns explanations instead of translations
+### Model mengembalikan penjelasan, bukan terjemahan
 
-Local translation models are usually more stable than general chat models. If explanations still appear, test the same prompt with `curl` first to verify the model's output style.
+Model terjemahan lokal biasanya lebih stabil daripada model chat umum. Jika penjelasan masih muncul, uji prompt yang sama dengan `curl` terlebih dahulu untuk memeriksa gaya keluaran model. Anda juga dapat menerjemahkan entri yang lebih pendek atau menurunkan parameter sampling seperti temperature.
 
-You can also translate shorter entries first or reduce sampling parameters such as temperature.
+### NocoBase tidak dapat terhubung ke layanan model
 
-### NocoBase cannot connect to the model service
+Periksa:
 
-Check:
+- Apakah Base URL menyertakan `/v1`.
+- Apakah runtime NocoBase dapat mengakses alamat tersebut.
+- Apakah firewall atau jaringan container memblokir port.
+- Apakah `llama-server` masih berjalan.
 
-- Whether Base URL includes `/v1`.
-- Whether the NocoBase runtime environment can access the address.
-- Whether firewall or container networking blocks the port.
-- Whether `llama-server` is still running.
+## Tinjau sebelum publikasi
 
-## Review Before Publishing
+Setelah terjemahan AI selesai, tinjau sebelum publikasi:
 
-After AI translation finishes, review before publishing:
+- Filter berdasarkan modul dan periksa entri pendek seperti menu, tombol, nama field, dan status.
+- Periksa variabel, placeholder, tag HTML, dan simbol format.
+- Periksa konsistensi istilah bisnis penting.
+- Jika terjemahan entri bawaan tertimpa, sinkronkan ulang di Localization Management dan pilih `Reset system built-in entry translations` untuk memulihkan default. Untuk berkontribusi pada terjemahan default sistem dan plugin resmi, lihat [Translation Contribution](/get-started/translations).
+- Publikasikan di lingkungan uji terlebih dahulu, lalu sinkronkan ke produksi.
 
-- Filter by module and check short entries such as menus, buttons, field names, and statuses.
-- Check variables, placeholders, HTML tags, and formatting symbols.
-- Check key business terminology consistency.
-- If built-in entry translations are overwritten, resynchronize in Localization Management and select `Reset system built-in entry translations` to restore defaults. To contribute default translations for the system and official plugins, see [Translation Contribution](/get-started/translations).
-- Publish in a test environment first, then sync to production.
-
-## References
+## Referensi
 
 - [tencent/HY-MT1.5-1.8B-GGUF](https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF)
-- [llama-server documentation](https://www.mintlify.com/ggml-org/llama.cpp/inference/server)
-- [Lina: Localization Engineer](/ai-employees/built-in/lina)
+- [Dokumentasi llama-server](https://www.mintlify.com/ggml-org/llama.cpp/inference/server)
+- [Lina: insinyur lokalisasi](/ai-employees/built-in/lina)

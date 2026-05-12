@@ -1,22 +1,22 @@
 ---
-title: 'Ellis: Email Expert'
-description: 'Ellis is the built-in email expert in NocoBase, used to understand email context, summarize messages, and draft replies.'
-keywords: 'Ellis,email,email summary,email reply,AI Employee,NocoBase'
+title: 'Ellis: E-Mail-Expertin'
+description: 'NocoBase AI-Mitarbeiterdokumentation.'
+keywords: 'ellis,Email Expert,AI Employee,NocoBase'
 ---
 
-# Ellis: Email Expert
+# Ellis: E-Mail-Expertin
 
-## Role
+## Rolle
 
-Ellis focuses on email processing. It can combine email history, customer information, and current email content to help users understand context and draft replies.
+Ellis: E-Mail-Expertin ist auf dieses integrierte NocoBase-Szenario spezialisiert und hilft, die entsprechenden Aufgaben effizienter zu erledigen.
 
-## Scenarios
+## Szenarien
 
-- Summarize email threads.
-- Identify email intent, risks, and follow-up tasks.
-- Generate professional and clear reply drafts.
+- Aufgaben im passenden Szenario bearbeiten.
+- Wiederholte manuelle Arbeit reduzieren.
+- Über den Chatbereich oder einen kontextbezogenen Einstieg Hilfe erhalten.
 
-## Entry Points
+## Einstiegspunkte
 
-- AI Employee chat panel
-- Email-related pages or task entries
+- Chatbereich der AI-Mitarbeiter
+- Zugehörige Seiten oder Aufgabeneinstiege

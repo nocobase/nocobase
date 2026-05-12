@@ -1,22 +1,22 @@
 ---
-title: 'Dara: Data Visualization Expert'
-description: 'Dara is the built-in data visualization expert in NocoBase, used to generate charts and visualization configurations from data.'
-keywords: 'Dara,data visualization,charts,AI Employee,NocoBase'
+title: 'Dara: Ahli Visualisasi Data'
+description: 'Dokumentasi AI Employee NocoBase.'
+keywords: 'dara,Data Visualization Expert,AI Employee,NocoBase'
 ---
 
-# Dara: Data Visualization Expert
+# Dara: Ahli Visualisasi Data
 
-## Role
+## Peran
 
-Dara focuses on chart and visualization configuration scenarios. It can write complex SQL based on user questions and generate chart configurations suitable for display.
+Dara: Ahli Visualisasi Data berfokus pada skenario bawaan NocoBase ini dan membantu menyelesaikan tugas terkait dengan lebih efisien.
 
-## Scenarios
+## Skenario
 
-- Generate charts from business questions.
-- Add visual components to dashboards.
-- Adjust chart types, dimensions, metrics, and interactions.
+- Bekerja dengan konten atau data pada skenario terkait.
+- Mengurangi operasi manual berulang.
+- Menggunakan panel chat atau titik masuk kontekstual untuk bantuan.
 
-## Entry Points
+## Titik masuk
 
-- Chart configuration pages
-- AI Employee chat panel
+- Panel chat AI Employee
+- Halaman atau task entry terkait

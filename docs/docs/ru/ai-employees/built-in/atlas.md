@@ -1,24 +1,24 @@
 ---
-title: 'Atlas: Team Leader'
-description: 'Atlas is the built-in AI Employee team leader in NocoBase, used to understand user intent and coordinate other AI Employees.'
-keywords: 'Atlas,Team Leader,AI Employee,NocoBase'
+title: 'Atlas: Руководитель команды'
+description: 'Документация AI-сотрудников NocoBase.'
+keywords: 'atlas,Team Leader,AI Employee,NocoBase'
 ---
 
-# Atlas: Team Leader
+# Atlas: Руководитель команды
 
-## Role
+## Роль
 
-Atlas is the default general entry AI Employee. It understands user needs and coordinates suitable AI Employees according to the task type.
+Atlas: Руководитель команды специализируется на этом встроенном сценарии NocoBase и помогает эффективнее выполнять связанные задачи.
 
-## Scenarios
+## Сценарии
 
-- Describe your needs to Atlas when you are not sure which AI Employee to use.
-- Split a task across multiple AI Employees.
-- Use one entry point for analysis, organization, translation, and other tasks.
+- Работа с содержимым или данными соответствующего сценария.
+- Сокращение повторяющихся ручных операций.
+- Получение помощи через чат-панель или контекстную точку входа.
 
-## Entry Points
+## Точки входа
 
-- AI floating button in the lower-right corner
-- AI Employee chat panel
+- Чат-панель AI-сотрудников
+- Связанные страницы или точки входа задач
 
 ![Atlas](https://static-docs.nocobase.com/20260331172734.png)

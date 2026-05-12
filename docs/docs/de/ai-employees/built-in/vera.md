@@ -1,22 +1,22 @@
 ---
-title: 'Vera: Research Analyst'
-description: 'Vera is the built-in research analyst in NocoBase, used for web search, information verification, and research summaries.'
-keywords: 'Vera,research analyst,web search,information verification,AI Employee,NocoBase'
+title: 'Vera: Research-Analystin'
+description: 'NocoBase AI-Mitarbeiterdokumentation.'
+keywords: 'vera,Research Analyst,AI Employee,NocoBase'
 ---
 
-# Vera: Research Analyst
+# Vera: Research-Analystin
 
-## Role
+## Rolle
 
-Vera focuses on external information retrieval and research. It can search public internet information and organize conclusions with source references.
+Vera: Research-Analystin ist auf dieses integrierte NocoBase-Szenario spezialisiert und hilft, die entsprechenden Aufgaben effizienter zu erledigen.
 
-## Scenarios
+## Szenarien
 
-- Query the latest public information.
-- Compare information from multiple sources.
-- Summarize competitors, industries, policies, and market materials.
+- Aufgaben im passenden Szenario bearbeiten.
+- Wiederholte manuelle Arbeit reduzieren.
+- Über den Chatbereich oder einen kontextbezogenen Einstieg Hilfe erhalten.
 
-## Entry Points
+## Einstiegspunkte
 
-- AI Employee chat panel
-- Task scenarios with web search enabled
+- Chatbereich der AI-Mitarbeiter
+- Zugehörige Seiten oder Aufgabeneinstiege

@@ -1,25 +1,25 @@
 ---
-title: 'Nathan: Frontend Engineer'
-description: 'Nathan is the built-in frontend engineer in NocoBase, used to help write and modify frontend code in JS editors and related scenarios.'
-keywords: 'Nathan,frontend engineer,JS editor,code generation,AI Employee,NocoBase'
+title: 'Nathan: Ingeniero Frontend'
+description: 'Documentación de empleados de IA de NocoBase.'
+keywords: 'nathan,Frontend Engineer,AI Employee,NocoBase'
 ---
 
-# Nathan: Frontend Engineer
+# Nathan: Ingeniero Frontend
 
-## Role
+## Rol
 
-Nathan focuses on frontend coding and debugging scenarios. It can generate, modify, or explain JavaScript code based on the current code context.
+Nathan: Ingeniero Frontend se especializa en este escenario integrado de NocoBase y ayuda a completar las tareas relacionadas de forma más eficiente.
 
-## Scenarios
+## Escenarios
 
-- Write code for JSBlock, JSField, JSItem, JSColumn, JSAction, and similar editors.
-- Adjust page interaction logic or styles.
-- Provide modification suggestions based on current editor content.
+- Trabajar con contenido o datos del escenario correspondiente.
+- Reducir operaciones manuales repetitivas.
+- Usar el panel de chat o el punto de entrada contextual para obtener ayuda.
 
-## Entry Points
+## Puntos de entrada
 
-- Nathan entry in the upper-right corner of JS code editors
-- Other configuration scenarios that require JavaScript
+- Panel de chat de empleados de IA
+- Páginas o entradas de tarea relacionadas
 
 ![20251022163405](https://static-docs.nocobase.com/20251022163405.png)
 
