@@ -10,6 +10,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { TemplateCreator } from '../services/template-creator';
 import { XlsxImporter } from '../services/xlsx-importer';
+import { readImportWorkbook } from '../actions/import-xlsx';
 import * as XLSX from 'xlsx';
 import * as process from 'node:process';
 import * as path from 'node:path';
@@ -374,6 +375,45 @@ describe('basic importer', () => {
       expect(users[0]['dateOnly']).toBe('2111-11-12');
       expect(users[1]['dateOnly']).toBe('2021-10-18');
       expect(users[2]['dateOnly']).toBe('2024-11-12');
+    });
+
+    it('should keep dateOnly value stable after xlsx round-trip in non-UTC timezone', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['dateOnly'],
+          defaultTitle: '日期',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 45789]], { origin: 'A2' });
+      worksheet['B2'].z = 'm/d/yy';
+
+      const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+      const workbook = readImportWorkbook(buffer, 10);
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook,
+      });
+
+      await importer.run();
+
+      const users = (await User.repository.find()).map((user) => user.toJSON());
+      expect(users[0]['dateOnly']).toBe('2025-05-12');
     });
 
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with datetimeNoTz', async () => {
@@ -2286,6 +2326,7 @@ describe('basic importer', () => {
         {
           type: 'time',
           name: 'brithtime',
+          interface: 'time',
         },
       ],
     });
@@ -2306,9 +2347,11 @@ describe('basic importer', () => {
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
-    XLSX.utils.sheet_add_aoa(worksheet, [['12:12:12']], {
-      origin: 'A3',
-    });
+    XLSX.utils.sheet_add_aoa(worksheet, [[0.5084722222222222]], { origin: 'A3' });
+    worksheet['A3'].z = 'h:mm:ss';
+
+    const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+    const workbook = readImportWorkbook(buffer, 10);
 
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
@@ -2320,12 +2363,13 @@ describe('basic importer', () => {
           defaultTitle: '出生时间',
         },
       ],
-      workbook: template,
+      workbook,
     });
 
     await importer.run();
-    const count = await TimeCollection.repository.count();
-    expect(count).toBe(1);
+    const records = await TimeCollection.repository.find();
+    expect(records).toHaveLength(1);
+    expect(records[0].get('brithtime')).toBe('12:12:12');
   });
 
   it('should throw error when import textarea field, value is date', async () => {
