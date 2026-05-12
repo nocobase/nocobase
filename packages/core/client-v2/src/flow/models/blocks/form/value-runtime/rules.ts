@@ -1508,16 +1508,21 @@ export class RuleEngine {
   private getRowTargetKey(baseCtx: any, rowPath: NamePath): string | string[] {
     let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
     let field: any;
+    let lastAssociationField: any;
     for (const seg of rowPath) {
       if (typeof seg === 'number') continue;
       if (typeof seg !== 'string' || !seg || !collection?.getField) break;
 
       field = collection?.getField?.(seg);
       if (!field?.isAssociationField?.()) break;
+      lastAssociationField = field;
       collection = field?.targetCollection;
     }
 
-    const raw = field?.targetCollection?.filterTargetKey ?? field?.targetCollection?.filterByTk ?? field?.targetKey;
+    const raw =
+      lastAssociationField?.targetCollection?.filterTargetKey ??
+      lastAssociationField?.targetCollection?.filterByTk ??
+      lastAssociationField?.targetKey;
     if (Array.isArray(raw)) {
       const keys = raw.filter((key): key is string => typeof key === 'string' && !!key);
       return keys.length ? keys : 'id';
