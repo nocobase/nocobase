@@ -12,33 +12,16 @@ import type { PluginClass } from '../PluginManager';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
 
-/**
- * @internal
- */
-export function defineDevPlugins(plugins: Record<string, PluginClass>) {
-  Object.entries(plugins).forEach(([packageName, plugin]) => {
-    window.define(`${packageName}/client-v2`, () => plugin);
-  });
+function getClientV2ModuleId(packageName: string) {
+  return `${packageName}/client-v2`;
 }
 
 /**
  * @internal
  */
-export function definePluginClient(packageName: string) {
-  window.define(`${packageName}/client-v2`, ['exports', packageName], function (_exports: any, _pluginExports: any) {
-    Object.defineProperty(_exports, '__esModule', {
-      value: true,
-    });
-    Object.keys(_pluginExports).forEach(function (key) {
-      if (key === '__esModule') return;
-      if (key in _exports && _exports[key] === _pluginExports[key]) return;
-      Object.defineProperty(_exports, key, {
-        enumerable: true,
-        get: function () {
-          return _pluginExports[key];
-        },
-      });
-    });
+export function defineDevPlugins(plugins: Record<string, PluginClass>) {
+  Object.entries(plugins).forEach(([packageName, plugin]) => {
+    window.define(getClientV2ModuleId(packageName), () => plugin);
   });
 }
 
@@ -49,7 +32,7 @@ export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
   requirejs.requirejs.config({
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((acc, cur) => {
-      acc[cur.packageName] = cur.url;
+      acc[getClientV2ModuleId(cur.packageName)] = cur.url;
       return acc;
     }, {}),
   });
@@ -85,10 +68,7 @@ export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins
 export function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []): Promise<Array<[string, PluginClass]>> {
   configRequirejs(requirejs, pluginData);
 
-  const packageNames = pluginData.map((item) => item.packageName);
-  packageNames.forEach((packageName) => {
-    definePluginClient(packageName);
-  });
+  const packageNames = pluginData.map((item) => getClientV2ModuleId(item.packageName));
 
   return new Promise((resolve, reject) => {
     requirejs.requirejs(packageNames, processRemotePlugins(pluginData, resolve), reject);

@@ -122,12 +122,26 @@ async function listEnabledPlugins(ctx, lane: PluginClientLane = 'client') {
     const url = await PackageUrls.get(item.packageName, lane);
     const { name, packageName, options } = item.toJSON();
     if (url) {
-      arr.push({
+      const entry: {
+        name: string;
+        packageName: string;
+        options: unknown;
+        url: string;
+        clientV2Url?: string;
+      } = {
         name,
         packageName,
         options,
         url,
-      });
+      };
+      // 让 v1 lane 的前端 PluginManager 能精准注册跨 lane 的 paths,而不必猜 URL。
+      if (lane === 'client' && (await PackageUrls.hasClientEntry(packageName, 'client-v2'))) {
+        const clientV2Url = await PackageUrls.get(packageName, 'client-v2');
+        if (clientV2Url) {
+          entry.clientV2Url = clientV2Url;
+        }
+      }
+      arr.push(entry);
     }
   }
   return arr;
