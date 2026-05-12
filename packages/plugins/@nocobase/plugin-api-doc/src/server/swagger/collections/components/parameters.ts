@@ -10,6 +10,11 @@
 import { Collection } from '@nocobase/database';
 import { getTypeByField } from './field-type-map';
 
+const createStringQueryParameterSchema = (example: string) => ({
+  type: 'string',
+  example,
+});
+
 export default (collection: Collection) => {
   const primaryKey = collection.model.primaryKeyAttribute;
 
@@ -64,123 +69,39 @@ export default (collection: Collection) => {
       name: 'sort',
       in: 'query',
       description: 'sort items by fields, example: `-field1,-field2,field3`',
-      schema: {
-        oneOf: [
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            example: ['-id', 'createdAt'],
-          },
-          {
-            type: 'string',
-            example: '-id,createdAt',
-          },
-        ],
-      },
+      schema: createStringQueryParameterSchema('-id,createdAt'),
     },
     fields: {
       name: 'fields',
       in: 'query',
       description: 'select fields, example: `field1,field2`',
-      schema: {
-        oneOf: [
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            example: ['id', 'createdAt'],
-          },
-          {
-            type: 'string',
-            example: 'id,createdAt',
-          },
-        ],
-      },
+      schema: createStringQueryParameterSchema('id,createdAt'),
     },
 
     except: {
       name: 'except',
       in: 'query',
       description: 'except fields in results, example: `field1,field2`',
-      schema: {
-        oneOf: [
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            example: ['id', 'createdAt'],
-          },
-          {
-            type: 'string',
-            example: 'id,createdAt',
-          },
-        ],
-      },
+      schema: createStringQueryParameterSchema('id,createdAt'),
     },
 
     appends: {
       name: 'appends',
       in: 'query',
       description: 'append associations in results, example: `assoc1,assoc2`',
-      schema: {
-        oneOf: [
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            example: ['id', 'createdAt'],
-          },
-          {
-            type: 'string',
-            example: 'id,createdAt',
-          },
-        ],
-      },
+      schema: createStringQueryParameterSchema('id,createdAt'),
     },
     whitelist: {
       name: 'whitelist',
       in: 'query',
       description: 'whitelist for fields changes, example: `field1,field2`',
-      schema: {
-        oneOf: [
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            example: ['id', 'createdAt'],
-          },
-          {
-            type: 'string',
-            example: 'id,createdAt',
-          },
-        ],
-      },
+      schema: createStringQueryParameterSchema('id,createdAt'),
     },
     blacklist: {
       name: 'blacklist',
       in: 'query',
       description: 'blacklist for fields changes, example: `field1,field2`',
-      schema: {
-        oneOf: [
-          {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            example: ['id', 'createdAt'],
-          },
-          {
-            type: 'string',
-            example: 'id,createdAt',
-          },
-        ],
-      },
+      schema: createStringQueryParameterSchema('id,createdAt'),
     },
   });
 

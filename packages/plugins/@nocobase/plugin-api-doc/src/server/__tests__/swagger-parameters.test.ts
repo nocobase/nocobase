@@ -61,4 +61,21 @@ describe('plugin-api-doc > swagger parameters', () => {
     });
     expect(parameters.filter.content).toBeUndefined();
   });
+
+  test('should describe comma-separated query parameters as strings', () => {
+    const collection: any = {
+      name: 'posts',
+      model: {},
+      fields: new Map(),
+    };
+
+    const { parameters } = buildParameters(collection);
+
+    for (const key of ['sort', 'fields', 'except', 'appends', 'whitelist', 'blacklist']) {
+      expect(parameters[key].schema).toMatchObject({
+        type: 'string',
+      });
+      expect(parameters[key].schema.oneOf).toBeUndefined();
+    }
+  });
 });
