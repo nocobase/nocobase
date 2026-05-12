@@ -7070,6 +7070,10 @@ export class FlowSurfacesService {
       preserveTitle: options.preserveSingleScopeDataBlockTitle === true,
     });
     inlineSettings = this.attachHiddenPopupDefaultsToBlockSettings(inlineSettings, blockType, popupDefaultsMetadata);
+    const persistableInlineSettings =
+      blockType === 'calendar' || blockType === 'kanban'
+        ? this.stripHiddenPopupDefaultsFromBlockSettings(inlineSettings, blockType)
+        : inlineSettings;
     if (semanticResource && rawResourceInit) {
       throwBadRequest('flowSurfaces addBlock does not allow resource and resourceInit at the same time');
     }
@@ -7173,14 +7177,14 @@ export class FlowSurfacesService {
             actionName: 'addBlock',
             resourceInit: effectiveResourceInit,
             props: values.props,
-            settings: inlineSettings,
+            settings: persistableInlineSettings,
           })
         : catalogItem.use === 'KanbanBlockModel'
           ? this.buildKanbanInitialBlockProps({
               actionName: 'addBlock',
               resourceInit: effectiveResourceInit,
               props: values.props,
-              settings: inlineSettings,
+              settings: persistableInlineSettings,
             })
           : values.props;
     const initialGrid = options.deferAutoLayout
@@ -7201,13 +7205,13 @@ export class FlowSurfacesService {
           ? this.buildCalendarInitialStepParams({
               stepParams: values.stepParams,
               props: values.props,
-              settings: inlineSettings,
+              settings: persistableInlineSettings,
             })
           : catalogItem.use === 'KanbanBlockModel'
             ? this.buildKanbanInitialStepParams({
                 stepParams: values.stepParams,
                 props: values.props,
-                settings: inlineSettings,
+                settings: persistableInlineSettings,
               })
             : values.stepParams,
     });
@@ -7216,12 +7220,12 @@ export class FlowSurfacesService {
       if (itemNode) {
         const itemProps = this.buildKanbanInitialItemProps({
           props: values.props,
-          settings: inlineSettings,
+          settings: persistableInlineSettings,
         });
         const itemStepParams = this.buildKanbanInitialItemStepParams({
           stepParams: itemNode.stepParams,
           props: values.props,
-          settings: inlineSettings,
+          settings: persistableInlineSettings,
         });
         if (Object.keys(itemProps).length) {
           itemNode.props = {
@@ -8522,6 +8526,18 @@ export class FlowSurfacesService {
     } as FlowSurfaceApplyBlueprintDefaults;
   }
 
+  private stripPopupDefaultsMetadata<T extends Record<string, any> | undefined>(popup: T): T {
+    if (
+      !_.isPlainObject(popup) ||
+      !Object.prototype.hasOwnProperty.call(popup, FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY)
+    ) {
+      return popup;
+    }
+    const nextPopup = _.cloneDeep(popup) as Record<string, any>;
+    delete nextPopup[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
+    return nextPopup as T;
+  }
+
   private attachPopupDefaultsMetadata(
     popup: Record<string, any> | undefined,
     metadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
@@ -8609,6 +8625,34 @@ export class FlowSurfacesService {
       }
       nextSettings[key] = this.attachPopupDefaultsMetadata(nextSettings[key], metadata);
       changed = true;
+    }
+    return changed ? nextSettings : settings;
+  }
+
+  private stripHiddenPopupDefaultsFromBlockSettings(settings: Record<string, any> | undefined, blockType?: string) {
+    if (!_.isPlainObject(settings)) {
+      return settings;
+    }
+    const keys =
+      blockType === 'calendar'
+        ? ['quickCreatePopup', 'eventPopup', 'quickCreatePopupSettings', 'eventPopupSettings']
+        : blockType === 'kanban'
+          ? ['quickCreatePopup', 'cardPopup', 'quickCreatePopupSettings', 'cardPopupSettings']
+          : [];
+    if (!keys.length) {
+      return settings;
+    }
+    const nextSettings = _.cloneDeep(settings);
+    let changed = false;
+    for (const key of keys) {
+      if (!_.isPlainObject(nextSettings[key])) {
+        continue;
+      }
+      const nextPopup = this.stripPopupDefaultsMetadata(nextSettings[key]);
+      if (nextPopup !== nextSettings[key]) {
+        nextSettings[key] = nextPopup;
+        changed = true;
+      }
     }
     return changed ? nextSettings : settings;
   }
@@ -15002,7 +15046,14 @@ export class FlowSurfacesService {
         forceEmpty: true,
       });
     }
-
+    const persistableQuickCreatePopupSettings = this.stripPopupDefaultsMetadata(quickCreatePopupSettings);
+    const persistableEventPopupSettings = this.stripPopupDefaultsMetadata(eventPopupSettings);
+    const persistableQuickCreatePopupSettingsBaseWithDefaults = this.stripPopupDefaultsMetadata(
+      quickCreatePopupSettingsBaseWithDefaults,
+    );
+    const persistableEventPopupSettingsBaseWithDefaults = this.stripPopupDefaultsMetadata(
+      eventPopupSettingsBaseWithDefaults,
+    );
     const previousQuickCreateOpenView = this.buildCalendarPopupOpenView({
       blockNode: current,
       actionKey: 'quickCreateAction',
@@ -15065,14 +15116,14 @@ export class FlowSurfacesService {
                   ...(hasOwnDefined(changes, 'weekStart') ? { weekStart: { weekStart } } : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
                   ...(hasQuickCreatePopupChange
-                    ? { quickCreatePopupSettings: quickCreatePopupSettings || {} }
+                    ? { quickCreatePopupSettings: persistableQuickCreatePopupSettings || {} }
                     : resourceChanged
-                      ? { quickCreatePopupSettings: quickCreatePopupSettingsBaseWithDefaults }
+                      ? { quickCreatePopupSettings: persistableQuickCreatePopupSettingsBaseWithDefaults }
                       : {}),
                   ...(hasEventPopupChange
-                    ? { eventPopupSettings: eventPopupSettings || {} }
+                    ? { eventPopupSettings: persistableEventPopupSettings || {} }
                     : resourceChanged
-                      ? { eventPopupSettings: eventPopupSettingsBaseWithDefaults }
+                      ? { eventPopupSettings: persistableEventPopupSettingsBaseWithDefaults }
                       : {}),
                 }),
               }
@@ -15463,6 +15514,12 @@ export class FlowSurfacesService {
     if (shouldWriteCardPopup) {
       cardPopup = this.attachPopupDefaultsMetadata(cardPopup, popupDefaultsMetadata, { forceEmpty: true });
     }
+    const persistableQuickCreatePopup = this.stripPopupDefaultsMetadata(quickCreatePopup);
+    const persistableCardPopup = this.stripPopupDefaultsMetadata(cardPopup);
+    const persistableQuickCreatePopupBaseWithDefaults = this.stripPopupDefaultsMetadata(
+      quickCreatePopupBaseWithDefaults,
+    );
+    const persistableCardPopupBaseWithDefaults = this.stripPopupDefaultsMetadata(cardPopupBaseWithDefaults);
     const previousQuickCreateOpenView = this.buildKanbanPopupOpenView({
       blockNode: current,
       actionKey: 'quickCreateAction',
@@ -15582,7 +15639,7 @@ export class FlowSurfacesService {
                 : {}),
               ...(shouldWriteQuickCreatePopup
                 ? {
-                    popup: quickCreatePopup || {},
+                    popup: persistableQuickCreatePopup || {},
                   }
                 : {}),
               ...(hasOwnDefined(changes, 'pageSize')
@@ -15646,7 +15703,7 @@ export class FlowSurfacesService {
                 : {}),
               ...(shouldWriteCardPopup
                 ? {
-                    popup: cardPopup || {},
+                    popup: persistableCardPopup || {},
                   }
                 : {}),
               ...(hasOwnDefined(changes, 'cardLayout') ||
@@ -15711,7 +15768,7 @@ export class FlowSurfacesService {
       await this.replaceKanbanStoredPopupSettings(
         popupSettingsStorageNode,
         'quickCreateAction',
-        quickCreatePopupBaseWithDefaults,
+        persistableQuickCreatePopupBaseWithDefaults,
         options.transaction,
       );
     }
@@ -15719,7 +15776,7 @@ export class FlowSurfacesService {
       await this.replaceKanbanStoredPopupSettings(
         popupSettingsStorageNode,
         'cardViewAction',
-        cardPopupBaseWithDefaults,
+        persistableCardPopupBaseWithDefaults,
         options.transaction,
       );
     }
