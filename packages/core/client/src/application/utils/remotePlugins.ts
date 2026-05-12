@@ -50,6 +50,7 @@ export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((acc, cur) => {
       acc[cur.packageName] = cur.url;
+      acc[`${cur.packageName}/client-v2`] = cur.url.replace('/dist/client/', '/dist/client-v2/');
       return acc;
     }, {}),
   });

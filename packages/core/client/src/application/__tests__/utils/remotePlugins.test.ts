@@ -107,6 +107,7 @@ describe('remotePlugins', () => {
       waitSeconds: 120,
       paths: {
         '@nocobase/demo': 'https://demo.com',
+        '@nocobase/demo/client-v2': 'https://demo.com',
       },
     });
   });
@@ -245,7 +246,9 @@ describe('remotePlugins', () => {
         waitSeconds: 120,
         paths: {
           '@nocobase/demo': 'https://demo1.com',
+          '@nocobase/demo/client-v2': 'https://demo1.com',
           '@nocobase/demo2': 'https://demo2.com',
+          '@nocobase/demo2/client-v2': 'https://demo2.com',
         },
       });
     });
@@ -342,6 +345,7 @@ describe('remotePlugins', () => {
         waitSeconds: 120,
         paths: {
           '@nocobase/demo2': 'https://demo2.com',
+          '@nocobase/demo2/client-v2': 'https://demo2.com',
         },
       });
     });
