@@ -12,6 +12,11 @@ import { Cache } from '@nocobase/cache';
 import { Database, Model, Op } from '@nocobase/database';
 import { PluginManager } from '@nocobase/server';
 
+type LocalizationSource = {
+  namespace?: string;
+  title?: string;
+};
+
 const appendTranslations = async (db: Database, rows: Model[], locale: string): Promise<any[]> => {
   const texts = rows || [];
   const textIds = texts.map((text: any) => text.id);
@@ -90,7 +95,7 @@ const list = async (ctx: Context, next: Next) => {
   const cache = ctx.app.cache as Cache;
   const pm = ctx.app.pm as PluginManager;
   const plugins = await cache.wrap(`lm-plugins:${locale}`, () => pm.list({ locale }));
-  const sources = Array.from(ctx.app.localeManager.sources.getValues());
+  const sources = Array.from(ctx.app.localeManager.sources.getValues()) as LocalizationSource[];
   const extendModules = sources
     .filter((source) => source.namespace)
     .map((source) => ({
