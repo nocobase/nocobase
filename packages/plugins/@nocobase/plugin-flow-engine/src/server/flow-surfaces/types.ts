@@ -314,6 +314,7 @@ export type FlowSurfaceContextVarInfo = {
   disabled?: boolean;
   disabledReason?: string;
   properties?: Record<string, FlowSurfaceContextVarInfo>;
+  dynamicProperties?: FlowSurfaceContextVarInfo;
 };
 
 export type FlowSurfaceContextValues = {

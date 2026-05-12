@@ -311,7 +311,14 @@ export async function collectFlowSurfaceAuthoringErrors(
 
   const blocks = getAuthoringBlocks(actionName, values);
   const localKeys = new Set<string>();
-  blocks.forEach(({ block }) => collectLocalKeys(block, localKeys));
+  if (actionName === 'applyBlueprint') {
+    _.castArray(values?.tabs || []).forEach((tab) => {
+      const scopePrefix = String(tab?.key || '').trim();
+      _.castArray(tab?.blocks || []).forEach((block) => collectLocalKeys(block, localKeys, scopePrefix));
+    });
+  } else {
+    blocks.forEach(({ block }) => collectLocalKeys(block, localKeys));
+  }
   blocks.forEach(({ block, path }) => collectBlockErrors(block, path, errors, localKeys, context));
   collectReactionErrors(values?.reaction, '$.reaction', localKeys, errors);
   if (!context.skipGeneratedPopupDefaultFieldGroups) {
@@ -4515,41 +4522,43 @@ function getFieldPathInput(field: any): string {
   return '';
 }
 
-function collectLocalKeys(value: any, keys: Set<string>) {
+function collectLocalKeys(value: any, keys: Set<string>, scopePrefix = '') {
   if (!_.isPlainObject(value)) {
     return;
   }
-  const key = String(value.key || '').trim();
-  if (key) {
+  const addKey = (rawKey: string) => {
+    const key = String(rawKey || '').trim();
+    if (!key) {
+      return;
+    }
     keys.add(key);
-  }
+    if (scopePrefix && !key.startsWith(`${scopePrefix}.`)) {
+      keys.add(`${scopePrefix}.${key}`);
+    }
+  };
+  const key = String(value.key || '').trim();
+  addKey(key);
   _.castArray(value.fields || []).forEach((field) => {
     if (_.isPlainObject(field)) {
       const fieldKey = String(field.key || field.name || field.path || '').trim();
-      if (fieldKey) {
-        keys.add(fieldKey);
-      }
-      collectLocalKeys(field.popup, keys);
+      addKey(fieldKey);
+      collectLocalKeys(field.popup, keys, fieldKey && scopePrefix ? `${scopePrefix}.${fieldKey}.popup` : '');
     }
   });
   _.castArray(value.actions || []).forEach((action) => {
     if (_.isPlainObject(action)) {
       const actionKey = String(action.key || '').trim();
-      if (actionKey) {
-        keys.add(actionKey);
-      }
+      addKey(actionKey);
     }
   });
   _.castArray(value.recordActions || []).forEach((action) => {
     if (_.isPlainObject(action)) {
       const actionKey = String(action.key || '').trim();
-      if (actionKey) {
-        keys.add(actionKey);
-      }
+      addKey(actionKey);
     }
   });
-  _.castArray(value.blocks || []).forEach((block) => collectLocalKeys(block, keys));
-  _.castArray(value.popup?.blocks || []).forEach((block) => collectLocalKeys(block, keys));
+  _.castArray(value.blocks || []).forEach((block) => collectLocalKeys(block, keys, scopePrefix));
+  _.castArray(value.popup?.blocks || []).forEach((block) => collectLocalKeys(block, keys, scopePrefix));
 }
 
 function getFieldKeys(fields: any): string[] {

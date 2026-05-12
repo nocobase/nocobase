@@ -104,6 +104,9 @@ function collectContextPathEntries(context: FlowSurfaceContextResponse) {
       return;
     }
     result.set(prefix, info);
+    if (info.dynamicProperties) {
+      result.set(`${prefix}.*`, info.dynamicProperties);
+    }
     for (const [childKey, childInfo] of Object.entries(info.properties || {})) {
       visit(`${prefix}.${childKey}`, childInfo);
     }

@@ -697,34 +697,56 @@ function buildAllowedContextPathSet(operatorsByPath: Record<string, string[]>) {
   return new Set(Object.keys(operatorsByPath || {}).filter(Boolean));
 }
 
+function resolveAllowedContextPath(path: string, operatorsByPath: Record<string, string[]>) {
+  if (operatorsByPath[path]) {
+    return path;
+  }
+  const wildcardPath = Object.keys(operatorsByPath || {})
+    .filter((candidate) => candidate.endsWith('.*'))
+    .sort((a, b) => b.length - a.length)
+    .find((candidate) => {
+      const prefix = candidate.slice(0, -2);
+      return path.startsWith(`${prefix}.`) && path.length > prefix.length + 1;
+    });
+  return wildcardPath || null;
+}
+
 function formatAllowedValues(values: string[]) {
   return values.length ? values.join(', ') : '(none)';
 }
 
 function validateContextBoundValuePath(
   rawPath: unknown,
-  allowedContextPaths: Set<string>,
+  capabilityOrAllowedPaths: FlowSurfaceLinkageValidationCapability | Set<string>,
   fieldName: string,
   code = FLOW_SURFACE_REACTION_INVALID_VALUE_PATH,
 ) {
   const path = extractBareContextPath(rawPath, `${fieldName}.path`);
-  if (!allowedContextPaths.has(path)) {
+  const operatorsByPath =
+    capabilityOrAllowedPaths instanceof Set
+      ? Object.fromEntries([...capabilityOrAllowedPaths].map((allowedPath) => [allowedPath, []]))
+      : capabilityOrAllowedPaths.conditionMeta?.operatorsByPath || {};
+  if (!resolveAllowedContextPath(path, operatorsByPath)) {
     throwBadRequest(`${fieldName}.path "${path}" is not available in the current reaction context.`, code);
   }
 }
 
-function validateContextBoundValue(value: any, allowedContextPaths: Set<string>, fieldName: string) {
+function validateContextBoundValue(
+  value: any,
+  capabilityOrAllowedPaths: FlowSurfaceLinkageValidationCapability | Set<string>,
+  fieldName: string,
+) {
   if (_.isPlainObject(value) && value.source === 'path') {
-    validateContextBoundValuePath(value.path, allowedContextPaths, fieldName);
+    validateContextBoundValuePath(value.path, capabilityOrAllowedPaths, fieldName);
     return;
   }
   if (Array.isArray(value)) {
-    value.forEach((item, index) => validateContextBoundValue(item, allowedContextPaths, `${fieldName}[${index}]`));
+    value.forEach((item, index) => validateContextBoundValue(item, capabilityOrAllowedPaths, `${fieldName}[${index}]`));
     return;
   }
   if (_.isPlainObject(value)) {
     for (const [key, item] of Object.entries(value)) {
-      validateContextBoundValue(item, allowedContextPaths, `${fieldName}.${key}`);
+      validateContextBoundValue(item, capabilityOrAllowedPaths, `${fieldName}.${key}`);
     }
   }
 }
@@ -735,7 +757,6 @@ function validateReactionFilterAgainstCapability(
   prefix: string,
 ) {
   const operatorsByPath = capability.conditionMeta?.operatorsByPath || {};
-  const allowedContextPaths = buildAllowedContextPathSet(operatorsByPath);
 
   const visit = (node: any, currentPrefix: string) => {
     if (!_.isPlainObject(node)) {
@@ -762,7 +783,8 @@ function validateReactionFilterAgainstCapability(
     }
 
     const path = extractBareContextPath(node.path, `${currentPrefix}.path`);
-    if (!allowedContextPaths.has(path)) {
+    const operatorPath = resolveAllowedContextPath(path, operatorsByPath);
+    if (!operatorPath) {
       throwBadRequest(
         `${currentPrefix}.path "${path}" is not available in the current reaction context.`,
         FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
@@ -770,7 +792,7 @@ function validateReactionFilterAgainstCapability(
     }
 
     const operator = typeof node.operator === 'string' ? node.operator.trim() : '';
-    const allowedOperators = operatorsByPath[path] || [];
+    const allowedOperators = operatorsByPath[operatorPath] || [];
     if (!operator) {
       throwBadRequest(
         `${currentPrefix}.operator is required for path "${path}".`,
@@ -787,7 +809,7 @@ function validateReactionFilterAgainstCapability(
     }
 
     if (hasValue) {
-      validateContextBoundValue(node.value, allowedContextPaths, `${currentPrefix}.value`);
+      validateContextBoundValue(node.value, capability, `${currentPrefix}.value`);
     }
   };
 

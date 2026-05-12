@@ -70,6 +70,16 @@ describe('flowSurfaces context', () => {
     });
     expect(rootRes.status).toBe(200);
     const rootData = getData(rootRes);
+    expect(rootData.vars.user.properties.id).toBeTruthy();
+    expect(rootData.vars.role.type).toBe('string');
+    expect(rootData.vars.locale.title).toBe('Current language');
+    expect(rootData.vars.token.type).toBe('string');
+    expect(rootData.vars.auth.properties.roleName.type).toBe('string');
+    expect(rootData.vars.auth.properties.locale.title).toBe('Current language');
+    expect(rootData.vars.auth.properties.user.properties.id).toBeTruthy();
+    expect(rootData.vars.urlSearchParams.dynamicProperties.type).toBe('string');
+    expect(rootData.vars.location.properties.pathname.type).toBe('string');
+    expect(rootData.vars.deviceType.enumValues).toEqual(expect.arrayContaining(['computer', 'mobile', 'tablet']));
     expect(rootData.vars.record.properties.nickname).toBeTruthy();
     expect(rootData.vars.record.properties.department.properties.title).toBeTruthy();
 
@@ -96,6 +106,28 @@ describe('flowSurfaces context', () => {
     expect(deepPathRes.status).toBe(200);
     const deepPathData = getData(deepPathRes);
     expect(deepPathData.vars['record.department'].properties.title).toBeTruthy();
+
+    const authPathRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: detailsBlock.uid },
+        path: 'auth',
+        maxDepth: 3,
+      },
+    });
+    expect(authPathRes.status).toBe(200);
+    const authPathData = getData(authPathRes);
+    expect(authPathData.vars.auth.properties.locale.title).toBe('Current language');
+    expect(authPathData.vars.auth.properties.user.properties.id).toBeTruthy();
+
+    const urlParamPathRes = await rootAgent.resource('flowSurfaces').context({
+      values: {
+        target: { uid: detailsBlock.uid },
+        path: 'urlSearchParams.hideTable',
+        maxDepth: 2,
+      },
+    });
+    expect(urlParamPathRes.status).toBe(200);
+    expect(getData(urlParamPathRes).vars['urlSearchParams.hideTable'].type).toBe('string');
 
     for (const invalidPath of ['ctx.record', '{{ ctx.record }}']) {
       const invalidRes = await rootAgent.resource('flowSurfaces').context({
@@ -225,12 +257,12 @@ describe('flowSurfaces context', () => {
                 alias: 'employeeCount',
               },
             ],
-            dimensions: [{ field: 'department.title' }],
+            dimensions: [{ field: 'status' }],
           },
           visual: {
             type: 'bar',
             mappings: {
-              x: 'department.title',
+              x: 'status',
               y: 'employeeCount',
             },
           },
@@ -249,7 +281,7 @@ describe('flowSurfaces context', () => {
     expect(builderContextRes.status).toBe(200);
     const builderContext = getData(builderContextRes);
     expect(builderContext.vars.collection.properties.nickname).toBeTruthy();
-    expect(builderContext.vars.collection.properties.department.properties.title).toBeTruthy();
+    expect(builderContext.vars.collection.properties.status).toBeTruthy();
 
     const chartContextRes = await rootAgent.resource('flowSurfaces').context({
       values: {
@@ -261,7 +293,7 @@ describe('flowSurfaces context', () => {
     expect(chartContextRes.status).toBe(200);
     const chartContext = getData(chartContextRes);
     expect(chartContext.vars.chart.properties.queryOutputs.properties.employeeCount.type).toBe('number');
-    expect(chartContext.vars.chart.properties.queryOutputs.properties['department.title'].type).toBe('string');
+    expect(chartContext.vars.chart.properties.queryOutputs.properties.status.type).toBe('string');
     expect(chartContext.vars.chart.properties.aliases.properties.employeeCount).toBeTruthy();
     expect(chartContext.vars.chart.properties.supportedVisualTypes.properties.bar).toBeTruthy();
 
@@ -692,6 +724,8 @@ async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'nickname', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'input' },
+        { name: 'email', type: 'string', interface: 'input' },
+        { name: 'position', type: 'string', interface: 'input' },
       ],
     },
   });
@@ -739,7 +773,7 @@ async function setupFixtureCollections(rootAgent: any, db: Database) {
 
   await waitForFixtureCollectionsReady(db, {
     departments: ['title', 'location'],
-    employees: ['nickname', 'status', 'departmentId'],
+    employees: ['nickname', 'status', 'email', 'position', 'departmentId'],
     tasks: ['title', 'status', 'employeeId'],
   });
 }

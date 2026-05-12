@@ -2045,6 +2045,7 @@ const schemas = {
         type: 'object',
         additionalProperties: ref('FlowSurfaceContextVarInfo'),
       },
+      dynamicProperties: ref('FlowSurfaceContextVarInfo'),
     },
     additionalProperties: false,
   },

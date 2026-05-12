@@ -18586,6 +18586,7 @@ export class FlowSurfacesService {
 
     return {
       collection,
+      userCollection: this.getCollection('main', 'users'),
       recordCollection,
       formValuesCollection,
       itemCollections,

@@ -747,6 +747,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceContextResponse.properties.vars.additionalProperties.$ref).toBe(
       '#/components/schemas/FlowSurfaceContextVarInfo',
     );
+    expect(schemas.FlowSurfaceContextVarInfo.properties.dynamicProperties.$ref).toBe(
+      '#/components/schemas/FlowSurfaceContextVarInfo',
+    );
     expect(schemas.FlowSurfaceConfigureOption.properties.supportsFlowContext.type).toBe('boolean');
     expect(schemas.FlowSurfaceCatalogResponse.properties.actions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceCatalogItem',

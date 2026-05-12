@@ -84,6 +84,19 @@ describe('flowSurfaces reaction', () => {
       supportedSources: ['literal', 'path', 'runjs'],
       runjsScene: 'fieldValue',
     });
+    const fieldLinkageCapability = findCapability(meta, 'fieldLinkage');
+    expect(fieldLinkageCapability.conditionMeta?.operatorsByPath?.role).toEqual(
+      expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']),
+    );
+    expect(fieldLinkageCapability.conditionMeta?.operatorsByPath?.['auth.locale']).toEqual(
+      expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']),
+    );
+    expect(fieldLinkageCapability.conditionMeta?.operatorsByPath?.deviceType).toEqual(
+      expect.arrayContaining(['$eq', '$ne', '$in', '$notIn']),
+    );
+    expect(fieldLinkageCapability.conditionMeta?.operatorsByPath?.['urlSearchParams.*']).toEqual(
+      expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']),
+    );
 
     const fieldValueResult = await service.transaction((transaction) =>
       service.setFieldValueRules(
@@ -192,6 +205,64 @@ describe('flowSurfaces reaction', () => {
       },
     ]);
 
+    const roleBlockLinkageResult = await service.transaction((transaction) =>
+      service.setBlockLinkageRules(
+        {
+          target: {
+            uid: tableUid,
+          },
+          rules: [
+            {
+              key: 'hideAdminOnlyTable',
+              when: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'role',
+                    operator: '$eq',
+                    value: 'admin',
+                  },
+                  {
+                    path: 'urlSearchParams.hideTable',
+                    operator: '$eq',
+                    value: '1',
+                  },
+                ],
+              },
+              then: [
+                {
+                  type: 'setBlockState',
+                  state: 'hidden',
+                },
+              ],
+            },
+          ],
+        },
+        { transaction },
+      ),
+    );
+    expect(roleBlockLinkageResult.resolvedScene).toBe('block');
+    expect(roleBlockLinkageResult.normalizedRules).toMatchObject([
+      {
+        key: 'hideAdminOnlyTable',
+        when: {
+          logic: '$and',
+          items: [
+            {
+              path: 'role',
+              operator: '$eq',
+              value: 'admin',
+            },
+            {
+              path: 'urlSearchParams.hideTable',
+              operator: '$eq',
+              value: '1',
+            },
+          ],
+        },
+      },
+    ]);
+
     const actionLinkageResult = await service.transaction((transaction) =>
       service.setActionLinkageRules(
         {
@@ -239,7 +310,22 @@ describe('flowSurfaces reaction', () => {
 
     expect(tableReadback.tree.stepParams?.cardSettings?.linkageRules).toMatchObject([
       {
-        key: 'hideTable',
+        key: 'hideAdminOnlyTable',
+        condition: {
+          logic: '$and',
+          items: [
+            {
+              path: '{{ ctx.role }}',
+              operator: '$eq',
+              value: 'admin',
+            },
+            {
+              path: '{{ ctx.urlSearchParams.hideTable }}',
+              operator: '$eq',
+              value: '1',
+            },
+          ],
+        },
         actions: [
           {
             name: 'linkageSetBlockProps',
@@ -846,7 +932,7 @@ describe('flowSurfaces reaction', () => {
               },
             ],
             layout: {
-              rows: [['main.employeeForm'], ['main.employeesTable']],
+              rows: [['employeeForm', 'employeesTable']],
             },
           },
         ],
@@ -899,7 +985,7 @@ describe('flowSurfaces reaction', () => {
             },
             {
               type: 'setActionLinkageRules',
-              target: 'main.employeesTable.refreshAction',
+              target: 'main.refreshAction',
               rules: [
                 {
                   key: 'disableRefresh',
@@ -1034,11 +1120,13 @@ async function setupReactionFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'nickname', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'input' },
+        { name: 'email', type: 'string', interface: 'input' },
+        { name: 'position', type: 'string', interface: 'input' },
       ],
     },
   });
 
   await waitForFixtureCollectionsReady(db, {
-    employees: ['nickname', 'status'],
+    employees: ['nickname', 'status', 'email', 'position'],
   });
 }
