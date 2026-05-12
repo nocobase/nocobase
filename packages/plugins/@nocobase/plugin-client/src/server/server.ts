@@ -189,15 +189,53 @@ export class PluginClientServer extends Plugin {
         instance.allowNewMenu === undefined ? ['admin', 'member'].includes(instance.name) : !!instance.allowNewMenu,
       );
     });
-    this.db.on('desktopRoutes.afterDestroy', async (instance: Model, { transaction }) => {
-      const r = this.db.getRepository('flowModels');
-      if (r) {
-        await r.destroy({
+
+    const collectDesktopRouteSchemaUids = async (instance: Model, transaction?: Transaction) => {
+      const routeRepo = this.db.getRepository('desktopRoutes');
+      const schemaUids = new Set<string>();
+      const pendingIds: Array<string | number> = [];
+      const rootId = instance.get('id');
+      const rootSchemaUid = instance.get('schemaUid');
+
+      if (rootSchemaUid) {
+        schemaUids.add(rootSchemaUid);
+      }
+      if (rootId) {
+        pendingIds.push(rootId);
+      }
+
+      while (pendingIds.length) {
+        const routes = await routeRepo.find({
+          fields: ['id', 'schemaUid'],
           filter: {
-            uid: instance.get('schemaUid'),
+            parentId: {
+              $in: pendingIds.splice(0, pendingIds.length),
+            },
           },
           transaction,
         });
+        for (const route of routes) {
+          const schemaUid = route.get('schemaUid');
+          const id = route.get('id');
+          if (schemaUid) {
+            schemaUids.add(schemaUid);
+          }
+          if (id) {
+            pendingIds.push(id);
+          }
+        }
+      }
+
+      return Array.from(schemaUids);
+    };
+
+    this.db.on('desktopRoutes.beforeDestroy', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels') as any;
+      if (r?.remove) {
+        const schemaUids = await collectDesktopRouteSchemaUids(instance, transaction);
+        for (const schemaUid of schemaUids) {
+          await r.remove(schemaUid, { transaction });
+        }
       }
     });
     this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
