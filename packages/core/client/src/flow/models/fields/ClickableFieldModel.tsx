@@ -8,6 +8,7 @@
  */
 
 import { CollectionField, tExpr } from '@nocobase/flow-engine';
+import { uid } from '@formily/shared';
 import { Tag } from 'antd';
 import { castArray, get } from 'lodash';
 import React from 'react';
@@ -42,6 +43,36 @@ function getParentAssociationField(model: FieldModel): CollectionField | null {
   const parentCollectionField =
     (model.parent as any)?.context?.collectionField || (model.parent as any)?.collectionField;
   return parentCollectionField?.isAssociationField?.() ? parentCollectionField : null;
+}
+
+export function applyClickToOpenProps(ctx: any, params: any) {
+  const collectionField = ctx.collectionField?.isAssociationField?.()
+    ? ctx.collectionField
+    : ctx.model?.parent?.context?.collectionField || ctx.collectionField;
+  ctx.model.setProps({
+    clickToOpen: params.clickToOpen,
+    ...(collectionField?.getComponentProps?.() || {}),
+  });
+}
+
+export async function refreshClickToOpenRuntime(ctx: any) {
+  ctx.model.invalidateFlowCache?.('beforeRender', true);
+  await ctx.model.rerender?.();
+
+  const parent = ctx.model.parent;
+  if (!parent) {
+    return;
+  }
+  parent.invalidateFlowCache?.('beforeRender', true);
+  parent.setProps?.({
+    __displayFieldRefreshKey: uid(),
+  });
+  await parent.rerender?.();
+}
+
+export async function applyClickToOpenSetting(ctx: any, params: any) {
+  applyClickToOpenProps(ctx, params);
+  await refreshClickToOpenRuntime(ctx);
 }
 
 export class ClickableFieldModel extends FieldModel {
@@ -303,8 +334,11 @@ ClickableFieldModel.registerFlow({
       hideInSettings(ctx) {
         return ctx.disableFieldClickToOpen;
       },
+      async afterParamsSave(ctx, params) {
+        await applyClickToOpenSetting(ctx, params);
+      },
       handler(ctx, params) {
-        ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });
+        applyClickToOpenProps(ctx, params);
       },
     },
   },

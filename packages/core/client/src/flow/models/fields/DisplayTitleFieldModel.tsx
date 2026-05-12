@@ -13,7 +13,7 @@ import { castArray } from 'lodash';
 import { css } from '@emotion/css';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
-import { ClickableFieldModel } from './ClickableFieldModel';
+import { applyClickToOpenProps, applyClickToOpenSetting, ClickableFieldModel } from './ClickableFieldModel';
 
 function isParentAssociationField(ctx: any) {
   return !!ctx.model?.parent?.context?.collectionField?.isAssociationField?.();
@@ -98,11 +98,11 @@ DisplayTitleFieldModel.registerFlow({
       hideInSettings(ctx) {
         return ctx.disableFieldClickToOpen;
       },
+      async afterParamsSave(ctx, params) {
+        await applyClickToOpenSetting(ctx, params);
+      },
       handler(ctx, params) {
-        ctx.model.setProps({
-          clickToOpen: params.clickToOpen,
-          ...(ctx.collectionField?.getComponentProps?.() || {}),
-        });
+        applyClickToOpenProps(ctx, params);
       },
     },
   },

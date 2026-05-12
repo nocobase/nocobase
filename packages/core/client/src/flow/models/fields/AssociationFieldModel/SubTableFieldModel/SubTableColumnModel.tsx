@@ -641,9 +641,15 @@ export class SubTableColumnModel<
         this.props.pattern,
         this.props.readPretty,
         this.props.titleField,
+        this.props.__displayFieldRefreshKey,
         fieldModel?.uid,
         fieldModel?.use,
         fieldModel?.constructor?.name,
+        fieldModel?.props?.clickToOpen,
+        fieldModel?.props?.displayStyle,
+        fieldModel?.props?.overflowMode,
+        fieldModel?.props?.titleField,
+        fieldModel?.props?.fieldNames?.label,
       ]
         .filter((item) => item !== undefined && item !== null)
         .join(':');

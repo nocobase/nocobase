@@ -236,4 +236,53 @@ describe('ClickableFieldModel', () => {
     expect(screen.getByText('S-001')).toBeInTheDocument();
     expect(screen.queryByText('Sales')).not.toBeInTheDocument();
   });
+
+  it('refreshes the parent column when title display click-to-open changes', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DisplayTitleFieldModel });
+
+    const rolesField = {
+      name: 'roles',
+      target: 'roles',
+      collection: { name: 'users' },
+      targetCollection: { name: 'roles' },
+      isAssociationField: () => true,
+      getComponentProps: () => ({ titleField: 'name' }),
+    };
+    const titleField = {
+      name: 'title',
+      collection: { name: 'roles' },
+      isAssociationField: () => false,
+    };
+
+    const parent = engine.createModel<FlowModel>({
+      use: FlowModel,
+      uid: 'roles-title-column-refresh',
+    });
+    parent.context.defineProperty('collectionField', { value: rolesField });
+    const parentSetProps = vi.spyOn(parent, 'setProps');
+    const parentRerender = vi.spyOn(parent, 'rerender').mockResolvedValue(undefined);
+
+    const model = engine.createModel<DisplayTitleFieldModel>({
+      use: DisplayTitleFieldModel,
+      uid: 'roles-title-display-refresh',
+    });
+    model.setParent(parent);
+    model.context.defineProperty('collectionField', { value: titleField });
+    const modelRerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+
+    const clickToOpenStep = model.getFlow('displayFieldSettings').steps.clickToOpen;
+
+    await clickToOpenStep.afterParamsSave(model.context as any, { clickToOpen: true }, { clickToOpen: false });
+
+    expect(model.props).toMatchObject({
+      clickToOpen: true,
+      titleField: 'name',
+    });
+    expect(modelRerender).toHaveBeenCalled();
+    expect(parentSetProps).toHaveBeenCalledWith({
+      __displayFieldRefreshKey: expect.any(String),
+    });
+    expect(parentRerender).toHaveBeenCalled();
+  });
 });
