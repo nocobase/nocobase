@@ -25,7 +25,7 @@ nb license activate [flags]
 | `--account` | string | オンライン有効化に使用するライセンスサービスのアカウント |
 | `--password` | string | オンライン有効化に使用するライセンスサービスのパスワード |
 | `--desc` | string | オンライン有効化時に送信するアプリケーション名 |
-| `--yes` | boolean | 送信する情報が正確であることを確認します |
+| `--yes`, `-y` | boolean | 明示的に指定した `--env` が現在の env と異なる場合、対話確認をスキップします |
 | `--json` | boolean | JSON を出力します |
 
 ## 使用例
@@ -34,6 +34,7 @@ nb license activate [flags]
 nb license activate --env app1 --key <licenseKey>
 nb license activate --env app1 --key-file ./license.txt
 nb license activate --env app1 --online
+nb license activate --env app1 --online --account aa --password bb --desc test24
 nb license activate --env app1 --online --account aa --password bb --desc test24 --yes
 nb license activate --env app1 --json --key-file ./license.txt
 ```
@@ -41,6 +42,8 @@ nb license activate --env app1 --json --key-file ./license.txt
 ## 補足
 
 オンライン有効化を使用する場合、CLI は現在の env の instance ID とアプリ URL を使ってライセンスサービスに license key を要求します。
+
+`--env` を明示的に指定し、その値が現在の env と異なる場合、CLI は最初に確認を求めます。非対話端末や AI エージェントのセッションでは、自分で `--yes` を追加するか、先に `nb env use <name>` を実行してから再試行してください。
 
 ## 関連コマンド
 

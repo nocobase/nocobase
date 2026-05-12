@@ -32,6 +32,7 @@ nb api resource <command>
 | `--api-base-url` | string | NocoBase API 地址，例如 `http://localhost:13000/api` |
 | `--verbose` | boolean | 显示详细进度 |
 | `--env`, `-e` | string | 环境名称 |
+| `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 | `--role` | string | 角色覆盖，作为 `X-Role` 请求头发送 |
 | `--token`, `-t` | string | API key 覆盖 |
 | `--json-output`, `-j` / `--no-json-output` | boolean | 是否输出原始 JSON，默认开启 |
@@ -39,6 +40,8 @@ nb api resource <command>
 | `--data-source` | string | 数据源 key，默认 `main` |
 
 关联资源命令还可以配合 `--source-id` 指定源记录 ID。
+
+只有在你显式传入 `--env` 时，CLI 才会检查它是否与当前 env 一致。如果显式指定了不同的 env，交互终端会先确认；在非交互终端或 AI agent 场景下，需要由你自己显式追加 `--yes`，或者先执行 `nb env use <name>` 再重试。
 
 ## 示例
 

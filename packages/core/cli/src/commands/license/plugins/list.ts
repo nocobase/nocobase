@@ -9,7 +9,13 @@
 
 import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
-import { licenseEnvFlag, licenseJsonFlag, licensePkgUrlFlag, requireLicenseRuntime } from '../shared.js';
+import {
+  createLicenseEnvFlag,
+  licenseJsonFlag,
+  licensePkgUrlFlag,
+  licenseYesFlag,
+  requireLicenseRuntime,
+} from '../shared.js';
 import { fetchLicensedPluginPackages } from './shared.js';
 import { renderTable } from '../../../lib/ui.js';
 
@@ -23,13 +29,10 @@ export default class LicensePluginsList extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --json',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to inspect licensed plugins for. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
     'pkg-url': licensePkgUrlFlag,
-    yes: Flags.boolean({
-      description: 'Skip the interactive cross-env confirmation prompt',
-      default: false,
-    }),
+    yes: licenseYesFlag,
   };
 
   public async run(): Promise<void> {

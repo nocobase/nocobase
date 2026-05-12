@@ -13,7 +13,7 @@ const fs = require('fs-extra');
 const zlib = require('zlib');
 const tar = require('tar');
 const path = require('path');
-const { createStoragePluginsSymlink, resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
+const { syncPluginSymlinks, resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
 const { getAccessKeyPair, showLicenseInfo, LicenseKeyError } = require('../license');
 const { logger } = require('../logger');
 
@@ -313,7 +313,7 @@ module.exports = (cli) => {
       const file = path.resolve(__dirname, '../../package.json');
       const json = await fs.readJson(file);
       await pm.download({ version: json.version });
-      await createStoragePluginsSymlink();
+      await syncPluginSymlinks();
     });
   pkg.command('export-all').action(async () => {
     logger.info('Todo...');

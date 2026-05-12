@@ -11,14 +11,17 @@ import React, { useState } from 'react';
 import { Tag, Image } from 'antd';
 import { Attachment as AttachmentType } from '../types';
 import { getFileIconByExt } from './utils';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const Attachment: React.FC<{
   file: AttachmentType;
   closable?: boolean;
 }> = ({ file, closable }) => {
   const [visible, setVisible] = useState(false);
-  const removeAttachment = useChatMessagesStore.use.removeAttachment();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const removeAttachment = chat.removeAttachment;
 
   return (
     <Tag

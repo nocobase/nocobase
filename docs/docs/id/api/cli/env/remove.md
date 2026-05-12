@@ -20,7 +20,7 @@ nb env remove <name> [flags]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `<name>` | string | Nama lingkungan yang akan dihapus |
+| `<name>` | string | Nama env yang sudah dikonfigurasi untuk dihapus |
 | `--force`, `-f` | boolean | Lewati konfirmasi dan langsung hapus |
 | `--verbose` | boolean | Menampilkan progress detail |
 

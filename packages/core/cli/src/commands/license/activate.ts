@@ -12,10 +12,11 @@ import { Command, Flags } from '@oclif/core';
 import { readFile } from 'node:fs/promises';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
+  createLicenseEnvFlag,
   ensureInstanceId,
-  licenseEnvFlag,
   licenseJsonFlag,
   licensePkgUrlFlag,
+  licenseYesFlag,
   redactLicenseKey,
   requireLicenseRuntime,
   resolveLicenseKeyFile,
@@ -218,7 +219,7 @@ export default class LicenseActivate extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --json --key-file ./license.txt',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to activate a license for. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
     key: Flags.string({
       description: 'Existing license key to activate',
@@ -240,10 +241,7 @@ export default class LicenseActivate extends Command {
       description: 'Application name for online activation',
     }),
     'pkg-url': licensePkgUrlFlag,
-    yes: Flags.boolean({
-      description: 'Skip the interactive cross-env confirmation prompt',
-      default: false,
-    }),
+    yes: licenseYesFlag,
   };
 
   public async run(): Promise<void> {

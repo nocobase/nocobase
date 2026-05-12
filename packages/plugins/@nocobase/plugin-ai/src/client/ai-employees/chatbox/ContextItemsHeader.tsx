@@ -10,11 +10,14 @@
 import React from 'react';
 import { css } from '@emotion/css';
 import { ContextItem } from './ContextItem';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const ContextItemsHeader: React.FC = () => {
-  const contextItems = useChatMessagesStore.use.contextItems();
-  const removeContextItem = useChatMessagesStore.use.removeContextItem();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const contextItems = chat.use.contextItems();
+  const removeContextItem = chat.removeContextItem;
   if (!contextItems?.length) {
     return null;
   }

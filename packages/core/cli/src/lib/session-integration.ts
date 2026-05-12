@@ -489,41 +489,25 @@ function buildManagedFileContent(shell: SessionShell) {
     case 'zsh':
       return [
         '# NocoBase session integration',
-        'if [ -n "${CODEX_THREAD_ID:-}" ]; then',
-        '  export NB_SESSION_ID="${CODEX_THREAD_ID}"',
-        'else',
-        `  export NB_SESSION_ID="nb-$(node -e 'console.log(require("node:crypto").randomUUID())')"`,
-        'fi',
+        `export NB_SESSION_ID="nb-$(node -e 'console.log(require("node:crypto").randomUUID())')"`,
         '',
       ].join('\n');
     case 'fish':
       return [
         '# NocoBase session integration',
-        'if set -q CODEX_THREAD_ID',
-        '    set -gx NB_SESSION_ID "$CODEX_THREAD_ID"',
-        'else',
-        '    set -gx NB_SESSION_ID "nb-"(node -e "console.log(require(\'node:crypto\').randomUUID())")',
-        'end',
+        'set -gx NB_SESSION_ID "nb-"(node -e "console.log(require(\'node:crypto\').randomUUID())")',
         '',
       ].join('\n');
     case 'powershell':
       return [
         '# NocoBase session integration',
-        'if ($env:CODEX_THREAD_ID) {',
-        '  $env:NB_SESSION_ID = $env:CODEX_THREAD_ID',
-        '} else {',
         '  $env:NB_SESSION_ID = "nb-" + [guid]::NewGuid().ToString()',
-        '}',
         '',
       ].join('\n');
     case 'cmd':
       return [
         '@echo off',
-        'if defined CODEX_THREAD_ID (',
-        '  set "NB_SESSION_ID=%CODEX_THREAD_ID%"',
-        ') else (',
-        '  set "NB_SESSION_ID=nb-%RANDOM%%RANDOM%%RANDOM%%RANDOM%"',
-        ')',
+        'set "NB_SESSION_ID=nb-%RANDOM%%RANDOM%%RANDOM%%RANDOM%"',
         '',
       ].join('\r\n');
     default:

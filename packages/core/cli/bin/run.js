@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { normalizeSessionEnv } from './session-env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const requireFromCli = createRequire(import.meta.url);
@@ -15,6 +16,8 @@ let isDev = isSourcePackage;
 if (process.env.NB_CLI_USE_DIST === '1') {
   isDev = false;
 }
+
+normalizeSessionEnv();
 
 /**
  * In the monorepo, plain `node` cannot load `.ts`. Re-exec once with `--import <tsx>`

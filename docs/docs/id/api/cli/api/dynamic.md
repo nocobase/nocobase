@@ -41,6 +41,13 @@ Perintah dinamis dengan request body mendukung:
 
 `--body` dan `--body-file` saling eksklusif.
 
+Perintah API dinamis juga mendukung:
+
+- `--env`, `-e`: nama env CLI tujuan permintaan; jika dihilangkan, env saat ini akan digunakan
+- `--yes`, `-y`: saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
+
 ## Perintah Terkait
 
 - [`nb env update`](../env/update.md)

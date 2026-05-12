@@ -19,7 +19,9 @@ nb app upgrade [flags]
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
 | `--env`, `-e` | string | アップグレードする CLI env 名。省略時は現在の env を使用します |
+| `--yes`, `-y` | boolean | 明示的に指定した `--env` が現在の env と異なる場合、対話確認をスキップします |
 | `--skip-code-update`, `-s` | boolean | 保存済みのローカルソースコードまたは Docker イメージを使用して再起動し、再ダウンロードは行いません |
+| `--version` | string | 保存されている `downloadVersion` を上書きします。アップグレードに成功すると、新しいバージョンが env 設定へ書き戻されます |
 | `--verbose` | boolean | 内部の更新・再起動コマンド出力を表示します |
 
 ## 使用例
@@ -28,9 +30,12 @@ nb app upgrade [flags]
 nb app upgrade
 nb app upgrade --env local
 nb app upgrade --env local -s
+nb app upgrade --env local --version beta
 nb app upgrade --env local --verbose
 nb app upgrade --env local-docker -s
 ```
+
+`--env` を明示的に指定し、その値が現在の env と異なる場合、CLI は最初に確認を求めます。非対話端末や AI エージェントのセッションでは、自分で `--yes` を追加するか、先に `nb env use <name>` を実行してから再試行してください。
 
 ## 関連コマンド
 

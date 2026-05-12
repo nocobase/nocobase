@@ -10,9 +10,10 @@
 import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
+  createLicenseEnvFlag,
   generateAndSaveInstanceId,
-  licenseEnvFlag,
   licenseJsonFlag,
+  licenseYesFlag,
   readSavedInstanceId,
   requireLicenseRuntime,
   resolveInstanceIdFile,
@@ -30,12 +31,9 @@ export default class LicenseId extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --json',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to inspect. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
-    yes: Flags.boolean({
-      description: 'Skip the interactive cross-env confirmation prompt',
-      default: false,
-    }),
+    yes: licenseYesFlag,
     force: Flags.boolean({
       description: 'Force regenerate the instance ID even if one is already saved',
       default: false,

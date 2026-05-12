@@ -27,7 +27,7 @@ export default class EnvUpdate extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Environment name (omit to use the current env)',
+      description: 'Configured environment name to refresh. Defaults to the current env when omitted',
       required: false,
     }),
   };

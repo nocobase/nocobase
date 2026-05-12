@@ -19,11 +19,11 @@ nb env status [name] [flags]
 
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
-| [name] | string | Env name to inspect; uses the current env if omitted |
-| --all | boolean | Show status for all configured envs |
-| --json-output | boolean | Output the result as JSON |
+| `[name]` | string | 表示する設定済み環境名。省略時は現在の env を使用し、`--all` と同時には使用できません |
+| `--all` | boolean | 設定済みのすべての env の状態を表示します |
+| `--json-output` | boolean | 結果を JSON で出力します |
 
-`[name]` and `--all` cannot be used together.
+`[name]` と `--all` は同時に使用できません。
 
 ## Status values
 

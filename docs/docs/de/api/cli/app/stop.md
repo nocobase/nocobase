@@ -19,6 +19,7 @@ nb app stop [flags]
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
 | `--env`, `-e` | string | Name der zu stoppenden CLI env; bei Auslassung wird die aktuelle env verwendet |
+| `--yes`, `-y` | boolean | Wenn ein explizit übergebenes `--env` auf eine andere env als die aktuelle env zeigt, die interaktive Bestätigung überspringen |
 | `--verbose` | boolean | Ausgabe der zugrunde liegenden lokalen oder Docker-Befehle anzeigen |
 
 ## Beispiele
@@ -29,6 +30,8 @@ nb app stop --env local
 nb app stop --env local --verbose
 nb app stop --env local-docker
 ```
+
+Wenn Sie `--env` explizit übergeben und es sich von der aktuellen env unterscheidet, fragt die CLI zuerst nach einer Bestätigung. In nicht interaktiven Terminals oder AI-Agent-Sitzungen fügen Sie `--yes` selbst hinzu oder führen zuerst `nb env use <name>` aus und versuchen es dann erneut.
 
 ## Verwandte Befehle
 

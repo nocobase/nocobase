@@ -22,7 +22,7 @@ export default class EnvUse extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Configured environment name',
+      description: 'Configured environment name to switch to',
       required: true,
     }),
   };

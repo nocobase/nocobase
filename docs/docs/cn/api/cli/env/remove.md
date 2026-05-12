@@ -20,7 +20,7 @@ nb env remove <name> [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `<name>` | string | 要移除的环境名称 |
+| `<name>` | string | 要移除的已配置环境名称 |
 | `--force`, `-f` | boolean | 跳过确认直接删除 |
 | `--verbose` | boolean | 显示详细进度 |
 
