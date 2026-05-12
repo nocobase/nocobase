@@ -104,6 +104,14 @@ const isToOneAssociationField = (collectionField: any) => {
   );
 };
 
+const isMultipleAssociationField = (fieldModel: any, collectionField: any) => {
+  if (fieldModel?.props?.allowMultiple === true || fieldModel?.props?.multiple === true) {
+    return true;
+  }
+
+  return !isToOneAssociationField(collectionField);
+};
+
 const buildVirtualFilterCollectionField = (ctx: FlowModelContext, filterField: any) => {
   if (!filterField) {
     return;
@@ -552,7 +560,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     if (Array.isArray(value)) {
       if (value.length === 0) return value;
       const normalizedValue = value.map((item) => (item && typeof item === 'object' ? item[valueKey] : item));
-      return isToOneAssociationField(collectionField) ? normalizedValue[0] : normalizedValue;
+      return isMultipleAssociationField(fieldModel, collectionField) ? normalizedValue : normalizedValue[0];
     }
     if (typeof value === 'object') {
       return (value as any)?.[valueKey];

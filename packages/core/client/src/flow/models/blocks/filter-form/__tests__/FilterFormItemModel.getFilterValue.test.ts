@@ -18,19 +18,21 @@ describe('FilterFormItemModel getFilterValue', () => {
     association = true,
     fieldNames = { label: 'nickname', value: 'id' },
     collectionField = {},
+    fieldProps = {},
   }: {
     defaultValue: any;
     fieldValue?: any;
     association?: boolean;
     fieldNames?: { label: string; value: string };
     collectionField?: Record<string, any>;
+    fieldProps?: Record<string, any>;
   }) => {
     return {
       mounted: false,
       props: { name: 'ownerId' },
       subModels: {
         field: {
-          props: { fieldNames },
+          props: { fieldNames, ...fieldProps },
           context: {
             collectionField: {
               isAssociationField: () => association,
@@ -110,6 +112,21 @@ describe('FilterFormItemModel getFilterValue', () => {
 
     const value = FilterFormItemModel.prototype.getFilterValue.call(model as any);
     expect(value).toBe('org-3');
+  });
+
+  it('keeps to-one association arrays when allowMultiple is enabled', () => {
+    const model = createModelMock({
+      defaultValue: undefined,
+      fieldValue: [
+        { id: 5, nickname: 'Org 5' },
+        { id: 6, nickname: 'Org 6' },
+      ],
+      collectionField: { type: 'belongsTo', interface: 'm2o' },
+      fieldProps: { allowMultiple: true, multiple: true },
+    });
+
+    const value = FilterFormItemModel.prototype.getFilterValue.call(model as any);
+    expect(value).toEqual([5, 6]);
   });
 
   it('keeps association arrays for to-many fields', () => {
