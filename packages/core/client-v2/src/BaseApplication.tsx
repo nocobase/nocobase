@@ -586,25 +586,26 @@ export class ApplicationModel extends FlowModel {
   }
 
   render() {
-    if (this.app.maintaining) {
-      return this.renderMaintaining();
+    if (this.app.maintaining && !this.app.maintained) {
+      return <>{this.renderMaintaining()}</>;
     }
-    if (this.app.error) {
-      return this.renderError();
-    }
-    return this.renderContent();
-  }
-
-  renderMaintaining() {
-    if (!this.app.maintained) {
-      return this.app.renderComponent('AppMaintaining', { app: this.app, error: this.app.error });
+    if (this.app.error && !this.app.maintaining) {
+      return <>{this.renderError()}</>;
     }
     return (
       <>
         {this.renderContent()}
-        {this.app.renderComponent('AppMaintainingDialog', { app: this.app, error: this.app.error })}
+        {this.app.maintaining && this.app.maintained ? this.renderMaintainingDialog() : null}
       </>
     );
+  }
+
+  renderMaintaining() {
+    return this.app.renderComponent('AppMaintaining', { app: this.app, error: this.app.error });
+  }
+
+  renderMaintainingDialog() {
+    return this.app.renderComponent('AppMaintainingDialog', { app: this.app, error: this.app.error });
   }
 
   renderError() {
