@@ -328,11 +328,10 @@ const CALENDAR_SETTINGS_GROUP = {
     'quickCreatePopupSettings',
     'eventPopupSettings',
     'dataScope.filter',
-    'linkageRules.value',
   ],
   clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['dataScope', 'linkageRules'],
+  eventBindingSteps: ['dataScope'],
   pathSchemas: {
     'titleField.titleField': STRING_SCHEMA,
     'colorField.colorFieldName': STRING_SCHEMA,
@@ -345,7 +344,6 @@ const CALENDAR_SETTINGS_GROUP = {
     quickCreatePopupSettings: OBJECT_SCHEMA,
     eventPopupSettings: OBJECT_SCHEMA,
     'dataScope.filter': FILTER_GROUP_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
   },
 };
 const TREE_BLOCK_PROP_SCHEMAS = {

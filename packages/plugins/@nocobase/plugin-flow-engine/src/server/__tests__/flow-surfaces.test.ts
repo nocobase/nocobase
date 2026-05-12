@@ -1696,6 +1696,62 @@ describe('flowSurfaces resource', () => {
     });
   });
 
+  it('should persist calendar configure linkageRules through cardSettings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Calendar linkage configure page',
+      tabTitle: 'Calendar linkage configure tab',
+    });
+    const calendarBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'calendar',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+          },
+          defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'calendar_events' }),
+        },
+      }),
+    );
+
+    const configured = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: calendarBlock.uid,
+        },
+        changes: {
+          linkageRules: [{ key: 'hideCalendar' }],
+        },
+      },
+    });
+    expect(configured.status).toBe(200);
+
+    const invalidCalendarSettingsWrite = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: calendarBlock.uid,
+        },
+        stepParams: {
+          calendarSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(invalidCalendarSettingsWrite.status).toBe(400);
+
+    const readback = await getSurface(rootAgent, {
+      uid: calendarBlock.uid,
+    });
+    expect(readback.tree.stepParams?.cardSettings?.linkageRules?.value).toEqual([{ key: 'hideCalendar' }]);
+    expect(readback.tree.stepParams?.calendarSettings?.linkageRules).toBeUndefined();
+  });
+
   it('should enforce real action button settings keys and linkageRules event bindings', async () => {
     const page = await createPage(rootAgent, {
       title: 'Action contract page',

@@ -110,6 +110,16 @@ describe('flowSurfaces block header contracts', () => {
     }
   });
 
+  it('should expose calendar block linkage through cardSettings only', () => {
+    const contract = getNodeContract('CalendarBlockModel');
+    const cardSettingsAllowedPaths = contract.domains.stepParams?.groups?.cardSettings?.allowedPaths || [];
+    const calendarSettingsAllowedPaths = contract.domains.stepParams?.groups?.calendarSettings?.allowedPaths || [];
+
+    expect(cardSettingsAllowedPaths).toEqual(expect.arrayContaining(['linkageRules.value']));
+    expect(calendarSettingsAllowedPaths).not.toContain('linkageRules.value');
+    expect(getReactionKindsForUse('CalendarBlockModel')).toEqual(expect.arrayContaining(['blockLinkage']));
+  });
+
   it('should expose canonical blockHeight paths and reject legacy raw block height props', () => {
     const blockHeightCases = [
       'TableBlockModel',
@@ -317,6 +327,50 @@ describe('flowSurfaces block header contracts', () => {
       });
       expect(updateSettings.mock.calls[0][0]).not.toHaveProperty('decoratorProps');
     }
+  });
+
+  it('should persist calendar semantic linkageRules through cardSettings', async () => {
+    const service = new FlowSurfacesService({ db: {} } as any);
+    vi.spyOn(service as any, 'getCalendarBlockResourceInit').mockReturnValue({
+      dataSourceKey: 'main',
+      collectionName: 'events',
+    });
+    vi.spyOn(service as any, 'assertCalendarCollectionCompatible').mockReturnValue({
+      collection: {},
+      collectionName: 'events',
+    });
+    vi.spyOn(service as any, 'normalizeCalendarFieldNamesForCollection').mockReturnValue({});
+    vi.spyOn(service as any, 'ensureCalendarBlockPopupHosts').mockResolvedValue(undefined);
+    vi.spyOn(service as any, 'repository', 'get').mockReturnValue({
+      findModelById: vi.fn().mockResolvedValue({
+        uid: 'calendar-1',
+        props: {},
+        stepParams: {},
+      }),
+    } as any);
+    const updateSettings = vi.spyOn(service, 'updateSettings').mockResolvedValue({ uid: 'calendar-1' } as any);
+
+    await (service as any).configureCalendarBlock(
+      { uid: 'calendar-1' },
+      { uid: 'calendar-1', props: {}, stepParams: {} },
+      {
+        linkageRules: [{ key: 'hideCalendar' }],
+      },
+      {},
+    );
+
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(updateSettings.mock.calls[0][0]).toMatchObject({
+      target: { uid: 'calendar-1' },
+      stepParams: {
+        cardSettings: {
+          linkageRules: {
+            value: [{ key: 'hideCalendar' }],
+          },
+        },
+      },
+    });
+    expect(updateSettings.mock.calls[0][0].stepParams?.calendarSettings?.linkageRules).toBeUndefined();
   });
 
   it('should persist kanban block height configure changes without overwriting item cardSettings', async () => {

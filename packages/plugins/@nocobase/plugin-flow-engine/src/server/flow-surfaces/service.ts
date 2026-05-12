@@ -14915,7 +14915,11 @@ export class FlowSurfacesService {
     popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('CalendarBlockModel');
-    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
+    const nextCardSettings = buildBlockCardSettingsFromSemanticChanges(changes) || {};
+    if (hasOwnDefined(changes, 'linkageRules')) {
+      _.set(nextCardSettings, ['linkageRules', 'value'], changes.linkageRules);
+    }
+    const cardSettings = Object.keys(nextCardSettings).length ? nextCardSettings : undefined;
     assertSupportedSimpleChanges('calendar', changes, allowedKeys);
     this.validateCalendarSettingValues('configure', {
       defaultView: changes.defaultView,
@@ -15044,7 +15048,6 @@ export class FlowSurfacesService {
             'showLunar',
             'weekStart',
             'dataScope',
-            'linkageRules',
             'quickCreatePopup',
             'eventPopup',
             'resource',
@@ -15064,7 +15067,6 @@ export class FlowSurfacesService {
                   ...(hasOwnDefined(changes, 'showLunar') ? { showLunar: { showLunar: showLunar === true } } : {}),
                   ...(hasOwnDefined(changes, 'weekStart') ? { weekStart: { weekStart } } : {}),
                   ...(hasOwnDefined(changes, 'dataScope') ? { dataScope: { filter: changes.dataScope } } : {}),
-                  ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: { value: changes.linkageRules } } : {}),
                   ...(hasQuickCreatePopupChange
                     ? { quickCreatePopupSettings: quickCreatePopupSettings || {} }
                     : resourceChanged
