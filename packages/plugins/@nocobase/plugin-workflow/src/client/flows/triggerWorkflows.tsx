@@ -22,6 +22,7 @@ type SchemaOptions = {
   optionFilter?: (option: { key: string; type: string; config: any }) => boolean;
   usingContext?: boolean;
   filter?: Record<string, any>;
+  description?: string | ((ctx: any) => string | undefined);
 };
 
 export function createTriggerWorkflowsSchema({
@@ -29,13 +30,31 @@ export function createTriggerWorkflowsSchema({
   optionFilter,
   usingContext = true,
   filter,
+  description,
 }: SchemaOptions = {}) {
   return (ctx) => {
     const { collection: collectionModel } = ctx.blockModel as CollectionBlockModel;
     const workflowCollection = collectionModel
       ? joinCollectionName(collectionModel.dataSource.name, collectionModel.name)
       : null;
+    const workflowDescription = typeof description === 'function' ? description(ctx) : description;
     return {
+      ...(workflowDescription
+        ? {
+            description: {
+              type: 'void',
+              'x-component': 'Alert',
+              'x-component-props': {
+                type: 'info',
+                showIcon: true,
+                message: workflowDescription,
+                style: {
+                  marginBottom: '1em',
+                },
+              },
+            },
+          }
+        : {}),
       group: {
         type: 'array',
         'x-decorator': 'FormItem',
@@ -142,13 +161,17 @@ export function createTriggerWorkflowsSchema({
   };
 }
 
+const operationEventDescription = `{{t('Support pre-action event (local mode), post-action event (local mode), and approval event here.', { ns: "${NAMESPACE}" })}}`;
+
 FormSubmitActionModel.registerFlow({
   key: 'formTriggerWorkflowsActionSettings',
   title: `{{t('Workflow', { ns: 'workflow' })}}`,
   steps: {
     setTriggerWorkflows: {
       title: `{{t('Bind workflows', { ns: "${NAMESPACE}" })}}`,
-      uiSchema: createTriggerWorkflowsSchema(),
+      uiSchema: createTriggerWorkflowsSchema({
+        description: operationEventDescription,
+      }),
       handler(ctx, params) {
         const triggerWorkflows = params.group?.length
           ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
@@ -169,7 +192,9 @@ UpdateRecordActionModel.registerFlow({
   steps: {
     setTriggerWorkflows: {
       title: `{{t('Bind workflows', { ns: "${NAMESPACE}" })}}`,
-      uiSchema: createTriggerWorkflowsSchema(),
+      uiSchema: createTriggerWorkflowsSchema({
+        description: operationEventDescription,
+      }),
       handler(ctx, params) {
         const triggerWorkflows = params.group?.length
           ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
