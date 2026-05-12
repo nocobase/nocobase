@@ -17,5 +17,5 @@ export interface VectorDatabaseProviderFeature {
 
 export type VectorDatabaseProviderComponents = {
   name: string;
-  formComponent: (ctx: FlowModelContext, record?: unknown) => React.JSX.Element;
+  formComponent: (ctx: FlowModelContext, fieldClassName: string, record?: unknown) => React.JSX.Element;
 };

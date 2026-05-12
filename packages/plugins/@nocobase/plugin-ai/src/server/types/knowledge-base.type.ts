@@ -18,17 +18,18 @@ export type VectorStoreProp = {
 export type KnowledgeBase = {
   knowledgeBaseType: KnowledgeBaseType;
   knowledgeBaseOuterId: string;
+  key: string;
   name: string;
   description: string;
   vectorStoreProvider: string;
-  vectorStoreConfigId?: string;
+  vectorStoreConfigKey?: string;
   vectorStoreProps?: VectorStoreProp[];
   enabled: boolean;
 };
 
 export type VectorStoreConfig = {
   vectorStoreProvider: string;
-  vectorStoreConfigId?: string;
+  vectorStoreConfigKey?: string;
 };
 
 export type KnowledgeBaseGroup = {
