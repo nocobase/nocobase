@@ -29,7 +29,6 @@ import {
 } from '../../lib/cli-locale.js';
 import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
 import { printVerbose, setVerboseMode } from '../../lib/ui.js';
-import * as p from '@clack/prompts';
 
 type EnvAddParsedFlags = {
   env?: string;
@@ -374,7 +373,7 @@ export default class EnvAdd extends Command {
     applyCliLocale(parsedFlags.locale);
     setVerboseMode(parsedFlags.verbose);
     if (!parsedFlags['no-intro']) {
-      p.intro('Connect a NocoBase Environment');
+      this.log('Connect a NocoBase Environment');
     }
 
     const results = await runPromptCatalog(EnvAdd.prompts, {
@@ -399,6 +398,6 @@ export default class EnvAdd extends Command {
     }
     await this.config.runCommand('env:update', [envName]);
 
-    p.outro(`Env "${envName}" added successfully.`);
+    this.log(`Env "${envName}" added successfully.`);
   }
 }

@@ -19,8 +19,8 @@ import { findAvailableTcpPort } from '../lib/prompt-validators.js';
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   runNocoBaseCommand: vi.fn(),
-  promptInfo: vi.fn(),
-  promptStep: vi.fn(),
+  printInfo: vi.fn(),
+  printWarning: vi.fn(),
 }));
 
 vi.mock('../lib/run-npm.js', () => ({
@@ -28,14 +28,13 @@ vi.mock('../lib/run-npm.js', () => ({
   runNocoBaseCommand: mocks.runNocoBaseCommand,
 }));
 
-vi.mock('@clack/prompts', () => ({
-  log: {
-    info: mocks.promptInfo,
-    step: mocks.promptStep,
-    warn: vi.fn(),
-  },
-  outro: vi.fn(),
-  cancel: vi.fn(),
+vi.mock('../lib/ui.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/ui.js')>();
+  return {
+    ...actual,
+    printInfo: mocks.printInfo,
+    printWarning: mocks.printWarning,
+  };
 }));
 
 const tempDirs: string[] = [];
@@ -43,8 +42,8 @@ const tempDirs: string[] = [];
 afterEach(async () => {
   mocks.run.mockReset();
   mocks.runNocoBaseCommand.mockReset();
-  mocks.promptInfo.mockReset();
-  mocks.promptStep.mockReset();
+  mocks.printInfo.mockReset();
+  mocks.printWarning.mockReset();
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
@@ -156,7 +155,7 @@ test('startBuiltinDb reuses an existing db container without rechecking its publ
 
     expect(plan.containerName).toContain('demo-postgres');
     expect(mocks.run.mock.calls.length).toBe(0);
-    expect(mocks.promptInfo.mock.calls).toEqual([
+    expect(mocks.printInfo.mock.calls).toEqual([
       [`Built-in postgres container already exists: ${plan.containerName}`],
       [`Built-in postgres database is ready at 127.0.0.1:${dbPort}`],
     ]);

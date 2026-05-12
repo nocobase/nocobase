@@ -15,8 +15,6 @@ const mocks = vi.hoisted(() => ({
   setCurrentEnv: vi.fn(),
   setVerboseMode: vi.fn(),
   printVerbose: vi.fn(),
-  intro: vi.fn(),
-  outro: vi.fn(),
 }));
 
 vi.mock('../lib/prompt-catalog.js', async (importOriginal) => {
@@ -35,11 +33,6 @@ vi.mock('../lib/auth-store.js', () => ({
 vi.mock('../lib/ui.js', () => ({
   setVerboseMode: mocks.setVerboseMode,
   printVerbose: mocks.printVerbose,
-}));
-
-vi.mock('@clack/prompts', () => ({
-  intro: mocks.intro,
-  outro: mocks.outro,
 }));
 
 beforeEach(() => {

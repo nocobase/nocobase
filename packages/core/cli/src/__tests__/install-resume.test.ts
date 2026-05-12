@@ -15,12 +15,8 @@ const mocks = vi.hoisted(() => ({
   upsertEnv: vi.fn(),
   setCurrentEnv: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
-  promptInfo: vi.fn(),
-  promptStep: vi.fn(),
-  promptWarn: vi.fn(),
-  promptIntro: vi.fn(),
-  promptOutro: vi.fn(),
-  promptCancel: vi.fn(),
+  printInfo: vi.fn(),
+  printWarning: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -65,15 +61,13 @@ vi.mock('../lib/auth-store.js', async (importOriginal) => {
   };
 });
 
-vi.mock('@clack/prompts', () => ({
-  intro: mocks.promptIntro,
-  log: {
-    info: mocks.promptInfo,
-    step: mocks.promptStep,
-    warn: mocks.promptWarn,
-  },
-  outro: mocks.promptOutro,
-  cancel: mocks.promptCancel,
+vi.mock('../lib/ui.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/ui.js')>();
+  return {
+    ...actual,
+    printInfo: mocks.printInfo,
+    printWarning: mocks.printWarning,
+  };
 }));
 
 vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
