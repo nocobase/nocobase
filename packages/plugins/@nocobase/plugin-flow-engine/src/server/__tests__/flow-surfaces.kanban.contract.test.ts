@@ -1693,6 +1693,121 @@ describe('flowSurfaces kanban contract', () => {
     });
   });
 
+  it('should apply default field groups to omitted calendar and kanban quick-create popup settings', async () => {
+    const unique = Date.now();
+    const collectionName = `omitted_quick_create_groups_${unique}`;
+    await createLargeAddNewTemplateCollection(collectionName);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Omitted quick create groups ${unique}`,
+          },
+        },
+        page: {
+          title: `Omitted quick create groups ${unique}`,
+        },
+        defaults: {
+          collections: {
+            [collectionName]: {
+              fieldGroups: [
+                {
+                  key: 'identity',
+                  title: 'Identity',
+                  fields: ['title', 'owner', 'email', 'phone'],
+                },
+                {
+                  key: 'profile',
+                  title: 'Profile',
+                  fields: ['city', 'country', 'priority', 'category'],
+                },
+                {
+                  key: 'activity',
+                  title: 'Activity',
+                  fields: ['status', 'score', 'notes'],
+                },
+              ],
+              popups: {
+                addNew: {
+                  name: 'Create grouped task without explicit popup settings',
+                  description: 'Create one grouped task without explicit popup settings.',
+                },
+                view: {
+                  name: 'Grouped task details without explicit popup settings',
+                  description: 'View one grouped task without explicit popup settings.',
+                },
+                edit: {
+                  name: 'Edit grouped task without explicit popup settings',
+                  description: 'Edit one grouped task without explicit popup settings.',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Planning',
+            layout: {
+              rows: [
+                [
+                  { key: 'taskCalendar', span: 12 },
+                  { key: 'taskBoard', span: 12 },
+                ],
+              ],
+            },
+            blocks: [
+              {
+                key: 'taskCalendar',
+                type: 'calendar',
+                title: 'Task calendar',
+                collection: collectionName,
+                settings: {
+                  titleField: 'title',
+                  startField: 'createdAt',
+                  endField: 'updatedAt',
+                },
+              },
+              {
+                key: 'taskBoard',
+                type: 'kanban',
+                title: 'Task board',
+                collection: collectionName,
+                fields: ['title', 'owner', 'status'],
+                settings: {
+                  groupField: 'status',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+
+    const data = getData(executeRes);
+    const calendarBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CalendarBlockModel')[0];
+    const kanbanBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'KanbanBlockModel')[0];
+    expect(calendarBlock.subModels?.quickCreateAction?.popup?.template?.uid).toBeTruthy();
+    expect(kanbanBlock.subModels?.quickCreateAction?.popup?.template?.uid).toBeTruthy();
+
+    for (const actionUid of [`${calendarBlock.uid}-quickCreateAction`, `${kanbanBlock.uid}-quick-create-action`]) {
+      const popup = await readPrimaryPopupBlock(actionUid);
+      expect(popup.popupBlock?.use).toBe('CreateFormModel');
+      const formItems = _.castArray(popup.popupBlock?.subModels?.grid?.subModels?.items || []);
+      expect(formItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Identity')).toBe(
+        true,
+      );
+      expect(formItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Profile')).toBe(
+        true,
+      );
+      expect(formItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Activity')).toBe(
+        true,
+      );
+    }
+  });
+
   it('should reuse one grouped add new template across calendar and kanban add-new hosts', async () => {
     const unique = Date.now();
     const collectionName = `add_new_template_tasks_${unique}`;

@@ -5660,6 +5660,7 @@ export class FlowSurfacesService {
           {
             ...payload,
             ...(Object.keys(hiddenPopupSettings).length ? { settings: hiddenPopupSettings } : {}),
+            ...(values.defaults ? { defaults: values.defaults } : {}),
           },
           {
             ...options,
