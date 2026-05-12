@@ -19,6 +19,7 @@ import { dayjs } from '@nocobase/utils/client';
 import * as nocobaseFlowEngine from '@nocobase/flow-engine';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
+import axios from 'axios';
 import * as i18next from 'i18next';
 import lodash from 'lodash';
 import React from 'react';
@@ -68,6 +69,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
 
   // utils
   requirejs.define('ahooks', () => ahooks);
+  requirejs.define('axios', () => axios);
   requirejs.define('dayjs', () => dayjs);
   requirejs.define('lodash', () => lodash);
   requirejs.define('@emotion/css', () => emotionCss);

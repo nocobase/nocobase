@@ -25,6 +25,7 @@ export type PluginData = {
   packageName: string;
   version: string;
   url: string;
+  clientV2Url?: string;
   type: 'local' | 'upload' | 'npm';
 };
 
