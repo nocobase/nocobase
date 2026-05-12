@@ -177,6 +177,10 @@ export function buildBlockCardSettingsFromSemanticChanges(changes: Record<string
     _.unset(nextCardSettings, ['blockHeight']);
   }
 
+  if (hasOwnDefined(changes, 'linkageRules')) {
+    _.set(nextCardSettings, ['linkageRules', 'value'], changes.linkageRules);
+  }
+
   return Object.keys(nextCardSettings).length ? nextCardSettings : undefined;
 }
 

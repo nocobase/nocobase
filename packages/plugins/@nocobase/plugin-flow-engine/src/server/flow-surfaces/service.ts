@@ -14915,11 +14915,7 @@ export class FlowSurfacesService {
     popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('CalendarBlockModel');
-    const nextCardSettings = buildBlockCardSettingsFromSemanticChanges(changes) || {};
-    if (hasOwnDefined(changes, 'linkageRules')) {
-      _.set(nextCardSettings, ['linkageRules', 'value'], changes.linkageRules);
-    }
-    const cardSettings = Object.keys(nextCardSettings).length ? nextCardSettings : undefined;
+    const cardSettings = buildBlockCardSettingsFromSemanticChanges(changes);
     assertSupportedSimpleChanges('calendar', changes, allowedKeys);
     this.validateCalendarSettingValues('configure', {
       defaultView: changes.defaultView,
