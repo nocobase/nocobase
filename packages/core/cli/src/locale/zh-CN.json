@@ -90,7 +90,7 @@
         },
         "apiBaseUrl": {
           "message": "API 基础地址是什么？",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
           "message": "你想使用哪种登录方式？",
@@ -307,7 +307,7 @@
         },
         "apiBaseUrl": {
           "message": "API 基础地址",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         }
       },
       "webUi": {

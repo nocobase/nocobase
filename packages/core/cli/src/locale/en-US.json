@@ -90,7 +90,7 @@
         },
         "apiBaseUrl": {
           "message": "What is the API base URL?",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
           "message": "How would you like to sign in?",
@@ -307,7 +307,7 @@
         },
         "apiBaseUrl": {
           "message": "API base URL",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         }
       },
       "webUi": {
