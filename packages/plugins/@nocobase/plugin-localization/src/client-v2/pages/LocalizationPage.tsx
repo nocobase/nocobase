@@ -11,7 +11,7 @@ import { ReloadOutlined, SyncOutlined, UploadOutlined } from '@ant-design/icons'
 import { Schema } from '@formily/react';
 import { languageCodes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
-import { AIEmployeeShortcut, type AIEmployee, type Task } from '@nocobase/plugin-ai/client-v2';
+import { AIEmployeeShortcut, formatModelLabel, type AIEmployee, type Task } from '@nocobase/plugin-ai/client-v2';
 import { useRequest } from 'ahooks';
 import {
   Button,
@@ -409,6 +409,8 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
         values,
       });
       const preview = previewResponse?.data?.data || previewResponse?.data;
+      const providerLabel = preview?.providerTitle ? Schema.compile(preview.providerTitle, { t }) : preview?.provider;
+      const modelLabel = preview?.model ? formatModelLabel(preview.model) : undefined;
       const confirmed = await new Promise<boolean>((resolve) => {
         Modal.confirm({
           title: t('Confirm translation task'),
@@ -418,10 +420,10 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
                 {t('Entries to translate')}: {preview?.count ?? 0}
               </div>
               <div>
-                {t('Provider')}: {preview?.providerTitle || preview?.provider || '-'}
+                {t('Provider')}: {providerLabel || '-'}
               </div>
               <div>
-                {t('Model')}: {preview?.model || '-'}
+                {t('Model')}: {modelLabel || '-'}
               </div>
             </Space>
           ),

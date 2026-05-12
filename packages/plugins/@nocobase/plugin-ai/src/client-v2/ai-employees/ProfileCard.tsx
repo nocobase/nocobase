@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Avatar, Divider, Flex, Tag, Typography, theme } from 'antd';
-import { avatars } from '../../shared/ai-employees/avatars';
+import { avatars } from './avatars';
 import type { AIEmployee, Task } from './types';
 
 export const AIEmployeeProfileCard: React.FC<{

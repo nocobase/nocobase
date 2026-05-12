@@ -15,5 +15,6 @@ export default PluginAIClientV2;
 
 export { AIEmployeeProfileCard } from './ai-employees/ProfileCard';
 export { AIEmployeeShortcut } from './ai-employees/AIEmployeeShortcut';
+export { avatars, avatarsMap } from './ai-employees/avatars';
 export type { AIEmployee, Task } from './ai-employees/types';
-export { avatars, avatarsMap } from '../shared/ai-employees/avatars';
+export { formatModelLabel } from './llm-services/model-label';

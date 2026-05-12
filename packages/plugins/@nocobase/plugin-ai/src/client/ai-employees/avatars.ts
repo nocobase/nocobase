@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { avatars, avatarsMap } from '../../shared/ai-employees/avatars';
+export { avatars, avatarsMap } from '../../client-v2/ai-employees/avatars';

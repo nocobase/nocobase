@@ -11,7 +11,7 @@ import React, { useMemo, useState } from 'react';
 import { Avatar, Popover } from 'antd';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { avatars } from '../../shared/ai-employees/avatars';
+import { avatars } from './avatars';
 import { AIEmployeeProfileCard } from './ProfileCard';
 import type { AIEmployee, Task } from './types';
 
