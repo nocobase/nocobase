@@ -12,45 +12,55 @@ import { castArray } from 'lodash';
 import { BlockSceneEnum } from '../../base';
 import { TableBlockModel } from './TableBlockModel';
 
+export function getAssociationSelectForeignKeyFilter(collectionField: any) {
+  const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
+  const foreignKey = collectionField?.foreignKey;
+  if (!isOToAny || !foreignKey) {
+    return null;
+  }
+  return {
+    [foreignKey]: {
+      $is: null,
+    },
+  };
+}
+
+export function getAssociationSelectAssociatedRecordsFilter(collection: any, associatedRecords: any[] = []) {
+  const targetKey = collection?.filterTargetKey || 'id';
+  const filterKeys = associatedRecords
+    .map((record) => record?.[targetKey])
+    .filter((value) => value !== undefined && value !== null && value !== '');
+
+  if (!filterKeys.length) {
+    return null;
+  }
+
+  return {
+    [`${targetKey}.$ne`]: filterKeys,
+  };
+}
+
 export class TableSelectModel extends TableBlockModel {
   static scene = BlockSceneEnum.select;
   rowSelectionProps: any = observable.deep({});
   onInit(options: any) {
     super.onInit(options);
     const collectionField = this.context.view.inputArgs.collectionField || {};
-    const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
-    const sourceId = this.context.view.inputArgs.sourceId;
-    if (isOToAny) {
-      const foreignKey = collectionField.foreignKey;
+    const foreignKeyFilter = getAssociationSelectForeignKeyFilter(collectionField);
+    if (foreignKeyFilter) {
       const filterGroupKey = `${this.uid}-${collectionField.name}`;
-      if (foreignKey) {
-        if (sourceId != null) {
-          this.resource.addFilterGroup(filterGroupKey, {
-            $or: [{ [foreignKey]: { $is: null } }, { [foreignKey]: { $eq: sourceId } }],
-          });
-        } else {
-          this.resource.addFilterGroup(filterGroupKey, {
-            [foreignKey]: {
-              $is: null,
-            },
-          });
-        }
-      }
+      this.resource.addFilterGroup(filterGroupKey, foreignKeyFilter);
     }
 
     Object.assign(this.rowSelectionProps, this.context.view.inputArgs.rowSelectionProps || {});
 
     const getSelectedRows = this.rowSelectionProps?.defaultSelectedRows;
     const selectData = typeof getSelectedRows === 'function' ? getSelectedRows() : getSelectedRows;
-    const data = (selectData && castArray(selectData)) || [];
-    const filterKeys = data
-      .map((v) => {
-        return v[this.collection.filterTargetKey];
-      })
-      .filter(Boolean);
-    this.resource.addFilterGroup(`${this.uid}-select`, {
-      [`${this.collection.filterTargetKey}.$ne`]: filterKeys,
-    });
+    const data = [...castArray(selectData || []), ...castArray(this.context.view.inputArgs.associatedRecords || [])];
+    const associatedRecordsFilter = getAssociationSelectAssociatedRecordsFilter(this.collection, data);
+    if (associatedRecordsFilter) {
+      this.resource.addFilterGroup(`${this.uid}-select`, associatedRecordsFilter);
+    }
   }
 }
 

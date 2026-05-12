@@ -9,7 +9,9 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
+import { render, screen } from '@testing-library/react';
 import { ClickableFieldModel } from '../ClickableFieldModel';
+import { DisplayTextFieldModel } from '../DisplayTextFieldModel';
 
 function createRolesFieldModel(sourceRecord: Record<string, any>) {
   const engine = new FlowEngine();
@@ -83,5 +85,26 @@ describe('ClickableFieldModel', () => {
       },
       { debounce: true },
     );
+  });
+
+  it('renders object title field values by configured target title field', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DisplayTextFieldModel });
+
+    const model = engine.createModel<DisplayTextFieldModel>({
+      use: DisplayTextFieldModel,
+      uid: 'display-text-association-title',
+    });
+    model.context.defineProperty('collectionField', {
+      value: {
+        targetCollectionTitleFieldName: 'code',
+        isAssociationField: () => true,
+      },
+    });
+
+    render(model.renderInDisplayStyle({ id: 2, name: 'Sales', code: 'S-001' }, { id: 1 }, false));
+
+    expect(screen.getByText('S-001')).toBeInTheDocument();
+    expect(screen.queryByText('Sales')).not.toBeInTheDocument();
   });
 });

@@ -61,6 +61,20 @@ export function normalizeSelectRenderValue(value: unknown, props?: Record<string
   return value;
 }
 
+export function getSelectedEnumLabels(value: any, fallbackOptions: Option[] = []): Array<{ value: any; label: any }> {
+  const values = Array.isArray(value) ? value : value == null ? [] : [value];
+  return values.map((item) => {
+    const fallback = fallbackOptions.find((option) => option?.value === item);
+    if (fallback) {
+      return { value: item, label: fallback.label };
+    }
+    return {
+      value: item,
+      label: item?.toString?.() ?? item,
+    };
+  });
+}
+
 // Populate model.props.options from uiSchema.enum if missing; returns whether options were injected
 export function ensureOptionsFromUiSchemaEnumIfAbsent(model: FlowModel, collectionField: CollectionField): boolean {
   const iface = collectionField?.interface;

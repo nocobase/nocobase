@@ -531,6 +531,9 @@ TableColumnModel.registerFlow({
           fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
           await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
         }
+        if (targetUse) {
+          ctx.model.setStepParams('tableColumnSettings', 'model', { use: targetUse });
+        }
         ctx.model.setProps(targetCollectionField.getComponentProps());
       },
       defaultParams: (ctx: any) => {

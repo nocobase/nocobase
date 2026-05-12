@@ -3034,6 +3034,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   declare engine: FlowEngine;
   declare api: APIClient;
+  declare locale: string;
   declare viewer: FlowViewer;
   declare view: FlowView;
   declare modal: HookAPI;
@@ -3143,6 +3144,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
+    });
+    this.defineProperty('locale', {
+      get: () => this.api?.auth?.locale || this.i18n?.language,
+      cache: false,
+      meta: Object.assign(() => ({ type: 'string', title: this.t('Current language'), sort: 970 }), {
+        title: escapeT('Current language'),
+        sort: 970,
+        hasChildren: false,
+      }),
     });
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);

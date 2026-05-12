@@ -13,6 +13,7 @@ import { castArray } from 'lodash';
 import { css } from '@emotion/css';
 import React from 'react';
 import { FieldModel } from '../base';
+import { hasDisplayValue, normalizeDisplayValue } from '../utils/displayValueUtils';
 
 export class DisplayTitleFieldModel extends FieldModel {
   get collectionField(): CollectionField {
@@ -53,13 +54,20 @@ export class DisplayTitleFieldModel extends FieldModel {
     };
     if (titleField) {
       const result = castArray(value).flatMap((v, idx) => {
-        const result = this.renderComponent(v?.[titleField]);
-        const node = v?.[titleField] ? result : 'N/A';
+        const titleCollectionField =
+          this.context.collectionField?.targetCollection?.getField?.(titleField) || this.context.collectionField;
+        const displayValue = normalizeDisplayValue(v?.[titleField], { collectionField: titleCollectionField });
+        const result = this.renderComponent(displayValue);
+        const node = hasDisplayValue(displayValue) ? result : 'N/A';
         return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
       });
       return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
     } else {
-      const textContent = <Typography.Text {...typographyProps}>{this.renderComponent(value)}</Typography.Text>;
+      const textContent = (
+        <Typography.Text {...typographyProps}>
+          {this.renderComponent(normalizeDisplayValue(value, { collectionField: this.context.collectionField }))}
+        </Typography.Text>
+      );
       return textContent;
     }
   }

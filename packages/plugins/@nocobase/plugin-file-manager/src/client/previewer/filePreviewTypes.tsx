@@ -115,6 +115,9 @@ const FALLBACK_ICON_MAP: Record<string, string> = {
   default: '/file-placeholder/unknown-200-200.png',
 };
 
+const ACTIVE_CONTENT_MIMETYPES = new Set(['application/xhtml+xml', 'image/svg+xml', 'text/html']);
+const ACTIVE_CONTENT_EXTENSIONS = new Set(['htm', 'html', 'svg', 'svgz', 'xhtml']);
+
 const stripQueryAndHash = (url: string) => url.split('?')[0].split('#')[0];
 
 const getExtFromName = (value?: string) => {
@@ -148,6 +151,16 @@ export const getFileExt = (file: any, url?: string) => {
   return getExtFromName(url);
 };
 
+export const isActiveContentFile = (file: any, url?: string) => {
+  const mimetype = file?.mimetype || file?.type;
+  if (typeof mimetype === 'string' && ACTIVE_CONTENT_MIMETYPES.has(mimetype.toLowerCase())) {
+    return true;
+  }
+
+  const ext = getFileExt(file, url);
+  return ACTIVE_CONTENT_EXTENSIONS.has(ext);
+};
+
 export const getFileName = (file: any, url?: string) => {
   const nameFromUrl = getNameFromUrl(url);
   if (!file || typeof file === 'string') {
@@ -176,6 +189,9 @@ export const getFallbackIcon = (file: any, url?: string) => {
 export const getPreviewThumbnailUrl = (file: any) => {
   const previewFile = normalizePreviewFile(file);
   const src = getPreviewFileUrl(previewFile);
+  if (isActiveContentFile(previewFile, src)) {
+    return getFallbackIcon(previewFile, src);
+  }
   const { getThumbnailURL } = filePreviewTypes.getTypeByFile(previewFile) ?? {};
   const thumbnail = getThumbnailURL?.(previewFile);
   if (thumbnail) {
@@ -399,6 +415,13 @@ filePreviewTypes.add({
     return matchMimetype(file, 'video/*');
   },
   Previewer: wrapWithModalPreviewer(VideoPreviewer),
+});
+
+filePreviewTypes.add({
+  match(file) {
+    return isActiveContentFile(file, getFileUrl(file));
+  },
+  Previewer: wrapWithModalPreviewer(UnsupportedPreviewer),
 });
 
 export const FilePreviewRenderer = (props: FilePreviewerProps) => {

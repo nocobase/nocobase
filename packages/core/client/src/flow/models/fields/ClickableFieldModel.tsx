@@ -14,6 +14,7 @@ import React from 'react';
 import { EllipsisWithTooltip } from '../../components/EllipsisWithTooltip';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base/FieldModel';
+import { hasDisplayValue, normalizeDisplayValue } from '../utils/displayValueUtils';
 
 export function transformNestedData(inputData) {
   const resultArray = [];
@@ -150,11 +151,15 @@ export class ClickableFieldModel extends FieldModel {
 
   renderInDisplayStyle(value, record?, isToMany?, wrap?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, disabled, ...restProps } = this.props;
-    if (value && typeof value === 'object' && restProps.target) {
+    const titleCollectionField = titleField
+      ? this.context.collectionField?.targetCollection?.getField?.(titleField) || this.context.collectionField
+      : this.context.collectionField;
+    const displayValue = normalizeDisplayValue(value, { collectionField: titleCollectionField });
+    if (!hasDisplayValue(displayValue) && value && typeof value === 'object' && restProps.target) {
       return;
     }
-    const result = this.renderComponent(value, wrap);
-    const display = record ? (value ? result : 'N/A') : result;
+    const result = this.renderComponent(displayValue, wrap);
+    const display = record ? (hasDisplayValue(displayValue) ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
       clickToOpen && this.onClick(e, record);
@@ -169,7 +174,7 @@ export class ClickableFieldModel extends FieldModel {
 
     if (isTag) {
       return (
-        value && (
+        hasDisplayValue(displayValue) && (
           <Tag {...restProps} style={commonStyle} onClick={handleClick}>
             {display}
           </Tag>

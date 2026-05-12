@@ -124,7 +124,7 @@ export const Department: React.FC = () => {
             style={{
               textAlign: 'left',
               marginBottom: '5px',
-              background: department ? '' : token.colorBgTextHover,
+              background: department ? '' : token.colorPrimaryBg,
             }}
             onClick={() => {
               setDepartment(null);

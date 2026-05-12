@@ -152,7 +152,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
-    this.aiManager.registerLLMProvider('xai', xaiProviderOptions)
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),

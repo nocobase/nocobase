@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { enumToOptions, translateOptions } from '../enumOptionsUtils';
+import { enumToOptions, getSelectedEnumLabels, translateOptions } from '../enumOptionsUtils';
 
 // 一个极简的 t：
 // - 直接返回传入 key；
@@ -54,5 +54,14 @@ describe('enumOptions utils', () => {
       { label: '草稿', value: 'draft' },
       { label: '否', value: false },
     ]);
+  });
+
+  it('getSelectedEnumLabels: keeps label for selected value missing from limited options', () => {
+    const labels = getSelectedEnumLabels('published', [
+      { label: 'Draft', value: 'draft' },
+      { label: 'Published', value: 'published' },
+    ]);
+
+    expect(labels).toEqual([{ label: 'Published', value: 'published' }]);
   });
 });
