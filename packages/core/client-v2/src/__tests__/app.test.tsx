@@ -254,6 +254,22 @@ describe('app', () => {
     expect(screen.getByText('maintaining dialog message')).toBeInTheDocument();
   });
 
+  it('should keep current content behind maintained dialog state', async () => {
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: () => <div>Current page content</div> });
+      }
+    }
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    app.maintained = true;
+    app.maintaining = true;
+    app.error = { code: 'APP_COMMANDING', command: { name: 'pm.enable' }, message: 'starting sub applications...' };
+    await renderApp(app);
+    expect(screen.getByText('Current page content')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Enabling plugin')).toBeInTheDocument();
+  });
+
   it('should handle long loading state gracefully', async () => {
     class PluginHelloClient extends Plugin {
       async load() {

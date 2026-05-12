@@ -599,7 +599,12 @@ export class ApplicationModel extends FlowModel {
     if (!this.app.maintained) {
       return this.app.renderComponent('AppMaintaining', { app: this.app, error: this.app.error });
     }
-    return this.app.renderComponent('AppMaintainingDialog', { app: this.app, error: this.app.error });
+    return (
+      <>
+        {this.renderContent()}
+        {this.app.renderComponent('AppMaintainingDialog', { app: this.app, error: this.app.error })}
+      </>
+    );
   }
 
   renderError() {
