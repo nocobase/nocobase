@@ -81,7 +81,7 @@ export default {
      * knowledgeBase: {
      *  topK: number;
      *  score: string;
-     *  knowledgeBaseIds: string[];
+     *  knowledgeBaseKeys: string[];
      * }
      */
     {
@@ -133,9 +133,10 @@ export type AIEmployee = {
   knowledgeBase?: {
     topK: number;
     score: string;
-    knowledgeBaseIds: string[];
+    knowledgeBaseKeys: string[];
   };
   enableKnowledgeBase: boolean;
   enabled: boolean;
   builtIn: boolean;
+  missingKnowledgeBaseKeys?: string[];
 };
