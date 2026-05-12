@@ -22,6 +22,11 @@ import {
   NumberFieldInterface,
 } from '../../../../../collection-manager/interfaces';
 import { Form } from 'antd';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 // -----------------------------
 // Helpers
 // -----------------------------
@@ -337,6 +342,31 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     // flow registered (eventSettings)
     const flows = model.getFlows();
     expect(flows.has('eventSettings')).toBe(true);
+  });
+
+  it('replays linkage rules after the settings rerender tick', async () => {
+    vi.useFakeTimers();
+    const engine = new FlowEngine();
+    const TestFormModel = await createTestFormModelSubclass();
+    const model = new TestFormModel({ uid: 'form-linkage-save', flowEngine: engine } as any);
+    const applyFlow = vi.spyOn(model, 'applyFlow').mockResolvedValue(undefined as any);
+    const flow = model.getFlow('eventSettings') as any;
+    const afterParamsSave = flow?.steps?.linkageRules?.afterParamsSave;
+    const ctx: any = {
+      model,
+      form: {
+        getFieldsValue: vi.fn(() => ({ status: 'draft' })),
+      },
+    };
+
+    afterParamsSave(ctx);
+
+    expect(applyFlow).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(applyFlow).toHaveBeenCalledWith('eventSettings', {
+      changedValues: {},
+      allValues: { status: 'draft' },
+    });
   });
 
   it('delegates layout/assignRules/linkageRules stepParams to grid model', async () => {

@@ -12,25 +12,55 @@ import { Select, Tag, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../base';
 import { MobileSelect } from './mobile-components/MobileSelect';
+import { enumToOptions, getSelectedEnumLabels } from '../../internal/utils/enumOptionsUtils';
+
+const getOriginalEnumOptions = (model: SelectFieldModel) => {
+  const fromEnum = enumToOptions(model.context.collectionField?.uiSchema?.enum, (text) => text) || [];
+  if (fromEnum.length > 0) {
+    return fromEnum.map((option) => ({ ...option }));
+  }
+  const current = Array.isArray(model.props.options) ? model.props.options : [];
+  return current.map((option) => ({ ...option }));
+};
 
 export class SelectFieldModel extends FieldModel {
   render() {
+    const fallbackOptions = getOriginalEnumOptions(this);
     const options = this.props.options?.map((v) => {
       return {
         ...v,
         label: this.translate(v.label),
       };
     });
+    const selectedLabels = getSelectedEnumLabels(this.props.value, fallbackOptions).map((item) => ({
+      ...item,
+      label: this.translate(item.label),
+    }));
+    const value = Array.isArray(this.props.value)
+      ? selectedLabels
+      : selectedLabels.length > 0
+        ? selectedLabels[0]
+        : this.props.value;
 
     // TODO: 移动端相关的代码需迁移到单独的插件中
     if (this.context.isMobileLayout) {
-      return <MobileSelect {...this.props} options={options} />;
+      return <MobileSelect {...this.props} options={options} displayValue={value} />;
     }
 
     return (
       <Select
         {...this.props}
+        value={value}
+        labelInValue
+        onChange={(nextValue) => {
+          if (Array.isArray(nextValue)) {
+            this.props.onChange?.(nextValue.map((item: any) => item?.value));
+            return;
+          }
+          this.props.onChange?.(nextValue?.value);
+        }}
         options={options}
+        labelRender={(item) => item.label}
         maxTagCount="responsive"
         maxTagPlaceholder={(omittedValues) => (
           <Tooltip
