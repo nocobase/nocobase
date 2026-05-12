@@ -21,7 +21,7 @@ import {
   useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { RolesManagerContext } from '../RolesManagerProvider';
 import { roleCollectionsSchema } from '../schemas/roles';
 import { RolesResourcesActions } from './RolesResourcesActions';
@@ -126,30 +126,47 @@ const useSaveRoleResourceAction = () => {
 
 const useRoleResourceValues = (options: any) => {
   const record = useRecord();
+  const api = useAPIClient();
   const { visible } = useActionContext();
+  const latestRecordRef = useRef({
+    roleName: record.roleName,
+    name: record.name,
+    exists: record.exists,
+  });
+  latestRecordRef.current = {
+    roleName: record.roleName,
+    name: record.name,
+    exists: record.exists,
+  };
   const result = useRequest(
-    {
-      resource: 'roles.resources',
-      resourceOf: record.roleName,
-      action: 'get',
-      params: {
+    async (roleName: string, name: string, exists: boolean) => {
+      if (!exists) {
+        return { data: {} };
+      }
+      const response = await api.resource('roles.resources', roleName).get({
         appends: ['actions', 'actions.scope'],
-        filterByTk: record.name,
+        filterByTk: name,
+      });
+      return response?.data;
+    },
+    {
+      ...options,
+      manual: true,
+      onSuccess(data, params) {
+        const [roleName, name, exists] = params || [];
+        const latest = latestRecordRef.current;
+        if (latest.roleName !== roleName || latest.name !== name || latest.exists !== exists) {
+          return;
+        }
+        options.onSuccess?.(data);
       },
     },
-    { ...options, manual: true },
   );
   useEffect(() => {
-    if (!record.exists) {
-      options.onSuccess({
-        data: {},
-      });
-      return;
-    }
     if (visible) {
-      result.run();
+      result.run(record.roleName, record.name, record.exists);
     }
-  }, [visible, record.exists]);
+  }, [visible, record.roleName, record.name, record.exists]);
   return result;
 };
 
