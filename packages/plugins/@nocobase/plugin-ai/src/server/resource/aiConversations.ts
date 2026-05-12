@@ -10,7 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Model, Op } from '@nocobase/database';
-import { sendSSEError } from '../utils';
+import { ResourceActionError, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 import { AIMessageInput } from '../types';
 
@@ -40,11 +40,17 @@ function sendErrorResponse(ctx: Context, errorMessage: string) {
   sendSSEError(ctx, errorMessage);
 }
 
-async function parallelConversationsLimit(ctx: Context, next: Next) {
+async function loginInCheck(ctx: Context, next: Next) {
   const userId = ctx.auth?.user.id;
   if (!userId) {
     return ctx.throw(403);
   }
+
+  await next();
+}
+
+const isReachParallelLimit = async (ctx: Context) => {
+  const userId = ctx.auth?.user.id;
 
   const activeStreamCount = await ctx.db.getModel('aiConversations').count({
     where: {
@@ -56,28 +62,19 @@ async function parallelConversationsLimit(ctx: Context, next: Next) {
     },
   });
 
-  if (activeStreamCount > 2) {
-    sendErrorResponse(ctx, ctx.t('There are conversations in progress. Please try again later.'));
-    return;
-  }
-
-  await next();
-}
+  return activeStreamCount > 2;
+};
 
 export default {
   name: 'aiConversations',
   middlewares: [
     {
-      only: ['sendMessages', 'resendMessages', 'resumeStream'],
-      handler: parallelConversationsLimit,
+      handler: loginInCheck,
     },
   ],
   actions: {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
       const filter = ctx.action.params.filter || {};
       ctx.action.mergeParams({
         filter: {
@@ -92,9 +89,6 @@ export default {
 
     async unreadCount(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
 
       const count = await ctx.db.getModel('aiConversations').count({
         where: {
@@ -114,9 +108,6 @@ export default {
 
     async unreadCounts(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
 
       const [conversationUnreadCount, workflowTaskUnreadCount] = await Promise.all([
         ctx.db.getModel('aiConversations').count({
@@ -146,9 +137,6 @@ export default {
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
       const { aiEmployee, systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
@@ -177,9 +165,6 @@ export default {
     async update(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
       const { filterByTk: sessionId } = ctx.action.params;
       const { title } = ctx.action.params.values || {};
       ctx.body = await plugin.aiConversationsManager.update({ userId, sessionId, title });
@@ -189,9 +174,6 @@ export default {
     async updateOptions(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
 
       const { filterByTk: sessionId } = ctx.action.params;
       if (!sessionId) {
@@ -221,9 +203,6 @@ export default {
 
     async destroy(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
       ctx.action.mergeParams({
         filter: {
           userId,
@@ -235,9 +214,6 @@ export default {
     async getMessages(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
 
       const { sessionId, cursor, updateRead: originalUpdateRead } = ctx.action.params || {};
       if (!sessionId) {
@@ -267,9 +243,6 @@ export default {
     async updateToolArgs(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
 
       const {
         sessionId,
@@ -312,12 +285,8 @@ export default {
     },
 
     async sendMessages(ctx: Context, next: Next) {
-      const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
-
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const userId = ctx.auth?.user.id;
       const {
         sessionId,
         aiEmployee: employeeName,
@@ -332,41 +301,32 @@ export default {
       if (shouldStream) {
         setupSSEHeaders(ctx);
       }
-      if (!sessionId) {
-        if (shouldStream) {
-          sendErrorResponse(ctx, 'sessionId is required');
-        } else {
-          ctx.status = 400;
-          ctx.body = { error: 'sessionId is required' };
-        }
-        return next();
-      }
-
-      const userMessage = messages.find((message: any) => message.role === 'user');
-      if (!userMessage) {
-        if (shouldStream) {
-          sendErrorResponse(ctx, 'user message is required');
-        } else {
-          ctx.status = 400;
-          ctx.body = { error: 'user message is required' };
-        }
-        return next();
-      }
 
       try {
+        if (!sessionId) {
+          throw new ResourceActionError(400, ctx.t('sessionId is required'));
+        }
+
+        if (!Array.isArray(messages)) {
+          throw new ResourceActionError(400, ctx.t('messages must be an array'));
+        }
+        const userMessage = messages.find((message: any) => message.role === 'user');
+        if (!userMessage) {
+          throw new ResourceActionError(400, ctx.t('user message is required'));
+        }
+
         const conversation = await plugin.aiConversationsManager.getConversation({
           sessionId,
           userId,
         });
 
         if (!conversation) {
-          if (shouldStream) {
-            sendErrorResponse(ctx, 'conversation not found');
-          } else {
-            ctx.status = 404;
-            ctx.body = { error: 'conversation not found' };
-          }
-          return next();
+          throw new ResourceActionError(400, ctx.t('conversation not found'));
+        }
+
+        const employee = await getAIEmployee(ctx, employeeName);
+        if (!employee) {
+          throw new ResourceActionError(400, ctx.t('AI employee not found'));
         }
 
         if (!conversation.title) {
@@ -381,19 +341,11 @@ export default {
           }
         }
 
-        const employee = await getAIEmployee(ctx, employeeName);
-        if (!employee) {
-          if (shouldStream) {
-            sendErrorResponse(ctx, 'AI employee not found');
-          } else {
-            ctx.status = 404;
-            ctx.body = { error: 'AI employee not found' };
-          }
-          return next();
+        if (await isReachParallelLimit(ctx)) {
+          throw new ResourceActionError(400, ctx.t('There are conversations in progress. Please try again later.'));
         }
 
         const legacy = conversation.thread === 0;
-
         const aiEmployee = new AIEmployee({
           ctx,
           employee,
@@ -442,11 +394,19 @@ export default {
         }
       } catch (err) {
         ctx.log.error(err);
+        let status = 500;
+        let message = ctx.t('Server unexpected error occur');
+        if (err instanceof ResourceActionError) {
+          status = err.status;
+          message = err.message;
+        } else if (err instanceof Error) {
+          status = 500;
+          message = err.message;
+        }
         if (shouldStream) {
-          sendErrorResponse(ctx, err.message || 'Tool call error');
+          sendErrorResponse(ctx, message);
         } else {
-          ctx.status = 500;
-          ctx.body = { error: err.message || 'Tool call error' };
+          ctx.throw(status, message);
         }
       } finally {
         await next();
@@ -455,9 +415,6 @@ export default {
 
     async abort(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
       const { sessionId } = ctx.action.params.values || {};
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
 
@@ -477,9 +434,6 @@ export default {
     async resumeStream(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
 
       setupSSEHeaders(ctx);
 
@@ -498,6 +452,11 @@ export default {
 
         if (!conversation) {
           sendErrorResponse(ctx, 'conversation not found');
+          return;
+        }
+
+        if (await isReachParallelLimit(ctx)) {
+          sendErrorResponse(ctx, ctx.t('There are conversations in progress. Please try again later.'));
           return;
         }
 
@@ -532,28 +491,31 @@ export default {
     async resendMessages(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
-
-      setupSSEHeaders(ctx);
-
-      const { sessionId, webSearch, model } = ctx.action.params.values || {};
+      const { sessionId, webSearch, model, stream = true } = ctx.action.params.values || {};
       let { messageId } = ctx.action.params.values || {};
-      if (!sessionId) {
-        sendErrorResponse(ctx, 'sessionId is required');
-        return next();
+
+      const shouldStream = stream !== false;
+      if (shouldStream) {
+        setupSSEHeaders(ctx);
       }
 
       try {
+        if (!sessionId) {
+          throw new ResourceActionError(400, ctx.t('sessionId is required'));
+        }
+
         const conversation = await plugin.aiConversationsManager.getConversation({
           sessionId,
           userId,
         });
 
         if (!conversation) {
-          sendErrorResponse(ctx, 'conversation not found');
-          return next();
+          throw new ResourceActionError(400, ctx.t('conversation not found'));
+        }
+
+        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
+        if (!employee) {
+          throw new ResourceActionError(400, ctx.t('AI employee not found'));
         }
 
         const resendMessages: AIMessageInput[] = [];
@@ -565,8 +527,7 @@ export default {
           });
 
           if (!message) {
-            sendErrorResponse(ctx, 'message not found');
-            return next();
+            throw new ResourceActionError(400, ctx.t('message not found'));
           }
         } else {
           const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
@@ -576,8 +537,7 @@ export default {
             sort: ['-messageId'],
           });
           if (!message) {
-            sendErrorResponse(ctx, 'No messages to resend');
-            return next();
+            throw new ResourceActionError(400, ctx.t('message not found'));
           }
           messageId = message.messageId;
           if (['user', 'tool'].includes(message.role)) {
@@ -592,10 +552,8 @@ export default {
           }
         }
 
-        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
-        if (!employee) {
-          sendErrorResponse(ctx, 'AI employee not found');
-          return next();
+        if (await isReachParallelLimit(ctx)) {
+          throw new ResourceActionError(400, ctx.t('There are conversations in progress. Please try again later.'));
         }
 
         const aiEmployee = new AIEmployee({
@@ -608,21 +566,39 @@ export default {
           webSearch,
           model,
         });
-        await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
+
+        if (shouldStream) {
+          await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
+        } else {
+          ctx.body = await aiEmployee.invoke({
+            messageId,
+            userMessages: resendMessages.length ? resendMessages : undefined,
+          });
+        }
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, err.message || 'Chat error warning');
+        let status = 500;
+        let message = ctx.t('Server unexpected error occur');
+        if (err instanceof ResourceActionError) {
+          status = err.status;
+          message = err.message;
+        } else if (err instanceof Error) {
+          status = 500;
+          message = err.message;
+        }
+        if (shouldStream) {
+          sendErrorResponse(ctx, message);
+        } else {
+          ctx.throw(status, message);
+        }
+      } finally {
+        await next();
       }
-
-      await next();
     },
 
     async updateUserDecision(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
 
       const { sessionId, messageId, toolCallId, userDecision } = ctx.action.params.values || {};
       if (!sessionId) {
@@ -714,9 +690,6 @@ export default {
 
     async resumeToolCall(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      if (!userId) {
-        return ctx.throw(403);
-      }
       setupSSEHeaders(ctx);
 
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
