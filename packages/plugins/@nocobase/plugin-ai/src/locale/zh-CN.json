@@ -143,6 +143,7 @@
   "Messages": "消息",
   "Model": "模型",
   "Model settings": "模型设置",
+  "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.": "以下知识库 Key 缺少配置：{{keys}}。请创建相同 Key 的知识库，员工才能正常使用知识库能力。",
   "Display name": "展示名称",
   "Model id": "模型标识",
   "New AI employee": "新建 AI 员工",

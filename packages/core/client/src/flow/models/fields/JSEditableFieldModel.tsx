@@ -35,6 +35,10 @@ function JsEditableField() {
     ctx.setValue?.(v);
   };
 
+  if (ctx.readOnly) {
+    return <span>{String(value ?? '')}</span>;
+  }
+
   return (
     <Input
       {...ctx.model.props}
@@ -47,6 +51,23 @@ function JsEditableField() {
 // Mount to the field container
 ctx.render(<JsEditableField />);
 `;
+
+function getEffectivePattern(model?: JSEditableFieldModel) {
+  return (
+    model?.props?.pattern ??
+    (model?.context as { pattern?: string } | undefined)?.pattern ??
+    (model?.parent as { props?: { pattern?: string } } | undefined)?.props?.pattern
+  );
+}
+
+function isReadOnlyMode(model?: JSEditableFieldModel) {
+  return !!model?.props?.readOnly || getEffectivePattern(model) === 'readPretty';
+}
+
+function resolveScriptCode(codeParam?: string) {
+  const raw = codeParam ?? DEFAULT_CODE;
+  return typeof raw === 'string' ? raw.trim() : '';
+}
 
 const JSFormRuntime: React.FC<{
   model: JSEditableFieldModel;
@@ -66,9 +87,13 @@ const JSFormRuntime: React.FC<{
   // 统一获取&裁剪脚本代码，直接依赖具体 code 字符串，避免顶层 stepParams 引用未变化导致不更新
   const codeParam = model.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
   const scriptCode = useMemo(() => {
-    const raw = codeParam ?? DEFAULT_CODE;
-    return typeof raw === 'string' ? raw.trim() : '';
+    return resolveScriptCode(codeParam);
   }, [codeParam]);
+
+  useEffect(() => {
+    if (!containerRef.current || !scriptCode) return;
+    model.scheduleApplyJsSettings();
+  }, [model, scriptCode]);
 
   useEffect(() => {
     if (!containerRef.current || !scriptCode) return;
@@ -76,16 +101,13 @@ const JSFormRuntime: React.FC<{
     containerRef.current.dispatchEvent(event);
   }, [value, scriptCode]);
 
-  // 无自定义 JS 时默认渲染 Input，保持可用性
+  if (readOnly && !scriptCode) {
+    return <span>{String(value ?? '')}</span>;
+  }
+
   if (!scriptCode) {
     return (
-      <Input
-        value={value}
-        onChange={(e) => onChange?.(e.target.value)}
-        disabled={disabled}
-        readOnly={readOnly}
-        style={{ width: '100%' }}
-      />
+      <Input value={value} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} style={{ width: '100%' }} />
     );
   }
 
@@ -100,14 +122,77 @@ const JSFormRuntime: React.FC<{
  */
 export class JSEditableFieldModel extends FieldModel {
   private _mountedOnce = false;
+  private _pendingJsSettingsApply = false;
+  private _lastAppliedJsSettings?: {
+    code: string;
+    disabled: boolean;
+    readOnly: boolean;
+    element: HTMLSpanElement | null;
+  };
+
+  scheduleApplyJsSettings() {
+    const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+    if (!resolveScriptCode(codeParam)) return;
+
+    if (this._pendingJsSettingsApply) {
+      return;
+    }
+
+    this._pendingJsSettingsApply = true;
+    queueMicrotask(() => {
+      this._pendingJsSettingsApply = false;
+
+      const nextCodeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+      const nextCode = resolveScriptCode(nextCodeParam);
+      const nextElement = this.context.ref?.current as HTMLSpanElement | null;
+      if (!nextCode || !nextElement) {
+        return;
+      }
+
+      const nextRun = {
+        code: nextCode,
+        disabled: !!this.props?.disabled,
+        readOnly: isReadOnlyMode(this),
+        element: nextElement,
+      };
+      const lastRun = this._lastAppliedJsSettings;
+      if (
+        lastRun &&
+        lastRun.code === nextRun.code &&
+        lastRun.disabled === nextRun.disabled &&
+        lastRun.readOnly === nextRun.readOnly &&
+        lastRun.element === nextRun.element
+      ) {
+        return;
+      }
+
+      this._lastAppliedJsSettings = nextRun;
+      void this.applyFlow('jsSettings');
+    });
+  }
+
+  useHooksBeforeRender() {
+    const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+    const scriptCode = resolveScriptCode(codeParam);
+    const disabled = this.props?.disabled;
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      if (!scriptCode) return;
+      this.scheduleApplyJsSettings();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scriptCode, disabled]);
+  }
+
   render() {
+    const readOnly = isReadOnlyMode(this);
     return (
       <JSFormRuntime
         model={this as JSEditableFieldModel}
         value={this.props?.value}
         onChange={this.props?.onChange}
         disabled={this.props?.disabled}
-        readOnly={this.props?.readOnly}
+        readOnly={readOnly}
       />
     );
   }
@@ -128,13 +213,17 @@ export class JSEditableFieldModel extends FieldModel {
   }
 }
 
-JSEditableFieldModel.define({
+const jsEditableFieldModelMeta = {
   label: tExpr('JS field'),
-});
+  preserveOnPatternChange: true,
+};
+
+JSEditableFieldModel.define(jsEditableFieldModelMeta);
 
 JSEditableFieldModel.registerFlow({
   key: 'jsSettings',
   title: tExpr('JavaScript settings'),
+  manual: true,
   steps: {
     runJs: {
       title: tExpr('Write JavaScript'),
@@ -174,6 +263,10 @@ JSEditableFieldModel.registerFlow({
       },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
+        if (!code?.trim()) {
+          return;
+        }
+
         ctx.onRefReady(ctx.ref, async (element) => {
           // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
           ctx.defineProperty('element', {
@@ -201,7 +294,10 @@ JSEditableFieldModel.registerFlow({
           });
           ctx.defineProperty('namePath', { get: () => ctx.model.props?.name, cache: false });
           ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
-          ctx.defineProperty('readOnly', { get: () => !!ctx.model.props?.readOnly, cache: false });
+          ctx.defineProperty('readOnly', {
+            get: () => isReadOnlyMode(ctx.model),
+            cache: false,
+          });
           const navigator = createSafeNavigator();
           await ctx.runjs(
             code,

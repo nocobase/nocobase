@@ -142,6 +142,7 @@
   "Messages": "Messages",
   "Model": "Model",
   "Model settings": "Model settings",
+  "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.": "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.",
   "Display name": "Display name",
   "Model id": "Model id",
   "New AI employee": "New AI employee",

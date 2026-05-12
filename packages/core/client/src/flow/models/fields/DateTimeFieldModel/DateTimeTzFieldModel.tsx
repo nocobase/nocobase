@@ -12,6 +12,7 @@ import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 import { MobileDatePicker } from '../mobile-components/MobileDatePicker';
 import { DatePicker } from 'antd';
+import { useDateLimit } from './dateLimit';
 
 function parseToDate(value: string | Date | dayjs.Dayjs | undefined, format?: string): Date | undefined {
   if (!value) return undefined;
@@ -49,12 +50,20 @@ function parseInitialValue(value: string | Date | undefined, format?: string): d
 export const DateTimeTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
   const ctx = useFlowModelContext();
+  const { disabledDate, disabledTime, minDate, maxDate } = useDateLimit({
+    ...props,
+    currentForm: ctx.model?.context?.form,
+  });
   const componentProps = {
     ...rest,
     value: parseInitialValue(value, format),
     format,
     picker,
     showTime,
+    disabledDate,
+    disabledTime,
+    minDate,
+    maxDate,
     onChange: (val: any) => {
       let result = parseToDate(val, format);
       // Adjust to start of period for month/quarter/year pickers
