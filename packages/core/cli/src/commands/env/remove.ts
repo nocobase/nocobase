@@ -77,7 +77,7 @@ export default class EnvRemove extends Command {
         return;
       }
       if (!confirmed) {
-        this.log('Canceled.');
+        p.cancel('Canceled.');
         return;
       }
     }
@@ -85,13 +85,15 @@ export default class EnvRemove extends Command {
     printVerbose(`Removing env "${args.name}"`);
     const result = await removeEnv(args.name, { scope });
 
-    this.log(`Removed env "${result.removed}".`);
-
     if (result.hasEnvs) {
-      this.log(`Current env: ${await getCurrentEnvName({ scope })}`);
+      if (args.name === currentEnv) {
+        p.outro(`Removed env "${result.removed}". Switched current env to "${await getCurrentEnvName({ scope })}".`);
+        return;
+      }
+      p.outro(`Removed env "${result.removed}".`);
       return;
     }
 
-    this.log('No envs configured.');
+    p.outro(`Removed env "${result.removed}". No envs configured.`);
   }
 }
