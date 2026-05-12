@@ -10,11 +10,6 @@
 import { Collection } from '@nocobase/database';
 import { getTypeByField } from './field-type-map';
 
-const createStringQueryParameterSchema = (example: string) => ({
-  type: 'string',
-  example,
-});
-
 export default (collection: Collection) => {
   const primaryKey = collection.model.primaryKeyAttribute;
 
@@ -42,7 +37,7 @@ export default (collection: Collection) => {
       },
 
       filterByTks: {
-        name: 'filterByTks',
+        name: 'filterByTk',
         in: 'query',
         description: 'filter by TKs(default by ID), example: `1,2,3`',
         schema: {
@@ -58,50 +53,135 @@ export default (collection: Collection) => {
       name: 'filter',
       in: 'query',
       description: 'filter items',
-      style: 'deepObject',
-      explode: true,
-      schema: {
-        type: 'object',
-        additionalProperties: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+          },
+        },
       },
     },
     sort: {
       name: 'sort',
       in: 'query',
       description: 'sort items by fields, example: `-field1,-field2,field3`',
-      schema: createStringQueryParameterSchema('-id,createdAt'),
+      schema: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['-id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: '-id,createdAt',
+          },
+        ],
+      },
     },
     fields: {
       name: 'fields',
       in: 'query',
       description: 'select fields, example: `field1,field2`',
-      schema: createStringQueryParameterSchema('id,createdAt'),
+      schema: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
+      },
     },
 
     except: {
       name: 'except',
       in: 'query',
       description: 'except fields in results, example: `field1,field2`',
-      schema: createStringQueryParameterSchema('id,createdAt'),
+      schema: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
+      },
     },
 
     appends: {
       name: 'appends',
       in: 'query',
       description: 'append associations in results, example: `assoc1,assoc2`',
-      schema: createStringQueryParameterSchema('id,createdAt'),
+      schema: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
+      },
     },
     whitelist: {
       name: 'whitelist',
       in: 'query',
       description: 'whitelist for fields changes, example: `field1,field2`',
-      schema: createStringQueryParameterSchema('id,createdAt'),
+      schema: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
+      },
     },
     blacklist: {
       name: 'blacklist',
       in: 'query',
       description: 'blacklist for fields changes, example: `field1,field2`',
-      schema: createStringQueryParameterSchema('id,createdAt'),
+      schema: {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
+      },
     },
   });
 

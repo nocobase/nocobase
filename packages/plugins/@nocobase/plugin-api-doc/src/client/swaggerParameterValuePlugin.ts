@@ -12,26 +12,30 @@ const INPUT_SELECTOR = 'input, textarea';
 const RECENT_INPUT_TTL = 2000;
 
 type InputLike = HTMLInputElement | HTMLTextAreaElement;
+
 type ParameterIdentity = {
   paramName: string;
   paramIn: string;
 };
+
 type SwaggerParameter = {
   get?: (key: string) => unknown;
 };
+
 type SwaggerSystem = {
   specActions?: {
     changeParam?: (path: unknown, paramName: string, paramIn: string, value: unknown, isXml?: boolean) => unknown;
   };
 };
+
 type ChangeParamByIdentityAction = (path: unknown, param: SwaggerParameter, value: unknown, isXml?: boolean) => unknown;
 
-function getParameterInputIdentity(input: InputLike): ParameterIdentity | null {
+function getInputIdentity(input: InputLike): ParameterIdentity | null {
   const row = input.closest(ROW_SELECTOR);
   const paramName = row?.getAttribute('data-param-name');
   const paramIn = row?.getAttribute('data-param-in');
 
-  if (!row || !paramName || !paramIn) {
+  if (!paramName || !paramIn) {
     return null;
   }
 
@@ -39,44 +43,6 @@ function getParameterInputIdentity(input: InputLike): ParameterIdentity | null {
     paramName,
     paramIn,
   };
-}
-
-function getParameterInputKey(input: InputLike): string | null {
-  const row = input.closest(ROW_SELECTOR);
-  const opblock = input.closest('.opblock');
-  const identity = getParameterInputIdentity(input);
-  const operationId = opblock?.id;
-
-  if (!row || !identity || !operationId) {
-    return null;
-  }
-
-  return `${operationId}::${identity.paramIn}::${identity.paramName}`;
-}
-
-function getParameterInputs(root: ParentNode): InputLike[] {
-  return Array.from(root.querySelectorAll<InputLike>(`${ROW_SELECTOR} ${INPUT_SELECTOR}`));
-}
-
-export function syncSwaggerParameterValues(root: ParentNode, values: Map<string, string>) {
-  for (const input of getParameterInputs(root)) {
-    const key = getParameterInputKey(input);
-    if (!key) continue;
-
-    if (!values.has(key)) {
-      values.set(key, input.value);
-      continue;
-    }
-
-    const expectedValue = values.get(key) ?? '';
-    if (input.value !== expectedValue) {
-      input.value = expectedValue;
-    }
-  }
-}
-
-function normalizeValue(value: unknown) {
-  return value == null ? '' : String(value);
 }
 
 function getParameterIdentity(param: SwaggerParameter | undefined): ParameterIdentity | null {
@@ -93,6 +59,10 @@ function getParameterIdentity(param: SwaggerParameter | undefined): ParameterIde
   };
 }
 
+function normalizeValue(value: unknown) {
+  return value == null ? '' : String(value);
+}
+
 export function createSwaggerParameterValuePlugin(root: HTMLElement) {
   let lastEditedParameter: (ParameterIdentity & { value: string; updatedAt: number }) | null = null;
 
@@ -100,7 +70,7 @@ export function createSwaggerParameterValuePlugin(root: HTMLElement) {
     const target = event.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
 
-    const identity = getParameterInputIdentity(target);
+    const identity = getInputIdentity(target);
     if (!identity) return;
 
     lastEditedParameter = {
@@ -110,7 +80,7 @@ export function createSwaggerParameterValuePlugin(root: HTMLElement) {
     };
   };
 
-  const getActiveParameterIdentity = (value: unknown): ParameterIdentity | null => {
+  const getActiveInputIdentity = (value: unknown): ParameterIdentity | null => {
     const activeElement = document.activeElement;
     if (!(activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement)) {
       return null;
@@ -122,10 +92,10 @@ export function createSwaggerParameterValuePlugin(root: HTMLElement) {
       return null;
     }
 
-    return getParameterInputIdentity(activeElement);
+    return getInputIdentity(activeElement);
   };
 
-  const getRecentParameterIdentity = (value: unknown): ParameterIdentity | null => {
+  const getRecentInputIdentity = (value: unknown): ParameterIdentity | null => {
     if (!lastEditedParameter) return null;
     if (Date.now() - lastEditedParameter.updatedAt > RECENT_INPUT_TTL) return null;
     if (lastEditedParameter.value !== normalizeValue(value)) return null;
@@ -148,7 +118,7 @@ export function createSwaggerParameterValuePlugin(root: HTMLElement) {
               (originalAction: ChangeParamByIdentityAction, system: SwaggerSystem) =>
               (path: unknown, param: SwaggerParameter, value: unknown, isXml?: boolean) => {
                 const identity =
-                  getActiveParameterIdentity(value) || getRecentParameterIdentity(value) || getParameterIdentity(param);
+                  getActiveInputIdentity(value) || getRecentInputIdentity(value) || getParameterIdentity(param);
 
                 if (identity && system?.specActions?.changeParam) {
                   return system.specActions.changeParam(path, identity.paramName, identity.paramIn, value, isXml);
@@ -164,37 +134,5 @@ export function createSwaggerParameterValuePlugin(root: HTMLElement) {
       root.removeEventListener('input', updateLastEditedParameter, true);
       root.removeEventListener('change', updateLastEditedParameter, true);
     },
-  };
-}
-
-export function createSwaggerParameterValuePersistence(root: HTMLElement) {
-  const values = new Map<string, string>();
-
-  const handleInput = (event: Event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
-
-    const key = getParameterInputKey(target);
-    if (!key) return;
-
-    values.set(key, target.value);
-  };
-
-  const observer = new MutationObserver(() => {
-    syncSwaggerParameterValues(root, values);
-  });
-
-  root.addEventListener('input', handleInput, true);
-  root.addEventListener('change', handleInput, true);
-  syncSwaggerParameterValues(root, values);
-  observer.observe(root, {
-    childList: true,
-    subtree: true,
-  });
-
-  return () => {
-    observer.disconnect();
-    root.removeEventListener('input', handleInput, true);
-    root.removeEventListener('change', handleInput, true);
   };
 }
