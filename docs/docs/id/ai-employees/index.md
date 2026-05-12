@@ -44,7 +44,7 @@ Lihat [Mulai Cepat](/ai-employees/quick-start) terlebih dahulu, selesaikan konfi
 
 ### C. Kemampuan Lanjutan (Ekstensi)
 
-- [Karyawan AI Bawaan](/ai-employees/features/built-in-employee): Pelajari positioning karyawan bawaan dan skenario penggunaannya.
+- [Karyawan AI Bawaan](/ai-employees/built-in/): Pelajari positioning karyawan bawaan dan skenario penggunaannya.
 - [Kontrol Permission](/ai-employees/permission): Kontrol akses karyawan, Skills, dan data berdasarkan model Permission organisasi.
 - [Basis Pengetahuan AI](/ai-employees/knowledge-base/index): Perkenalkan pengetahuan perusahaan, tingkatkan stabilitas dan keterlacakan jawaban.
 - [Node Karyawan AI Workflow](/ai-employees/workflow/nodes/employee/configuration): Orkestrasikan kemampuan Karyawan AI ke dalam alur otomatisasi.

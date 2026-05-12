@@ -53,7 +53,7 @@ Runtime của JS Item sẽ inject các khả năng thường dùng, có thể tr
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- Có thể kết hợp với AI Employee để tạo / chỉnh sửa script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- Có thể kết hợp với AI Employee để tạo / chỉnh sửa script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Cách sử dụng phổ biến (ví dụ ngắn gọn)
 

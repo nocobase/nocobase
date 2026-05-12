@@ -53,7 +53,7 @@ En tiempo de ejecución, JS Item inyecta capacidades comunes que pueden usarse d
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- Puede combinarse con AI Employees para generar / modificar scripts: [AI Employee · Nathan: ingeniero frontend](/ai-employees/features/built-in-employee)
+- Puede combinarse con AI Employees para generar / modificar scripts: [AI Employee · Nathan: ingeniero frontend](/ai-employees/built-in/)
 
 ## Usos comunes (ejemplos resumidos)
 

@@ -44,7 +44,7 @@ Start with [Quick Start](/ai-employees/quick-start), and complete minimal setup 
 
 ### C. Advanced Capabilities (Extensions)
 
-- [Built-in AI Employees](/ai-employees/features/built-in-employee): understand built-in role positioning and suitable scenarios.
+- [Built-in AI Employees](/ai-employees/built-in/): understand built-in role positioning and suitable scenarios.
 - [Permission Control](/ai-employees/permission): control employee, skill, and data access by org permissions.
 - [AI Knowledge Base](/ai-employees/knowledge-base/index): import enterprise knowledge for stable and traceable answers.
 - [Workflow AI Employee Nodes](/ai-employees/workflow/nodes/employee/configuration): orchestrate AI Employee capabilities into automated workflows.

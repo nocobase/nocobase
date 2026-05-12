@@ -54,7 +54,7 @@ Der Skript-Editor des JS Field unterstützt Syntax-Highlighting, Fehlerhinweise 
 
 Kann in Kombination mit KI-Mitarbeitern zur Code-Generierung verwendet werden:
 
-- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
+- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/)
 
 ## Häufige Anwendungsfälle
 

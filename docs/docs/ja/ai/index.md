@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: すぐに使える AI チーム
         details: NocoBase にプリセットされた AI 社員チーム。データモデリング、フロントエンド開発、データ整理などのシーンをカバーし、設定不要ですぐに利用できます。
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: AI にあなたのビジネスを理解させる
         details: AI ナレッジベースにビジネスドキュメントやデータをインポートし、AI 社員の回答と操作をあなたの実際のシーンに合わせます。
         link: /ai-employees/knowledge-base
