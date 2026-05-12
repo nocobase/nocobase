@@ -451,6 +451,9 @@ export default {
     async resumeStream(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
+      const abortController = new AbortController();
+      const abortStream = () => abortController.abort();
+      const shouldStopStream = () => abortController.signal.aborted || ctx.res.destroyed || ctx.res.writableEnded;
 
       setupSSEHeaders(ctx);
 
@@ -461,11 +464,17 @@ export default {
         return;
       }
 
+      ctx.req.once('aborted', abortStream);
+      ctx.res.once('close', abortStream);
+
       try {
         const conversation = await plugin.aiConversationsManager.getConversation({
           sessionId,
           userId,
         });
+        if (shouldStopStream()) {
+          return;
+        }
 
         if (!conversation) {
           sendErrorResponse(ctx, 'conversation not found');
@@ -473,16 +482,24 @@ export default {
         }
 
         const reachLimit = await isReachParallelLimit(ctx);
+        if (shouldStopStream()) {
+          return;
+        }
 
         let hasChunks = false;
         if (!reachLimit) {
-          for await (const chunk of plugin.llmStreamCachedManager.getCached(sessionId).stream()) {
+          for await (const chunk of plugin.llmStreamCachedManager
+            .getCached(sessionId)
+            .stream({ signal: abortController.signal })) {
+            if (shouldStopStream()) {
+              break;
+            }
             hasChunks = true;
             ctx.res.write(chunk);
           }
         }
 
-        if (!hasChunks) {
+        if (!hasChunks && !shouldStopStream()) {
           const currentConversation = await plugin.aiConversationsManager.getConversation({
             sessionId,
             userId,
@@ -493,11 +510,16 @@ export default {
           }
         }
       } catch (err) {
+        if (shouldStopStream()) {
+          return;
+        }
         ctx.log.error(err);
         sendErrorResponse(ctx, err.message || 'Resume stream error');
         return;
       } finally {
-        if (!ctx.res.writableEnded) {
+        ctx.req.off('aborted', abortStream);
+        ctx.res.off('close', abortStream);
+        if (!shouldStopStream()) {
           ctx.res.end();
         }
         await next();
