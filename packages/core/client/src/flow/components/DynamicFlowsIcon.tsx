@@ -36,6 +36,9 @@ import { useUpdate } from 'ahooks';
 import _ from 'lodash';
 
 type FlowOnObject = Exclude<FlowDefinition['on'], string | undefined>;
+type FlowRegistryAvailability = {
+  hasFlow(flowKey: string): boolean;
+};
 
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
   return !!on && typeof on === 'object';
@@ -200,7 +203,7 @@ const EventConfigSection = observer(
     flow: FlowDefinition;
     model: FlowModel;
     flowEngine: any;
-    flowRegistry: Pick<DetachedFlowRegistry, 'hasFlow'>;
+    flowRegistry: FlowRegistryAvailability;
   }) => {
     const ctx = useFlowContext<FlowEngineContext>();
     const t = model.translate.bind(model);

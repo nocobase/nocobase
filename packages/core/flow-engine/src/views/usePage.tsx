@@ -33,6 +33,14 @@ type GlobalEmbedActiveView = {
   destroy: (result?: any) => void;
 };
 
+type PendingGlobalEmbedActions = {
+  beforeClose?: any;
+  destroyed?: { result?: any };
+  update?: any;
+  footer?: React.ReactNode;
+  header?: { title?: React.ReactNode; extra?: React.ReactNode };
+};
+
 function isPromiseLike<T = any>(value: unknown): value is PromiseLike<T> {
   return !!value && typeof (value as PromiseLike<T>).then === 'function';
 }
@@ -60,12 +68,26 @@ function createPendingGlobalEmbedView(
   preventClose: boolean,
 ) {
   let openedPage: any;
-  let pendingBeforeClose: any;
+  const pendingActions: PendingGlobalEmbedActions = {};
 
   const readyPromise = openedPromise.then(({ page }) => {
     openedPage = page;
-    if (openedPage && pendingBeforeClose) {
-      openedPage.beforeClose = pendingBeforeClose;
+    if (openedPage) {
+      if ('beforeClose' in pendingActions) {
+        openedPage.beforeClose = pendingActions.beforeClose;
+      }
+      if ('update' in pendingActions) {
+        openedPage.update(pendingActions.update);
+      }
+      if ('footer' in pendingActions) {
+        openedPage.setFooter(pendingActions.footer);
+      }
+      if ('header' in pendingActions) {
+        openedPage.setHeader(pendingActions.header);
+      }
+      if (pendingActions.destroyed) {
+        openedPage.destroy(pendingActions.destroyed.result);
+      }
     }
     return { page };
   });
@@ -79,28 +101,44 @@ function createPendingGlobalEmbedView(
       Header: null,
       Footer: null,
       get beforeClose() {
-        return openedPage?.beforeClose ?? pendingBeforeClose;
+        return openedPage?.beforeClose ?? pendingActions.beforeClose;
       },
       set beforeClose(value) {
         if (openedPage) {
           openedPage.beforeClose = value;
         } else {
-          pendingBeforeClose = value;
+          pendingActions.beforeClose = value;
         }
       },
       close: (result?: any, force?: boolean) =>
         readyPromise.then(({ page }) => (page ? page.close(result, force) : false)),
       destroy: (result?: any) => {
-        openedPage?.destroy(result);
+        if (openedPage) {
+          openedPage.destroy(result);
+        } else {
+          pendingActions.destroyed = { result };
+        }
       },
       update: (newConfig: any) => {
-        openedPage?.update(newConfig);
+        if (openedPage) {
+          openedPage.update(newConfig);
+        } else {
+          pendingActions.update = { ...pendingActions.update, ...newConfig };
+        }
       },
       setFooter: (footer: React.ReactNode) => {
-        openedPage?.setFooter(footer);
+        if (openedPage) {
+          openedPage.setFooter(footer);
+        } else {
+          pendingActions.footer = footer;
+        }
       },
       setHeader: (header: { title?: React.ReactNode; extra?: React.ReactNode }) => {
-        openedPage?.setHeader(header);
+        if (openedPage) {
+          openedPage.setHeader(header);
+        } else {
+          pendingActions.header = header;
+        }
       },
     },
   );
@@ -118,6 +156,7 @@ const PageElementsHolder = React.memo(
 export function usePage() {
   const holderRef = React.useRef(null);
   const globalEmbedActiveRef = React.useRef<null | GlobalEmbedActiveView>(null);
+  const globalEmbedReplacementTokenRef = React.useRef(0);
 
   const open = (config, flowContext) => {
     const {
@@ -126,6 +165,7 @@ export function usePage() {
       preventClose,
       inheritContext = true,
       inputArgs: viewInputArgs = {},
+      onOpenCancelled,
       ...restConfig
     } = config;
     const isGlobalEmbedContainer = target instanceof HTMLElement && target.id === GLOBAL_EMBED_CONTAINER_ID;
@@ -186,12 +226,16 @@ export function usePage() {
       }
 
       // 构造 currentPage 实例
+      let destroyed = false;
+      let closingPromise: Promise<boolean | void> | undefined;
       const currentPage = {
         type: 'embed' as const,
         inputArgs: viewInputArgs,
         preventClose: !!config.preventClose,
         beforeClose: undefined,
         destroy: (result?: any) => {
+          if (destroyed) return;
+          destroyed = true;
           config.onClose?.();
           resolvePromise?.(result);
           pageRef.current?.destroy();
@@ -216,24 +260,47 @@ export function usePage() {
           scopedEngine.unlinkFromStack();
         },
         update: (newConfig) => pageRef.current?.update(newConfig),
-        close: async (result?: any, force?: boolean) => {
-          if (preventClose && !force) {
-            return false;
+        close: (result?: any, force?: boolean) => {
+          if (destroyed) {
+            return Promise.resolve(true);
+          }
+          if (closingPromise) {
+            return closingPromise;
           }
 
-          const shouldClose = await runViewBeforeClose(currentPage, { result, force });
-          if (!shouldClose) {
-            return false;
-          }
+          closingPromise = (async () => {
+            try {
+              if (preventClose && !force) {
+                closingPromise = undefined;
+                return false;
+              }
 
-          if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
-            // 交由路由系统来销毁当前视图
-            config.inputArgs.navigation.back();
-            return true;
-          }
+              const shouldClose = await runViewBeforeClose(currentPage, { result, force });
+              if (destroyed) {
+                return true;
+              }
+              if (!shouldClose) {
+                closingPromise = undefined;
+                return false;
+              }
 
-          currentPage.destroy(result);
-          return true;
+              if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+                // 交由路由系统来销毁当前视图
+                config.inputArgs.navigation.back();
+                return true;
+              }
+
+              currentPage.destroy(result);
+              return true;
+            } catch (error) {
+              if (!destroyed) {
+                closingPromise = undefined;
+              }
+              throw error;
+            }
+          })();
+
+          return closingPromise;
         },
         Header: HeaderComponent,
         Footer: FooterComponent,
@@ -324,11 +391,13 @@ export function usePage() {
 
     // Global embed container uses "replace" behavior. The previous view still owns beforeClose.
     if (isGlobalEmbedContainer && globalEmbedActiveRef.current) {
+      const replacementToken = (globalEmbedReplacementTokenRef.current += 1);
+      const cancelOpen = () => onOpenCancelled?.();
       let closeResult: Promise<boolean | void> | boolean | void;
       try {
         closeResult = closeReplacingGlobalEmbed(target, globalEmbedActiveRef.current);
       } catch (error) {
-        config.onOpenCancelled?.();
+        cancelOpen();
         throw error;
       }
 
@@ -336,14 +405,14 @@ export function usePage() {
         return createPendingGlobalEmbedView(
           Promise.resolve(closeResult).then(
             (closed) => {
-              if (closed === false) {
-                config.onOpenCancelled?.();
+              if (closed === false || replacementToken !== globalEmbedReplacementTokenRef.current) {
+                cancelOpen();
                 return { page: null };
               }
               return { page: openCurrentPage() };
             },
             (error) => {
-              config.onOpenCancelled?.();
+              cancelOpen();
               throw error;
             },
           ),
@@ -353,7 +422,7 @@ export function usePage() {
       }
 
       if (closeResult === false) {
-        config.onOpenCancelled?.();
+        cancelOpen();
         return createPendingGlobalEmbedView(Promise.resolve({ page: null }), viewInputArgs, !!config.preventClose);
       }
     }

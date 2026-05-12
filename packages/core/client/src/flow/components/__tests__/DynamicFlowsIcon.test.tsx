@@ -45,7 +45,16 @@ vi.mock('antd', async (importOriginal) => {
         ))}
       </div>
     ),
-    Dropdown: ({ children }: any) => <div>{children}</div>,
+    Dropdown: ({ children, menu }: any) => (
+      <div>
+        {children}
+        {menu?.items?.map((item: any) => (
+          <button key={item.key} type="button" onClick={item.onClick}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+    ),
     Empty: ({ description }: any) => <div>{description}</div>,
     Input: (props: any) => <input {...props} />,
     Select: (props: any) => {
@@ -77,11 +86,12 @@ const openDynamicFlowsEditor = async (model: FlowModel) => {
   const embedCall = (model.context.viewer.embed as any).mock.calls.at(-1)?.[0];
   expect(embedCall?.content).toBeTruthy();
 
-  render(embedCall.content);
+  const editor = render(embedCall.content);
 
   return {
     embedCall,
     view: mockState.flowContextValue.view,
+    editor,
   };
 };
 
@@ -153,18 +163,35 @@ const createModel = (options: { preventClose?: boolean; hiddenClose?: boolean; s
   return model;
 };
 
-const createView = () => ({
-  close: vi.fn(async function (this: any) {
-    const allowed = await this.beforeClose?.({});
-    if (allowed === false) {
-      return false;
-    }
-    this.destroy();
-    return true;
-  }),
-  destroy: vi.fn(),
-  beforeClose: undefined as any,
-});
+const createView = () => {
+  let destroyed = false;
+  let closingPromise: Promise<boolean | void> | undefined;
+  const view = {
+    close: vi.fn(function () {
+      if (destroyed) {
+        return Promise.resolve(true);
+      }
+      if (closingPromise) {
+        return closingPromise;
+      }
+      closingPromise = (async () => {
+        const allowed = await view.beforeClose?.({});
+        if (allowed === false) {
+          closingPromise = undefined;
+          return false;
+        }
+        view.destroy();
+        return true;
+      })();
+      return closingPromise;
+    }),
+    destroy: vi.fn(() => {
+      destroyed = true;
+    }),
+    beforeClose: undefined as any,
+  };
+  return view;
+};
 
 describe('DynamicFlowsIcon', () => {
   beforeEach(() => {
@@ -241,6 +268,25 @@ describe('DynamicFlowsIcon', () => {
     expect(model.flowRegistry.getFlows().size).toBe(1);
   });
 
+  it('runs only one unsaved confirmation while cancel is pending', async () => {
+    const model = createModel();
+    let resolveConfirm: (value: boolean) => void;
+    mockState.flowContextValue.modal.confirm.mockImplementation(
+      () => new Promise<boolean>((resolve) => (resolveConfirm = resolve)),
+    );
+    const { view } = await openDynamicFlowsEditor(model);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add event flow' }));
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+    await userEvent.click(cancelButton);
+    await userEvent.click(cancelButton);
+
+    expect(mockState.flowContextValue.modal.confirm).toHaveBeenCalledTimes(1);
+
+    resolveConfirm(true);
+    await waitFor(() => expect(view.destroy).toHaveBeenCalledTimes(1));
+  });
+
   it('discards draft changes after confirmed cancel', async () => {
     const model = createModel();
     mockState.flowContextValue.modal.confirm.mockResolvedValue(true);
@@ -266,6 +312,37 @@ describe('DynamicFlowsIcon', () => {
 
     expect(view.destroy).toHaveBeenCalledTimes(1);
     expect(model.flowRegistry.getFlow('flow1')?.title).toBe('Event flow');
+  });
+
+  it('discards added draft steps after confirmed cancel', async () => {
+    const model = createModel();
+    mockState.flowContextValue.modal.confirm.mockResolvedValue(true);
+    const { view } = await openDynamicFlowsEditor(model);
+
+    expect(model.flowRegistry.getFlow('flow1')?.getSteps().size).toBe(0);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Notify' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(view.destroy).toHaveBeenCalledTimes(1);
+    expect(model.flowRegistry.getFlow('flow1')?.getSteps().size).toBe(0);
+  });
+
+  it('does not keep discarded draft changes after reopening the editor', async () => {
+    const model = createModel();
+    mockState.flowContextValue.modal.confirm.mockResolvedValue(true);
+
+    const firstEditor = await openDynamicFlowsEditor(model);
+    await userEvent.click(screen.getByRole('button', { name: 'Add event flow' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    firstEditor.editor.unmount();
+
+    mockState.capturedSelectProps.length = 0;
+    mockState.flowContextValue.view = createView();
+    const secondEditor = await openDynamicFlowsEditor(model);
+
+    expect(secondEditor.editor.container.querySelectorAll('input[placeholder="Enter flow title"]')).toHaveLength(1);
+    expect(model.flowRegistry.getFlows().size).toBe(1);
   });
 
   it('saves draft event flows into the real registry', async () => {

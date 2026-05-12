@@ -27,7 +27,6 @@ export const PageComponent = forwardRef((props: any, ref) => {
     onClose,
   } = mergedProps;
   const closedRef = useRef(false);
-  const closingRef = useRef(false);
   const flowEngine = useFlowEngine();
   const [footer, setFooter] = useState(() => _footer);
   const [header, setHeader] = useState(_header);
@@ -89,15 +88,10 @@ export const PageComponent = forwardRef((props: any, ref) => {
             size="small"
             icon={<CloseOutlined />}
             onClick={async () => {
-              if (!closedRef.current && !closingRef.current) {
-                closingRef.current = true;
-                try {
-                  const closed = await onClose?.();
-                  if (closed !== false) {
-                    closedRef.current = true;
-                  }
-                } finally {
-                  closingRef.current = false;
+              if (!closedRef.current) {
+                const closed = await onClose?.();
+                if (closed !== false) {
+                  closedRef.current = true;
                 }
               }
             }}
