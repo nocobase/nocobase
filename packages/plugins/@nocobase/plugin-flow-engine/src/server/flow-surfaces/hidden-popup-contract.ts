@@ -653,7 +653,7 @@ export function buildImplicitHiddenPopupDefaultContent(popupSettings?: Record<st
   }
   return {
     ...defaultsMetadata,
-    tryTemplate: hasDefaultsMetadata ? false : true,
+    tryTemplate: hasDefaultsMetadata ? popupSettings?.tryTemplate === true : true,
     [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
   };
 }

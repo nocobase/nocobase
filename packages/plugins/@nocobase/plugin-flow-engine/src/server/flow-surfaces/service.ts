@@ -8889,7 +8889,7 @@ export class FlowSurfacesService {
       return popup;
     }
     const nextPopup = _.isPlainObject(popup) ? _.cloneDeep(popup) : {};
-    if (this.getApplyBlueprintPopupDefaultsMetadata(nextPopup)) {
+    if (this.getApplyBlueprintPopupDefaultsMetadata(nextPopup) && nextPopup.tryTemplate !== true) {
       nextPopup.tryTemplate = false;
     } else if (_.isUndefined(nextPopup.tryTemplate)) {
       nextPopup.tryTemplate = true;
