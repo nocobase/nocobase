@@ -7,4 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
+export * from './BaseUrlField';
+export * from './DefaultField';
+export * from './FileSizeField';
+export * from './MimetypeField';
+export * from './NameField';
+export * from './ParanoidField';
+export * from './PathField';
+export * from './RenameModeField';
+export * from './TitleField';
