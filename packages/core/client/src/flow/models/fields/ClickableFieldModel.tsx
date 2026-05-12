@@ -37,9 +37,19 @@ const hasAssociationPathName = (parent: unknown): parent is { associationPathNam
 
 const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
 
+function getParentAssociationField(model: FieldModel): CollectionField | null {
+  const parentCollectionField =
+    (model.parent as any)?.context?.collectionField || (model.parent as any)?.collectionField;
+  return parentCollectionField?.isAssociationField?.() ? parentCollectionField : null;
+}
+
 export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
-    return this.context.collectionField;
+    const collectionField = this.context.collectionField;
+    if (collectionField?.isAssociationField?.()) {
+      return collectionField;
+    }
+    return getParentAssociationField(this) || collectionField;
   }
 
   /**
