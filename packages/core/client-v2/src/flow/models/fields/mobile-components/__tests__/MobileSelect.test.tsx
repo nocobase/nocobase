@@ -178,6 +178,13 @@ describe('MobileSelect', () => {
     clickTrigger();
     expect(screen.queryByTestId('popup')).not.toBeInTheDocument();
   });
+
+  it('prefers displayValue for trigger rendering', () => {
+    const displayValue = [{ label: 'Published', value: 'published' }];
+    renderMobileSelect({ value: ['published'], displayValue, mode: 'multiple' });
+
+    expect(mockState.selectProps?.value).toEqual(displayValue);
+  });
 });
 
 function SubTableCellHarness({ value, onCommit, mode }: { value: any; onCommit: (value: any) => void; mode?: string }) {
