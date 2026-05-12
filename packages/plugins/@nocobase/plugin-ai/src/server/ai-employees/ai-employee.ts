@@ -134,7 +134,7 @@ export class AIEmployee {
   }
 
   private get chatSettings() {
-    return (this.employee.get?.('chatSettings') ?? (this.employee as any).chatSettings ?? {}) as {
+    return (this.employee?.get?.('chatSettings') ?? (this.employee as any)?.chatSettings ?? {}) as {
       systemPromptMode?: 'default' | 'raw' | 'none';
       enableSkills?: boolean;
       enableTools?: boolean;
