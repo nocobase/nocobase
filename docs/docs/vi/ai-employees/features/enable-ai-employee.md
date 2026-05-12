@@ -1,20 +1,20 @@
 ---
 pkg: '@nocobase/plugin-ai'
-title: 'Kích hoạt AI Employee'
-description: 'Trên trang quản lý AI employees, sử dụng công tắc Enabled để kích hoạt/vô hiệu hóa AI Employee. Sau khi kích hoạt, AI Employee sẽ xuất hiện ở lối tắt góc dưới bên phải hoặc lối vào của các tình huống cụ thể.'
-keywords: 'Kích hoạt AI Employee,AI employees,NocoBase'
+title: 'Bật nhân viên AI'
+description: 'Bật hoặc tắt nhân viên AI bằng công tắc Enabled trên trang quản lý AI employees. Nhân viên đã bật sẽ xuất hiện ở lối vào nhanh góc dưới bên phải hoặc lối vào ngữ cảnh riêng.'
+keywords: 'bật nhân viên AI,AI employees,NocoBase'
 ---
 
-# Kích hoạt AI Employee
+# Bật nhân viên AI
 
-NocoBase đã tích hợp sẵn nhiều AI Employee phục vụ cho các tình huống khác nhau.
+NocoBase cung cấp nhân viên AI tích hợp cho nhiều ngữ cảnh. Xem mô tả đầy đủ tại [Nhân viên AI tích hợp](/ai-employees/built-in/).
 
-## Cách kích hoạt
+## Cách bật
 
-Sau khi vào trang quản lý `AI employees`, bạn có thể bật trực tiếp công tắc `Enabled` trong danh sách để kích hoạt AI Employee.
+Sau khi vào trang quản lý `AI employees`, bật trực tiếp công tắc `Enabled` trong danh sách.
 
-![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
+![](https://static-docs.nocobase.com/202605121048555.png)
 
-## Sử dụng sau khi kích hoạt
+## Sử dụng sau khi bật
 
-Sau khi kích hoạt, AI Employee đó sẽ xuất hiện tại các lối vào khả dụng (như lối tắt ở góc dưới bên phải hoặc lối vào của tình huống cụ thể).
+Sau khi bật, nhân viên sẽ xuất hiện trong các lối vào khả dụng, như lối vào nhanh góc dưới bên phải hoặc lối vào ngữ cảnh riêng.
