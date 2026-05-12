@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import * as p from '@clack/prompts';
 import { Command, Flags } from '@oclif/core';
-import { confirmAction, setVerboseMode } from '../../lib/ui.js';
+import { setVerboseMode } from '../../lib/ui.js';
 import {
   formatSelfUpdateUnavailableMessage,
   formatUnsupportedSelfUpdateMessage,
@@ -64,10 +65,16 @@ export default class SelfUpdate extends Command {
     }
 
     if (!flags.yes && status.updateAvailable) {
-      const confirmed = await confirmAction(
-        `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion}?`,
-        { defaultValue: false },
-      );
+      const confirmed = await p.confirm({
+        message: `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion}?`,
+        active: 'Yes',
+        inactive: 'No',
+        initialValue: false,
+      });
+      if (p.isCancel(confirmed)) {
+        p.cancel('Skipped CLI update.');
+        return;
+      }
       if (!confirmed) {
         this.log('Skipped CLI update.');
         return;

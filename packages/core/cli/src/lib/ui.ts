@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import ora, { type Ora } from 'ora';
 import pc from 'picocolors';
@@ -34,57 +33,6 @@ export function setVerboseMode(value: boolean) {
 
 export function isVerboseMode() {
   return verboseMode;
-}
-
-export async function promptText(message: string, options?: { defaultValue?: string; secret?: boolean }) {
-  if (!isInteractiveTerminal()) {
-    return options?.defaultValue ?? '';
-  }
-
-  const rl = readline.createInterface({
-    input,
-    output,
-    terminal: true,
-  });
-
-  try {
-    const suffix = options?.defaultValue ? ` (${options.defaultValue})` : '';
-    const hint = options?.secret ? ' [input visible]' : '';
-    const prompt = `${message}${suffix}${hint}: `;
-    const answer = await rl.question(prompt);
-    return answer.trim() || options?.defaultValue || '';
-  } finally {
-    rl.close();
-  }
-}
-
-export async function confirmAction(message: string, options?: { defaultValue?: boolean }) {
-  if (!isInteractiveTerminal()) {
-    return Boolean(options?.defaultValue);
-  }
-
-  stopTask();
-
-  const rl = readline.createInterface({
-    input,
-    output,
-    terminal: true,
-  });
-
-  try {
-    const suffix = options?.defaultValue ? pc.dim('[Y/n]') : pc.dim('[y/N]');
-    const prompt = `${pc.yellow('?')} ${pc.bold(message)} ${suffix} `;
-    const answer = await rl.question(prompt);
-    const normalized = answer.trim().toLowerCase();
-
-    if (!normalized) {
-      return Boolean(options?.defaultValue);
-    }
-
-    return normalized === 'y' || normalized === 'yes';
-  } finally {
-    rl.close();
-  }
 }
 
 export function printSection(title: string) {

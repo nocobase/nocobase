@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import * as p from '@clack/prompts';
 import { getCurrentEnvName, getEnv, setEnvRuntime, updateEnvConnection } from './auth-store.js';
 import type { CliHomeScope } from './cli-home.js';
 import { resolveAccessToken } from './env-auth.js';
 import { fetchWithPreservedAuthRedirect } from './http-request.js';
 import { generateRuntime } from './runtime-generator.js';
 import { hasRuntimeSync, saveRuntime } from './runtime-store.js';
-import { confirmAction, printInfo, printVerbose, printWarningBlock, setVerboseMode, stopTask, updateTask } from './ui.js';
+import { printInfo, printVerbose, printWarningBlock, setVerboseMode, stopTask, updateTask } from './ui.js';
 
 const APP_RETRY_INTERVAL = 2000;
 const APP_RETRY_TIMEOUT = 120000;
@@ -230,7 +231,17 @@ async function waitForSwaggerSchema(baseUrl: string, token?: string, role?: stri
 }
 
 async function confirmEnableApiDoc() {
-  return confirmAction('Enable the API documentation plugin now?', { defaultValue: false });
+  const answer = await p.confirm({
+    message: 'Enable the API documentation plugin now?',
+    active: 'Yes',
+    inactive: 'No',
+    initialValue: false,
+  });
+  if (p.isCancel(answer)) {
+    p.cancel('Canceled.');
+    return false;
+  }
+  return answer;
 }
 
 async function fetchSwaggerSchema(

@@ -160,8 +160,8 @@ async function confirmDownAll(envName: string, force: boolean, options?: { expli
       usedCurrentEnv
         ? `Delete everything for current env "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`
         : `Delete everything for "${envName}"? This removes the app, managed containers, storage data, and the saved CLI env config.`,
-    active: 'yes',
-    inactive: 'no',
+    active: 'Yes',
+    inactive: 'No',
     initialValue: false,
   });
 

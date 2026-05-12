@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import * as p from '@clack/prompts';
 import { Command, Flags } from '@oclif/core';
-import { confirmAction, setVerboseMode } from '../../lib/ui.js';
+import { setVerboseMode } from '../../lib/ui.js';
 import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsUpdate extends Command {
@@ -42,10 +43,16 @@ export default class SkillsUpdate extends Command {
     setVerboseMode(flags.verbose);
 
     if (!flags.yes) {
-      const confirmed = await confirmAction(
-        'Update the globally installed NocoBase AI coding skills?',
-        { defaultValue: true },
-      );
+      const confirmed = await p.confirm({
+        message: 'Update the globally installed NocoBase AI coding skills?',
+        active: 'Yes',
+        inactive: 'No',
+        initialValue: true,
+      });
+      if (p.isCancel(confirmed)) {
+        p.cancel('Skipped skills update.');
+        return;
+      }
       if (!confirmed) {
         this.log('Skipped skills update.');
         return;
