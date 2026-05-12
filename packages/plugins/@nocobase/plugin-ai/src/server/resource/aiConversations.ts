@@ -13,6 +13,7 @@ import { Model, Op } from '@nocobase/database';
 import { ResourceActionError, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 import { AIMessageInput } from '../types';
+import { createAIChatConversation } from '../manager/ai-chat-conversation';
 
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
@@ -63,6 +64,21 @@ const isReachParallelLimit = async (ctx: Context) => {
   });
 
   return activeStreamCount > 2;
+};
+
+const saveUserMessages = async (ctx: Context, sessionId: string, messages: AIMessageInput[], messageId?: string) => {
+  const userMessages = messages.filter((message) => message.role === 'user');
+  if (!userMessages.length) {
+    return;
+  }
+
+  const aiChatConversation = createAIChatConversation(ctx, sessionId);
+  await aiChatConversation.withTransaction(async (conversation) => {
+    if (messageId && (await conversation.getMessage(messageId))) {
+      await conversation.removeMessages({ messageId });
+    }
+    await conversation.addMessages(userMessages);
+  });
 };
 
 export default {
@@ -342,6 +358,7 @@ export default {
         }
 
         if (await isReachParallelLimit(ctx)) {
+          await saveUserMessages(ctx, sessionId, messages, editingMessageId);
           throw new ResourceActionError(400, ctx.t('There are conversations in progress. Please try again later.'));
         }
 
@@ -455,15 +472,14 @@ export default {
           return;
         }
 
-        if (await isReachParallelLimit(ctx)) {
-          sendErrorResponse(ctx, ctx.t('There are conversations in progress. Please try again later.'));
-          return;
-        }
+        const reachLimit = await isReachParallelLimit(ctx);
 
         let hasChunks = false;
-        for await (const chunk of plugin.llmStreamCachedManager.getCached(sessionId).stream()) {
-          hasChunks = true;
-          ctx.res.write(chunk);
+        if (!reachLimit) {
+          for await (const chunk of plugin.llmStreamCachedManager.getCached(sessionId).stream()) {
+            hasChunks = true;
+            ctx.res.write(chunk);
+          }
         }
 
         if (!hasChunks) {
