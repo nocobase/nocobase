@@ -13,6 +13,7 @@ import React, { createContext, FC, useCallback, useMemo, useRef } from 'react';
 import compatOldTheme from './compatOldTheme';
 import { addCustomAlgorithmToTheme } from './customAlgorithm';
 import defaultTheme from './defaultTheme';
+import { v2AppShellClassName } from './globalStyles';
 import { ThemeConfig } from './type';
 
 interface ThemeItem {
@@ -93,7 +94,13 @@ export const GlobalThemeProvider: FC<GlobalThemeProviderProps> = ({ children, th
 
   return (
     <GlobalThemeContext.Provider value={value}>
-      <ConfigProvider theme={compatOldTheme(value.theme)}>{children}</ConfigProvider>
+      <ConfigProvider theme={compatOldTheme(value.theme)}>
+        {/* `display: contents` keeps the wrapper invisible to layout while
+         * still letting the className participate in CSS scoping. */}
+        <div className={v2AppShellClassName} style={{ display: 'contents' }}>
+          {children}
+        </div>
+      </ConfigProvider>
     </GlobalThemeContext.Provider>
   );
 };

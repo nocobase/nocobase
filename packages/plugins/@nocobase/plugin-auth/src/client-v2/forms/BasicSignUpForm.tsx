@@ -69,7 +69,7 @@ function renderDynamicField(field: any, t: (key: string) => string, fieldT: (key
   );
 }
 
-export function BasicSignUpForm({ authenticatorName }: SignUpFormProps) {
+export default function BasicSignUpForm({ authenticatorName }: SignUpFormProps) {
   const app = useApp();
   const navigate = useNavigate();
   const { t } = useAuthTranslation();

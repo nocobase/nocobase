@@ -20,7 +20,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Input } from 'antd';
 import { css } from '@emotion/css';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
-import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
+import { FlowContextSelector, useFlowContext, type MetaTreeNode } from '@nocobase/flow-engine';
 
 export interface TextAreaWithContextSelectorProps {
   value?: string;
@@ -29,6 +29,13 @@ export interface TextAreaWithContextSelectorProps {
   rows?: number;
   maxRows?: number;
   style?: React.CSSProperties;
+  disabled?: boolean;
+  /**
+   * Custom meta tree for the variable picker. Accepts an array, a sync getter,
+   * or an async getter — same shape as `FlowContextSelector`'s `metaTree`. If
+   * omitted, the full `ctx.getPropertyMetaTree()` is used (legacy default).
+   */
+  metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
 }
 
 /**
@@ -41,6 +48,8 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
   rows = 3,
   maxRows = 24,
   style,
+  disabled,
+  metaTree,
 }) => {
   const flowCtx = useFlowContext();
   const [innerValue, setInnerValue] = useState<string>(value || '');
@@ -94,8 +103,8 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
     [insertAtCaret],
   );
 
-  // 使用函数形式提供变量树，保证与运行时上下文一致
-  const metaTree = useMemo(() => () => flowCtx.getPropertyMetaTree?.(), [flowCtx]);
+  // 使用函数形式提供变量树，保证与运行时上下文一致；当外部传入则尊重外部值。
+  const resolvedMetaTree = useMemo(() => metaTree ?? (() => flowCtx.getPropertyMetaTree?.()), [flowCtx, metaTree]);
 
   return (
     <div style={{ position: 'relative', width: '100%', ...style }}>
@@ -105,6 +114,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
         onChange={handleTextChange}
         autoSize={{ minRows: rows, maxRows }}
         placeholder={placeholder}
+        disabled={disabled}
         style={{ width: '100%' }}
       />
       <div
@@ -116,7 +126,11 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
           lineHeight: 0,
         }}
       >
-        <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)}>
+        <FlowContextSelector
+          metaTree={resolvedMetaTree}
+          disabled={disabled}
+          onChange={(val) => handleVariableSelected(val)}
+        >
           <Button
             type="default"
             style={{ fontStyle: 'italic', fontFamily: 'New York, Times New Roman, Times, serif' }}
