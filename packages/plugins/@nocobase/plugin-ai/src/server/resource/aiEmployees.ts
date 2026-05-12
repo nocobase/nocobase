@@ -12,6 +12,7 @@ import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
+import { EEFeatures } from '../manager/ai-feature-manager';
 
 export const list = async (ctx: Context, next: Next) => {
   const { paginate } = ctx.action.params || {};
@@ -21,10 +22,36 @@ export const list = async (ctx: Context, next: Next) => {
   await actions.list(ctx as Context, () => {});
 
   const locale = ctx.getCurrentLocale();
-  let data = ctx.body.rows;
+  let data;
   if (paginate === 'false' || paginate === false) {
+    ctx.body = ctx.body.map((it) => it.toJSON());
     data = ctx.body;
+  } else {
+    ctx.body.rows = ctx.body.rows.map((it) => it.toJSON());
+    data = ctx.body.rows;
   }
+
+  const featureEnabled = plugin.features.isFeaturesEnabled(Object.values(EEFeatures));
+  if (featureEnabled) {
+    const knowledgeBaseKeys: string[] = _.uniq(
+      data.map((it) => it.knowledgeBase?.knowledgeBaseKeys ?? []).flatMap((it) => it),
+    );
+    const knowledgeBaseList = await plugin.features.knowledgeBase.getKnowledgeBase(knowledgeBaseKeys);
+    const existedKnowledgeBaseKeys = knowledgeBaseList?.map((it) => it.key) ?? [];
+    for (const row of data as AIEmployee[]) {
+      row.missingKnowledgeBaseKeys = [];
+      if (!row.knowledgeBase?.knowledgeBaseKeys?.length) {
+        continue;
+      }
+      for (const k of row.knowledgeBase.knowledgeBaseKeys) {
+        if (existedKnowledgeBaseKeys.includes(k)) {
+          continue;
+        }
+        row.missingKnowledgeBaseKeys.push(k);
+      }
+    }
+  }
+
   data.forEach((row: AIEmployee) => {
     if (row.builtIn) {
       builtInManager.setupBuiltInInfo(locale, row);

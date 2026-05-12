@@ -8,15 +8,21 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar as AntdAvatar, Radio, Tabs } from 'antd';
-import { ExtendCollectionsProvider, SchemaComponent, useAPIClient, useTableBlockContext } from '@nocobase/client';
+import { Avatar as AntdAvatar, Radio, Space, Tabs, Tooltip } from 'antd';
+import {
+  ExtendCollectionsProvider,
+  SchemaComponent,
+  useAPIClient,
+  useTableBlockContext,
+  useRecord,
+} from '@nocobase/client';
 import { useT } from '../../locale';
 import { useField } from '@formily/react';
 import { Field } from '@formily/core';
 import { avatars } from '../avatars';
 import { ProfileSettings } from './ProfileSettings';
 import { SystemPrompt } from './SystemPrompt';
-import aiEmployees from '../../../collections/ai-employees';
+import aiEmployees, { type AIEmployee } from '../../../collections/ai-employees';
 import { SkillSettings } from './SkillSettings';
 import { Templates } from './Templates';
 import {
@@ -28,7 +34,7 @@ import {
   useDeleteActionProps,
 } from './hooks';
 import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
-import { CheckOutlined } from '@ant-design/icons';
+import { CheckOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { EnableSwitch } from './EnableSwitch';
 
 const AIEmployeeForm: React.FC<{
@@ -134,12 +140,43 @@ const CategoryFilter: React.FC = () => {
   );
 };
 
+const Username: React.FC = () => {
+  const t = useT();
+  const field = useField<Field<string>>();
+  const record = useRecord<AIEmployee>();
+  const missingKnowledgeBaseKeys = record?.missingKnowledgeBaseKeys || [];
+
+  if (!field.value) {
+    return null;
+  }
+
+  if (!missingKnowledgeBaseKeys.length) {
+    return <span>{field.value}</span>;
+  }
+
+  return (
+    <Space size={4}>
+      <span>{field.value}</span>
+      <Tooltip
+        title={t(
+          'Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.',
+          {
+            keys: missingKnowledgeBaseKeys.join(', '),
+          },
+        )}
+      >
+        <ExclamationCircleOutlined style={{ color: '#faad14', cursor: 'help' }} />
+      </Tooltip>
+    </Space>
+  );
+};
+
 export const Employees: React.FC = () => {
   const t = useT();
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
       <SchemaComponent
-        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch, CategoryFilter }}
+        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch, CategoryFilter, Username }}
         scope={{
           t,
           useCreateFormProps,
@@ -300,7 +337,7 @@ export const Employees: React.FC = () => {
                       properties: {
                         username: {
                           type: 'string',
-                          'x-component': 'Input',
+                          'x-component': 'Username',
                           'x-pattern': 'readPretty',
                         },
                       },

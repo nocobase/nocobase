@@ -27,8 +27,8 @@ import { DepartmentsListProvider, UsersListProvider } from '../ResourcesProvider
 export const DepartmentManagement: React.FC = () => {
   return (
     <SchemaComponentOptions components={{ SuperiorDepartmentSelect, DepartmentSelect }}>
-      <Row gutter={48} style={{ flexWrap: 'nowrap' }}>
-        <Col span={6} style={{ borderRight: '1px solid #eee', minWidth: '300px' }}>
+      <Row gutter={24} style={{ flexWrap: 'nowrap' }}>
+        <Col flex="280px" style={{ borderRight: '1px solid #eee', minWidth: '300px' }}>
           <DepartmentsListProvider>
             <Department />
           </DepartmentsListProvider>

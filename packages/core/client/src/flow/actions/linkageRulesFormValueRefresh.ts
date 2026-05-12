@@ -15,11 +15,7 @@ import {
   isRunJSValue,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import {
-  namePathToPathKey,
-  parsePathString,
-  pathKeyToNamePath,
-} from '../models/blocks/form/value-runtime/path';
+import { namePathToPathKey, parsePathString, pathKeyToNamePath } from '../models/blocks/form/value-runtime/path';
 import {
   collectStaticDepsFromRunJSValue,
   collectStaticDepsFromTemplateValue,
@@ -243,9 +239,7 @@ function collectLinkageRefreshDeps(ctx: FlowContext, params: any): LinkageRefres
 
     if (depKey === 'ctx:item' || depKey.startsWith('ctx:item:')) {
       const subPath = depKey === 'ctx:item' ? '' : depKey.slice('ctx:item:'.length);
-      const depPath = subPath
-        ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath)
-        : [];
+      const depPath = subPath ? (parsePathString(subPath).filter((seg) => typeof seg !== 'object') as NamePath) : [];
       const resolved = resolveItemDependencyPath(ctx, depPath);
       wildcard ||= resolved.wildcard;
       valuePaths.push(...resolved.valuePaths);

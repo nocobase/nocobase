@@ -862,7 +862,21 @@ export class CollectionField {
           });
 
           if (error) {
-            const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+            const message = error.details
+              .map((d: any) => {
+                const translated = this.flowEngine.translate(d.type, {
+                  ...d.context,
+                  ns: 'data-source-main',
+                  label,
+                });
+
+                if (translated && translated !== d.type) {
+                  return translated;
+                }
+
+                return d.message.replace(/"value"/g, `"${label}"`);
+              })
+              .join(', ');
             return Promise.reject(message);
           }
 

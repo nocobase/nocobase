@@ -20,6 +20,7 @@ export * from './refreshTargetBlocks';
 export * from './setTargetDataScope';
 export { titleField } from './titleField';
 export * from './dateTimeFormat';
+export * from './dateRangeLimit';
 export * from './sortingRules';
 export * from './dataLoadingMode';
 export * from './renderMode';

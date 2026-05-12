@@ -36,6 +36,12 @@ import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/Table
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getSubTableRowIdentity } from './rowIdentity';
 
+export const SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT = 'subTableColumn';
+
+export function isSubTableColumnFieldComponentContext(ctx) {
+  return (ctx?.model?.constructor as any)?.fieldComponentContext === SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT;
+}
+
 const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
   React.useEffect(() => {
     const emitter = model?.flowEngine?.emitter;
@@ -176,6 +182,25 @@ const handleModelName = (modelName) => {
 const MemoFieldRenderer = React.memo(FieldModelRenderer, (prev, next) => {
   return prev.value === next.value && prev.model === next.model;
 });
+
+export function buildRowPathFromFieldIndex(fieldIndex: unknown): Array<string | number> | null {
+  if (!Array.isArray(fieldIndex) || !fieldIndex.length) return null;
+  const out: Array<string | number> = [];
+  for (const entry of fieldIndex) {
+    if (typeof entry !== 'string') continue;
+    const [fieldName, indexStr] = entry.split(':');
+    const index = Number(indexStr);
+    if (!fieldName || !Number.isFinite(index)) continue;
+    out.push(fieldName, index);
+  }
+  return out.length ? out : null;
+}
+
+export function getLatestSubTableRowRecord(form: any, fieldIndex: unknown, fallbackRecord: any): any {
+  const latestRowPath = buildRowPathFromFieldIndex(fieldIndex);
+  const latestRecord = latestRowPath ? form?.getFieldValue?.(latestRowPath) : undefined;
+  return typeof latestRecord === 'undefined' ? fallbackRecord : latestRecord;
+}
 
 function shouldCommitImmediately(value: any) {
   if (Array.isArray(value)) {
@@ -382,6 +407,7 @@ export class SubTableColumnModel<
   T extends SubTableColumnModelStructure = SubTableColumnModelStructure,
 > extends EditableItemModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
+  static fieldComponentContext = SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT;
 
   renderHiddenInConfig() {
     return <FieldWithoutPermissionPlaceholder targetModel={this} />;
@@ -574,6 +600,9 @@ export class SubTableColumnModel<
       const rowForkKey = `row:${baseIndexKey}:${rowIdentity}:${String(rowIdx)}`;
       const rowFork: any = (() => {
         const fork = this.createFork({}, rowForkKey);
+        fork.context.defineProperty('subTableRowFork', {
+          value: true,
+        });
         const associationFieldPath =
           (this.parent as any)?.fieldPath ??
           (this.parent as any)?.context?.fieldPath ??
@@ -592,9 +621,11 @@ export class SubTableColumnModel<
         }
         fork.context.defineProperty('item', {
           get: () => {
+            const form = (fork.context as any)?.form || (this.context?.blockModel as any)?.context?.form;
+            const rowRecord = getLatestSubTableRowRecord(form, fork.context.fieldIndex, record);
             const parentItemCtx = (parentItem ?? this.context?.item) as any;
-            const isNew = record?.__is_new__;
-            const isStored = record?.__is_stored__;
+            const isNew = rowRecord?.__is_new__;
+            const isStored = rowRecord?.__is_stored__;
             const list = (this.parent as any)?.props?.value;
             const length = Array.isArray(list) ? list.length : undefined;
             return {
@@ -602,7 +633,7 @@ export class SubTableColumnModel<
               length,
               __is_new__: isNew,
               __is_stored__: isStored,
-              value: record,
+              value: rowRecord,
               parentItem: parentItemCtx,
             };
           },
