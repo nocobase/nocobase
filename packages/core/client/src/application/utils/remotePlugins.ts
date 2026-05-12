@@ -50,7 +50,10 @@ export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((acc, cur) => {
       acc[cur.packageName] = cur.url;
-      acc[`${cur.packageName}/client-v2`] = cur.url.replace('/dist/client/', '/dist/client-v2/');
+      // 仅当服务端确认该插件存在 client-v2 产物时才注册子路径,避免对纯 v1 插件埋下静默 404。
+      if (cur.clientV2Url) {
+        acc[`${cur.packageName}/client-v2`] = cur.clientV2Url;
+      }
       return acc;
     }, {}),
   });

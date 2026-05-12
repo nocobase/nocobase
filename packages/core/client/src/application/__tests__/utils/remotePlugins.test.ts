@@ -107,7 +107,35 @@ describe('remotePlugins', () => {
       waitSeconds: 120,
       paths: {
         '@nocobase/demo': 'https://demo.com',
-        '@nocobase/demo/client-v2': 'https://demo.com',
+      },
+    });
+  });
+
+  test('should register /client-v2 path only when server provides clientV2Url', () => {
+    const requirejs = {
+      requirejs: {
+        config: vi.fn(),
+      },
+    };
+    const pluginData: any = [
+      {
+        packageName: '@nocobase/demo',
+        url: '/static/plugins/@nocobase/demo/dist/client/index.js?hash=v1hash',
+        clientV2Url: '/static/plugins/@nocobase/demo/dist/client-v2/index.js?hash=v2hash',
+      },
+      {
+        packageName: '@nocobase/legacy',
+        url: '/static/plugins/@nocobase/legacy/dist/client/index.js?hash=v1hash',
+      },
+    ];
+    configRequirejs(requirejs, pluginData);
+
+    expect(requirejs.requirejs.config).toBeCalledWith({
+      waitSeconds: 120,
+      paths: {
+        '@nocobase/demo': '/static/plugins/@nocobase/demo/dist/client/index.js?hash=v1hash',
+        '@nocobase/demo/client-v2': '/static/plugins/@nocobase/demo/dist/client-v2/index.js?hash=v2hash',
+        '@nocobase/legacy': '/static/plugins/@nocobase/legacy/dist/client/index.js?hash=v1hash',
       },
     });
   });
@@ -246,9 +274,7 @@ describe('remotePlugins', () => {
         waitSeconds: 120,
         paths: {
           '@nocobase/demo': 'https://demo1.com',
-          '@nocobase/demo/client-v2': 'https://demo1.com',
           '@nocobase/demo2': 'https://demo2.com',
-          '@nocobase/demo2/client-v2': 'https://demo2.com',
         },
       });
     });
@@ -345,7 +371,6 @@ describe('remotePlugins', () => {
         waitSeconds: 120,
         paths: {
           '@nocobase/demo2': 'https://demo2.com',
-          '@nocobase/demo2/client-v2': 'https://demo2.com',
         },
       });
     });
