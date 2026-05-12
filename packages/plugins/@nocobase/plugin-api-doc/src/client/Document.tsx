@@ -13,7 +13,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
 import 'swagger-ui-dist/swagger-ui.css';
 import { useTranslation } from '../locale';
-import { createSwaggerParameterValuePersistence } from './swaggerParameterValuePersistence';
+import {
+  createSwaggerParameterValuePersistence,
+  createSwaggerParameterValuePlugin,
+} from './swaggerParameterValuePersistence';
 
 const DESTINATION_URL_KEY = 'API_DOC:DESTINATION_URL_KEY';
 const getUrl = () => localStorage.getItem(DESTINATION_URL_KEY);
@@ -54,15 +57,19 @@ const Documentation = () => {
   useEffect(() => {
     if (!swaggerUIRef.current) return;
 
+    const parameterValuePlugin = createSwaggerParameterValuePlugin(swaggerUIRef.current);
+
     SwaggerUIBundle({
       requestInterceptor,
       url: destination,
       domNode: swaggerUIRef.current,
+      plugins: [parameterValuePlugin.plugin],
     });
 
     const disposeValuePersistence = createSwaggerParameterValuePersistence(swaggerUIRef.current);
 
     return () => {
+      parameterValuePlugin.dispose();
       disposeValuePersistence();
       swaggerUIRef.current?.replaceChildren();
     };
