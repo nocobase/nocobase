@@ -9,7 +9,7 @@
 
 import { Application, createMockClient, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client-v2';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 
@@ -252,6 +252,33 @@ describe('app', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('App initializing')).toBeInTheDocument();
     expect(screen.getByText('maintaining dialog message')).toBeInTheDocument();
+  });
+
+  it('should keep current content behind maintained dialog state', async () => {
+    const CurrentPage = () => {
+      const [count, setCount] = React.useState(0);
+      return <button onClick={() => setCount((value) => value + 1)}>Current page count: {count}</button>;
+    };
+
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: CurrentPage });
+      }
+    }
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    await renderApp(app);
+    fireEvent.click(screen.getByRole('button', { name: 'Current page count: 0' }));
+    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+
+    act(() => {
+      app.maintained = true;
+      app.maintaining = true;
+      app.error = { code: 'APP_COMMANDING', command: { name: 'pm.enable' }, message: 'starting sub applications...' };
+    });
+
+    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Enabling plugin')).toBeInTheDocument();
   });
 
   it('should handle long loading state gracefully', async () => {
