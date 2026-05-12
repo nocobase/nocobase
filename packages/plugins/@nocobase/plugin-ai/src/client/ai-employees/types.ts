@@ -108,6 +108,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
     metadata?: {
       model: string;
       provider: string;
+      llmService?: string;
       usage_metadata?: {
         input_tokens: number;
         output_tokens: number;

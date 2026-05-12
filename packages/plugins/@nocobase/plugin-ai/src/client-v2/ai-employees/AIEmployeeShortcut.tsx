@@ -70,15 +70,14 @@ export const AIEmployeeShortcut: React.FC<{
       }
       placement="bottomRight"
     >
-      <Avatar
-        src={currentAvatar}
-        size={size}
-        shape="circle"
-        style={{ cursor: 'pointer' }}
+      <span
+        style={{ cursor: 'pointer', display: 'inline-block' }}
         onMouseEnter={() => setFocus(true)}
         onMouseLeave={() => setFocus(false)}
         onClick={onClick}
-      />
+      >
+        <Avatar src={currentAvatar} size={size} shape="circle" />
+      </span>
     </Popover>
   );
 };
