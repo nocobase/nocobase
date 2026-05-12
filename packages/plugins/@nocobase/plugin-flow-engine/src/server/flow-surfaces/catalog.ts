@@ -179,7 +179,7 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.type',
     'general.danger',
     'general.color',
-    'linkageRules',
+    'linkageRules.value',
   ],
   mergeStrategy: 'deep' as const,
   eventBindingSteps: ['general', 'linkageRules'],
@@ -190,7 +190,7 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.type': STRING_SCHEMA,
     'general.danger': BOOLEAN_SCHEMA,
     'general.color': STRING_SCHEMA,
-    linkageRules: ARRAY_SCHEMA,
+    'linkageRules.value': ARRAY_SCHEMA,
   },
 };
 const RUN_JS_SETTINGS_GROUP = {
@@ -302,7 +302,7 @@ const BLOCK_CARD_SETTINGS_GROUP = {
     'titleDescription.description',
     'blockHeight.heightMode',
     'blockHeight.height',
-    'linkageRules',
+    'linkageRules.value',
   ],
   clearable: true,
   mergeStrategy: 'deep' as const,
@@ -312,7 +312,7 @@ const BLOCK_CARD_SETTINGS_GROUP = {
     'titleDescription.description': STRING_SCHEMA,
     'blockHeight.heightMode': BLOCK_HEIGHT_MODE_SCHEMA,
     'blockHeight.height': NUMBER_SCHEMA,
-    linkageRules: ARRAY_SCHEMA,
+    'linkageRules.value': ARRAY_SCHEMA,
   },
 };
 const CALENDAR_SETTINGS_GROUP = {
@@ -2203,12 +2203,12 @@ const CALENDAR_READONLY_ACTION_CONTRACT = createContract({
 });
 CALENDAR_READONLY_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: {
-    allowedPaths: ['linkageRules'],
+    allowedPaths: ['linkageRules.value'],
     clearable: true,
     mergeStrategy: 'deep',
     eventBindingSteps: ['linkageRules'],
     pathSchemas: {
-      linkageRules: ARRAY_SCHEMA,
+      'linkageRules.value': ARRAY_SCHEMA,
     },
   },
 });

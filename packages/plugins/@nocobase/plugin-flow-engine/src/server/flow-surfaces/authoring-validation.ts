@@ -4078,7 +4078,11 @@ function collectNestedBlockErrors(
 function collectReactionErrors(reaction: any, path: string, localKeys: Set<string>, errors: AuthoringErrorInput[]) {
   const items = Array.isArray(reaction?.items) ? reaction.items : [];
   items.forEach((item: any, index: number) => {
-    const target = String(item?.target || item?.targetKey || item?.targetBlock || '').trim();
+    const rawTarget = item?.target ?? item?.targetKey ?? item?.targetBlock;
+    if (typeof rawTarget !== 'string') {
+      return;
+    }
+    const target = rawTarget.trim();
     if (!target) {
       return;
     }
@@ -4538,6 +4542,7 @@ function collectLocalKeys(value: any, keys: Set<string>, scopePrefix = '') {
   };
   const key = String(value.key || '').trim();
   addKey(key);
+  const scopedValueKey = scopePrefix && key && !key.startsWith(`${scopePrefix}.`) ? `${scopePrefix}.${key}` : key;
   _.castArray(value.fields || []).forEach((field) => {
     if (_.isPlainObject(field)) {
       const fieldKey = String(field.key || field.name || field.path || '').trim();
@@ -4549,12 +4554,18 @@ function collectLocalKeys(value: any, keys: Set<string>, scopePrefix = '') {
     if (_.isPlainObject(action)) {
       const actionKey = String(action.key || '').trim();
       addKey(actionKey);
+      if (scopedValueKey && actionKey && !actionKey.startsWith(`${scopedValueKey}.`)) {
+        keys.add(`${scopedValueKey}.${actionKey}`);
+      }
     }
   });
   _.castArray(value.recordActions || []).forEach((action) => {
     if (_.isPlainObject(action)) {
       const actionKey = String(action.key || '').trim();
       addKey(actionKey);
+      if (scopedValueKey && actionKey && !actionKey.startsWith(`${scopedValueKey}.`)) {
+        keys.add(`${scopedValueKey}.${actionKey}`);
+      }
     }
   });
   _.castArray(value.blocks || []).forEach((block) => collectLocalKeys(block, keys, scopePrefix));

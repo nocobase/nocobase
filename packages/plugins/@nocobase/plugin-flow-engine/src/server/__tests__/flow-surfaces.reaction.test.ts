@@ -308,7 +308,7 @@ describe('flowSurfaces reaction', () => {
     const formReadback = await getSurface(rootAgent, { uid: formUid });
     const actionReadback = await getSurface(rootAgent, { uid: refreshAction.uid });
 
-    expect(tableReadback.tree.stepParams?.cardSettings?.linkageRules).toMatchObject([
+    expect(tableReadback.tree.stepParams?.cardSettings?.linkageRules?.value).toMatchObject([
       {
         key: 'hideAdminOnlyTable',
         condition: {
@@ -372,7 +372,7 @@ describe('flowSurfaces reaction', () => {
         ],
       },
     ]);
-    expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules).toMatchObject([
+    expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules?.value).toMatchObject([
       {
         key: 'disableRefresh',
         actions: [
@@ -432,7 +432,7 @@ describe('flowSurfaces reaction', () => {
       ]);
 
       const readback = await getSurface(rootAgent, { uid });
-      expect(readback.tree.stepParams?.cardSettings?.linkageRules).toMatchObject([
+      expect(readback.tree.stepParams?.cardSettings?.linkageRules?.value).toMatchObject([
         {
           key: `hide-${uid}`,
           actions: [
@@ -588,7 +588,7 @@ describe('flowSurfaces reaction', () => {
     const readback = await getSurface(rootAgent, {
       uid: deleteAction.uid,
     });
-    expect(readback.tree.stepParams?.buttonSettings?.linkageRules).toMatchObject([
+    expect(readback.tree.stepParams?.buttonSettings?.linkageRules?.value).toMatchObject([
       {
         key: 'disableReadonlyDelete',
         condition: {
@@ -985,7 +985,7 @@ describe('flowSurfaces reaction', () => {
             },
             {
               type: 'setActionLinkageRules',
-              target: 'main.refreshAction',
+              target: 'main.employeesTable.refreshAction',
               rules: [
                 {
                   key: 'disableRefresh',
@@ -1015,8 +1015,8 @@ describe('flowSurfaces reaction', () => {
     expect(formNode?.stepParams?.eventSettings?.linkageRules?.value).toBeUndefined();
     expect(formNode?.subModels?.grid?.stepParams?.formModelSettings?.assignRules?.value).toHaveLength(1);
     expect(formNode?.subModels?.grid?.stepParams?.eventSettings?.linkageRules?.value).toHaveLength(1);
-    expect(tableNode?.stepParams?.cardSettings?.linkageRules).toHaveLength(1);
-    expect(refreshActionNode?.stepParams?.buttonSettings?.linkageRules).toHaveLength(1);
+    expect(tableNode?.stepParams?.cardSettings?.linkageRules?.value).toHaveLength(1);
+    expect(refreshActionNode?.stepParams?.buttonSettings?.linkageRules?.value).toHaveLength(1);
   });
 });
 

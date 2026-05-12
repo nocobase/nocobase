@@ -1418,7 +1418,9 @@ describe('flowSurfaces resource', () => {
               title: 'Employees',
               description: 'All active employees',
             },
-            linkageRules: [],
+            linkageRules: {
+              value: [],
+            },
           },
         },
       },
@@ -1443,7 +1445,7 @@ describe('flowSurfaces resource', () => {
       uid: tableUid,
     });
     expect(readback.tree.stepParams?.cardSettings?.titleDescription).toBeUndefined();
-    expect(readback.tree.stepParams?.cardSettings?.linkageRules).toEqual([]);
+    expect(readback.tree.stepParams?.cardSettings?.linkageRules?.value).toEqual([]);
   });
 
   it('should enforce real block settings keys for representative built-in block contracts', async () => {
@@ -1781,7 +1783,9 @@ describe('flowSurfaces resource', () => {
         },
         stepParams: {
           buttonSettings: {
-            linkageRules: [],
+            linkageRules: {
+              value: [],
+            },
           },
         },
       },
@@ -1796,7 +1800,7 @@ describe('flowSurfaces resource', () => {
         stepParams: {
           buttonSettings: {
             linkageRules: {
-              legacy: true,
+              value: 'legacy',
             },
           },
         },
@@ -1844,7 +1848,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
-    expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules).toEqual([]);
+    expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules?.value).toEqual([]);
   });
 
   it('should expose and configure filter action built-in filter settings via flowSurfaces', async () => {

@@ -104,7 +104,7 @@ describe('flowSurfaces block header contracts', () => {
       const cardSettingsAllowedPaths = contract.domains.stepParams?.groups?.cardSettings?.allowedPaths || [];
 
       expect(cardSettingsAllowedPaths).toEqual(
-        expect.arrayContaining(['titleDescription.title', 'titleDescription.description', 'linkageRules']),
+        expect.arrayContaining(['titleDescription.title', 'titleDescription.description', 'linkageRules.value']),
       );
       expect(getReactionKindsForUse(use)).toEqual(expect.arrayContaining(['blockLinkage']));
     }
@@ -352,7 +352,9 @@ describe('flowSurfaces block header contracts', () => {
         props: {},
         stepParams: {
           cardSettings: {
-            linkageRules: [{ id: 'keep-block-linkage' }],
+            linkageRules: {
+              value: [{ id: 'keep-block-linkage' }],
+            },
           },
         },
         subModels: {
@@ -414,7 +416,9 @@ describe('flowSurfaces block header contracts', () => {
                     heightMode: 'specifyValue',
                     height: 500,
                   },
-                  linkageRules: [{ id: 'keep-linkage' }],
+                  linkageRules: {
+                    value: [{ id: 'keep-linkage' }],
+                  },
                 },
               },
             }),
@@ -451,7 +455,9 @@ describe('flowSurfaces block header contracts', () => {
             blockHeight: {
               heightMode: 'defaultHeight',
             },
-            linkageRules: [{ id: 'keep-linkage' }],
+            linkageRules: {
+              value: [{ id: 'keep-linkage' }],
+            },
           },
         },
       },
@@ -460,7 +466,7 @@ describe('flowSurfaces block header contracts', () => {
   });
 
   it('should route configure to map and comments block handlers', async () => {
-    const service = new FlowSurfacesService({ db: {} } as any);
+    const service = new FlowSurfacesService({ db: { getCollection: vi.fn(() => null) } } as any);
     const resolve = vi.fn().mockResolvedValue({ uid: 'block-1', kind: 'node' });
     vi.spyOn(service, 'locator', 'get').mockReturnValue({ resolve } as any);
     vi.spyOn(service as any, 'loadResolvedNode')

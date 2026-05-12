@@ -17049,7 +17049,7 @@ export class FlowSurfacesService {
               }),
             }
           : {}),
-        ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: changes.linkageRules } : {}),
+        ...(hasOwnDefined(changes, 'linkageRules') ? { linkageRules: { value: changes.linkageRules } } : {}),
       };
     }
     if (hasOwnDefined(changes, 'filterableFieldNames') || hasOwnDefined(changes, 'defaultFilter')) {
