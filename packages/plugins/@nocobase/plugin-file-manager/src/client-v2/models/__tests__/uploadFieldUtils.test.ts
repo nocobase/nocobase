@@ -12,7 +12,7 @@ import {
   getUploadFieldPreviewIndex,
   normalizeUploadFieldFileList,
   shouldShowUploadActionSlot,
-} from '../../../client-v2/models/uploadFieldUtils';
+} from '../uploadFieldUtils';
 
 describe('shouldShowUploadActionSlot', () => {
   it('单值字段已有文件时应隐藏追加入口', () => {
