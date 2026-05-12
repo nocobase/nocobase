@@ -66,8 +66,8 @@ export class KnowledgeBaseManager {
           vectorStoreConfig.vectorStoreProvider,
           [
             {
-              key: 'vectorStoreConfigId',
-              value: vectorStoreConfig.vectorStoreConfigId,
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey,
             },
           ],
         );
@@ -87,8 +87,8 @@ export class KnowledgeBaseManager {
             [
               ...knowledgeBase.vectorStoreProps,
               {
-                key: 'vectorStoreConfigId',
-                value: vectorStoreConfig.vectorStoreConfigId,
+                key: 'vectorStoreConfigKey',
+                value: vectorStoreConfig.vectorStoreConfigKey,
               },
             ],
           );
@@ -134,11 +134,11 @@ export class KnowledgeBaseManager {
   }
 
   private async getKnowledgeBaseGroup(employee: AIEmployee): Promise<KnowledgeBaseGroup[]> {
-    const { knowledgeBaseIds } = employee?.knowledgeBase ?? {};
-    if (!knowledgeBaseIds || _.isEmpty(knowledgeBaseIds)) {
+    const { knowledgeBaseKeys } = employee?.knowledgeBase ?? {};
+    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
       return [];
     }
-    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseIds);
+    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseKeys);
   }
 
   private async getEmployee(username: string) {
