@@ -66,6 +66,7 @@ export function normalizeKanbanPopupSettings(
   const actionUid = blockUid && actionKey ? getKanbanPopupActionUid(blockUid, actionKey) : undefined;
   return normalizeHiddenPopupSettings(popupSettings, {
     invalidUids: [blockUid, actionUid],
+    preserveApplyBlueprintDefaults: true,
   });
 }
 

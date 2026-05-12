@@ -9153,7 +9153,13 @@ export class FlowSurfacesService {
       return true;
     }
     const templateUse = String(template?.useModel || '').trim();
-    return !templateUse || POPUP_ACTION_USES.has(templateUse);
+    if (!templateUse) {
+      return true;
+    }
+    return (
+      !!getFlowSurfaceDefaultActionPopupConfigByUse(this.resolveDefaultActionPopupSemanticUse(templateUse)) ||
+      POPUP_ACTION_USES.has(templateUse)
+    );
   }
 
   private inferPopupDefaultTypeFromTemplateTree(node: any): FlowSurfacePopupTemplateSemanticType {

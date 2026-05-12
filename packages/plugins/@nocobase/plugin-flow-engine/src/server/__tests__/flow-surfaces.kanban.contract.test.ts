@@ -141,6 +141,58 @@ describe('flowSurfaces kanban contract', () => {
     });
   }
 
+  async function createLargeAddNewTemplateCollection(collectionName: string) {
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        filterTargetKey: 'id',
+        createdAt: true,
+        updatedAt: true,
+        fields: [
+          { name: 'createdAt', type: 'date', interface: 'createdAt', field: 'createdAt' },
+          { name: 'updatedAt', type: 'date', interface: 'updatedAt', field: 'updatedAt' },
+          { name: 'title', type: 'string', interface: 'input' },
+          {
+            name: 'status_sort',
+            type: 'sort',
+            interface: 'sort',
+            scopeKey: 'status',
+            hidden: true,
+          },
+          { name: 'status', type: 'string', interface: 'select' },
+          { name: 'owner', type: 'string', interface: 'input' },
+          { name: 'email', type: 'string', interface: 'email' },
+          { name: 'phone', type: 'string', interface: 'input' },
+          { name: 'city', type: 'string', interface: 'input' },
+          { name: 'country', type: 'string', interface: 'input' },
+          { name: 'priority', type: 'string', interface: 'select' },
+          { name: 'category', type: 'string', interface: 'select' },
+          { name: 'score', type: 'integer', interface: 'integer' },
+          { name: 'notes', type: 'text', interface: 'textarea' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [collectionName]: [
+        'createdAt',
+        'updatedAt',
+        'title',
+        'status',
+        'status_sort',
+        'owner',
+        'email',
+        'phone',
+        'city',
+        'country',
+        'priority',
+        'category',
+        'score',
+        'notes',
+      ],
+    });
+  }
+
   async function createExternalKanbanPopupTargets(collectionName = 'kanban_tasks') {
     const page = await createPage(rootAgent, {
       title: `Kanban popup source page ${collectionName}`,
@@ -1639,6 +1691,138 @@ describe('flowSurfaces kanban contract', () => {
     expect(persistedKanbanItem?.stepParams?.cardSettings?.popup).toMatchObject({
       popupTemplateUid: cardTemplateUid,
     });
+  });
+
+  it('should reuse one grouped add new template across calendar and kanban add-new hosts', async () => {
+    const unique = Date.now();
+    const collectionName = `add_new_template_tasks_${unique}`;
+    await createLargeAddNewTemplateCollection(collectionName);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Add new template reuse ${unique}`,
+          },
+        },
+        page: {
+          title: `Add new template reuse ${unique}`,
+        },
+        defaults: {
+          collections: {
+            [collectionName]: {
+              fieldGroups: [
+                {
+                  key: 'identity',
+                  title: 'Identity',
+                  fields: ['title', 'owner', 'email', 'phone'],
+                },
+                {
+                  key: 'profile',
+                  title: 'Profile',
+                  fields: ['city', 'country', 'priority', 'category'],
+                },
+                {
+                  key: 'activity',
+                  title: 'Activity',
+                  fields: ['status', 'score', 'notes'],
+                },
+              ],
+              popups: {
+                addNew: {
+                  name: 'Create grouped task',
+                  description: 'Create one grouped task.',
+                },
+                view: {
+                  name: 'Grouped task details',
+                  description: 'View one grouped task.',
+                },
+                edit: {
+                  name: 'Edit grouped task',
+                  description: 'Edit one grouped task.',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Planning',
+            layout: {
+              rows: [
+                [
+                  { key: 'taskCalendar', span: 12 },
+                  { key: 'taskBoard', span: 12 },
+                ],
+              ],
+            },
+            blocks: [
+              {
+                key: 'taskCalendar',
+                type: 'calendar',
+                title: 'Task calendar',
+                collection: collectionName,
+                actions: ['addNew', 'refresh'],
+                settings: {
+                  titleField: 'title',
+                  startField: 'createdAt',
+                  endField: 'updatedAt',
+                  quickCreateEvent: true,
+                  quickCreatePopup: {
+                    tryTemplate: true,
+                  },
+                },
+              },
+              {
+                key: 'taskBoard',
+                type: 'kanban',
+                title: 'Task board',
+                collection: collectionName,
+                fields: ['title', 'owner', 'status'],
+                actions: ['addNew', 'refresh'],
+                settings: {
+                  groupField: 'status',
+                  quickCreateEnabled: true,
+                  quickCreatePopup: {
+                    tryTemplate: true,
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+
+    const data = getData(executeRes);
+    const calendarBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CalendarBlockModel')[0];
+    const kanbanBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'KanbanBlockModel')[0];
+    const templateUids = [
+      calendarBlock.subModels?.quickCreateAction?.popup?.template?.uid,
+      _.castArray(calendarBlock.subModels?.actions || []).find((item: any) => item?.use === 'AddNewActionModel')?.popup
+        ?.template?.uid,
+      kanbanBlock.subModels?.quickCreateAction?.popup?.template?.uid,
+      _.castArray(kanbanBlock.subModels?.actions || []).find((item: any) => item?.use === 'AddNewActionModel')?.popup
+        ?.template?.uid,
+    ];
+    expect(templateUids.every(Boolean)).toBe(true);
+    expect(new Set(templateUids).size).toBe(1);
+
+    const popup = await readPrimaryPopupBlock(`${calendarBlock.uid}-quickCreateAction`);
+    expect(popup.popupBlock?.use).toBe('CreateFormModel');
+    const formItems = _.castArray(popup.popupBlock?.subModels?.grid?.subModels?.items || []);
+    expect(formItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Identity')).toBe(
+      true,
+    );
+    expect(formItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Profile')).toBe(
+      true,
+    );
+    expect(formItems.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Activity')).toBe(
+      true,
+    );
+    await expectTemplateUsageAtLeast(templateUids[0], 4);
   });
 
   it('should recursively backfill persisted kanban popup hosts in nested managed popup trees', async () => {

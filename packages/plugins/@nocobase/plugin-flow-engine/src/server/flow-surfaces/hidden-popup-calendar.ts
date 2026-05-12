@@ -93,6 +93,7 @@ export type HiddenPopupHostRuntime = {
 export function normalizeCalendarPopupSettings(actionKey: CalendarPopupActionKey, popupSettings?: Record<string, any>) {
   return normalizeHiddenPopupSettings(popupSettings, {
     collectionOnly: actionKey === 'quickCreateAction',
+    preserveApplyBlueprintDefaults: true,
   });
 }
 

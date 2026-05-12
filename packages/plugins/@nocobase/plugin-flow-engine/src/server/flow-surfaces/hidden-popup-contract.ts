@@ -170,10 +170,13 @@ export function normalizeHiddenPopupSettings(
   options: {
     collectionOnly?: boolean;
     invalidUids?: any[];
+    preserveApplyBlueprintDefaults?: boolean;
   } = {},
 ) {
   const nextParams = _.cloneDeep(popupSettings || {});
-  delete nextParams[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
+  if (!options.preserveApplyBlueprintDefaults) {
+    delete nextParams[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
+  }
   normalizeHiddenPopupScalarSettings(nextParams);
 
   const popupTemplateUidProvided = Object.prototype.hasOwnProperty.call(nextParams, 'popupTemplateUid');
@@ -270,7 +273,7 @@ export function buildHiddenPopupOpenView(input: {
   const current = input.normalizePopupSettings
     ? input.normalizePopupSettings(input.popupSettings)
     : normalizeHiddenPopupSettings(input.popupSettings);
-  const openViewSettings = _.omit(current, ['tryTemplate']);
+  const openViewSettings = _.omit(current, ['tryTemplate', FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]);
   return buildDefinedPayload({
     ...defaults,
     ...openViewSettings,
