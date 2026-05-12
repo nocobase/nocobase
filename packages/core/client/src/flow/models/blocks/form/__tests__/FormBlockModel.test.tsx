@@ -22,6 +22,11 @@ import {
   NumberFieldInterface,
 } from '../../../../../collection-manager/interfaces';
 import { Form } from 'antd';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 // -----------------------------
 // Helpers
 // -----------------------------
