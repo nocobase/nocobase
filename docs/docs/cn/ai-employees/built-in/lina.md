@@ -108,6 +108,8 @@ Translate the following text into {target_language}. Output only the translated 
 
 可以根据模型能力灵活调整请求并发数，更容易控制任务吞吐、响应时间和成本。
 
+如需参考本地部署翻译专用小模型的完整实践，可查看 [使用 Lina 和本地 HY-MT1.5-1.8B 翻译本地化词条](/ai-employees/scenarios/localization-hy-mt)。
+
 :::info{title=提示}
 本地化翻译任务的并发数可通过环境变量 `AI_LOCALIZATION_CONCURRENCY` 控制，默认值为 `10`，允许范围为 `1` 到 `20`。超出范围时会使用默认值。
 :::

@@ -108,6 +108,8 @@ If local deployment is not possible, use a translation-specific model rather tha
 
 You can adjust request concurrency according to model capability to better control throughput, response time, and cost.
 
+For a complete practice using a locally deployed translation-specific small model, see [Use Lina and local HY-MT1.5-1.8B to translate localization entries](/ai-employees/scenarios/localization-hy-mt).
+
 :::info{title=Tip}
 The concurrency of localization translation tasks is controlled by `AI_LOCALIZATION_CONCURRENCY`. The default is `10`, the allowed range is `1` to `20`, and values outside the range use the default.
 :::
