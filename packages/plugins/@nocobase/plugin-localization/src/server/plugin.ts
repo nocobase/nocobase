@@ -27,7 +27,20 @@ export class PluginLocalizationServer extends Plugin {
   private aiTranslateTaskRegistered = false;
   private localeSourceTextHookKeys = new Set<string>();
 
+  normalizeResourceModule(module: string) {
+    const prefix = 'resources.';
+    const namespace = module.startsWith(prefix) ? module.slice(prefix.length) : module;
+    const normalizedNamespace = namespace.startsWith(OFFICIAL_PLUGIN_PREFIX)
+      ? namespace.replace(OFFICIAL_PLUGIN_PREFIX, '')
+      : namespace;
+    return `${prefix}${normalizedNamespace}`;
+  }
+
   addNewTexts = async (texts: { text: string; module: string }[], options?: { transaction?: any; locale?: string }) => {
+    texts = texts.map(({ text, module }) => ({
+      text,
+      module: this.normalizeResourceModule(module),
+    }));
     texts = await this.resources.filterExists(texts, options?.transaction);
     await this.db
       .getModel('localizationTexts')

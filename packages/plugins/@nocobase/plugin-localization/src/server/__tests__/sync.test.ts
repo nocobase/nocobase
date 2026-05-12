@@ -105,6 +105,32 @@ describe('sync', () => {
     expect(legacyTexts.length).toBe(0);
   });
 
+  it('should normalize official plugin package name when adding new texts', async () => {
+    const plugin = app.pm.get('localization') as any;
+    await plugin.addNewTexts([
+      {
+        module: 'resources.@nocobase/plugin-workflow-cc',
+        text: 'Missing workflow cc text',
+      },
+    ]);
+
+    const normalizedText = await repo.findOne({
+      filter: {
+        module: 'resources.workflow-cc',
+        text: 'Missing workflow cc text',
+      },
+    });
+    const legacyText = await repo.findOne({
+      filter: {
+        module: 'resources.@nocobase/plugin-workflow-cc',
+        text: 'Missing workflow cc text',
+      },
+    });
+
+    expect(normalizedText).toBeTruthy();
+    expect(legacyText).toBeFalsy();
+  });
+
   it('should reset existing local resource translations', async () => {
     vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
       test: {

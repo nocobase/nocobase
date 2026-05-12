@@ -23,10 +23,18 @@ const sync = async (ctx: Context, next: Next) => {
   }
 
   const resources = await ctx.app.localeManager.syncSources(ctx, types);
-  let textValues = [];
+  const normalizedResources = {};
   Object.entries(resources).forEach(([module, resource]) => {
+    const normalizedModule = plugin.normalizeResourceModule(module).replace('resources.', '');
+    normalizedResources[normalizedModule] = {
+      ...(normalizedResources[normalizedModule] || {}),
+      ...(resource as Record<string, string>),
+    };
+  });
+  let textValues = [];
+  Object.entries(normalizedResources).forEach(([module, resource]) => {
     Object.keys(resource).forEach((text) => {
-      textValues.push({ module: `resources.${module}`, text });
+      textValues.push({ module: plugin.normalizeResourceModule(module), text });
     });
   });
   textValues = (await resourcesInstance.filterExists(textValues)) as any[];
@@ -41,15 +49,15 @@ const sync = async (ctx: Context, next: Next) => {
     });
     const translationValues = texts
       .filter((text: Model) => {
-        const module = text.module.replace('resources.', '');
-        return resources[module]?.[text.text];
+        const module = plugin.normalizeResourceModule(text.module).replace('resources.', '');
+        return normalizedResources[module]?.[text.text];
       })
       .map((text: Model) => {
-        const module = text.module.replace('resources.', '');
+        const module = plugin.normalizeResourceModule(text.module).replace('resources.', '');
         return {
           locale,
           textId: text.id,
-          translation: resources[module]?.[text.text],
+          translation: normalizedResources[module]?.[text.text],
         };
       });
 

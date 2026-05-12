@@ -36,6 +36,31 @@ class TestLocaleSourcePlugin extends Plugin {
   }
 }
 
+class TestOfficialPluginLocaleSourcePlugin extends Plugin {
+  async beforeLoad() {
+    this.app.db.collection({
+      name: 'testOfficialPluginLocaleSources',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+        },
+      ],
+    });
+
+    this.app.localeManager.registerSource('test-official-plugin-locale-source', {
+      title: 'Test official plugin locale source',
+      namespace: '@nocobase/plugin-workflow-cc',
+      collections: [
+        {
+          collection: 'testOfficialPluginLocaleSources',
+          fields: ['title'],
+        },
+      ],
+    });
+  }
+}
+
 describe('locale source', () => {
   let app: MockServer;
 
@@ -63,5 +88,34 @@ describe('locale source', () => {
     });
 
     expect(text).toBeTruthy();
+  });
+
+  it('normalizes official plugin package name when source collection fields are saved', async () => {
+    app = await createMockServer({
+      plugins: ['localization', TestOfficialPluginLocaleSourcePlugin],
+    });
+    await app.localeManager.load();
+
+    await app.db.getRepository('testOfficialPluginLocaleSources').create({
+      values: {
+        title: 'Test official plugin title',
+      },
+    });
+
+    const normalizedText = await app.db.getRepository('localizationTexts').findOne({
+      filter: {
+        module: 'resources.workflow-cc',
+        text: 'Test official plugin title',
+      },
+    });
+    const legacyText = await app.db.getRepository('localizationTexts').findOne({
+      filter: {
+        module: 'resources.@nocobase/plugin-workflow-cc',
+        text: 'Test official plugin title',
+      },
+    });
+
+    expect(normalizedText).toBeTruthy();
+    expect(legacyText).toBeFalsy();
   });
 });

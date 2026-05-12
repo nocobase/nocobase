@@ -151,7 +151,7 @@ const missing = async (ctx: Context, next: Next) => {
     const plugin = ctx.app.pm?.get('localization');
     const currentLocale = locale || ctx.get('X-Locale') || 'en-US';
     await plugin?.addNewTexts(
-      keys.map((key) => ({ text: key.text, module: `resources.${key.ns}` })),
+      keys.map((key) => ({ text: key.text, module: plugin.normalizeResourceModule(key.ns) })),
       {
         locale: currentLocale,
       },
