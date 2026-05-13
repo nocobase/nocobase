@@ -162,7 +162,7 @@ RootPageModel.registerFlow({
         const route = ctx.routeRepository.getRouteBySchemaUid(ctx.model.parentId);
         ctx.model.setProps('routeId', route?.id);
         const routes: NocoBaseDesktopRoute[] = _.castArray(route?.children);
-        for (const route of routes.sort((a, b) => a.sort - b.sort)) {
+        for (const route of routes.sort((a, b) => a.sort - b.sort).filter(Boolean)) {
           // 过滤掉隐藏的路由
           if (route.hideInMenu) {
             continue;
