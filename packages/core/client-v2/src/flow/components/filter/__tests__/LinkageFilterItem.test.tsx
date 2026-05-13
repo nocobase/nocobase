@@ -67,6 +67,9 @@ function createModel() {
   return { model, app };
 }
 
+const getRenderedSelectTexts = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('.ant-select-selection-item')).map((node) => (node.textContent || '').trim());
+
 describe('LinkageFilterItem', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -199,6 +202,74 @@ describe('LinkageFilterItem', () => {
     await waitFor(() => {
       expect(value.value).toEqual(['alpha', 'beta']);
     });
+  });
+
+  it('does not render an empty selected option for constant single select', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const { model } = createModel();
+
+    (globalThis as any).__TEST_META__ = {
+      interface: 'select',
+      uiSchema: {
+        'x-component': 'Select',
+        enum: [{ label: 'Published', value: 'published' }],
+        'x-filter-operators': [
+          {
+            value: '$eq',
+            label: 'is',
+            selected: true,
+            schema: { 'x-component': 'Select' },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    const view = render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$eq');
+    });
+
+    expect(getRenderedSelectTexts(view.container).filter((text) => text === '')).toHaveLength(0);
+  });
+
+  it('does not render an empty selected tag for constant multi select', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const { model } = createModel();
+
+    (globalThis as any).__TEST_META__ = {
+      interface: 'select',
+      uiSchema: {
+        'x-component': 'Select',
+        enum: [{ label: 'Published', value: 'published' }],
+        'x-filter-operators': [
+          {
+            value: '$in',
+            label: 'is any of',
+            selected: true,
+            schema: { 'x-component': 'Select', 'x-component-props': { mode: 'tags' } },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    const view = render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$in');
+    });
+
+    expect(getRenderedSelectTexts(view.container).filter((text) => text === '')).toHaveLength(0);
   });
 
   it('passes enum options to single select multi-value operators', async () => {
