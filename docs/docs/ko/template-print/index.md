@@ -26,7 +26,7 @@ pkg: "@nocobase/plugin-action-template-print"
 
 ### 플러그인 설치
 
-[상용 플러그인 설치 및 업그레이드](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)를 참고해 주세요.
+[상용 플러그인 설치 및 업그레이드](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)를 참고해 주세요.
 
 ### LibreOffice 설치 (선택 사항)
 

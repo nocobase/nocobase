@@ -75,4 +75,4 @@ Confirme que ha modificado `image` al nuevo número de versión y que ha ejecuta
 
 **P: Fallo en la descarga o actualización de un plugin comercial**
 
-Para los plugins comerciales, por favor, verifique la clave de licencia en el sistema y luego reinicie el contenedor de Docker. Para más detalles, consulte la [Guía de activación de licencias comerciales de NocoBase](https://www.nocobase.com/blog/nocobase-commercial-license-activation-guide).
+Para los plugins comerciales, por favor, verifique la clave de licencia en el sistema y luego reinicie el contenedor de Docker. Para más detalles, consulte la [Guía de activación de licencias comerciales de NocoBase](https://www.nocobase.com/es/blog/nocobase-commercial-license-activation-guide).

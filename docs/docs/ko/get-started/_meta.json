@@ -104,7 +104,7 @@
       {
         "type": "custom-link",
         "label": "더 빠른 배포 방법",
-        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+        "link": "/get-started/deployment/how-to-deploy-nocobase-faster"
       }
     ]
   },
