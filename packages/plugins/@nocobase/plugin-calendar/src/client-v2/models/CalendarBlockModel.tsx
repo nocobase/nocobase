@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
+import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '@nocobase/client-v2';
 import {
   AddSubModelButton,
   DndProvider,
@@ -18,10 +18,11 @@ import {
   FlowSettingsButton,
   MultiRecordResource,
   observer,
-  tExpr,
 } from '@nocobase/flow-engine';
 import { Select, Space } from 'antd';
+import { createStyles } from 'antd-style';
 import React from 'react';
+import { tExpr } from '../locale';
 import { CalendarBlock } from './components';
 import {
   buildCalendarSlotFormData,
@@ -100,6 +101,18 @@ const DRAG_HANDLER_TOOLBAR_ITEMS = [
     sort: 1,
   },
 ];
+
+const useCalendarActionBarStyle = createStyles(({ token }) => {
+  return {
+    actionBar: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: token.margin,
+      gap: token.marginXXS,
+    },
+  };
+});
 
 const getWeekStartOptions = (translate: (key: string, options?: Record<string, any>) => string) => [
   { label: translate('Monday', { ns: 'calendar' }), value: 1 },
@@ -476,6 +489,7 @@ const CalendarBlockRenderer = observer(
     fieldNames: any;
     colorCollectionField: any;
   }) => {
+    const { styles } = useCalendarActionBarStyle();
     const colorFieldInterface = colorCollectionField?.interface
       ? model.calendarPlugin?.getColorFieldInterface?.(colorCollectionField.interface)
       : null;
@@ -527,15 +541,7 @@ const CalendarBlockRenderer = observer(
     const actionBar =
       hasActions || isConfigMode ? (
         <DndProvider>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              marginBottom: model.context.themeToken.margin,
-              gap: model.context.themeToken.marginXXS,
-            }}
-          >
+          <div className={styles.actionBar}>
             <Space wrap>
               {leftActions}
               <span />
@@ -596,10 +602,10 @@ const CalendarBlockView = observer(({ model }: { model: CalendarBlockModel }) =>
 CalendarBlockModel.registerFlow({
   key: 'calendarSettings',
   sort: 500,
-  title: tExpr('Calendar', { ns: 'calendar' }),
+  title: tExpr('Calendar'),
   steps: {
     fields: {
-      title: tExpr('Calendar fields', { ns: 'calendar' }),
+      title: tExpr('Calendar fields'),
       preset: true,
       hideInSettings: true,
       uiSchema(ctx) {
@@ -610,7 +616,7 @@ CalendarBlockModel.registerFlow({
         return {
           titleField: {
             type: 'string',
-            title: tExpr('Title field', { ns: 'calendar' }),
+            title: tExpr('Title field'),
             required: true,
             enum: titleFieldOptions,
             'x-component': 'Select',
@@ -621,7 +627,7 @@ CalendarBlockModel.registerFlow({
           },
           start: {
             type: 'string',
-            title: tExpr('Start date field', { ns: 'calendar' }),
+            title: tExpr('Start date field'),
             required: true,
             enum: dateFieldOptions,
             'x-component': 'Select',
@@ -632,7 +638,7 @@ CalendarBlockModel.registerFlow({
           },
           end: {
             type: 'string',
-            title: tExpr('End date field', { ns: 'calendar' }),
+            title: tExpr('End date field'),
             enum: dateFieldOptions,
             'x-component': 'Select',
             'x-decorator': 'FormItem',
@@ -654,7 +660,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     titleField: {
-      title: tExpr('Title field', { ns: 'calendar' }),
+      title: tExpr('Title field'),
       uiMode(ctx) {
         return {
           type: 'select',
@@ -677,7 +683,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     colorField: {
-      title: tExpr('Color field', { ns: 'calendar' }),
+      title: tExpr('Color field'),
       uiMode(ctx) {
         const model = ctx.model as CalendarBlockModel;
         return {
@@ -704,7 +710,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     startDateField: {
-      title: tExpr('Start date field', { ns: 'calendar' }),
+      title: tExpr('Start date field'),
       uiMode(ctx) {
         return {
           type: 'select',
@@ -727,7 +733,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     endDateField: {
-      title: tExpr('End date field', { ns: 'calendar' }),
+      title: tExpr('End date field'),
       uiMode(ctx) {
         return {
           type: 'select',
@@ -753,7 +759,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     defaultView: {
-      title: tExpr('Default view', { ns: 'calendar' }),
+      title: tExpr('Default view'),
       uiMode: {
         type: 'select',
         key: 'defaultView',
@@ -771,7 +777,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     quickCreateEvent: {
-      title: tExpr('Quick create event', { ns: 'calendar' }),
+      title: tExpr('Quick create event'),
       uiMode: { type: 'switch', key: 'enableQuickCreateEvent' },
       defaultParams(ctx) {
         return {
@@ -784,7 +790,7 @@ CalendarBlockModel.registerFlow({
     },
     quickCreatePopupSettings: {
       use: 'openView',
-      title: tExpr('Quick create popup settings', { ns: 'calendar' }),
+      title: tExpr('Quick create popup settings'),
       hideInSettings(ctx) {
         const stepParams = ctx.model.getStepParams?.('calendarSettings', 'quickCreateEvent');
         const enabled = stepParams?.enableQuickCreateEvent;
@@ -806,7 +812,7 @@ CalendarBlockModel.registerFlow({
     },
     eventPopupSettings: {
       use: 'openView',
-      title: tExpr('Event popup settings', { ns: 'calendar' }),
+      title: tExpr('Event popup settings'),
       async defaultParams(ctx) {
         const model = ctx.model as CalendarBlockModel;
         const action = await model.ensurePopupAction('eventViewAction');
@@ -820,7 +826,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     showLunar: {
-      title: tExpr('Show lunar', { ns: 'calendar' }),
+      title: tExpr('Show lunar'),
       uiMode: { type: 'switch', key: 'showLunar' },
       defaultParams(ctx) {
         return {
@@ -832,7 +838,7 @@ CalendarBlockModel.registerFlow({
       },
     },
     weekStart: {
-      title: tExpr('Week start day', { ns: 'calendar' }),
+      title: tExpr('Week start day'),
       uiMode(ctx) {
         return {
           type: 'select',
@@ -859,7 +865,7 @@ CalendarBlockModel.registerFlow({
 });
 
 CalendarBlockModel.define({
-  label: tExpr('Calendar', { ns: 'calendar' }),
+  label: tExpr('Calendar'),
   searchable: true,
   searchPlaceholder: tExpr('Search'),
   createModelOptions: {
