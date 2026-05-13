@@ -108,13 +108,25 @@ function AuthenticatorFormView(props: {
 
   const handleSubmit = useMemoizedFn(async () => {
     const raw = await form.validateFields();
-    const values = { ...raw, options: recursiveTrim(raw.options || {}) };
+    const trimmedOptions = recursiveTrim(raw.options || {});
     setSubmitting(true);
     try {
       if (props.mode === 'create') {
-        await resource.create({ values });
+        await resource.create({ values: { ...raw, options: trimmedOptions } });
       } else if (props.record?.id != null) {
-        await resource.update({ filterByTk: props.record.id, values });
+        // v1 Formily forms serialized the entire record back on submit (init
+        // values came from useValuesFromRecord), so server-side `options`
+        // never lost a key. antd Form.validateFields only returns DECLARED
+        // paths, so paths the current admin-settings form doesn't render
+        // would silently disappear on update. Merge the original record's
+        // top-level fields and existing `options` so unrelated keys survive
+        // — only the keys this form owns get overwritten.
+        const merged = {
+          ...cloneDeep(props.record),
+          ...raw,
+          options: { ...(props.record.options || {}), ...trimmedOptions },
+        };
+        await resource.update({ filterByTk: props.record.id, values: merged });
       }
       props.onSubmitted();
     } finally {
