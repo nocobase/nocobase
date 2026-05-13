@@ -1,0 +1,74 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { CollectionFieldInterface } from '@nocobase/client-v2';
+import {
+  CHINA_REGION_BASE_COMPONENT_PROPS,
+  CHINA_REGION_BASE_DEFAULT,
+  CHINA_REGION_FILTERABLE_CHILD_BASE,
+  CHINA_REGION_INTERFACE_NAME,
+  CHINA_REGION_LEVEL_OPTIONS,
+  initializeChinaRegionValues,
+} from './chinaRegionConstants';
+
+const stringOperators = [
+  { label: '{{t("contains")}}', value: '$includes', selected: true },
+  { label: '{{t("does not contain")}}', value: '$notIncludes' },
+  { label: '{{t("is")}}', value: '$eq' },
+  { label: '{{t("is not")}}', value: '$ne' },
+  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
+  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
+];
+
+export class ChinaRegionFieldInterface extends CollectionFieldInterface {
+  name = CHINA_REGION_INTERFACE_NAME;
+  type = 'object';
+  group = 'choices';
+  order = 7;
+  title = '{{t("China region")}}';
+  isAssociation = true;
+  default = {
+    ...CHINA_REGION_BASE_DEFAULT,
+    uiSchema: {
+      ...CHINA_REGION_BASE_DEFAULT.uiSchema,
+      'x-component-props': { ...CHINA_REGION_BASE_COMPONENT_PROPS },
+    },
+  };
+  availableTypes = ['belongsToMany'];
+
+  initialize(values: any): void {
+    initializeChinaRegionValues(values);
+  }
+
+  properties = {
+    'uiSchema.x-component-props.maxLevel': {
+      type: 'number',
+      'x-component': 'Radio.Group',
+      'x-decorator': 'FormItem',
+      title: '{{t("Select level")}}',
+      default: 3,
+      enum: CHINA_REGION_LEVEL_OPTIONS,
+    },
+    'uiSchema.x-component-props.changeOnSelectLast': {
+      type: 'boolean',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Must select to the last level")}}',
+      'x-decorator': 'FormItem',
+    },
+  };
+
+  filterable = {
+    children: [
+      {
+        ...CHINA_REGION_FILTERABLE_CHILD_BASE,
+        operators: stringOperators,
+      },
+    ],
+  };
+}
