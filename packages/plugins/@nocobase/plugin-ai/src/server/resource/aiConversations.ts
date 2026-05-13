@@ -153,7 +153,8 @@ export default {
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      const { aiEmployee, systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
+      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings } =
+        ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -167,6 +168,7 @@ export default {
             systemMessage,
             skillSettings,
             conversationSettings,
+            modelSettings,
           },
         });
       } catch (error) {
@@ -196,8 +198,8 @@ export default {
         return ctx.throw(400, 'invalid sessionId');
       }
 
-      const { systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
-      if (!systemMessage && !skillSettings && !conversationSettings) {
+      const { systemMessage, skillSettings, conversationSettings, modelSettings } = ctx.action.params.values || {};
+      if (!systemMessage && !skillSettings && !conversationSettings && !modelSettings) {
         return ctx.throw(400, 'invalid options');
       }
 
@@ -205,7 +207,7 @@ export default {
         ctx.body = await plugin.aiConversationsManager.update({
           userId,
           sessionId,
-          options: { systemMessage, skillSettings, conversationSettings },
+          options: { systemMessage, skillSettings, conversationSettings, modelSettings },
         });
       } catch (error) {
         if (error.message === 'invalid sessionId') {
@@ -363,6 +365,7 @@ export default {
         }
 
         const legacy = conversation.thread === 0;
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
         const aiEmployee = new AIEmployee({
           ctx,
           employee,
@@ -371,7 +374,7 @@ export default {
           skillSettings: conversation.options?.skillSettings,
           tools: conversation.options?.tools,
           webSearch,
-          model,
+          model: resolvedModel,
           legacy,
         });
 
@@ -593,6 +596,7 @@ export default {
         if (await isReachParallelLimit(ctx)) {
           throw new ResourceActionError(400, ctx.t('There are conversations in progress. Please try again later.'));
         }
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx,
@@ -602,7 +606,7 @@ export default {
           skillSettings: conversation.options?.skillSettings,
           tools: conversation.options?.tools,
           webSearch,
-          model,
+          model: resolvedModel,
         });
 
         if (shouldStream) {
@@ -775,6 +779,7 @@ export default {
           sendErrorResponse(ctx, 'No tool calls found');
           return next();
         }
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx,
@@ -784,7 +789,7 @@ export default {
           skillSettings: conversation.options?.skillSettings,
           tools: conversation.options?.tools,
           webSearch,
-          model,
+          model: resolvedModel,
         });
 
         const userDecisions = await plugin.aiConversationsManager.getUserDecisions(messageId);

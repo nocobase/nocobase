@@ -25,7 +25,7 @@ import {
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
-import { enumToOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, normalizeSelectRenderValue, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
@@ -155,11 +155,7 @@ function createStaticInputRenderer(
           options={selectOptions}
           {...commonProps}
           {...rest}
-          value={
-            Array.isArray(value) || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-              ? (value as unknown)
-              : undefined
-          }
+          value={normalizeSelectRenderValue(value, commonProps) as any}
           onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
         />
       );

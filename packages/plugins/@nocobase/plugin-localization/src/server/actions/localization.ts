@@ -17,16 +17,24 @@ const sync = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('localization') as PluginLocalizationServer;
   const resourcesInstance = plugin.resources;
   const locale = ctx.get('X-Locale') || 'en-US';
-  const { types = [] } = ctx.action.params.values || {};
+  const { types = [], resetTranslations = false } = ctx.action.params.values || {};
   if (!types.length) {
     ctx.throw(400, ctx.t('Please provide synchronization source.'));
   }
 
-  const resources = await plugin.sourceManager.sync(ctx, types);
-  let textValues = [];
+  const resources = await ctx.app.localeManager.syncSources(ctx, types);
+  const normalizedResources = {};
   Object.entries(resources).forEach(([module, resource]) => {
+    const normalizedModule = plugin.normalizeResourceModule(module).replace('resources.', '');
+    normalizedResources[normalizedModule] = {
+      ...(normalizedResources[normalizedModule] || {}),
+      ...(resource as Record<string, string>),
+    };
+  });
+  let textValues = [];
+  Object.entries(normalizedResources).forEach(([module, resource]) => {
     Object.keys(resource).forEach((text) => {
-      textValues.push({ module: `resources.${module}`, text });
+      textValues.push({ module: plugin.normalizeResourceModule(module), text });
     });
   });
   textValues = (await resourcesInstance.filterExists(textValues)) as any[];
@@ -36,27 +44,35 @@ const sync = async (ctx: Context, next: Next) => {
     });
     const texts = await ctx.db.getModel('localizationTexts').findAll({
       include: [{ association: 'translations', where: { locale }, required: false }],
-      where: { '$translations.id$': null },
+      where: resetTranslations ? undefined : { '$translations.id$': null },
       transaction: t,
     });
     const translationValues = texts
       .filter((text: Model) => {
-        const module = text.module.replace('resources.', '');
-        return resources[module]?.[text.text];
+        const module = plugin.normalizeResourceModule(text.module).replace('resources.', '');
+        return normalizedResources[module]?.[text.text];
       })
       .map((text: Model) => {
-        const module = text.module.replace('resources.', '');
+        const module = plugin.normalizeResourceModule(text.module).replace('resources.', '');
         return {
           locale,
           textId: text.id,
-          translation: resources[module]?.[text.text],
+          translation: normalizedResources[module]?.[text.text],
         };
       });
 
-    await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
-      transaction: t,
-    });
+    if (resetTranslations) {
+      await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
+        updateOnDuplicate: ['translation'],
+        transaction: t,
+      });
+    } else {
+      await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
+        transaction: t,
+      });
+    }
     await resourcesInstance.updateCacheTexts(newTexts);
+    await resourcesInstance.reset();
   });
   ctx.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
   await next();
@@ -68,12 +84,13 @@ const publish = async (ctx: Context, next: Next) => {
 };
 
 const getSources = async (ctx: Context, next: Next) => {
-  const plugin = ctx.app.pm.get('localization') as PluginLocalizationServer;
-  const sources = Array.from(plugin.sourceManager.sources.getEntities());
-  ctx.body = sources.map(([name, source]) => ({
-    name,
-    title: source.title,
-  }));
+  const sources = Array.from(ctx.app.localeManager.sources.getEntities());
+  ctx.body = sources
+    .filter(([, source]) => source.sync)
+    .map(([name, source]) => ({
+      name,
+      title: source.title,
+    }));
   await next();
 };
 

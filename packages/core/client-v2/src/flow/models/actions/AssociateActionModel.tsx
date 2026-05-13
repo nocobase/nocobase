@@ -16,6 +16,7 @@ import { SkeletonFallback } from '../../components/SkeletonFallback';
 import { ActionModel, ActionSceneEnum } from '../base';
 import {
   applyAssociateAction,
+  getAssociationSelectorContextInputArgs,
   getAssociationTargetResourceSettings,
   isAssociationBlockContext,
 } from './AssociationActionUtils';
@@ -139,7 +140,6 @@ AssociateActionModel.registerFlow({
   steps: {
     openSelector: {
       async handler(ctx, params) {
-        const blockModel = ctx.blockModel;
         const targetResourceSettings = getAssociationTargetResourceSettings(ctx);
         const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params?.mode || 'drawer';
         const size = ctx.inputArgs?.size || params?.size || 'medium';
@@ -168,9 +168,9 @@ AssociateActionModel.registerFlow({
             scene: 'select',
             dataSourceKey: targetResourceSettings.dataSourceKey,
             collectionName: targetResourceSettings.collectionName,
+            ...getAssociationSelectorContextInputArgs(ctx),
             rowSelectionProps: {
               type: 'checkbox',
-              defaultSelectedRows: () => blockModel?.resource?.getData?.() || [],
               renderCell: undefined,
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {

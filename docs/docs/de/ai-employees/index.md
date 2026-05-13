@@ -41,7 +41,7 @@ Sehen Sie sich zuerst den [Schnellstart](/ai-employees/quick-start) an und schli
 
 ### C. Fortgeschrittene Fähigkeiten (Erweiterungen)
 
-- [Integrierte AI-Mitarbeiter](/ai-employees/features/built-in-employee): Positionierung und Anwendungsszenarien vordefinierter Mitarbeiter verstehen.
+- [Integrierte AI-Mitarbeiter](/ai-employees/built-in/): Positionierung und Anwendungsszenarien vordefinierter Mitarbeiter verstehen.
 - [Berechtigungskontrolle](/ai-employees/permission): Zugriff auf Mitarbeiter, Fähigkeiten und Daten gemäß dem Organisationsberechtigungsmodell steuern.
 - [AI-Wissensdatenbank](/ai-employees/knowledge-base/index): Unternehmenswissen einbinden, Stabilität und Rückverfolgbarkeit der Antworten verbessern.
 - [Workflow-LLM-Knoten](/ai-employees/workflow/nodes/llm/chat): KI-Fähigkeiten in automatisierte Abläufe orchestrieren.

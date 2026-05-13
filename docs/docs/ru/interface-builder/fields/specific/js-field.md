@@ -54,7 +54,7 @@ JS Field используется для кастомного рендеринг
 
 Можно комбинировать с AI-сотрудником для генерации кода:
 
-- [AI-сотрудник · Nathan: Frontend-инженер](/ai-employees/features/built-in-employee)
+- [AI-сотрудник · Nathan: Frontend-инженер](/ai-employees/built-in/)
 
 ## Общие способы использования
 

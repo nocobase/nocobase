@@ -30,6 +30,7 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
+import { getStorageUploadSecurityHeaders } from './static-file-security';
 import { injectRuntimeScript, resolvePublicPath, resolveV2PublicPath, rewriteV2AssetPublicPath } from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
@@ -426,6 +427,10 @@ export class Gateway extends EventEmitter {
         if (isProxy) {
           return;
         }
+      }
+      const headers = getStorageUploadSecurityHeaders(pathname);
+      for (const [key, value] of Object.entries(headers)) {
+        res.setHeader(key, value);
       }
       req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);

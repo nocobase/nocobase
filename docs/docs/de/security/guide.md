@@ -196,6 +196,18 @@ Standardmäßig werden Schlüssel mit AES-256-CBC verschlüsselt. NocoBase gener
 
 Wenn Sie sensible Dateien speichern müssen, empfehlen wir Cloud-Storage mit S3-Protokoll, kombiniert mit dem kommerziellen Plugin File storage: S3 (Pro), um Lese- und Schreibrechte privat zu halten. In Intranet-Umgebungen empfiehlt sich der Einsatz von MinIO oder ähnlichen S3-kompatiblen, privat betreibbaren Speicheranwendungen.
 
+Bei lokalem Speicher oder anderem öffentlichen Speicher, der direkt über gleich-originäre Anwendungs-URLs erreichbar ist, sollten Sie zusätzlich auf die Risiken durch aktive Inhaltsdateien achten. Dateien wie `html`, `xhtml` und `svg` können vom Browser direkt geparst und ausgeführt werden. Wenn ein Angreifer solche Dateien hochladen und Benutzer zum Öffnen verleiten kann, kann er die vertrauenswürdige Domain Ihrer Anwendung zum Hosten bösartiger Seiten oder Skripte missbrauchen.
+
+In der Regel empfehlen wir Administratoren:
+
+- Bevorzugen Sie privaten Speicher, signierte URLs oder eine separate Dateidomain, damit hochgeladene Dateien nicht direkt unter derselben Origin wie die Hauptanwendung ausgeliefert werden.
+- Erzwingen Sie eine strikte MIME-Type-Allowlist für Uploads und erlauben Sie nur Dateitypen, die geschäftlich tatsächlich benötigt werden.
+- Seien Sie vorsichtig beim Zulassen aktiver Inhaltstypen wie `text/html`, `application/xhtml+xml` und `image/svg+xml`. Auch wenn das System versucht, solche Dateien als Download zurückzugeben, ersetzt dies keine Upload-Beschränkungen und keine Origin-Isolation.
+- Konfigurieren Sie Reverse Proxies, CDNs, Objektspeicher und andere Schichten zur Auslieferung statischer Dateien konsistent, damit gefährliche Dateien nicht unter Umgehung des Anwendungsschutzes inline zurückgegeben werden.
+- Verwenden Sie lokalen/öffentlichen Speicher nicht zum Hosten nicht vertrauenswürdiger Webinhalte. Falls dies dennoch erforderlich ist, verwenden Sie eine isolierte Domain und bewerten Sie CSP, Download-Verhalten und Zugriffskontrolle separat.
+
+Wenn ein Administrator das Hochladen gefährlicher Dateitypen ausdrücklich erlaubt, sollte er die daraus entstehenden Risiken wie Phishing, Same-Origin-Skriptausführung und das Offenlegen sensibler Informationen selbst bewerten und sicherstellen, dass Webserver, Gateway, CDN und Speicherdienste entlang der Bereitstellungskette konsistente Einschränkungen erzwingen.
+
 ![](https://static-docs.nocobase.com/202501031623549.png)
 
 ### Anwendungs-Backup
