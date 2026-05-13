@@ -26,7 +26,7 @@ RUN yarn config set registry $VERDACCIO_URL && \
   yarn config set network-timeout 600000 -g && \
   yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
-  yarn install --production && \
+  yarn install --production --legacy-peer-deps && \
   yarn add newrelic --production -W && \
   $BEFORE_PACK_NOCOBASE && \
   rm -rf /app/my-nocobase-app/packages/app/client/src/.umi && \
@@ -34,26 +34,9 @@ RUN yarn config set registry $VERDACCIO_URL && \
   rm -rf /app/my-nocobase-app
 
 RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    LICENSE_KIT_RANGE=$(npm view @nocobase/cli dependencies.@nocobase/license-kit --registry $VERDACCIO_URL) && \
-    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE#\'} && \
-    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE%\'} && \
-    LICENSE_KIT_VERSION=$(npm view "@nocobase/license-kit@${LICENSE_KIT_RANGE}" version --registry https://registry.npmjs.org/) && \
     mkdir -p /tmp/nb-cli && \
-    printf '%s\n' \
-      '{' \
-      '  "private": true,' \
-      '  "dependencies": {' \
-      '    "@nocobase/cli": "latest"' \
-      '  },' \
-      '  "resolutions": {' \
-      "    \"@nocobase/license-kit\": \"https://registry.npmjs.org/@nocobase/license-kit/-/license-kit-${LICENSE_KIT_VERSION}.tgz\"" \
-      '  }' \
-      '}' > /tmp/nb-cli/package.json; \
-  fi
-
-RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
     cd /tmp/nb-cli && \
-    yarn install --production --registry $VERDACCIO_URL && \
+    npm install @nocobase/cli --registry $VERDACCIO_URL --omit=dev --legacy-peer-deps && \
     mkdir -p /opt/nb/bin && \
     cp -a /tmp/nb-cli/node_modules /opt/nb/ && \
     ln -sf /opt/nb/node_modules/.bin/nb /opt/nb/bin/nb && \
