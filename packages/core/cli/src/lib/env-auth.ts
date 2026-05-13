@@ -21,7 +21,7 @@ import {
   type AuthStoreOptions,
   type OauthAuthConfig,
 } from './auth-store.js';
-import { printInfo, printVerbose, printWarning, printWarningBlock, updateTask } from './ui.js';
+import { printInfo, printVerbose, printWarning, printWarningBlock, stopTask, updateTask } from './ui.js';
 
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const LOOPBACK_HOST = '127.0.0.1';
@@ -1050,6 +1050,7 @@ export async function authenticateEnvWithOauth(options: {
     if (!browser.opened) {
       printWarningBlock('We could not open your browser automatically. Open the URL below to continue signing in:');
     } else {
+      stopTask();
       printInfo('Open this URL to sign in.');
     }
     printInfo(authorizationUrl.toString());

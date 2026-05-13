@@ -33,7 +33,7 @@ vi.mock('../post-processors/index.js', () => ({
   registerPostProcessors: mocks.registerPostProcessors,
 }));
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.confirm,
 }));
 
@@ -156,7 +156,6 @@ test('generated API commands treat a canceled confirmation as a no-op', async ()
   try {
     await TestGeneratedCommand.prototype.run.call(command);
     expect(mocks.executeApiRequest).not.toHaveBeenCalled();
-    expect(log).toHaveBeenCalledWith('Canceled.');
   } finally {
     restoreTerminal();
   }

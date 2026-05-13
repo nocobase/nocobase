@@ -128,7 +128,7 @@ vi.mock('../lib/ui.js', async (importOriginal) => {
   };
 });
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   select: mocks.activateSelect,
   input: mocks.activateInput,
   password: mocks.activatePassword,
@@ -1046,9 +1046,7 @@ test('license activate supports interactive pasted key input', async () => {
     await LicenseActivate.prototype.run.call(command);
 
     expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
-    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toBe('License key\n❯');
-    expect(typeof mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer).toBe('function');
-    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer?.('Use an existing license key'))).toContain('❯');
+    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toBe('License key');
     expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
   } finally {
     await rm(storagePath, { recursive: true, force: true });
@@ -1331,18 +1329,16 @@ test('license activate supports interactive online activation', async () => {
     await LicenseActivate.prototype.run.call(command);
 
     expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
-    expect(typeof mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer).toBe('function');
-    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer?.('Request and activate a license online'))).toContain('❯');
-    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toBe('Service account\n❯');
-    expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toBe('Service password\n❯');
+    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toBe('Service account');
+    expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toBe('Service password');
     expect(mocks.activatePassword.mock.calls[0]?.[0]?.mask).toBe('•');
-    expect(String(mocks.activateInput.mock.calls[1]?.[0]?.message)).toBe('Application name\n❯');
+    expect(String(mocks.activateInput.mock.calls[1]?.[0]?.message)).toBe('Application name');
     expect(mocks.crossEnvConfirm).toHaveBeenCalledTimes(1);
-    expect(mocks.crossEnvConfirm).toHaveBeenCalledWith({
+    expect(mocks.crossEnvConfirm).toHaveBeenCalledWith(expect.objectContaining({
       message:
         'Current env is "dev", but this command targets "app1" via --env. Continue without switching the current env?',
       default: false,
-    });
+    }));
     expect(log.mock.calls[0]?.[0]).toContain('Activated the online license');
   } finally {
     await rm(storagePath, { recursive: true, force: true });
@@ -1633,11 +1629,11 @@ test('license status asks for confirmation before cross-env requests in interact
 
     await LicenseStatus.prototype.run.call(command);
 
-    expect(mocks.crossEnvConfirm).toHaveBeenCalledWith({
+    expect(mocks.crossEnvConfirm).toHaveBeenCalledWith(expect.objectContaining({
       message:
         'Current env is "dev", but this command targets "prod" via --env. Continue without switching the current env?',
       default: false,
-    });
+    }));
     expect(log.mock.calls[0]?.[0]).toContain('License status for env "prod"');
   } finally {
     restoreTerminal();

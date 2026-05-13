@@ -43,12 +43,12 @@ export function isVerboseMode() {
 }
 
 export function printSection(title: string) {
-  console.log(pc.bold(title));
+  console.log(title);
 }
 
 export function printStage(title: string) {
   clearActiveSpinner();
-  console.log(pc.bold(title));
+  console.log(title);
 }
 
 export function printInfo(message: string) {

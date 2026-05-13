@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   setVerboseMode: vi.fn(),
 }));
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.confirm,
 }));
 

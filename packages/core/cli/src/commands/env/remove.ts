@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { confirm } from '@inquirer/prompts';
 import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName, loadAuthConfig, removeEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { confirm } from '../../lib/inquirer.ts';
 import { isInteractiveTerminal, printVerbose, setVerboseMode } from '../../lib/ui.js';
 
 export default class EnvRemove extends Command {

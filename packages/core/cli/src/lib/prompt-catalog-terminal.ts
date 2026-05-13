@@ -8,14 +8,9 @@
  */
 
 import pc from 'picocolors';
-import {
-  confirm,
-  select,
-} from '@inquirer/prompts';
 import { exit, stdin as stdinStream, stdout as stdoutStream } from 'node:process';
 import { createCliTranslate, type CliLocale } from './cli-locale.ts';
-import { passwordInput } from './inquirer-password-input.ts';
-import { placeholderInput } from './inquirer-placeholder-input.ts';
+import { confirm, select, input, password } from './inquirer.ts';
 import {
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -76,14 +71,6 @@ function inquirerSelectOptions(options: SelectOptionDef[], locale: CliLocale) {
   );
 }
 
-function buildSelectAnswer(text: string) {
-  return `\n${pc.cyan('❯')} ${pc.cyan(text)}`;
-}
-
-function buildConfirmAnswer(text: string) {
-  return `\n${pc.cyan('❯')} ${pc.cyan(text)}`;
-}
-
 function createInquirerRenderer(): PromptTerminalRenderer {
   return {
     intro(message: string) {
@@ -96,7 +83,7 @@ function createInquirerRenderer(): PromptTerminalRenderer {
       console.error(pc.red(`✖ ${message}`));
     },
     text(options) {
-      return placeholderInput({
+      return input({
         message: options.message,
         default: options.initialValue,
         placeholder: options.placeholder,
@@ -107,22 +94,11 @@ function createInquirerRenderer(): PromptTerminalRenderer {
       return confirm({
         message: options.message,
         default: options.initialValue,
-        theme: {
-          style: {
-            answer: buildConfirmAnswer,
-          },
-        },
-        transformer: (value) => (value ? 'Yes' : 'No'),
       });
     },
     select<T extends string>(options: { message: string; options: Array<{ value: T; label: string; hint?: string; disabled?: boolean }>; initialValue?: T }) {
       return select<T>({
         message: options.message,
-        theme: {
-          style: {
-            answer: buildSelectAnswer,
-          },
-        },
         choices: options.options.map((option) => ({
           value: option.value,
           name: option.label,
@@ -133,7 +109,7 @@ function createInquirerRenderer(): PromptTerminalRenderer {
       });
     },
     password(options) {
-      return passwordInput({
+      return password({
         message: options.message,
         mask: options.mask ?? '•',
         validate: adaptInquirerValidate(options.validate),

@@ -28,7 +28,7 @@ vi.mock('../lib/skills-manager.js', () => ({
   inspectSkillsStatus: mocks.inspectSkillsStatus,
 }));
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.confirm,
 }));
 

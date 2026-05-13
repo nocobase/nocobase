@@ -68,7 +68,7 @@ vi.mock('../lib/ui.js', async (importOriginal) => {
     printInfo: mocks.printInfo,
     printWarning: mocks.printWarning,
   };
-}));
+});
 
 vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/prompt-validators.js')>();

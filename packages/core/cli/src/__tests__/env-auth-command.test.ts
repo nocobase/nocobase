@@ -59,7 +59,7 @@ test('env auth falls back to the current env and uses product-style task message
     ['Starting browser sign-in for "staging"...'],
   ]);
   expect(mocks.succeedTask.mock.calls).toEqual([
-    ['Signed in to "staging".'],
+    ['✔ Signed in to "staging".'],
   ]);
   expect(mocks.failTask.mock.calls.length).toBe(0);
 });

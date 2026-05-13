@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { confirm } from '@inquirer/prompts';
 import { Command, Flags } from '@oclif/core';
+import { confirm } from '../../lib/inquirer.ts';
 import { setVerboseMode } from '../../lib/ui.js';
 import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
 

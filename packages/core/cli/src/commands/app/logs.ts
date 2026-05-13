@@ -70,7 +70,6 @@ export default class AppLogs extends Command {
         yes: flags.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

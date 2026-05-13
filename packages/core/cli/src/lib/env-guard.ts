@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { confirm } from '@inquirer/prompts';
 import type { Command } from '@oclif/core';
 import { stdin as input, stdout as output } from 'node:process';
 import { getCurrentEnvName } from './auth-store.js';
+import { confirm } from './inquirer.ts';
 
 function normalizeEnvName(value: unknown): string | undefined {
   const text = String(value ?? '').trim();

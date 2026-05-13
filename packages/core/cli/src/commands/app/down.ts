@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { confirm } from '@inquirer/prompts';
 import { Command, Flags } from '@oclif/core';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
@@ -22,6 +21,7 @@ import {
 import { getCurrentEnvName, removeEnv } from '../../lib/auth-store.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { confirm } from '../../lib/inquirer.ts';
 import { commandOutput, commandSucceeds, run } from '../../lib/run-npm.js';
 import {
   failTask,
@@ -241,7 +241,6 @@ export default class AppDown extends Command {
           yes: flags.yes,
         });
         if (!confirmed) {
-          this.log('Canceled.');
           return;
         }
       }

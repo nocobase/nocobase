@@ -10,7 +10,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { confirm } from '@inquirer/prompts';
+import { confirm } from './inquirer.ts';
 import {
   inspectSelfInstall,
   inspectSelfStatus,

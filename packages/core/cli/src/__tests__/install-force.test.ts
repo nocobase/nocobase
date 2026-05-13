@@ -35,7 +35,7 @@ vi.mock('../lib/ui.js', async (importOriginal) => {
     printInfo: mocks.printInfo,
     printWarning: mocks.printWarning,
   };
-}));
+});
 
 const tempDirs: string[] = [];
 
@@ -156,8 +156,8 @@ test('startBuiltinDb reuses an existing db container without rechecking its publ
     expect(plan.containerName).toContain('demo-postgres');
     expect(mocks.run.mock.calls.length).toBe(0);
     expect(mocks.printInfo.mock.calls).toEqual([
-      [`Built-in postgres container already exists: ${plan.containerName}`],
-      [`Built-in postgres database is ready at 127.0.0.1:${dbPort}`],
+      ['Using built-in postgres database.'],
+      ['Postgres database ready.'],
     ]);
   } finally {
     await new Promise<void>((resolve, reject) => {
@@ -213,6 +213,7 @@ test('downloadLocalApp delegates npm/git downloads through nb source download an
       [
         '-y',
         '--no-intro',
+        '--compact-log',
         '--verbose',
         '--source',
         'npm',
@@ -536,6 +537,7 @@ test('downloadManagedSource delegates docker downloads through nb source downloa
       [
         '-y',
         '--no-intro',
+        '--compact-log',
         '--verbose',
         '--source',
         'docker',
@@ -582,6 +584,7 @@ test('downloadManagedSource resolves otherVersion before delegating to nb source
   expect(runCommand.mock.calls[0]?.[1]).toEqual([
     '-y',
     '--no-intro',
+    '--compact-log',
     '--source',
     'git',
     '--version',

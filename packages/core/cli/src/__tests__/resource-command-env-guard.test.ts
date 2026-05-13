@@ -24,7 +24,7 @@ vi.mock('../lib/resource-request.js', () => ({
   executeResourceRequest: mocks.executeResourceRequest,
 }));
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.confirm,
 }));
 
@@ -149,7 +149,6 @@ test('resource commands treat a canceled confirmation as a no-op', async () => {
     });
 
     expect(mocks.executeResourceRequest).not.toHaveBeenCalled();
-    expect(command.log).toHaveBeenCalledWith('Canceled.');
   } finally {
     restoreTerminal();
   }

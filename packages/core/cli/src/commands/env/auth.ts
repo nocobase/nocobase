@@ -57,7 +57,7 @@ export default class EnvAuth extends Command {
         envName,
         scope: resolveDefaultConfigScope(),
       });
-      succeedTask(`Signed in to "${envName}".`);
+      succeedTask(`✔ Signed in to "${envName}".`);
     } catch (error) {
       failTask(`Sign-in failed for "${envName}".`);
       throw error;

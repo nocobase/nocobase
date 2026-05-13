@@ -152,7 +152,7 @@ vi.mock('@clack/prompts', () => ({
   confirm: mocks.promptConfirm,
 }));
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.crossEnvConfirm,
 }));
 

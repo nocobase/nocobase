@@ -12,21 +12,15 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   select: vi.fn(),
   confirm: vi.fn(),
-  placeholderInput: vi.fn(),
-  passwordInput: vi.fn(),
+  input: vi.fn(),
+  password: vi.fn(),
 }));
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   select: mocks.select,
   confirm: mocks.confirm,
-}));
-
-vi.mock('../lib/inquirer-placeholder-input.ts', () => ({
-  placeholderInput: mocks.placeholderInput,
-}));
-
-vi.mock('../lib/inquirer-password-input.ts', () => ({
-  passwordInput: mocks.passwordInput,
+  input: mocks.input,
+  password: mocks.password,
 }));
 
 const stdinIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
@@ -58,8 +52,8 @@ afterEach(() => {
   }
 });
 
-test('runPromptCatalog adapts async text validate results for placeholder input', async () => {
-  mocks.placeholderInput.mockImplementation(async (options: { validate?: (value: string) => Promise<true | string> }) => {
+test('runPromptCatalog adapts async text validate results for input', async () => {
+  mocks.input.mockImplementation(async (options: { validate?: (value: string) => Promise<true | string> }) => {
     await expect(options.validate?.('dd')).resolves.toBe(true);
     await expect(options.validate?.('x')).resolves.toBe('too short');
     return 'dd';
@@ -76,11 +70,11 @@ test('runPromptCatalog adapts async text validate results for placeholder input'
   });
 
   expect(result).toEqual({ env: 'dd' });
-  expect(mocks.placeholderInput).toHaveBeenCalledTimes(1);
+  expect(mocks.input).toHaveBeenCalledTimes(1);
 });
 
-test('runPromptCatalog passes default bullet mask and async password validate to password input', async () => {
-  mocks.passwordInput.mockImplementation(async (options: {
+test('runPromptCatalog passes default bullet mask and async password validate to password', async () => {
+  mocks.password.mockImplementation(async (options: {
     mask?: boolean | string;
     validate?: (value: string) => Promise<true | string>;
   }) => {
@@ -101,23 +95,11 @@ test('runPromptCatalog passes default bullet mask and async password validate to
   });
 
   expect(result).toEqual({ password: 'secret' });
-  expect(mocks.passwordInput).toHaveBeenCalledTimes(1);
+  expect(mocks.password).toHaveBeenCalledTimes(1);
 });
 
-test('runPromptCatalog styles select answers with a new cyan prompt line', async () => {
-  mocks.select.mockImplementation(async (options: {
-    theme?: {
-      style?: {
-        answer?: (text: string) => string;
-      };
-    };
-  }) => {
-    const rendered = options.theme?.style?.answer?.('Online activation');
-    expect(rendered).toContain('\n');
-    expect(rendered).toContain('❯');
-    expect(rendered).toContain('Online activation');
-    return 'online';
-  });
+test('runPromptCatalog forwards select options through the shared inquirer layer', async () => {
+  mocks.select.mockResolvedValue('online');
 
   const { runPromptCatalog } = await import('../lib/prompt-catalog-terminal.ts');
 
@@ -131,26 +113,18 @@ test('runPromptCatalog styles select answers with a new cyan prompt line', async
 
   expect(result).toEqual({ mode: 'online' });
   expect(mocks.select).toHaveBeenCalledTimes(1);
+  expect(mocks.select).toHaveBeenCalledWith({
+    message: 'Mode',
+    choices: [
+      { value: 'online', name: 'online' },
+      { value: 'offline', name: 'offline' },
+    ],
+    default: 'online',
+  });
 });
 
-test('runPromptCatalog styles confirm answers as Yes/No on a new cyan prompt line', async () => {
-  mocks.confirm.mockImplementation(async (options: {
-    transformer?: (value: boolean) => string;
-    theme?: {
-      style?: {
-        answer?: (text: string) => string;
-      };
-    };
-  }) => {
-    expect(options.transformer?.(true)).toBe('Yes');
-    expect(options.transformer?.(false)).toBe('No');
-
-    const rendered = options.theme?.style?.answer?.('Yes');
-    expect(rendered).toContain('\n');
-    expect(rendered).toContain('❯');
-    expect(rendered).toContain('Yes');
-    return true;
-  });
+test('runPromptCatalog forwards confirm prompts through the shared inquirer layer', async () => {
+  mocks.confirm.mockResolvedValue(true);
 
   const { runPromptCatalog } = await import('../lib/prompt-catalog-terminal.ts');
 
@@ -164,6 +138,10 @@ test('runPromptCatalog styles confirm answers as Yes/No on a new cyan prompt lin
 
   expect(result).toEqual({ confirmInstall: true });
   expect(mocks.confirm).toHaveBeenCalledTimes(1);
+  expect(mocks.confirm).toHaveBeenCalledWith({
+    message: 'Continue?',
+    default: true,
+  });
 });
 
 test('runPromptCatalog skips preset validation for hidden fields', async () => {
@@ -194,5 +172,5 @@ test('runPromptCatalog skips preset validation for hidden fields', async () => {
 
   expect(result).toEqual({ hasNocobase: 'no' });
   expect(hiddenValidate).not.toHaveBeenCalled();
-  expect(mocks.placeholderInput).not.toHaveBeenCalled();
+  expect(mocks.input).not.toHaveBeenCalled();
 });

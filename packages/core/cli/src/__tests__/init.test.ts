@@ -118,7 +118,7 @@ vi.mock('../lib/ui.js', async (importOriginal) => {
     printInfo: mocks.printInfo,
     printWarning: mocks.printWarning,
   };
-}));
+});
 
 test('nb init continues from the browser UI result and runs env:add for an existing app', async () => {
   const { default: Init } = await import('../commands/init.js');
@@ -162,9 +162,8 @@ test('nb init continues from the browser UI result and runs env:add for an exist
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.log).toHaveBeenCalledWith('Set Up NocoBase for Coding Agents');
   expect(mocks.runPromptCatalogWebUI.mock.calls.length).toBe(1);
-  expect(mocks.log).toHaveBeenCalledWith(
+  expect(log).toHaveBeenCalledWith(
     'A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.',
   );
   const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls[0]?.[0];
@@ -174,8 +173,8 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     port: 60128,
     url: 'http://127.0.0.1:60128/',
   });
-  expect(mocks.log).toHaveBeenCalledWith('Local setup form is ready.');
-  expect(mocks.log).toHaveBeenCalledWith(
+  expect(log).toHaveBeenCalledWith('Local setup form is ready.');
+  expect(log).toHaveBeenCalledWith(
     'If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.',
   );
   expect(log).toHaveBeenCalledWith('URL: http://127.0.0.1:60128/');
@@ -284,7 +283,7 @@ test('nb init localizes the browser UI intro title', async () => {
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.log).toHaveBeenCalledWith('Set up NocoBase');
+  expect(command.log).not.toHaveBeenCalledWith('Set up NocoBase');
 });
 
 test('nb init forwards download options to nb install for a new app flow', async () => {
@@ -379,6 +378,7 @@ test('nb init forwards download options to nb install for a new app flow', async
       [
         '-y',
         '--no-intro',
+        '--skip-save-env-log',
         '--env',
         'demoapp',
         '--lang',
@@ -481,7 +481,7 @@ test('nb init saves env config before install starts so failures still leave the
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/install failed/);
 
   expect(mocks.upsertEnv.mock.calls.length).toBe(1);
   expect(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(true);
@@ -557,7 +557,7 @@ test('nb init install failures include a full resume command', async () => {
     });
 
     await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(
-      /exit: 1/,
+      /Couldn't finish preparing the local NocoBase app\./,
     );
     const rendered = String(mocks.error.mock.calls.at(-1)?.[0] ?? '');
     const resumeCommand =
@@ -638,14 +638,17 @@ test('nb init forwards api connection settings to nb install', async () => {
     },
   );
 
-  expect(argv).toEqual(expect.arrayContaining([
-    '--api-base-url',
-    'http://demo.example.com/api',
+  expect(argv).toEqual([
+    '-y',
+    '--no-intro',
+    '--skip-save-env-log',
+    '--env',
+    'demoapp',
     '--auth-type',
     'token',
     '--access-token',
     'secret-token',
-  ]));
+  ]);
 });
 
 test('nb init treats arbitrary CLI --version values as otherVersion prompt values', async () => {
@@ -735,12 +738,10 @@ test('nb init --resume delegates to nb install --resume for the selected env', a
   expect(runCommand.mock.calls).toEqual([
     [
       'install',
-      ['--no-intro', '--env', 'app1', '--resume'],
+      ['--no-intro', '--skip-save-env-log', '--env', 'app1', '--resume'],
     ],
   ]);
-  expect(mocks.log.mock.calls).toEqual([
-    ['Installing NocoBase agent skills (nb skills install)'],
-  ]);
+  expect(mocks.printInfo).toHaveBeenCalledWith('Agent skills ready.');
 });
 
 test('nb init --resume --yes forwards setup-only defaults to nb install', async () => {
@@ -777,6 +778,7 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
         [
           '-y',
           '--no-intro',
+          '--skip-save-env-log',
           '--env',
           'app8',
           '--resume',
@@ -799,9 +801,7 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
         ],
       ],
     ]);
-    expect(mocks.log.mock.calls).toEqual([
-      ['Installing NocoBase agent skills (nb skills install)'],
-    ]);
+    expect(mocks.printInfo).toHaveBeenCalledWith('Agent skills ready.');
   } finally {
     process.argv = originalArgv;
   }
@@ -840,7 +840,7 @@ test('nb init skips skills sync when --skip-skills is provided in flags mode', a
   expect(mocks.inspectSkillsStatus).not.toHaveBeenCalled();
   expect(mocks.installNocoBaseSkills).not.toHaveBeenCalled();
   expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
-  expect(mocks.log).toHaveBeenCalledWith('Skipped NocoBase agent skills sync.');
+  expect(mocks.log).not.toHaveBeenCalledWith('Skipped NocoBase agent skills sync.');
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
@@ -968,7 +968,7 @@ test('nb init logs duplicate env validation errors with Clack in --yes mode', as
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env "local3" already exists/);
   expect(mocks.error.mock.calls.length).toBe(1);
   expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(/local3/);
 });
@@ -994,7 +994,7 @@ test('nb init explains that --env is required when --yes skips prompts', async (
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env name is required when prompts are skipped\./);
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
   expect(mocks.log.mock.calls.length).toBe(0);
   expect(mocks.printWarning.mock.calls.length).toBe(0);
@@ -1026,7 +1026,7 @@ test('nb init --locale overrides the environment locale for prompt-side messages
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env name is required when prompts are skipped\./);
   expect(mocks.error.mock.calls.length).toBe(1);
   expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(
     /Env name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
@@ -1082,7 +1082,7 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
 
   expect(runCommand.mock.calls[0]).toEqual([
     'install',
-    ['-y', '--no-intro', '--env', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
+    ['-y', '--no-intro', '--skip-save-env-log', '--env', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
   ]);
   expect(mocks.printWarning.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env'))).toBe(true);
   expect(mocks.printWarning.mock.calls.some((call) => String(call[0]).includes('local5'))).toBe(true);
