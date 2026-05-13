@@ -96,7 +96,11 @@ export default function SignInPage() {
   return (
     <Space direction="vertical" style={{ display: 'flex' }}>
       {tabs.length > 1 ? <Tabs items={tabs as any} /> : tabs.length ? (tabs[0] as any).children : null}
-      {buttons.length ? <Space direction="vertical">{buttons}</Space> : null}
+      {buttons.length ? (
+        <Space direction="vertical" style={{ display: 'flex' }}>
+          {buttons}
+        </Space>
+      ) : null}
     </Space>
   );
 }
