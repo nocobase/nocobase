@@ -1,13 +1,20 @@
-# Ativar funcionários de IA
+---
+pkg: '@nocobase/plugin-ai'
+title: 'Habilitar funcionários de IA'
+description: 'Habilite ou desabilite funcionários de IA com o switch Enabled na página de gestão AI employees. Funcionários habilitados aparecem na entrada rápida inferior direita ou em entradas específicas.'
+keywords: 'habilitar funcionários de IA,AI employees,NocoBase'
+---
 
-O NocoBase oferece vários funcionários de IA integrados para diferentes cenários.
+# Habilitar funcionários de IA
 
-## Como ativar
+O NocoBase fornece funcionários de IA integrados para vários cenários. Veja a descrição completa em [Funcionários de IA integrados](/ai-employees/built-in/).
 
-Acesse a página de gerenciamento de `AI employees` e ative a chave `Enabled` diretamente na lista.
+## Como habilitar
 
-![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
+Depois de entrar na página de gestão `AI employees`, ative diretamente o switch `Enabled` na lista.
 
-## Uso após a ativação
+![](https://static-docs.nocobase.com/202605121048555.png)
 
-Após a ativação, o funcionário aparecerá nos pontos de entrada disponíveis (como o atalho no canto inferior direito ou em pontos de entrada específicos de cenários).
+## Uso após habilitar
+
+Após habilitar, o funcionário aparece nas entradas disponíveis, como a entrada rápida inferior direita ou uma entrada específica de cenário.

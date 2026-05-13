@@ -16,7 +16,7 @@ Vor der Konfiguration des KI-Mitarbeiter-Knotens sollten Sie wissen, wie Workflo
 Sie können die folgenden Dokumente einsehen:
   - [Workflow](/workflow)
   - [LLM-Dienst konfigurieren](/ai-employees/features/llm-service)
-  - [Integrierte KI-Mitarbeiter](/ai-employees/features/built-in-employee)
+  - [Integrierte KI-Mitarbeiter](/ai-employees/built-in/)
   - [Neue KI-Mitarbeiter erstellen](/ai-employees/features/new-ai-employees)
 
 ### Aufgabe

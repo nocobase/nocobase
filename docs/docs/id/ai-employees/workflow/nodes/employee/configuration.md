@@ -16,7 +16,7 @@ Sebelum mengonfigurasi Node Karyawan AI, perlu memahami terlebih dahulu cara mem
 Dapat melihat dokumentasi berikut:
   - [Workflow](/workflow)
   - [Konfigurasi LLM Service](/ai-employees/features/llm-service)
-  - [Karyawan AI Bawaan](/ai-employees/features/built-in-employee)
+  - [Karyawan AI Bawaan](/ai-employees/built-in/)
   - [Buat Karyawan AI](/ai-employees/features/new-ai-employees)
 
 ### Tugas

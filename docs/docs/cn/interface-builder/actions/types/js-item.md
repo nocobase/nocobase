@@ -53,7 +53,7 @@ JS Item 运行时会注入常用能力，可直接在脚本中使用：
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- 可结合 AI 员工生成 / 修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/features/built-in-employee)
+- 可结合 AI 员工生成 / 修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/built-in/nathan)
 
 ## 常见用法（精简示例）
 

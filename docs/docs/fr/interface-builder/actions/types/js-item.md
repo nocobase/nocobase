@@ -53,7 +53,7 @@ L'environnement d'exécution de JS Item injecte des capacités courantes que vou
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- Vous pouvez combiner avec un employé IA pour générer / modifier des scripts : [Employés IA · Nathan : ingénieur frontend](/ai-employees/features/built-in-employee)
+- Vous pouvez combiner avec un employé IA pour générer / modifier des scripts : [Employés IA · Nathan : ingénieur frontend](/ai-employees/built-in/)
 
 ## Cas d'usage courants (exemples simplifiés)
 

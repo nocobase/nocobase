@@ -18,7 +18,7 @@ You can refer to the following documents:
 
 - [Workflow](/workflow)
 - [Configure LLM Service](/ai-employees/features/llm-service)
-- [Built-in AI Employees](/ai-employees/features/built-in-employee)
+- [Built-in AI Employees](/ai-employees/built-in/)
 - [New AI Employee](/ai-employees/features/new-ai-employees)
 
 ### Task

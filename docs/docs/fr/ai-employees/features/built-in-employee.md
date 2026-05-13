@@ -18,7 +18,6 @@ Il vous suffit de configurer le service LLM et d'activer l'employé correspondan
 | **Lexi** | Assistant de traduction | Traduction multilingue, aide à la communication |
 | **Vera** | Analyste de recherche | Recherche en ligne, agrégation d'informations, recherche approfondie |
 | **Dara** | Expert en visualisation de données | Configuration de graphiques, génération de rapports visuels |
-| **Orin** | Expert en modélisation de données | Aide à la conception de structures de collections, suggestions de champs |
 | **Nathan** | Ingénieur Frontend | Aide à l'écriture de fragments de code frontend, ajustements de style |
 
 
@@ -29,10 +28,8 @@ Vous pouvez cliquer sur la **bulle flottante IA** en bas à droite de l'interfac
 
 Certains employés IA intégrés (de type constructeur) n'apparaissent pas dans la liste des employés IA en bas à droite ; ils disposent d'espaces de travail dédiés, par exemple :
 
-* **Orin** n'apparaît que sur la page de configuration de la source de données ;
 * **Dara** n'apparaît que sur la page de configuration des graphiques ;
 * **Nathan** n'apparaît que dans l'éditeur JS.
-
 
 
 ---
@@ -121,7 +118,6 @@ Chaque question de suivi continuera d'approfondir l'analyse sur la base des rés
 ---
 
 
-
 ## Dex : Expert en organisation de données
 
 ### Présentation
@@ -156,14 +152,13 @@ Après l'envoi, `Dex` structurera les données et utilisera ses compétences pou
 ---
 
 
-
-## Orin : Modélisateur de données
+## : Modélisateur de données
 
 ### Présentation
 
 > Concevez intelligemment des collections et optimisez les structures de base de données.
 
-`Orin` est un expert en modélisation de données. Sur la page de configuration de la source de données principale, vous pouvez laisser `Orin` vous aider à créer ou modifier des collections.
+`` est un expert en modélisation de données. Sur la page de configuration de la source de données principale, vous pouvez laisser `` vous aider à créer ou modifier des collections.
 
 ![20251022160628](https://static-docs.nocobase.com/20251022160628.png)
 
@@ -173,21 +168,20 @@ Accédez au plugin de gestion de source de données et sélectionnez la configur
 
 ![20251022161146](https://static-docs.nocobase.com/20251022161146.png)
 
-Cliquez sur l'avatar d' `Orin` dans le coin supérieur droit pour ouvrir la boîte de dialogue de l'employé IA.
+Cliquez sur l'avatar d' `` dans le coin supérieur droit pour ouvrir la boîte de dialogue de l'employé IA.
 
 ![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
 
-Décrivez vos besoins de modélisation à `Orin`, envoyez et attendez une réponse. 
+Décrivez vos besoins de modélisation à ``, envoyez et attendez une réponse.
 
-Une fois qu'`Orin` aura confirmé vos besoins, il utilisera ses compétences et vous répondra avec un aperçu de la modélisation des données.
+Une fois qu'`` aura confirmé vos besoins, il utilisera ses compétences et vous répondra avec un aperçu de la modélisation des données.
 
-Après avoir examiné l'aperçu, cliquez sur le bouton **Finish review and apply** (Terminer la révision et appliquer) pour créer les collections selon la modélisation d'`Orin`.
+Après avoir examiné l'aperçu, cliquez sur le bouton **Finish review and apply** (Terminer la révision et appliquer) pour créer les collections selon la modélisation d'``.
 
 ![20251022162142](https://static-docs.nocobase.com/20251022162142.png)
 
 
 ---
-
 
 
 ## Nathan : Ingénieur Frontend

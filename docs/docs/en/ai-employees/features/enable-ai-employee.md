@@ -7,14 +7,14 @@ keywords: 'Enable AI Employees,AI employees,NocoBase'
 
 # Enable AI Employees
 
-NocoBase provides multiple built-in AI Employees for different scenarios.
+NocoBase provides built-in AI Employees for multiple scenarios. For the complete description, see [Built-in AI Employees](/ai-employees/built-in/).
 
 ## How to Enable
 
-Open the `AI employees` management page and toggle `Enabled` directly in the list.
+After entering the `AI employees` management page, turn on the `Enabled` switch directly in the list to enable an employee.
 
-![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
+![](https://static-docs.nocobase.com/202605121048555.png)
 
 ## Usage After Enabling
 
-After enabling, the employee appears in available entry points (such as bottom-right shortcut entry or scenario-specific entry).
+After enabling, the employee appears in available entries, such as the bottom-right shortcut entry or scenario-specific entry.

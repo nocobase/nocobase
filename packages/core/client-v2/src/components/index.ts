@@ -9,6 +9,6 @@
 
 export * from './AppComponents';
 export * from './BlankComponent';
+export * from './form';
 export * from './Icon';
-export * from './form/JsonTextArea';
 export * from './RouterContextCleaner';

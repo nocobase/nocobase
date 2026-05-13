@@ -1,8 +1,8 @@
 ---
 pkg: "@nocobase/plugin-ai"
 title: "Karyawan AI Bawaan"
-description: "Karyawan AI bawaan NocoBase: positioning role dan skenario penggunaan Atlas, Cole, Ellis, Dex, Viz, Lexi, Vera, Dara, Orin, Nathan, termasuk Atlas pemimpin tim, Viz analisis insight, Dex pengelolaan data, Orin pemodelan data, Nathan pengembangan frontend."
-keywords: "Karyawan AI Bawaan,Atlas,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara,Orin,Nathan,NocoBase"
+description: "Karyawan AI bawaan NocoBase: positioning role dan skenario penggunaan Atlas, Cole, Ellis, Dex, Viz, Lexi, Vera, Dara, Nathan, termasuk Atlas pemimpin tim, Viz analisis insight, Dex pengelolaan data pemodelan data, Nathan pengembangan frontend."
+keywords: "Karyawan AI Bawaan,Atlas,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara, Nathan,NocoBase"
 ---
 
 # Karyawan AI Bawaan
@@ -26,7 +26,6 @@ Anda hanya perlu mengonfigurasi LLM Service dan mengaktifkan karyawan terkait, m
 | **Lexi** | Asisten Terjemahan | Terjemahan multi-bahasa, bantuan komunikasi |
 | **Vera** | Analis Riset | Pencarian web, ringkasan informasi, riset mendalam |
 | **Dara** | Spesialis Visualisasi Data | Konfigurasi grafik, pembuatan laporan visualisasi |
-| **Orin** | Spesialis Pemodelan Data | Membantu merancang struktur tabel data, saran Field |
 | **Nathan** | Engineer Frontend | Membantu menulis snippet kode frontend, penyesuaian style |
 
 
@@ -54,7 +53,7 @@ Dalam sebagian besar skenario, langsung deskripsikan kebutuhan Anda saja, Atlas 
 
 Sebagian Karyawan AI bawaan (kategori build) tidak akan muncul di daftar Karyawan AI di pojok kanan bawah, mereka memiliki skenario kerja eksklusif, contohnya
 
-* Orin hanya akan muncul di halaman konfigurasi data source;
+* hanya akan muncul di halaman konfigurasi data source;
 * Dara hanya akan muncul di halaman konfigurasi grafik;
 * Nathan hanya akan muncul di JS editor.
 
@@ -180,40 +179,7 @@ Setelah dikirim `Dex` akan menstrukturkan data, dan menggunakan Skills untuk mem
 
 ---
 
-
-
-## Orin: Pemodel Data
-
-### Pengantar
-
-> Merancang tabel data secara cerdas, mengoptimalkan struktur database.
-
-`Orin` adalah spesialis pemodelan data, pada halaman konfigurasi data source utama dapat membiarkan `Orin` membantu Anda membuat atau memodifikasi tabel data.
-
-![20251022160628](https://static-docs.nocobase.com/20251022160628.png)
-
-### Cara Penggunaan
-
-Masuk ke Plugin manajemen data source, pilih konfigurasi data source utama
-
-![20251022161146](https://static-docs.nocobase.com/20251022161146.png)
-
-Klik avatar `Orin` di pojok kanan atas, buka kotak dialog Karyawan AI
-
-![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
-
-Deskripsikan kebutuhan pemodelan Anda kepada `Orin`, kirim dan tunggu balasan.
-
-Saat `Orin` mengonfirmasi kebutuhan Anda, akan menggunakan Skills dan membalas Anda preview pemodelan data.
-
-Setelah melihat preview, klik tombol `Finish review and apply` untuk membuat tabel data sesuai pemodelan `Orin`.
-
-![20251022162142](https://static-docs.nocobase.com/20251022162142.png)
-
-
 ---
-
-
 
 ## Nathan: Engineer Frontend
 

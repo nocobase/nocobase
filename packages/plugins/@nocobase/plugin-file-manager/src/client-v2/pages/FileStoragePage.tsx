@@ -7,34 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { JsonTextArea } from '@nocobase/client-v2';
-import { useFlowContext, useFlowView } from '@nocobase/flow-engine';
-import {
-  App,
-  Button,
-  Card,
-  Checkbox,
-  Dropdown,
-  Form,
-  Input,
-  InputNumber,
-  Radio,
-  Select,
-  Space,
-  Table,
-  theme,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { DrawerFormLayout } from '@nocobase/client-v2';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { cloneDeep, get, set } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MAX, FILE_SIZE_LIMIT_MIN } from '../../constants';
+import { App, Button, Card, Checkbox, Dropdown, Form, Input, Space, Spin, Table, theme } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { cloneDeep } from 'lodash';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
-import { storageTypes } from '../storageTypes';
-import type { StorageFieldMeta, StorageTypeMeta } from '../storageTypes/types';
-import { EnvVariableInput } from '@nocobase/plugin-environment-variables/client-v2';
+import { PluginFileManagerClientV2, type StorageType } from '../plugin';
 
 type StorageRecord = {
   id: number | string;
@@ -66,117 +49,19 @@ function useStorageFormClassName() {
   );
 }
 
-// Mirrors v1's `.auto-width` rule (registered globally on FormItem in @nocobase/client):
-// shrinks the antd control to its content width but keeps a sensible minimum.
-const autoWidthClassName = css`
-  &.ant-input-number,
-  &.ant-select {
-    width: auto;
-    min-width: 6em;
-  }
-`;
-
-const drawerTitleClassName = css`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: -8px;
-`;
-
-const renameModeOptions = [
-  { label: 'Append random ID', value: 'appendRandomID' },
-  { label: 'Random string', value: 'random' },
-  { label: 'Keep original filename (will be overwrite if filename is existed)', value: 'none' },
-];
-
-const unitOptions = [
-  { value: 1, label: 'Byte' },
-  { value: 1024, label: 'KB' },
-  { value: 1024 * 1024, label: 'MB' },
-  { value: 1024 * 1024 * 1024, label: 'GB' },
-];
-
 function createStorageName() {
   return `s_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-function getUnitOption(value: number, defaultUnit = 1024 * 1024) {
-  const size = value || defaultUnit;
-  for (let i = unitOptions.length - 1; i >= 0; i -= 1) {
-    const option = unitOptions[i];
-    if (size % option.value === 0) {
-      return option;
-    }
+function getInitialValues(options: { mode: 'create' | 'edit'; storageType: StorageType; record?: StorageRecord }) {
+  if (options.mode === 'edit') {
+    return cloneDeep(options.record || {});
   }
-
-  return unitOptions[0];
-}
-
-function limitSize(value: number, min = FILE_SIZE_LIMIT_MIN, max = FILE_SIZE_LIMIT_MAX) {
-  return Math.min(Math.max(min, value), max);
-}
-
-function FileSizeInput(props: { value?: number; onChange?: (value?: number) => void; disabled?: boolean }) {
-  const defaultValue = FILE_SIZE_LIMIT_DEFAULT;
-  const unit = getUnitOption(props.value ?? defaultValue);
-  const value = props.value == null ? props.value : props.value / unit.value;
-
-  const handleBlur = useCallback(() => {
-    // Mirror v1: when blurred with empty / below-min input, snap to the minimum byte size
-    // so the form stays valid instead of flagging "required".
-    if (props.value == null || props.value < FILE_SIZE_LIMIT_MIN) {
-      props.onChange?.(FILE_SIZE_LIMIT_MIN);
-    }
-  }, [props]);
-
-  return (
-    <Space.Compact>
-      <InputNumber
-        value={value}
-        disabled={props.disabled}
-        defaultValue={defaultValue / getUnitOption(defaultValue).value}
-        step={1}
-        className={autoWidthClassName}
-        onBlur={handleBlur}
-        onChange={(nextValue) => {
-          props.onChange?.(nextValue == null ? undefined : limitSize(Number(nextValue) * unit.value));
-        }}
-      />
-      <Select
-        disabled={props.disabled}
-        options={unitOptions}
-        value={unit.value}
-        className={autoWidthClassName}
-        onChange={(nextUnit) => {
-          props.onChange?.(value == null ? undefined : limitSize(Number(value) * nextUnit));
-        }}
-      />
-    </Space.Compact>
-  );
-}
-
-function applyFieldDefaults(storageType: StorageTypeMeta, values: Record<string, any>) {
-  const nextValues = cloneDeep(values || {});
-  for (const field of storageType.fields) {
-    if (typeof field.defaultValue !== 'undefined' && typeof get(nextValues, field.name) === 'undefined') {
-      set(nextValues, field.name, field.defaultValue);
-    }
-  }
-  return nextValues;
-}
-
-function getInitialValues(options: { mode: 'create' | 'edit'; storageType: StorageTypeMeta; record?: StorageRecord }) {
-  const values =
-    options.mode === 'create'
-      ? {
-          type: options.storageType.name,
-          name: createStorageName(),
-        }
-      : {
-          ...options.record,
-        };
-
-  return applyFieldDefaults(options.storageType, values);
+  return {
+    ...cloneDeep(options.storageType.defaultValues || {}),
+    type: options.storageType.name,
+    name: createStorageName(),
+  };
 }
 
 function useStorageResource() {
@@ -184,63 +69,13 @@ function useStorageResource() {
   return ctx.api.resource('storages');
 }
 
-function StorageField(props: { field: StorageFieldMeta; disabledDefault?: boolean }) {
-  const { field, disabledDefault } = props;
-  const t = useT();
-
-  if (field.hidden) {
-    return (
-      <Form.Item name={field.name} hidden>
-        <Input />
-      </Form.Item>
-    );
-  }
-
-  if (field.component === 'checkbox') {
-    return (
-      <Form.Item name={field.name} valuePropName="checked" extra={field.description ? t(field.description) : undefined}>
-        <Checkbox disabled={disabledDefault && field.name === 'default'}>{t(field.label)}</Checkbox>
-      </Form.Item>
-    );
-  }
-
-  const rules = field.required ? [{ required: true, message: t('The field value is required') }] : undefined;
-  const help = field.description ? t(field.description) : undefined;
-
-  return (
-    <Form.Item name={field.name} label={`${t(field.label)} :`} rules={rules} extra={help}>
-      {field.component === 'variableInput' ? (
-        <EnvVariableInput
-          placeholder={field.placeholder ? t(field.placeholder) : undefined}
-          addonBefore={field.addonBefore}
-        />
-      ) : field.component === 'passwordVariableInput' ? (
-        <EnvVariableInput password />
-      ) : field.component === 'number' ? (
-        Array.isArray(field.name) && field.name.join('.') === 'rules.size' ? (
-          <FileSizeInput />
-        ) : (
-          <InputNumber style={{ width: '100%' }} />
-        )
-      ) : field.component === 'radio' ? (
-        <Radio.Group options={renameModeOptions.map((item) => ({ ...item, label: t(item.label) }))} />
-      ) : field.component === 'json' ? (
-        <JsonTextArea autoSize={{ minRows: 5 }} />
-      ) : (
-        <Input placeholder={field.placeholder ? t(field.placeholder) : undefined} addonBefore={field.addonBefore} />
-      )}
-    </Form.Item>
-  );
-}
-
 function StorageFormView(props: {
   mode: 'create' | 'edit';
-  storageType: StorageTypeMeta;
+  storageType: StorageType;
   record?: StorageRecord;
   onSubmitted: () => void;
 }) {
   const t = useT();
-  const view = useFlowView();
   const resource = useStorageResource();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -264,62 +99,31 @@ function StorageFormView(props: {
         await resource.update({ filterByTk: props.record?.id, values });
       }
       props.onSubmitted();
-      await view.close();
     } finally {
       setSubmitting(false);
     }
-  }, [form, props, resource, view]);
+  }, [form, props, resource]);
 
+  const StorageFormBody = useMemo(() => lazy(props.storageType.formLoader), [props.storageType]);
   const title = `${props.mode === 'create' ? t('Add new') : t('Edit')} - ${t(props.storageType.title)}`;
 
   return (
-    <div>
-      {view.Header ? (
-        <view.Header
-          title={
-            <span className={drawerTitleClassName}>
-              <Button
-                type="text"
-                size="small"
-                icon={<CloseOutlined />}
-                onClick={async () => {
-                  await view.close();
-                }}
-              />
-              <span>{title}</span>
-            </span>
-          }
-        />
-      ) : null}
+    <DrawerFormLayout
+      title={title}
+      onSubmit={handleSubmit}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+    >
       <Form form={form} layout="vertical" initialValues={initialValues} className={storageFormClassName}>
         <Form.Item name="type" hidden>
           <Input />
         </Form.Item>
-        {props.storageType.fields.map((field) => (
-          <StorageField
-            field={field}
-            key={Array.isArray(field.name) ? field.name.join('.') : field.name}
-            disabledDefault={props.mode === 'edit' && !!props.record?.default}
-          />
-        ))}
+        <Suspense fallback={<Spin />}>
+          <StorageFormBody />
+        </Suspense>
       </Form>
-      {view.Footer ? (
-        <view.Footer>
-          <Space>
-            <Button
-              onClick={async () => {
-                await view.close();
-              }}
-            >
-              {t('Cancel')}
-            </Button>
-            <Button type="primary" loading={submitting} onClick={handleSubmit}>
-              {t('Submit')}
-            </Button>
-          </Space>
-        </view.Footer>
-      ) : null}
-    </div>
+    </DrawerFormLayout>
   );
 }
 
@@ -340,6 +144,8 @@ export default function FileStoragePage() {
   const ctx = useFlowContext();
   const { modal, message } = App.useApp();
   const resource = useStorageResource();
+  const fileManagerPlugin = ctx.app.pm.get(PluginFileManagerClientV2);
+  const storageTypes = useMemo(() => [...fileManagerPlugin.storageTypes.values()], [fileManagerPlugin]);
   const [page, setPage] = useState(1);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const { data, loading, refresh } = useRequest(
@@ -358,7 +164,7 @@ export default function FileStoragePage() {
   );
 
   const openForm = useCallback(
-    (mode: 'create' | 'edit', storageType: StorageTypeMeta, record?: StorageRecord) => {
+    (mode: 'create' | 'edit', storageType: StorageType, record?: StorageRecord) => {
       ctx.viewer.drawer({
         width: '50%',
         content: () => (
@@ -405,7 +211,7 @@ export default function FileStoragePage() {
           <Space>
             <a
               onClick={() => {
-                const storageType = storageTypes[record.type || ''];
+                const storageType = fileManagerPlugin.getStorageType(record.type);
                 if (!storageType) {
                   message.error(
                     t('Storage type {{type}} is not registered, please check if related plugin is enabled.').replace(
@@ -425,7 +231,7 @@ export default function FileStoragePage() {
         ),
       },
     ],
-    [handleDelete, message, openForm, t],
+    [fileManagerPlugin, handleDelete, message, openForm, t],
   );
 
   return (
@@ -440,12 +246,12 @@ export default function FileStoragePage() {
         </Button>
         <Dropdown
           menu={{
-            items: Object.values(storageTypes).map((storageType) => ({
+            items: storageTypes.map((storageType) => ({
               key: storageType.name,
               label: t(storageType.title),
             })),
             onClick(info) {
-              const storageType = storageTypes[info.key];
+              const storageType = fileManagerPlugin.getStorageType(info.key);
               if (storageType) {
                 openForm('create', storageType);
               }

@@ -18,6 +18,7 @@ function createMockFieldModel(options: { uid: string; props?: Record<string, any
   const model: any = {
     uid: options.uid,
     props: { ...(options.props || {}) },
+    _options: { props: { ...(options.props || {}) } },
     stepParams: { ...(options.stepParams || {}) },
     emitter: { emit: vi.fn() },
     setProps(patch: any) {
@@ -97,7 +98,9 @@ describe('filter-form legacyDefaultValueMigration', () => {
     clearLegacyDefaultValuesFromFilterFormModel(filterFormModel);
 
     expect(field1.props.initialValue).toBeUndefined();
+    expect(field1._options.props.initialValue).toBeUndefined();
     expect(field1.props.keep).toBe(true);
+    expect(field1._options.props.keep).toBe(true);
     expect(field1.stepParams.filterFormItemSettings?.initialValue).toBeUndefined();
     expect(field1.stepParams.otherFlow?.s?.x).toBe(1);
 

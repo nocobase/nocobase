@@ -16,6 +16,7 @@ import {
   AssociateActionModel,
   CollectionActionGroupModel,
   DisassociateActionModel,
+  getAssociationSelectorContextInputArgs,
   getAssociationTargetResourceSettings,
   PopupActionModel,
   RecordActionGroupModel,
@@ -84,6 +85,68 @@ describe('association action models', () => {
     expect(getAssociationTargetResourceSettings(ctx)).toEqual({
       dataSourceKey: 'main',
       collectionName: 'transports',
+    });
+  });
+
+  it('passes one-to-many association context to selector table blocks', () => {
+    const association = {
+      name: 'orders',
+      interface: 'o2m',
+      target: 'orders',
+      sourceKey: 'id',
+      foreignKey: 'userId',
+    };
+    const ctx: any = {
+      blockModel: {
+        association,
+        resource: {
+          getSourceId: () => 362872646860800,
+        },
+        getResourceSettingsInitParams: () => ({
+          dataSourceKey: 'main',
+          collectionName: 'orders',
+          associationName: 'users.orders',
+          sourceId: '{{ctx.popup.record.id}}',
+        }),
+      },
+    };
+
+    expect(getAssociationSelectorContextInputArgs(ctx)).toEqual({
+      collectionField: association,
+      sourceId: 362872646860800,
+      associatedRecords: [],
+    });
+  });
+
+  it('passes current associated records to selector table blocks', () => {
+    const associatedRecords = [{ id: 11 }, { id: 12 }];
+    const association = {
+      name: 'tags',
+      interface: 'm2m',
+      target: 'tags',
+      sourceKey: 'id',
+      targetKey: 'id',
+    };
+    const ctx: any = {
+      blockModel: {
+        association,
+        resource: {
+          getSourceId: () => 1,
+          getData: () => associatedRecords,
+        },
+        getResourceSettingsInitParams: () => ({
+          dataSourceKey: 'main',
+          collectionName: 'tags',
+          associationName: 'posts.tags',
+          sourceId: '{{ctx.popup.record.id}}',
+        }),
+      },
+    };
+
+    expect(getAssociationSelectorContextInputArgs(ctx)).toEqual({
+      collectionField: association,
+      sourceId: 1,
+      associatedRecords,
     });
   });
 

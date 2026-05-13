@@ -16,7 +16,7 @@ Antes de configurar o nó de Funcionário de IA, você precisa entender como con
 Você pode consultar os seguintes documentos:
   - [Workflow](/workflow)
   - [Configurar serviço de LLM](/ai-employees/features/llm-service)
-  - [Funcionários de IA integrados](/ai-employees/features/built-in-employee)
+  - [Funcionários de IA integrados](/ai-employees/built-in/)
   - [Criar novo Funcionário de IA](/ai-employees/features/new-ai-employees)
 
 ### Tarefa
