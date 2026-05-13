@@ -1,13 +1,20 @@
-# AI-Mitarbeiter aktivieren
+---
+pkg: '@nocobase/plugin-ai'
+title: 'KI-Mitarbeiter aktivieren'
+description: 'Aktivieren oder deaktivieren Sie KI-Mitarbeiter auf der Verwaltungsseite AI employees über den Enabled-Schalter. Aktivierte Mitarbeiter erscheinen im Schnellzugriff unten rechts oder in spezifischen Einstiegspunkten.'
+keywords: 'KI-Mitarbeiter aktivieren,AI employees,NocoBase'
+---
 
-NocoBase bietet mehrere integrierte AI-Mitarbeiter für verschiedene Szenarien an.
+# KI-Mitarbeiter aktivieren
 
-## Aktivierung
+NocoBase enthält integrierte KI-Mitarbeiter für mehrere Szenarien. Eine vollständige Beschreibung finden Sie unter [Integrierte KI-Mitarbeiter](/ai-employees/built-in/).
 
-Öffnen Sie die Verwaltungsseite `AI employees` und aktivieren Sie den Schalter `Enabled` direkt in der Liste.
+## Aktivieren
 
-![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
+Öffnen Sie die Verwaltungsseite `AI employees` und aktivieren Sie den Mitarbeiter direkt in der Liste über den Schalter `Enabled`.
 
-## Verwendung nach der Aktivierung
+![](https://static-docs.nocobase.com/202605121048555.png)
 
-Nach der Aktivierung erscheint der Mitarbeiter an den verfügbaren Einstiegspunkten (z. B. in der Verknüpfung unten rechts oder an szenariospezifischen Einstiegspunkten).
+## Nutzung nach der Aktivierung
+
+Nach der Aktivierung erscheint der Mitarbeiter in verfügbaren Einstiegen, zum Beispiel im Schnellzugriff unten rechts oder in einem spezifischen Szenario.

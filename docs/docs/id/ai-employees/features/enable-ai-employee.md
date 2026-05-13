@@ -1,20 +1,20 @@
 ---
 pkg: '@nocobase/plugin-ai'
-title: 'Aktifkan Karyawan AI'
-description: 'Pada halaman manajemen AI employees aktifkan/nonaktifkan Karyawan AI melalui switch Enabled, setelah diaktifkan karyawan akan muncul di entry shortcut pojok kanan bawah atau entry skenario tertentu.'
-keywords: 'Aktifkan Karyawan AI,AI employees,NocoBase'
+title: 'Mengaktifkan AI Employee'
+description: 'Aktifkan atau nonaktifkan AI Employee dengan switch Enabled di halaman manajemen AI employees. Employee yang aktif akan muncul di entri cepat kanan bawah atau entri skenario khusus.'
+keywords: 'mengaktifkan AI Employee,AI employees,NocoBase'
 ---
 
-# Aktifkan Karyawan AI
+# Mengaktifkan AI Employee
 
-NocoBase menyediakan beberapa Karyawan AI yang ditujukan untuk skenario.
+NocoBase menyediakan AI Employee bawaan untuk beberapa skenario. Lihat penjelasan lengkap di [AI Employee bawaan](/ai-employees/built-in/).
 
-## Cara Mengaktifkan
+## Cara mengaktifkan
 
-Setelah masuk ke halaman manajemen `AI employees`, dapat langsung membuka switch `Enabled` di daftar untuk mengaktifkan karyawan.
+Setelah masuk ke halaman manajemen `AI employees`, aktifkan switch `Enabled` langsung di daftar.
 
-![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
+![](https://static-docs.nocobase.com/202605121048555.png)
 
-## Penggunaan Setelah Diaktifkan
+## Penggunaan setelah diaktifkan
 
-Setelah diaktifkan, karyawan tersebut akan muncul di entry yang tersedia (seperti entry shortcut pojok kanan bawah atau entry skenario tertentu).
+Setelah diaktifkan, employee akan muncul pada entri yang tersedia, seperti entri cepat kanan bawah atau entri skenario khusus.

@@ -155,6 +155,8 @@ export const listByUser = async (ctx: Context, next: Next) => {
         prompt: row.userConfigs?.[0]?.prompt,
       },
       skillSettings,
+      chatSettings: row.chatSettings,
+      modelSettings: row.modelSettings,
       builtIn: row.builtIn,
       category: row.category,
       deprecated: row.deprecated,

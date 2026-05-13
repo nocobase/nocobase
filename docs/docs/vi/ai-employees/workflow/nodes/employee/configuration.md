@@ -16,7 +16,7 @@ Trước khi cấu hình Node Nhân viên AI, cần tìm hiểu cách xây dựn
 Có thể xem các tài liệu sau:
   - [Workflow](/workflow)
   - [Cấu hình dịch vụ LLM](/ai-employees/features/llm-service)
-  - [Nhân viên AI tích hợp sẵn](/ai-employees/features/built-in-employee)
+  - [Nhân viên AI tích hợp sẵn](/ai-employees/built-in/)
   - [Tạo Nhân viên AI mới](/ai-employees/features/new-ai-employees)
 
 ### Tác vụ

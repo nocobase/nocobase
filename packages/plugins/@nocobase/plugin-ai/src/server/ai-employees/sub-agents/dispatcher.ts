@@ -120,9 +120,7 @@ export class SubAgentsDispatcher {
       throw new Error('User not authenticated');
     }
 
-    if (!model?.llmService || !model?.model) {
-      throw new Error('LLM service not configured');
-    }
+    const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
     const aiEmployee = new AIEmployee({
       ctx,
@@ -130,7 +128,7 @@ export class SubAgentsDispatcher {
       sessionId,
       skillSettings,
       webSearch,
-      model,
+      model: resolvedModel,
       from: 'sub-agent',
     });
 

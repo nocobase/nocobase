@@ -17,11 +17,12 @@ import {
   useRecord,
 } from '@nocobase/client';
 import { useT } from '../../locale';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { avatars } from '../avatars';
 import { ProfileSettings } from './ProfileSettings';
 import { SystemPrompt } from './SystemPrompt';
+import { ModelSettings } from './ModelSettings';
 import aiEmployees, { type AIEmployee } from '../../../collections/ai-employees';
 import { SkillSettings } from './SkillSettings';
 import { Templates } from './Templates';
@@ -43,7 +44,11 @@ const AIEmployeeForm: React.FC<{
 }> = ({ edit }) => {
   const t = useT();
   const api = useAPIClient();
+  const form = useForm();
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
+  const chatSettings = form.values?.chatSettings ?? {};
+  const showSkills = chatSettings.enableSkills !== false;
+  const showTools = chatSettings.enableTools !== false;
 
   useEffect(() => {
     api
@@ -71,15 +76,29 @@ const AIEmployeeForm: React.FC<{
           forceRender: true,
         },
         {
-          key: 'skills',
-          label: t('Skills'),
-          children: <SkillSettings />,
+          key: 'modelSettings',
+          label: t('Model settings'),
+          children: <ModelSettings />,
+          forceRender: true,
         },
-        {
-          key: 'tools',
-          label: t('Tools'),
-          children: <ToolSettings />,
-        },
+        ...(showSkills
+          ? [
+              {
+                key: 'skills',
+                label: t('Skills'),
+                children: <SkillSettings />,
+              },
+            ]
+          : []),
+        ...(showTools
+          ? [
+              {
+                key: 'tools',
+                label: t('Tools'),
+                children: <ToolSettings />,
+              },
+            ]
+          : []),
         ...(knowledgeBaseEnabled
           ? [
               {

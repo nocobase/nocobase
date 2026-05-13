@@ -53,7 +53,7 @@ JS Item のランタイムでは一般的な機能が注入され、スクリプ
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- AI 従業員と組み合わせてスクリプトの生成/修正が可能です：[AI 従業員 - Nathan：フロントエンドエンジニア](/ai-employees/features/built-in-employee)
+- AI 従業員と組み合わせてスクリプトの生成/修正が可能です：[AI 従業員 - Nathan：フロントエンドエンジニア](/ai-employees/built-in/)
 
 ## 一般的な使い方（簡潔な例）
 

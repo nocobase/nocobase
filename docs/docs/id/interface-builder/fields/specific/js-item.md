@@ -34,7 +34,7 @@ JS Item digunakan untuk "item kustom" di Form (tidak terikat Field). Anda dapat 
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Dapat dikombinasikan dengan AI Employee untuk generate/modify script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- Dapat dikombinasikan dengan AI Employee untuk generate/modify script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Penggunaan Umum (Contoh Ringkas)
 

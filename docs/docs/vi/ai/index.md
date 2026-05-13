@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: Đội ngũ AI sẵn sàng sử dụng
         details: Đội ngũ Nhân viên AI tích hợp sẵn của NocoBase, bao quát các tình huống như mô hình hóa dữ liệu, phát triển frontend, xử lý dữ liệu, có thể sử dụng ngay mà không cần cấu hình.
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: Để AI hiểu rõ nghiệp vụ của bạn
         details: Thông qua Knowledge Base AI, hãy nhập tài liệu và dữ liệu nghiệp vụ để các Nhân viên AI có thể trả lời và thao tác sát với tình huống thực tế của bạn.
         link: /ai-employees/knowledge-base

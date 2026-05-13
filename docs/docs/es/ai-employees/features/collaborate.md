@@ -1,33 +1,44 @@
+---
+pkg: '@nocobase/plugin-ai'
+title: 'Colaborar con empleados de IA'
+description: 'Colabore con empleados de IA: entrada principal inferior derecha, entrada de Action en bloques, operaciones de chat y cambio de empleado y modelo dentro de la conversación.'
+keywords: 'colaboración con empleados de IA,panel de chat,cambio de empleado,cambio de modelo,NocoBase'
+---
+
 # Colaborar con empleados de IA
 
-Después de crear y habilitar los empleados de IA, usted podrá colaborar con ellos en las páginas.
+Después de crear y habilitar empleados de IA, puede colaborar con ellos en las páginas.
 
 ## Puntos de entrada
 
-Existen dos tipos de puntos de entrada comunes:
+1. **Entrada principal inferior derecha**: abre el panel de chat de IA desde la esquina inferior derecha de las páginas de negocio. Es adecuada para preguntas generales y colaboración entre bloques.
+2. **Entrada de Action en bloques**: en los bloques que admiten `Actions`, agregue empleados de IA mediante `Actions -> AI employees`. Es adecuada para tareas sobre el bloque actual, por ejemplo rellenar bloques de formulario.
+3. **Entrada específica**: los empleados orientados al desarrollo, como Nathan, Lina y Dara, ofrecen entradas dedicadas en escenarios específicos como bloques JS, bloques de gráficos o Localization Management.
 
-1. **Entrada principal en la esquina inferior derecha**: Abra el panel de chat de IA desde la esquina inferior derecha de las páginas de negocio. Es ideal para preguntas y respuestas generales y para la colaboración entre bloques.
-2. **Entrada desde la acción del bloque**: En los bloques que admiten `Actions`, acceda a través de `Actions -> AI employees`. Es adecuado para realizar tareas específicas en el bloque actual (por ejemplo, en escenarios de JSBlock).
+### Entrada principal inferior derecha
 
-### Entrada principal en la esquina inferior derecha
+![20260331165456](https://static-docs.nocobase.com/20260331165456.png)
 
-![ai-employees-entry-bottom-right.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employees-entry-bottom-right.png)
-
-### Entrada desde la acción del bloque
+### Entrada de Action en bloques
 
 ![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
-## Operaciones básicas de chat
+### Entrada específica
 
-El panel de chat permite realizar operaciones comunes como enviar mensajes, cargar archivos adjuntos, ver el historial de conversaciones, crear nuevos chats y editar los prompts del sistema.
+![](https://static-docs.nocobase.com/202605121057862.png)
 
-## Cambio dentro del chat
+## Operaciones básicas del chat
 
-En la parte inferior del área de entrada, puede realizar cambios directamente:
+El panel de chat permite operaciones habituales como enviar mensajes, subir archivos adjuntos, ver el historial, crear nuevas conversaciones y editar el prompt del sistema.
 
-- `AI Employee Switcher`: Cambia el empleado actual.
-- `Model Switcher`: Cambia el modelo de la sesión actual.
+## Cambio dentro de la conversación
 
-Las preferencias del modelo se guardan por empleado y se restaurarán prioritariamente la próxima vez que acceda.
+En la mayoría de los casos puede hablar directamente con Atlas; él coordinará al empleado de IA adecuado para ayudar con la tarea.
+
+Si quiere usar un empleado de IA específico, haga clic en la lista desplegable de empleados de IA en el cuadro de envío y selecciónelo.
+
+![20260331174320](https://static-docs.nocobase.com/20260331174320.png)
+
+Las preferencias de modelo se guardan por empleado y se restauran con prioridad la próxima vez.
 
 ![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)

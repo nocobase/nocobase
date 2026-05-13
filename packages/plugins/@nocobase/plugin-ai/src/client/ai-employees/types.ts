@@ -30,11 +30,26 @@ export type AIEmployee = {
     tools?: { name: string; autoCall?: boolean }[];
     skills?: string[];
   };
+  chatSettings?: {
+    systemPromptMode?: 'default' | 'raw' | 'none';
+    enableSkills?: boolean;
+    enableTools?: boolean;
+    [key: string]: unknown;
+  };
   builtIn?: boolean;
   webSearch?: boolean;
   toolsConflict?: boolean;
   category?: string;
   deprecated?: boolean;
+  modelSettings?: {
+    enabled?: boolean;
+    llmService?: string;
+    model?: string;
+    models?: {
+      llmService?: string;
+      model?: string;
+    }[];
+  };
 };
 
 export type SkillSettings = {
@@ -50,6 +65,13 @@ export type Conversation = {
   updatedAt: string;
   aiEmployee: AIEmployee;
   read: boolean;
+  options?: {
+    modelSettings?: {
+      llmService?: string;
+      model?: string;
+    };
+    [key: string]: any;
+  };
 };
 
 export type ContextItem = {
@@ -86,6 +108,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
     metadata?: {
       model: string;
       provider: string;
+      llmService?: string;
       usage_metadata?: {
         input_tokens: number;
         output_tokens: number;
