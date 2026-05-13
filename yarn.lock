@@ -22652,19 +22652,6 @@ map-obj@^4.0.0:
   resolved "https://registry.npmmirror.com/map-obj/-/map-obj-4.3.0.tgz#9304f906e93faae70880da102a9f1df0ea8bb05a"
   integrity sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ==
 
-mariadb@^2.5.6:
-  version "2.5.6"
-  resolved "https://registry.npmmirror.com/mariadb/-/mariadb-2.5.6.tgz#7314e9287cdba212831ebf16ef3b34dc6a1f0f06"
-  integrity sha512-zBx7loYY5GzLl8Y6AKxGXfY9DUYIIdGrmEORPOK9FEu0pg5ZLBKCGJuucHwKADxTBxKY7eM4rxndqxRcnMZKIw==
-  dependencies:
-    "@types/geojson" "^7946.0.8"
-    "@types/node" "^17.0.10"
-    denque "^2.0.1"
-    iconv-lite "^0.6.3"
-    long "^5.2.0"
-    moment-timezone "^0.5.34"
-    please-upgrade-node "^3.2.0"
-
 markdown-it-highlightjs@3.3.1:
   version "3.3.1"
   resolved "https://registry.npmmirror.com/markdown-it-highlightjs/-/markdown-it-highlightjs-3.3.1.tgz#38403610487292b8a1ae2d1acc7bb66e4ede6be8"

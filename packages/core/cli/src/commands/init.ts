@@ -35,11 +35,11 @@ import {
   installNocoBaseSkills,
   updateNocoBaseSkills,
 } from '../lib/skills-manager.js';
+import { omitKeys, pickKeys } from '../lib/object-utils.ts';
 import { isVerboseMode, printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
-import _ from 'lodash';
 
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
@@ -389,8 +389,8 @@ Prompt modes:
       min: 0,
       max: 65535,
     }),
-    ..._.pick(EnvAdd.flags, INIT_ENV_ADD_FLAG_NAMES),
-    ..._.omit(Install.flags, ['yes', 'env']),
+    ...pickKeys(EnvAdd.flags, INIT_ENV_ADD_FLAG_NAMES),
+    ...omitKeys(Install.flags, ['yes', 'env']),
   };
 
   public async run(): Promise<void> {

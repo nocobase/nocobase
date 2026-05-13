@@ -8,7 +8,6 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import _ from 'lodash';
 import { spawn } from 'node:child_process';
 import pc from 'picocolors';
 import crypto from 'node:crypto';
@@ -63,6 +62,7 @@ import {
   printWarning,
   setVerboseMode,
 } from '../lib/ui.js';
+import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import Download, {
@@ -598,7 +598,7 @@ export default class Install extends Command {
         'Download NocoBase app files or pull a Docker image before installing',
       default: false,
     }),
-    ..._.omit(Download.flags, ['yes']),
+    ...omitKeys(Download.flags, ['yes']),
   };
 
   /** Environment name only: run before {@link Install.prompts} (see `run`). */
@@ -2102,7 +2102,7 @@ export default class Install extends Command {
     await this.ensureBuiltinDbContainer(plan, {
       stdio: params.commandStdio ?? 'ignore',
     });
-    printInfo(`${_.upperFirst(plan.dbDialect)} database ready.`);
+    printInfo(`${upperFirst(plan.dbDialect)} database ready.`);
     printVerbose(`Built-in ${plan.dbDialect} database ready at ${plan.dbHost}:${plan.dbPort}`);
 
     return plan;

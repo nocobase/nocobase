@@ -32,7 +32,6 @@ const mockPgConnect = vi.fn();
 const mockPgQuery = vi.fn();
 const mockPgEnd = vi.fn();
 const mockMysqlCreateConnection = vi.fn();
-const mockMariaDbCreateConnection = vi.fn();
 
 vi.mock('pg', () => ({
   default: {
@@ -47,12 +46,6 @@ vi.mock('pg', () => ({
 vi.mock('mysql2/promise', () => ({
   default: {
     createConnection: mockMysqlCreateConnection,
-  },
-}));
-
-vi.mock('mariadb', () => ({
-  default: {
-    createConnection: mockMariaDbCreateConnection,
   },
 }));
 
@@ -86,7 +79,6 @@ afterEach(() => {
   mockPgQuery.mockReset();
   mockPgEnd.mockReset();
   mockMysqlCreateConnection.mockReset();
-  mockMariaDbCreateConnection.mockReset();
 });
 
 test('validateApiBaseUrl accepts URLs whose health check returns HTTP 200', async () => {
