@@ -22,7 +22,7 @@ El plugin de Impresión de Plantillas le permite diseñar plantillas en Word, Ex
 
 ### Instalar plugins
 
-Consulte [Instalación y actualización de plugins comerciales](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)
+Consulte [Instalación y actualización de plugins comerciales](https://www.nocobase.com/es/blog/nocobase-commercial-license-activation-guide)
 
 ### Instalar LibreOffice (Opcional)
 
