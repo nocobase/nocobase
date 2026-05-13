@@ -8,6 +8,10 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 Ab Version v1.6.0 unterstützt NocoBase das Ausführen von Anwendungen im Cluster-Modus. Wenn eine Anwendung im Cluster-Modus läuft, kann sie ihre Leistung bei der Verarbeitung gleichzeitiger Zugriffe verbessern, indem sie mehrere Instanzen und einen Mehrkern-Modus nutzt.
 
+Auf Basis des Cluster-Modus lässt sich Hochverfügbarkeit auf Anwendungsebene erreichen: Ein Load Balancer verteilt den Datenverkehr auf mehrere NocoBase-Instanzen innerhalb desselben Clusters, sodass bei Ausfall, Neustart oder Bereitstellung einer einzelnen Instanz andere Instanzen den Dienst weiter bereitstellen können. In der Praxis sollte ein einzelner Cluster in der Regel innerhalb derselben Netzwerkumgebung mit geringer Latenz bereitgestellt werden.
+
+Wichtig ist, dass der Cluster-Modus von NocoBase die horizontale Skalierung und Hochverfügbarkeit von Anwendungsinstanzen auf der Anwendungsebene adressiert. Wenn Sie Warm-Standby oder Disaster Recovery über Verfügbarkeitszonen oder Regionen hinweg benötigen, werden in der Regel mehrere unabhängige Cluster bereitgestellt. Das Betriebsteam ist dann für die Replikations- und Umschaltstrategie von Datenbank, gemeinsamem Speicher und anderer Infrastruktur verantwortlich.
+
 ## Systemarchitektur
 
 ![20251031221530](https://static-docs.nocobase.com/20251031221530.png)

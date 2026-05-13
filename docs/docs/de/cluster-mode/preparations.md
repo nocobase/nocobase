@@ -22,11 +22,13 @@ Stellen Sie zunächst sicher, dass Sie die Lizenzen für die oben genannten Plug
 
 ## Systemkomponenten
 
-Neben der Anwendungsinstanz selbst können weitere Systemkomponenten je nach den betrieblichen Anforderungen Ihres Teams vom Betriebspersonal ausgewählt werden.
+Neben den Anwendungsinstanzen selbst erfordert eine Cluster-Bereitstellung auch Systemkomponenten wie Datenbank, Middleware, gemeinsamen Speicher und Lastverteilung. Unterschiedliche Teams können die konkrete Implementierung dieser Komponenten entsprechend ihrem eigenen Betriebsmodell auswählen.
 
 ### Datenbank
 
 Da der aktuelle Cluster-Modus nur auf Anwendungsinstanzen abzielt, unterstützt die Datenbank vorübergehend nur einen einzelnen Knoten. Falls Sie eine Datenbankarchitektur wie Master-Slave verwenden, müssen Sie diese selbst über Middleware implementieren und sicherstellen, dass sie für die NocoBase-Anwendung transparent ist.
+
+Wenn Sie Warm-Standby oder Disaster Recovery über Verfügbarkeitszonen oder Regionen hinweg benötigen, müssen Datenbanksynchronisation und Umschaltstrategie vom Betriebsteam selbst entworfen und umgesetzt werden.
 
 ### Middleware
 
@@ -46,9 +48,36 @@ Wenn alle Middleware-Komponenten Redis verwenden, können Sie einen einzelnen Re
 
 ### Gemeinsamer Speicher
 
-NocoBase benötigt das `storage`-Verzeichnis, um systemrelevante Dateien zu speichern. Im Multi-Node-Modus sollten Sie eine Cloud-Festplatte (oder NFS) mounten, um den gemeinsamen Zugriff über mehrere Knoten hinweg zu ermöglichen. Andernfalls wird der lokale Speicher nicht automatisch synchronisiert und kann nicht ordnungsgemäß funktionieren.
+NocoBase verwendet das Verzeichnis `storage`, um systemrelevante Dateien zu speichern. Gemeinsamer Speicher ist außerdem ein notwendiger Bestandteil einer Cluster-Bereitstellung. Im Multi-Node-Modus können Sie je nach Infrastruktur unterschiedliche Implementierungen wie Cloud-Datenträger, NFS oder EFS wählen, um den gemeinsamen Zugriff mehrerer Knoten zu ermöglichen. Andernfalls werden Systemdateien nicht automatisch synchronisiert und die Anwendung kann nicht ordnungsgemäß funktionieren.
 
 Bei der Bereitstellung mit Kubernetes beachten Sie bitte den Abschnitt [Kubernetes-Bereitstellung: Gemeinsamer Speicher](./kubernetes#shared-storage).
+
+#### Was wird typischerweise im Verzeichnis `storage` gespeichert?
+
+Der Inhalt des Verzeichnisses `storage` variiert je nach aktivierten Plugins und Bereitstellungsart. Nach aktuellem Implementierungsstand gehören typischerweise dazu:
+
+| Pfad | Zweck | Nutzungsempfehlung |
+| --- | --- | --- |
+| `storage/uploads` | Hochgeladene Dateien im lokalen Speichermodus | In Produktionsclustern sollten vorrangig Objektspeicher wie S3 / OSS / COS verwendet werden |
+| `storage/plugins` | Zur Laufzeit installierte, hochgeladene oder erkannte lokale Plugin-Pakete | Wenn lokale Plugins verwendet werden, muss dieses Verzeichnis gemeinsam genutzt werden; sind Plugins bereits im Image enthalten, lässt sich diese Abhängigkeit verringern |
+| `storage/apps/<app>/jwt_secret.dat` | Standard-Token-Schlüssel, der automatisch generiert wird, wenn `APP_KEY` nicht explizit konfiguriert ist | In Produktion nicht auf diese Datei verlassen; stattdessen `APP_KEY` explizit konfigurieren |
+| `storage/apps/<app>/aes_key.dat` | Standard-AES-Schlüssel, der automatisch generiert wird, wenn `APP_AES_SECRET_KEY` nicht explizit konfiguriert ist | In Produktion nicht auf diese Datei verlassen; stattdessen `APP_AES_SECRET_KEY` explizit konfigurieren |
+| `storage/environment-variables/<app>/aes_key.dat` | AES-Schlüsseldatei für Szenarien mit dem Umgebungsvariablen-Plugin | Es wird empfohlen, eine schreibgeschützt eingebundene Schlüsseldatei zu verwenden |
+| `storage/logs` | Standard-Logverzeichnis sowie einige Migrationsprotokolle | Perspektivisch wird die Anbindung an eine externe Logging-Plattform empfohlen |
+| `storage/tmp` | Temporäre Dateien für Import, Export, Migration usw. | Kann temporär sein; wenn eine Wiederverwendung über mehrere Knoten hinweg nötig ist, muss es gemeinsam genutzt werden oder die Operation auf einen einzelnen Verwaltungs-Knoten beschränkt werden |
+| `storage/backups`, `storage/duplicator`, `storage/migration-manager` | Artefakte für Backup, Wiederherstellung und Migration | Diese sollten als Betriebsverzeichnisse betrachtet, persistent gespeichert und nicht gleichzeitig von mehreren Knoten verändert werden |
+
+Die obige Tabelle ist nicht vollständig, verdeutlicht jedoch einen wichtigen Punkt: `storage` enthält Geschäftsdaten-Dateien, Schlüsseldateien, Plugin-Verzeichnisse, Logs und betriebsbezogene temporäre Artefakte zugleich. Daher ist die übliche Grundlage für Cluster-Bereitstellungen, das gesamte Verzeichnis `/app/nocobase/storage` gemeinsam und persistent bereitzustellen.
+
+#### Speicherbezogene Empfehlungen
+
+Die Cluster-Konsistenz in NocoBase stützt sich primär auf Datenbank, Redis, Nachrichtenwarteschlangen und verteilte Sperren und nicht darauf, ein gemeinsames Dateisystem als Koordinationsmedium mit hoher Parallelität zu verwenden.
+
+Daher wird empfohlen:
+
+- Für hochfrequent genutzte Geschäftsdaten-Dateien wie Anhänge vorrangig Objektspeicher zu verwenden. Von einer langfristigen Nutzung lokalen Speichers in Produktionsclustern wird abgeraten.
+- Gemeinsamer Speicher sollte hauptsächlich das Verzeichnis `storage` tragen und nicht als Dateispeicher mit hohem Durchsatz dienen.
+- Vorgänge wie Plugin-Installation, Plugin-Upgrade, Backup, Wiederherstellung und Migration sollten erst nach dem Herunterskalieren des Clusters auf einen einzelnen Knoten durchgeführt werden; anschließend kann der Cluster wieder hochskaliert werden.
 
 ### Lastverteilung
 
@@ -58,7 +87,6 @@ Am Beispiel eines selbst gehosteten Nginx fügen Sie den Konfigurationsdateien d
 
 ```
 upstream myapp {
-    # ip_hash; # Kann für die Session-Persistenz verwendet werden. Wenn aktiviert, werden Anfragen desselben Clients immer an denselben Backend-Server gesendet.
     server 172.31.0.1:13000; # Interner Knoten 1
     server 172.31.0.2:13000; # Interner Knoten 2
     server 172.31.0.3:13000; # Interner Knoten 3
@@ -79,9 +107,36 @@ Dies bedeutet, dass Anfragen per Reverse-Proxy an verschiedene Serverknoten zur 
 
 Für Lastverteilungs-Middleware, die von anderen Cloud-Anbietern bereitgestellt wird, beachten Sie bitte die Konfigurationsdokumentation des jeweiligen Anbieters.
 
+Für Hochverfügbarkeits-Bereitstellungen wird empfohlen:
+
+- Innerhalb desselben Clusters mindestens 2 Anwendungsinstanzen zu betreiben und das Failover einzelner Instanzen dem Load Balancer zu überlassen.
+- Die Gesundheitsprüfung des Load Balancers sollte die tatsächliche Verfügbarkeit der Anwendung abbilden und nicht nur prüfen, ob der Port erreichbar ist.
+- Wenn Warm-Standby über Verfügbarkeitszonen oder Regionen hinweg erforderlich ist, sollten in der Regel mehrere unabhängige Cluster bereitgestellt werden. Die Synchronisation und Umschaltung von Datenbank, gemeinsamem Speicher und anderer Infrastruktur liegt dann beim Betriebsteam.
+
 ## Umgebungsvariablen-Konfiguration
 
 Alle Knoten im Cluster sollten dieselbe Umgebungsvariablen-Konfiguration verwenden. Zusätzlich zu den grundlegenden [Umgebungsvariablen](/api/cli/env) von NocoBase müssen auch die folgenden Middleware-bezogenen Umgebungsvariablen konfiguriert werden.
+
+### Wichtige Schlüssel
+
+Zusätzlich zu den Middleware-Umgebungsvariablen sollten auf allen Knoten im Cluster dieselben wichtigen Schlüssel explizit konfiguriert werden:
+
+```ini
+APP_KEY=
+APP_AES_SECRET_KEY=
+# Oder eine schreibgeschützt eingebundene Schlüsseldatei verwenden
+# APP_AES_SECRET_KEY_PATH=
+```
+
+- `APP_KEY` wird für die Signierung von Token / JWT verwendet. Wenn er nicht explizit konfiguriert ist, greift die Anwendung auf die Standard-Schlüsseldatei unter `storage` zurück.
+- `APP_AES_SECRET_KEY` wird verwendet, um sensible Felder in der Datenbank zu entschlüsseln. Wenn er nicht explizit konfiguriert ist, greift die Anwendung ebenfalls auf die Standard-Schlüsseldatei unter `storage` zurück.
+- In flüchtigen Containern oder Multi-Node-Bereitstellungen kann die Abhängigkeit von automatisch generierten lokalen Schlüsseldateien dazu führen, dass Tokens nach einem Neustart ungültig werden oder historische verschlüsselte Daten nicht mehr entschlüsselt werden können.
+
+:::info{title=Tipp}
+`APP_AES_SECRET_KEY` muss ein 32-Byte-AES-256-Schlüssel sein, dargestellt durch 64 hexadezimale Zeichen.
+
+In Cloud-Umgebungen wird empfohlen, diese Werte zentral über Dienste wie Secrets Manager, SSM Parameter Store, Kubernetes Secret oder eine schreibgeschützt eingebundene Schlüsseldatei zu verwalten.
+:::
 
 ### Mehrkern-Modus
 

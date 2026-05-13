@@ -22,11 +22,13 @@ Primero, asegúrese de haber obtenido las licencias para los **plugins** mencion
 
 ## Componentes del sistema
 
-Aparte de la propia instancia de la aplicación, el personal de operaciones puede seleccionar otros componentes del sistema según las necesidades operativas de cada equipo.
+Además de las propias instancias de la aplicación, una implementación en clúster también requiere componentes del sistema como la base de datos, el middleware, el almacenamiento compartido y el balanceo de carga. Cada equipo puede elegir la implementación concreta de estos componentes según su propio modelo operativo.
 
 ### Base de datos
 
 Dado que el modo clúster actual se enfoca únicamente en las instancias de la aplicación, la base de datos solo soporta temporalmente un único nodo. Si usted cuenta con una arquitectura de base de datos como maestro-esclavo, deberá implementarla por su cuenta a través de middleware y asegurarse de que sea transparente para la aplicación NocoBase.
+
+Si necesita standby en caliente o recuperación ante desastres entre zonas de disponibilidad o regiones, la estrategia de sincronización y conmutación de la base de datos debe ser diseñada e implementada por su equipo de operaciones.
 
 ### Middleware
 
@@ -46,9 +48,36 @@ Cuando todos los componentes de middleware utilizan Redis, puede iniciar un úni
 
 ### Almacenamiento compartido
 
-NocoBase necesita utilizar el directorio `storage` para almacenar archivos relacionados con el sistema. En el modo de múltiples nodos, debe montar un disco en la nube (o NFS) para permitir el acceso compartido entre varios nodos. De lo contrario, el almacenamiento local no se sincronizará automáticamente y no funcionará correctamente.
+NocoBase necesita utilizar el directorio `storage` para almacenar archivos relacionados con el sistema, y el almacenamiento compartido también es un componente obligatorio del despliegue en clúster. En el modo de múltiples nodos, puede elegir distintas implementaciones según su entorno de infraestructura, como discos en la nube, NFS o EFS, para permitir el acceso compartido entre varios nodos. De lo contrario, los archivos del sistema no se sincronizarán automáticamente y la aplicación no podrá funcionar correctamente.
 
 Al implementar con Kubernetes, consulte la sección [Implementación en Kubernetes: Almacenamiento compartido](./kubernetes#shared-storage).
+
+#### Qué suele almacenarse en el directorio `storage`
+
+El contenido del directorio `storage` varía según los plugins habilitados y el método de despliegue. Según la implementación actual, el contenido habitual incluye:
+
+| Ruta | Propósito | Recomendación de uso |
+| --- | --- | --- |
+| `storage/uploads` | Archivos subidos cuando se usa el modo de almacenamiento local | En clústeres de producción, se recomienda priorizar almacenamiento de objetos como S3 / OSS / COS |
+| `storage/plugins` | Paquetes de plugins locales instalados, subidos o detectados en tiempo de ejecución | Si depende de plugins locales, este directorio debe compartirse; si los plugins ya están integrados en la imagen, esta dependencia puede reducirse |
+| `storage/apps/<app>/jwt_secret.dat` | Secreto de token predeterminado generado automáticamente cuando `APP_KEY` no está configurado explícitamente | No dependa de este archivo en producción; configure `APP_KEY` explícitamente |
+| `storage/apps/<app>/aes_key.dat` | Clave AES predeterminada generada automáticamente cuando `APP_AES_SECRET_KEY` no está configurado explícitamente | No dependa de este archivo en producción; configure `APP_AES_SECRET_KEY` explícitamente |
+| `storage/environment-variables/<app>/aes_key.dat` | Archivo de clave AES para escenarios del plugin de variables de entorno | Se recomienda montar un archivo de clave en modo solo lectura |
+| `storage/logs` | Directorio de logs predeterminado y algunos registros de migración | Se recomienda integrar una plataforma de logs externa en el futuro |
+| `storage/tmp` | Archivos temporales para importación, exportación, migración, etc. | Puede ser temporal, pero si necesita reutilizarse entre nodos, debe compartirse, o bien la operación debe fijarse en un único nodo de administración |
+| `storage/backups`, `storage/duplicator`, `storage/migration-manager` | Artefactos relacionados con copia de seguridad, restauración y migración | Deben tratarse como directorios de operaciones, almacenarse de forma persistente y no modificarse de forma concurrente entre varios nodos |
+
+La tabla anterior no es exhaustiva, pero ilustra un punto importante: `storage` mezcla archivos de negocio, archivos de claves, directorios de plugins, logs y artefactos temporales relacionados con operaciones. Por ello, en los despliegues en clúster, la base habitual es persistir y compartir todo el directorio `/app/nocobase/storage`.
+
+#### Recomendaciones relacionadas con el almacenamiento
+
+La consistencia del clúster en NocoBase depende principalmente de la base de datos, Redis, las colas de mensajes y los bloqueos distribuidos, y no de usar el sistema de archivos compartido como medio de coordinación de alta concurrencia.
+
+Por ello, se recomienda:
+
+- Para archivos de negocio de alta frecuencia, como los adjuntos, utilizar preferentemente almacenamiento de objetos. No se recomienda depender a largo plazo del almacenamiento local en clústeres de producción.
+- El almacenamiento compartido debe utilizarse principalmente para alojar el directorio `storage`, y no como un servicio de almacenamiento de archivos de alto rendimiento.
+- Operaciones como la instalación o actualización de plugins, las copias de seguridad, las restauraciones y las migraciones deben realizarse solo después de reducir el clúster a un único nodo; una vez finalizadas, el clúster puede volver a ampliarse.
 
 ### Balanceo de carga
 
@@ -58,7 +87,6 @@ Tomando como ejemplo un Nginx autoalojado, añada el siguiente contenido al arch
 
 ```
 upstream myapp {
-    # ip_hash; # Se puede usar para la persistencia de sesiones. Cuando está habilitado, las solicitudes del mismo cliente siempre se envían al mismo servidor backend.
     server 172.31.0.1:13000; # Nodo interno 1
     server 172.31.0.2:13000; # Nodo interno 2
     server 172.31.0.3:13000; # Nodo interno 3
@@ -79,9 +107,36 @@ Esto significa que las solicitudes se reenvían mediante proxy inverso y se dist
 
 Para el middleware de balanceo de carga proporcionado por otros proveedores de servicios en la nube, consulte la documentación de configuración específica del proveedor.
 
+Para despliegues de alta disponibilidad, se recomienda:
+
+- Ejecutar al menos 2 instancias de la aplicación dentro del mismo clúster y dejar que el balanceador de carga se encargue del failover de las instancias.
+- La verificación de estado del balanceador de carga debe reflejar la disponibilidad real de la aplicación, y no limitarse a comprobar si el puerto está abierto.
+- Si necesita standby en caliente entre zonas de disponibilidad o regiones, normalmente deberá desplegar varios clústeres independientes, y el equipo de operaciones será responsable de sincronizar y conmutar la base de datos, el almacenamiento compartido y el resto de la infraestructura.
+
 ## Configuración de variables de entorno
 
 Todos los nodos del clúster deben utilizar la misma configuración de variables de entorno. Además de las [variables de entorno](/api/cli/env) básicas de NocoBase, también es necesario configurar las siguientes variables de entorno relacionadas con el middleware.
+
+### Secretos clave
+
+Además de las variables de entorno del middleware, todos los nodos del clúster también deben configurar explícitamente los mismos secretos clave:
+
+```ini
+APP_KEY=
+APP_AES_SECRET_KEY=
+# O use un archivo de clave montado en modo solo lectura
+# APP_AES_SECRET_KEY_PATH=
+```
+
+- `APP_KEY` se utiliza para la firma de tokens / JWT. Si no se configura explícitamente, la aplicación recurre al archivo de secreto predeterminado en `storage`.
+- `APP_AES_SECRET_KEY` se utiliza para descifrar campos sensibles en la base de datos. Si no se configura explícitamente, la aplicación también recurre al archivo de secreto predeterminado en `storage`.
+- En contenedores efímeros o despliegues multinodo, depender de archivos de secretos locales generados automáticamente puede hacer que los tokens dejen de ser válidos tras un reinicio o que los datos cifrados históricos ya no puedan descifrarse.
+
+:::info{title=Consejo}
+`APP_AES_SECRET_KEY` debe ser una clave AES-256 de 32 bytes, representada por 64 caracteres hexadecimales.
+
+En entornos en la nube, se recomienda gestionar estos valores de forma centralizada a través de servicios como Secrets Manager, SSM Parameter Store, Kubernetes Secret o un archivo de clave montado en modo solo lectura.
+:::
 
 ### Modo multinúcleo
 

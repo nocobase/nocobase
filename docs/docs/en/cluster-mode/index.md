@@ -4,6 +4,10 @@
 
 Starting from v1.6.0, NocoBase supports running applications in cluster mode. When an application runs in cluster mode, it can improve its performance in handling concurrent access by using multiple instances and a multi-core mode.
 
+Based on cluster mode, you can achieve application-level high availability: traffic is distributed by a load balancer across multiple NocoBase instances within the same cluster, so if a single instance fails, restarts, or is being released, other instances can continue serving traffic. In practice, a single cluster should usually be deployed within the same low-latency network environment.
+
+It is important to note that NocoBase cluster mode addresses horizontal scaling and high availability of application instances at the application layer. If you need warm standby or disaster recovery across availability zones or regions, you would typically deploy multiple independent clusters, and the operations team would be responsible for the data replication and switchover strategy for the database, shared storage, and other infrastructure.
+
 ## System Architecture
 
 

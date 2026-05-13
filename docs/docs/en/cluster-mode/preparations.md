@@ -18,11 +18,13 @@ First, please ensure you have obtained licenses for the above plugins (you can p
 
 ## System Components
 
-Other system components, besides the application instance itself, can be selected by operations personnel based on the team's operational needs.
+In addition to the application instances themselves, cluster deployment also requires system components such as the database, middleware, shared storage, and load balancing. Different teams can choose the specific implementation of these components based on their own operating model.
 
 ### Database
 
 Since the current cluster mode only targets application instances, the database temporarily supports only a single node. If you have a database architecture like master-slave, you need to implement it yourself through middleware and ensure it is transparent to the NocoBase application.
+
+If you need warm standby or disaster recovery across availability zones or regions, the database synchronization and switchover strategy must be designed and implemented by your operations team.
 
 ### Middleware
 
@@ -42,9 +44,36 @@ When all middleware components use Redis, you can start a single Redis service w
 
 ### Shared Storage
 
-NocoBase needs to use the storage directory to store system-related files. In multi-node mode, you should mount a cloud disk (or NFS) to support shared access across multiple nodes. Otherwise, local storage will not be automatically synchronized, and it will not function properly.
+NocoBase needs to use the `storage` directory to store system-related files, and shared storage is also a required component of cluster deployment. In multi-node mode, you can choose different implementations based on your infrastructure environment, such as cloud disks, NFS, or EFS, to support shared access across multiple nodes. Otherwise, system files will not be synchronized automatically and the application will not work properly.
 
 When deploying with Kubernetes, please refer to the [Kubernetes Deployment: Shared Storage](./kubernetes#shared-storage) section.
+
+#### What is typically stored in the `storage` directory
+
+The contents of the `storage` directory vary depending on the enabled plugins and the deployment method. Based on the current implementation, common contents include:
+
+| Path | Purpose | Usage recommendation |
+| --- | --- | --- |
+| `storage/uploads` | Uploaded files when using local storage mode | In production clusters, prefer object storage such as S3 / OSS / COS |
+| `storage/plugins` | Local plugin packages installed, uploaded, or discovered at runtime | If you rely on local plugins, this directory must be shared; if plugins are built into the image, this dependency can be reduced |
+| `storage/apps/<app>/jwt_secret.dat` | Default token secret generated automatically when `APP_KEY` is not explicitly configured | Do not rely on this file in production; explicitly configure `APP_KEY` instead |
+| `storage/apps/<app>/aes_key.dat` | Default AES key generated automatically when `APP_AES_SECRET_KEY` is not explicitly configured | Do not rely on this file in production; explicitly configure `APP_AES_SECRET_KEY` instead |
+| `storage/environment-variables/<app>/aes_key.dat` | AES key file used in environment-variable plugin scenarios | A read-only mounted key file is recommended |
+| `storage/logs` | Default log directory and some migration logs | It is recommended to integrate with an external logging platform in the future |
+| `storage/tmp` | Temporary files for import, export, migration, etc. | It can be temporary, but if it needs to be reused across nodes, it must be shared, or the operation should be fixed to a single management node |
+| `storage/backups`, `storage/duplicator`, `storage/migration-manager` | Artifacts related to backup, restore, and migration | These should be treated as operations directories, stored persistently, and not modified concurrently across multiple nodes |
+
+The table above is not exhaustive, but it illustrates an important point: `storage` mixes business files, secret files, plugin directories, logs, and operations-related temporary artifacts. Therefore, in cluster deployment, the baseline is usually to persist and share the entire `/app/nocobase/storage`.
+
+#### Storage recommendations
+
+Cluster consistency in NocoBase mainly relies on the database, Redis, message queues, and distributed locks, rather than treating shared file systems as a high-concurrency coordination medium.
+
+Therefore, the following is recommended:
+
+- For high-frequency business files such as attachments, prefer object storage. In production clusters, long-term reliance on local storage is not recommended.
+- Shared storage should mainly be used to host the `storage` directory, rather than as a high-throughput file storage service.
+- Operations such as plugin installation, plugin upgrade, backup, restore, and migration should be performed only after scaling the cluster down to a single node, and the cluster can be scaled out again after completion.
 
 ### Load Balancing
 
@@ -54,7 +83,6 @@ Taking a self-hosted Nginx as an example, add the following content to the confi
 
 ```
 upstream myapp {
-    # ip_hash; # Can be used for session persistence. When enabled, requests from the same client are always sent to the same backend server.
     server 172.31.0.1:13000; # Internal node 1
     server 172.31.0.2:13000; # Internal node 2
     server 172.31.0.3:13000; # Internal node 3
@@ -75,9 +103,36 @@ This means that requests are reverse-proxied and distributed to different server
 
 For load balancing middleware provided by other cloud service providers, please refer to the configuration documentation provided by the specific provider.
 
+For high-availability deployments, the following is recommended:
+
+- Run at least 2 application instances within the same cluster, and let the load balancer handle instance failover.
+- The health check of the load balancer should reflect actual application availability, not just whether the port is open.
+- If you need warm standby across availability zones or regions, you would typically deploy multiple independent clusters, and the operations team would be responsible for synchronizing and switching the database, shared storage, and other infrastructure.
+
 ## Environment Variable Configuration
 
 All nodes in the cluster should use the same environment variable configuration. In addition to NocoBase's basic [environment variables](/api/cli/env), the following middleware-related environment variables also need to be configured.
+
+### Key Secrets
+
+In addition to the middleware environment variables, all nodes in the cluster should also explicitly configure the same key secrets:
+
+```ini
+APP_KEY=
+APP_AES_SECRET_KEY=
+# Or use a read-only mounted key file
+# APP_AES_SECRET_KEY_PATH=
+```
+
+- `APP_KEY` is used for token / JWT signing. If it is not explicitly configured, the application falls back to the default secret file under `storage`.
+- `APP_AES_SECRET_KEY` is used to decrypt sensitive fields in the database. If it is not explicitly configured, the application also falls back to the default secret file under `storage`.
+- In ephemeral containers or multi-node deployments, relying on automatically generated local secret files can cause tokens to become invalid after restart, or historical encrypted data to become undecryptable.
+
+:::info{title=Tip}
+`APP_AES_SECRET_KEY` must be a 32-byte AES-256 key, represented by 64 hexadecimal characters.
+
+In cloud environments, it is recommended to manage these values centrally through services such as Secrets Manager, SSM Parameter Store, Kubernetes Secret, or a read-only mounted key file.
+:::
 
 ### Multi-core Mode
 
