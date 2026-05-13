@@ -24,6 +24,7 @@ Create a channel in Notification manager, type **DingTalk**, and select the auth
 
 ![](https://static-docs.nocobase.com/20260513232435.png)
 
+- **Text template** — `text` work notification for plain text messages, configured with `text.content`.
 - **Markdown template** — `markdown` work notification (text / images / links per DingTalk client).
 - **ActionCard template** — `action_card` with **whole-card jump** (single URL) or **independent buttons** (`btn_json_list` JSON array).
 - **Form template (OA)** — `oa` for structured summaries (e.g. orders), optional `form` key-value JSON rows, plus `message_url` / `pc_message_url`.

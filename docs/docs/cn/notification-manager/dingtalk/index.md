@@ -28,6 +28,7 @@ pkg: '@nocobase/plugin-auth-dingtalk'
 
 ![](https://static-docs.nocobase.com/20260513232435.png)
 
+- **Text 模板**：对应钉钉工作通知 `msgtype: text`，适合发送纯文本通知，配置 `text.content`。
 - **Markdown 模板**：对应钉钉工作通知 `msgtype: markdown`，适合纯展示类通知（文本、图片、链接等以钉钉客户端能力为准）。
 - **ActionCard 模板**：对应 `action_card`。  
   - **整体跳转**：单按钮，整张卡片指向同一链接。  
