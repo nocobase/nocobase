@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionBlockModel } from '@nocobase/client';
+import { CollectionBlockModel } from '@nocobase/client-v2';
 import { defineAction } from '@nocobase/flow-engine';
 import { Empty, Select, Spin, Switch, theme } from 'antd';
 import React from 'react';

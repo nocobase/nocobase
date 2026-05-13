@@ -8,7 +8,7 @@
  */
 
 import { DisplayItemModel, FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { AddChildActionModel, PopupActionModel } from '@nocobase/client';
+import { AddChildActionModel, PopupActionModel } from '@nocobase/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TreeBlockModel, TreeTitleFieldSettingsModel } from '../TreeBlockModel';
 
