@@ -445,6 +445,9 @@ TableColumnModel.registerFlow({
     quickEdit: {
       title: tExpr('Enable quick edit'),
       uiMode: { type: 'switch', key: 'editable' },
+      hideInSettings(ctx) {
+        return !!ctx.model.associationPathName;
+      },
       defaultParams(ctx) {
         if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
@@ -456,7 +459,7 @@ TableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('editable', params.editable);
+        ctx.model.setProps('editable', ctx.model.associationPathName ? false : params.editable);
       },
     },
     model: {
