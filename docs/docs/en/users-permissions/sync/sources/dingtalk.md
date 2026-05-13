@@ -35,6 +35,32 @@ After saving, copy the **event subscription callback URL** shown on the page int
 
 In the data source list, click **Sync** to run a full pull. When it succeeds, check **Users** and **Departments**.
 
+## Synced fields
+
+DingTalk sync pulls two types of data: **departments** and **users**. The data is converted into the standard fields of the user data sync plugin and then written to NocoBase. DingTalk-side IDs are stored as source unique identifiers, which are used for later incremental updates, deletions, and relationship maintenance.
+
+### Department fields
+
+| DingTalk field | NocoBase sync field | Description |
+| --- | --- | --- |
+| Department ID | `uid` | Source unique identifier for the same DingTalk department. It is not used directly as the primary key of the NocoBase departments table. |
+| Department name | `title` | Written to the NocoBase department name. |
+| Parent department ID | `parentUid` | Used to maintain the parent-child relationship of departments in NocoBase. |
+| Deleted status | `isDeleted` | Used during incremental sync to delete or detach the corresponding department record. |
+
+### User fields
+
+| DingTalk field | NocoBase sync field | Description |
+| --- | --- | --- |
+| User ID | `uid` | Source unique identifier for the same DingTalk user. It is not used directly as the primary key of the NocoBase users table. |
+| Name | `nickname` | Written to the NocoBase user nickname. |
+| Mobile number | `phone` | Written to the NocoBase user phone number, and can be used to match existing users. |
+| Email | `email` | Written to the NocoBase user email, and can be used to match existing users. |
+| Department ID list | `departments` | Maintains the user's department relationships. The corresponding department records must exist before syncing the relationship. |
+| Department owner information | `departments[].isOwner` | Marks whether the user is an owner of the corresponding department. |
+| Main department information | `departments[].isMain` | Marks the user's main department. |
+| Deleted / resigned status | `isDeleted` | Used during incremental sync to delete or detach the corresponding user record. Users with the root role will not be deleted. |
+
 ## Incremental sync
 
 With event subscription enabled and **Token** / **EncodingAESKey** configured correctly, DingTalk pushes encrypted events; the server decrypts them and writes changes through the user data sync resources. If you do not use the callback, you can still stay consistent via scheduled or manual full sync.
