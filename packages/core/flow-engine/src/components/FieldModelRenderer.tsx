@@ -29,40 +29,59 @@ const flowModelRendererPropKeys: (keyof FlowModelRendererProps)[] = [
 export function FieldModelRenderer(props: any) {
   const { model, ...rest } = props;
   const composingRef = useRef(false);
+  const pendingValueRef = useRef<any>(undefined);
+  const lastEmittedValueRef = useRef<any>(Symbol('unset'));
 
-  const handleChange = (e: any) => {
-    let val;
+  const resolveValueFromChange = (e: any) => {
     if (e && e.target && typeof e.target.value !== 'undefined') {
-      val = e.target.value;
-    } else if (
+      return e.target.value;
+    }
+    if (
       typeof e === 'string' ||
       typeof e === 'number' ||
       typeof e === 'boolean' ||
       (typeof e === 'object' && !(e instanceof Event))
     ) {
-      val = e;
-    } else {
-      val = null;
+      return e;
     }
+    return null;
+  };
+
+  const handleChange = (e: any) => {
+    const val = resolveValueFromChange(e);
+    pendingValueRef.current = val;
 
     model.setProps({ value: val });
-    if (!composingRef.current) {
-      props.onChange?.(val);
-    }
+    const nativeIsComposing = !!e?.nativeEvent?.isComposing;
+    const isComposing = composingRef.current || nativeIsComposing;
+    if (isComposing) return;
+    if (Object.is(lastEmittedValueRef.current, val)) return;
+    lastEmittedValueRef.current = val;
+    props.onChange?.(val);
   };
   const handleCompositionStart = () => {
+    composingRef.current = true;
+  };
+  const handleCompositionUpdate = () => {
     composingRef.current = true;
   };
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>, flag = true) => {
     composingRef.current = false;
-    if (flag) {
-      props.onChange(e);
-    }
+    if (!flag) return;
+    // Ensure the final value is propagated as a value (not a raw event),
+    // and keep consistency with `handleChange` behavior.
+    const val = resolveValueFromChange(e) ?? pendingValueRef.current;
+    pendingValueRef.current = val;
+    model.setProps({ value: val });
+    if (Object.is(lastEmittedValueRef.current, val)) return;
+    lastEmittedValueRef.current = val;
+    props.onChange?.(val);
   };
 
   const modelProps = {
     onCompositionStart: handleCompositionStart,
+    onCompositionUpdate: handleCompositionUpdate,
     onCompositionEnd: handleCompositionEnd,
     ..._.omit(rest, flowModelRendererPropKeys),
     onChange: handleChange,
