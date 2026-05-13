@@ -17,6 +17,36 @@ import { useRequest } from 'ahooks';
 import React, { useMemo } from 'react';
 import { TextAreaWithContextSelector } from '../../flow/components/TextAreaWithContextSelector';
 
+/**
+ * The flow-engine defaults emit `{{ ctx.$X.Y }}` and only parse the same
+ * shape back into a path — but NocoBase server templates (and v1 stored
+ * values) use the bare `{{$X.Y}}` form without the `ctx.` prefix. These
+ * converters keep the picker's output stable against v1 and let already-
+ * stored values round-trip to a labelled pill instead of falling back to a
+ * raw `{{…}}` literal.
+ */
+const VARIABLE_EXPR_RE = /^\{\{\s*(.+?)\s*\}\}$/;
+
+export function parseVariablePath(value?: string): string[] | undefined {
+  if (typeof value !== 'string') return undefined;
+  const match = value.trim().match(VARIABLE_EXPR_RE);
+  if (!match) return undefined;
+  let pathString = match[1];
+  // Backwards-compat: accept the legacy `ctx.` prefix so values produced by
+  // pre-fix versions of the picker still resolve to a labelled pill.
+  if (pathString === 'ctx') return [];
+  if (pathString.startsWith('ctx.')) pathString = pathString.slice(4);
+  return pathString.split('.');
+}
+
+export function formatVariablePath(meta?: MetaTreeNode): string | undefined {
+  const paths = meta?.paths || [];
+  if (paths.length === 0) return undefined;
+  // No inner spaces — matches the v1 storage shape exactly so round-trips
+  // through the API stay byte-stable.
+  return `{{${paths.join('.')}}}`;
+}
+
 const META_TREE_CACHE_PREFIX = '@nocobase/client-v2:VariableInput:metaTree';
 
 /**
@@ -108,7 +138,15 @@ export interface VariableInputProps {
 export function VariableInput(props: VariableInputProps) {
   const { namespaces, extraNodes, converters, ...rest } = props;
   const metaTree = useFilteredMetaTree({ namespaces, extraNodes });
-  return <VariableHybridInput {...rest} converters={converters} metaTree={metaTree} />;
+  const mergedConverters = useMemo<VariableHybridInputConverters>(
+    () => ({
+      formatPathToValue: formatVariablePath,
+      parseValueToPath: parseVariablePath,
+      ...converters,
+    }),
+    [converters],
+  );
+  return <VariableHybridInput {...rest} converters={mergedConverters} metaTree={metaTree} />;
 }
 
 export interface VariableTextAreaProps extends Omit<VariableInputProps, 'converters' | 'addonBefore'> {
@@ -127,6 +165,13 @@ export function VariableTextArea(props: VariableTextAreaProps) {
   const metaTree = useFilteredMetaTree({ namespaces, extraNodes });
   const metaTreeGetter = useMemo(() => () => metaTree, [metaTree]);
   return (
-    <TextAreaWithContextSelector {...rest} rows={rows} maxRows={maxRows} style={style} metaTree={metaTreeGetter} />
+    <TextAreaWithContextSelector
+      {...rest}
+      rows={rows}
+      maxRows={maxRows}
+      style={style}
+      metaTree={metaTreeGetter}
+      formatPathToValue={(meta) => formatVariablePath(meta) ?? ''}
+    />
   );
 }

@@ -36,6 +36,13 @@ export interface TextAreaWithContextSelectorProps {
    * omitted, the full `ctx.getPropertyMetaTree()` is used (legacy default).
    */
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  /**
+   * Format a picked meta node into the string inserted at the caret. When
+   * omitted, the FlowContextSelector default (`{{ ctx.X.Y }}`) is used.
+   * Override to match a different storage convention — e.g. NocoBase server
+   * templates use `{{$X.Y}}` without the `ctx.` prefix.
+   */
+  formatPathToValue?: (meta: MetaTreeNode) => string;
 }
 
 /**
@@ -50,6 +57,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
   style,
   disabled,
   metaTree,
+  formatPathToValue,
 }) => {
   const flowCtx = useFlowContext();
   const [innerValue, setInnerValue] = useState<string>(value || '');
@@ -129,6 +137,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
         <FlowContextSelector
           metaTree={resolvedMetaTree}
           disabled={disabled}
+          formatPathToValue={formatPathToValue}
           onChange={(val) => handleVariableSelected(val)}
         >
           <Button

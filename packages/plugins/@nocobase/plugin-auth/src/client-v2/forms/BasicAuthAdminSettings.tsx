@@ -10,7 +10,7 @@
 import { Table, VariableInput, VariableTextArea } from '@nocobase/client-v2';
 import { useFlowContext, type MetaTreeNode } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { Alert, Checkbox, Form, InputNumber, Radio, Select, Tabs, Typography } from 'antd';
+import { Alert, Checkbox, Form, InputNumber, Radio, Select, Tabs, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -166,7 +166,11 @@ function SignupFormTable(props: { value?: SignupFieldRow[]; onChange?: (next: Si
       {
         title: t('Field'),
         dataIndex: 'field',
-        render: (fieldName) => fieldTitle(fieldName),
+        width: 200,
+        // v1 wrapped field names in a bordered Tag — keep the same chip
+        // affordance so the row reads as a *field reference* and not free
+        // text. `bordered` is implicit on the default Tag.
+        render: (fieldName) => <Tag>{fieldTitle(fieldName)}</Tag>,
       },
       {
         title: t('Show'),
@@ -189,6 +193,10 @@ function SignupFormTable(props: { value?: SignupFieldRow[]; onChange?: (next: Si
           />
         ),
       },
+      // Filler: antd Table stretches to fill its container, so without a
+      // trailing column every sized column gets the slack — including Field.
+      // An empty, unsized column absorbs the remainder instead.
+      { title: '', dataIndex: '_filler', render: () => null },
     ],
     [fieldTitle, t, updateRow],
   );
@@ -206,7 +214,6 @@ function SignupFormTable(props: { value?: SignupFieldRow[]; onChange?: (next: Si
   return (
     <Table<SignupFieldRow>
       rowKey="field"
-      size="small"
       pagination={false}
       columns={columns}
       dataSource={reconciled}
