@@ -323,7 +323,7 @@ describe('remotePlugins', () => {
       expect(requirejs.requirejs.config).toBeCalledTimes(0);
     });
 
-    it.skip('If there is devDynamicImport and devDynamicImport returns partial, remote API will be requested', async () => {
+    it('If there is devDynamicImport and devDynamicImport returns partial, remote API will be requested', async () => {
       const remoteFn = vi.fn();
       const mockPluginsModules = (pluginData, resolve) => {
         remoteFn();

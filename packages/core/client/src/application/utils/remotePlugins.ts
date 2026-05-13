@@ -138,10 +138,8 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<[stri
     return res;
   }
 
-  if (res.length === 0) {
-    const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
-    res.push(...remotePluginList);
-  }
+  const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
+  res.push(...remotePluginList);
 
   return res;
 }

@@ -15,7 +15,7 @@ import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
-import { generatePlugins, getRsbuildAlias } from '@nocobase/devtools/rsbuildConfig';
+import { generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,7 +104,7 @@ export default defineConfig(({ command }) => {
   const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${clientPort + 1}`;
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT, clientPort);
-  const workspaceAliases = getRsbuildAlias();
+  const workspaceAliases = getRsbuildBrowserAlias();
 
   return {
     plugins: [pluginReact(), pluginLess(), pluginNodePolyfill(), pluginSvgr()],

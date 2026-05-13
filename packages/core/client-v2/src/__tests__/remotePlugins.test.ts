@@ -58,6 +58,57 @@ describe('client-v2 remotePlugins', () => {
     expect(mockDefine).not.toHaveBeenCalledWith('@nocobase/demo/client', expect.any(Function));
   });
 
+  it('should request remote plugins when devDynamicImport only resolves some plugins', async () => {
+    class DemoPlugin extends Plugin {}
+
+    const remoteFn = vi.fn();
+    const requirejs: any = {
+      requirejs: (pluginData, resolve) => {
+        remoteFn();
+        resolve({ default: DemoPlugin });
+      },
+    };
+    requirejs.requirejs.config = vi.fn();
+
+    const mockDefine: any = vi.fn();
+    window.define = mockDefine;
+
+    const plugins = await getPlugins({
+      requirejs,
+      pluginData: [
+        {
+          name: '@nocobase/demo',
+          packageName: '@nocobase/demo',
+          url: 'https://demo.com/dist/client-v2/index.js',
+        },
+        {
+          name: '@nocobase/remote',
+          packageName: '@nocobase/remote',
+          url: 'https://remote.com/dist/client-v2/index.js',
+        },
+      ] as any,
+      devDynamicImport: ((packageName) => {
+        if (packageName === '@nocobase/demo') {
+          return Promise.resolve({ default: DemoPlugin });
+        }
+        return Promise.resolve(null);
+      }) as any,
+    });
+
+    expect(plugins).toEqual([
+      ['@nocobase/demo', DemoPlugin],
+      ['@nocobase/remote', DemoPlugin],
+    ]);
+    expect(remoteFn).toHaveBeenCalledTimes(1);
+    expect(mockDefine).toHaveBeenCalledTimes(1);
+    expect(requirejs.requirejs.config).toHaveBeenCalledWith({
+      waitSeconds: 120,
+      paths: {
+        '@nocobase/remote/client-v2': 'https://remote.com/dist/client-v2/index.js',
+      },
+    });
+  });
+
   it('should configure remote plugin paths with /client-v2 module ids', () => {
     const requirejs: any = {
       requirejs: {
