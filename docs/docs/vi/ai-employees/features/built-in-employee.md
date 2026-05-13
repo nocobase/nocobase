@@ -1,8 +1,8 @@
 ---
 pkg: "@nocobase/plugin-ai"
 title: "Nhân viên AI tích hợp sẵn"
-description: "Nhân viên AI có sẵn của NocoBase: Định vị vai trò và kịch bản sử dụng của Atlas, Cole, Ellis, Dex, Viz, Lexi, Vera, Dara, Orin, Nathan, bao gồm Atlas trưởng nhóm, Viz phân tích insight, Dex tổ chức dữ liệu, Orin mô hình hóa dữ liệu, Nathan phát triển front-end."
-keywords: "Nhân viên AI tích hợp sẵn,Atlas,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara,Orin,Nathan,NocoBase"
+description: "Nhân viên AI có sẵn của NocoBase: Định vị vai trò và kịch bản sử dụng của Atlas, Cole, Ellis, Dex, Viz, Lexi, Vera, Dara, Nathan, bao gồm Atlas trưởng nhóm, Viz phân tích insight, Dex tổ chức dữ liệu, Nathan phát triển front-end."
+keywords: "Nhân viên AI tích hợp sẵn,Atlas,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara, Nathan,NocoBase"
 ---
 
 # Nhân viên AI tích hợp sẵn
@@ -26,7 +26,6 @@ Bạn chỉ cần cấu hình tốt dịch vụ LLM và kích hoạt nhân viên
 | **Lexi** | Trợ lý dịch thuật | Dịch đa ngôn ngữ, hỗ trợ giao tiếp |
 | **Vera** | Nhà phân tích nghiên cứu | Tìm kiếm trên web, tổng hợp thông tin, nghiên cứu chuyên sâu |
 | **Dara** | Chuyên gia trực quan hóa dữ liệu | Cấu hình biểu đồ, tạo báo cáo trực quan |
-| **Orin** | Chuyên gia mô hình hóa dữ liệu | Hỗ trợ thiết kế cấu trúc bảng dữ liệu, gợi ý Field |
 | **Nathan** | Kỹ sư front-end | Hỗ trợ viết đoạn mã front-end, điều chỉnh style |
 
 
@@ -54,7 +53,7 @@ Trong hầu hết các kịch bản, chỉ cần trực tiếp mô tả nhu cầ
 
 Một số Nhân viên AI tích hợp sẵn (loại xây dựng) sẽ không xuất hiện trong danh sách Nhân viên AI ở góc dưới bên phải, họ có kịch bản công việc chuyên biệt, ví dụ
 
-* Orin chỉ xuất hiện trong trang cấu hình nguồn dữ liệu;
+* chỉ xuất hiện trong trang cấu hình nguồn dữ liệu;
 * Dara chỉ xuất hiện trong trang cấu hình biểu đồ;
 * Nathan chỉ xuất hiện trên trình soạn thảo JS.
 
@@ -180,40 +179,7 @@ Sau khi gửi, `Dex` sẽ cấu trúc hóa dữ liệu, và sử dụng Skill đ
 
 ---
 
-
-
-## Orin: Nhà mô hình hóa dữ liệu
-
-### Giới thiệu
-
-> Thiết kế bảng dữ liệu thông minh, tối ưu cấu trúc cơ sở dữ liệu.
-
-`Orin` là chuyên gia mô hình hóa dữ liệu, trong trang cấu hình nguồn dữ liệu chính có thể cho `Orin` giúp bạn tạo hoặc sửa đổi bảng dữ liệu.
-
-![20251022160628](https://static-docs.nocobase.com/20251022160628.png)
-
-### Cách sử dụng
-
-Vào Plugin quản lý nguồn dữ liệu, chọn cấu hình nguồn dữ liệu chính.
-
-![20251022161146](https://static-docs.nocobase.com/20251022161146.png)
-
-Nhấp vào avatar `Orin` ở góc trên bên phải, mở hộp thoại Nhân viên AI.
-
-![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
-
-Mô tả nhu cầu mô hình hóa của bạn cho `Orin`, sau khi gửi đợi phản hồi.
-
-Khi `Orin` xác nhận nhu cầu của bạn, sẽ sử dụng Skill và phản hồi lại cho bạn bản xem trước mô hình hóa dữ liệu.
-
-Sau khi xem xong bản xem trước, nhấp nút `Finish review and apply` để tạo bảng dữ liệu theo mô hình hóa của `Orin`.
-
-![20251022162142](https://static-docs.nocobase.com/20251022162142.png)
-
-
 ---
-
-
 
 ## Nathan: Kỹ sư front-end
 

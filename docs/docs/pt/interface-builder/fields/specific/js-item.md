@@ -28,7 +28,7 @@ O JS Item é usado para "itens personalizados" em formulários (não vinculados 
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Pode ser combinado com o Funcionário AI para gerar/modificar scripts: [Funcionário AI · Nathan: Engenheiro Frontend](/ai-employees/features/built-in-employee)
+- Pode ser combinado com o Funcionário AI para gerar/modificar scripts: [Funcionário AI · Nathan: Engenheiro Frontend](/ai-employees/built-in/)
 
 ## Uso Comum (Exemplos Simplificados)
 

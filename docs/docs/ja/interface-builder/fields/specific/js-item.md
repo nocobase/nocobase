@@ -28,7 +28,7 @@ JS Item は、フォーム内で「カスタム項目」（フィールドにバ
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- AI従業員と連携してスクリプトを生成・修正することも可能です：[AI従業員・Nathan：フロントエンドエンジニア](/ai-employees/features/built-in-employee)
+- AI従業員と連携してスクリプトを生成・修正することも可能です：[AI従業員・Nathan：フロントエンドエンジニア](/ai-employees/built-in/)
 
 ## よくある使い方（簡易例）
 

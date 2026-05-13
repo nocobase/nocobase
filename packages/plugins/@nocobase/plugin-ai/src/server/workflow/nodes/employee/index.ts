@@ -90,6 +90,8 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
             username,
           },
         });
+        const plugin = this.workflow.app.pm.get('ai') as PluginAIServer;
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx: {
@@ -107,7 +109,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
               params: {
                 values: {
                   sessionId: conversation.sessionId,
-                  model,
+                  model: resolvedModel,
                 },
               },
             },
@@ -117,7 +119,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
           systemMessage,
           skillSettings,
           webSearch,
-          model,
+          model: resolvedModel,
           tools: [{ name: toolName }],
         });
 

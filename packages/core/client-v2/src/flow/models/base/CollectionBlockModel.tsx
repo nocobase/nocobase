@@ -662,6 +662,9 @@ CollectionBlockModel.registerFlow({
       async handler(ctx) {
         const blockModel = ctx.model as CollectionBlockModel;
         const filterManager: FilterManager = ctx.model.context.filterManager;
+        const preparedFilterBlocks = filterManager?.prepareFiltersForTarget
+          ? await filterManager.prepareFiltersForTarget(ctx.model.uid)
+          : undefined;
         if (filterManager) {
           filterManager.bindToTarget(ctx.model.uid);
         }
@@ -678,6 +681,10 @@ CollectionBlockModel.registerFlow({
           resource.loading = false;
           return;
         }
+
+        preparedFilterBlocks?.forEach((filterBlockModel: any) => {
+          filterBlockModel?.markInitialTargetRefreshHandled?.(ctx.model.uid);
+        });
 
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;

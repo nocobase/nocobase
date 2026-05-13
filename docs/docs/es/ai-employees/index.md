@@ -41,7 +41,7 @@ Primero consulte el [Inicio rápido](/ai-employees/quick-start) y complete la co
 
 ### C. Capacidades avanzadas (Extensiones)
 
-- [Empleados de IA integrados](/ai-employees/features/built-in-employee): conozca el posicionamiento y los escenarios de aplicación de los empleados preestablecidos.
+- [Empleados de IA integrados](/ai-employees/built-in/): conozca el posicionamiento y los escenarios de aplicación de los empleados preestablecidos.
 - [Control de permisos](/ai-employees/permission): controle el acceso a empleados, habilidades y datos según el modelo de permisos de la organización.
 - [Base de conocimientos de IA](/ai-employees/knowledge-base/index): introduzca el conocimiento de la empresa para mejorar la estabilidad y trazabilidad de las respuestas.
 - [Nodo LLM de flujo de trabajo](/ai-employees/workflow/nodes/llm/chat): organice las capacidades de IA en procesos automatizados.

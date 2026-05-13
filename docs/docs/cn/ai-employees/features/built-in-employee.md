@@ -1,8 +1,8 @@
 ---
 pkg: "@nocobase/plugin-ai"
 title: "内置 AI 员工"
-description: "NocoBase 预置 AI 员工：Atlas、Cole、Ellis、Dex、Viz、Lexi、Vera、Dara、Orin、Nathan 的角色定位与使用场景，含  Atlas 团队领导、Viz 洞察分析、Dex 数据整理、Orin 数据建模、Nathan 前端开发。"
-keywords: "内置 AI 员工,Atlas,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara,Orin,Nathan,NocoBase"
+description: "NocoBase 预置 AI 员工：Atlas、Cole、Ellis、Dex、Viz、Lexi、Vera、Dara、Nathan 的角色定位与使用场景，含  Atlas 团队领导、Viz 洞察分析、Dex 数据整理、Nathan 前端开发。"
+keywords: "内置 AI 员工,Atlas,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara,Nathan,NocoBase"
 ---
 
 # 内置 AI 员工
@@ -26,7 +26,6 @@ NocoBase 预置了多个针对特定场景的 AI 员工。
 | **Lexi**   | 翻译助理       | 多语言翻译、沟通辅助                                           |
 | **Vera**   | 研究分析师     | 联网搜索、信息汇总、深度研究                                   |
 | **Dara**   | 数据可视化专家 | 图表配置、可视化报表生成                                       |
-| **Orin**   | 数据建模专家   | 辅助设计数据表结构、字段建议                                   |
 | **Nathan** | 前端工程师     | 辅助编写前端代码片段、样式调整                                 |
 
 
@@ -54,7 +53,6 @@ Atlas 是 NocoBase 内置的默认总入口 AI 员工。大多数情况下，直
 
 部分内置 AI 员工（构建类）不会出现在右下角的 AI 员工列表中，它们有专属工作场景，例如
 
-* Orin 只会出现在数据源配置页面；
 * Dara 只会出现在图表配置页面；
 * Nathan 只会出现在 JS 编辑器上。
 
@@ -176,39 +174,6 @@ Hi Viz，生成本月线索趋势。
 发送后 `Dex` 会将数据结构化，并使用技能把数据更新到选中的表单中。
 
 ![20251022155733](https://static-docs.nocobase.com/20251022155733.png)
-
-
----
-
-
-
-## Orin：数据建模师
-
-### 介绍
-
-> 智能设计数据表，优化数据库结构。
-
-`Orin` 是数据建模专家，在主数据源配置页面可以让 `Orin` 帮助你创建或修改数据表。
-
-![20251022160628](https://static-docs.nocobase.com/20251022160628.png)
-
-### 使用方式
-
-进入数据源管理插件，选择配置主数据源
-
-![20251022161146](https://static-docs.nocobase.com/20251022161146.png)
-
-点击右上角 `Orin` 头像，打开 AI 员工对话框
-
-![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
-
-向 `Orin` 描述你的建模需求，发送后等待回复。 
-
-当 `Orin` 确认你的需求后，会使用技能并回复给你数据建模的预览。
-
-查看完预览，点击 `Finish review and apply` 按钮按照 `Orin` 的建模创建数据表。
-
-![20251022162142](https://static-docs.nocobase.com/20251022162142.png)
 
 
 ---

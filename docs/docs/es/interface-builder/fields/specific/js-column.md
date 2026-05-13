@@ -33,7 +33,7 @@ El editor de scripts de JS Column admite resaltado de sintaxis, sugerencias de e
 
 Puede combinarse con empleados de IA para generar código:
 
-- [Empleado de IA · Nathan: Ingeniero frontend](/ai-employees/features/built-in-employee)
+- [Empleado de IA · Nathan: Ingeniero frontend](/ai-employees/built-in/)
 
 ## Usos Comunes
 

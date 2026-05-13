@@ -18,7 +18,7 @@ export const validation = defineAction({
       return;
     }
     const targetInterface = ctx.model.collectionField.getInterfaceOptions();
-    if (!targetInterface.validationType) {
+    if (!targetInterface?.validationType) {
       return null;
     }
     return {

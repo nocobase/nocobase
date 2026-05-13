@@ -16,7 +16,7 @@
 Можно ознакомиться со следующими документами:
   - [Рабочие процессы](/workflow)
   - [Настройка LLM-сервиса](/ai-employees/features/llm-service)
-  - [Встроенные AI-сотрудники](/ai-employees/features/built-in-employee)
+  - [Встроенные AI-сотрудники](/ai-employees/built-in/)
   - [Создание AI-сотрудника](/ai-employees/features/new-ai-employees)
 
 ### Задача

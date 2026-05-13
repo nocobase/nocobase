@@ -40,7 +40,7 @@ Trình chỉnh sửa script của JS Block hỗ trợ tô sáng cú pháp, gợi
 
 Và ở góc trên bên phải của trình chỉnh sửa có thể trực tiếp gọi AI Employee "Frontend Engineer · Nathan", để anh ấy giúp bạn viết hoặc chỉnh sửa script dựa trên ngữ cảnh hiện tại, "Apply to editor" một lần để áp dụng vào trình chỉnh sửa rồi chạy xem hiệu ứng. Xem chi tiết:
 
-- [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Môi trường runtime và bảo mật
 
