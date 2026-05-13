@@ -9,7 +9,9 @@
 
 import * as antdCssinjs from '@ant-design/cssinjs';
 import * as antdIcons from '@ant-design/icons';
+import * as antdStyle from 'antd-style';
 import * as emotionCss from '@emotion/css';
+import * as formilyAntdV5 from '@formily/antd-v5';
 import * as formilyCore from '@formily/core';
 import * as formilyReact from '@formily/react';
 import * as formilyReactive from '@formily/reactive';
@@ -19,6 +21,7 @@ import { dayjs } from '@nocobase/utils/client';
 import * as nocobaseFlowEngine from '@nocobase/flow-engine';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
+import * as FileSaver from 'file-saver';
 import axios from 'axios';
 import * as i18next from 'i18next';
 import lodash from 'lodash';
@@ -49,12 +52,14 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('antd', () => antd);
   requirejs.define('@ant-design/icons', () => antdIcons);
   requirejs.define('@ant-design/cssinjs', () => antdCssinjs);
+  requirejs.define('antd-style', () => antdStyle);
 
   // i18next
   requirejs.define('i18next', () => i18next);
   requirejs.define('react-i18next', () => reactI18next);
 
   // formily
+  requirejs.define('@formily/antd-v5', () => formilyAntdV5);
   requirejs.define('@formily/core', () => formilyCore);
   requirejs.define('@formily/react', () => formilyReact);
   requirejs.define('@formily/reactive', () => formilyReactive);
@@ -73,4 +78,5 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('dayjs', () => dayjs);
   requirejs.define('lodash', () => lodash);
   requirejs.define('@emotion/css', () => emotionCss);
+  requirejs.define('file-saver', () => FileSaver);
 }
