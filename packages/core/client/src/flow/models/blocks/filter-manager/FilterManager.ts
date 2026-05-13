@@ -100,6 +100,18 @@ async function waitForResourceIdle(resource: any) {
   });
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  try {
+    return String(error);
+  } catch {
+    return 'Unknown error';
+  }
+}
+
 export class FilterManager {
   private filterConfigs: FilterConfig[];
   private readonly gridModel: FlowModel;
@@ -151,7 +163,7 @@ export class FilterManager {
             preparedBlockModels.add(blockModel);
           }
         } catch (error) {
-          console.error(`Failed to prepare filter defaults for target "${targetId}": ${error.message}`);
+          console.error(`Failed to prepare filter defaults for target "${targetId}": ${getErrorMessage(error)}`);
         }
       }),
     );

@@ -326,6 +326,40 @@ describe('FilterManager', () => {
       expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
     });
+
+    it('should keep error isolation when a filter block rejects a non-error value', async () => {
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['name'],
+        },
+        {
+          filterId: 'filter2',
+          targetId: 'target1',
+          filterPaths: ['title'],
+        },
+      ];
+      const failingBlockModel = { prepareInitialFilterValues: vi.fn().mockRejectedValue('bad default') };
+      const preparedBlockModel = { prepareInitialFilterValues: vi.fn().mockResolvedValue(true) };
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'filter1') return { context: { blockModel: failingBlockModel } };
+        if (uid === 'filter2') return { context: { blockModel: preparedBlockModel } };
+        return null;
+      });
+
+      try {
+        const prepared = await filterManager.prepareFiltersForTarget('target1');
+
+        expect(prepared.has(failingBlockModel)).toBe(false);
+        expect(prepared.has(preparedBlockModel)).toBe(true);
+        expect(errorSpy).toHaveBeenCalledWith('Failed to prepare filter defaults for target "target1": bad default');
+      } finally {
+        errorSpy.mockRestore();
+      }
+    });
   });
 
   describe('addFilterConfig', () => {
@@ -582,6 +616,7 @@ describe('FilterManager', () => {
     });
 
     it('should wait for target resource idle before refreshing', async () => {
+      vi.useFakeTimers();
       (filterManager as any).filterConfigs = [
         {
           filterId: 'filter-1',
@@ -616,14 +651,23 @@ describe('FilterManager', () => {
       });
 
       const refreshPromise = filterManager.refreshTargetsByFilter('filter-1');
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      resource.loading = false;
-      await refreshPromise;
 
-      expect(resource.refresh).toHaveBeenCalledTimes(1);
+      try {
+        await vi.advanceTimersByTimeAsync(16);
+        expect(resource.refresh).not.toHaveBeenCalled();
+
+        resource.loading = false;
+        await vi.advanceTimersByTimeAsync(16);
+        await refreshPromise;
+
+        expect(resource.refresh).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('should not refresh before a slow target resource becomes idle', async () => {
+      vi.useFakeTimers();
       (filterManager as any).filterConfigs = [
         {
           filterId: 'filter-1',
@@ -655,14 +699,20 @@ describe('FilterManager', () => {
       });
 
       const refreshPromise = filterManager.refreshTargetsByFilter('filter-1');
-      await new Promise((resolve) => setTimeout(resolve, 2100));
 
-      expect(resource.refresh).not.toHaveBeenCalled();
+      try {
+        await vi.advanceTimersByTimeAsync(2100);
 
-      resource.loading = false;
-      await refreshPromise;
+        expect(resource.refresh).not.toHaveBeenCalled();
 
-      expect(resource.refresh).toHaveBeenCalledTimes(1);
+        resource.loading = false;
+        await vi.advanceTimersByTimeAsync(16);
+        await refreshPromise;
+
+        expect(resource.refresh).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('should skip excluded target ids when refreshing', async () => {

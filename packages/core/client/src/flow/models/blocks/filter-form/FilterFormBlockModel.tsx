@@ -31,7 +31,7 @@ import {
 import { BlockSceneEnum, FilterBlockModel } from '../../base';
 import { FormComponent } from '../../blocks/form/FormBlockModel';
 import { isEmptyValue } from '../form/value-runtime/utils';
-import { FilterManager } from '../filter-manager/FilterManager';
+import { FilterManager, type RefreshTargetsByFilterOptions } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
 import { clearLegacyDefaultValuesFromFilterFormModel } from './legacyDefaultValueMigration';
 import { findFormItemModelByFieldPath } from '../../../internal/utils/modelUtils';
@@ -83,7 +83,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     this.context.defineProperty('blockModel', {
       value: this,
     });
-    this.context.defineMethod('refreshTargets', async (options?: { excludeTargetIds?: Set<string> | string[] }) => {
+    this.context.defineMethod('refreshTargets', async (options?: RefreshTargetsByFilterOptions) => {
       const gridModel = this.subModels.grid;
       const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
       const filterIds = fieldModels?.map((fieldModel) => fieldModel?.uid).filter(Boolean);
