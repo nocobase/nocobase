@@ -9,6 +9,7 @@
 
 import { SettingOutlined } from '@ant-design/icons';
 import { FormButtonGroup } from '@formily/antd-v5';
+import type { CollectionField, PropertyMeta, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   DndProvider,
@@ -39,6 +40,169 @@ import { FormItemModel } from '../form';
 import { getDefaultOperator } from '../filter-manager/utils';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 
+const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'];
+const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'];
+
+function getFilterFormFieldMetaType(field: CollectionField) {
+  if (RELATION_FIELD_TYPES.includes(field.type)) {
+    return 'object';
+  }
+
+  if (NUMERIC_FIELD_TYPES.includes(field.type)) {
+    return 'number';
+  }
+
+  switch (field.type) {
+    case 'boolean':
+      return 'boolean';
+    case 'json':
+      return 'object';
+    case 'array':
+      return 'array';
+    default:
+      return 'string';
+  }
+}
+
+function shouldShowFilterFormFieldMeta(field: CollectionField) {
+  return Boolean(field?.interface);
+}
+
+function createFilterFormFieldMeta(field: CollectionField): PropertyMeta {
+  const baseMeta = {
+    title: field.title || field.name,
+    interface: field.interface,
+    options: field.options,
+    uiSchema: field.uiSchema || {},
+  };
+
+  if (!field.isAssociationField?.()) {
+    return {
+      type: getFilterFormFieldMetaType(field),
+      ...baseMeta,
+    };
+  }
+
+  const targetCollection = field.targetCollection;
+  if (!targetCollection) {
+    return {
+      type: 'object',
+      ...baseMeta,
+    };
+  }
+
+  return {
+    type: 'object',
+    ...baseMeta,
+    properties: async () => {
+      const properties: Record<string, PropertyMeta> = {};
+      targetCollection.fields.forEach((subField) => {
+        if (shouldShowFilterFormFieldMeta(subField)) {
+          properties[subField.name] = createFilterFormFieldMeta(subField);
+        }
+      });
+      return properties;
+    },
+  };
+}
+
+function getFilterFormItemFieldName(itemModel: any) {
+  const name = itemModel?.props?.name;
+  if (typeof name === 'string' && name) {
+    return name;
+  }
+
+  return itemModel?.fieldPath && itemModel?.uid ? `${itemModel.fieldPath}_${itemModel.uid}` : undefined;
+}
+
+function toFilterByTk(value: any, primaryKey: string | string[] | undefined) {
+  if (value == null) return undefined;
+  if (Array.isArray(primaryKey)) {
+    if (typeof value !== 'object') return undefined;
+    const filterByTk: Record<string, any> = {};
+    for (const key of primaryKey) {
+      const item = value?.[key];
+      if (item == null) return undefined;
+      filterByTk[key] = item;
+    }
+    return filterByTk;
+  }
+  if (typeof value !== 'object') return value;
+  const key = Array.isArray(primaryKey) ? primaryKey[0] : primaryKey;
+  return key ? value?.[key] : value?.id;
+}
+
+function setValueByPath(target: Record<string, any>, path: string, value: any) {
+  const segments = path.split('.').filter(Boolean);
+  if (!segments.length) return;
+
+  let cursor = target;
+  segments.forEach((segment, index) => {
+    if (index === segments.length - 1) {
+      cursor[segment] = value;
+      return;
+    }
+
+    if (!cursor[segment] || typeof cursor[segment] !== 'object' || Array.isArray(cursor[segment])) {
+      cursor[segment] = {};
+    }
+    cursor = cursor[segment];
+  });
+}
+
+function setMetaByPath(target: Record<string, PropertyMeta>, path: string, meta: PropertyMeta) {
+  const segments = path.split('.').filter(Boolean);
+  if (!segments.length) return;
+
+  let cursor = target;
+  segments.forEach((segment, index) => {
+    if (index === segments.length - 1) {
+      cursor[segment] = meta;
+      return;
+    }
+
+    const current = cursor[segment];
+    if (!current || typeof current !== 'object') {
+      cursor[segment] = {
+        type: 'object',
+        title: segment,
+        properties: {},
+      };
+    }
+    const properties = cursor[segment].properties;
+    if (!properties || typeof properties === 'function') {
+      cursor[segment].properties = {};
+    }
+    cursor = cursor[segment].properties as Record<string, PropertyMeta>;
+  });
+}
+
+function getFilterFormValues(form: any, items: any[]) {
+  const formValues = form?.getFieldsValue?.() || {};
+  const values = { ...formValues };
+
+  for (const itemModel of items) {
+    const fieldName = getFilterFormItemFieldName(itemModel);
+    if (!fieldName || !fieldName.includes('.') || !(fieldName in formValues)) {
+      continue;
+    }
+    setValueByPath(values, fieldName, formValues[fieldName]);
+  }
+
+  return values;
+}
+
+function findFilterFormItemByVariableSubPath(items: any[], subPath: string) {
+  if (!subPath) return null;
+
+  return (
+    items.find((itemModel) => {
+      const fieldName = getFilterFormItemFieldName(itemModel);
+      return fieldName && (subPath === fieldName || subPath.startsWith(`${fieldName}.`));
+    }) || null
+  );
+}
+
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
     grid: any; // Replace with actual type if available
@@ -64,10 +228,97 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     return 'Filter form';
   }
 
+  protected createFormValuesMetaFactory(): PropertyMetaFactory {
+    const factory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: this.translate('Current form'),
+      properties: async () => {
+        const properties: Record<string, PropertyMeta> = {};
+        const items = this.subModels?.grid?.subModels?.items || [];
+
+        for (const itemModel of items) {
+          const fieldName = getFilterFormItemFieldName(itemModel);
+          const collectionField = itemModel?.subModels?.field?.context?.collectionField || itemModel?.collectionField;
+          if (!fieldName || !collectionField || !shouldShowFilterFormFieldMeta(collectionField)) {
+            continue;
+          }
+          setMetaByPath(properties, fieldName, createFilterFormFieldMeta(collectionField));
+        }
+
+        return properties;
+      },
+      buildVariablesParams: () => {
+        const formValues = this.form?.getFieldsValue?.() || {};
+        const items = this.subModels?.grid?.subModels?.items || [];
+        const params: Record<string, any> = {};
+
+        for (const itemModel of items) {
+          const fieldName = getFilterFormItemFieldName(itemModel);
+          const collectionField = itemModel?.subModels?.field?.context?.collectionField || itemModel?.collectionField;
+          if (!fieldName || !collectionField?.isAssociationField?.()) {
+            continue;
+          }
+
+          const targetCollection = collectionField.targetCollection;
+          const target = collectionField.target;
+          if (!targetCollection || !target) {
+            continue;
+          }
+
+          const fieldValue = formValues[fieldName];
+          const primaryKey = targetCollection.filterTargetKey;
+          if (Array.isArray(fieldValue)) {
+            const filterByTk = fieldValue.map((item) => toFilterByTk(item, primaryKey)).filter((item) => item != null);
+            if (filterByTk.length) {
+              setValueByPath(params, fieldName, {
+                collection: target,
+                dataSourceKey: targetCollection.dataSourceKey,
+                filterByTk,
+              });
+            }
+            continue;
+          }
+
+          const filterByTk = toFilterByTk(fieldValue, primaryKey);
+          if (filterByTk != null) {
+            setValueByPath(params, fieldName, {
+              collection: target,
+              dataSourceKey: targetCollection.dataSourceKey,
+              filterByTk,
+            });
+          }
+        }
+
+        return params;
+      },
+    });
+    factory.title = this.translate('Current form');
+    return factory;
+  }
+
   useHooksBeforeRender() {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form, cache: false });
+    this.context.defineProperty('formValues', {
+      get: () => getFilterFormValues(this.form, this.subModels?.grid?.subModels?.items || []),
+      cache: false,
+      meta: this.createFormValuesMetaFactory(),
+      resolveOnServer: (subPath: string) => {
+        const items = this.subModels?.grid?.subModels?.items || [];
+        const itemModel = findFilterFormItemByVariableSubPath(items, subPath);
+        if (!itemModel) return false;
+
+        const fieldName = getFilterFormItemFieldName(itemModel);
+        const collectionField = itemModel?.subModels?.field?.context?.collectionField || itemModel?.collectionField;
+        return Boolean(
+          fieldName &&
+            subPath.startsWith(`${fieldName}.`) &&
+            collectionField?.isAssociationField?.() &&
+            collectionField?.targetCollection,
+        );
+      },
+    });
   }
 
   async saveStepParams() {
