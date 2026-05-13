@@ -250,6 +250,41 @@ describe('modeling apply actions', () => {
     expect(events.getField('exclude').options.type).toBe('json');
   });
 
+  it('should apply a comment collection with content baseline', async () => {
+    await app.destroy();
+    app = await createApp({
+      plugins: ['comments', 'field-markdown-vditor'],
+    });
+    agent = app.agent();
+
+    const response = await agent.resource('collections').apply({
+      values: {
+        name: 'ticket_comments',
+        title: 'Ticket Comments',
+        template: 'comment',
+        fields: [],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.verify.valid).toBe(true);
+
+    const comments = app.db.getCollection('ticket_comments');
+    expect(comments).toBeDefined();
+    expect(comments.options.template).toBe('comment');
+    expect(comments.hasField('content')).toBe(true);
+    expect(comments.hasField('createdAt')).toBe(true);
+    expect(comments.hasField('createdBy')).toBe(true);
+
+    const content = comments.getField('content');
+    expect(content.options.interface).toBe('vditor');
+    expect(content.options.type).toBe('text');
+    expect(content.options.length).toBe('long');
+    expect(content.options.deletable).toBe(false);
+    expect(content.options.uiSchema.title).toBe('Comment Content');
+    expect(content.options.uiSchema['x-component']).toBe('MarkdownVditor');
+  });
+
   it('should reject unknown field interfaces', async () => {
     const response = await agent.resource('collections').apply({
       values: {
