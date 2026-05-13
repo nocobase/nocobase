@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel } from '@nocobase/client';
+import { CollectionBlockModel } from '@nocobase/client-v2';
 import {
   AddSubModelButton,
   type ActionDefinition,
@@ -19,11 +19,10 @@ import {
   FlowModelRenderer,
   FlowSettingsButton,
   MultiRecordResource,
-  tExpr,
 } from '@nocobase/flow-engine';
 import { InputNumber, Space, Switch } from 'antd';
 import React from 'react';
-import { generateNTemplate, lang } from '../locale';
+import { tExpr } from '../locale';
 import { KanbanBlockView } from './components/KanbanBlock';
 import { createKanbanCardViewActionOptions } from './actions/KanbanPopupModels';
 import { createKanbanQuickCreateActionOptions } from './actions/KanbanPopupModels';
@@ -1312,7 +1311,7 @@ KanbanBlockModel.registerFlow({
       },
     },
     styleVariant: {
-      title: lang('Style'),
+      title: tExpr('Style'),
       preset: true,
       uiMode: () => {
         return {
@@ -1320,8 +1319,8 @@ KanbanBlockModel.registerFlow({
           key: 'styleVariant',
           props: {
             options: [
-              { label: lang('Classic style'), value: 'default' },
-              { label: lang('Filled style'), value: 'filled' },
+              { label: tExpr('Classic style'), value: 'default' },
+              { label: tExpr('Filled style'), value: 'filled' },
             ],
           },
         };

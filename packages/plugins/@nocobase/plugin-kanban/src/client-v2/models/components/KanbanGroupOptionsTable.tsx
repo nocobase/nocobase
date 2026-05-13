@@ -11,9 +11,7 @@ import { MenuOutlined } from '@ant-design/icons';
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { observer } from '@formily/react';
-import { useAPIClient } from '@nocobase/client';
-import { MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { MultiRecordResource, observer, useFlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { Alert, Empty, Input, Select, Space, Spin, Switch, Table, Tag } from 'antd';
@@ -157,7 +155,7 @@ export const KanbanGroupOptionsTable = observer(
       settingsContext = undefined;
     }
 
-    const api = useAPIClient();
+    const { api } = useFlowContext();
     const resolvedModel = model || settingsContext?.model;
     const token = resolvedModel?.context?.themeToken || {};
     const resolvedCollection = resolvedModel?.collection || collection || settingsContext?.collection;
