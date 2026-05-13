@@ -652,7 +652,7 @@ describe('flowSurfaces resource', () => {
           binding: 'associatedRecords',
           associationField: 'employee',
         },
-        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
+        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
       },
     });
     expect(semanticAdd.status).toBe(200);
@@ -667,7 +667,7 @@ describe('flowSurfaces resource', () => {
           binding: 'associatedRecords',
           associationField: 'employee',
         },
-        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
+        defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
       },
     });
     expect(semanticListAdd.status).toBe(200);
@@ -751,6 +751,18 @@ describe('flowSurfaces resource', () => {
       associationName: 'tasks.employee',
       sourceId: '{{ctx.popup.record.employeeId}}',
     });
+    const associationPopupBlockFilterAction = _.castArray(associationPopupBlock.subModels?.actions || []).find(
+      (item: any) => item?.use === 'FilterActionModel',
+    );
+    const semanticAssociationPopupBlockFilterAction = _.castArray(
+      semanticAssociationPopupBlock.subModels?.actions || [],
+    ).find((item: any) => item?.use === 'FilterActionModel');
+    expect(associationPopupBlockFilterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path)).toEqual(
+      FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION.employees,
+    );
+    expect(
+      semanticAssociationPopupBlockFilterAction?.props?.defaultFilterValue?.items.map((item: any) => item.path),
+    ).toEqual(FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION.employees);
 
     const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view', {
       popup: {
@@ -3188,7 +3200,7 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(incompleteFilterRes.status).toBe(400);
-    expect(readErrorMessage(incompleteFilterRes)).toContain('must include at least 4 filterable fields');
+    expect(readErrorMessage(incompleteFilterRes)).toContain('must include at least 3 filterable fields');
 
     const invalidDefaultFilterRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {

@@ -28,7 +28,7 @@ export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPES = new Set([
 ]);
 export const FLOW_SURFACE_PUBLIC_DATA_SURFACE_BLOCK_TYPE_LABEL = 'table/list/gridCard/calendar/kanban';
 export const FLOW_SURFACE_DEFAULT_FILTER_MAX_CANDIDATE_FIELDS = 4;
-export const FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT = 4;
+export const FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT = 3;
 export const FLOW_SURFACE_DEFAULT_FILTER_MINIMUM_COVERAGE_FIELDS = FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT;
 
 const FLOW_SURFACE_DEFAULT_FILTER_CANDIDATE_INTERFACES = new Set([
@@ -93,6 +93,16 @@ export function resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(
   );
   const candidateFieldNames = resolveFlowSurfaceDefaultFilterCandidateFieldNames(collection, options);
   return candidateFieldNames.slice(0, Math.min(minimumFields, candidateFieldNames.length));
+}
+
+export function resolveFlowSurfaceDefaultFilterRequiredFieldCount(collection: any) {
+  if (!collection) {
+    return FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT;
+  }
+  const candidateFieldCount = resolveFlowSurfaceDefaultFilterCandidateFieldNames(collection, {
+    maxCandidates: FLOW_SURFACE_DEFAULT_FILTER_MAX_CANDIDATE_FIELDS,
+  }).length;
+  return Math.min(FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT, candidateFieldCount);
 }
 
 export function resolveFlowSurfaceDefaultFilterCandidateFieldNames(

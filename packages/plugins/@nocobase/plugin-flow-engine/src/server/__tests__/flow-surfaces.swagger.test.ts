@@ -488,8 +488,8 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('calendar');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('kanban');
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('exactly 4');
-    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('at least 4');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('up to 4');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.defaultFilter.description).toContain('smaller of 3');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintFieldSpec',
     );
@@ -960,7 +960,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
       'When omitted, backend authoring generates a default filter',
     );
-    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain('exactly 4');
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain('up to 4');
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain('smaller of 3');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.defaultFilter.description).toContain(
       'action-level value wins',
     );
@@ -1275,7 +1276,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
-    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.description).toContain('exactly 4');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.description).toContain('up to 4');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultFilter.description).toContain('smaller of 3');
     expect(schemas.FlowSurfaceAddBlockRequest.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );
@@ -1434,7 +1436,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.allOf).toEqual([
       { $ref: '#/components/schemas/FlowSurfaceFilterGroup' },
     ]);
-    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.description).toContain('exactly 4');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.description).toContain('up to 4');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.defaultFilter.description).toContain('smaller of 3');
     expect(schemas.FlowSurfaceAddBlockItem.properties.defaultActionSettings.$ref).toBe(
       '#/components/schemas/FlowSurfaceDefaultActionSettings',
     );

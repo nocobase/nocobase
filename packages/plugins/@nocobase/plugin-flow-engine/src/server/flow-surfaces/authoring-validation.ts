@@ -40,6 +40,7 @@ import {
   FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT,
   isFlowSurfacePublicDataSurfaceBlockType,
   resolveFlowSurfaceDefaultFilterFieldNames,
+  resolveFlowSurfaceDefaultFilterRequiredFieldCount,
 } from './public-data-surface-default-filter';
 import {
   hasFlowSurfaceInlinePopupBlocks,
@@ -2640,25 +2641,40 @@ function collectDefaultFilterErrors(
       message: `flowSurfaces authoring ${path} must include at least one concrete filter item`,
     });
   }
-  collectDefaultFilterFieldCountErrors(value, path, errors);
+  collectDefaultFilterFieldCountErrors(value, path, errors, block, context);
   visitFilterItems(value, path, errors, block, context);
 }
 
-function collectDefaultFilterFieldCountErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+function collectDefaultFilterFieldCountErrors(
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  block?: any,
+  context: FlowSurfaceAuthoringValidationContext = {},
+) {
   const fieldNames = resolveFlowSurfaceDefaultFilterFieldNames(value);
-  if (fieldNames.length >= FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT) {
+  const requiredFieldCount = resolveDefaultFilterRequiredFieldCount(block, context);
+  if (fieldNames.length >= requiredFieldCount) {
     return;
   }
   pushAuthoringError(errors, {
     path,
     ruleId: 'defaultFilter-minimum-fields',
-    message: `flowSurfaces authoring ${path} must include at least ${FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT} filterable fields`,
+    message: `flowSurfaces authoring ${path} must include at least ${requiredFieldCount} filterable fields`,
     details: {
       fieldCount: fieldNames.length,
-      requiredFieldCount: FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT,
+      requiredFieldCount,
       fieldNames,
     },
   });
+}
+
+function resolveDefaultFilterRequiredFieldCount(block?: any, context: FlowSurfaceAuthoringValidationContext = {}) {
+  const collection = block ? getBlockCollection(block, context) : null;
+  if (!collection) {
+    return FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT;
+  }
+  return resolveFlowSurfaceDefaultFilterRequiredFieldCount(collection);
 }
 
 function collectEffectiveDefaultFilterFieldCountErrors(
@@ -2683,7 +2699,13 @@ function collectEffectiveDefaultFilterFieldCountErrors(
   if (!effectiveDefaultFilter) {
     return;
   }
-  collectDefaultFilterFieldCountErrors(effectiveDefaultFilter.value, effectiveDefaultFilter.path, errors);
+  collectDefaultFilterFieldCountErrors(
+    effectiveDefaultFilter.value,
+    effectiveDefaultFilter.path,
+    errors,
+    block,
+    context,
+  );
 }
 
 function collectDefaultFilterGroupShapeErrors(value: any, path: string, errors: AuthoringErrorInput[]) {

@@ -26,6 +26,8 @@ const LARGE_DEFAULTS_ACTION_COLLECTION = 'flow_surface_authoring_large_defaults_
 const LARGE_DEFAULTS_ACTION_FIELDS = Array.from({ length: 11 }, (_item, index) => `actionField${index + 1}`);
 const DEFAULT_FILTER_CAP_COLLECTION = 'flow_surface_authoring_default_filter_caps';
 const DEFAULT_FILTER_CAP_FIELDS = Array.from({ length: 6 }, (_item, index) => `capField${index + 1}`);
+const NARROW_DEFAULT_FILTER_COLLECTION = 'flow_surface_authoring_narrow_default_filter';
+const NARROW_DEFAULT_FILTER_FIELDS = ['title', 'name'];
 const LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION = 'flow_surface_authoring_large_defaults_sources';
 const LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION = 'flow_surface_authoring_large_defaults_targets';
 const LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS = Array.from(
@@ -61,6 +63,17 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
         name: DEFAULT_FILTER_CAP_COLLECTION,
         title: 'Flow surface authoring default filter caps',
         fields: DEFAULT_FILTER_CAP_FIELDS.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: NARROW_DEFAULT_FILTER_COLLECTION,
+        title: 'Flow surface authoring narrow default filter',
+        fields: NARROW_DEFAULT_FILTER_FIELDS.map((name) => ({
           name,
           type: 'string',
           interface: 'input',
@@ -111,6 +124,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     await waitForFixtureCollectionsReady(context.db, {
       [LARGE_DEFAULTS_ACTION_COLLECTION]: LARGE_DEFAULTS_ACTION_FIELDS,
       [DEFAULT_FILTER_CAP_COLLECTION]: DEFAULT_FILTER_CAP_FIELDS,
+      [NARROW_DEFAULT_FILTER_COLLECTION]: NARROW_DEFAULT_FILTER_FIELDS,
       [LARGE_DEFAULTS_ASSOCIATION_SOURCE_COLLECTION]: ['title', 'targetId'],
       [LARGE_DEFAULTS_ASSOCIATION_TARGET_COLLECTION]: LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS,
       categories: ['title', 'code', 'status', 'scope', 'sort'],
@@ -570,6 +584,173 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
   });
 
+  it('should require three defaultFilter fields for collections with four or more candidates', async () => {
+    const validResponse = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring three field explicit default filter blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring three field explicit default filter blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+                fields: ['capField1'],
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: 'capField1', operator: '$notEmpty' },
+                    { path: 'capField2', operator: '$notEmpty' },
+                    { path: 'capField3', operator: '$notEmpty' },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(validResponse.status, readErrorMessage(validResponse)).toBe(200);
+
+    const invalidResponse = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring two field explicit default filter blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring two field explicit default filter blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+                fields: ['capField1'],
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: 'capField1', operator: '$notEmpty' },
+                    { path: 'capField2', operator: '$notEmpty' },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(invalidResponse.status).toBe(400);
+    const minimumError = invalidResponse.body?.errors?.find(
+      (error: any) => error.ruleId === 'defaultFilter-minimum-fields',
+    );
+    expect(minimumError).toMatchObject({
+      details: {
+        fieldCount: 2,
+        requiredFieldCount: 3,
+        fieldNames: ['capField1', 'capField2'],
+      },
+    });
+  });
+
+  it('should relax defaultFilter field count for narrow direct-interface collections', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring narrow collection default filter blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring narrow collection default filter blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'narrowDefaultsTable',
+                type: 'table',
+                collection: NARROW_DEFAULT_FILTER_COLLECTION,
+                fields: ['title', 'name'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+    const data = getData(response);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const filterAction = readTableActionNodes(persistedTable).find((item: any) => item?.use === 'FilterActionModel');
+    const generatedFilter = filterAction?.props?.defaultFilterValue;
+    expect(generatedFilter?.items).toHaveLength(2);
+    expect(generatedFilter.items.map((item: any) => item.path)).toEqual(['name', 'title']);
+    expect(filterAction?.props?.filterableFieldNames).toEqual(['name', 'title']);
+  });
+
+  it('should require all available defaultFilter candidates for narrow direct-interface collections', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring narrow collection incomplete default filter blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring narrow collection incomplete default filter blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'narrowDefaultsTable',
+                type: 'table',
+                collection: NARROW_DEFAULT_FILTER_COLLECTION,
+                fields: ['title', 'name'],
+                defaultFilter: {
+                  logic: '$and',
+                  items: [{ path: 'title', operator: '$notEmpty' }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const minimumError = response.body?.errors?.find((error: any) => error.ruleId === 'defaultFilter-minimum-fields');
+    expect(minimumError).toMatchObject({
+      details: {
+        fieldCount: 1,
+        requiredFieldCount: 2,
+        fieldNames: ['title'],
+      },
+    });
+  });
+
   it('should reject explicit narrow defaultFilter before applyBlueprint writes', async () => {
     const explicitFilter = {
       logic: '$and',
@@ -608,6 +789,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(response.body.errors.map((error: any) => error.ruleId)).toEqual(
       expect.arrayContaining(['defaultFilter-minimum-fields']),
     );
+    const minimumError = response.body.errors.find((error: any) => error.ruleId === 'defaultFilter-minimum-fields');
+    expect(minimumError?.details?.requiredFieldCount).toBe(3);
     expect(response.body.errors.map((error: any) => error.path)).toEqual(
       expect.arrayContaining(['$.tabs[0].blocks[0].defaultFilter']),
     );

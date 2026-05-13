@@ -2211,13 +2211,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
-  it('should reject explicit defaultFilter payloads with fewer than four fields', async () => {
-    const threeFieldDefaultFilter = {
+  it('should reject explicit defaultFilter payloads with fewer than three fields', async () => {
+    const twoFieldDefaultFilter = {
       logic: '$and',
       items: [
         { path: 'nickname', operator: '$notEmpty' },
         { path: 'status', operator: '$notEmpty' },
-        { path: 'email', operator: '$notEmpty' },
       ],
     };
     const response = await rootAgent.resource('flowSurfaces').compose({
@@ -2228,7 +2227,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             key: 'narrowBlockDefaultFilterTable',
             type: 'table',
             collection: 'employees',
-            defaultFilter: threeFieldDefaultFilter,
+            defaultFilter: twoFieldDefaultFilter,
           },
           {
             key: 'narrowActionSettingsDefaultFilterTable',
@@ -2239,7 +2238,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                 key: 'filter',
                 type: 'filter',
                 settings: {
-                  defaultFilter: threeFieldDefaultFilter,
+                  defaultFilter: twoFieldDefaultFilter,
                 },
               },
             ],
@@ -2250,7 +2249,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             collection: 'employees',
             defaultActionSettings: {
               filter: {
-                defaultFilter: threeFieldDefaultFilter,
+                defaultFilter: twoFieldDefaultFilter,
               },
             },
           },
@@ -2272,9 +2271,9 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
     for (const error of minimumErrors) {
       expect(error.details).toMatchObject({
-        fieldCount: 3,
-        requiredFieldCount: 4,
-        fieldNames: ['nickname', 'status', 'email'],
+        fieldCount: 2,
+        requiredFieldCount: 3,
+        fieldNames: ['nickname', 'status'],
       });
     }
   });
