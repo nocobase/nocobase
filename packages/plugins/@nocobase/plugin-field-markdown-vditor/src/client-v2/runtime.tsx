@@ -7,35 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { lazy, Plugin } from '@nocobase/client';
-import 'vditor/dist/index.css';
-import { DisplayVditorFieldModel } from '../client-v2/models/DisplayVditorFieldModel';
-import { VditorFieldModel } from '../client-v2/models/VditorFieldModel';
-const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
-import { editModeSettingsItem } from './settings/markdownVditorComponentFieldSettings';
-import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
-export class PluginFieldMarkdownVditorClient extends Plugin {
-  dependencyLoaded = false;
+import React from 'react';
+import { Display } from './components/Display';
+import { MarkdownVditor } from './components';
 
-  async afterAdd() {}
+export class MarkdownVditorRuntime {
+  constructor(
+    private app: any,
+    private getPublicPath: () => string,
+  ) {}
 
-  async beforeLoad() {}
-
-  async load() {
-    this.app.addComponents({ MarkdownVditor });
-    this.app.dataSourceManager.addFieldInterfaces([MarkdownVditorFieldInterface]);
-    this.flowEngine.registerModels({
-      VditorFieldModel,
-      DisplayVditorFieldModel,
-    });
-    this.app.schemaSettingsManager.addItem('fieldSettings:component:MarkdownVditor', 'editMode', editModeSettingsItem);
+  get dependencies() {
+    return {
+      cdn: this.getCDN(),
+    };
   }
 
   getCDN() {
     if (process.env.NODE_ENV === 'production') {
-      return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
+      const base = window['__webpack_public_path__'] || this.getPublicPath().replace(/\/v2\/?$/, '/');
+      return `${base}static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client-v2/vditor`;
     }
-    return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
+    return 'https://cdn.jsdelivr.net/npm/vditor@3.11.2';
   }
 
   initVditorDependency() {
@@ -64,6 +57,13 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
       console.log('initVditorDependency failed', e);
     }
   }
-}
 
-export default PluginFieldMarkdownVditorClient;
+  render(text, props = {}) {
+    if (!text) return null;
+    return <Display value={text} {...props} />;
+  }
+
+  edit(props = {}) {
+    return <MarkdownVditor {...props} />;
+  }
+}

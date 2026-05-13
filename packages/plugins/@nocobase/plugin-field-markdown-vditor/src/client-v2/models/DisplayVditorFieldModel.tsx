@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
-import { DisplayTitleFieldModel, tval } from '@nocobase/client';
+import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayTitleFieldModel } from '@nocobase/client-v2';
 import React, { useState, useEffect } from 'react';
+import { tExpr } from '../locale';
 
 const Display = ({ value, markdown, liquid, t, textOnly, ctx, overflowMode, parseLiquid = false }) => {
   const [content, setContent] = useState(null);
@@ -34,12 +35,12 @@ const Display = ({ value, markdown, liquid, t, textOnly, ctx, overflowMode, pars
 export class DisplayVditorFieldModel extends DisplayTitleFieldModel {
   public renderComponent(value) {
     if (!value) return null;
-    const { markdown, liquid, t } = this.context;
+    const { markdownVditor, markdown, liquid, t } = this.context;
     const { textOnly, overflowMode } = this.props;
     return (
       <Display
         value={value}
-        markdown={markdown}
+        markdown={markdownVditor || markdown}
         liquid={liquid}
         t={t}
         textOnly={textOnly}
@@ -51,12 +52,12 @@ export class DisplayVditorFieldModel extends DisplayTitleFieldModel {
 }
 
 DisplayVditorFieldModel.define({
-  label: escapeT('MarkdownVditor'),
+  label: tExpr('MarkdownVditor'),
 });
 
 DisplayVditorFieldModel.registerFlow({
   key: 'markdownVditorSettings',
-  title: tval('Content settings'),
+  title: tExpr('Content settings'),
   sort: 200,
   steps: {
     renderMode: {
