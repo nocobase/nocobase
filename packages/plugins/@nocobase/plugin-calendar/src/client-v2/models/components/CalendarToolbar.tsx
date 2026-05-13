@@ -10,8 +10,8 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { i18nt, useTranslation } from '../../../locale';
-import { getLunarDay } from '../../calendar/utils';
+import { getLunarDay } from '../../../shared/calendar';
+import { tExpr, useT } from '../../locale';
 
 type CalendarToolbarProps = {
   date: Date;
@@ -24,13 +24,13 @@ type CalendarToolbarProps = {
 };
 
 const VIEW_LABELS = {
-  month: i18nt('Month'),
-  week: i18nt('Week'),
-  day: i18nt('Day'),
+  month: tExpr('Month'),
+  week: tExpr('Week'),
+  day: tExpr('Day'),
 };
 
 export const CalendarToolbar = ({ date, label, onNavigate, onView, view, views, showLunar }: CalendarToolbarProps) => {
-  const { t } = useTranslation();
+  const t = useT();
   const lunarLabel = useMemo(() => {
     if (!showLunar || view !== 'day') {
       return null;
@@ -56,7 +56,7 @@ export const CalendarToolbar = ({ date, label, onNavigate, onView, view, views, 
       </span>
       <span className="rbc-toolbar-label">
         {label}
-        {lunarLabel ? <span style={{ marginLeft: 8 }}>{lunarLabel}</span> : null}
+        {lunarLabel ? <span className="rbc-toolbar-lunar">{lunarLabel}</span> : null}
       </span>
       <span className="rbc-btn-group">
         {views.map((name) => (

@@ -8,10 +8,10 @@
  */
 
 import { ActionSceneEnum, PopupActionModel } from '@nocobase/client-v2';
-import { handleDateChangeOnForm } from '@nocobase/client';
-import { tExpr } from '@nocobase/flow-engine';
 import dayjs from 'dayjs';
 import { set } from 'lodash';
+import { tExpr } from '../../locale';
+import { handleDateChangeOnForm } from '../components/dateTimeUtils';
 import { normalizeCalendarFieldPath } from '../utils';
 
 export const createCalendarQuickCreateActionOptions = (uid?: string) => {
@@ -160,7 +160,7 @@ class CalendarPopupActionModel extends PopupActionModel {
 export class CalendarQuickCreateActionModel extends CalendarPopupActionModel {
   static scene = ActionSceneEnum.collection;
 
-  defaultPopupTitle = tExpr('Add new', { ns: 'calendar' });
+  defaultPopupTitle = tExpr('Add new');
 
   getAclActionName(): any {
     return 'create';
