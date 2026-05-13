@@ -14,7 +14,7 @@ import {
   getCalendarVisibleRange,
   normalizeCalendarFieldPath,
   parseCalendarWeekStart,
-} from '../models/utils';
+} from '../../client-v2/models/utils';
 
 describe('calendar v2 utils', () => {
   it('should normalize field path values', () => {
