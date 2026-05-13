@@ -10,7 +10,8 @@
 import { defineAction, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { isEqual } from 'lodash';
 import React from 'react';
-import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
+import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import { findFormItemModelByFieldPath, getCollectionFromModel } from '../internal/utils/modelUtils';
@@ -18,6 +19,7 @@ import {
   collectLegacyDefaultValueRulesFromFilterFormModel,
   mergeAssignRulesWithLegacyDefaults,
 } from '../models/blocks/filter-form/legacyDefaultValueMigration';
+import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefaultValueMigrationBase';
 import { getDefaultOperator } from '../models/blocks/filter-manager/utils';
 import { operators } from '../../collection-manager';
 
@@ -34,6 +36,10 @@ const FilterFormDefaultValuesUI = observer(
 
     const legacyDefaults = React.useMemo(() => {
       return collectLegacyDefaultValueRulesFromFilterFormModel(ctx.model);
+    }, [ctx.model]);
+
+    const hasPersistedValue = React.useMemo(() => {
+      return hasPersistedAssignRulesValue(ctx.model, 'formFilterBlockModelSettings', 'defaultValues');
     }, [ctx.model]);
 
     const getValueInputProps = React.useCallback(
@@ -57,7 +63,7 @@ const FilterFormDefaultValuesUI = observer(
     );
 
     // 兼容：将字段级默认值（filterFormItemSettings.initialValue）合并到表单级 defaultValues 里展示。
-    // 仅在首次打开时合并，后续以当前 step 表单值为准（便于用户在此处编辑/删除后统一保存）。
+    // 仅在表单级 defaultValues.value 尚未持久化时合并；已保存的空数组也代表用户显式删除。
     const hasInitializedMergeRef = React.useRef(false);
     const [hasInitializedMerge, setHasInitializedMerge] = React.useState(false);
     const markInitialized = React.useCallback(() => {
@@ -66,12 +72,23 @@ const FilterFormDefaultValuesUI = observer(
       setHasInitializedMerge(true);
     }, []);
 
+    const normalizedValue = React.useMemo(() => {
+      return Array.isArray(props.value) ? props.value : [];
+    }, [props.value]);
+
+    const legacyAwareValue = React.useMemo(() => {
+      if (hasPersistedValue) {
+        return normalizedValue;
+      }
+      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, props.value]);
+
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
-        return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
+        return legacyAwareValue;
       }
-      return Array.isArray(props.value) ? props.value : [];
-    }, [canEdit, hasInitializedMerge, legacyDefaults, props.value]);
+      return normalizedValue;
+    }, [canEdit, hasInitializedMerge, legacyAwareValue, normalizedValue]);
 
     const handleChange = React.useCallback(
       (next: FieldAssignRuleItem[]) => {
@@ -87,12 +104,16 @@ const FilterFormDefaultValuesUI = observer(
       if (hasInitializedMergeRef.current) return;
       if (!canEdit) return;
 
-      const nextValue = mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-      if (!isEqual(props.value || [], nextValue || [])) {
-        props.onChange?.(nextValue);
+      if (hasPersistedValue) {
+        markInitialized();
+        return;
+      }
+
+      if (!isEqual(normalizedValue, legacyAwareValue)) {
+        props.onChange?.(legacyAwareValue);
       }
       markInitialized();
-    }, [canEdit, legacyDefaults, markInitialized, props.onChange, props.value]);
+    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, props.onChange]);
 
     return (
       <FieldAssignRulesEditor
