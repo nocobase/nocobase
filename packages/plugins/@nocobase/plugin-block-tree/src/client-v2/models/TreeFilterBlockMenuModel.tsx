@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { BlockSceneEnum, FilterBlockModel } from '@nocobase/client';
+import { BlockSceneEnum, FilterBlockModel } from '@nocobase/client-v2';
 import { tExpr } from '../locale';
 import { TreeBlockModel } from './TreeBlockModel';
 

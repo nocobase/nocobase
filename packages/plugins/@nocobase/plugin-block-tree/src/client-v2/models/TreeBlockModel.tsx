@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
 import { SettingOutlined } from '@ant-design/icons';
 import {
   AddChildActionModel,
@@ -17,7 +16,7 @@ import {
   CollectionBlockModel,
   isTitleField,
   RecordActionGroupModel,
-} from '@nocobase/client';
+} from '@nocobase/client-v2';
 import {
   AddSubModelButton,
   buildSubModelItem,
@@ -32,6 +31,7 @@ import {
   FlowSettingsButton,
   FlowsFloatContextMenu,
   MultiRecordResource,
+  observable,
 } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';

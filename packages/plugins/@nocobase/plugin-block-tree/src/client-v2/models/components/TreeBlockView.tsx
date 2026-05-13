@@ -22,7 +22,7 @@ import type { ForkFlowModel, PropertyMetaFactory } from '@nocobase/flow-engine';
 import { Checkbox, DatePicker, Input, InputNumber, Radio, Select, Space, Switch, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Tree, TreeProps } from '../../component';
-import { useTreeTranslation } from '../../locale';
+import { useT } from '../../locale';
 import type { TreeBlockModel } from '../TreeBlockModel';
 
 const SEARCH_FILTER_GROUP = '__tree_search__';
@@ -454,7 +454,7 @@ const TreeNodeTitleContent = ({
 };
 
 const TreeTitleFieldDeletedPlaceholder = ({ model }: { model: TreeBlockModel }) => {
-  const { t } = useTreeTranslation();
+  const t = useT();
   const content = useMemo(() => getTreeTitleFieldDeletedMessage(model, t), [model, t]);
 
   return (
