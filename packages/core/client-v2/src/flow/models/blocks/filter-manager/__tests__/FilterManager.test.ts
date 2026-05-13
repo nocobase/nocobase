@@ -243,6 +243,125 @@ describe('FilterManager', () => {
     });
   });
 
+  describe('prepareFiltersForTarget', () => {
+    it('should prepare filter form initial values before target refresh', async () => {
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['name'],
+        },
+      ];
+      const prepareInitialFilterValues = vi.fn().mockResolvedValue(undefined);
+      const filterBlockModel = { prepareInitialFilterValues };
+      const filterModel = {
+        context: {
+          blockModel: filterBlockModel,
+        },
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'filter1') return filterModel;
+        return null;
+      });
+
+      const prepared = await filterManager.prepareFiltersForTarget('target1');
+
+      expect(prepareInitialFilterValues).toHaveBeenCalledTimes(1);
+      expect(prepared.has(filterBlockModel)).toBe(true);
+    });
+
+    it('should skip marking a filter block when initial values are not ready', async () => {
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['name'],
+        },
+      ];
+      const filterBlockModel = { prepareInitialFilterValues: vi.fn().mockResolvedValue(false) };
+      const filterModel = {
+        context: {
+          blockModel: filterBlockModel,
+        },
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'filter1') return filterModel;
+        return null;
+      });
+
+      const prepared = await filterManager.prepareFiltersForTarget('target1');
+
+      expect(prepared.has(filterBlockModel)).toBe(false);
+    });
+
+    it('should continue preparing other filter blocks when one fails', async () => {
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['name'],
+        },
+        {
+          filterId: 'filter2',
+          targetId: 'target1',
+          filterPaths: ['title'],
+        },
+      ];
+      const failingBlockModel = { prepareInitialFilterValues: vi.fn().mockRejectedValue(new Error('bad default')) };
+      const preparedBlockModel = { prepareInitialFilterValues: vi.fn().mockResolvedValue(true) };
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'filter1') return { context: { blockModel: failingBlockModel } };
+        if (uid === 'filter2') return { context: { blockModel: preparedBlockModel } };
+        return null;
+      });
+
+      const prepared = await filterManager.prepareFiltersForTarget('target1');
+
+      expect(prepared.has(failingBlockModel)).toBe(false);
+      expect(prepared.has(preparedBlockModel)).toBe(true);
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
+
+    it('should keep error isolation when a filter block rejects a non-error value', async () => {
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['name'],
+        },
+        {
+          filterId: 'filter2',
+          targetId: 'target1',
+          filterPaths: ['title'],
+        },
+      ];
+      const failingBlockModel = { prepareInitialFilterValues: vi.fn().mockRejectedValue('bad default') };
+      const preparedBlockModel = { prepareInitialFilterValues: vi.fn().mockResolvedValue(true) };
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'filter1') return { context: { blockModel: failingBlockModel } };
+        if (uid === 'filter2') return { context: { blockModel: preparedBlockModel } };
+        return null;
+      });
+
+      try {
+        const prepared = await filterManager.prepareFiltersForTarget('target1');
+
+        expect(prepared.has(failingBlockModel)).toBe(false);
+        expect(prepared.has(preparedBlockModel)).toBe(true);
+        expect(errorSpy).toHaveBeenCalledWith('Failed to prepare filter defaults for target "target1": bad default');
+      } finally {
+        errorSpy.mockRestore();
+      }
+    });
+  });
+
   describe('addFilterConfig', () => {
     it('should add a new filter config successfully', async () => {
       const filterConfig = {
@@ -493,6 +612,157 @@ describe('FilterManager', () => {
 
       // Verify both target models were refreshed
       expect(mockTargetModel1.resource.refresh).toHaveBeenCalledTimes(1);
+      expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('should wait for target resource idle before refreshing', async () => {
+      vi.useFakeTimers();
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
+        },
+      ];
+
+      const resource = {
+        loading: true,
+        addFilterGroup: vi.fn(),
+        removeFilterGroup: vi.fn(),
+        refresh: vi.fn().mockImplementation(() => {
+          expect(resource.loading).toBe(false);
+          return Promise.resolve();
+        }),
+      };
+      const mockTargetModel = {
+        resource,
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
+      };
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      const refreshPromise = filterManager.refreshTargetsByFilter('filter-1');
+
+      try {
+        await vi.advanceTimersByTimeAsync(16);
+        expect(resource.refresh).not.toHaveBeenCalled();
+
+        resource.loading = false;
+        await vi.advanceTimersByTimeAsync(16);
+        await refreshPromise;
+
+        expect(resource.refresh).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should not refresh before a slow target resource becomes idle', async () => {
+      vi.useFakeTimers();
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
+        },
+      ];
+
+      const resource = {
+        loading: true,
+        addFilterGroup: vi.fn(),
+        removeFilterGroup: vi.fn(),
+        refresh: vi.fn().mockResolvedValue(undefined),
+      };
+      const mockTargetModel = {
+        resource,
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
+      };
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      const refreshPromise = filterManager.refreshTargetsByFilter('filter-1');
+
+      try {
+        await vi.advanceTimersByTimeAsync(2100);
+
+        expect(resource.refresh).not.toHaveBeenCalled();
+
+        resource.loading = false;
+        await vi.advanceTimersByTimeAsync(16);
+        await refreshPromise;
+
+        expect(resource.refresh).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should skip excluded target ids when refreshing', async () => {
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
+        },
+        {
+          filterId: 'filter-1',
+          targetId: 'target-2',
+          filterPaths: ['name'],
+          operator: '$eq',
+        },
+      ];
+
+      const mockTargetModel1 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
+      };
+      const mockTargetModel2 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
+      };
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel1;
+        if (uid === 'target-2') return mockTargetModel2;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      await filterManager.refreshTargetsByFilter('filter-1', { excludeTargetIds: new Set(['target-1']) });
+
+      expect(mockTargetModel1.resource.refresh).not.toHaveBeenCalled();
       expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
     });
 

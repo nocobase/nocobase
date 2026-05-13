@@ -361,6 +361,9 @@
   "Data organizer": "Data organizer",
   "I extract and structure data from text, and can fill forms automatically.": "I extract and structure data from text, and can fill forms automatically.",
   "Hi! Send me text and I'll structure it into organized data or fill forms.": "Hi! Send me text and I'll structure it into organized data or fill forms.",
+  "Team leader": "Team leader",
+  "I analyze each request, identify the right specialist, and coordinate the best AI employee to complete the task efficiently.": "I analyze each request, identify the right specialist, and coordinate the best AI employee to complete the task efficiently.",
+  "Hi, I'm Atlas. Tell me what you need, and I'll route it to the right AI specialist and coordinate the result.": "Hi, I'm Atlas. Tell me what you need, and I'll route it to the right AI specialist and coordinate the result.",
   "Data visualization specialist": "Data visualization specialist",
   "I'm Dara, a data visualization expert who transforms complex data into clear and engaging charts that make insights instantly visible.": "I'm Dara, a data visualization expert who transforms complex data into clear and engaging charts that make insights instantly visible.",
   "Hi, I'm Dara. Ask me about your data — I'll visualize the answer.": "Hi, I'm Dara. Ask me about your data — I'll visualize the answer.",
@@ -373,6 +376,9 @@
   "Translator": "Translator",
   "I'm Lexi. I bridge communication gaps by providing fast and accurate translations so you can understand others and they can understand you.": "I'm Lexi. I bridge communication gaps by providing fast and accurate translations so you can understand others and they can understand you.",
   "Hello, I'm Lexi. What can I translate for you today?": "Hello, I'm Lexi. What can I translate for you today?",
+  "Localization engineer": "Localization engineer",
+  "I translate NocoBase system resources into concise, accurate interface text while preserving placeholders and formatting.": "I translate NocoBase system resources into concise, accurate interface text while preserving placeholders and formatting.",
+  "Hi, I am Lina. I can help translate localization resources for your system.": "Hi, I am Lina. I can help translate localization resources for your system.",
   "Email expert": "Email expert",
   "I organize, summarize, and draft professional emails by combining history, customer identity, and the current message.": "I organize, summarize, and draft professional emails by combining history, customer identity, and the current message.",
   "Hi, I'm Ellis. Share an email or thread, and I'll pull the context, summarize clearly, and help you craft the right reply.": "Hi, I'm Ellis. Share an email or thread, and I'll pull the context, summarize clearly, and help you craft the right reply.",
@@ -437,5 +443,12 @@
   "Please enter and send the modification request": "Please enter and send the modification request",
   "{{ nickname }} is working in background.": "{{ nickname }} is working in background.",
   "Click": "Click",
-  "to Refresh.": "to Refresh."
+  "to Refresh.": "to Refresh.",
+  "Enable dedicated model configuration": "Enable dedicated model configuration",
+  "When enabled, this AI employee will always use the selected model and users cannot switch to other models in chat.": "When enabled, this AI employee will always use the selected model and users cannot switch to other models in chat.",
+  "When enabled, this AI employee can only use the selected models, and users can only switch between these models in chat.": "When enabled, this AI employee can only use the selected models, and users can only switch between these models in chat.",
+  "Restrict this AI employee to the selected models.": "Restrict this AI employee to the selected models.",
+  "Select model": "Select model",
+  "Select models": "Select models",
+  "Models": "Models"
 }

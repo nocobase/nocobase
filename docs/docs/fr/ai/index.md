@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: Une équipe AI prête à l'emploi
         details: L'équipe d'employés AI préconfigurée par NocoBase couvre la modélisation des données, le développement front-end, l'organisation de données et bien plus, utilisable directement sans configuration.
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: Faites comprendre votre métier à l'AI
         details: Importez vos documents et données métier dans la base de connaissances AI pour rendre les réponses et actions des employés AI plus pertinentes pour vos scénarios réels.
         link: /ai-employees/knowledge-base

@@ -18,7 +18,6 @@ Usted solo necesita configurar el servicio de LLM y habilitar al empleado corres
 | **Lexi** | Asistente de traducción | Traducción multilingüe, asistencia en la comunicación |
 | **Vera** | Analista de investigación | Búsqueda en la web, agregación de información, investigación profunda |
 | **Dara** | Experto en visualización de datos | Configuración de gráficos, generación de informes visuales |
-| **Orin** | Experto en modelado de datos | Asistencia en el diseño de estructuras de colecciones, sugerencias de campos |
 | **Nathan** | Ingeniero de frontend | Asistencia en la escritura de fragmentos de código frontend, ajustes de estilo |
 
 
@@ -29,10 +28,8 @@ Usted puede hacer clic en la **esfera flotante de IA** en la esquina inferior de
 
 Algunos empleados de IA integrados (de tipo constructor) no aparecen en la lista de empleados de IA de la esquina inferior derecha; tienen escenarios de trabajo exclusivos, por ejemplo:
 
-* **Orin** solo aparece en la página de configuración de la fuente de datos;
 * **Dara** solo aparece en la página de configuración de gráficos;
 * **Nathan** solo aparece en el editor de JS.
-
 
 
 ---
@@ -121,7 +118,6 @@ Cada pregunta de seguimiento continuará profundizando basándose en los resulta
 ---
 
 
-
 ## Dex: Organizador de datos
 
 ### Introducción
@@ -154,40 +150,6 @@ Después de enviarlos, `Dex` estructurará los datos y utilizará sus habilidade
 
 
 ---
-
-
-
-## Orin: Modelador de datos
-
-### Introducción
-
-> Diseñe colecciones de forma inteligente y optimice las estructuras de las bases de datos.
-
-`Orin` es un experto en modelado de datos. En la página de configuración de la fuente de datos principal, puede dejar que `Orin` le ayude a crear o modificar colecciones.
-
-![20251022160628](https://static-docs.nocobase.com/20251022160628.png)
-
-### Modo de uso
-
-Acceda al plugin de gestión de fuentes de datos y seleccione configurar la fuente de datos principal.
-
-![20251022161146](https://static-docs.nocobase.com/20251022161146.png)
-
-Haga clic en el avatar de `Orin` en la esquina superior derecha para abrir el cuadro de diálogo del empleado de IA.
-
-![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
-
-Describa sus requisitos de modelado a `Orin`, envíelos y espere una respuesta. 
-
-Una vez que `Orin` confirme sus requisitos, utilizará sus habilidades y le responderá con una vista previa del modelado de datos.
-
-Después de revisar la vista previa, haga clic en el botón `Finish review and apply` (Finalizar revisión y aplicar) para crear las colecciones de acuerdo con el modelado de `Orin`.
-
-![20251022162142](https://static-docs.nocobase.com/20251022162142.png)
-
-
----
-
 
 
 ## Nathan: Ingeniero de frontend

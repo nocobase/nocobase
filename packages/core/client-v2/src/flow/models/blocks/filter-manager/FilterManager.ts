@@ -24,6 +24,10 @@ type FilterConfig = {
   operator?: string;
 };
 
+export type RefreshTargetsByFilterOptions = {
+  excludeTargetIds?: Set<string> | string[];
+};
+
 const ARRAY_FIELD_OPERATORS_TO_SCALAR_OPERATORS: Record<string, string> = {
   $match: '$in',
   $anyOf: '$in',
@@ -78,6 +82,36 @@ function normalizeOperatorForTargetField(operator: string, targetModel: any, fie
   return scalarOperator;
 }
 
+async function waitForResourceIdle(resource: any) {
+  if (!resource?.loading) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const check = () => {
+      if (!resource.loading) {
+        resolve();
+        return;
+      }
+      setTimeout(check, 16);
+    };
+
+    check();
+  });
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  try {
+    return String(error);
+  } catch {
+    return 'Unknown error';
+  }
+}
+
 export class FilterManager {
   private filterConfigs: FilterConfig[];
   private readonly gridModel: FlowModel;
@@ -109,6 +143,32 @@ export class FilterManager {
         filterPaths: config.filterPaths,
       })),
     };
+  }
+
+  async prepareFiltersForTarget(targetId: string) {
+    const relatedConfigs = this.filterConfigs.filter((config) => config.targetId === targetId);
+    const preparedBlockModels = new Set<any>();
+
+    await Promise.all(
+      relatedConfigs.map(async (config) => {
+        try {
+          const filterModel: any = this.gridModel.flowEngine.getModel(config.filterId);
+          const blockModel = filterModel?.context?.blockModel;
+          if (!blockModel || typeof blockModel.prepareInitialFilterValues !== 'function') {
+            return;
+          }
+
+          const prepared = await blockModel.prepareInitialFilterValues();
+          if (prepared !== false) {
+            preparedBlockModels.add(blockModel);
+          }
+        } catch (error) {
+          console.error(`Failed to prepare filter defaults for target "${targetId}": ${getErrorMessage(error)}`);
+        }
+      }),
+    );
+
+    return preparedBlockModels;
   }
 
   async saveConnectFieldsConfig(filterModelUid: string, config: ConnectFieldsConfig) {
@@ -459,7 +519,7 @@ export class FilterManager {
    * await filterManager.refreshTargetsByFilter(['filter-1', 'filter-2']);
    * ```
    */
-  async refreshTargetsByFilter(filterId: string | string[]): Promise<void> {
+  async refreshTargetsByFilter(filterId: string | string[], options?: RefreshTargetsByFilterOptions): Promise<void> {
     // 1. 参数验证和标准化
     if (!filterId) {
       console.error('filterId must be provided');
@@ -482,7 +542,10 @@ export class FilterManager {
     }
 
     // 3. 提取所有相关的 targetId 并去重
-    const targetIds = [...new Set(relatedConfigs.map((config) => config.targetId))];
+    const excludeTargetIds = options?.excludeTargetIds ? new Set(options.excludeTargetIds) : undefined;
+    const targetIds = [...new Set(relatedConfigs.map((config) => config.targetId))].filter(
+      (targetId) => !excludeTargetIds?.has(targetId),
+    );
 
     // 4. 并行处理所有目标模型
     const refreshPromises = targetIds.map(async (targetId) => {
@@ -522,6 +585,7 @@ export class FilterManager {
         }
 
         // 4.5 调用 refresh 方法
+        await waitForResourceIdle(resource);
         if (typeof resource.setPage === 'function') {
           resource.setPage(1); // 重置到第一页
         }

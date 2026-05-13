@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: Tim AI Siap Pakai
         details: Tim Karyawan AI bawaan NocoBase, mencakup skenario pemodelan data, pengembangan frontend, pengelolaan data, dan lainnya, dapat langsung digunakan tanpa konfigurasi.
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: Buat AI Memahami Bisnis Anda
         details: Impor dokumen dan data bisnis melalui Basis Pengetahuan AI, agar jawaban dan operasi Karyawan AI lebih sesuai dengan skenario aktual Anda.
         link: /ai-employees/knowledge-base
