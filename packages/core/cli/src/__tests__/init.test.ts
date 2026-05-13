@@ -940,7 +940,7 @@ test('nb init does not forward the default app port in --yes mode unless it was 
   }
 });
 
-test('nb init logs duplicate env validation errors with Clack in --yes mode', async () => {
+test('nb init logs duplicate env validation errors in --yes mode', async () => {
   const { default: Init } = await import('../commands/init.js');
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => {
     options.hooks?.onMissingNonInteractive?.(

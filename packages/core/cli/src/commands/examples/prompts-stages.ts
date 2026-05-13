@@ -57,8 +57,8 @@ function buildWebUiStagesFromTestPrompts(
 
 /**
  * With `--ui`: `runPromptCatalogWebUI` using `stages` + `sectionTitle`, then
- * `runPromptCatalog` on the same catalog as `prompts-test`. Without `--ui`, same terminal behavior
- * as `prompts-test` (handy for comparing).
+ * `runPromptCatalog` on the same catalog as `prompts-test`. Without `--ui`, the same terminal prompt
+ * behavior as `prompts-test` (handy for comparing).
  */
 export default class PromptsStages extends Command {
   static override hidden = true;
@@ -79,13 +79,13 @@ export default class PromptsStages extends Command {
   static override flags = {
     ui: Flags.boolean({
       description:
-        'Open the localhost form: `runPromptCatalogWebUI` with `stages` and `sectionTitle` (vs `prompts-test --ui`, which uses one `catalog`). Without --ui, behavior matches `prompts-test` (Clack in TTY / presets).',
+        'Open the localhost form: `runPromptCatalogWebUI` with `stages` and `sectionTitle` (vs `prompts-test --ui`, which uses one `catalog`). Without --ui, behavior matches `prompts-test` (terminal prompt layer in TTY / presets).',
       default: false,
     }),
     yes: Flags.boolean({
       char: 'y',
       description:
-        'Accept defaults only in the terminal (no Clack after submit); same semantics as `prompts-test` when used with the submitted or default preset.',
+        'Accept defaults only in the terminal (no extra interactive prompts after submit); same semantics as `prompts-test` when used with the submitted or default preset.',
       default: false,
     }),
     locale: Flags.string({

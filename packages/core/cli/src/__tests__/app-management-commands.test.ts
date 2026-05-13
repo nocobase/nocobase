@@ -56,7 +56,6 @@ const mocks = vi.hoisted(() => ({
   announceTargetEnv: vi.fn((envName: string) => mocks.printInfo(`Target env: ${envName}`)),
   isInteractiveTerminal: vi.fn(),
   crossEnvConfirm: vi.fn(),
-  promptConfirm: vi.fn(),
   renderTable: vi.fn((headers: string[], rows: string[][]) => [headers.join('|'), ...rows.map((row) => row.join('|'))].join('\n')),
   listEnvs: vi.fn(),
   getCurrentEnvName: vi.fn(),
@@ -146,10 +145,6 @@ vi.mock('../lib/ui.js', () => ({
   announceTargetEnv: mocks.announceTargetEnv,
   isInteractiveTerminal: mocks.isInteractiveTerminal,
   renderTable: mocks.renderTable,
-}));
-
-vi.mock('@clack/prompts', () => ({
-  confirm: mocks.promptConfirm,
 }));
 
 vi.mock('../lib/inquirer.ts', () => ({
@@ -309,7 +304,6 @@ beforeEach(() => {
   mocks.formatDbCheckAddress.mockImplementation((config: { host: string; port: number; database: string }) =>
     `${config.host}:${config.port}/${config.database}`,
   );
-  mocks.promptConfirm.mockResolvedValue(true);
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.removeEnv.mockResolvedValue({
     removed: 'local',
