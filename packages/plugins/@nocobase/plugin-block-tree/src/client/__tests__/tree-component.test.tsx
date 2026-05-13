@@ -10,7 +10,7 @@
 import React from 'react';
 import AppBasic from '../demos/component-basic';
 import { Tree } from '../component';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 describe('TreeComponent', () => {
   test('basic', () => {
@@ -81,5 +81,34 @@ describe('TreeComponent', () => {
 
     expect(container.querySelector('.ant-tree-treenode-switcher-close')).toBeInTheDocument();
     expect(container.querySelector('.ant-tree-treenode-switcher-open')).not.toBeInTheDocument();
+  });
+
+  test('clears search state when searchable is turned off', async () => {
+    const onSearch = vi.fn();
+    const { rerender } = render(
+      <Tree
+        searchable
+        onSearch={onSearch}
+        treeData={[{ key: 'parent', title: 'Parent', children: [{ key: 'child', title: 'Child' }] }]}
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'Parent' } });
+
+    await waitFor(() => {
+      expect(onSearch).toHaveBeenCalledWith('Parent');
+    });
+
+    rerender(
+      <Tree
+        searchable={false}
+        onSearch={onSearch}
+        treeData={[{ key: 'parent', title: 'Parent', children: [{ key: 'child', title: 'Child' }] }]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onSearch).toHaveBeenLastCalledWith('');
+    });
   });
 });

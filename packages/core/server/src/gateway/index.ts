@@ -10,7 +10,7 @@
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 import { Registry, resolveStorageRoot, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
-import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
+import { syncPluginSymlinks } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { randomUUID } from 'crypto';
@@ -30,6 +30,7 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
+import { getStorageUploadSecurityHeaders } from './static-file-security';
 import { injectRuntimeScript, resolvePublicPath, resolveV2PublicPath, rewriteV2AssetPublicPath } from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
@@ -338,6 +339,7 @@ export class Gateway extends EventEmitter {
   private getV2RuntimeConfig() {
     return {
       __nocobase_public_path__: this.getV2PublicPath(),
+      __webpack_public_path__: process.env.CDN_BASE_URL ? `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/` : '',
       __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
       __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
       __nocobase_api_client_storage_type__: process.env.API_CLIENT_STORAGE_TYPE,
@@ -425,6 +427,10 @@ export class Gateway extends EventEmitter {
         if (isProxy) {
           return;
         }
+      }
+      const headers = getStorageUploadSecurityHeaders(pathname);
+      for (const [key, value] of Object.entries(headers)) {
+        res.setHeader(key, value);
       }
       req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);
@@ -637,7 +643,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (isStart || !ipcClient) {
-      await createStoragePluginsSymlink();
+      await syncPluginSymlinks();
     }
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);

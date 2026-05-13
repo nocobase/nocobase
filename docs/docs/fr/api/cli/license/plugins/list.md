@@ -19,6 +19,7 @@ nb license plugins list [flags]
 | Paramètre | Type | Description |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nom de l'env CLI ; si omis, l'env courant est utilisé |
+| `--yes`, `-y` | boolean | Lorsque `--env` est passé explicitement et cible une env différente de l'env actuelle, ignore la confirmation interactive |
 | `--json` | boolean | Sortie JSON |
 
 ## Exemples
@@ -26,8 +27,11 @@ nb license plugins list [flags]
 ```bash
 nb license plugins list
 nb license plugins list --env app1
+nb license plugins list --env app1 --yes
 nb license plugins list --env app1 --json
 ```
+
+Si vous passez `--env` explicitement et qu'il est différent de l'env actuelle, la CLI demande d'abord une confirmation. Dans un terminal non interactif ou une session d'agent IA, ajoutez vous-même `--yes` ou exécutez d'abord `nb env use <name>` puis réessayez.
 
 ## Commandes connexes
 

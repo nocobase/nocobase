@@ -19,6 +19,7 @@ nb license id [flags]
 | Parámetro | Tipo | Descripción |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nombre del env del CLI; si se omite, se usa el env actual |
+| `--yes`, `-y` | boolean | Cuando un `--env` pasado explícitamente apunta a una env distinta de la env actual, omite la confirmación interactiva |
 | `--force` | boolean | Regenerar el ID de instancia incluso si ya existe uno guardado |
 | `--json` | boolean | Salida en JSON |
 
@@ -27,9 +28,12 @@ nb license id [flags]
 ```bash
 nb license id
 nb license id --env app1
+nb license id --env app1 --yes
 nb license id --env app1 --force
 nb license id --env app1 --json
 ```
+
+`--force` solo fuerza la regeneración del ID de instancia. No sustituye la confirmación entre envs; si un `--env` pasado explícitamente apunta a una env distinta de la actual, aún necesita confirmación o `--yes`.
 
 ## Comandos relacionados
 

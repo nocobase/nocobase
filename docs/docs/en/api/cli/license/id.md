@@ -19,6 +19,7 @@ nb license id [flags]
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env name; when omitted, the current env is used |
+| `--yes`, `-y` | boolean | When an explicitly passed `--env` targets a different env than the current env, skip the interactive confirmation prompt |
 | `--force` | boolean | Regenerate the instance ID even when one is already saved |
 | `--json` | boolean | Output JSON |
 
@@ -27,9 +28,12 @@ nb license id [flags]
 ```bash
 nb license id
 nb license id --env app1
+nb license id --env app1 --yes
 nb license id --env app1 --force
 nb license id --env app1 --json
 ```
+
+`--force` only forces regeneration of the instance ID. It does not replace cross-env confirmation; if an explicitly passed `--env` targets a non-current env, you still need confirmation or `--yes`.
 
 ## Related Commands
 

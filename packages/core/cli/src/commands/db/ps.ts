@@ -25,7 +25,7 @@ export default class DbPs extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description: 'CLI env name to inspect. Omit to show all configured envs',
+      description: 'CLI env name to inspect built-in database status for. Omit to show all configured envs',
     }),
   };
 

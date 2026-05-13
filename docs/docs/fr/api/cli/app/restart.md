@@ -19,6 +19,7 @@ nb app restart [flags]
 | Paramètre | Type | Description |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nom de l'env CLI à redémarrer ; utilise l'env courant si omis |
+| `--yes`, `-y` | boolean | Lorsque `--env` est passé explicitement et cible une env différente de l'env actuelle, ignore la confirmation interactive |
 | `--quickstart` | boolean | Démarrer rapidement l'application après l'arrêt |
 | `--port`, `-p` | string | Surcharger l'`appPort` défini dans la configuration de l'env |
 | `--daemon`, `-d` / `--no-daemon` | boolean | Lancer ou non en mode daemon après l'arrêt, activé par défaut |
@@ -36,8 +37,11 @@ nb app restart --env local --port 12000
 nb app restart --env local --no-daemon
 nb app restart --env local --instances 2
 nb app restart --env local --launch-mode pm2
+nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
+
+Si vous passez `--env` explicitement et qu'il est différent de l'env actuelle, la CLI demande d'abord une confirmation. Dans un terminal non interactif ou une session d'agent IA, ajoutez vous-même `--yes` ou exécutez d'abord `nb env use <name>` puis réessayez.
 
 ## Commandes connexes
 

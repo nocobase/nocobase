@@ -18,7 +18,7 @@ nb env auth [name]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `[name]` | string | Nama lingkungan, jika dilewati menggunakan env saat ini |
+| `[name]` | string | Nama env yang sudah dikonfigurasi untuk login; jika dihilangkan, menggunakan env saat ini |
 
 ## Penjelasan
 

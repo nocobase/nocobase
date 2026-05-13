@@ -18,12 +18,9 @@ nb env info [name] [flags]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Nom de l'env CLI à consulter ; utilise l'env courant si omis |
-| `--env`, `-e` | string | Nom de l'env CLI à consulter ; alternative au paramètre positionnel |
+| `[name]` | string | Nom de l'environnement configuré à consulter ; utilise l'env courante s'il est omis |
 | `--json` | boolean | Sortie au format JSON |
 | `--show-secrets` | boolean | Afficher en clair les tokens, mots de passe et autres secrets |
-
-Si `[name]` et `--env` sont passés ensemble, ils doivent correspondre.
 
 ## Exemples
 
@@ -31,7 +28,6 @@ Si `[name]` et `--env` sont passés ensemble, ils doivent correspondre.
 nb env info app1
 nb env info app1 --json
 nb env info app1 --show-secrets
-nb env info --env app1
 ```
 
 ## Commandes connexes

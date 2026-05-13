@@ -118,6 +118,66 @@ const buildTreeNodeActionItems = (ctx: FlowModelContext) =>
 export class TreeBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.filter;
 
+  static getSupportedAssociatedFields(ctx: FlowModelContext) {
+    const { dataSourceKey, collectionName } = ctx.view.inputArgs || {};
+    if (!dataSourceKey || !collectionName) {
+      return [];
+    }
+
+    const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
+    return (
+      collection?.getAssociationFields(this._getScene()).filter((field) => {
+        if (!field.targetCollection) {
+          return false;
+        }
+        if (['belongsTo', 'hasOne', 'belongsToArray'].includes(field.type)) {
+          return false;
+        }
+        if (!this.filterCollection(field.targetCollection)) {
+          return false;
+        }
+        if (!this.isCollectionAvailable(field.targetCollection)) {
+          return false;
+        }
+        return true;
+      }) || []
+    );
+  }
+
+  static async defineChildren(ctx: FlowModelContext) {
+    const items = ((await super.defineChildren(ctx)) || []) as any[];
+    const { collectionName } = ctx.view.inputArgs || {};
+
+    if (!collectionName) {
+      return items;
+    }
+
+    const supportedAssociatedFields = this.getSupportedAssociatedFields(ctx);
+    const associatedGroupKey = `${this.name}associated`;
+
+    if (!supportedAssociatedFields.length) {
+      return items.filter((item) => item?.key !== associatedGroupKey);
+    }
+
+    const supportedAssociatedKeys = new Set(
+      supportedAssociatedFields.map((field) => `${this.name}associated-${field.name}`),
+    );
+
+    return items.map((item) => {
+      if (item?.key !== associatedGroupKey || typeof item.children !== 'function') {
+        return item;
+      }
+
+      return {
+        ...item,
+        children: (...args) => {
+          const children = item.children(...args) || [];
+          return children.filter((child) => supportedAssociatedKeys.has(child?.key));
+        },
+      };
+    });
+  }
+
   static async getExtraMenuItems(model, t) {
     const items = await super.getExtraMenuItems(model, t);
     return items.filter((item) => item.key !== 'block-reference:convert-to-template');
@@ -324,6 +384,7 @@ export class TreeBlockModel extends CollectionBlockModel {
         showBorder={false}
         showDeleteButton={false}
         showCopyUidButton={false}
+        showDynamicFlowsEditor={false}
         settingsMenuLevel={2}
       >
         {children}
@@ -470,6 +531,13 @@ export class TreeTitleFieldSettingsModel extends FlowModel<{
     field: FlowModel;
   };
 }> {
+  onInit(options) {
+    super.onInit(options);
+    this.context.defineProperty('disableFieldClickToOpen', {
+      value: true,
+    });
+  }
+
   get treeBlockModel() {
     return this.parent as TreeBlockModel;
   }

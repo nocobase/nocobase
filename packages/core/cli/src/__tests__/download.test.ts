@@ -97,11 +97,11 @@ test('downloadFromDocker pulls image and saves a sanitized tarball path', async 
 
   await command.downloadFromDocker(flags);
 
-  const imageRef = 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:feature/foo';
+  const imageRef = 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:feature/foo-full';
   const tarPath = path.join(
     cwd,
     'docker-images',
-    'registry.cn-shanghai.aliyuncs.com-nocobase-nocobase-feature-foo.tar',
+    'registry.cn-shanghai.aliyuncs.com-nocobase-nocobase-feature-foo-full.tar',
   );
 
   expect(mocks.run.mock.calls).toEqual([
@@ -474,7 +474,7 @@ test('downloadFromDocker uses the locale-aware default registry when docker-regi
 
   expect(mocks.run.mock.calls[0]?.[1]).toEqual([
     'pull',
-    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha',
+    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full',
   ]);
 });
 

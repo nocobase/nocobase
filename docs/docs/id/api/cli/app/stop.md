@@ -19,6 +19,7 @@ nb app stop [flags]
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nama env CLI yang akan dihentikan, jika dilewati menggunakan env saat ini |
+| `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
 | `--verbose` | boolean | Menampilkan output perintah lokal atau Docker yang mendasarinya |
 
 ## Contoh
@@ -29,6 +30,8 @@ nb app stop --env local
 nb app stop --env local --verbose
 nb app stop --env local-docker
 ```
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
 ## Perintah Terkait
 

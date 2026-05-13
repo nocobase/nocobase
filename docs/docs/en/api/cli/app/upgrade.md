@@ -19,7 +19,9 @@ nb app upgrade [flags]
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env name to upgrade; uses the current env if omitted |
+| `--yes`, `-y` | boolean | When an explicitly passed `--env` targets a different env than the current env, skip the interactive confirmation prompt |
 | `--skip-code-update`, `-s` | boolean | Restart from the saved local source or Docker image without downloading updates |
+| `--version` | string | Override the saved `downloadVersion`; when the upgrade succeeds, the new version is written back to the env config |
 | `--verbose` | boolean | Show underlying update and restart command output |
 
 ## Examples
@@ -28,9 +30,12 @@ nb app upgrade [flags]
 nb app upgrade
 nb app upgrade --env local
 nb app upgrade --env local -s
+nb app upgrade --env local --version beta
 nb app upgrade --env local --verbose
 nb app upgrade --env local-docker -s
 ```
+
+If you explicitly pass `--env` and it differs from the current env, the CLI asks for confirmation first. In non-interactive terminals or AI agent sessions, add `--yes` yourself or run `nb env use <name>` first and try again.
 
 ## Related Commands
 

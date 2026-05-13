@@ -15,33 +15,67 @@ import { ListEmpty } from './common';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
 import { ModelRef, useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { JOB_STATUS, JobStatusOptionsMap } from '@nocobase/plugin-workflow/client';
-import { useChatMessagesStore } from '../stores/chat-messages';
+import {
+  JOB_STATUS,
+  JobStatusOptions,
+  JobStatusOptionsMap as WorkflowJobStatusOptionsMap,
+} from '@nocobase/plugin-workflow/client';
 import { FilterOutlined } from '@ant-design/icons';
+import { useChat } from '../hooks/useChat';
 
-type UseWorkflowTasksListOptions = {
+const JobStatusOptionsMap = WorkflowJobStatusOptionsMap as Record<number, (typeof JobStatusOptions)[number]>;
+
+export const WorkflowTasksList: React.FC<{
   onOpenConversation: (sessionId: string, username?: string, model?: ModelRef) => void;
-};
-
-export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksListOptions) => {
+}> = ({ onOpenConversation }) => {
+  const { token } = theme.useToken();
+  const compile = useCompile();
+  const containerRef = useRef<HTMLDivElement>(null);
   const {
     loading,
     workflowTasks,
-    unreadCount,
     selectedJobStatus,
-    runSearch,
     runJobStatusFilter,
-    refresh,
     hasMore,
     loadMoreWorkflowTasks,
     lastWorkflowTaskRef,
     acceptWorkflowTask,
     getWorkflowTaskBySession,
   } = useWorkflowTasks();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = useChatConversationsStore.use.currentConversation?.();
+  const chat = useChat(currentConversation);
   const setReadonly = useChatBoxStore.use.setReadonly();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
   const [pendingConversation, setPendingConversation] = useState<string>();
+
+  const jobStatusOptions = [JOB_STATUS.PENDING, JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED, JOB_STATUS.ABORTED]
+    .map((status) => JobStatusOptionsMap[status])
+    .filter(Boolean);
+
+  useEffect(() => {
+    const scrollContainer = containerRef.current?.parentElement;
+    if (!scrollContainer) {
+      return;
+    }
+
+    const onScroll = () => {
+      if (loading || !hasMore) {
+        return;
+      }
+
+      const threshold = 24;
+      const distanceToBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+
+      if (distanceToBottom <= threshold) {
+        loadMoreWorkflowTasks();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', onScroll);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', onScroll);
+    };
+  }, [hasMore, loadMoreWorkflowTasks, loading]);
 
   useEffect(() => {
     if (pendingConversation && pendingConversation === currentConversation) {
@@ -62,7 +96,7 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
         try {
           const task = await getWorkflowTaskBySession(sessionId);
           username = task?.config?.username;
-          model = task?.config?.model;
+          model = task?.config?.model ?? undefined;
           readonly = task?.readonly === true;
           responseLoading = task?.status === 'processing';
         } catch {
@@ -70,72 +104,17 @@ export const useWorkflowTasksList = ({ onOpenConversation }: UseWorkflowTasksLis
           model = undefined;
         }
         setReadonly(readonly);
-        setResponseLoading(responseLoading);
+        chat.for(sessionId).setResponseLoading(responseLoading);
         onOpenConversation(sessionId, username, model);
       } catch (error) {
         setPendingConversation(undefined);
         throw error;
       }
     },
-    [acceptWorkflowTask, getWorkflowTaskBySession, onOpenConversation, setReadonly, setResponseLoading],
+    [acceptWorkflowTask, chat, getWorkflowTaskBySession, onOpenConversation, setReadonly],
   );
 
-  return {
-    currentConversation,
-    selectedConversation: pendingConversation ?? currentConversation,
-    loading,
-    workflowTasks,
-    unreadCount,
-    selectedJobStatus,
-    onSelectWorkflowTask,
-    runSearch,
-    runJobStatusFilter,
-    refresh,
-    hasMore,
-    loadMoreWorkflowTasks,
-    lastWorkflowTaskRef,
-  };
-};
-
-export type WorkflowTasksListController = ReturnType<typeof useWorkflowTasksList>;
-
-export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListController }> = ({ controller }) => {
-  const { token } = theme.useToken();
-  const compile = useCompile();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const jobStatusOptions = [JOB_STATUS.PENDING, JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED, JOB_STATUS.ABORTED]
-    .map((status) => JobStatusOptionsMap[status])
-    .filter(Boolean);
-
-  useEffect(() => {
-    const scrollContainer = containerRef.current?.parentElement;
-    if (!scrollContainer) {
-      return;
-    }
-
-    const onScroll = () => {
-      if (controller.loading || !controller.hasMore) {
-        return;
-      }
-
-      const threshold = 24;
-      const distanceToBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
-
-      if (distanceToBottom <= threshold) {
-        controller.loadMoreWorkflowTasks();
-      }
-    };
-
-    scrollContainer.addEventListener('scroll', onScroll);
-    onScroll();
-
-    return () => {
-      scrollContainer.removeEventListener('scroll', onScroll);
-    };
-  }, [controller]);
-
-  if (controller.loading && !controller.workflowTasks.length) {
+  if (loading && !workflowTasks.length) {
     return (
       <Spin
         style={{
@@ -151,8 +130,8 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
       <Select
         prefix={<FilterOutlined />}
         allowClear
-        value={controller.selectedJobStatus}
-        onChange={controller.runJobStatusFilter}
+        value={selectedJobStatus}
+        onChange={runJobStatusFilter}
         style={{ width: '100%', marginBottom: '10px' }}
         placeholder={compile('{{t("Filter by status")}}')}
         options={jobStatusOptions.map((option) => ({
@@ -166,23 +145,22 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
           return <Tag color={option?.color}>{props.label}</Tag>;
         }}
       />
-      {!controller.workflowTasks.length ? (
+      {!workflowTasks.length ? (
         <ListEmpty />
       ) : (
         <List
-          dataSource={controller.workflowTasks}
+          dataSource={workflowTasks}
           split={false}
           footer={
-            controller.loading && controller.workflowTasks.length ? (
+            loading && workflowTasks.length ? (
               <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
                 <Spin size="small" />
               </div>
             ) : null
           }
           renderItem={(item) => {
-            const selected = item.sessionId === controller.selectedConversation;
-            const isLastItem =
-              controller.workflowTasks[controller.workflowTasks.length - 1]?.sessionId === item.sessionId;
+            const selected = item.sessionId === (pendingConversation ?? currentConversation);
+            const isLastItem = workflowTasks[workflowTasks.length - 1]?.sessionId === item.sessionId;
             const jobStatusOption = typeof item.jobStatus !== 'undefined' ? JobStatusOptionsMap[item.jobStatus] : null;
             const createdAtText = item.createdAt ? dayjs(item.createdAt).format('YYYY-MM-DD HH:mm:ss') : null;
             const executionIdText =
@@ -190,7 +168,7 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
 
             return (
               <List.Item key={item.sessionId} style={{ padding: '0 0 8px' }}>
-                <div ref={isLastItem ? controller.lastWorkflowTaskRef : undefined} style={{ width: '100%' }}>
+                <div ref={isLastItem ? lastWorkflowTaskRef : undefined} style={{ width: '100%' }}>
                   <Card
                     type="inner"
                     title={
@@ -208,7 +186,7 @@ export const WorkflowTasksList: React.FC<{ controller: WorkflowTasksListControll
                     }
                     size="small"
                     hoverable
-                    onClick={() => controller.onSelectWorkflowTask(item.sessionId)}
+                    onClick={() => onSelectWorkflowTask(item.sessionId)}
                     style={{
                       width: '100%',
                       backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,

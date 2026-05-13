@@ -20,7 +20,7 @@ nb env remove <name> [flags]
 
 | Parámetro | Tipo | Descripción |
 | --- | --- | --- |
-| `<name>` | string | Nombre del entorno a eliminar |
+| `<name>` | string | Nombre del entorno configurado que se va a eliminar |
 | `--force`, `-f` | boolean | Omite la confirmación y elimina directamente |
 | `--verbose` | boolean | Muestra el progreso detallado |
 

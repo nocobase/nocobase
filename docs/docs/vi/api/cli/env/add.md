@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `[name]` | string | Tên môi trường; trong TTY nếu bỏ qua sẽ hỏi, ngoài TTY thì bắt buộc |
+| `[name]` | string | Tên môi trường cần lưu; trong TTY sẽ được hỏi khi bỏ qua, và bắt buộc ở chế độ non-TTY |
 | `--verbose` | boolean | Hiển thị tiến trình chi tiết khi ghi cấu hình |
 | `--locale` | string | Ngôn ngữ CLI prompt: `en-US` hoặc `zh-CN` |
 | `--api-base-url`, `-u` | string | Địa chỉ API NocoBase, bao gồm tiền tố `/api` |

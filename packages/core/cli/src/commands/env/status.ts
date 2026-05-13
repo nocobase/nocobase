@@ -32,7 +32,7 @@ export default class EnvStatus extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Configured environment name. Defaults to the current env when omitted',
+      description: 'Configured environment name to inspect. Defaults to the current env when omitted; cannot be used with --all',
       required: false,
     }),
   };

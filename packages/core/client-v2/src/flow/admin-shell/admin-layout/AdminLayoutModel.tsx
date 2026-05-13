@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { define, observable } from '@formily/reactive';
 import { type FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import type { NocoBaseDesktopRoute } from '../../../flow-compat';
@@ -50,6 +51,23 @@ type GetAdminLayoutModelOptions<TModel extends FlowModel = AdminLayoutModel> = G
  */
 export class AdminLayoutModel extends BaseLayoutModel<AdminLayoutStructure> {
   layoutPathPrefix = 'admin';
+  menuRouteRefreshVersion = 0;
+
+  constructor(options: any) {
+    super(options);
+    define(this, {
+      menuRouteRefreshVersion: observable.ref,
+    });
+  }
+
+  /**
+   * 通知 Layout 重新生成 ProLayout 菜单路由。
+   *
+   * @returns {void}
+   */
+  refreshMenuRouteTree() {
+    this.menuRouteRefreshVersion += 1;
+  }
 
   /**
    * 使用当前可访问菜单路由刷新 Layout 菜单树。

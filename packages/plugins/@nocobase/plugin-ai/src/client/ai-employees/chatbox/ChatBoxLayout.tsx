@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useApp, useMobileLayout } from '@nocobase/client';
 import { ChatBoxWrapper } from './ChatBox';
 import { Helmet } from 'react-helmet';
@@ -18,7 +18,7 @@ import { ToolModal } from './generative-ui/ToolModal';
 import { useChatToolsStore } from './stores/chat-tools';
 // [AI_DEBUG]
 import { DebugPanel } from './DebugPanel';
-import { useWorkflowTasks } from './hooks/useWorkflowTasks';
+import { useChatConversationActions } from './hooks/useChatConversationActions';
 
 export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
@@ -33,16 +33,18 @@ export const ChatBoxLayout: React.FC<{
   useChatBoxEffect();
 
   const app = useApp();
-  const { refresh: onAIEmployeeTaskStatusUpdate } = useWorkflowTasks();
+  const { loadUnreadCounts } = useChatConversationActions();
   useEffect(() => {
-    onAIEmployeeTaskStatusUpdate();
-  }, []);
+    void loadUnreadCounts();
+  }, [loadUnreadCounts]);
   useEffect(() => {
-    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', loadUnreadCounts);
+    app.eventBus.addEventListener('ws:message:ai-conversations:read', loadUnreadCounts);
     return () => {
-      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
+      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', loadUnreadCounts);
+      app.eventBus.removeEventListener('ws:message:ai-conversations:read', loadUnreadCounts);
     };
-  }, [app.eventBus, onAIEmployeeTaskStatusUpdate]);
+  }, [app.eventBus, loadUnreadCounts]);
 
   return (
     <>

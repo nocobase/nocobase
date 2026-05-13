@@ -34,7 +34,7 @@ export default class EnvRemove extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Configured environment name',
+      description: 'Configured environment name to remove',
       required: true,
     }),
   };

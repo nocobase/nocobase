@@ -14,6 +14,11 @@ import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engi
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
 import { FormBlockContent, FormBlockModel, FormComponent } from '../../../..';
 import { Form } from 'antd';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 // -----------------------------
 // Helpers
 // -----------------------------
@@ -317,6 +322,31 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     // flow registered (eventSettings)
     const flows = model.getFlows();
     expect(flows.has('eventSettings')).toBe(true);
+  });
+
+  it('replays linkage rules after the settings rerender tick', async () => {
+    vi.useFakeTimers();
+    const engine = new FlowEngine();
+    const TestFormModel = await createTestFormModelSubclass();
+    const model = new TestFormModel({ uid: 'form-linkage-save', flowEngine: engine } as any);
+    const applyFlow = vi.spyOn(model, 'applyFlow').mockResolvedValue(undefined as any);
+    const flow = model.getFlow('eventSettings') as any;
+    const afterParamsSave = flow?.steps?.linkageRules?.afterParamsSave;
+    const ctx: any = {
+      model,
+      form: {
+        getFieldsValue: vi.fn(() => ({ status: 'draft' })),
+      },
+    };
+
+    afterParamsSave(ctx);
+
+    expect(applyFlow).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(applyFlow).toHaveBeenCalledWith('eventSettings', {
+      changedValues: {},
+      allValues: { status: 'draft' },
+    });
   });
 
   it('delegates layout/assignRules/linkageRules stepParams to grid model', async () => {

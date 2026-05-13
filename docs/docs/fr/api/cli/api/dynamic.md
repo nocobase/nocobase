@@ -41,6 +41,13 @@ Les commandes dynamiques avec corps de requête prennent en charge :
 
 `--body` et `--body-file` sont mutuellement exclusifs.
 
+Les commandes d'API dynamiques prennent aussi en charge :
+
+- `--env`, `-e` : nom de l'env CLI vers laquelle envoyer la requête ; si ce paramètre est omis, l'env actuelle est utilisée
+- `--yes`, `-y` : lorsque `--env` est passé explicitement et cible une env différente de l'env actuelle, ignore la confirmation interactive
+
+Si vous passez `--env` explicitement et qu'il est différent de l'env actuelle, la CLI demande d'abord une confirmation. Dans un terminal non interactif ou une session d'agent IA, ajoutez vous-même `--yes` ou exécutez d'abord `nb env use <name>` puis réessayez.
+
 ## Commandes connexes
 
 - [`nb env update`](../env/update.md)
