@@ -46,6 +46,21 @@ export function enumToOptions(uiEnum: UiSchemaEnumItem[] | undefined, t: (s: str
   return translateOptions(normalized, t);
 }
 
+export function normalizeSelectRenderValue(value: unknown, props?: Record<string, any>) {
+  const mode = props?.mode;
+  const isMultiple = mode === 'multiple' || mode === 'tags' || props?.multiple === true;
+
+  if (Array.isArray(value)) {
+    return value.filter((item) => item !== '' && item !== null && typeof item !== 'undefined');
+  }
+
+  if (value === '' || value === null || typeof value === 'undefined') {
+    return isMultiple ? [] : undefined;
+  }
+
+  return value;
+}
+
 export function getSelectedEnumLabels(value: any, fallbackOptions: Option[] = []): Array<{ value: any; label: any }> {
   const values = Array.isArray(value) ? value : value == null ? [] : [value];
   return values.map((item) => {

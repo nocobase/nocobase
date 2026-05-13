@@ -227,6 +227,38 @@ exports.getVersion = async () => {
   return versions[versions.length - 1];
 };
 
+function normalizeAppDevClientRsbuildConfig(appDevDir) {
+  const configPath = resolve(appDevDir, 'client/rsbuild.config.ts');
+  if (!existsSync(configPath)) {
+    return;
+  }
+  const content = fs.readFileSync(configPath, 'utf-8');
+  const normalized = content.replace(
+    "require('../../devtools/package.json')",
+    "require('@nocobase/devtools/package.json')",
+  );
+  if (normalized !== content) {
+    fs.writeFileSync(configPath, normalized, 'utf-8');
+  }
+}
+
+function normalizeAppDevClientV2Tsconfig(appDevDir) {
+  const tsconfigPath = resolve(appDevDir, 'client-v2/tsconfig.json');
+  if (!existsSync(tsconfigPath)) {
+    return;
+  }
+  const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
+  tsconfig.extends = '../../../tsconfig.json';
+  tsconfig.compilerOptions = tsconfig.compilerOptions || {};
+  tsconfig.compilerOptions.baseUrl = '../../../';
+  fs.writeFileSync(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`, 'utf-8');
+}
+
+function normalizeAppDevFiles(appDevDir) {
+  normalizeAppDevClientRsbuildConfig(appDevDir);
+  normalizeAppDevClientV2Tsconfig(appDevDir);
+}
+
 exports.generateAppDir = function generateAppDir() {
   const appPkgPath = dirname(dirname(require.resolve('@nocobase/app/src/index.ts')));
   const appDevDir = resolve(process.cwd(), './storage/.app-dev');
@@ -238,6 +270,7 @@ exports.generateAppDir = function generateAppDir() {
         force: true,
       });
     }
+    normalizeAppDevFiles(appDevDir);
     process.env.APP_PACKAGE_ROOT = appDevDir;
   } else {
     process.env.APP_PACKAGE_ROOT = appPkgPath;

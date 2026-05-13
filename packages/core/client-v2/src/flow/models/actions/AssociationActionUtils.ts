@@ -33,6 +33,20 @@ export const getAssociationTargetResourceSettings = (ctx: FlowModelContext | any
   };
 };
 
+export const getAssociationSelectorContextInputArgs = (ctx: FlowModelContext | any) => {
+  const blockModel = ctx?.blockModel || ctx?.model?.context?.blockModel;
+  const association = blockModel?.association;
+  const resourceSettings = getAssociationBlockResourceSettings(ctx);
+  const sourceId = blockModel?.resource?.getSourceId?.() ?? resourceSettings?.sourceId;
+  const associatedRecords = blockModel?.resource?.getData?.() || [];
+
+  return {
+    collectionField: association,
+    sourceId,
+    associatedRecords,
+  };
+};
+
 const callAssociationResourceAction = async (resource: any, action: 'add' | 'remove', values: any[]) => {
   if (typeof resource?.[action] === 'function') {
     return await resource[action]({ values });

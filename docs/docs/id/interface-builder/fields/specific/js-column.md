@@ -39,7 +39,7 @@ Editor script JS Column mendukung syntax highlighting, error prompt, dan snippet
 
 Dapat dikombinasikan dengan AI Employee untuk generate kode:
 
-- [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Penggunaan Umum
 

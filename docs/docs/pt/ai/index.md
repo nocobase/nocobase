@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: Equipe de IA pronta para uso
         details: A equipe de Funcionários de IA pré-configurada do NocoBase cobre cenários como modelagem de dados, desenvolvimento front-end, organização de dados — pronta para usar sem necessidade de configuração.
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: Faça a IA entender o seu negócio
         details: Importe documentos e dados de negócio através da base de conhecimento de IA, fazendo com que as respostas e ações dos Funcionários de IA fiquem mais alinhadas ao seu cenário real.
         link: /ai-employees/knowledge-base

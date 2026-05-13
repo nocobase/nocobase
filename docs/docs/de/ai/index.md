@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: Sofort einsatzbereites KI-Team
         details: Das vorkonfigurierte KI-Mitarbeiter-Team von NocoBase deckt Datenmodellierung, Frontend-Entwicklung, Datenaufbereitung und mehr ab – ohne Konfiguration direkt nutzbar.
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: KI Ihr Geschäft verstehen lassen
         details: Importieren Sie Geschäftsdokumente und Daten über die KI-Wissensdatenbank, damit die Antworten und Aktionen Ihrer KI-Mitarbeiter besser zu Ihrem konkreten Szenario passen.
         link: /ai-employees/knowledge-base

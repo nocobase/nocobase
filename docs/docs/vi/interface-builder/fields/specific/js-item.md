@@ -34,7 +34,7 @@ JS Item được dùng cho "mục tùy chỉnh" (không gắn Field) trong Form.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Có thể kết hợp với AI Employee để tạo/chỉnh sửa script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- Có thể kết hợp với AI Employee để tạo/chỉnh sửa script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Cách sử dụng phổ biến (ví dụ ngắn gọn)
 

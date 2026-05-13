@@ -88,6 +88,7 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
             greeting: employee.greeting,
             about: null,
             defaultPrompt: employee.systemPrompt,
+            chatSettings: employee.chatSettings,
             skillSettings: {
               skills: employee.skills,
               tools: employee.tools,
@@ -116,6 +117,7 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
         bio: employee.bio ?? current.bio,
         greeting: employee.greeting ?? current.greeting,
         defaultPrompt: employee.systemPrompt,
+        chatSettings: employee.chatSettings ?? current.chatSettings,
         skillSettings: {
           skills: [...(employee.skills ?? [])],
           tools: [...mergedTools],
