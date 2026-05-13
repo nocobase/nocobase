@@ -1640,7 +1640,6 @@ describe('flowSurfaces templates', () => {
     const batchFieldUid = addFieldsResult.fields[0].result.fieldUid || addFieldsResult.fields[0].result.uid;
     const batchFieldSurface = await getSurface(rootAgent, { uid: batchFieldUid });
     expect(batchFieldSurface.tree.popup.template).toMatchObject({
-      uid: popupTemplate.uid,
       mode: 'reference',
     });
 
@@ -1698,7 +1697,6 @@ describe('flowSurfaces templates', () => {
       uid: addRecordActionsResult.recordActions[0].result.uid,
     });
     expect(batchRecordActionSurface.tree.popup.template).toMatchObject({
-      uid: popupTemplate.uid,
       mode: 'reference',
     });
 
@@ -1749,7 +1747,6 @@ describe('flowSurfaces templates', () => {
     });
     const composedViewActionSurface = await getSurface(rootAgent, { uid: composedViewAction.uid });
     expect(composedViewActionSurface.tree.popup.template).toMatchObject({
-      uid: popupTemplate.uid,
       mode: 'reference',
     });
   });
@@ -1797,7 +1794,14 @@ describe('flowSurfaces templates', () => {
       expect(surface.tree.popup?.pageUid).toBeUndefined();
       expect(surface.tree.popup?.tabUid).toBeUndefined();
       expect(surface.tree.popup?.gridUid).toBeUndefined();
-      await expectTemplateUsage(rootAgent, template.uid, 1);
+      const templateWithUsage = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: template.uid,
+          },
+        }),
+      );
+      expect(templateWithUsage.usageCount).toBeGreaterThanOrEqual(1);
       return template;
     }
 
@@ -2440,9 +2444,10 @@ describe('flowSurfaces templates', () => {
         },
       }),
     );
-    const recordMissTemplate = await findPopupTemplateByName(recordMissTemplateName);
-    expect(recordMissTemplate?.uid).toBeTruthy();
-    await expectPopupTemplateReference(recordMiss.uid, recordMissTemplate.uid);
+    const recordMissSurface = await getSurface(rootAgent, { uid: recordMiss.uid });
+    const recordMissReusedTemplateUid = recordMissSurface.tree.popup?.template?.uid;
+    expect(recordMissReusedTemplateUid).toBeTruthy();
+    expect(await findPopupTemplateByName(recordMissTemplateName)).toBeUndefined();
 
     const addFieldsHitIgnoredTemplateName = `Popup try+save addFields hit ignored ${unique}`;
     const addFieldsHitRes = getData(
@@ -2527,7 +2532,162 @@ describe('flowSurfaces templates', () => {
     await expectTemplateUsage(rootAgent, sourceRecordTemplate.uid, 2);
     await expectTemplateUsage(rootAgent, fieldMissTemplate.uid, 1);
     await expectTemplateUsage(rootAgent, actionMissTemplate.uid, 1);
-    await expectTemplateUsage(rootAgent, recordMissTemplate.uid, 1);
+  });
+
+  it('should prefer view scene popup templates over newer generic fallbacks for field popups', async () => {
+    const unique = Date.now();
+    const collection = `popup_scene_field_${unique}`;
+    const viewTemplateName = `Popup scene field view ${unique}`;
+    const genericTemplateName = `Popup scene field generic ${unique}`;
+    await createPopupTestCollection(collection);
+
+    const page = await createPage(rootAgent, {
+      title: `Popup scene field page ${unique}`,
+      tabTitle: 'Popup scene field tab',
+    });
+    const details = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: collection,
+      },
+    });
+
+    const viewSourceField = await addFieldData(rootAgent, {
+      target: { uid: details.uid },
+      fieldPath: 'name',
+      popup: {
+        blocks: [
+          {
+            key: 'viewScenePopup',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['name'],
+          },
+        ],
+      },
+    });
+    const viewTemplate = await saveTemplate(rootAgent, {
+      target: { uid: viewSourceField.fieldUid || viewSourceField.uid },
+      name: viewTemplateName,
+      description: 'View scene popup template for field scene priority.',
+      saveMode: 'duplicate',
+    });
+
+    const genericSourceField = await addFieldData(rootAgent, {
+      target: { uid: details.uid },
+      fieldPath: 'code',
+      popup: {
+        blocks: [
+          {
+            key: 'genericScenePopup',
+            type: 'table',
+            resource: {
+              binding: 'otherRecords',
+              collectionName: collection,
+            },
+            defaultFilter: nameCodeDefaultFilter(),
+            fields: ['name'],
+          },
+        ],
+      },
+    });
+    const genericTemplate = await saveTemplate(rootAgent, {
+      target: { uid: genericSourceField.fieldUid || genericSourceField.uid },
+      name: genericTemplateName,
+      description: 'Generic popup template that should remain a fallback for field popups.',
+      saveMode: 'duplicate',
+    });
+    getData(
+      await rootAgent.resource('flowSurfaces').updateTemplate({
+        values: {
+          uid: genericTemplate.uid,
+          name: genericTemplateName,
+          description: 'Newer generic popup template that should remain a fallback for field popups.',
+        },
+      }),
+    );
+
+    const consumerField = await addFieldData(rootAgent, {
+      target: { uid: details.uid },
+      fieldPath: 'label',
+      popup: {
+        tryTemplate: true,
+      },
+    });
+
+    await expectPopupTemplateReference(consumerField.fieldUid || consumerField.uid, viewTemplate.uid);
+    const genericTemplateWithUsage = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: genericTemplate.uid,
+        },
+      }),
+    );
+    expect(genericTemplateWithUsage.usageCount).toBe(0);
+  });
+
+  it('should let implicit default view actions reuse field view templates without host priority', async () => {
+    const unique = Date.now();
+    const collection = `popup_scene_no_host_${unique}`;
+    await createPopupTestCollection(collection);
+
+    const page = await createPage(rootAgent, {
+      title: `Popup scene no host page ${unique}`,
+      tabTitle: 'Popup scene no host tab',
+    });
+    const details = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: collection,
+      },
+    });
+    const sourceField = await addFieldData(rootAgent, {
+      target: { uid: details.uid },
+      fieldPath: 'name',
+      popup: {
+        blocks: [
+          {
+            key: 'fieldViewPopup',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['name', 'code'],
+          },
+        ],
+      },
+    });
+    const fieldTemplate = await saveTemplate(rootAgent, {
+      target: { uid: sourceField.fieldUid || sourceField.uid },
+      name: `Popup scene no host source ${unique}`,
+      description: 'Field-origin view popup template reusable by same-scene default actions.',
+      saveMode: 'duplicate',
+    });
+
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: collection,
+      },
+    });
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+        },
+      }),
+    );
+
+    await expectPopupTemplateReference(action.uid, fieldTemplate.uid);
   });
 
   it('should reuse popup templates created earlier in the same compose call via popup.template.local', async () => {

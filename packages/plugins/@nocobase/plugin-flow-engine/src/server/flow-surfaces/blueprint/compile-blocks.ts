@@ -619,7 +619,7 @@ function shouldDefaultApplyBlueprintPopupDisplayPage(
 }
 
 const MAX_AUTO_TEMPLATE_NAME_LENGTH = 80;
-const MAX_AUTO_TEMPLATE_DESCRIPTION_LENGTH = 160;
+const MAX_AUTO_TEMPLATE_DESCRIPTION_LENGTH = 240;
 const MAX_HEADER_TEXT = 60;
 const CJK_TEXT_PATTERN = /[\u3400-\u9fff\uf900-\ufaff]/;
 
@@ -644,8 +644,21 @@ function trimAutoTemplateLabel(value: any, maxLength = MAX_AUTO_TEMPLATE_NAME_LE
 function getApplyBlueprintCollectionLabel(block?: Record<string, any>) {
   return (
     normalizeMetadataText(block?.collection) ||
+    normalizeMetadataText(block?.resourceInit?.collectionName) ||
+    normalizeMetadataText(block?.resourceInit?.collection) ||
     normalizeMetadataText(block?.resource?.collectionName) ||
     normalizeMetadataText(block?.resource?.collection) ||
+    ''
+  );
+}
+
+function getApplyBlueprintAssociationLabel(block?: Record<string, any>) {
+  return (
+    normalizeMetadataText(block?.associationName) ||
+    normalizeMetadataText(block?.resourceInit?.associationName) ||
+    normalizeMetadataText(block?.resource?.associationName) ||
+    normalizeMetadataText(block?.associationField) ||
+    normalizeMetadataText(block?.resource?.associationField) ||
     ''
   );
 }
@@ -736,12 +749,68 @@ function summarizePopupTemplateBlocks(blocks: FlowSurfaceApplyBlueprintBlockSpec
   return labels.join(locale === 'zh' ? '、' : ', ');
 }
 
+function inferPopupTemplateMetadataScene(popup: FlowSurfaceApplyBlueprintPopup, options: { ownerActionType?: string }) {
+  const requestedDefaultType = normalizeMetadataText((popup as any).defaultType);
+  if (requestedDefaultType === 'view' || requestedDefaultType === 'edit') {
+    return requestedDefaultType;
+  }
+  const ownerActionType = normalizeMetadataText(options.ownerActionType);
+  if (ownerActionType === 'edit') {
+    return 'edit';
+  }
+  if (ownerActionType === 'addNew' || ownerActionType === 'addChild') {
+    return 'addNew';
+  }
+  if (ownerActionType === 'view') {
+    return 'view';
+  }
+  const firstBlockType = normalizeMetadataText(_.castArray(popup.blocks || [])[0]?.type);
+  if (firstBlockType === 'details') {
+    return 'view';
+  }
+  if (firstBlockType === 'editForm') {
+    return 'edit';
+  }
+  if (firstBlockType === 'createForm') {
+    return 'addNew';
+  }
+  return 'generic';
+}
+
+function describePopupTemplateMatchContext(
+  popup: FlowSurfaceApplyBlueprintPopup,
+  options: {
+    hostBlock?: FlowSurfaceApplyBlueprintBlockSpec;
+    ownerActionType?: string;
+  },
+  locale: string,
+) {
+  const popupBlocks = _.castArray(popup.blocks || []);
+  const firstResourceBlock = popupBlocks.find(
+    (block: any) => getApplyBlueprintCollectionLabel(block) || getApplyBlueprintAssociationLabel(block),
+  );
+  const collectionLabel =
+    getApplyBlueprintCollectionLabel(firstResourceBlock) || getApplyBlueprintCollectionLabel(options.hostBlock);
+  const associationLabel =
+    getApplyBlueprintAssociationLabel(firstResourceBlock) || getApplyBlueprintAssociationLabel(options.hostBlock);
+  const scene = inferPopupTemplateMetadataScene(popup, options);
+  const parts = locale === 'zh' ? [`场景：${scene}`] : [`Scene: ${scene}`];
+  if (collectionLabel) {
+    parts.push(locale === 'zh' ? `数据表：${collectionLabel}` : `collection: ${collectionLabel}`);
+  }
+  if (associationLabel) {
+    parts.push(locale === 'zh' ? `关系：${associationLabel}` : `association: ${associationLabel}`);
+  }
+  return parts.join(locale === 'zh' ? '；' : '; ');
+}
+
 function buildApplyBlueprintAutoSaveTemplateMetadata(
   popup: FlowSurfaceApplyBlueprintPopup,
   options: {
     triggerKind?: string;
     triggerLabel?: string;
     hostBlock?: FlowSurfaceApplyBlueprintBlockSpec;
+    ownerActionType?: string;
   },
 ) {
   const locale = inferPopupTemplateMetadataLocale(popup, options);
@@ -749,6 +818,7 @@ function buildApplyBlueprintAutoSaveTemplateMetadata(
   const hostLabel = describePopupTemplateHost(options.hostBlock, locale);
   const triggerLabel = describePopupTemplateTrigger(options.triggerKind, options.triggerLabel, locale);
   const contentLabel = summarizePopupTemplateBlocks(popup.blocks, locale);
+  const matchContextLabel = describePopupTemplateMatchContext(popup, options, locale);
   const name = popupTitle
     ? locale === 'zh'
       ? `${popupTitle}弹窗模板`
@@ -758,8 +828,8 @@ function buildApplyBlueprintAutoSaveTemplateMetadata(
       : `${hostLabel} ${triggerLabel} popup template`;
   const description =
     locale === 'zh'
-      ? `复用弹窗模板。宿主：${hostLabel}；触发器：${triggerLabel}；内容：${contentLabel}。`
-      : `Reusable popup template for ${triggerLabel} on ${hostLabel}. Content: ${contentLabel}.`;
+      ? `复用弹窗模板。${matchContextLabel}；宿主：${hostLabel}；触发器：${triggerLabel}；内容：${contentLabel}。`
+      : `Reusable popup template. ${matchContextLabel}; host: ${hostLabel}; trigger: ${triggerLabel}; content: ${contentLabel}.`;
   return {
     name: trimAutoTemplateLabel(name, MAX_AUTO_TEMPLATE_NAME_LENGTH),
     description: trimAutoTemplateLabel(description, MAX_AUTO_TEMPLATE_DESCRIPTION_LENGTH),
@@ -1370,7 +1440,8 @@ function compilePopup(
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
-  const willAutoTryTemplate = _.isUndefined(popup.tryTemplate) && options.mode === 'create' && !hasTemplateDocument;
+  const willAutoTryTemplate =
+    _.isUndefined(popup.tryTemplate) && options.mode === 'create' && !hasTemplateDocument && popupBlocks.length > 0;
   if (saveAsTemplate && !popupBlocks.length && tryTemplate !== true && !willAutoTryTemplate) {
     throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
   }
@@ -1401,12 +1472,7 @@ function compilePopup(
     _.isUndefined(saveAsTemplate) && options.mode === 'create' && !hasTemplateDocument && popupBlocks.length > 0
       ? buildApplyBlueprintAutoSaveTemplateMetadata(popup, options)
       : undefined;
-  const effectiveTryTemplate =
-    autoSaveAsTemplate || saveAsTemplate
-      ? tryTemplate
-      : _.isUndefined(popup.tryTemplate) && options.mode === 'create' && !hasTemplateDocument
-        ? true
-        : tryTemplate;
+  const effectiveTryTemplate = willAutoTryTemplate ? true : tryTemplate;
   const displayMode =
     popupMode.displayMode ||
     (shouldDefaultApplyBlueprintPopupDisplayPage(popup, popupBlocks, options)

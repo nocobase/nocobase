@@ -27,6 +27,8 @@ function kanbanDefaultFilter() {
     items: [
       { path: 'title', operator: '$notEmpty' },
       { path: 'status', operator: '$notEmpty' },
+      { path: 'priority', operator: '$notEmpty' },
+      { path: 'scope', operator: '$notEmpty' },
     ],
   };
 }
@@ -133,11 +135,13 @@ describe('flowSurfaces kanban contract', () => {
             hidden: true,
           },
           { name: 'status', type: 'string', interface: 'select' },
+          { name: 'priority', type: 'string', interface: 'select' },
+          { name: 'scope', type: 'string', interface: 'input' },
         ],
       },
     });
     await waitForFixtureCollectionsReady(context.app.db, {
-      [collectionName]: ['title', 'status', 'status_sort'],
+      [collectionName]: ['title', 'status', 'priority', 'scope', 'status_sort'],
     });
   }
 
@@ -1304,11 +1308,13 @@ describe('flowSurfaces kanban contract', () => {
             hidden: true,
           },
           { name: 'status', type: 'string', interface: 'select' },
+          { name: 'priority', type: 'string', interface: 'select' },
+          { name: 'scope', type: 'string', interface: 'input' },
         ],
       },
     });
     await waitForFixtureCollectionsReady(context.app.db, {
-      [collectionName]: ['title', 'status', 'status_sort'],
+      [collectionName]: ['title', 'status', 'priority', 'scope', 'status_sort'],
     });
 
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({

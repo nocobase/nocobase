@@ -2423,6 +2423,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                     key: 'employeeNickname',
                     field: 'nickname',
                     popup: {
+                      tryTemplate: false,
                       blocks: [
                         {
                           key: 'employeePopupDetails',
@@ -2452,6 +2453,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                     type: 'popup',
                     title: 'Open employee popup',
                     popup: {
+                      tryTemplate: false,
                       blocks: [
                         {
                           key: 'employeePopupTable',
@@ -2474,6 +2476,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                     key: 'employeeViewAction',
                     type: 'view',
                     popup: {
+                      tryTemplate: false,
                       blocks: [
                         {
                           key: 'employeeRecordPopupDetails',
@@ -2532,6 +2535,96 @@ describe('flowSurfaces applyBlueprint contract', () => {
     await expectSavedTemplateReference(recordActionTemplateName);
   });
 
+  it('should keep applying popup template reuse after a template is saved earlier in the same blueprint', async () => {
+    const unique = Date.now();
+    const collectionName = `popup_bp_same_request_${unique}`;
+    const firstTemplateName = `Blueprint same request popup source ${unique}`;
+    const secondTemplateName = `Blueprint same request popup ignored ${unique}`;
+    await createPopupTestCollection(collectionName);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint same request popup reuse ${unique}`,
+          },
+        },
+        page: {
+          title: 'Blueprint same request popup reuse',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'detailsWithPopups',
+                type: 'details',
+                collection: collectionName,
+                fields: [
+                  {
+                    key: 'sourceField',
+                    field: 'name',
+                    popup: {
+                      tryTemplate: false,
+                      blocks: [
+                        {
+                          key: 'sourcePopup',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['name'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: firstTemplateName,
+                        description: 'Popup template saved earlier in this applyBlueprint request.',
+                      },
+                    },
+                  },
+                  {
+                    key: 'reuseField',
+                    field: 'code',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'reusePopup',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['code'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: secondTemplateName,
+                        description: 'This metadata must not create a second template.',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const sourceTemplate = await findPopupTemplateByName(firstTemplateName);
+    expect(sourceTemplate?.uid).toBeTruthy();
+    expect(await findPopupTemplateByName(secondTemplateName)).toBeUndefined();
+    const popupReferences = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.popup?.template?.uid === sourceTemplate.uid,
+    );
+    expect(popupReferences).toHaveLength(2);
+    await expectTemplateUsage(rootAgent, sourceTemplate.uid, 2);
+  });
+
   it('should reuse popup templates created earlier in the same blueprint via popup.template.local', async () => {
     const unique = Date.now();
     const templateName = `Blueprint popup local ${unique}`;
@@ -2562,6 +2655,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                     key: 'producerField',
                     field: 'nickname',
                     popup: {
+                      tryTemplate: false,
                       blocks: [
                         {
                           key: 'producerPopupDetails',

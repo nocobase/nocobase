@@ -1283,6 +1283,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                     type: 'view',
                     title: 'Review employee',
                     popup: {
+                      tryTemplate: false,
                       blocks: [
                         {
                           key: 'employeeDetails',
@@ -1318,6 +1319,428 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     );
     expect(template.name).toContain('Review employee');
     expect(template.description).toContain('Reusable popup template');
+  });
+
+  it('should reuse auto-saved local popup templates when creating the same blueprint structure again', async () => {
+    const unique = Date.now();
+    const fieldCollection = `authoring_popup_reuse_field_${unique}`;
+    const actionCollection = `authoring_popup_reuse_action_${unique}`;
+    const fieldPopupTitle = `Authoring field popup reuse ${unique}`;
+    const actionPopupTitle = `Authoring action popup reuse ${unique}`;
+    await createAuthoringPopupReuseCollection(rootAgent, context.db, fieldCollection);
+    await createAuthoringPopupReuseCollection(rootAgent, context.db, actionCollection);
+    const baselineTemplateUids = await listPopupTemplateUids(context.db);
+
+    const buildValues = (pageTitle: string) => ({
+      mode: 'create',
+      navigation: {
+        item: {
+          title: pageTitle,
+        },
+      },
+      page: {
+        title: pageTitle,
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'fieldDetails',
+              type: 'details',
+              collection: fieldCollection,
+              fields: [
+                {
+                  key: 'nameWithPopup',
+                  field: 'name',
+                  popup: {
+                    title: fieldPopupTitle,
+                    blocks: [
+                      {
+                        key: 'fieldPopupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name', 'code'],
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+            {
+              key: 'actionTable',
+              type: 'table',
+              collection: actionCollection,
+              fields: ['name'],
+              recordActions: [
+                {
+                  key: 'viewActionRecord',
+                  type: 'view',
+                  title: 'Inspect',
+                  popup: {
+                    title: actionPopupTitle,
+                    blocks: [
+                      {
+                        key: 'actionPopupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name', 'label'],
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const firstRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(`Authoring popup reuse first ${unique}`),
+    });
+    expect(firstRes.status, readErrorMessage(firstRes)).toBe(200);
+    const firstData = getData(firstRes);
+    const firstFieldTemplateUid = readAuthoringReuseFieldPopupTemplateUid(firstData.surface.tree);
+    const firstActionTemplateUid = readAuthoringReuseActionPopupTemplateUid(firstData.surface.tree);
+    expect(firstFieldTemplateUid).toBeTruthy();
+    expect(firstActionTemplateUid).toBeTruthy();
+    const afterFirstTemplateUids = await listPopupTemplateUids(context.db);
+    const newTemplateUids = afterFirstTemplateUids.filter((uid) => !baselineTemplateUids.includes(uid));
+    expect(newTemplateUids).toEqual(expect.arrayContaining([firstActionTemplateUid, firstFieldTemplateUid]));
+
+    const secondRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(`Authoring popup reuse second ${unique}`),
+    });
+    expect(secondRes.status, readErrorMessage(secondRes)).toBe(200);
+    const secondData = getData(secondRes);
+    expect(readAuthoringReuseFieldPopupTemplateUid(secondData.surface.tree)).toBe(firstFieldTemplateUid);
+    expect(readAuthoringReuseActionPopupTemplateUid(secondData.surface.tree)).toBe(firstActionTemplateUid);
+
+    expect(await listPopupTemplateUids(context.db)).toEqual(afterFirstTemplateUids);
+    await expectPopupTemplateUsage(rootAgent, firstFieldTemplateUid, 2);
+    await expectPopupTemplateUsage(rootAgent, firstActionTemplateUid, 2);
+  });
+
+  it('should reuse explicit saveAsTemplate popup templates even when metadata changes', async () => {
+    const unique = Date.now();
+    const collection = `authoring_popup_explicit_reuse_${unique}`;
+    const firstTemplateName = `Authoring explicit popup source ${unique}`;
+    const secondTemplateName = `Authoring explicit popup ignored ${unique}`;
+    await createAuthoringPopupReuseCollection(rootAgent, context.db, collection);
+    const baselineTemplateUids = await listPopupTemplateUids(context.db);
+
+    const buildValues = (pageTitle: string, templateName: string, description: string) => ({
+      mode: 'create',
+      navigation: {
+        item: {
+          title: pageTitle,
+        },
+      },
+      page: {
+        title: pageTitle,
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'detailsWithPopup',
+              type: 'details',
+              collection,
+              fields: [
+                {
+                  key: 'nameWithPopup',
+                  field: 'name',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'popupDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name', 'code'],
+                      },
+                    ],
+                    saveAsTemplate: {
+                      name: templateName,
+                      description,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const firstRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(
+        `Authoring explicit popup first ${unique}`,
+        firstTemplateName,
+        'Explicit popup template source.',
+      ),
+    });
+    expect(firstRes.status, readErrorMessage(firstRes)).toBe(200);
+    const firstTemplateUid = readPopupTemplateUidForFieldPath(getData(firstRes).surface.tree, 'name');
+    expect(firstTemplateUid).toBeTruthy();
+    const afterFirstTemplateUids = await listPopupTemplateUids(context.db);
+    expect(afterFirstTemplateUids.filter((uid) => !baselineTemplateUids.includes(uid))).toContain(firstTemplateUid);
+
+    const secondRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(
+        `Authoring explicit popup second ${unique}`,
+        secondTemplateName,
+        'Different metadata should not force a new template.',
+      ),
+    });
+    expect(secondRes.status, readErrorMessage(secondRes)).toBe(200);
+    expect(readPopupTemplateUidForFieldPath(getData(secondRes).surface.tree, 'name')).toBe(firstTemplateUid);
+    expect(await listPopupTemplateUids(context.db)).toEqual(afterFirstTemplateUids);
+    expect(await findPopupTemplateByName(context.db, secondTemplateName)).toBeUndefined();
+    await expectPopupTemplateUsage(rootAgent, firstTemplateUid, 2);
+  });
+
+  it('should reuse popup templates saved earlier in the same blueprint before considering new metadata', async () => {
+    const unique = Date.now();
+    const collection = `authoring_popup_same_blueprint_${unique}`;
+    const firstTemplateName = `Authoring same blueprint source ${unique}`;
+    const secondTemplateName = `Authoring same blueprint ignored ${unique}`;
+    await createAuthoringPopupReuseCollection(rootAgent, context.db, collection);
+    const baselineTemplateUids = await listPopupTemplateUids(context.db);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Authoring same blueprint popup reuse ${unique}`,
+          },
+        },
+        page: {
+          title: 'Authoring same blueprint popup reuse',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'detailsWithPopups',
+                type: 'details',
+                collection,
+                fields: [
+                  {
+                    key: 'nameWithPopup',
+                    field: 'name',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'firstPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['name'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: firstTemplateName,
+                        description: 'Template saved by the first popup in this blueprint.',
+                      },
+                    },
+                  },
+                  {
+                    key: 'codeWithPopup',
+                    field: 'code',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'secondPopupDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['code'],
+                        },
+                      ],
+                      saveAsTemplate: {
+                        name: secondTemplateName,
+                        description: 'Different metadata must not force a second template in the same blueprint.',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const firstTemplateUid = readPopupTemplateUidForFieldPath(data.surface.tree, 'name');
+    const secondTemplateUid = readPopupTemplateUidForFieldPath(data.surface.tree, 'code');
+    expect(firstTemplateUid).toBeTruthy();
+    expect(secondTemplateUid).toBe(firstTemplateUid);
+
+    const afterTemplateUids = await listPopupTemplateUids(context.db);
+    expect(afterTemplateUids.filter((uid) => !baselineTemplateUids.includes(uid))).toContain(firstTemplateUid);
+    expect((await findPopupTemplateByName(context.db, firstTemplateName))?.uid).toBe(firstTemplateUid);
+    expect(await findPopupTemplateByName(context.db, secondTemplateName)).toBeUndefined();
+    await expectPopupTemplateUsage(rootAgent, firstTemplateUid, 2);
+  });
+
+  it('should prefer popup templates with matching block types and still fallback to reusable templates', async () => {
+    const unique = Date.now();
+    const collection = `authoring_popup_type_reuse_${unique}`;
+    const detailsTemplateName = `Authoring popup details source ${unique}`;
+    const tableTemplateName = `Authoring popup table source ${unique}`;
+    await createAuthoringPopupReuseCollection(rootAgent, context.db, collection);
+
+    const buildValues = (pageTitle: string, fieldPath: string, popup: Record<string, any>) => ({
+      mode: 'create',
+      navigation: {
+        item: {
+          title: pageTitle,
+        },
+      },
+      page: {
+        title: pageTitle,
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'detailsWithPopup',
+              type: 'details',
+              collection,
+              fields: [
+                {
+                  key: `${fieldPath}WithPopup`,
+                  field: fieldPath,
+                  popup,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const detailsSourceRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(`Authoring popup details source ${unique}`, 'name', {
+        tryTemplate: false,
+        blocks: [
+          {
+            key: 'detailsPopup',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['name'],
+          },
+        ],
+        saveAsTemplate: {
+          name: detailsTemplateName,
+          description: 'Details popup template used for block type priority.',
+        },
+      }),
+    });
+    expect(detailsSourceRes.status, readErrorMessage(detailsSourceRes)).toBe(200);
+    const detailsTemplateUid = readPopupTemplateUidForFieldPath(getData(detailsSourceRes).surface.tree, 'name');
+    expect(detailsTemplateUid).toBeTruthy();
+
+    const tableSourceRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(`Authoring popup table source ${unique}`, 'code', {
+        tryTemplate: false,
+        blocks: [
+          {
+            key: 'tablePopup',
+            type: 'table',
+            resource: {
+              binding: 'otherRecords',
+              collectionName: collection,
+            },
+            fields: ['name'],
+          },
+        ],
+        saveAsTemplate: {
+          name: tableTemplateName,
+          description: 'Table popup template used as the newer fallback candidate.',
+        },
+      }),
+    });
+    expect(tableSourceRes.status, readErrorMessage(tableSourceRes)).toBe(200);
+    const tableTemplateUid = readPopupTemplateUidForFieldPath(getData(tableSourceRes).surface.tree, 'code');
+    expect(tableTemplateUid).toBeTruthy();
+    expect(tableTemplateUid).not.toBe(detailsTemplateUid);
+    const updateTableTemplateRes = await rootAgent.resource('flowSurfaces').updateTemplate({
+      values: {
+        uid: tableTemplateUid,
+        name: tableTemplateName,
+        description: 'Updated table popup template used as the newer fallback candidate.',
+      },
+    });
+    expect(updateTableTemplateRes.status, readErrorMessage(updateTableTemplateRes)).toBe(200);
+    const afterSourceTemplateUids = await listPopupTemplateUids(context.db);
+
+    const matchingRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(`Authoring popup type match ${unique}`, 'label', {
+        blocks: [
+          {
+            key: 'requestedDetailsPopup',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['label'],
+          },
+        ],
+        saveAsTemplate: {
+          name: `Authoring popup details ignored ${unique}`,
+          description: 'Matching block type should reuse the existing details template.',
+        },
+      }),
+    });
+    expect(matchingRes.status, readErrorMessage(matchingRes)).toBe(200);
+    const matchingTemplateUid = readPopupTemplateUidForFieldPath(getData(matchingRes).surface.tree, 'label');
+    expect(matchingTemplateUid).toBeTruthy();
+    expect(afterSourceTemplateUids).toContain(matchingTemplateUid);
+    const matchingTemplateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, matchingTemplateUid);
+    expect(collectDescendantNodes(matchingTemplateSurface, (item) => item?.use === 'DetailsBlockModel')).not.toEqual(
+      [],
+    );
+    expect(await listPopupTemplateUids(context.db)).toEqual(afterSourceTemplateUids);
+
+    const fallbackRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildValues(`Authoring popup type fallback ${unique}`, 'label', {
+        blocks: [
+          {
+            key: 'requestedCreatePopup',
+            type: 'createForm',
+            collection,
+            fields: ['name'],
+          },
+        ],
+        saveAsTemplate: {
+          name: `Authoring popup fallback ignored ${unique}`,
+          description: 'Unmatched block type should still reuse an existing template.',
+        },
+      }),
+    });
+    expect(fallbackRes.status, readErrorMessage(fallbackRes)).toBe(200);
+    const fallbackTemplateUid = readPopupTemplateUidForFieldPath(getData(fallbackRes).surface.tree, 'label');
+    expect(fallbackTemplateUid).toBeTruthy();
+    expect(afterSourceTemplateUids).toContain(fallbackTemplateUid);
+    expect(await listPopupTemplateUids(context.db)).toEqual(afterSourceTemplateUids);
   });
 
   it('should normalize legacy calendar field bindings and quickCreateEnabled before writing', async () => {
@@ -2291,6 +2714,85 @@ async function readPopupTemplateSurface(rootAgent: any, flowRepo: any, templateU
   );
   expect(template?.targetUid).toBeTruthy();
   return flowRepo.findModelById(template.targetUid, { includeAsyncNode: true });
+}
+
+async function createAuthoringPopupReuseCollection(rootAgent: any, db: any, name: string) {
+  await rootAgent.resource('collections').create({
+    values: {
+      name,
+      title: name,
+      fields: [
+        { name: 'name', type: 'string', interface: 'input' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'label', type: 'string', interface: 'input' },
+      ],
+    },
+  });
+  await waitForFixtureCollectionsReady(db, {
+    [name]: ['name', 'code', 'label'],
+  });
+}
+
+async function listPopupTemplateUids(db: any) {
+  const rows = await db.getRepository('flowModelTemplates').find({
+    filter: {
+      type: 'popup',
+    },
+  });
+  return _.castArray(rows || [])
+    .map((row: any) => String(row?.uid ?? row?.get?.('uid') ?? '').trim())
+    .filter(Boolean)
+    .sort();
+}
+
+async function findPopupTemplateByName(db: any, name: string) {
+  const rows = await db.getRepository('flowModelTemplates').find({
+    filter: {
+      type: 'popup',
+      name,
+    },
+  });
+  return _.castArray(rows || [])
+    .map((row: any) => row?.toJSON?.() || row)
+    .find((row: any) => row?.name === name);
+}
+
+async function expectPopupTemplateUsage(rootAgent: any, templateUid: string, usageCount: number) {
+  const template = getData(
+    await rootAgent.resource('flowSurfaces').getTemplate({
+      values: {
+        uid: templateUid,
+      },
+    }),
+  );
+  expect(template.usageCount).toBe(usageCount);
+}
+
+function readPopupTemplateUidForFieldPath(tree: any, fieldPath: string) {
+  const field = collectDescendantNodes(
+    tree,
+    (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath && !!readPopupTemplateUid(item),
+  )[0];
+  return readPopupTemplateUid(field);
+}
+
+function readAuthoringReuseFieldPopupTemplateUid(tree: any) {
+  const field = collectDescendantNodes(
+    tree,
+    (item) =>
+      item?.use === 'DisplayTextFieldModel' &&
+      item?.stepParams?.fieldSettings?.init?.fieldPath === 'name' &&
+      !!readPopupTemplateUid(item),
+  )[0];
+  return readPopupTemplateUid(field);
+}
+
+function readAuthoringReuseActionPopupTemplateUid(tree: any) {
+  const action = collectDescendantNodes(
+    tree,
+    (item) => item?.use === 'ViewActionModel' && item?.props?.title === 'Inspect' && !!readPopupTemplateUid(item),
+  )[0];
+  return readPopupTemplateUid(action);
 }
 
 function employeeDefaultFilter() {
