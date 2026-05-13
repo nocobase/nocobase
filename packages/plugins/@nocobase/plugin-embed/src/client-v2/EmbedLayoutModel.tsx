@@ -7,12 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  BaseLayoutModel,
-  BaseLayoutRouteCoordinator,
-  getLayoutModel,
-  type GetLayoutModelOptions,
-} from '@nocobase/client-v2';
+import { BaseLayoutModel, getLayoutModel, type GetLayoutModelOptions } from '@nocobase/client-v2';
 import { type FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { EmbedLayoutComponent } from './EmbedLayoutComponent';
@@ -24,12 +19,6 @@ export const EMBED_LAYOUT_MODEL_UID = 'embed-layout-model';
  */
 export class EmbedLayoutModelV2 extends BaseLayoutModel {
   layoutPathPrefix = 'embed';
-
-  protected createRouteCoordinator() {
-    return new BaseLayoutRouteCoordinator(this.flowEngine, {
-      layoutPathPrefix: this.layoutPathPrefix,
-    });
-  }
 
   render() {
     return <EmbedLayoutComponent {...this.props} model={this} />;
