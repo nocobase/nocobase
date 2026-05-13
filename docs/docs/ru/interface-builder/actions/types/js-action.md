@@ -31,7 +31,7 @@ JS Action используется для выполнения JavaScript при
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- Можно комбинировать с AI-сотрудником для генерации/изменения скриптов: [AI-сотрудник · Nathan: Фронтенд-инженер](/ai-employees/features/built-in-employee)
+- Можно комбинировать с AI-сотрудником для генерации/изменения скриптов: [AI-сотрудник · Nathan: Фронтенд-инженер](/ai-employees/built-in/)
 
 ## Распространенные способы использования (краткие примеры)
 

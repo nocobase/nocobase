@@ -16,7 +16,7 @@ Antes de configurar el nodo de AI Employee, debe conocer cómo construir un work
 Puede consultar la siguiente documentación:
   - [Workflow](/workflow)
   - [Configurar el servicio LLM](/ai-employees/features/llm-service)
-  - [AI Employees integrados](/ai-employees/features/built-in-employee)
+  - [AI Employees integrados](/ai-employees/built-in/)
   - [Crear AI Employees](/ai-employees/features/new-ai-employees)
 
 ### Tarea

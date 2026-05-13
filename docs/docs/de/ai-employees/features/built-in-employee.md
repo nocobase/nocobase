@@ -18,7 +18,6 @@ Sie müssen lediglich den LLM-Dienst konfigurieren und den entsprechenden Mitarb
 | **Lexi** | Übersetzungsassistent | Mehrsprachige Übersetzung, Kommunikationshilfe |
 | **Vera** | Forschungsanalyst | Web-Suche, Informationsaggregation, Tiefenforschung |
 | **Dara** | Datenvisualisierungsexperte | Diagrammkonfiguration, Erstellung visueller Berichte |
-| **Orin** | Datenmodellierungsexperte | Unterstützung beim Entwurf von Sammlungsstrukturen, Feldvorschläge |
 | **Nathan** | Frontend-Ingenieur | Unterstützung beim Schreiben von Frontend-Code-Snippets, Stilanpassungen |
 
 
@@ -29,10 +28,9 @@ Sie können auf der Anwendungsoberfläche auf den **AI-Schwebeknopf** unten rech
 
 Einige integrierte AI-Mitarbeiter (Konstruktionstypen) erscheinen nicht in der AI-Mitarbeiterliste unten rechts. Sie verfügen über exklusive Arbeitsbereiche, zum Beispiel:
 
-* Orin erscheint nur auf der Datenquellen-Konfigurationsseite;
+* erscheint nur auf der Datenquellen-Konfigurationsseite;
 * Dara erscheint nur auf der Diagramm-Konfigurationsseite;
 * Nathan erscheint nur im JS-Editor.
-
 
 
 ---
@@ -121,7 +119,6 @@ Jede Folgefrage vertieft die vorherigen Analyseergebnisse, ohne dass Datenbeding
 ---
 
 
-
 ## Dex: Datenorganisator
 
 ### Einführung
@@ -154,40 +151,6 @@ Nach dem Absenden wird `Dex` die Daten strukturieren und seine Fähigkeiten nutz
 
 
 ---
-
-
-
-## Orin: Datenmodellierer
-
-### Einführung
-
-> Sammlungen intelligent entwerfen und Datenbankstrukturen optimieren.
-
-`Orin` ist ein Experte für Datenmodellierung. Auf der Konfigurationsseite der Hauptdatenquelle können Sie sich von `Orin` beim Erstellen oder Ändern von Sammlungen helfen lassen.
-
-![20251022160628](https://static-docs.nocobase.com/20251022160628.png)
-
-### Nutzung
-
-Rufen Sie das Datenquellen-Manager-Plugin auf und wählen Sie die Konfiguration der Hauptdatenquelle aus.
-
-![20251022161146](https://static-docs.nocobase.com/20251022161146.png)
-
-Klicken Sie oben rechts auf den Avatar von `Orin`, um das Dialogfenster des AI-Mitarbeiters zu öffnen.
-
-![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
-
-Beschreiben Sie `Orin` Ihre Modellierungsanforderungen, senden Sie diese ab und warten Sie auf eine Antwort. 
-
-Sobald `Orin` Ihre Anforderungen bestätigt hat, wird er seine Fähigkeiten einsetzen und Ihnen eine Vorschau der Datenmodellierung antworten.
-
-Nachdem Sie die Vorschau überprüft haben, klicken Sie auf die Schaltfläche `Überprüfung abschließen und anwenden`, um die Sammlungen gemäß der Modellierung von `Orin` zu erstellen.
-
-![20251022162142](https://static-docs.nocobase.com/20251022162142.png)
-
-
----
-
 
 
 ## Nathan: Frontend-Ingenieur

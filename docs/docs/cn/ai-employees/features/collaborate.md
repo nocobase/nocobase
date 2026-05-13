@@ -1,8 +1,8 @@
 ---
-pkg: "@nocobase/plugin-ai"
-title: "与 AI 员工协作"
-description: "与 AI 员工协作：右下角主入口、区块 Action 入口、对话操作、会话内切换员工与模型（AI Employee Switcher、Model Switcher）。"
-keywords: "AI 员工协作,对话面板,员工切换,模型切换,NocoBase"
+pkg: '@nocobase/plugin-ai'
+title: '与 AI 员工协作'
+description: '与 AI 员工协作：右下角主入口、区块 Action 入口、对话操作、会话内切换员工与模型（AI Employee Switcher、Model Switcher）。'
+keywords: 'AI 员工协作,对话面板,员工切换,模型切换,NocoBase'
 ---
 
 # 与 AI 员工协作
@@ -11,10 +11,9 @@ keywords: "AI 员工协作,对话面板,员工切换,模型切换,NocoBase"
 
 ## 入口
 
-常用入口有两类：
-
 1. **右下角主入口**：在业务页面右下角唤起 AI 对话面板，适合通用问答与跨区块协作。
-2. **区块 Action 入口**：在支持 `Actions` 的区块中，通过 `Actions -> AI employees` 进入，适合针对当前区块执行任务（例如 JSBlock 等场景）。
+2. **区块 Action 入口**：在支持 `Actions` 的区块中，通过 `Actions -> AI employees` 添加 AI 员工，适合针对当前区块执行任务（例如填写表单区块等场景）。
+3. **特定入口**：开发类员工（如 Nathan、Lina、Dara）会在 JS 区块、图表区块或本地化管理等特定场景提供专属入口。
 
 ### 右下角主入口
 
@@ -24,13 +23,17 @@ keywords: "AI 员工协作,对话面板,员工切换,模型切换,NocoBase"
 
 ![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
+### 特定入口
+
+![](https://static-docs.nocobase.com/202605121057862.png)
+
 ## 对话基础操作
 
 对话框支持发送消息、上传附件、查看历史会话、新建会话和编辑系统提示词等常见操作。
 
 ## 会话内切换
 
-大部分情况下直接和  Atlas 对话即可，他会协调合适的 AI 员工协助处理问题。
+大部分情况下直接和 Atlas 对话即可，他会协调合适的 AI 员工协助处理问题。
 
 如果要使用指定 AI 员工，可以点击发送框的 AI 员工下拉列表进行选择
 

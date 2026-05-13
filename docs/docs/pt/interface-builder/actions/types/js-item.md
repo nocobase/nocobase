@@ -53,7 +53,7 @@ O JS Item injeta capacidades comuns no runtime, usáveis diretamente no script:
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- Pode ser combinado com AI Employees para gerar ou modificar scripts: [AI Employee · Nathan: Engenheiro de front-end](/ai-employees/features/built-in-employee)
+- Pode ser combinado com AI Employees para gerar ou modificar scripts: [AI Employee · Nathan: Engenheiro de front-end](/ai-employees/built-in/)
 
 ## Exemplos comuns (concisos)
 

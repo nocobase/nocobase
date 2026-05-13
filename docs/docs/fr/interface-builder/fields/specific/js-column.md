@@ -33,7 +33,7 @@ L'éditeur de script de la colonne JS prend en charge la coloration syntaxique, 
 
 Vous pouvez également utiliser un employé IA pour générer du code :
 
--   [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/features/built-in-employee)
+-   [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/)
 
 ## Cas d'utilisation courants
 

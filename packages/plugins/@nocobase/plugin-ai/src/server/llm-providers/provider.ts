@@ -23,11 +23,28 @@ import { ContentBlock } from '@langchain/core/messages';
 import { CachedDocumentLoader, SUPPORTED_DOCUMENT_EXTNAMES } from '../document-loader';
 import path from 'node:path';
 import PluginAIServer from '../plugin';
+import { MODEL_KWARGS_KEY } from './common/reasoning';
 
 export type ParsedAttachmentResult = {
   placement: string;
   content: any;
 };
+
+export type LLMProviderInvokeOptions = {
+  modelKwargs?: Record<string, any>;
+  modelRequestParams?: Record<string, any>;
+  [key: string]: any;
+};
+
+export type LLMModelRequestBuilderResult = {
+  context: AIChatContext;
+  options?: LLMProviderInvokeOptions;
+};
+
+export type LLMModelRequestBuilder = (input: {
+  context: AIChatContext;
+  options?: LLMProviderInvokeOptions;
+}) => LLMModelRequestBuilderResult;
 
 export interface LLMProviderOptions {
   app: Application;
@@ -57,6 +74,10 @@ export abstract class LLMProvider {
     }
   }
 
+  protected getModelRequestBuilder(_model?: string): LLMModelRequestBuilder | null {
+    return null;
+  }
+
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
     const toolDefinitions = context.tools?.map(buildTool);
@@ -80,9 +101,25 @@ export abstract class LLMProvider {
     return chain;
   }
 
-  async invoke(context: AIChatContext, options?: any) {
-    const chain = this.prepareChain(context);
-    return chain.invoke(context.messages, options);
+  async invoke(context: AIChatContext, options?: LLMProviderInvokeOptions) {
+    const builder = this.getModelRequestBuilder(this.modelOptions?.model);
+    const request = builder?.({ context, options }) || { context, options };
+    const chain = this.prepareChain(request.context);
+    const { modelKwargs, modelRequestParams, options: requestOptions, ...restOptions } = request.options || {};
+    const invokeOptions = modelKwargs
+      ? {
+          ...restOptions,
+          [MODEL_KWARGS_KEY]: modelKwargs,
+          options: {
+            ...(requestOptions || {}),
+            [MODEL_KWARGS_KEY]: modelKwargs,
+          },
+        }
+      : {
+          ...restOptions,
+          ...(requestOptions ? { options: requestOptions } : {}),
+        };
+    return chain.invoke(request.context.messages, invokeOptions);
   }
 
   async stream(context: AIChatContext, options?: any) {

@@ -53,7 +53,7 @@ Saat JS Item dijalankan akan menginjeksikan kemampuan umum, dapat langsung digun
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- Dapat dikombinasikan dengan AI Employee untuk generate / modify script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- Dapat dikombinasikan dengan AI Employee untuk generate / modify script: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Penggunaan Umum (Contoh Ringkas)
 

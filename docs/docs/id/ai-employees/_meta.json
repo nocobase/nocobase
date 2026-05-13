@@ -25,6 +25,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Konfigurasi Model Karyawan AI",
+        "link": "/ai-employees/features/model-settings"
+      },
+      {
+        "type": "custom-link",
         "label": "Berkolaborasi dengan Karyawan AI",
         "link": "/ai-employees/features/collaborate"
       },
@@ -60,11 +65,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Karyawan AI Bawaan",
-        "link": "/ai-employees/features/built-in-employee"
-      },
-      {
-        "type": "custom-link",
         "label": "Buat Karyawan AI Baru",
         "link": "/ai-employees/features/new-ai-employees"
       },
@@ -77,6 +77,62 @@
         "type": "custom-link",
         "label": "Manajemen File",
         "link": "/ai-employees/file-manager"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Karyawan AI Bawaan",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/ai-employees/built-in/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Atlas: Pemimpin Tim",
+        "link": "/ai-employees/built-in/atlas"
+      },
+      {
+        "type": "custom-link",
+        "label": "Viz: Analis Insight",
+        "link": "/ai-employees/built-in/viz"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dex: Ahli Pengelolaan Data",
+        "link": "/ai-employees/built-in/dex"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ellis: Ahli Email",
+        "link": "/ai-employees/built-in/ellis"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lexi: Asisten Terjemahan",
+        "link": "/ai-employees/built-in/lexi"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vera: Analis Riset",
+        "link": "/ai-employees/built-in/vera"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nathan: Engineer Frontend",
+        "link": "/ai-employees/built-in/nathan"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lina: Engineer Lokalisasi",
+        "link": "/ai-employees/built-in/lina"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dara: Ahli Visualisasi Data",
+        "link": "/ai-employees/built-in/dara"
       }
     ]
   },
@@ -167,6 +223,11 @@
         "type": "custom-link",
         "label": "Viz: Konfigurasi Skenario CRM",
         "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lina: Terjemahan Lokalisasi",
+        "link": "/ai-employees/scenarios/localization-hy-mt"
       },
       {
         "type": "custom-link",

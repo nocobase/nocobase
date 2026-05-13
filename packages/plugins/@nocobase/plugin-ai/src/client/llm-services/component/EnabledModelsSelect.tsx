@@ -15,7 +15,15 @@ import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { useT } from '../../locale';
 import { isRecommendedModel, getRecommendedModels } from '../../../common/recommended-models';
+import { formatModelLabel } from '../../../client-v2/llm-services/model-label';
 import type PluginAIClient from '../../index';
+
+export {
+  capitalize,
+  formatModelLabel,
+  mergeVersionSegments,
+  stripModelIdPrefix,
+} from '../../../client-v2/llm-services/model-label';
 
 const { Text } = Typography;
 
@@ -23,53 +31,6 @@ export interface EnabledModelsConfig {
   mode: 'recommended' | 'provider' | 'custom';
   models: Array<{ label: string; value: string }>;
 }
-
-/**
- * Strip known prefixes from a model ID.
- */
-export const stripModelIdPrefix = (id: string): string => {
-  let name = id;
-  name = name.replace(/^ft:/, '');
-  const slashIndex = name.lastIndexOf('/');
-  if (slashIndex !== -1) {
-    name = name.substring(slashIndex + 1);
-  }
-  return name;
-};
-
-export const capitalize = (s: string) => (s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-
-/**
- * Merge consecutive short (≤2 digit) numeric segments with '.'.
- * e.g. ["claude","opus","4","5","20251101"] → ["claude","opus","4.5","20251101"]
- */
-export const mergeVersionSegments = (segments: string[]): string[] => {
-  const result: string[] = [];
-  let i = 0;
-  while (i < segments.length) {
-    if (/^\d{1,2}$/.test(segments[i])) {
-      let version = segments[i];
-      while (i + 1 < segments.length && /^\d{1,2}$/.test(segments[i + 1])) {
-        version += '.' + segments[i + 1];
-        i++;
-      }
-      result.push(version);
-    } else {
-      result.push(segments[i]);
-    }
-    i++;
-  }
-  return result;
-};
-
-/**
- * Default fallback: space-separated, version-merged.
- */
-export const formatModelLabel = (id: string): string => {
-  const name = stripModelIdPrefix(id);
-  const segments = mergeVersionSegments(name.split(/[-_]/));
-  return segments.map(capitalize).join(' ');
-};
 
 /**
  * Normalize old `string[]` format to new `EnabledModelsConfig`.
