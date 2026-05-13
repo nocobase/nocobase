@@ -247,17 +247,45 @@ const useKeepDropdownOpen = () => {
  */
 const useMenuSearch = () => {
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [isSearching, setIsSearching] = useState(false);
+  const [composingCount, setComposingCount] = useState(0);
+  const composingKeysRef = useRef<Set<string>>(new Set());
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updateSearchValue = (key: string, value: string) => {
     setIsSearching(true);
+    setInputValues((prev) => ({ ...prev, [key]: value }));
     setSearchValues((prev) => ({ ...prev, [key]: value }));
 
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
     searchTimeoutRef.current = setTimeout(() => setIsSearching(false), 300);
+  };
+
+  const startComposition = (key: string) => {
+    composingKeysRef.current.add(key);
+    setIsSearching(true);
+    setComposingCount(composingKeysRef.current.size);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+  };
+
+  const endComposition = (key: string, value: string) => {
+    composingKeysRef.current.delete(key);
+    setComposingCount(composingKeysRef.current.size);
+    updateSearchValue(key, value);
+  };
+
+  const updateInputValue = (key: string, value: string) => {
+    setInputValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const isComposing = (key?: string) => {
+    return key ? composingKeysRef.current.has(key) : composingKeysRef.current.size > 0;
   };
 
   useEffect(() => {
@@ -270,8 +298,13 @@ const useMenuSearch = () => {
 
   return {
     searchValues,
-    isSearching,
+    inputValues,
+    isSearching: isSearching || composingCount > 0,
     updateSearchValue,
+    updateInputValue,
+    startComposition,
+    endComposition,
+    isComposing,
   };
 };
 
@@ -364,12 +397,18 @@ const createSearchItem = (
   currentSearchValue: string,
   menuVisible: boolean,
   t: (key: string) => string,
-  updateSearchValue: (key: string, value: string) => void,
+  searchHandlers: {
+    updateSearchValue: (key: string, value: string) => void;
+    updateInputValue: (key: string, value: string) => void;
+    startComposition: (key: string) => void;
+    endComposition: (key: string, value: string) => void;
+    isComposing: (key: string) => boolean;
+  },
 ) => ({
   key: `${searchKey}-search`,
   type: 'group' as const,
   label: (
-    <div>
+    <div onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
       <SearchInputWithAutoFocus
         visible={menuVisible}
         variant="borderless"
@@ -378,9 +417,24 @@ const createSearchItem = (
         value={currentSearchValue}
         onChange={(e) => {
           e.stopPropagation();
-          updateSearchValue(searchKey, e.target.value);
+          if ((e.nativeEvent as any)?.isComposing || searchHandlers.isComposing(searchKey)) {
+            searchHandlers.updateInputValue(searchKey, e.target.value);
+            return;
+          }
+          searchHandlers.updateSearchValue(searchKey, e.target.value);
+        }}
+        onCompositionStart={(e) => {
+          e.stopPropagation();
+          searchHandlers.startComposition(searchKey);
+        }}
+        onCompositionEnd={(e) => {
+          e.stopPropagation();
+          searchHandlers.endComposition(searchKey, e.currentTarget.value);
         }}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+        }}
         onMouseDown={(e) => {
           // 防止菜单聚焦丢失或页面滚动
           e.stopPropagation();
@@ -432,7 +486,8 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     openKeys,
     refreshKeys,
   );
-  const { searchValues, isSearching, updateSearchValue } = useMenuSearch();
+  const searchHandlers = useMenuSearch();
+  const { searchValues, inputValues, isSearching } = searchHandlers;
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
 
@@ -492,6 +547,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   ): any[] {
     const searchKey = keyPath;
     const currentSearchValue = searchValues[searchKey] || '';
+    const currentInputValue = inputValues[searchKey] ?? currentSearchValue;
 
     // 递归过滤：当 child 为分组时，会继续向下过滤其 children；
     // 仅保留自身匹配或存在匹配子项的分组。
@@ -521,7 +577,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       : children;
 
     const resolvedFiltered = resolve(filteredChildren, [...path, item.key]);
-    const searchItem = createSearchItem(item, searchKey, currentSearchValue, menuVisible, t, updateSearchValue);
+    const searchItem = createSearchItem(item, searchKey, currentInputValue, menuVisible, t, searchHandlers);
     const dividerItem = { key: `${keyPath}-search-divider`, type: 'divider' as const };
 
     if (currentSearchValue && resolvedFiltered.length === 0) {
@@ -685,6 +741,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       menu={{
         ...dropdownMenuProps,
         items: items,
+        subMenuCloseDelay: dropdownMenuProps.subMenuCloseDelay ?? 0.2,
         onClick: () => {},
         style: {
           maxHeight: dropdownMaxHeight,

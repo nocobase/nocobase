@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { vi, beforeEach } from 'vitest';
 import {
   AddSubModelButton,
@@ -245,6 +245,57 @@ describe('transformItems - searchable flags', () => {
     expect(submenu.searchable).toBe(true);
     expect(submenu.searchPlaceholder).toBe('Search blocks');
     expect(Array.isArray(submenu.children)).toBe(true);
+  });
+
+  it('keeps searchable submenu children during IME composition', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    const input = screen.getByRole('textbox');
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: 'zzzz' }, nativeEvent: { isComposing: true } });
+
+    expect(input).toHaveValue('zzzz');
+    expect(screen.getByText('Field 1')).toBeInTheDocument();
+    expect(screen.getByText('Field 2')).toBeInTheDocument();
+
+    fireEvent.compositionEnd(input);
+    fireEvent.change(input, { target: { value: 'zzzz' } });
+
+    await waitFor(() => expect(screen.getAllByText('No data').length).toBeGreaterThan(0));
   });
 });
 
