@@ -35,7 +35,7 @@ import {
   installNocoBaseSkills,
   updateNocoBaseSkills,
 } from '../lib/skills-manager.js';
-import { printInfo, printWarning } from '../lib/ui.js';
+import { isVerboseMode, printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
@@ -185,7 +185,11 @@ function shellQuoteArg(value: string): string {
 }
 
 function initTitle(): string {
-  return translateCli('commands.init.messages.title');
+  return 'Set up NocoBase';
+}
+
+function logInitStage(title: string) {
+  printStage(title);
 }
 
 function logInitUiReady(command: { log: (message: string) => void }, url: string) {
@@ -420,7 +424,7 @@ Prompt modes:
         this.exit(1);
       }
 
-      this.log(initTitle());
+      logInitStage(initTitle());
 
       await this.syncNocoBaseSkills({
         skip: Boolean(normalizedFlags['skip-skills']),
@@ -471,7 +475,6 @@ Prompt modes:
         this.error(message);
       }
 
-      this.log('Workspace init finished.');
       return;
     }
 
@@ -541,15 +544,13 @@ Prompt modes:
 
     const appName = String(presetValues.appName ?? '').trim();
     if (useBrowserUi) {
-      this.log(initTitle());
+      logInitStage(initTitle());
       this.log(translateCli('commands.init.messages.uiOpening'));
     } else {
-      this.log(initTitle());
+      logInitStage(initTitle());
 
       if (normalizedFlags.yes) {
-        this.log(
-          `Prompts skipped (--yes). NocoBase will be installed for env "${appName}" using the provided flags and safe defaults.`,
-        );
+        printInfo(`Non-interactive setup for env "${appName}" (--yes).`);
       } else if (!interactive) {
         printWarning(
           'No interactive terminal detected. NocoBase will be installed using the provided flags and safe defaults.',
@@ -624,13 +625,15 @@ Prompt modes:
     try {
       // oclif explicit registry keys use `:` (e.g. `env:add`); users still type `nb env add`.
       if (hasNocobase) {
-        this.log('Running nb env add');
+        logInitStage('Connecting to the env');
+        printVerbose('Running nb env add');
         await this.config.runCommand('env:add', this.buildEnvAddArgv(results));
       } else {
-        this.log('Saving the local env config');
+        logInitStage('Saving env config');
         await this.persistManagedEnvConfig(results, normalizedFlags);
         managedInstallResults = results;
-        this.log('Running nb init');
+        printInfo(`Saved env config for "${String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME}".`);
+        printVerbose('Running nb init');
         await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
       }
     } catch (error: unknown) {
@@ -642,7 +645,6 @@ Prompt modes:
       this.exit(1);
     }
 
-    this.log('Workspace init finished.');
   }
 
   private static async buildDynamicInitialValuesForInstall(
@@ -943,20 +945,23 @@ Prompt modes:
 
   private async syncNocoBaseSkills(options?: { skip?: boolean }): Promise<void> {
     if (options?.skip) {
-      this.log('Skipped NocoBase agent skills sync.');
+      printVerbose('Skipped agent skills sync.');
       return;
     }
 
     try {
+      logInitStage('Syncing agent skills');
       const status = await inspectSkillsStatus();
       if (!status.installed) {
-        this.log('Installing NocoBase agent skills (nb skills install)');
+        printVerbose('Installing NocoBase agent skills (nb skills install)');
         await installNocoBaseSkills();
+        printInfo('Agent skills ready.');
         return;
       }
 
-      this.log('Updating NocoBase agent skills (nb skills update)');
+      printVerbose('Updating NocoBase agent skills (nb skills update)');
       await updateNocoBaseSkills();
+      printInfo('Agent skills ready.');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(pc.red(`Skills sync failed: ${message}`));
@@ -1057,9 +1062,11 @@ Prompt modes:
     if (options?.nonInteractive ?? true) {
       argv.unshift('-y');
     }
+    argv.push('--skip-save-env-log');
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
+    const hasNocobase = String(results.hasNocobase ?? '').trim() === 'yes';
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim();
     const accessToken = String(results.accessToken ?? '');
@@ -1073,7 +1080,7 @@ Prompt modes:
       argv.push('--verbose');
     }
 
-    if (apiBaseUrl) {
+    if (hasNocobase && apiBaseUrl) {
       argv.push('--api-base-url', apiBaseUrl);
     }
 

@@ -12,6 +12,7 @@ import { test, vi, expect } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   authenticateEnvWithOauth: vi.fn(),
+  printStage: vi.fn(),
   startTask: vi.fn(),
   succeedTask: vi.fn(),
   failTask: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('../lib/env-auth.ts', () => ({
 }));
 
 vi.mock('../lib/ui.ts', () => ({
+  printStage: mocks.printStage,
   startTask: mocks.startTask,
   succeedTask: mocks.succeedTask,
   failTask: mocks.failTask,
@@ -50,6 +52,9 @@ test('env auth falls back to the current env and uses product-style task message
 
   expect(mocks.getCurrentEnvName.mock.calls).toEqual([[{ scope: 'global' }]]);
   expect(mocks.authenticateEnvWithOauth.mock.calls).toEqual([[{ envName: 'staging', scope: 'global' }]]);
+  expect(mocks.printStage.mock.calls).toEqual([
+    ['Signing in'],
+  ]);
   expect(mocks.startTask.mock.calls).toEqual([
     ['Starting browser sign-in for "staging"...'],
   ]);

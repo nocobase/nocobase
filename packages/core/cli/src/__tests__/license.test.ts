@@ -1046,7 +1046,9 @@ test('license activate supports interactive pasted key input', async () => {
     await LicenseActivate.prototype.run.call(command);
 
     expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
-    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toContain('License key');
+    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toBe('License key\n❯');
+    expect(typeof mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer).toBe('function');
+    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer?.('Use an existing license key'))).toContain('❯');
     expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
   } finally {
     await rm(storagePath, { recursive: true, force: true });
@@ -1329,9 +1331,12 @@ test('license activate supports interactive online activation', async () => {
     await LicenseActivate.prototype.run.call(command);
 
     expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
-    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toContain('Service account');
-    expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toContain('Service password');
-    expect(String(mocks.activateInput.mock.calls[1]?.[0]?.message)).toContain('Application name');
+    expect(typeof mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer).toBe('function');
+    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.theme?.style?.answer?.('Request and activate a license online'))).toContain('❯');
+    expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toBe('Service account\n❯');
+    expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toBe('Service password\n❯');
+    expect(mocks.activatePassword.mock.calls[0]?.[0]?.mask).toBe('•');
+    expect(String(mocks.activateInput.mock.calls[1]?.[0]?.message)).toBe('Application name\n❯');
     expect(mocks.crossEnvConfirm).toHaveBeenCalledTimes(1);
     expect(mocks.crossEnvConfirm).toHaveBeenCalledWith({
       message:

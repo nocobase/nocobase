@@ -10,6 +10,7 @@
 import { input, password as promptPassword, select } from '@inquirer/prompts';
 import { Command, Flags } from '@oclif/core';
 import { readFile } from 'node:fs/promises';
+import pc from 'picocolors';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   createLicenseEnvFlag,
@@ -40,10 +41,19 @@ function resolveOnlineInputValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function buildSelectAnswer(text: string) {
+  return `\n${pc.cyan('❯')} ${pc.cyan(text)}`;
+}
+
 async function promptActivationMode(): Promise<ActivationMode> {
   try {
     return await select<ActivationMode>({
       message: 'How do you want to activate the license?',
+      theme: {
+        style: {
+          answer: buildSelectAnswer,
+        },
+      },
       choices: [
         { value: 'key', name: 'Use an existing license key' },
         { value: 'online', name: 'Request and activate a license online' },
@@ -61,6 +71,11 @@ async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string
   try {
     answer = await select<'key' | 'file'>({
       message: 'How do you want to provide the license key?',
+      theme: {
+        style: {
+          answer: buildSelectAnswer,
+        },
+      },
       choices: [
         { value: 'key', name: 'Paste the license key' },
         { value: 'file', name: 'Read the key from a file' },
@@ -74,7 +89,7 @@ async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string
   if (answer === 'key') {
     try {
       const key = await input({
-        message: 'License key',
+        message: 'License key\n❯',
         validate: (value) => String(value ?? '').trim() ? true : 'License key is required.',
       });
       return { key: String(key ?? '').trim() || undefined };
@@ -85,7 +100,7 @@ async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string
 
   try {
     const keyFile = await input({
-      message: 'Path to the license key file',
+      message: 'Path to the license key file\n❯',
       validate: (value) => String(value ?? '').trim() ? true : 'License key file path is required.',
     });
     return { keyFile: String(keyFile ?? '').trim() || undefined };
@@ -101,7 +116,7 @@ async function promptOnlineActivationInput(
   if (!account) {
     try {
       const answer = await input({
-        message: 'Service account',
+        message: 'Service account\n❯',
         validate: (value) => String(value ?? '').trim() ? true : 'Service account is required.',
       });
       account = String(answer ?? '').trim();
@@ -117,7 +132,8 @@ async function promptOnlineActivationInput(
   if (!password) {
     try {
       const answer = await promptPassword({
-        message: 'Service password',
+        message: 'Service password\n❯',
+        mask: '•',
         validate: (value) => String(value ?? '').trim() ? true : 'Service password is required.',
       });
       password = String(answer ?? '').trim();
@@ -133,7 +149,7 @@ async function promptOnlineActivationInput(
   if (!appName) {
     try {
       const answer = await input({
-        message: 'Application name',
+        message: 'Application name\n❯',
         validate: (value) => String(value ?? '').trim() ? true : 'Application name is required.',
       });
       appName = String(answer ?? '').trim();

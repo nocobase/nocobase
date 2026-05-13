@@ -284,7 +284,7 @@ test('nb init localizes the browser UI intro title', async () => {
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.log).toHaveBeenCalledWith('配置供 Coding Agents 使用的 NocoBase');
+  expect(mocks.log).toHaveBeenCalledWith('Set up NocoBase');
 });
 
 test('nb init forwards download options to nb install for a new app flow', async () => {

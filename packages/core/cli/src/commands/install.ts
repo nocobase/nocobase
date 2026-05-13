@@ -56,7 +56,13 @@ import {
 import { validateExternalDbConfig } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { run, runNocoBaseCommand } from '../lib/run-npm.js';
-import { printInfo, printWarning, startTask, stopTask, updateTask } from '../lib/ui.js';
+import {
+  printInfo,
+  printStage,
+  printVerbose,
+  printWarning,
+  setVerboseMode,
+} from '../lib/ui.js';
 import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import Download, {
@@ -454,6 +460,16 @@ type ResumePortValidationContext = {
 };
 
 export default class Install extends Command {
+  private readonly ensuredDockerNetworks = new Set<string>();
+
+  private logStage(title: string) {
+    printStage(title);
+  }
+
+  private logDetail(message: string) {
+    printVerbose(message);
+  }
+
   static override hidden = true;
   static override description =
     'Install NocoBase: database, storage, admin user, and `nocobase-v1 install`. Optionally run `nb source download` first; distribution and image details are configured on `nb source download`, not here. Use `--resume` to continue an interrupted setup from the saved workspace env config.';
@@ -482,6 +498,10 @@ export default class Install extends Command {
     }),
     verbose: Flags.boolean({
       description: 'Show detailed command output',
+      default: false,
+    }),
+    'skip-save-env-log': Flags.boolean({
+      hidden: true,
       default: false,
     }),
     env: Flags.string({
@@ -1062,7 +1082,7 @@ export default class Install extends Command {
     const database = String(dbResults.dbDatabase ?? '').trim();
     const address = host && port ? `${host}:${port}` : host || port || '(unknown address)';
     const target = database ? `${address}/${database}` : address;
-    printInfo(`Checking external ${dialect} database: ${target}`);
+    printVerbose(`Checking external ${dialect} database: ${target}`);
 
     const validationError = await validateExternalDbConfig(dbResults as PromptCatalogValues);
     if (validationError) {
@@ -1924,19 +1944,25 @@ export default class Install extends Command {
   }
 
   private async ensureDockerNetwork(name: string): Promise<void> {
-    printInfo(`Checking Docker network: ${name}`);
-    const exists = await commandSucceeds('docker', ['network', 'inspect', name]);
-    if (exists) {
-      printInfo(`Docker network already exists: ${name}`);
+    if (this.ensuredDockerNetworks.has(name)) {
       return;
     }
 
-    printInfo(`Creating Docker network: ${name}`);
+    printVerbose(`Checking Docker network: ${name}`);
+    const exists = await commandSucceeds('docker', ['network', 'inspect', name]);
+    if (exists) {
+      printVerbose(`Docker network already exists: ${name}`);
+      this.ensuredDockerNetworks.add(name);
+      return;
+    }
+
+    printVerbose(`Creating Docker network: ${name}`);
     try {
       await run('docker', ['network', 'create', name], {
         errorName: 'docker network create',
       });
-      printInfo(`Docker network is ready: ${name}`);
+      printVerbose(`Docker network is ready: ${name}`);
+      this.ensuredDockerNetworks.add(name);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       if (/address pools have been fully subnetted/i.test(message)) {
@@ -1981,7 +2007,7 @@ export default class Install extends Command {
       return true;
     }
 
-    printInfo(
+    printVerbose(
       `Removing existing ${params.displayName}: ${params.containerName}`,
     );
     await this.removeDockerContainer(params.containerName);
@@ -2012,7 +2038,7 @@ export default class Install extends Command {
   ): Promise<void> {
     const exists = await this.dockerContainerExists(plan.containerName);
     if (exists) {
-      printInfo(
+      printVerbose(
         `Built-in ${plan.dbDialect} container already exists: ${plan.containerName}`,
       );
       return;
@@ -2055,7 +2081,8 @@ export default class Install extends Command {
       builtinDbImage: params.dbResults.builtinDbImage,
     });
 
-    printInfo(`Preparing built-in ${plan.dbDialect} database`);
+    this.logStage('Preparing database');
+    printInfo(`Using built-in ${plan.dbDialect} database.`);
     await this.ensureDockerNetwork(plan.networkName);
     const existingContainerKept = await this.removeDockerContainerIfForced({
       containerName: plan.containerName,
@@ -2075,9 +2102,8 @@ export default class Install extends Command {
     await this.ensureBuiltinDbContainer(plan, {
       stdio: params.commandStdio ?? 'ignore',
     });
-    printInfo(
-      `Built-in ${plan.dbDialect} database is ready at ${plan.dbHost}:${plan.dbPort}`,
-    );
+    printInfo(`${_.upperFirst(plan.dbDialect)} database ready.`);
+    printVerbose(`Built-in ${plan.dbDialect} database ready at ${plan.dbHost}:${plan.dbPort}`);
 
     return plan;
   }
@@ -2183,7 +2209,7 @@ export default class Install extends Command {
   ): Promise<'created' | 'existing'> {
     const exists = await this.dockerContainerExists(plan.containerName);
     if (exists) {
-      printInfo(`App container already exists: ${plan.containerName}`);
+      printVerbose(`App container already exists: ${plan.containerName}`);
       return 'existing';
     }
 
@@ -2226,7 +2252,7 @@ export default class Install extends Command {
       networkName,
     });
 
-    printInfo(`Starting Docker app ${plan.imageRef}`);
+    printVerbose('Starting NocoBase app (Docker)');
     await this.removeDockerContainerIfForced({
       containerName: plan.containerName,
       displayName: 'app container',
@@ -2240,7 +2266,7 @@ export default class Install extends Command {
       plan.appKey = env.APP_KEY || plan.appKey;
       plan.timeZone = env.TZ || plan.timeZone;
     }
-    printInfo(`App container is ready at http://127.0.0.1:${plan.appPort}`);
+    printVerbose(`NocoBase app is starting at http://127.0.0.1:${plan.appPort}`);
 
     return plan;
   }
@@ -2260,9 +2286,13 @@ export default class Install extends Command {
     results: Record<string, PromptValue>,
     options?: {
       verbose?: boolean;
+      compactLog?: boolean;
     },
   ): string[] {
     const argv = ['-y', '--no-intro'];
+    if (options?.compactLog) {
+      argv.push('--compact-log');
+    }
     const source = String(results.source ?? '').trim();
     if (options?.verbose) {
       argv.push('--verbose');
@@ -2345,13 +2375,8 @@ export default class Install extends Command {
   }): Promise<DownloadCommandResult | undefined> {
     const argv = Install.buildDownloadArgvFromResults(params.downloadResults, {
       verbose: params.verbose,
+      compactLog: true,
     });
-    const source = String(params.downloadResults.source ?? '').trim();
-    this.log(
-      source === 'docker'
-        ? 'Downloading Docker image'
-        : 'Downloading local NocoBase app files',
-    );
     return await this.config.runCommand(
       'source:download',
       argv,
@@ -2449,7 +2474,7 @@ export default class Install extends Command {
     });
     const args = ['start', '--quickstart', '--daemon'];
 
-    this.log(`Stopping any existing local NocoBase process in ${params.projectRoot}`);
+    this.logDetail(`Stopping any existing local NocoBase process in ${params.projectRoot}`);
     try {
       await runNocoBaseCommand(['pm2', 'kill'], {
         cwd: params.projectRoot,
@@ -2458,18 +2483,18 @@ export default class Install extends Command {
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.log(
+      this.logDetail(
         `Skipped local process cleanup before start: ${message}`,
       );
     }
 
-    this.log(`Starting local NocoBase app from ${params.projectRoot}`);
+    this.logDetail(`Starting local NocoBase app from ${params.projectRoot}`);
     await runNocoBaseCommand(args, {
       cwd: params.projectRoot,
       env,
       stdio: params.commandStdio ?? 'ignore',
     });
-    this.log(`Local app is starting at http://127.0.0.1:${env.APP_PORT}`);
+    this.logDetail(`Local app is starting at http://127.0.0.1:${env.APP_PORT}`);
 
     return {
       source: params.source,
@@ -2572,46 +2597,38 @@ export default class Install extends Command {
     const fetchImpl = options?.fetchImpl ?? fetch;
     const startedAt = Date.now();
     let lastMessage = 'No response yet';
-    let taskActive = true;
+    let lastLoggedStatus = '';
 
-    startTask(
-      `Waiting for application health check: ${healthCheckUrl}. NocoBase has started and is still booting...`,
-    );
+    printInfo('Waiting for NocoBase to become ready...');
 
-    try {
-      while (Date.now() - startedAt < timeoutMs) {
-        const result = await Install.requestAppHealthCheck({
-          healthCheckUrl,
-          fetchImpl,
-          requestTimeoutMs,
-        });
+    while (Date.now() - startedAt < timeoutMs) {
+      const result = await Install.requestAppHealthCheck({
+        healthCheckUrl,
+        fetchImpl,
+        requestTimeoutMs,
+      });
 
-        if (result.ok) {
-          stopTask();
-          taskActive = false;
-          this.log(`Application health check passed: ${healthCheckUrl}`);
-          return;
-        }
-
-        lastMessage = result.message;
-        const elapsedSeconds = Math.max(
-          1,
-          Math.floor((Date.now() - startedAt) / 1000),
-        );
-        updateTask(
-          `Waiting for application health check: ${healthCheckUrl}. Still starting... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(lastMessage)})`,
-        );
-
-        const remainingMs = timeoutMs - (Date.now() - startedAt);
-        if (remainingMs <= 0) {
-          break;
-        }
-        await Install.sleep(Math.min(intervalMs, remainingMs));
+      if (result.ok) {
+        return;
       }
-    } finally {
-      if (taskActive) {
-        stopTask();
+
+      lastMessage = result.message;
+      const elapsedSeconds = Math.max(
+        1,
+        Math.floor((Date.now() - startedAt) / 1000),
+      );
+      const statusLine =
+        `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(lastMessage)})`;
+      if (statusLine !== lastLoggedStatus) {
+        printInfo(statusLine);
+        lastLoggedStatus = statusLine;
       }
+
+      const remainingMs = timeoutMs - (Date.now() - startedAt);
+      if (remainingMs <= 0) {
+        break;
+      }
+      await Install.sleep(Math.min(intervalMs, remainingMs));
     }
 
     const logHint = options?.containerName
@@ -2805,7 +2822,15 @@ export default class Install extends Command {
       yes,
     });
 
-    const envAddResults = await runPromptCatalog(EnvAdd.prompts, {
+    const envAddPromptsForInstall = {
+      ...EnvAdd.prompts,
+      apiBaseUrl: {
+        ...EnvAdd.prompts.apiBaseUrl,
+        validate: undefined,
+      },
+    };
+
+    const envAddResults = await runPromptCatalog(envAddPromptsForInstall, {
       initialValues: {
         apiBaseUrl: `http://127.0.0.1:${appResults.appPort ?? DEFAULT_INSTALL_APP_PORT}/api`,
       },
@@ -2836,13 +2861,14 @@ export default class Install extends Command {
     const parsed = {
       ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
     } as InstallParsedFlags & DownloadParsedFlags;
+    setVerboseMode(Boolean(parsed.verbose));
     const commandStdio = this.commandStdio(parsed.verbose);
     if (!parsed['no-intro']) {
-      this.log('Set Up NocoBase');
+      this.logStage('Set up NocoBase');
     }
     if (parsed.resume) {
       const envLabel = Install.toOptionalPromptString(parsed.env);
-      this.log(
+      printInfo(
         envLabel
           ? `Resuming setup for env "${envLabel}" from the saved workspace config`
           : 'Resuming setup from the saved workspace config',
@@ -2872,6 +2898,9 @@ export default class Install extends Command {
     await Install.ensureExternalDbReadyForInstall(dbResults);
 
     if (!parsed.resume) {
+      if (!parsed['skip-save-env-log']) {
+        this.logStage('Saving env config');
+      }
       await this.saveInstalledEnv({
         envName,
         appResults,
@@ -2880,7 +2909,9 @@ export default class Install extends Command {
         rootResults,
         envAddResults,
       });
-      this.log(`Saved install config for env "${envName}"`);
+      if (!parsed['skip-save-env-log']) {
+        printInfo(`Saved env config for "${envName}".`);
+      }
     }
 
     let builtinDbPlan: BuiltinDbPlan | undefined;
@@ -2906,11 +2937,13 @@ export default class Install extends Command {
     let dockerAppPlan: DockerAppPlan | undefined;
     let localAppPlan: LocalAppPlan | undefined;
     if (Boolean(appResults.fetchSource)) {
+      this.logStage('Preparing application');
       if (source === 'docker') {
         await this.downloadManagedSource({
           downloadResults,
           verbose: parsed.verbose,
         });
+        printInfo('Application image ready.');
         dockerAppPlan = await this.installDockerApp({
           envName,
           dockerNetworkName,
@@ -2933,6 +2966,7 @@ export default class Install extends Command {
           downloadResults,
           verbose: parsed.verbose,
         });
+        printInfo('Application files ready.');
         localAppPlan = await this.startLocalApp({
           envName,
           source: localSource,
@@ -2946,10 +2980,11 @@ export default class Install extends Command {
         appResults.timeZone = localAppPlan.timeZone;
       }
     } else {
-      this.log('Skipped app download and install.');
+      this.logDetail('Skipped app download and install.');
     }
 
     if (dockerAppPlan || localAppPlan) {
+      this.logStage('Starting NocoBase');
       await this.waitForAppHealthCheck(
         Install.resolveApiBaseUrl({
           appResults,
@@ -2959,6 +2994,7 @@ export default class Install extends Command {
           containerName: dockerAppPlan?.containerName,
         },
       );
+      printInfo(`NocoBase is ready at http://127.0.0.1:${dockerAppPlan?.appPort ?? localAppPlan?.appPort}`);
     }
 
     if (dockerAppPlan || localAppPlan || builtinDbPlan) {
@@ -2978,11 +3014,9 @@ export default class Install extends Command {
       appReady: Boolean(dockerAppPlan || localAppPlan),
     });
 
-    this.log(
-      dockerAppPlan || localAppPlan
-        ? `NocoBase is ready at http://127.0.0.1:${dockerAppPlan?.appPort ?? localAppPlan?.appPort}`
-        : `Install config for "${envName}" has been saved.`,
-    );
+    if (!dockerAppPlan && !localAppPlan) {
+      printInfo(`Install config for "${envName}" has been saved.`);
+    }
   }
 }
 

@@ -13,6 +13,9 @@ import pc from 'picocolors';
 
 let activeSpinner: Ora | undefined;
 let verboseMode = false;
+let lastStaticTaskMessage: string | undefined;
+let lastStaticTaskAt = 0;
+const STATIC_TASK_UPDATE_THROTTLE_MS = 3_000;
 
 function stringWidth(value: string) {
   return Array.from(value).length;
@@ -27,6 +30,10 @@ export function isInteractiveTerminal() {
   return Boolean(input.isTTY && output.isTTY);
 }
 
+function supportsDynamicTaskUpdates() {
+  return isInteractiveTerminal() && process.env.TERM !== 'dumb';
+}
+
 export function setVerboseMode(value: boolean) {
   verboseMode = value;
 }
@@ -36,6 +43,11 @@ export function isVerboseMode() {
 }
 
 export function printSection(title: string) {
+  console.log(pc.bold(title));
+}
+
+export function printStage(title: string) {
+  clearActiveSpinner();
   console.log(pc.bold(title));
 }
 
@@ -113,19 +125,32 @@ export function startTask(message: string) {
     activeSpinner.stop();
   }
 
+  lastStaticTaskMessage = message;
+  lastStaticTaskAt = Date.now();
+
+  if (!supportsDynamicTaskUpdates()) {
+    activeSpinner = undefined;
+    console.log(pc.cyan(message));
+    return;
+  }
+
   activeSpinner = ora({
     text: pc.cyan(message),
-    isSilent: !isInteractiveTerminal(),
+    isSilent: false,
   }).start();
-
-  if (!isInteractiveTerminal()) {
-    console.log(pc.cyan(message));
-  }
 }
 
 export function updateTask(message: string) {
   if (!activeSpinner) {
-    startTask(message);
+    const now = Date.now();
+    if (
+      message !== lastStaticTaskMessage
+      && now - lastStaticTaskAt >= STATIC_TASK_UPDATE_THROTTLE_MS
+    ) {
+      console.log(pc.cyan(message));
+      lastStaticTaskMessage = message;
+      lastStaticTaskAt = now;
+    }
     return;
   }
 
@@ -153,6 +178,8 @@ export function failTask(message: string) {
 }
 
 export function stopTask() {
+  lastStaticTaskMessage = undefined;
+  lastStaticTaskAt = 0;
   clearActiveSpinner();
 }
 

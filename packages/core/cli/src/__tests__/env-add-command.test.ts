@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   upsertEnv: vi.fn(),
   setCurrentEnv: vi.fn(),
   setVerboseMode: vi.fn(),
+  printStage: vi.fn(),
+  printSuccess: vi.fn(),
   printVerbose: vi.fn(),
 }));
 
@@ -32,6 +34,8 @@ vi.mock('../lib/auth-store.js', () => ({
 
 vi.mock('../lib/ui.js', () => ({
   setVerboseMode: mocks.setVerboseMode,
+  printStage: mocks.printStage,
+  printSuccess: mocks.printSuccess,
   printVerbose: mocks.printVerbose,
 }));
 
@@ -111,6 +115,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     ['env:update', ['local']],
   ]);
   expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
+  expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" is ready.');
 });
 
 test('env add stores config globally by default', async () => {
@@ -153,4 +158,5 @@ test('env add stores config globally by default', async () => {
     ['env:update', ['local']],
   ]);
   expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
+  expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" is ready.');
 });

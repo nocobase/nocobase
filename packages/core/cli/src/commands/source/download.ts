@@ -287,6 +287,11 @@ export default class SourceDownload extends Command {
       description: 'Skip command intro when invoked by another CLI command',
       default: false,
     }),
+    'compact-log': Flags.boolean({
+      hidden: true,
+      description: 'Reduce default logs when invoked inside another setup flow',
+      default: false,
+    }),
     source: Flags.string({
       char: 's',
       description:
@@ -846,6 +851,17 @@ export default class SourceDownload extends Command {
     return this.isVerbose() ? 'inherit' : 'ignore';
   }
 
+  private useCompactLog(): boolean {
+    const flags = this._flags as Partial<DownloadParsedFlags> | undefined;
+    return Boolean(flags?.['compact-log']);
+  }
+
+  private logProgress(message: string): void {
+    if (this.isVerbose() || !this.useCompactLog()) {
+      this.log(message);
+    }
+  }
+
   private formatCommandForLog(name: string, args: string[], cwd?: string): string {
     const quotedArgs = args.map((arg) => (/\s/.test(arg) ? JSON.stringify(arg) : arg));
     const commandLine = [name, ...quotedArgs].join(' ');
@@ -949,12 +965,12 @@ export default class SourceDownload extends Command {
     }
     pullArgs.push(imageRef);
     this.finishPreparationTask();
-    this.log(`Pulling Docker image ${imageRef}`);
+    this.logProgress(`Pulling Docker image ${imageRef}`);
     await this.runExternalCommand('docker', pullArgs, {
       errorName: 'docker pull',
       loadingMessage: 'Pulling the Docker image',
     });
-    this.log(`Docker image is ready: ${imageRef}`);
+    this.logProgress(`Docker image is ready: ${imageRef}`);
 
     if (!flags['docker-save']) {
       return;
@@ -1094,7 +1110,7 @@ export default class SourceDownload extends Command {
   public async run(): Promise<DownloadCommandResult> {
     try {
       const result = await this.download();
-      this.log(`Download completed via ${downloadSourceLabel(result.resolved.source as DownloadSource)}.`);
+      this.logProgress(`Download completed via ${downloadSourceLabel(result.resolved.source as DownloadSource)}.`);
       return result;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
