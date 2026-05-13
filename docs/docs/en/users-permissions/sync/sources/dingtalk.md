@@ -22,6 +22,8 @@ Grant the app directory read and other required permissions (see the DingTalk co
 
 ## Add a sync data source in NocoBase
 
+![](https://static-docs.nocobase.com/20260513231840.png)
+
 Go to **Users & permissions → Sync → Add**, choose sync source type **DingTalk**, and fill in:
 
 - **Client ID** and **Client Secret**: same as the application above.

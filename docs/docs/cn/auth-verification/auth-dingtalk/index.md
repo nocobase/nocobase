@@ -13,7 +13,7 @@ keywords: "钉钉,DingTalk,钉钉登录,自动登录,OAuth,Client ID,回调 URL,
 
 ## 激活插件
 
-![](https://static-docs.nocobase.com/202406120929356.png)
+![](https://static-docs.nocobase.com/20260513231045.png)
 
 ## 在钉钉开发者后台申请接口权限
 
@@ -41,7 +41,7 @@ keywords: "钉钉,DingTalk,钉钉登录,自动登录,OAuth,Client ID,回调 URL,
 
 ### 配置
 
-![](https://static-docs.nocobase.com/202406120016896.png)
+![](https://static-docs.nocobase.com/20260513231225.png)
 
 - Sign up automatically when the user does not exist - 当使用手机号匹配不到已有用户时，是否自动创建新用户。
 - Client ID 和 Client Secret - 填写上一步复制的信息。

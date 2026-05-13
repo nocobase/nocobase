@@ -20,9 +20,13 @@ pkg: '@nocobase/plugin-auth-dingtalk'
 
 ## 配置渠道
 
+![](https://static-docs.nocobase.com/20260513232350.png)
+
 - **认证器**：选择用于发送消息的钉钉认证器（需包含可用的 Client ID、Client Secret 与 AgentId）。
 
 ## 消息模板（类型）
+
+![](https://static-docs.nocobase.com/20260513232435.png)
 
 - **Markdown 模板**：对应钉钉工作通知 `msgtype: markdown`，适合纯展示类通知（文本、图片、链接等以钉钉客户端能力为准）。
 - **ActionCard 模板**：对应 `action_card`。  

@@ -11,8 +11,7 @@ The Authentication: DingTalk plugin allows users to log in to NocoBase using the
 ## Enable Plugin
 
 
-![](https://static-docs.nocobase.com/202406120929356.png)
-
+![](https://static-docs.nocobase.com/20260513231045.png)
 
 ## Apply for API Permissions in DingTalk Developer Console
 
@@ -49,7 +48,7 @@ Add - DingTalk
 ### Configuration
 
 
-![](https://static-docs.nocobase.com/202406120016896.png)
+![](https://static-docs.nocobase.com/20260513231225.png)
 
 
 - Sign up automatically when the user does not exist - Whether to automatically create a new user when no existing user is matched by phone number.

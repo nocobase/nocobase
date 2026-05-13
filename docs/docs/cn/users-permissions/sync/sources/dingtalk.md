@@ -25,6 +25,8 @@ keywords: "钉钉,用户同步,通讯录,事件回调,用户数据同步,NocoBas
 
 ## 在 NocoBase 添加同步数据源
 
+![](https://static-docs.nocobase.com/20260513231840.png)
+
 路径：**用户和权限 → 同步 → 添加**，同步来源类型选择 **钉钉**，填写：
 
 - **Client ID**、**Client Secret**：与上述应用一致。

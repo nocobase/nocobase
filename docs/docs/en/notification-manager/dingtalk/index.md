@@ -16,9 +16,13 @@ The **DingTalk** plugin registers a notification channel type `dingtalk` that se
 
 ## Channel configuration
 
+![](https://static-docs.nocobase.com/20260513232350.png)
+
 Create a channel in Notification manager, type **DingTalk**, and select the authenticator to use.
 
 ## Message templates
+
+![](https://static-docs.nocobase.com/20260513232435.png)
 
 - **Markdown template** — `markdown` work notification (text / images / links per DingTalk client).
 - **ActionCard template** — `action_card` with **whole-card jump** (single URL) or **independent buttons** (`btn_json_list` JSON array).
