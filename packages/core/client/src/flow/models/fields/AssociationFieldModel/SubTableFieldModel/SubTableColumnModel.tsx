@@ -32,17 +32,11 @@ import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo, useEffect } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
+import { DetailsItemModel } from '../../../blocks/details/DetailsItemModel';
 import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
-import { buildSubTableRowForkKey, getSubTableRowIdentity } from './rowIdentity';
-import {
-  clearSubTablePendingRowFieldValue,
-  getSubTablePendingRowValues,
-  mergeSubTableRowPendingValues,
-  normalizeSubTableLatestValue,
-  setSubTablePendingRowFieldValue,
-  SubTableRowPendingValues,
-} from './SubTablePendingRowStore';
+import { getSubTableRowIdentity } from './rowIdentity';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../../../../internal/utils/rebuildFieldSubModel';
 
 export const SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT = 'subTableColumn';
 
@@ -91,15 +85,7 @@ export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   );
 }
 
-const LargeFieldEdit = observer((props: any) => {
-  const {
-    model,
-    params: { index },
-    defaultValue,
-    disabled,
-    onLatestValueChange,
-    ...others
-  } = props;
+const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, disabled, ...others }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
@@ -109,30 +95,15 @@ const LargeFieldEdit = observer((props: any) => {
   });
 
   const FieldModelRendererCom = (props) => {
-    const { model, onChange, onLatestValueChange, ...rest } = props;
+    const { model, onChange, ...rest } = props;
 
-    const commitChange = useMemo(
+    const handleChange = useMemo(
       () =>
         debounce((val) => {
+          if (props.onChange) props.onChange(val);
           if (onChange) onChange(val);
         }, 200),
-      [onChange],
-    );
-
-    useEffect(() => {
-      return () => {
-        commitChange.flush();
-      };
-    }, [commitChange]);
-
-    const handleChange = React.useCallback(
-      (value: any) => {
-        const latest = normalizeSubTableLatestValue(value);
-        if (!latest.ok) return;
-        onLatestValueChange?.(latest.value);
-        commitChange(latest.value);
-      },
-      [commitChange, onLatestValueChange],
+      [props.onChange, onChange],
     );
 
     return <FieldModelRenderer model={model} {...rest} onChange={handleChange} />;
@@ -154,14 +125,7 @@ const LargeFieldEdit = observer((props: any) => {
           },
         },
         content: (popover) => {
-          return (
-            <FieldModelRendererCom
-              model={model}
-              value={defaultValue}
-              onLatestValueChange={onLatestValueChange}
-              {...others}
-            />
-          );
+          return <FieldModelRendererCom model={model} value={defaultValue} {...others} />;
         },
       });
     } catch (error) {
@@ -234,23 +198,10 @@ export function buildRowPathFromFieldIndex(fieldIndex: unknown): Array<string | 
   return out.length ? out : null;
 }
 
-export function getLatestSubTableRowRecord(
-  form: any,
-  fieldIndex: unknown,
-  fallbackRecord: any,
-  pendingValues?: SubTableRowPendingValues,
-): any {
+export function getLatestSubTableRowRecord(form: any, fieldIndex: unknown, fallbackRecord: any): any {
   const latestRowPath = buildRowPathFromFieldIndex(fieldIndex);
   const latestRecord = latestRowPath ? form?.getFieldValue?.(latestRowPath) : undefined;
-  const rowRecord = typeof latestRecord === 'undefined' ? fallbackRecord : latestRecord;
-  return mergeSubTableRowPendingValues(rowRecord, pendingValues);
-}
-
-export function getLatestSubTableCurrentObject(rowItem: any, fallbackRecord: any) {
-  if (!rowItem || typeof rowItem !== 'object' || !Object.prototype.hasOwnProperty.call(rowItem, 'value')) {
-    return fallbackRecord;
-  }
-  return rowItem.value;
+  return typeof latestRecord === 'undefined' ? fallbackRecord : latestRecord;
 }
 
 function shouldCommitImmediately(value: any) {
@@ -269,59 +220,62 @@ function shouldCommitImmediately(value: any) {
   return false;
 }
 
+export function isSubTableColumnReadPretty(parent: any) {
+  return !!parent?.props?.readPretty || parent?.props?.pattern === 'readPretty';
+}
+
+export function isSubTableColumnConfiguredReadPretty(parent: any) {
+  return (
+    isSubTableColumnReadPretty(parent) ||
+    parent?.getStepParams?.('subTableColumnSettings', 'pattern')?.pattern === 'readPretty'
+  );
+}
+
+export function getSubTableColumnTitleField(parent: any) {
+  return (
+    parent?.props?.titleField ||
+    parent?.subModels?.field?.props?.titleField ||
+    parent?.subModels?.field?.props?.fieldNames?.label ||
+    parent?.collectionField?.targetCollectionTitleFieldName
+  );
+}
+
+export function getSubTableColumnReadPrettyFieldProps(parent: any, value: any) {
+  const fieldProps: Record<string, any> = { value };
+  const titleField = getSubTableColumnTitleField(parent);
+  const fieldNames = parent?.props?.fieldNames || parent?.subModels?.field?.props?.fieldNames;
+
+  if (titleField) {
+    fieldProps.titleField = titleField;
+  }
+  if (fieldNames) {
+    fieldProps.fieldNames = fieldNames;
+  }
+
+  return fieldProps;
+}
+
 const FieldModelRendererOptimize = React.memo((props: any) => {
-  const { model, onChange, onLatestValueChange, onCommittedValue, value, commitOnChange, ...rest } = props;
+  const { model, onChange, value, commitOnChange, ...rest } = props;
   const pendingValueRef = React.useRef<any>(props?.value);
-  const onChangeRef = React.useRef(onChange);
-  const onLatestValueChangeRef = React.useRef(onLatestValueChange);
-  const onCommittedValueRef = React.useRef(onCommittedValue);
-  const commitOnChangeRef = React.useRef(commitOnChange);
-
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-
-  useEffect(() => {
-    onLatestValueChangeRef.current = onLatestValueChange;
-  }, [onLatestValueChange]);
-
-  useEffect(() => {
-    onCommittedValueRef.current = onCommittedValue;
-  }, [onCommittedValue]);
-
-  useEffect(() => {
-    commitOnChangeRef.current = commitOnChange;
-  }, [commitOnChange]);
 
   useEffect(() => {
     pendingValueRef.current = value;
   }, [value]);
 
-  const updateLatestValue = React.useCallback((value: any) => {
-    const latest = normalizeSubTableLatestValue(value);
-    if (!latest.ok) return false;
-
-    pendingValueRef.current = latest.value;
-    onLatestValueChangeRef.current?.(latest.value);
-    return true;
-  }, []);
-
   const handleChange = React.useCallback(
     (value: any) => {
-      if (!updateLatestValue(value)) return;
-
-      if (commitOnChangeRef.current || shouldCommitImmediately(pendingValueRef.current)) {
-        onChangeRef.current?.(pendingValueRef.current);
+      pendingValueRef.current = value;
+      if (commitOnChange || shouldCommitImmediately(value)) {
+        onChange?.(value);
       }
     },
-    [updateLatestValue],
+    [commitOnChange, onChange],
   );
 
   const handleCommit = React.useCallback(() => {
-    onLatestValueChangeRef.current?.(pendingValueRef.current);
-    onChangeRef.current?.(pendingValueRef.current);
-    onCommittedValueRef.current?.();
-  }, []);
+    onChange?.(pendingValueRef.current);
+  }, [onChange]);
 
   return (
     <div onBlur={handleCommit}>
@@ -330,13 +284,8 @@ const FieldModelRendererOptimize = React.memo((props: any) => {
         value={value}
         model={model}
         onChange={handleChange}
-        onChangeComplete={(...args: any[]) => {
-          if (args.length) {
-            updateLatestValue(args[0]);
-          }
-          onLatestValueChangeRef.current?.(pendingValueRef.current);
-          onChangeRef.current?.(pendingValueRef.current);
-          onCommittedValueRef.current?.();
+        onChangeComplete={() => {
+          onChange?.(pendingValueRef.current);
         }}
       />
     </div>
@@ -358,9 +307,8 @@ interface CellProps {
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, memoKey, width, commitOnChange }) => {
+  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange }) => {
     const isNew = record?.__is_new__;
-    const subTableFieldModel = (parent as any).parent;
     return (
       <div
         style={{
@@ -397,20 +345,9 @@ const MemoCell: React.FC<CellProps> = React.memo(
         {parent.mapSubModels('field', (action: FieldModel) => {
           const fieldPath = action.context.fieldPath.split('.');
           const namePath = fieldPath.pop();
-          const updatePendingRowValue = (nextValue: any) => {
-            setSubTablePendingRowFieldValue(subTableFieldModel, memoKey, namePath, nextValue);
-          };
-          const clearPendingRowValue = () => {
-            setTimeout(() => {
-              clearSubTablePendingRowFieldValue(subTableFieldModel, memoKey, namePath);
-            });
-          };
 
           const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('currentObject', {
-            get: () => getLatestSubTableCurrentObject(rowFork?.context?.item, record),
-            cache: false,
-          });
+          fork.context.defineProperty('currentObject', { get: () => record });
           if (rowFork) {
             fork.context.defineProperty('item', {
               get: () => rowFork.context.item,
@@ -437,8 +374,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
             });
           }
 
-          if (parent.props.readPretty) {
-            fork.setProps({ value });
+          if (isSubTableColumnReadPretty(parent)) {
+            fork.setProps(getSubTableColumnReadPrettyFieldProps(parent, value));
             return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
           }
 
@@ -465,8 +402,6 @@ const MemoCell: React.FC<CellProps> = React.memo(
                     index: id,
                   }}
                   defaultValue={value}
-                  onLatestValueChange={updatePendingRowValue}
-                  onChange={clearPendingRowValue}
                   disabled={
                     parent.props.disabled ||
                     (!isNew && parent.props.aclDisabled) ||
@@ -478,8 +413,6 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   model={fork}
                   id={[(parent as any).context.fieldPath, rowIdx]}
                   commitOnChange={commitOnChange}
-                  onLatestValueChange={updatePendingRowValue}
-                  onCommittedValue={clearPendingRowValue}
                 />
               )}
             </FormItem>
@@ -697,10 +630,29 @@ export class SubTableColumnModel<
       // 这里为每一行创建一个 column fork，并注入 fieldIndex，让规则引擎能够按行解析与写入。
       const baseFieldIndex = parentFieldIndex ?? (this.parent as any)?.context?.fieldIndex ?? this.context?.fieldIndex;
       const baseArr = Array.isArray(baseFieldIndex) ? baseFieldIndex : [];
+      const baseIndexKey = baseArr.length ? baseArr.join('|') : 'root';
       const filterTargetKey =
         (this.parent as any)?.collection?.filterTargetKey ?? (this.parent as any)?.context?.collection?.filterTargetKey;
       const rowIdentity = getSubTableRowIdentity(record, filterTargetKey) ?? `row:${String(rowIdx)}`;
-      const rowForkKey = buildSubTableRowForkKey(baseArr, rowIdentity, rowIdx);
+      const rowForkKey = `row:${baseIndexKey}:${rowIdentity}:${String(rowIdx)}`;
+      const fieldModel: any = this.subModels.field;
+      const cellModeKey = [
+        rowForkKey,
+        this.props.pattern,
+        this.props.readPretty,
+        this.props.titleField,
+        this.props.__displayFieldRefreshKey,
+        fieldModel?.uid,
+        fieldModel?.use,
+        fieldModel?.constructor?.name,
+        fieldModel?.props?.clickToOpen,
+        fieldModel?.props?.displayStyle,
+        fieldModel?.props?.overflowMode,
+        fieldModel?.props?.titleField,
+        fieldModel?.props?.fieldNames?.label,
+      ]
+        .filter((item) => item !== undefined && item !== null)
+        .join(':');
       const rowFork: any = (() => {
         const fork = this.createFork({}, rowForkKey);
         fork.context.defineProperty('subTableRowFork', {
@@ -725,12 +677,7 @@ export class SubTableColumnModel<
         fork.context.defineProperty('item', {
           get: () => {
             const form = (fork.context as any)?.form || (this.context?.blockModel as any)?.context?.form;
-            const rowRecord = getLatestSubTableRowRecord(
-              form,
-              fork.context.fieldIndex,
-              record,
-              getSubTablePendingRowValues(this.parent, rowForkKey),
-            );
+            const rowRecord = getLatestSubTableRowRecord(form, fork.context.fieldIndex, record);
             const parentItemCtx = (parentItem ?? this.context?.item) as any;
             const isNew = rowRecord?.__is_new__;
             const isStored = rowRecord?.__is_stored__;
@@ -759,7 +706,7 @@ export class SubTableColumnModel<
           parentFieldIndex={baseArr}
           parentItem={parentItem}
           rowFork={rowFork}
-          memoKey={rowForkKey}
+          memoKey={cellModeKey}
           width={this.props.width}
           commitOnChange={this.hasFormulaColumn}
         />
@@ -791,6 +738,7 @@ SubTableColumnModel.registerFlow({
         ctx.model.setProps(collectionField.getComponentProps());
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
+        await ctx.model.applySubModelsBeforeRenderFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         // 避免强依赖 EditFormModel（减少循环依赖风险）：仅在存在该能力时调用
         currentBlockModel?.addAppends?.(ctx.model.fieldPath);
@@ -1003,6 +951,91 @@ SubTableColumnModel.registerFlow({
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
+    },
+    fieldNames: {
+      use: 'titleField',
+      title: tExpr('Title field'),
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField ||
+          !ctx.collectionField.isAssociationField() ||
+          !isSubTableColumnConfiguredReadPretty(ctx.model) ||
+          (ctx.model.subModels.field as any)?.disableTitleField
+        );
+      },
+      defaultParams(ctx) {
+        return {
+          label: getSubTableColumnTitleField(ctx.model),
+        };
+      },
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
+          return null;
+        }
+        if (!isSubTableColumnConfiguredReadPretty(ctx.model)) {
+          return null;
+        }
+        if (!params.label || params.label === previousParams.label) {
+          return null;
+        }
+
+        const targetCollection = ctx.collectionField.targetCollection;
+        const targetCollectionField = targetCollection?.getField(params.label);
+        if (!targetCollectionField) {
+          return null;
+        }
+
+        const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+        const fieldModel: any = ctx.model.subModels.field;
+        const currentUse = getFieldBindingUse(fieldModel) || fieldModel?.use;
+        const targetUse = binding?.modelName || currentUse;
+        const fieldSettingsInit = {
+          dataSourceKey: ctx.model.collectionField.dataSourceKey,
+          collectionName: targetCollection.name,
+          fieldPath: params.label,
+        };
+        const defaultProps =
+          typeof binding?.defaultProps === 'function'
+            ? binding.defaultProps(ctx, targetCollectionField)
+            : binding?.defaultProps;
+
+        ctx.model.setProps({
+          titleField: params.label,
+          ...targetCollectionField.getComponentProps?.(),
+        });
+
+        if (targetUse && targetUse !== currentUse) {
+          await rebuildFieldSubModel({
+            parentModel: ctx.model as any,
+            targetUse,
+            defaultProps: {
+              ...(defaultProps || {}),
+              titleField: params.label,
+            },
+            fieldSettingsInit,
+          });
+        } else if (fieldModel) {
+          fieldModel.setProps({
+            ...(defaultProps || {}),
+            titleField: params.label,
+          });
+          fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
+          await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+        }
+      },
+      handler(ctx, params) {
+        if (
+          !ctx.collectionField ||
+          !ctx.collectionField.isAssociationField() ||
+          !isSubTableColumnConfiguredReadPretty(ctx.model)
+        ) {
+          return null;
+        }
+        ctx.model.setProps({
+          titleField: params.label,
+          ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps?.(),
+        });
+      },
     },
     pattern: {
       use: 'pattern',

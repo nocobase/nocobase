@@ -8,18 +8,18 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { FlowEngine } from '@nocobase/flow-engine';
+import { DisplayTitleFieldModel } from '../../../DisplayTitleFieldModel';
+import { titleField } from '../../../../../actions/titleField';
 import {
-  getLatestSubTableCurrentObject,
+  SubTableColumnModel,
   getLatestSubTableRowRecord,
   buildRowPathFromFieldIndex,
+  isSubTableColumnConfiguredReadPretty,
+  getSubTableColumnTitleField,
+  getSubTableColumnReadPrettyFieldProps,
+  isSubTableColumnReadPretty,
 } from '../SubTableColumnModel';
-import { buildSubTableRowForkKey } from '../rowIdentity';
-import {
-  clearSubTablePendingRowFieldValue,
-  clearSubTablePendingRowValues,
-  getSubTablePendingRowValues,
-  setSubTablePendingRowFieldValue,
-} from '../SubTablePendingRowStore';
 
 describe('SubTableColumnModel row record helpers', () => {
   it('builds the row path from fieldIndex entries', () => {
@@ -51,155 +51,161 @@ describe('SubTableColumnModel row record helpers', () => {
     expect(getLatestSubTableRowRecord(form, ['roles:0'], fallback)).toBe(fallback);
   });
 
-  it('merges pending row values over the latest form row', () => {
-    const form = {
-      getFieldValue: vi.fn(() => ({
-        uid: 'role-uid-1',
-        name: 'Old name',
-        status: 'active',
-      })),
+  it('treats a display-only column pattern as read-pretty mode', () => {
+    expect(isSubTableColumnReadPretty({ props: { pattern: 'readPretty' } })).toBe(true);
+    expect(isSubTableColumnReadPretty({ props: { readPretty: true } })).toBe(true);
+    expect(isSubTableColumnReadPretty({ props: { pattern: 'editable' } })).toBe(false);
+  });
+
+  it('treats a saved display-only column pattern as read-pretty during beforeRender restore', () => {
+    expect(
+      isSubTableColumnConfiguredReadPretty({
+        props: {},
+        getStepParams: vi.fn(() => ({ pattern: 'readPretty' })),
+      }),
+    ).toBe(true);
+  });
+
+  it('passes the association title field to read-pretty cell field models', () => {
+    const relationValue = { id: 1, name: 'Alice' };
+    expect(
+      getSubTableColumnReadPrettyFieldProps(
+        {
+          props: {},
+          collectionField: {
+            targetCollectionTitleFieldName: 'name',
+          },
+        },
+        relationValue,
+      ),
+    ).toEqual({
+      value: relationValue,
+      titleField: 'name',
+    });
+  });
+
+  it('resolves the saved title field before the target collection default', () => {
+    expect(
+      getSubTableColumnTitleField({
+        props: { titleField: 'nickname' },
+        subModels: {
+          field: {
+            props: {
+              titleField: 'name',
+            },
+          },
+        },
+        collectionField: {
+          targetCollectionTitleFieldName: 'title',
+        },
+      }),
+    ).toBe('nickname');
+  });
+
+  it('applies the configured title field to a display-only association column', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ SubTableColumnModel, DisplayTitleFieldModel });
+    engine.registerActions({ titleField });
+
+    const rolesField = {
+      name: 'roles',
+      title: 'Roles',
+      collection: { name: 'users' },
+      targetCollectionTitleFieldName: 'name',
+      targetCollection: {
+        name: 'roles',
+        getField: vi.fn((name: string) => ({
+          name,
+          getComponentProps: () => ({ componentField: name }),
+        })),
+      },
+      isAssociationField: () => true,
+      getComponentProps: () => ({}),
     };
-    const host = {};
 
-    setSubTablePendingRowFieldValue(host, 'row:0', 'name', 'New name');
-
-    expect(getLatestSubTableRowRecord(form, ['roles:0'], {}, getSubTablePendingRowValues(host, 'row:0'))).toEqual({
-      uid: 'role-uid-1',
-      name: 'New name',
-      status: 'active',
+    const column = engine.createModel<SubTableColumnModel>({
+      use: SubTableColumnModel,
+      uid: 'roles-display-column-title-field',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'roles',
+          },
+        },
+        subTableColumnSettings: {
+          pattern: {
+            pattern: 'readPretty',
+          },
+          fieldNames: {
+            label: 'nickname',
+          },
+        },
+      },
     });
+    column.context.defineProperty('collectionField', { value: rolesField });
+    column.context.defineProperty('blockModel', { value: { addAppends: vi.fn() } });
+    column.setSubModel('field', {
+      use: DisplayTitleFieldModel,
+      uid: 'roles-display-field-title-field',
+    });
+
+    await column.dispatchEvent('beforeRender');
+
+    expect(column.props.titleField).toBe('nickname');
+    expect(column.props.componentField).toBe('nickname');
   });
 
-  it('keeps explicit undefined pending values so cleared fields override stale row values', () => {
-    const host = {};
+  it('applies saved display field settings to the inner field during column beforeRender', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ SubTableColumnModel, DisplayTitleFieldModel });
 
-    setSubTablePendingRowFieldValue(host, 'row:0', 'name', undefined);
-
-    expect(
-      getLatestSubTableRowRecord(
-        undefined,
-        undefined,
-        { uid: 'role-uid-1', name: 'Old name' },
-        getSubTablePendingRowValues(host, 'row:0'),
-      ),
-    ).toEqual({
-      uid: 'role-uid-1',
-      name: undefined,
-    });
-  });
-
-  it('uses the latest row item value for currentObject', () => {
-    const form = {
-      getFieldValue: vi.fn(() => ({
-        uid: 'role-uid-1',
-        name: 'Old name',
-      })),
+    const rolesCollection = {
+      name: 'roles',
+      filterTargetKey: 'id',
     };
-    const host = {};
-    const fallback = { uid: 'role-uid-1', name: 'Stale name' };
+    const rolesField = {
+      name: 'roles',
+      title: 'Roles',
+      collection: { name: 'users' },
+      targetCollection: rolesCollection,
+      isAssociationField: () => true,
+      getComponentProps: () => ({ titleField: 'name' }),
+    };
 
-    setSubTablePendingRowFieldValue(host, 'row:0', 'name', 'New name');
-
-    const latestRow = getLatestSubTableRowRecord(
-      form,
-      ['roles:0'],
-      fallback,
-      getSubTablePendingRowValues(host, 'row:0'),
-    );
-
-    expect(getLatestSubTableCurrentObject({ value: latestRow }, fallback)).toEqual({
-      uid: 'role-uid-1',
-      name: 'New name',
+    const column = engine.createModel<SubTableColumnModel>({
+      use: SubTableColumnModel,
+      uid: 'roles-title-column',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'roles',
+          },
+        },
+      },
     });
-    expect(getLatestSubTableCurrentObject({ value: null }, fallback)).toBeNull();
-    expect(getLatestSubTableCurrentObject(undefined, fallback)).toBe(fallback);
-  });
+    column.context.defineProperty('collectionField', { value: rolesField });
+    column.context.defineProperty('blockModel', { value: { addAppends: vi.fn() } });
 
-  it('normalizes event-like pending values from composition end events', () => {
-    const host = {};
+    const field = column.setSubModel('field', {
+      use: DisplayTitleFieldModel,
+      uid: 'roles-title-display',
+      stepParams: {
+        displayFieldSettings: {
+          clickToOpen: {
+            clickToOpen: true,
+          },
+        },
+      },
+    }) as DisplayTitleFieldModel;
 
-    setSubTablePendingRowFieldValue(host, 'row:0', 'name', {
-      target: { value: 'Composed text' },
-      preventDefault: vi.fn(),
-    });
+    expect(field.props.clickToOpen).toBeUndefined();
 
-    expect(getSubTablePendingRowValues(host, 'row:0')).toEqual({
-      name: 'Composed text',
-    });
-  });
+    await column.dispatchEvent('beforeRender');
 
-  it('does not store event-like pending values when no target value can be read', () => {
-    const host = {};
-
-    setSubTablePendingRowFieldValue(host, 'row:0', 'name', {
-      preventDefault: vi.fn(),
-    });
-
-    expect(getSubTablePendingRowValues(host, 'row:0')).toBeUndefined();
-    expect(
-      getLatestSubTableRowRecord(
-        undefined,
-        undefined,
-        { uid: 'role-uid-1', name: 'Old name' },
-        getSubTablePendingRowValues(host, 'row:0'),
-      ),
-    ).toEqual({
-      uid: 'role-uid-1',
-      name: 'Old name',
-    });
-
-    setSubTablePendingRowFieldValue(host, 'row:1', 'name', 'Latest name');
-    setSubTablePendingRowFieldValue(host, 'row:1', 'name', {
-      preventDefault: vi.fn(),
-    });
-
-    expect(getSubTablePendingRowValues(host, 'row:1')).toEqual({
-      name: 'Latest name',
-    });
-  });
-
-  it('clears a committed pending field without removing other pending fields in the same row', () => {
-    const host = {};
-
-    setSubTablePendingRowFieldValue(host, 'row:0', 'name', 'Latest name');
-    setSubTablePendingRowFieldValue(host, 'row:0', 'status', 'inactive');
-    clearSubTablePendingRowFieldValue(host, 'row:0', 'name');
-
-    expect(getSubTablePendingRowValues(host, 'row:0')).toEqual({
-      status: 'inactive',
-    });
-    expect(
-      getLatestSubTableRowRecord(
-        undefined,
-        undefined,
-        { uid: 'role-uid-1', name: 'Committed name', status: 'active' },
-        getSubTablePendingRowValues(host, 'row:0'),
-      ),
-    ).toEqual({
-      uid: 'role-uid-1',
-      name: 'Committed name',
-      status: 'inactive',
-    });
-  });
-
-  it('clears a pending row or the whole pending store', () => {
-    const host = {};
-
-    setSubTablePendingRowFieldValue(host, 'row:0', 'name', 'Row 0');
-    setSubTablePendingRowFieldValue(host, 'row:1', 'name', 'Row 1');
-
-    clearSubTablePendingRowValues(host, 'row:0');
-
-    expect(getSubTablePendingRowValues(host, 'row:0')).toBeUndefined();
-    expect(getSubTablePendingRowValues(host, 'row:1')).toEqual({ name: 'Row 1' });
-
-    clearSubTablePendingRowValues(host);
-
-    expect(getSubTablePendingRowValues(host, 'row:1')).toBeUndefined();
-  });
-
-  it('builds stable pending row keys from field index, row identity, and current row index', () => {
-    expect(buildSubTableRowForkKey(['users:1'], 'pk:10', 2)).toBe('row:users:1:pk:10:2');
-    expect(buildSubTableRowForkKey(undefined, undefined, 0)).toBe('row:root:row:0:0');
+    expect(field.props.clickToOpen).toBe(true);
   });
 });

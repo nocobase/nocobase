@@ -49,17 +49,6 @@ export function getSubTableRowIdentity(record: SubTableRow, filterTargetKey: Fil
   return null;
 }
 
-export function buildSubTableRowForkKey(
-  parentFieldIndex: unknown,
-  rowIdentity: string | null | undefined,
-  rowIdx: string | number,
-) {
-  const baseArr = Array.isArray(parentFieldIndex) ? parentFieldIndex : [];
-  const baseIndexKey = baseArr.length ? baseArr.join('|') : 'root';
-  const normalizedRowIdentity = rowIdentity ?? `row:${String(rowIdx)}`;
-  return `row:${baseIndexKey}:${normalizedRowIdentity}:${String(rowIdx)}`;
-}
-
 export function normalizeSubTableRows(rows: SubTableRow[]) {
   if (!rows.length) return rows;
 

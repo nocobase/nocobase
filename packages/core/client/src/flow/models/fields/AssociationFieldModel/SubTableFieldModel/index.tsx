@@ -123,7 +123,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
         formValuesChangeEmitter={this.context.blockModel?.emitter}
         fieldPathArray={this.parent?.context?.fieldPathArray}
         getCurrentValue={this.getCurrentValue}
-        pendingRowValueHost={this}
       />
     );
   }
