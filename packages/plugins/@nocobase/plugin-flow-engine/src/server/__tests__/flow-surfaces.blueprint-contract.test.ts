@@ -258,6 +258,66 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
   }
 
+  async function createPopupRelationTestCollections(sourceCollection: string, targetCollection: string) {
+    const throughCollection = `${sourceCollection}_${targetCollection}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: targetCollection,
+        titleField: 'title',
+        filterTargetKey: 'id',
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'name', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        titleField: 'username',
+        filterTargetKey: 'id',
+        fields: [
+          { name: 'username', type: 'string', interface: 'input' },
+          { name: 'email', type: 'string', interface: 'email' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: throughCollection,
+        title: throughCollection,
+        fields: [
+          {
+            name: 'id',
+            type: 'integer',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+            interface: 'id',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'roles',
+        type: 'belongsToMany',
+        target: targetCollection,
+        through: throughCollection,
+        foreignKey: 'sourceId',
+        otherKey: 'targetId',
+        interface: 'm2m',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [sourceCollection]: ['username', 'email'],
+      [targetCollection]: ['title', 'name'],
+      [throughCollection]: ['id', 'sourceId', 'targetId'],
+    });
+  }
+
   async function findPopupTemplateByName(name: string) {
     const listed = getListData(
       await rootAgent.resource('flowSurfaces').listTemplates({
@@ -2533,6 +2593,309 @@ describe('flowSurfaces applyBlueprint contract', () => {
     await expectSavedTemplateReference(fieldTemplateName);
     await expectSavedTemplateReference(actionTemplateName);
     await expectSavedTemplateReference(recordActionTemplateName);
+  });
+
+  it('should include relation context in auto-saved applyBlueprint popup template names', async () => {
+    const unique = Date.now();
+    const directPopupTitle = `用户详情 ${unique}`;
+    const relationPopupTitle = `角色详情 ${unique}`;
+    const relationEditPopupTitle = `编辑角色 ${unique}`;
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Relation popup template names ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'usersDetails',
+                type: 'details',
+                collection: 'users',
+                fields: [
+                  'username',
+                  {
+                    field: 'roles',
+                    popup: {
+                      title: relationPopupTitle,
+                      blocks: [
+                        {
+                          key: 'roleDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'roles',
+                          },
+                          fields: ['title', 'name'],
+                          recordActions: [
+                            {
+                              type: 'edit',
+                              title: '编辑',
+                              popup: {
+                                title: relationEditPopupTitle,
+                                blocks: [
+                                  {
+                                    key: 'roleEditForm',
+                                    type: 'editForm',
+                                    resource: {
+                                      binding: 'currentRecord',
+                                      collectionName: 'roles',
+                                    },
+                                    fields: ['title', 'name'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    type: 'view',
+                    title: '详情',
+                    popup: {
+                      title: directPopupTitle,
+                      blocks: [
+                        {
+                          key: 'userDetailsPopup',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: 'users',
+                          },
+                          fields: ['username', 'email'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+
+    const listed = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: String(unique),
+          pageSize: 20,
+        },
+      }),
+    );
+    const rows = listed.rows;
+    const findTemplate = (name: string) => rows.find((row: any) => row.name === name);
+
+    const directTemplate = findTemplate(`${directPopupTitle}弹窗模板`);
+    expect(directTemplate?.uid).toBeTruthy();
+    expect(directTemplate?.associationName).toBeFalsy();
+    expect(directTemplate?.description).toContain('上下文：直接/当前记录');
+
+    const relationTemplate = findTemplate(`${relationPopupTitle}(users.roles)`);
+    expect(relationTemplate?.uid).toBeTruthy();
+    expect(relationTemplate?.associationName).toBe('users.roles');
+    expect(relationTemplate?.name).not.toContain('弹窗');
+    expect(relationTemplate?.description).toContain('上下文：关联 users.roles');
+    expect(relationTemplate?.description).toContain('宿主：users');
+    expect(relationTemplate?.description).toContain('触发器：字段“roles”');
+
+    const relationEditTemplate = findTemplate(`${relationEditPopupTitle}(users.roles)`);
+    expect(relationEditTemplate?.uid).toBeTruthy();
+    expect(relationEditTemplate?.associationName).toBe('users.roles');
+    expect(relationEditTemplate?.name).not.toContain('弹窗');
+    expect(relationEditTemplate?.description).toContain('上下文：关联 users.roles');
+    expect(relationEditTemplate?.description).toContain('宿主：roles');
+    expect(relationEditTemplate?.description).toContain('触发器：记录操作“编辑”');
+  });
+
+  it('should reuse relation popup templates across field and record action hosts in applyBlueprint', async () => {
+    const unique = Date.now();
+    const sourceCollection = `prs_${unique}`;
+    const targetCollection = `prt_${unique}`;
+    const associationName = `${sourceCollection}.roles`;
+    const relationPopupTitle = `角色详情复用 ${unique}`;
+    const relationEditPopupTitle = `编辑角色复用 ${unique}`;
+    const userPopupTitle = `用户详情复用 ${unique}`;
+    await createPopupRelationTestCollections(sourceCollection, targetCollection);
+
+    const roleDetailsBlock = (key: string, editKey: string) => ({
+      key,
+      type: 'details',
+      resource: {
+        binding: 'currentRecord',
+        collectionName: targetCollection,
+      },
+      fields: ['title', 'name'],
+      recordActions: [
+        {
+          key: `${key}Edit`,
+          type: 'edit',
+          title: '编辑',
+          popup: {
+            title: relationEditPopupTitle,
+            blocks: [
+              {
+                key: editKey,
+                type: 'editForm',
+                resource: {
+                  binding: 'currentRecord',
+                  collectionName: targetCollection,
+                },
+                fields: ['title', 'name'],
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Relation popup template reuse ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'usersDetails',
+                type: 'details',
+                collection: sourceCollection,
+                fields: [
+                  'username',
+                  {
+                    field: 'roles',
+                    popup: {
+                      title: relationPopupTitle,
+                      blocks: [roleDetailsBlock('rootRoleDetails', 'rootRoleEditForm')],
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    key: 'userDetailAction',
+                    type: 'view',
+                    title: '详情',
+                    popup: {
+                      title: userPopupTitle,
+                      blocks: [
+                        {
+                          key: 'userDetailsPopup',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: sourceCollection,
+                          },
+                          fields: ['username', 'email'],
+                        },
+                        {
+                          key: 'userRolesTable',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                            collectionName: targetCollection,
+                          },
+                          fields: [
+                            {
+                              field: 'title',
+                              popup: {
+                                title: relationPopupTitle,
+                                blocks: [roleDetailsBlock('tableFieldRoleDetails', 'tableFieldRoleEditForm')],
+                              },
+                            },
+                            'name',
+                          ],
+                          recordActions: [
+                            {
+                              key: 'tableRoleView',
+                              type: 'view',
+                              title: '详情',
+                              popup: {
+                                title: relationPopupTitle,
+                                blocks: [roleDetailsBlock('tableActionRoleDetails', 'tableActionRoleEditForm')],
+                              },
+                            },
+                            {
+                              key: 'tableRoleEdit',
+                              type: 'edit',
+                              title: '编辑',
+                              popup: {
+                                title: relationEditPopupTitle,
+                                blocks: [
+                                  {
+                                    key: 'tableActionRoleEditForm',
+                                    type: 'editForm',
+                                    resource: {
+                                      binding: 'currentRecord',
+                                      collectionName: targetCollection,
+                                    },
+                                    fields: ['title', 'name'],
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const listed = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: String(unique),
+          pageSize: 20,
+        },
+      }),
+    );
+    const rows = listed.rows;
+    const relationTemplateName = `${relationPopupTitle}(${associationName})`;
+    const relationEditTemplateName = `${relationEditPopupTitle}(${associationName})`;
+    const relationTemplates = rows.filter((row: any) => row.name === relationTemplateName);
+    const relationEditTemplates = rows.filter((row: any) => row.name === relationEditTemplateName);
+
+    expect(relationTemplates).toHaveLength(1);
+    expect(relationTemplates[0]).toMatchObject({
+      collectionName: targetCollection,
+      associationName,
+    });
+    expect(relationEditTemplates).toHaveLength(1);
+    expect(relationEditTemplates[0]).toMatchObject({
+      collectionName: targetCollection,
+      associationName,
+    });
+    expect(rows.filter((row: any) => row.name === relationTemplateName && !row.associationName)).toHaveLength(0);
+    expect(rows.filter((row: any) => row.name === relationEditTemplateName && !row.associationName)).toHaveLength(0);
+    await expectTemplateUsage(rootAgent, relationTemplates[0].uid, 3);
+    await expectTemplateUsage(rootAgent, relationEditTemplates[0].uid, 2);
   });
 
   it('should keep applying popup template reuse after a template is saved earlier in the same blueprint', async () => {
