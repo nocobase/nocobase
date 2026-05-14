@@ -12,8 +12,15 @@ import type { PluginClass } from '../PluginManager';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
 
+type RemotePluginModule = PluginClass | ({ default?: PluginClass } & Record<string, unknown>);
+
 function getClientV2ModuleId(packageName: string) {
   return `${packageName}/client-v2`;
+}
+
+function getPluginClass(pluginModule: RemotePluginModule): PluginClass {
+  const defaultPlugin = 'default' in pluginModule ? pluginModule.default : undefined;
+  return defaultPlugin || (pluginModule as PluginClass);
 }
 
 /**
@@ -22,6 +29,14 @@ function getClientV2ModuleId(packageName: string) {
 export function defineDevPlugins(plugins: Record<string, PluginClass>) {
   Object.entries(plugins).forEach(([packageName, plugin]) => {
     window.define(getClientV2ModuleId(packageName), () => plugin);
+  });
+}
+
+function defineDevPluginModules(plugins: Record<string, RemotePluginModule>) {
+  window.__nocobase_app_dev_plugins__ = window.__nocobase_app_dev_plugins__ || {};
+  Object.entries(plugins).forEach(([packageName, pluginModule]) => {
+    window.define(getClientV2ModuleId(packageName), () => pluginModule);
+    window.__nocobase_app_dev_plugins__[getClientV2ModuleId(packageName)] = pluginModule;
   });
 }
 
@@ -75,6 +90,48 @@ export function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []):
   });
 }
 
+async function getEsmDevPlugins(pluginData: PluginData[] = []): Promise<Array<[string, PluginClass]>> {
+  const plugins: Array<[string, PluginClass]> = [];
+  for (const plugin of sortEsmDevPlugins(pluginData)) {
+    const pluginModule: RemotePluginModule = await import(/* webpackIgnore: true */ plugin.url);
+    const pluginClass = getPluginClass(pluginModule);
+    if (pluginClass) {
+      plugins.push([plugin.name, pluginClass]);
+      defineDevPluginModules({ [plugin.packageName]: pluginModule });
+    }
+  }
+  return plugins;
+}
+
+function sortEsmDevPlugins(pluginData: PluginData[] = []) {
+  const pluginMap = new Map(pluginData.map((plugin) => [plugin.packageName, plugin]));
+  const sorted: PluginData[] = [];
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+
+  const visit = (plugin: PluginData) => {
+    if (visited.has(plugin.packageName)) {
+      return;
+    }
+    if (visiting.has(plugin.packageName)) {
+      return;
+    }
+    visiting.add(plugin.packageName);
+    for (const dep of plugin.appDevDependencies || []) {
+      const depPlugin = pluginMap.get(dep);
+      if (depPlugin) {
+        visit(depPlugin);
+      }
+    }
+    visiting.delete(plugin.packageName);
+    visited.add(plugin.packageName);
+    sorted.push(plugin);
+  };
+
+  pluginData.forEach(visit);
+  return sorted;
+}
+
 interface GetPluginsOption {
   requirejs: RequireJS;
   pluginData: PluginData[];
@@ -103,12 +160,19 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<[stri
   }
 
   const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.packageName]);
+  const esmDevPlugins = remotePlugins.filter((item) => item.devMode === 'esm');
+  const requirejsPlugins = remotePlugins.filter((item) => item.devMode !== 'esm');
 
-  if (remotePlugins.length === 0) {
+  if (esmDevPlugins.length) {
+    const esmPluginList = await getEsmDevPlugins(esmDevPlugins);
+    res.push(...esmPluginList);
+  }
+
+  if (requirejsPlugins.length === 0) {
     return res;
   }
 
-  const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
+  const remotePluginList = await getRemotePlugins(requirejs, requirejsPlugins);
   res.push(...remotePluginList);
 
   return res;

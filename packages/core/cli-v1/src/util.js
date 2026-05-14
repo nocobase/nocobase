@@ -396,6 +396,7 @@ function buildIndexHtml(force = false) {
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
+    .replace(/\{\{env.NOCOBASE_APP_DEV\}\}/g, process.env.NOCOBASE_APP_DEV === 'true' ? 'true' : 'false')
     .replace(/\{\{env.ESM_CDN_BASE_URL\}\}/g, process.env.ESM_CDN_BASE_URL || '')
     .replace(/\{\{env.ESM_CDN_SUFFIX\}\}/g, process.env.ESM_CDN_SUFFIX || '')
     .replace(/((?:src|href)=")(?:\.\/)?assets\//g, `$1${process.env.APP_PUBLIC_PATH}assets/`)

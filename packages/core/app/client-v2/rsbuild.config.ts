@@ -41,6 +41,9 @@ function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean) {
   if (!isBuild) {
     return [
       `window['__nocobase_public_path__'] = window['__nocobase_public_path__'] || ${JSON.stringify(v2PublicPath)};`,
+      `window['__nocobase_app_dev__'] = window['__nocobase_app_dev__'] || ${JSON.stringify(
+        process.env.NOCOBASE_APP_DEV === 'true',
+      )};`,
       `window['__esm_cdn_base_url__'] = window['__esm_cdn_base_url__'] || ${JSON.stringify(
         process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
       )};`,
@@ -68,6 +71,9 @@ function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean) {
       process.env.WEBSOCKET_URL || '',
     )};`,
     `window['__nocobase_ws_path__'] = window['__nocobase_ws_path__'] || ${JSON.stringify(process.env.WS_PATH || '')};`,
+    `window['__nocobase_app_dev__'] = window['__nocobase_app_dev__'] || ${JSON.stringify(
+      process.env.NOCOBASE_APP_DEV === 'true',
+    )};`,
     `window['__esm_cdn_base_url__'] = window['__esm_cdn_base_url__'] || ${JSON.stringify(
       process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
     )};`,

@@ -14,7 +14,10 @@ import { configRequirejs, defineDevPlugins, getPlugins } from '../utils/remotePl
 describe('client-v2 remotePlugins', () => {
   afterEach(() => {
     window.define = undefined;
+    window.__nocobase_app_dev_plugins__ = undefined;
   });
+
+  const createModuleUrl = (code: string) => `data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`;
 
   it('should define dev plugins with /client-v2 module ids', () => {
     class DemoPlugin extends Plugin {}
@@ -107,6 +110,53 @@ describe('client-v2 remotePlugins', () => {
         '@nocobase/remote/client-v2': 'https://remote.com/dist/client-v2/index.js',
       },
     });
+  });
+
+  it('should register ESM dev plugins before importing dependent plugins', async () => {
+    const requirejs: any = {
+      requirejs: vi.fn(),
+    };
+    requirejs.requirejs.config = vi.fn();
+
+    const mockDefine: any = vi.fn();
+    window.define = mockDefine;
+
+    const plugins = await getPlugins({
+      requirejs,
+      pluginData: [
+        {
+          name: '@nocobase/dependent',
+          packageName: '@nocobase/dependent',
+          url: createModuleUrl(`
+              const dependency = window.__nocobase_app_dev_plugins__ && window.__nocobase_app_dev_plugins__['@nocobase/dependency/client-v2'];
+            export default class DependentPlugin extends dependency.default {
+              static SharedBase = dependency.SharedBase;
+            }
+          `),
+          devMode: 'esm',
+          appDevDependencies: ['@nocobase/dependency'],
+        },
+        {
+          name: '@nocobase/dependency',
+          packageName: '@nocobase/dependency',
+          url: createModuleUrl('export class SharedBase {}; export default class DependencyPlugin {}'),
+          devMode: 'esm',
+        },
+      ] as any,
+    });
+
+    const dependencyModule = window.__nocobase_app_dev_plugins__['@nocobase/dependency/client-v2'] as {
+      default?: unknown;
+      SharedBase?: unknown;
+    };
+    const dependentPlugin = plugins[1][1] as (typeof plugins)[number][1] & { SharedBase?: unknown };
+
+    expect(plugins.map(([name]) => name)).toEqual(['@nocobase/dependency', '@nocobase/dependent']);
+    expect(dependencyModule.SharedBase).toBeDefined();
+    expect(plugins[0][1]).toBe(dependencyModule.default);
+    expect(dependentPlugin.SharedBase).toBe(dependencyModule.SharedBase);
+    expect(mockDefine).toHaveBeenCalledWith('@nocobase/dependency/client-v2', expect.any(Function));
+    expect(requirejs.requirejs.config).not.toHaveBeenCalled();
   });
 
   it('should configure remote plugin paths with /client-v2 module ids', () => {
