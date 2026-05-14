@@ -114,7 +114,7 @@ export class CachedDocumentLoader {
     await fs.writeFile(tempFilePath, text, 'utf-8');
 
     const cache = await this.getCache();
-    await cache.set(cacheKey, tempFilePath);
+    await cache.set(cacheKey, tempFilePath, 30 * 60 * 1000);
   }
 
   private documentsToText(documents: Document[]) {
