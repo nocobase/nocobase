@@ -43,6 +43,17 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
   excludeValidationOptions = ['precision'];
   properties = {
     ...defaultProps,
+    'uiSchema.x-component-props.style.textAlign': {
+      type: 'string',
+      title: '{{t("Align")}}',
+      'x-component': 'Radio.Group',
+      'x-decorator': 'FormItem',
+      default: 'left',
+      enum: [
+        { label: '{{t("Left")}}', value: 'left' },
+        { label: '{{t("Right")}}', value: 'right' },
+      ],
+    },
     layout: {
       type: 'void',
       title: '{{t("Index")}}',

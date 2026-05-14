@@ -94,6 +94,7 @@
   "After successful submission, the selected data blocks will be automatically refreshed.": "提交成功后，会自动刷新这里选中的数据区块。",
   "After successful update": "更新成功后",
   "Agenda": "列表",
+  "Align": "对齐方式",
   "All": "所有",
   "All collections": "全部数据表",
   "All collections use general action permissions by default; permission configured individually will override the default one.": "所有数据表都默认使用通用数据操作权限；同时，可以针对每个数据表单独配置权限。",

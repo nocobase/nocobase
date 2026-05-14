@@ -49,6 +49,17 @@ export class NumberFieldInterface extends CollectionFieldInterface {
     },
     ...defaultProps,
     unique,
+    'uiSchema.x-component-props.style.textAlign': {
+      type: 'string',
+      title: '{{t("Align")}}',
+      'x-component': 'Radio.Group',
+      'x-decorator': 'FormItem',
+      default: 'left',
+      enum: [
+        { label: '{{t("Left")}}', value: 'left' },
+        { label: '{{t("Right")}}', value: 'right' },
+      ],
+    },
     'uiSchema.x-component-props.step': {
       type: 'string',
       title: '{{t("Precision(UI)")}}',

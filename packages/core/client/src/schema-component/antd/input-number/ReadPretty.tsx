@@ -168,10 +168,12 @@ export interface InputNumberReadPrettyProps {
   value?: any;
   addonBefore?: React.ReactNode;
   addonAfter?: React.ReactNode;
+  style?: React.CSSProperties;
 }
 
 export const ReadPretty: React.FC<InputNumberReadPrettyProps> = withPopupWrapper((props) => {
-  const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
+  const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator, style } =
+    props;
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
   }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
@@ -180,7 +182,7 @@ export const ReadPretty: React.FC<InputNumberReadPrettyProps> = withPopupWrapper
   }
 
   return (
-    <div>
+    <div style={style}>
       {addonBefore}
       <span dangerouslySetInnerHTML={{ __html: result }} />
       {addonAfter}
