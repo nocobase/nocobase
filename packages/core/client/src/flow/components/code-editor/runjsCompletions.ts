@@ -9,7 +9,12 @@
 
 import { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
-import { getRunJSDocFor, setupRunJSContexts, listSnippetsForContext } from '@nocobase/flow-engine';
+import {
+  getRunJSDocFor,
+  setupRunJSContexts,
+  listSnippetsForContext,
+  type RunJSDocCompletionDoc,
+} from '@nocobase/flow-engine';
 import { formatDocInfo } from './formatDocInfo';
 
 export type SnippetEntry = {
@@ -47,9 +52,12 @@ const hasRunJSElementContext = (doc: any, apiInfos: any, requestedScenes: string
 
 const usesCtxElement = (text?: string): boolean => typeof text === 'string' && /\bctx\.element\b/.test(text);
 
-const satisfiesStaticRequirements = (entry: StaticCompletionEntry, capabilities: { element: boolean }): boolean => {
-  if (!entry.requires?.length) return true;
-  return entry.requires.every((requirement) => requirement !== 'element' || capabilities.element);
+const satisfiesCompletionRequirements = (
+  completionSpec: Pick<RunJSDocCompletionDoc, 'requires'> | undefined,
+  capabilities: { element: boolean },
+): boolean => {
+  if (!completionSpec?.requires?.length) return true;
+  return completionSpec.requires.every((requirement) => requirement !== 'element' || capabilities.element);
 };
 
 const createApply = (insertText?: string) => (view: EditorView, _completion: Completion, from: number, to: number) => {
@@ -492,7 +500,7 @@ const RUNJS_RUNTIME_COMPLETIONS: StaticCompletionEntry[] = [
 
 function buildStaticRuntimeCompletions(capabilities: { element: boolean }): Completion[] {
   return [...SAFE_GLOBAL_COMPLETIONS, ...RUNJS_RUNTIME_COMPLETIONS]
-    .filter((entry) => satisfiesStaticRequirements(entry, capabilities))
+    .filter((entry) => satisfiesCompletionRequirements(entry, capabilities))
     .filter((entry) => capabilities.element || !usesCtxElement(entry.insertText))
     .map(staticEntry);
 }
@@ -678,6 +686,7 @@ export async function buildRunJSCompletions(
       const insertText =
         completionSpec?.insertText ??
         (root === 'popup' ? `await ctx.getVar('${ctxLabel}')` : isCallable ? `${ctxLabel}()` : undefined);
+      if (!satisfiesCompletionRequirements(completionSpec, { element: hasElementContext })) continue;
       if (!hasElementContext && usesCtxElement(insertText)) continue;
       const apply = insertText
         ? (view: EditorView, _completion: Completion, from: number, to: number) => {

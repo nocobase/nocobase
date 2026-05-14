@@ -276,12 +276,18 @@ export function defineBaseContextMeta() {
           popover: {
             description: 'Open a popover view. Parameters: (props: PopoverProps) => any',
             detail: '(props) => any',
-            completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+            completion: {
+              insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })',
+              requires: ['element'],
+            },
           },
           embed: {
             description: 'Open an embed view. Parameters: (props: ViewProps & TargetProps) => any',
             detail: '(props) => any',
-            completion: { insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })' },
+            completion: {
+              insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })',
+              requires: ['element'],
+            },
           },
         },
       },
@@ -402,7 +408,7 @@ export function defineBaseContextMeta() {
                 type: 'function',
                 description: 'Create a React root.',
                 detail: 'ReactDOM.createRoot',
-                completion: { insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)' },
+                completion: { insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)', requires: ['element'] },
               },
             },
           },
@@ -544,6 +550,7 @@ export function defineBaseContextMeta() {
         detail: 'ReactDOM Root',
         completion: {
           insertText: `ctx.render(<div />)`,
+          requires: ['element'],
         },
       },
       requireAsync: {
@@ -917,12 +924,18 @@ export function defineBaseContextMeta() {
             popover: {
               description: '打开气泡卡片视图。参数：(props: PopoverProps) => any',
               detail: '(props) => any',
-              completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+              completion: {
+                insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })',
+                requires: ['element'],
+              },
             },
             embed: {
               description: '打开内嵌视图。参数：(props: ViewProps & TargetProps) => any',
               detail: '(props) => any',
-              completion: { insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })' },
+              completion: {
+                insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })',
+                requires: ['element'],
+              },
             },
           },
         },
@@ -1047,7 +1060,7 @@ export function defineBaseContextMeta() {
                   type: 'function',
                   description: '创建 React 根。',
                   detail: 'ReactDOM.createRoot',
-                  completion: { insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)' },
+                  completion: { insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)', requires: ['element'] },
                 },
               },
             },
@@ -1187,6 +1200,7 @@ export function defineBaseContextMeta() {
           detail: 'ReactDOM Root',
           completion: {
             insertText: `ctx.render(<div />)`,
+            requires: ['element'],
           },
         },
         requireAsync: {

@@ -29,12 +29,18 @@ vi.mock('@nocobase/flow-engine', () => {
         popover: {
           type: 'function',
           description: 'open popover',
-          completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+          completion: {
+            insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })',
+            requires: ['element'],
+          },
         },
         embed: {
           type: 'function',
           description: 'open embed',
-          completion: { insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })' },
+          completion: {
+            insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })',
+            requires: ['element'],
+          },
         },
       },
     },
@@ -57,6 +63,10 @@ vi.mock('@nocobase/flow-engine', () => {
     bar: {
       description: 'bar method',
       completion: { insertText: "ctx.bar('value')" },
+    },
+    render: {
+      description: 'render react content',
+      completion: { insertText: 'ctx.render(<div />)', requires: ['element'] },
     },
   };
   const baseDoc = {
@@ -343,7 +353,9 @@ describe('buildRunJSCompletions', () => {
     const appliedTexts = appliedTextsOf(completions);
 
     expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
+    expect(labels.has('ctx.render()')).toBe(false);
     expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+    expect(appliedTexts.some((text) => text === 'ctx.render(<div />)')).toBe(false);
   });
 
   it('keeps ctx.element completions for DOM container models', async () => {
@@ -360,6 +372,12 @@ describe('buildRunJSCompletions', () => {
     expect(labels.has('ctx.element.innerHTML')).toBe(true);
     expect(labels.has('ctx.element.setAttribute()')).toBe(true);
     expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(true);
+    expect(labels.has('ctx.render()')).toBe(true);
+
+    const renderCompletion = completions.find((c: any) => c.label === 'ctx.render()');
+    const mockView = { dispatch: vi.fn() } as any;
+    (renderCompletion as any).apply?.(mockView, renderCompletion, 0, 0);
+    expect(mockView.dispatch.mock.calls[0][0]?.changes?.insert).toBe('ctx.render(<div />)');
   });
 
   it('hides ctx.element-dependent completions for eventFlow', async () => {
@@ -379,7 +397,9 @@ describe('buildRunJSCompletions', () => {
     expect(labels.has('ctx.ReactDOM.createRoot()')).toBe(false);
     expect(labels.has('ctx.viewer.popover()')).toBe(false);
     expect(labels.has('ctx.viewer.embed()')).toBe(false);
+    expect(labels.has('ctx.render()')).toBe(false);
     expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+    expect(appliedTexts.some((text) => text === 'ctx.render(<div />)')).toBe(false);
   });
 
   it('hides ctx.element-dependent completions for non-DOM action models', async () => {
@@ -402,7 +422,9 @@ describe('buildRunJSCompletions', () => {
       expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
       expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(false);
       expect(labels.has('ctx.ReactDOM.createRoot()')).toBe(false);
+      expect(labels.has('ctx.render()')).toBe(false);
       expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+      expect(appliedTexts.some((text) => text === 'ctx.render(<div />)')).toBe(false);
     }
   });
 

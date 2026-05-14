@@ -3955,6 +3955,7 @@ export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRunt
 
 export type RunJSDocCompletionDoc = {
   insertText?: string;
+  requires?: Array<'element'>;
 };
 
 export type RunJSDocHiddenDoc = boolean | ((ctx: any) => boolean | Promise<boolean>);

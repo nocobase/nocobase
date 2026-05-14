@@ -88,6 +88,18 @@ describe('flowRunJSContext registry and doc', () => {
       expect(doc?.properties?.element).toBeUndefined();
     });
 
+    it('should mark element-dependent base completions with element requirement', () => {
+      const ctx: any = { model: { constructor: { name: 'UnknownModel' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+
+      expect((doc?.methods?.render as any)?.completion?.requires).toContain('element');
+      expect((doc?.properties?.viewer as any)?.properties?.popover?.completion?.requires).toContain('element');
+      expect((doc?.properties?.viewer as any)?.properties?.embed?.completion?.requires).toContain('element');
+      expect(
+        (doc?.properties?.libs as any)?.properties?.ReactDOM?.properties?.createRoot?.completion?.requires,
+      ).toContain('element');
+    });
+
     it('should support locale-specific doc', () => {
       const ctx = new FlowContext();
       (ctx as any).defineProperty('model', { value: { constructor: { name: 'JSFieldModel' } } });
@@ -97,6 +109,11 @@ describe('flowRunJSContext registry and doc', () => {
       const messageText =
         typeof message === 'string' ? message : (message as any)?.description ?? (message as any)?.detail ?? '';
       expect(String(messageText)).toMatch(/Ant Design 全局消息/);
+      expect((doc?.methods?.render as any)?.completion?.requires).toContain('element');
+      expect((doc?.properties?.viewer as any)?.properties?.popover?.completion?.requires).toContain('element');
+      expect(
+        (doc?.properties?.libs as any)?.properties?.ReactDOM?.properties?.createRoot?.completion?.requires,
+      ).toContain('element');
     });
 
     it('should fallback to English when locale is not found', () => {
