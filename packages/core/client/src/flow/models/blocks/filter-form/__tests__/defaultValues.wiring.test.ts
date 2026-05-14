@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { filterFormDefaultValues } from '../../../../actions/filterFormDefaultValues';
@@ -51,6 +51,7 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
     defaultValuesRefreshSeq: 0,
     lastDefaultValueByFieldName: new Map<string, any>(),
     form: {
+      getFieldsValue: () => ({ ...values }),
       getFieldValue: (name: string) => values[name],
       setFieldValue: (name: string, value: any) => {
         values[name] = value;
@@ -86,6 +87,8 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
     }),
     canApplyFormDefaultValue: (FilterFormBlockModel.prototype as any).canApplyFormDefaultValue,
     matchDefaultValueCondition: (FilterFormBlockModel.prototype as any).matchDefaultValueCondition,
+    applyFormDefaultValues: FilterFormBlockModel.prototype.applyFormDefaultValues,
+    handleFilterFormValuesChange: (FilterFormBlockModel.prototype as any).handleFilterFormValuesChange,
     dispatchEvent: vi.fn(),
     emitter: {
       emit: vi.fn(),
@@ -336,5 +339,50 @@ describe('filter-form defaultValues wiring', () => {
     values.nickname_nick = 'allow';
     await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
     expect(values.username_user).toBe('Matched');
+  });
+
+  it('emits formValuesChange with final values after applying dependent field values', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel(
+      [
+        {
+          key: 'username-fixed',
+          enable: true,
+          targetPath: 'username',
+          mode: 'assign',
+          value: '{{ ctx.formValues.nickname_nick }}',
+        },
+      ],
+      { nickname_nick: 'Bob' },
+    );
+
+    (model as any).handleFilterFormValuesChange({ nickname_nick: 'Bob' }, { nickname_nick: 'Bob' });
+
+    await waitFor(() => {
+      expect(values.username_user).toBe('Bob');
+      expect(model.dispatchEvent).toHaveBeenCalledWith(
+        'formValuesChange',
+        {
+          changedValues: {
+            nickname_nick: 'Bob',
+            username_user: 'Bob',
+          },
+          allValues: {
+            nickname_nick: 'Bob',
+            username_user: 'Bob',
+          },
+        },
+        { debounce: true },
+      );
+    });
+    expect(model.emitter.emit).toHaveBeenCalledWith('formValuesChange', {
+      changedValues: {
+        nickname_nick: 'Bob',
+        username_user: 'Bob',
+      },
+      allValues: {
+        nickname_nick: 'Bob',
+        username_user: 'Bob',
+      },
+    });
   });
 });

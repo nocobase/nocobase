@@ -452,13 +452,14 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   }
 
   async applyFormDefaultValues(options?: { force?: boolean; refreshSeq?: number }) {
+    const appliedValues: Record<string, any> = {};
     const form = this.form;
-    if (!form) return;
+    if (!form) return appliedValues;
 
     const force = options?.force === true;
     const params = this.getStepParams?.('formFilterBlockModelSettings', 'defaultValues');
     const rules = (params?.value || []) as any[];
-    if (!Array.isArray(rules) || rules.length === 0) return;
+    if (!Array.isArray(rules) || rules.length === 0) return appliedValues;
 
     const resolveValue = async (raw: any) => {
       // RunJS support
@@ -475,7 +476,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       if (!rule || typeof rule !== 'object') continue;
       if (rule.enable === false) continue;
       if (!(await this.matchDefaultValueCondition(rule.condition))) continue;
-      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return;
+      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return appliedValues;
 
       const targetPath = rule.targetPath ? String(rule.targetPath).trim() : '';
       const fieldUid = rule.field ? String(rule.field).trim() : '';
@@ -492,7 +493,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       const current = (form as any).getFieldValue?.(name);
 
       const resolved = await resolveValue(rule.value);
-      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return;
+      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return appliedValues;
       if (typeof resolved === 'undefined') continue;
 
       const operator = getDefaultOperator(itemModel as any);
@@ -518,15 +519,24 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       } else {
         this.lastDefaultValueByFieldName.delete(String(name));
       }
+      appliedValues[String(name)] = normalized;
     }
+
+    return appliedValues;
   }
 
   private handleFilterFormValuesChange(changedValues: any, allValues: any) {
-    this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
-    this.emitter.emit('formValuesChange', { changedValues, allValues });
-
     const refreshSeq = ++this.defaultValuesRefreshSeq;
-    void this.applyFormDefaultValues({ refreshSeq }).catch((error) => {
+    void (async () => {
+      const appliedValues = await this.applyFormDefaultValues({ refreshSeq });
+      if (refreshSeq !== this.defaultValuesRefreshSeq) return;
+
+      const finalChangedValues = { ...(changedValues || {}), ...(appliedValues || {}) };
+      const finalAllValues = this.form?.getFieldsValue?.() || allValues;
+      const payload = { changedValues: finalChangedValues, allValues: finalAllValues };
+      this.dispatchEvent('formValuesChange', payload, { debounce: true });
+      this.emitter.emit('formValuesChange', payload);
+    })().catch((error) => {
       console.error('Failed to refresh filter form default values:', error);
     });
   }
