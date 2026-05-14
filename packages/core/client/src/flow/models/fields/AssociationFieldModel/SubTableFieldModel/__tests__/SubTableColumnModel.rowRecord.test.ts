@@ -8,7 +8,11 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { getLatestSubTableRowRecord, buildRowPathFromFieldIndex } from '../SubTableColumnModel';
+import {
+  getLatestSubTableCurrentObject,
+  getLatestSubTableRowRecord,
+  buildRowPathFromFieldIndex,
+} from '../SubTableColumnModel';
 import { buildSubTableRowForkKey } from '../rowIdentity';
 import {
   clearSubTablePendingRowFieldValue,
@@ -82,6 +86,33 @@ describe('SubTableColumnModel row record helpers', () => {
       uid: 'role-uid-1',
       name: undefined,
     });
+  });
+
+  it('uses the latest row item value for currentObject', () => {
+    const form = {
+      getFieldValue: vi.fn(() => ({
+        uid: 'role-uid-1',
+        name: 'Old name',
+      })),
+    };
+    const host = {};
+    const fallback = { uid: 'role-uid-1', name: 'Stale name' };
+
+    setSubTablePendingRowFieldValue(host, 'row:0', 'name', 'New name');
+
+    const latestRow = getLatestSubTableRowRecord(
+      form,
+      ['roles:0'],
+      fallback,
+      getSubTablePendingRowValues(host, 'row:0'),
+    );
+
+    expect(getLatestSubTableCurrentObject({ value: latestRow }, fallback)).toEqual({
+      uid: 'role-uid-1',
+      name: 'New name',
+    });
+    expect(getLatestSubTableCurrentObject({ value: null }, fallback)).toBeNull();
+    expect(getLatestSubTableCurrentObject(undefined, fallback)).toBe(fallback);
   });
 
   it('normalizes event-like pending values from composition end events', () => {

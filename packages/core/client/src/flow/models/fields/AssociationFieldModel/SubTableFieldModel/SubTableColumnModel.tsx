@@ -246,6 +246,13 @@ export function getLatestSubTableRowRecord(
   return mergeSubTableRowPendingValues(rowRecord, pendingValues);
 }
 
+export function getLatestSubTableCurrentObject(rowItem: any, fallbackRecord: any) {
+  if (!rowItem || typeof rowItem !== 'object' || !Object.prototype.hasOwnProperty.call(rowItem, 'value')) {
+    return fallbackRecord;
+  }
+  return rowItem.value;
+}
+
 function shouldCommitImmediately(value: any) {
   if (Array.isArray(value)) {
     return true;
@@ -400,7 +407,10 @@ const MemoCell: React.FC<CellProps> = React.memo(
           };
 
           const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('currentObject', { get: () => record });
+          fork.context.defineProperty('currentObject', {
+            get: () => getLatestSubTableCurrentObject(rowFork?.context?.item, record),
+            cache: false,
+          });
           if (rowFork) {
             fork.context.defineProperty('item', {
               get: () => rowFork.context.item,
