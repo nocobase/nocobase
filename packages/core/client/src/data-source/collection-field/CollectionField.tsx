@@ -20,6 +20,9 @@ import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { isVariable } from '../../variables/utils/isVariable';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
+import type { TFunction } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
+import { NAMESPACE_UI_SCHEMA } from '../../i18n';
 
 type Props = {
   component: any;
@@ -40,6 +43,25 @@ const setRequired = (field: Field, fieldSchema: Schema, uiSchema: Schema) => {
   }
 };
 
+export const translateValidatorMessage = (validator: Field['validator'], t: TFunction) => {
+  if (Array.isArray(validator)) {
+    return validator.map((valid) => {
+      if (valid['message']) {
+        valid['message'] = t(valid['message'], {
+          ns: NAMESPACE_UI_SCHEMA,
+        });
+      }
+      return valid;
+    });
+  }
+  if (typeof validator === 'object' && validator['message']) {
+    validator['message'] = t(validator['message'], {
+      ns: NAMESPACE_UI_SCHEMA,
+    });
+  }
+  return validator;
+};
+
 /**
  * @deprecated
  * Used to handle scenarios that use RecursionField, such as various plugin configuration pages
@@ -56,6 +78,7 @@ const CollectionFieldInternalField_deprecated: React.FC = (props: Props) => {
   );
   const ctx = useFormBlockContext();
   const dynamicProps = useDynamicComponentProps(uiSchemaOrigin?.['x-use-component-props'], props);
+  const { t } = useTranslation();
 
   // TODO: 初步适配
   useEffect(() => {
@@ -73,7 +96,7 @@ const CollectionFieldInternalField_deprecated: React.FC = (props: Props) => {
 
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
-      field.validator = concatSchema;
+      field.validator = translateValidatorMessage(concatSchema, t);
     }
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
@@ -103,6 +126,7 @@ const CollectionFieldInternalField = (props) => {
     fieldSchema['x-component-props']?.['component'] || uiSchema?.['x-component'] || 'Input',
   );
   const dynamicProps = useDynamicComponentProps(uiSchema?.['x-use-component-props'], props);
+  const { t } = useTranslation();
 
   useEffect(() => {
     /**
@@ -132,6 +156,7 @@ const CollectionFieldInternalField = (props) => {
     }
     field.data = field.data || {};
     field.data.dataSource = uiSchema?.enum;
+    field.validator = translateValidatorMessage(field.validator, t);
   }, [field, fieldSchema]);
 
   if (!uiSchema) return null;

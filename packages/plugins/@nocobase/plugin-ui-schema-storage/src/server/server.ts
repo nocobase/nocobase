@@ -30,6 +30,7 @@ function extractFields(obj) {
     obj['x-component-props']?.children,
     obj['x-decorator-props']?.title,
     obj['x-decorator-props']?.description,
+    ...(obj['x-validator']?.map((item) => item?.message) || []),
   ];
 
   const content = obj['x-component-props']?.content;
