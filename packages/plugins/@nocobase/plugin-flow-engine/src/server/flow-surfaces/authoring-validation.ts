@@ -53,6 +53,7 @@ import { hiddenPopupHostHasLocalContent } from './hidden-popup-contract';
 import { FIELD_WRAPPER_USES } from './node-use-sets';
 import { FLOW_SURFACE_INTERNAL_FIELD_KEYS } from './field-type-resolver';
 import { hasFlowSurfaceTemplateDocument, hasFlowSurfaceTemplateReference } from './template-reference';
+import { SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -1390,6 +1391,7 @@ type GeneratedPopupDefaultFieldGroupRequirement = {
   collection: string;
   actionTypes: GeneratedPopupDefaultActionType[];
   triggerPaths: string[];
+  triggerPathActionTypes: Record<string, GeneratedPopupDefaultActionType[]>;
 };
 
 function collectGeneratedPopupDefaultFieldGroupErrors(
@@ -1409,6 +1411,10 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
     getAuthoringBlocks(actionName, values).forEach(({ block, path }) =>
       collectBlockGeneratedPopupRequirements(block, path, context, requirements),
     );
+  }
+
+  if (actionName === 'applyBlueprint' || actionName === 'compose') {
+    expandGeneratedViewPopupOneHopRequirements(requirements, values?.defaults, context);
   }
 
   for (const requirement of requirements.values()) {
@@ -1458,6 +1464,117 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
       },
     });
   }
+}
+
+function expandGeneratedViewPopupOneHopRequirements(
+  requirements: Map<string, GeneratedPopupDefaultFieldGroupRequirement>,
+  defaults: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  const getCollection = context.getCollection;
+  if (!getCollection) {
+    return;
+  }
+  const baseRequirements = Array.from(requirements.values()).map((requirement) => ({
+    ...requirement,
+    actionTypes: [...requirement.actionTypes],
+    triggerPaths: [...requirement.triggerPaths],
+    triggerPathActionTypes: _.mapValues(requirement.triggerPathActionTypes, (actionTypes) => [...actionTypes]),
+  }));
+  const expanded = new Set<string>();
+  for (const requirement of baseRequirements) {
+    if (!requirement.actionTypes.includes('view')) {
+      continue;
+    }
+    const expansionKey = `${requirement.dataSourceKey}.${requirement.collection}.view`;
+    if (expanded.has(expansionKey)) {
+      continue;
+    }
+    expanded.add(expansionKey);
+
+    const collection = getCollection(requirement.dataSourceKey, requirement.collection);
+    if (!collection) {
+      continue;
+    }
+    const runtimeCandidates = getGeneratedPopupRuntimeFieldCandidates({
+      collection,
+      dataSourceKey: requirement.dataSourceKey,
+      actionType: 'view',
+      context,
+    });
+    const selectedFieldPaths = getGeneratedViewPopupSelectedFieldPaths(
+      runtimeCandidates,
+      defaults,
+      requirement.collection,
+    );
+    if (!selectedFieldPaths.size) {
+      continue;
+    }
+    const viewTriggerPaths = getGeneratedPopupRequirementTriggerPathsForActionType(requirement, 'view');
+    for (const candidate of runtimeCandidates) {
+      const fieldPath = String(candidate?.fieldPath || '').trim();
+      if (!fieldPath || !selectedFieldPaths.has(fieldPath)) {
+        continue;
+      }
+      const field = candidate?.field;
+      if (!isSingleValueAssociationField(field)) {
+        continue;
+      }
+      const targetCollection = resolveFieldTargetCollection(field, requirement.dataSourceKey, getCollection);
+      const targetCollectionName = getCollectionName(targetCollection);
+      if (!targetCollectionName) {
+        continue;
+      }
+      viewTriggerPaths.forEach((triggerPath) => {
+        addGeneratedPopupRequirement(
+          {
+            dataSourceKey: requirement.dataSourceKey,
+            collectionName: targetCollectionName,
+            triggerPath: `${triggerPath}.fields.${fieldPath}.popup`,
+            actionType: 'view',
+          },
+          requirements,
+        );
+      });
+    }
+  }
+}
+
+function getGeneratedViewPopupSelectedFieldPaths(
+  runtimeCandidates: ReturnType<typeof getGeneratedPopupRuntimeFieldCandidates>,
+  defaults: any,
+  collectionName: string,
+) {
+  const defaultFieldGroups = getDefaultCollectionFieldGroups(defaults, collectionName);
+  if (defaultFieldGroups) {
+    return new Set(
+      pickFlowSurfaceDefaultActionPopupFieldGroups(runtimeCandidates, defaultFieldGroups, {
+        excludeAuditTimestampFields: false,
+      }).flatMap((group) =>
+        _.castArray(group.fields || [])
+          .map(getFieldPathInput)
+          .filter(Boolean),
+      ),
+    );
+  }
+  return new Set(
+    pickFlowSurfaceDefaultActionPopupFieldPaths(runtimeCandidates, {
+      excludeAuditTimestampFields: false,
+    }),
+  );
+}
+
+function getGeneratedPopupRequirementTriggerPathsForActionType(
+  requirement: GeneratedPopupDefaultFieldGroupRequirement,
+  actionType: GeneratedPopupDefaultActionType,
+) {
+  const paths = requirement.triggerPaths.filter(
+    (triggerPath) => requirement.triggerPathActionTypes?.[triggerPath]?.includes(actionType),
+  );
+  if (paths.length) {
+    return paths;
+  }
+  return requirement.actionTypes.includes(actionType) ? requirement.triggerPaths : [];
 }
 
 function collectConfigureGeneratedPopupRequirements(
@@ -1904,6 +2021,7 @@ function addGeneratedPopupRequirement(
       collection,
       actionTypes: [],
       triggerPaths: [],
+      triggerPathActionTypes: {},
     } as GeneratedPopupDefaultFieldGroupRequirement);
   if (!existing.actionTypes.includes(input.actionType)) {
     existing.actionTypes.push(input.actionType);
@@ -1911,7 +2029,19 @@ function addGeneratedPopupRequirement(
   if (!existing.triggerPaths.includes(input.triggerPath)) {
     existing.triggerPaths.push(input.triggerPath);
   }
+  const triggerActionTypes = existing.triggerPathActionTypes[input.triggerPath] || [];
+  if (!triggerActionTypes.includes(input.actionType)) {
+    existing.triggerPathActionTypes[input.triggerPath] = [...triggerActionTypes, input.actionType];
+  }
   requirements.set(key, existing);
+}
+
+function isSingleValueAssociationField(field: any) {
+  if (!field || !isAssociationField(field)) {
+    return false;
+  }
+  const fieldInterface = String(getFieldInterface(field) || '').trim();
+  return SINGLE_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface);
 }
 
 function resolveDefaultPopupActionType(actionType: string) {

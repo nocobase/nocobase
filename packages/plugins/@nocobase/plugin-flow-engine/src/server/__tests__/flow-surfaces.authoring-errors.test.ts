@@ -24,6 +24,9 @@ const LARGE_GENERATED_POPUP_COLLECTION = 'flow_surface_large_generated_popup_rec
 const LARGE_GENERATED_POPUP_FIELDS = Array.from({ length: 11 }, (_item, index) => `field${index + 1}`);
 const LARGE_GENERATED_POPUP_SOURCE_COLLECTION = 'flow_surface_large_generated_popup_sources';
 const LARGE_GENERATED_POPUP_RELATION_FIELD = 'largeRecord';
+const LARGE_GENERATED_POPUP_M2M_SOURCE_COLLECTION = 'flow_surface_large_generated_popup_m2m_sources';
+const LARGE_GENERATED_POPUP_M2M_RELATION_FIELD = 'largeRecords';
+const LARGE_GENERATED_POPUP_M2M_THROUGH_COLLECTION = 'flow_surface_large_generated_popup_m2m_source_records';
 const LARGE_GENERATED_POPUP_KANBAN_COLLECTION = 'flow_surface_large_generated_popup_kanban';
 const LARGE_GENERATED_POPUP_UNSUPPORTED_COLLECTION = 'flow_surface_large_generated_popup_unsupported';
 const LARGE_GENERATED_POPUP_CODE_COLLECTION = 'flow_surface_large_generated_popup_code';
@@ -72,6 +75,46 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         target: LARGE_GENERATED_POPUP_COLLECTION,
         foreignKey: 'largeRecordId',
         interface: 'm2o',
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: LARGE_GENERATED_POPUP_M2M_SOURCE_COLLECTION,
+        title: 'Flow surface large generated popup m2m sources',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: LARGE_GENERATED_POPUP_M2M_THROUGH_COLLECTION,
+        title: 'Flow surface large generated popup m2m source records',
+        fields: [
+          {
+            name: 'id',
+            type: 'integer',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+            interface: 'id',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', LARGE_GENERATED_POPUP_M2M_SOURCE_COLLECTION).create({
+      values: {
+        name: LARGE_GENERATED_POPUP_M2M_RELATION_FIELD,
+        type: 'belongsToMany',
+        target: LARGE_GENERATED_POPUP_COLLECTION,
+        through: LARGE_GENERATED_POPUP_M2M_THROUGH_COLLECTION,
+        foreignKey: 'sourceId',
+        otherKey: 'targetId',
+        interface: 'm2m',
       },
     });
     await rootAgent.resource('collections').create({
@@ -130,6 +173,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     await waitForFixtureCollectionsReady(context.db, {
       [LARGE_GENERATED_POPUP_COLLECTION]: LARGE_GENERATED_POPUP_FIELDS,
       [LARGE_GENERATED_POPUP_SOURCE_COLLECTION]: ['title', 'largeRecordId'],
+      [LARGE_GENERATED_POPUP_M2M_SOURCE_COLLECTION]: ['title'],
+      [LARGE_GENERATED_POPUP_M2M_THROUGH_COLLECTION]: ['id', 'sourceId', 'targetId'],
       [LARGE_GENERATED_POPUP_KANBAN_COLLECTION]: [
         'title',
         'status',
@@ -1177,6 +1222,268 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       path: `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups`,
     });
     expect(missingDefaultsError.details.triggerPaths).toContain('$.blocks[0].fieldGroups[0].fields[0].popup');
+  });
+
+  it('should reject applyBlueprint generated view popups when generated relation field popups need target default fieldGroups', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring generated view relation popup missing defaults',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'sourceRecordsTable',
+                type: 'table',
+                collection: LARGE_GENERATED_POPUP_SOURCE_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const missingDefaultsError = response.body.errors.find(
+      (error: any) => error.ruleId === 'missing-default-field-groups',
+    );
+    expect(missingDefaultsError).toMatchObject({
+      path: `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups`,
+      details: {
+        collection: LARGE_GENERATED_POPUP_COLLECTION,
+        businessFieldCount: 11,
+        actionTypes: ['view'],
+      },
+    });
+    expect(missingDefaultsError.details.triggerPaths).toContain(
+      `$.tabs[0].blocks[0].recordActions.view.fields.${LARGE_GENERATED_POPUP_RELATION_FIELD}.popup`,
+    );
+  });
+
+  it('should reject compose generated view popups when generated relation field popups need target default fieldGroups', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring compose generated view relation popup missing defaults page',
+      tabTitle: 'Overview',
+    });
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'sourceRecordsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: LARGE_GENERATED_POPUP_SOURCE_COLLECTION,
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const missingDefaultsError = response.body.errors.find(
+      (error: any) => error.ruleId === 'missing-default-field-groups',
+    );
+    expect(missingDefaultsError).toMatchObject({
+      path: `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups`,
+      details: {
+        collection: LARGE_GENERATED_POPUP_COLLECTION,
+        businessFieldCount: 11,
+        actionTypes: ['view'],
+      },
+    });
+    expect(missingDefaultsError.details.triggerPaths).toContain(
+      `$.blocks[0].recordActions.view.fields.${LARGE_GENERATED_POPUP_RELATION_FIELD}.popup`,
+    );
+  });
+
+  it('should accept generated view relation popups when target default fieldGroups are provided', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring generated view relation popup with target defaults page',
+      tabTitle: 'Overview',
+    });
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        defaults: {
+          collections: {
+            [LARGE_GENERATED_POPUP_COLLECTION]: {
+              fieldGroups: [
+                {
+                  title: 'Core',
+                  fields: LARGE_GENERATED_POPUP_FIELDS.slice(0, 6),
+                },
+                {
+                  title: 'More',
+                  fields: LARGE_GENERATED_POPUP_FIELDS.slice(6),
+                },
+              ],
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'sourceRecordsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: LARGE_GENERATED_POPUP_SOURCE_COLLECTION,
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+  });
+
+  it('should not require target defaults when intermediate view fieldGroups omit the relation field', async () => {
+    const unique = Date.now();
+    const sourceCollection = `flow_surface_generated_popup_source_defaults_${unique}`;
+    const sourceFields = Array.from({ length: 11 }, (_item, index) => `sourceField${index + 1}`);
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        fields: sourceFields.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: LARGE_GENERATED_POPUP_RELATION_FIELD,
+        type: 'belongsTo',
+        target: LARGE_GENERATED_POPUP_COLLECTION,
+        foreignKey: `${LARGE_GENERATED_POPUP_RELATION_FIELD}Id`,
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [sourceCollection]: [...sourceFields, `${LARGE_GENERATED_POPUP_RELATION_FIELD}Id`],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Authoring generated view source defaults omit relation page',
+      tabTitle: 'Overview',
+    });
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        defaults: {
+          collections: {
+            [sourceCollection]: {
+              fieldGroups: [
+                {
+                  title: 'Source',
+                  fields: sourceFields,
+                },
+              ],
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'sourceRecordsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: sourceCollection,
+            },
+            fields: [sourceFields[0]],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(
+      response.body.errors.find(
+        (error: any) =>
+          error.ruleId === 'missing-default-field-groups' &&
+          error.details?.collection === LARGE_GENERATED_POPUP_COLLECTION,
+      ),
+    ).toBeUndefined();
+    expect(
+      response.body.errors.find(
+        (error: any) =>
+          error.ruleId === 'default-field-groups-incomplete' && error.details?.collection === sourceCollection,
+      ),
+    ).toMatchObject({
+      details: {
+        missingFieldNames: [LARGE_GENERATED_POPUP_RELATION_FIELD],
+      },
+    });
+  });
+
+  it('should not expand generated addNew and edit form popups through relation selector fields', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring generated form relation selector defaults page',
+      tabTitle: 'Overview',
+    });
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'sourceRecordsList',
+            type: 'list',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: LARGE_GENERATED_POPUP_SOURCE_COLLECTION,
+            },
+            fields: ['title'],
+          },
+          {
+            key: 'sourceDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: LARGE_GENERATED_POPUP_SOURCE_COLLECTION,
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+  });
+
+  it('should not expand multi-value relation fields in generated view popups', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring generated view m2m relation defaults page',
+      tabTitle: 'Overview',
+    });
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'm2mSourceRecordsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: LARGE_GENERATED_POPUP_M2M_SOURCE_COLLECTION,
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
   });
 
   it('should reject generated action popups when collection default fieldGroups contain no usable fields', async () => {
