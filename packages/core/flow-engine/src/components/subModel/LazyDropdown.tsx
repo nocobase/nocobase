@@ -253,7 +253,7 @@ const useMenuSearch = () => {
   const composingKeysRef = useRef<Set<string>>(new Set());
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const updateSearchValue = (key: string, value: string) => {
+  const updateSearchValue = useCallback((key: string, value: string) => {
     setIsSearching(true);
     setInputValues((prev) => ({ ...prev, [key]: value }));
     setSearchValues((prev) => ({ ...prev, [key]: value }));
@@ -262,9 +262,9 @@ const useMenuSearch = () => {
       clearTimeout(searchTimeoutRef.current);
     }
     searchTimeoutRef.current = setTimeout(() => setIsSearching(false), 300);
-  };
+  }, []);
 
-  const startComposition = (key: string) => {
+  const startComposition = useCallback((key: string) => {
     composingKeysRef.current.add(key);
     setIsSearching(true);
     setComposingCount(composingKeysRef.current.size);
@@ -272,21 +272,50 @@ const useMenuSearch = () => {
       clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = null;
     }
-  };
+  }, []);
 
-  const endComposition = (key: string, value: string) => {
+  const endComposition = useCallback(
+    (key: string, value: string) => {
+      composingKeysRef.current.delete(key);
+      setComposingCount(composingKeysRef.current.size);
+      updateSearchValue(key, value);
+    },
+    [updateSearchValue],
+  );
+
+  const updateInputValue = useCallback((key: string, value: string) => {
+    setInputValues((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const clearSearchValue = useCallback((key: string) => {
     composingKeysRef.current.delete(key);
     setComposingCount(composingKeysRef.current.size);
-    updateSearchValue(key, value);
-  };
 
-  const updateInputValue = (key: string, value: string) => {
-    setInputValues((prev) => ({ ...prev, [key]: value }));
-  };
+    setInputValues((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    setSearchValues((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
 
-  const isComposing = (key?: string) => {
+  const clearAllSearchValues = useCallback(() => {
+    composingKeysRef.current.clear();
+    setComposingCount(0);
+    setInputValues({});
+    setSearchValues({});
+    setIsSearching(false);
+  }, []);
+
+  const isComposing = useCallback((key?: string) => {
     return key ? composingKeysRef.current.has(key) : composingKeysRef.current.size > 0;
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -304,6 +333,8 @@ const useMenuSearch = () => {
     updateInputValue,
     startComposition,
     endComposition,
+    clearSearchValue,
+    clearAllSearchValues,
     isComposing,
   };
 };
@@ -513,6 +544,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
   const closeByOutsideClickRef = useRef(false);
+  const skipPreserveActiveSearchRef = useRef(false);
   const dropdownMaxHeight = useNiceDropdownMaxHeight();
   const t = engine.translate.bind(engine);
 
@@ -528,7 +560,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     refreshKeys,
   );
   const searchHandlers = useMenuSearch();
-  const { searchValues, inputValues } = searchHandlers;
+  const { searchValues, inputValues, clearSearchValue, clearAllSearchValues } = searchHandlers;
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
 
@@ -536,7 +568,8 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     setMenuVisible(false);
     setActiveSearchKey(null);
     setOpenKeys(new Set());
-  }, []);
+    clearAllSearchValues();
+  }, [clearAllSearchValues]);
 
   const activateSearchSubmenu = useCallback((key: string) => {
     setActiveSearchKey(key);
@@ -552,22 +585,57 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     setActiveSearchKey((prev) => (prev === key ? null : prev));
   }, []);
 
+  const closeActiveSearchForPath = useCallback(
+    (keyPath: string) => {
+      if (
+        !activeSearchKey ||
+        keyPath === activeSearchKey ||
+        keyPath.startsWith(`${activeSearchKey}/`) ||
+        activeSearchKey.startsWith(`${keyPath}/`)
+      ) {
+        return;
+      }
+
+      skipPreserveActiveSearchRef.current = true;
+      clearSearchValue(activeSearchKey);
+      setActiveSearchKey(null);
+      setOpenKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(activeSearchKey);
+        return next;
+      });
+    },
+    [activeSearchKey, clearSearchValue],
+  );
+
   const handleMenuOpenChange = useCallback(
     (nextOpenKeys: string[]) => {
       let normalized = normalizeOpenKeys(nextOpenKeys);
       if (activeSearchKey && openKeys.has(activeSearchKey) && !normalized.includes(activeSearchKey)) {
-        normalized = [...normalized, activeSearchKey];
+        if (normalized.length || skipPreserveActiveSearchRef.current) {
+          clearSearchValue(activeSearchKey);
+          setActiveSearchKey(null);
+        } else {
+          normalized = [activeSearchKey];
+        }
       }
 
       if (!normalized.length && shouldPreventClose()) {
         dropdownMenuProps.onOpenChange?.(Array.from(openKeys));
+        skipPreserveActiveSearchRef.current = false;
         return;
       }
 
+      Array.from(openKeys).forEach((key) => {
+        if (!normalized.includes(key)) {
+          clearSearchValue(key);
+        }
+      });
       setOpenKeys(new Set(normalized));
       dropdownMenuProps.onOpenChange?.(normalized);
+      skipPreserveActiveSearchRef.current = false;
     },
-    [activeSearchKey, dropdownMenuProps, openKeys, shouldPreventClose],
+    [activeSearchKey, clearSearchValue, dropdownMenuProps, openKeys, shouldPreventClose],
   );
 
   useEffect(() => {
@@ -766,6 +834,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
           key: keyPath,
           label,
           onClick: (info: any) => {},
+          onMouseEnter: () => closeActiveSearchForPath(keyPath),
           children: buildSearchChildren(children, item, keyPath, path, menuVisible, resolveItems),
         };
       }
@@ -819,6 +888,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         onClick: (info: any) => {
           if (!itemShouldKeepOpen) handleLeafClick(info);
         },
+        onMouseEnter: () => closeActiveSearchForPath(keyPath),
         onMouseDown: () => {
           if (!itemShouldKeepOpen) {
             return;
