@@ -58,6 +58,9 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
     const index = this.context.index;
     const record = this.context.record;
     const grid = this.subModels.grid.createFork({}, `grid-${index}`);
+    const token = this.context.themeToken;
+    const cardActionGap = token.marginSM ?? 8;
+    const zeroPaddingLeft = token.paddingXXS ? `${token.paddingXXS - token.paddingXXS}px` : '0px';
 
     // 重置 gridContainerRef，避免多个实例共享同一个 ref 引起的无法拖拽的问题
     (grid as any).gridContainerRef = React.createRef<HTMLDivElement>();
@@ -99,7 +102,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
             height: 100%;
           }
           .ant-form-item {
-            margin-bottom: 5px;
+            margin-bottom: ${cardActionGap}px;
           }
         `}
       >
@@ -110,7 +113,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
             height: '100%',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: '0px',
+            gap: zeroPaddingLeft,
           }}
         >
           <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
@@ -118,11 +121,13 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
           </FormComponent>
           <div>
             <DndProvider>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: token.marginXS }}
+              >
                 <Space
                   className={css`
                     button {
-                      padding: 5px;
+                      padding: ${cardActionGap}px;
                     }
                   `}
                   wrap
@@ -168,8 +173,8 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
                         <div
                           className={css`
                             button {
-                              padding: 5px;
-                              padding-left: ${i === 0 ? '0px' : null};
+                              padding: ${cardActionGap}px;
+                              padding-left: ${i === 0 ? zeroPaddingLeft : `${cardActionGap}px`};
                             }
                           `}
                         >
