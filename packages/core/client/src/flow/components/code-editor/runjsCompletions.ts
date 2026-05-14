@@ -30,6 +30,26 @@ type StaticCompletionEntry = {
   info?: string;
   insertText?: string;
   boost?: number;
+  requires?: Array<'element'>;
+};
+
+const NON_ELEMENT_COMPLETION_SCENES = new Set(['eventFlow', 'formValue', 'linkage']);
+
+const normalizeScenes = (scene?: string | string[]): string[] =>
+  (Array.isArray(scene) ? scene : scene ? [scene] : [])
+    .map((sceneName) => (typeof sceneName === 'string' ? sceneName.trim() : ''))
+    .filter(Boolean);
+
+const hasRunJSElementContext = (doc: any, apiInfos: any, requestedScenes: string[]): boolean => {
+  if (requestedScenes.some((sceneName) => NON_ELEMENT_COMPLETION_SCENES.has(sceneName))) return false;
+  return !!((doc as any)?.properties?.element || (apiInfos as any)?.element);
+};
+
+const usesCtxElement = (text?: string): boolean => typeof text === 'string' && /\bctx\.element\b/.test(text);
+
+const satisfiesStaticRequirements = (entry: StaticCompletionEntry, capabilities: { element: boolean }): boolean => {
+  if (!entry.requires?.length) return true;
+  return entry.requires.every((requirement) => requirement !== 'element' || capabilities.element);
 };
 
 const createApply = (insertText?: string) => (view: EditorView, _completion: Completion, from: number, to: number) => {
@@ -344,60 +364,6 @@ const RUNJS_RUNTIME_COMPLETIONS: StaticCompletionEntry[] = [
     insertText: "ctx.logger.child({ module: 'runjs' })",
     boost: 90,
   },
-  { label: 'ctx.element.innerHTML', type: 'property', detail: 'string', boost: 95 },
-  { label: 'ctx.element.outerHTML', type: 'property', detail: 'string', boost: 95 },
-  { label: 'ctx.element.textContent', type: 'property', detail: 'string | null', boost: 95 },
-  { label: 'ctx.element.style', type: 'property', detail: 'CSSStyleDeclaration', boost: 95 },
-  { label: 'ctx.element.classList', type: 'property', detail: 'DOMTokenList', boost: 95 },
-  {
-    label: 'ctx.element.appendChild()',
-    type: 'function',
-    detail: '(child: Node | string) => void',
-    insertText: "ctx.element.appendChild('text')",
-    boost: 95,
-  },
-  {
-    label: 'ctx.element.setAttribute()',
-    type: 'function',
-    detail: '(name: string, value: string) => void',
-    insertText: "ctx.element.setAttribute('data-key', 'value')",
-    boost: 95,
-  },
-  {
-    label: 'ctx.element.getAttribute()',
-    type: 'function',
-    detail: '(name: string) => string | null',
-    insertText: "ctx.element.getAttribute('data-key')",
-    boost: 95,
-  },
-  {
-    label: 'ctx.element.querySelector()',
-    type: 'function',
-    detail: '(selectors: string) => Element | null',
-    insertText: "ctx.element.querySelector('.selector')",
-    boost: 95,
-  },
-  {
-    label: 'ctx.element.querySelectorAll()',
-    type: 'function',
-    detail: '(selectors: string) => NodeListOf<Element>',
-    insertText: "ctx.element.querySelectorAll('.selector')",
-    boost: 95,
-  },
-  {
-    label: 'ctx.element.addEventListener()',
-    type: 'function',
-    detail: '(type: string, listener: EventListener) => void',
-    insertText: "ctx.element.addEventListener('click', (event) => {})",
-    boost: 95,
-  },
-  {
-    label: 'ctx.element.removeEventListener()',
-    type: 'function',
-    detail: '(type: string, listener: EventListener) => void',
-    insertText: "ctx.element.removeEventListener('click', handler)",
-    boost: 90,
-  },
   {
     label: 'ctx.libs.React.createElement()',
     type: 'function',
@@ -439,6 +405,7 @@ const RUNJS_RUNTIME_COMPLETIONS: StaticCompletionEntry[] = [
     detail: 'ReactDOM.createRoot',
     insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)',
     boost: 90,
+    requires: ['element'],
   },
   { label: 'ctx.libs.antd.Button', type: 'class', detail: 'Ant Design Button', boost: 90 },
   { label: 'ctx.libs.antd.Table', type: 'class', detail: 'Ant Design Table', boost: 90 },
@@ -516,14 +483,18 @@ const RUNJS_RUNTIME_COMPLETIONS: StaticCompletionEntry[] = [
     detail: 'ReactDOM.createRoot alias',
     insertText: 'ctx.ReactDOM.createRoot(ctx.element.__el)',
     boost: 80,
+    requires: ['element'],
   },
   { label: 'ctx.antd.Button', type: 'class', detail: 'Ant Design Button alias', boost: 80 },
   { label: 'ctx.antd.Modal', type: 'class', detail: 'Ant Design Modal alias', boost: 80 },
   { label: 'ctx.dayjs()', type: 'function', detail: 'dayjs alias', insertText: 'ctx.dayjs()', boost: 80 },
 ];
 
-function buildStaticRuntimeCompletions(): Completion[] {
-  return [...SAFE_GLOBAL_COMPLETIONS, ...RUNJS_RUNTIME_COMPLETIONS].map(staticEntry);
+function buildStaticRuntimeCompletions(capabilities: { element: boolean }): Completion[] {
+  return [...SAFE_GLOBAL_COMPLETIONS, ...RUNJS_RUNTIME_COMPLETIONS]
+    .filter((entry) => satisfiesStaticRequirements(entry, capabilities))
+    .filter((entry) => capabilities.element || !usesCtxElement(entry.insertText))
+    .map(staticEntry);
 }
 
 export async function buildRunJSCompletions(
@@ -534,6 +505,7 @@ export async function buildRunJSCompletions(
   completions: Completion[];
   entries: SnippetEntry[];
 }> {
+  const requestedScenes = normalizeScenes(scene);
   const isFunctionLikeDocNode = (node: any, completionSpec: any): boolean => {
     if (!node || typeof node !== 'object' || Array.isArray(node)) return false;
     const type = typeof (node as any).type === 'string' ? String((node as any).type) : '';
@@ -576,10 +548,12 @@ export async function buildRunJSCompletions(
   };
   const docApis = { ...((doc as any)?.properties || {}), ...normalizeMethodsRecord((doc as any)?.methods) };
   const apisSource = { ...(apiInfos && typeof apiInfos === 'object' ? apiInfos : {}), ...(docApis || {}) };
-  const completions: Completion[] = buildStaticRuntimeCompletions();
+  const hasElementContext = hasRunJSElementContext(doc, apiInfos, requestedScenes);
+  const completions: Completion[] = buildStaticRuntimeCompletions({ element: hasElementContext });
   const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
   const hiddenDecisionCache = new Map<string, { hideSelf: boolean; hideSubpaths: string[] }>();
   const hiddenPathPrefixes = new Set<string>();
+  if (!hasElementContext) hiddenPathPrefixes.add('ctx.element');
 
   const isHiddenByPaths = (label: string) => {
     if (!label || typeof label !== 'string') return false;
@@ -704,6 +678,7 @@ export async function buildRunJSCompletions(
       const insertText =
         completionSpec?.insertText ??
         (root === 'popup' ? `await ctx.getVar('${ctxLabel}')` : isCallable ? `${ctxLabel}()` : undefined);
+      if (!hasElementContext && usesCtxElement(insertText)) continue;
       const apply = insertText
         ? (view: EditorView, _completion: Completion, from: number, to: number) => {
             view.dispatch({
@@ -737,12 +712,6 @@ export async function buildRunJSCompletions(
   } catch (_) {
     entries = [];
   }
-
-  const requestedScenes = Array.isArray(scene)
-    ? scene.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
-    : scene
-      ? [scene]
-      : [];
 
   const filteredEntries = requestedScenes.length
     ? entries.filter((entry) => {

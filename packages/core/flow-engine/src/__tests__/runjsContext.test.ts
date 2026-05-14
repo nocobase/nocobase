@@ -85,6 +85,7 @@ describe('flowRunJSContext registry and doc', () => {
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc).toBeTruthy();
       expect(doc?.label).toMatch(/RunJS base/);
+      expect(doc?.properties?.element).toBeUndefined();
     });
 
     it('should support locale-specific doc', () => {

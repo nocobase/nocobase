@@ -11,44 +11,87 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock engine api provider
 vi.mock('@nocobase/flow-engine', () => {
-  const doc = {
-    properties: {
-      foo: 'foo prop',
-      api: {
-        description: 'api client',
-        completion: { insertText: 'ctx.api' },
-        properties: {
-          request: {
-            description: 'send request',
-            completion: { insertText: "await ctx.api.request({ url: '', method: 'get' })" },
-          },
-        },
-      },
-      popup: {
-        description: 'popup context (async)',
-        detail: 'Promise<any>',
-        hidden: async (ctx: any) => !(await ctx?.popup)?.uid,
-        properties: {
-          uid: 'popup uid',
-          record: 'popup record',
-          parent: {
-            properties: {
-              record: 'parent record',
-            },
-          },
+  const baseDocProperties = {
+    foo: 'foo prop',
+    api: {
+      description: 'api client',
+      completion: { insertText: 'ctx.api' },
+      properties: {
+        request: {
+          description: 'send request',
+          completion: { insertText: "await ctx.api.request({ url: '', method: 'get' })" },
         },
       },
     },
-    methods: {
-      bar: {
-        description: 'bar method',
-        completion: { insertText: "ctx.bar('value')" },
+    viewer: {
+      description: 'viewer helpers',
+      properties: {
+        popover: {
+          type: 'function',
+          description: 'open popover',
+          completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+        },
+        embed: {
+          type: 'function',
+          description: 'open embed',
+          completion: { insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })' },
+        },
+      },
+    },
+    popup: {
+      description: 'popup context (async)',
+      detail: 'Promise<any>',
+      hidden: async (ctx: any) => !(await ctx?.popup)?.uid,
+      properties: {
+        uid: 'popup uid',
+        record: 'popup record',
+        parent: {
+          properties: {
+            record: 'parent record',
+          },
+        },
       },
     },
   };
+  const methods = {
+    bar: {
+      description: 'bar method',
+      completion: { insertText: "ctx.bar('value')" },
+    },
+  };
+  const baseDoc = {
+    properties: baseDocProperties,
+    methods,
+  };
+  const domDoc = {
+    properties: {
+      ...baseDocProperties,
+      element: {
+        description: 'DOM container',
+        detail: 'ElementProxy',
+        properties: {
+          innerHTML: 'inner html',
+          setAttribute: {
+            type: 'function',
+            detail: '(name: string, value: string) => void',
+            completion: { insertText: "ctx.element.setAttribute('data-key', 'value')" },
+          },
+        },
+      },
+    },
+    methods,
+  };
+  const domModels = new Set([
+    'JSBlockModel',
+    'JSFieldModel',
+    'JSEditableFieldModel',
+    'JSItemModel',
+    'JSColumnModel',
+    'FormJSFieldItemModel',
+  ]);
   return {
-    getRunJSDocFor: () => doc,
-    FlowRunJSContext: { getDoc: () => doc },
+    getRunJSDocFor: (ctx: any) => (domModels.has(ctx?.model?.constructor?.name) ? domDoc : baseDoc),
+    FlowRunJSContext: { getDoc: () => baseDoc },
     // New cohesive APIs
     listSnippetsForContext: async () => [
       {
@@ -69,6 +112,17 @@ vi.mock('@nocobase/flow-engine', () => {
 import { buildRunJSCompletions } from '../runjsCompletions';
 
 describe('buildRunJSCompletions', () => {
+  const labelsOf = (completions: any[]) => new Set(completions.map((c: any) => c.label));
+
+  const appliedTextsOf = (completions: any[]) =>
+    completions.flatMap((completion: any) => {
+      const mockView = { dispatch: vi.fn() } as any;
+      if (typeof completion.apply === 'function') {
+        completion.apply(mockView, completion, 0, 0);
+      }
+      return mockView.dispatch.mock.calls.map((call: any[]) => String(call[0]?.changes?.insert || ''));
+    });
+
   it('builds ctx property/method completions and snippets', async () => {
     const hostCtx = { popup: Promise.resolve({ uid: 'p1' }) }; // not used since engine doc is mocked
     const { completions, entries } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
@@ -265,8 +319,15 @@ describe('buildRunJSCompletions', () => {
   });
 
   it('adds stable ctx runtime namespace completions', async () => {
-    const { completions } = await buildRunJSCompletions({}, 'v1', 'block');
-    const labels = new Set(completions.map((c: any) => c.label));
+    const hostCtx = {
+      model: {
+        constructor: {
+          name: 'JSBlockModel',
+        },
+      },
+    };
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
+    const labels = labelsOf(completions);
 
     expect(labels.has('ctx.runjs()')).toBe(true);
     expect(labels.has('ctx.sql.run()')).toBe(true);
@@ -274,6 +335,75 @@ describe('buildRunJSCompletions', () => {
     expect(labels.has('ctx.element.setAttribute()')).toBe(true);
     expect(labels.has('ctx.libs.React.createElement()')).toBe(true);
     expect(labels.has('ctx.libs.lodash.get()')).toBe(true);
+  });
+
+  it('does not expose ctx.element for generic base completions', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v1', 'block');
+    const labels = labelsOf(completions);
+    const appliedTexts = appliedTextsOf(completions);
+
+    expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
+    expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+  });
+
+  it('keeps ctx.element completions for DOM container models', async () => {
+    const hostCtx = {
+      model: {
+        constructor: {
+          name: 'JSBlockModel',
+        },
+      },
+    };
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
+    const labels = labelsOf(completions);
+
+    expect(labels.has('ctx.element.innerHTML')).toBe(true);
+    expect(labels.has('ctx.element.setAttribute()')).toBe(true);
+    expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(true);
+  });
+
+  it('hides ctx.element-dependent completions for eventFlow', async () => {
+    const hostCtx = {
+      model: {
+        constructor: {
+          name: 'JSBlockModel',
+        },
+      },
+    };
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'eventFlow');
+    const labels = labelsOf(completions);
+    const appliedTexts = appliedTextsOf(completions);
+
+    expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
+    expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(false);
+    expect(labels.has('ctx.ReactDOM.createRoot()')).toBe(false);
+    expect(labels.has('ctx.viewer.popover()')).toBe(false);
+    expect(labels.has('ctx.viewer.embed()')).toBe(false);
+    expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+  });
+
+  it('hides ctx.element-dependent completions for non-DOM action models', async () => {
+    for (const [modelName, scene] of [
+      ['JSRecordActionModel', 'table'],
+      ['JSFormActionModel', 'form'],
+      ['FilterFormJSActionModel', 'form'],
+    ]) {
+      const hostCtx = {
+        model: {
+          constructor: {
+            name: modelName,
+          },
+        },
+      };
+      const { completions } = await buildRunJSCompletions(hostCtx, 'v1', scene);
+      const labels = labelsOf(completions);
+      const appliedTexts = appliedTextsOf(completions);
+
+      expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
+      expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(false);
+      expect(labels.has('ctx.ReactDOM.createRoot()')).toBe(false);
+      expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+    }
   });
 
   it('uses friendly insertText for ctx.loadCSS and ctx.previewRunJS', async () => {
