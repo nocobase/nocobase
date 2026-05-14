@@ -12,12 +12,20 @@ import { Typography } from 'antd';
 import { castArray } from 'lodash';
 import { css } from '@emotion/css';
 import React from 'react';
-import { FieldModel } from '../base';
-import { hasDisplayValue, normalizeDisplayValue } from '../utils/displayValueUtils';
+import { openViewFlow } from '../../flows/openViewFlow';
+import { applyClickToOpenProps, applyClickToOpenSetting, ClickableFieldModel } from './ClickableFieldModel';
 
-export class DisplayTitleFieldModel extends FieldModel {
+function isParentAssociationField(ctx: any) {
+  return !!ctx.model?.parent?.context?.collectionField?.isAssociationField?.();
+}
+
+export class DisplayTitleFieldModel extends ClickableFieldModel {
   get collectionField(): CollectionField {
-    return this.context.collectionField;
+    const collectionField = this.context.collectionField;
+    if (collectionField?.isAssociationField?.()) {
+      return collectionField;
+    }
+    return (this.parent as any)?.context?.collectionField || collectionField;
   }
 
   renderComponent(value) {
@@ -56,20 +64,13 @@ export class DisplayTitleFieldModel extends FieldModel {
     };
     if (titleField) {
       const result = castArray(value).flatMap((v, idx) => {
-        const titleCollectionField =
-          this.context.collectionField?.targetCollection?.getField?.(titleField) || this.context.collectionField;
-        const displayValue = normalizeDisplayValue(v?.[titleField], { collectionField: titleCollectionField });
-        const result = this.renderComponent(displayValue);
-        const node = hasDisplayValue(displayValue) ? result : 'N/A';
-        return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
+        const node = this.renderInDisplayStyle(v?.[titleField], v, Array.isArray(value));
+        const keyedNode = React.isValidElement(node) ? React.cloneElement(node, { key: `item-${idx}` }) : node;
+        return idx === 0 ? [keyedNode] : [<span key={`sep-${idx}`}>, </span>, keyedNode];
       });
       return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
     } else {
-      const textContent = (
-        <Typography.Text {...typographyProps}>
-          {this.renderComponent(normalizeDisplayValue(value, { collectionField: this.context.collectionField }))}
-        </Typography.Text>
-      );
+      const textContent = <Typography.Text {...typographyProps}>{this.renderInDisplayStyle(value)}</Typography.Text>;
       return textContent;
     }
   }
@@ -83,5 +84,29 @@ DisplayTitleFieldModel.registerFlow({
     overflowMode: {
       use: 'overflowMode',
     },
+    clickToOpen: {
+      title: tExpr('Enable click-to-open'),
+      uiMode: { type: 'switch', key: 'clickToOpen' },
+      defaultParams: (ctx) => {
+        if (ctx.disableFieldClickToOpen) {
+          return {
+            clickToOpen: false,
+          };
+        }
+        return {
+          clickToOpen: ctx.collectionField?.isAssociationField?.() || isParentAssociationField(ctx),
+        };
+      },
+      hideInSettings(ctx) {
+        return ctx.disableFieldClickToOpen;
+      },
+      async afterParamsSave(ctx, params) {
+        await applyClickToOpenSetting(ctx, params);
+      },
+      handler(ctx, params) {
+        applyClickToOpenProps(ctx, params);
+      },
+    },
   },
 });
+DisplayTitleFieldModel.registerFlow(openViewFlow);
