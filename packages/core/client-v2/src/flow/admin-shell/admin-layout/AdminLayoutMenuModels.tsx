@@ -628,10 +628,6 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           )
           .filter(Boolean) || [];
 
-      if (isV2AdminRuntime(this.context.app) && children.length === 0) {
-        return null;
-      }
-
       if (options.designable && depth === 0) {
         children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', this, route));
       }

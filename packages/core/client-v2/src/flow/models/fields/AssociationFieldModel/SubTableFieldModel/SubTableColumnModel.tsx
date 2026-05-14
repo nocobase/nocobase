@@ -32,9 +32,11 @@ import { ErrorBoundary } from 'react-error-boundary';
 import React, { useRef, useMemo, useEffect } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
+import { DetailsItemModel } from '../../../blocks/details/DetailsItemModel';
 import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getSubTableRowIdentity } from './rowIdentity';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../../../../internal/utils/rebuildFieldSubModel';
 
 export const SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT = 'subTableColumn';
 
@@ -218,6 +220,41 @@ function shouldCommitImmediately(value: any) {
   return false;
 }
 
+export function isSubTableColumnReadPretty(parent: any) {
+  return !!parent?.props?.readPretty || parent?.props?.pattern === 'readPretty';
+}
+
+export function isSubTableColumnConfiguredReadPretty(parent: any) {
+  return (
+    isSubTableColumnReadPretty(parent) ||
+    parent?.getStepParams?.('subTableColumnSettings', 'pattern')?.pattern === 'readPretty'
+  );
+}
+
+export function getSubTableColumnTitleField(parent: any) {
+  return (
+    parent?.props?.titleField ||
+    parent?.subModels?.field?.props?.titleField ||
+    parent?.subModels?.field?.props?.fieldNames?.label ||
+    parent?.collectionField?.targetCollectionTitleFieldName
+  );
+}
+
+export function getSubTableColumnReadPrettyFieldProps(parent: any, value: any) {
+  const fieldProps: Record<string, any> = { value };
+  const titleField = getSubTableColumnTitleField(parent);
+  const fieldNames = parent?.props?.fieldNames || parent?.subModels?.field?.props?.fieldNames;
+
+  if (titleField) {
+    fieldProps.titleField = titleField;
+  }
+  if (fieldNames) {
+    fieldProps.fieldNames = fieldNames;
+  }
+
+  return fieldProps;
+}
+
 const FieldModelRendererOptimize = React.memo((props: any) => {
   const { model, onChange, value, commitOnChange, ...rest } = props;
   const pendingValueRef = React.useRef<any>(props?.value);
@@ -337,8 +374,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
             });
           }
 
-          if (parent.props.readPretty) {
-            fork.setProps({ value });
+          if (isSubTableColumnReadPretty(parent)) {
+            fork.setProps(getSubTableColumnReadPrettyFieldProps(parent, value));
             return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
           }
 
@@ -598,6 +635,24 @@ export class SubTableColumnModel<
         (this.parent as any)?.collection?.filterTargetKey ?? (this.parent as any)?.context?.collection?.filterTargetKey;
       const rowIdentity = getSubTableRowIdentity(record, filterTargetKey) ?? `row:${String(rowIdx)}`;
       const rowForkKey = `row:${baseIndexKey}:${rowIdentity}:${String(rowIdx)}`;
+      const fieldModel: any = this.subModels.field;
+      const cellModeKey = [
+        rowForkKey,
+        this.props.pattern,
+        this.props.readPretty,
+        this.props.titleField,
+        this.props.__displayFieldRefreshKey,
+        fieldModel?.uid,
+        fieldModel?.use,
+        fieldModel?.constructor?.name,
+        fieldModel?.props?.clickToOpen,
+        fieldModel?.props?.displayStyle,
+        fieldModel?.props?.overflowMode,
+        fieldModel?.props?.titleField,
+        fieldModel?.props?.fieldNames?.label,
+      ]
+        .filter((item) => item !== undefined && item !== null)
+        .join(':');
       const rowFork: any = (() => {
         const fork = this.createFork({}, rowForkKey);
         fork.context.defineProperty('subTableRowFork', {
@@ -651,7 +706,7 @@ export class SubTableColumnModel<
           parentFieldIndex={baseArr}
           parentItem={parentItem}
           rowFork={rowFork}
-          memoKey={rowForkKey}
+          memoKey={cellModeKey}
           width={this.props.width}
           commitOnChange={this.hasFormulaColumn}
         />
@@ -683,6 +738,7 @@ SubTableColumnModel.registerFlow({
         ctx.model.setProps(collectionField.getComponentProps());
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
+        await ctx.model.applySubModelsBeforeRenderFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         // 避免强依赖 EditFormModel（减少循环依赖风险）：仅在存在该能力时调用
         currentBlockModel?.addAppends?.(ctx.model.fieldPath);
@@ -895,6 +951,91 @@ SubTableColumnModel.registerFlow({
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
+    },
+    fieldNames: {
+      use: 'titleField',
+      title: tExpr('Title field'),
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField ||
+          !ctx.collectionField.isAssociationField() ||
+          !isSubTableColumnConfiguredReadPretty(ctx.model) ||
+          (ctx.model.subModels.field as any)?.disableTitleField
+        );
+      },
+      defaultParams(ctx) {
+        return {
+          label: getSubTableColumnTitleField(ctx.model),
+        };
+      },
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
+          return null;
+        }
+        if (!isSubTableColumnConfiguredReadPretty(ctx.model)) {
+          return null;
+        }
+        if (!params.label || params.label === previousParams.label) {
+          return null;
+        }
+
+        const targetCollection = ctx.collectionField.targetCollection;
+        const targetCollectionField = targetCollection?.getField(params.label);
+        if (!targetCollectionField) {
+          return null;
+        }
+
+        const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+        const fieldModel: any = ctx.model.subModels.field;
+        const currentUse = getFieldBindingUse(fieldModel) || fieldModel?.use;
+        const targetUse = binding?.modelName || currentUse;
+        const fieldSettingsInit = {
+          dataSourceKey: ctx.model.collectionField.dataSourceKey,
+          collectionName: targetCollection.name,
+          fieldPath: params.label,
+        };
+        const defaultProps =
+          typeof binding?.defaultProps === 'function'
+            ? binding.defaultProps(ctx, targetCollectionField)
+            : binding?.defaultProps;
+
+        ctx.model.setProps({
+          titleField: params.label,
+          ...targetCollectionField.getComponentProps?.(),
+        });
+
+        if (targetUse && targetUse !== currentUse) {
+          await rebuildFieldSubModel({
+            parentModel: ctx.model as any,
+            targetUse,
+            defaultProps: {
+              ...(defaultProps || {}),
+              titleField: params.label,
+            },
+            fieldSettingsInit,
+          });
+        } else if (fieldModel) {
+          fieldModel.setProps({
+            ...(defaultProps || {}),
+            titleField: params.label,
+          });
+          fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
+          await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+        }
+      },
+      handler(ctx, params) {
+        if (
+          !ctx.collectionField ||
+          !ctx.collectionField.isAssociationField() ||
+          !isSubTableColumnConfiguredReadPretty(ctx.model)
+        ) {
+          return null;
+        }
+        ctx.model.setProps({
+          titleField: params.label,
+          ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps?.(),
+        });
+      },
     },
     pattern: {
       use: 'pattern',

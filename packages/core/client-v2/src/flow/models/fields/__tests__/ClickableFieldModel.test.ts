@@ -8,9 +8,11 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowEngine } from '@nocobase/flow-engine';
-import { render, screen } from '@testing-library/react';
+import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ClickableFieldModel } from '../ClickableFieldModel';
+import { DisplayTitleFieldModel } from '../DisplayTitleFieldModel';
 import { DisplayTextFieldModel } from '../DisplayTextFieldModel';
 
 function createRolesFieldModel(sourceRecord: Record<string, any>) {
@@ -87,6 +89,133 @@ describe('ClickableFieldModel', () => {
     );
   });
 
+  it('uses the parent association field when the display model is bound to the title field', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ ClickableFieldModel });
+
+    const usersCollection = {
+      name: 'users',
+      filterTargetKey: 'id',
+    };
+    const rolesCollection = {
+      name: 'roles',
+      filterTargetKey: 'name',
+    };
+    const rolesField = {
+      name: 'roles',
+      target: 'roles',
+      targetKey: 'name',
+      type: 'belongsToMany',
+      interface: 'm2m',
+      collection: usersCollection,
+      targetCollection: rolesCollection,
+      isAssociationField: () => true,
+    };
+    const titleField = {
+      name: 'title',
+      collection: rolesCollection,
+      isAssociationField: () => false,
+    };
+
+    const parent = engine.createModel<FlowModel>({
+      use: FlowModel,
+      uid: 'roles-column',
+    });
+    parent.context.defineProperty('collectionField', { value: rolesField });
+
+    const model = engine.createModel<ClickableFieldModel>({
+      use: ClickableFieldModel,
+      uid: 'roles-title-display',
+    });
+    model.setParent(parent);
+    model.context.defineProperty('collectionField', { value: titleField });
+    model.context.defineProperty('blockModel', { value: { collection: usersCollection } });
+    model.context.defineProperty('record', { value: { id: 1 } });
+    const dispatchEvent = vi.spyOn(model, 'dispatchEvent').mockResolvedValue([]);
+    const event = { type: 'click' };
+
+    model.onClick(event, { name: 'admin', title: 'Admin' });
+
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'click',
+      {
+        event,
+        filterByTk: 'admin',
+        collectionName: 'users',
+        associationName: 'users.roles',
+        sourceId: 1,
+      },
+      { debounce: true },
+    );
+  });
+
+  it('renders title display values as links when click-to-open is enabled', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DisplayTitleFieldModel });
+
+    const usersCollection = {
+      name: 'users',
+      filterTargetKey: 'id',
+    };
+    const rolesCollection = {
+      name: 'roles',
+      filterTargetKey: 'name',
+    };
+    const rolesField = {
+      name: 'roles',
+      target: 'roles',
+      targetKey: 'name',
+      type: 'belongsToMany',
+      interface: 'm2m',
+      collection: usersCollection,
+      targetCollection: rolesCollection,
+      isAssociationField: () => true,
+    };
+    const titleField = {
+      name: 'title',
+      collection: rolesCollection,
+      isAssociationField: () => false,
+    };
+
+    const parent = engine.createModel<FlowModel>({
+      use: FlowModel,
+      uid: 'roles-title-column',
+    });
+    parent.context.defineProperty('collectionField', { value: rolesField });
+
+    const model = engine.createModel<DisplayTitleFieldModel>({
+      use: DisplayTitleFieldModel,
+      uid: 'roles-title-display-link',
+      props: {
+        clickToOpen: true,
+        titleField: 'name',
+        value: { name: 'admin', title: 'Admin' },
+      },
+    });
+    model.setParent(parent);
+    model.context.defineProperty('collectionField', { value: titleField });
+    model.context.defineProperty('blockModel', { value: { collection: usersCollection } });
+    model.context.defineProperty('record', { value: { id: 1 } });
+    const dispatchEvent = vi.spyOn(model, 'dispatchEvent').mockResolvedValue([]);
+
+    render(React.createElement(React.Fragment, null, model.render()));
+    const link = screen.getByText('admin').closest('a');
+    expect(link).toBeTruthy();
+
+    fireEvent.click(link);
+
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'click',
+      expect.objectContaining({
+        filterByTk: 'admin',
+        collectionName: 'users',
+        associationName: 'users.roles',
+        sourceId: 1,
+      }),
+      { debounce: true },
+    );
+  });
+
   it('renders object title field values by configured target title field', () => {
     const engine = new FlowEngine();
     engine.registerModels({ DisplayTextFieldModel });
@@ -106,5 +235,54 @@ describe('ClickableFieldModel', () => {
 
     expect(screen.getByText('S-001')).toBeInTheDocument();
     expect(screen.queryByText('Sales')).not.toBeInTheDocument();
+  });
+
+  it('refreshes the parent column when title display click-to-open changes', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DisplayTitleFieldModel });
+
+    const rolesField = {
+      name: 'roles',
+      target: 'roles',
+      collection: { name: 'users' },
+      targetCollection: { name: 'roles' },
+      isAssociationField: () => true,
+      getComponentProps: () => ({ titleField: 'name' }),
+    };
+    const titleField = {
+      name: 'title',
+      collection: { name: 'roles' },
+      isAssociationField: () => false,
+    };
+
+    const parent = engine.createModel<FlowModel>({
+      use: FlowModel,
+      uid: 'roles-title-column-refresh',
+    });
+    parent.context.defineProperty('collectionField', { value: rolesField });
+    const parentSetProps = vi.spyOn(parent, 'setProps');
+    const parentRerender = vi.spyOn(parent, 'rerender').mockResolvedValue(undefined);
+
+    const model = engine.createModel<DisplayTitleFieldModel>({
+      use: DisplayTitleFieldModel,
+      uid: 'roles-title-display-refresh',
+    });
+    model.setParent(parent);
+    model.context.defineProperty('collectionField', { value: titleField });
+    const modelRerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+
+    const clickToOpenStep = model.getFlow('displayFieldSettings').steps.clickToOpen;
+
+    await clickToOpenStep.afterParamsSave(model.context as any, { clickToOpen: true }, { clickToOpen: false });
+
+    expect(model.props).toMatchObject({
+      clickToOpen: true,
+      titleField: 'name',
+    });
+    expect(modelRerender).toHaveBeenCalled();
+    expect(parentSetProps).toHaveBeenCalledWith({
+      __displayFieldRefreshKey: expect.any(String),
+    });
+    expect(parentRerender).toHaveBeenCalled();
   });
 });
