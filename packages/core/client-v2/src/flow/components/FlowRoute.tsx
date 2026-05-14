@@ -29,7 +29,6 @@ export type LegacyPageBehavior = 'redirect' | 'notFound' | 'bridge';
 
 export type FlowRouteProps = {
   getLayoutModel?: (flowEngine: FlowEngine) => BaseLayoutModel | undefined;
-  routePrefix?: string;
   legacyPageBehavior?: LegacyPageBehavior;
 };
 

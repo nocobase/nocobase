@@ -15,7 +15,7 @@ import { getEmbedLayoutModel } from './EmbedLayoutModel';
 const getLayoutModel = (flowEngine: FlowEngine) => getEmbedLayoutModel(flowEngine, { required: true });
 
 const EmbedFlowRoute = () => {
-  return <FlowRoute getLayoutModel={getLayoutModel} routePrefix="embed" legacyPageBehavior="notFound" />;
+  return <FlowRoute getLayoutModel={getLayoutModel} legacyPageBehavior="notFound" />;
 };
 
 export default EmbedFlowRoute;
