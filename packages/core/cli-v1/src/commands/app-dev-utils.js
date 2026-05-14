@@ -23,7 +23,7 @@ const pluginClientLanes = {
 };
 
 function toPosixPath(filePath) {
-  return filePath.split(path.sep).join('/');
+  return filePath.replace(/\\/g, '/');
 }
 
 function getEntryName(packageName, lane) {
@@ -105,5 +105,6 @@ async function writePluginDevEntryFiles(entries, entryDir) {
 module.exports = {
   buildPluginDevUrlMap,
   discoverLocalPluginEntries,
+  toPosixPath,
   writePluginDevEntryFiles,
 };
