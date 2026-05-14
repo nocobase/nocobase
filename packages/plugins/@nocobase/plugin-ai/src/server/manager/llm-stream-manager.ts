@@ -27,7 +27,7 @@ export class LLMStreamCachedManager {
   private cachePromise?: Promise<Cache>;
 
   constructor(private readonly plugin: PluginAIServer) {
-    this.store = this.plugin.app.cacheManager.defaultStore;
+    this.store = this.plugin.app.options.cacheManager.defaultStore;
   }
 
   getCached(sessionId: string) {
