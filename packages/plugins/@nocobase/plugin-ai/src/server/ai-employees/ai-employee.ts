@@ -1016,7 +1016,6 @@ If information is missing, clearly state it in the summary.</Important>`;
   private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
     const formattedMessages = [];
     const workContextHandler = this.plugin.workContextHandler;
-    await this.hydrateAttachmentsMeta(messages);
 
     // 截断过长的内容
     const truncate = (text: string, maxLen = 50000) => {
@@ -1105,51 +1104,6 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
 
     return formattedMessages;
-  }
-
-  private async hydrateAttachmentsMeta(messages: AIMessageInput[]) {
-    type AttachmentWithMeta = { id?: string | number; meta?: unknown };
-    const attachmentIds = new Set<string | number>();
-
-    for (const message of messages) {
-      if (!message.attachments?.length) {
-        continue;
-      }
-      for (const attachment of message.attachments as AttachmentWithMeta[]) {
-        if (attachment?.id != null) {
-          attachmentIds.add(attachment.id);
-        }
-      }
-    }
-
-    if (!attachmentIds.size) {
-      return;
-    }
-
-    const files = await this.aiFilesModel.findAll({
-      where: {
-        id: {
-          [Op.in]: Array.from(attachmentIds),
-        },
-      },
-      attributes: ['id', 'meta'],
-    });
-    const metaById = new Map(files.map((file) => [file.get('id') as string | number, file.get('meta')]));
-
-    for (const message of messages) {
-      if (!message.attachments?.length) {
-        continue;
-      }
-      for (const attachment of message.attachments as AttachmentWithMeta[]) {
-        if (attachment?.id == null) {
-          continue;
-        }
-        const meta = metaById.get(attachment.id);
-        if (meta !== undefined) {
-          attachment.meta = meta;
-        }
-      }
-    }
   }
 
   private async getToolCallMap(messageId: string): Promise<
