@@ -187,4 +187,138 @@ describe('pattern action', () => {
 
     getDisplayBindingSpy.mockRestore();
   });
+
+  it('falls back to the target collection title field for association display only mode', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      DummyFormItemModel,
+      FieldModel,
+    });
+
+    const parent = engine.createModel<DummyFormItemModel>({
+      use: DummyFormItemModel,
+      uid: 'form-item-association',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-association',
+          props: {},
+        },
+      },
+    });
+    const collectionField = {
+      targetCollectionTitleFieldName: 'name',
+      isAssociationField: () => true,
+    };
+    parent.collectionField = collectionField;
+
+    await pattern.beforeParamsSave?.(
+      {
+        model: parent,
+        collectionField,
+      } as any,
+      { pattern: 'readPretty' },
+      { pattern: 'editable' },
+    );
+
+    expect(parent.props).toMatchObject({
+      pattern: 'readPretty',
+      disabled: false,
+      titleField: 'name',
+    });
+    expect(parent.getStepParams('editItemSettings', 'titleField')).toEqual({
+      titleField: 'name',
+    });
+  });
+
+  it('passes the association title field to the rebuilt display field model', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      DummyFormItemModel,
+      FieldModel,
+      DummyDisplayFieldModel,
+    });
+
+    const parent = engine.createModel<DummyFormItemModel>({
+      use: DummyFormItemModel,
+      uid: 'form-item-association-rebuild',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'field-association-rebuild',
+          props: {},
+        },
+      },
+    });
+    const targetTitleField = { name: 'name' };
+    const collectionField = {
+      targetCollectionTitleFieldName: 'name',
+      targetCollection: {
+        getField: vi.fn(() => targetTitleField),
+      },
+      isAssociationField: () => true,
+    };
+    parent.collectionField = collectionField;
+    const getDisplayBindingSpy = vi.spyOn(DetailsItemModel, 'getDefaultBindingByField').mockReturnValue({
+      modelName: 'DummyDisplayFieldModel',
+      defaultProps: { display: true },
+    } as any);
+
+    await pattern.afterParamsSave?.(
+      {
+        model: parent,
+        collectionField,
+        engine,
+      } as any,
+      { pattern: 'readPretty' },
+      { pattern: 'editable' },
+    );
+
+    expect(parent.subModels.field).toBeInstanceOf(DummyDisplayFieldModel);
+    expect(parent.subModels.field?.props).toMatchObject({
+      display: true,
+      titleField: 'name',
+    });
+
+    getDisplayBindingSpy.mockRestore();
+  });
+
+  it('refreshes the parent model after leaving display only mode', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      DummyFormItemModel,
+      FieldModel,
+      DummyDisplayFieldModel,
+    });
+
+    const host = engine.createModel<FlowModel>({
+      use: FlowModel,
+      uid: 'sub-table-host',
+    });
+    const parent = engine.createModel<DummyFormItemModel>({
+      use: DummyFormItemModel,
+      uid: 'sub-table-column',
+      subModels: {
+        field: {
+          use: FieldModel,
+          uid: 'sub-table-column-field',
+          stepParams: {
+            fieldBinding: {
+              use: 'DummyDisplayFieldModel',
+            },
+          },
+        },
+      },
+    });
+    parent.setParent(host);
+    const hostSetPropsSpy = vi.spyOn(host, 'setProps');
+
+    await pattern.afterParamsSave?.(makeCtx(parent), { pattern: 'editable' }, { pattern: 'readPretty' });
+
+    expect(parent.subModels.field).toBeInstanceOf(FieldModel);
+    expect(parent.subModels.field?.uid).toBe('sub-table-column-field');
+    expect(hostSetPropsSpy).toHaveBeenCalledWith({
+      __patternRefreshKey: expect.any(String),
+    });
+  });
 });

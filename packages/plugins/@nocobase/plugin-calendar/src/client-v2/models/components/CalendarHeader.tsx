@@ -9,7 +9,7 @@
 
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { getLunarDay } from '../../calendar/utils';
+import { getLunarDay } from '../../../shared/calendar';
 
 type CalendarHeaderProps = {
   date: Date;
@@ -45,9 +45,7 @@ export const CalendarHeader = ({
 
       return (
         <>
-          <span className="rbc-date-solar" style={{ fontSize: 14 }}>
-            {dayLabel}
-          </span>
+          <span className="rbc-date-solar rbc-date-solar-week">{dayLabel}</span>
           {lunarElement}
         </>
       );

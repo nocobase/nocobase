@@ -8,12 +8,12 @@
  */
 
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { ActionModel, CollectionActionGroupModel, Icon } from '@nocobase/client';
-import { observer, tExpr, useFlowModel, type FlowModelContext } from '@nocobase/flow-engine';
+import { ActionModel, CollectionActionGroupModel, Icon } from '@nocobase/client-v2';
+import { observer, useFlowModel, type FlowModelContext } from '@nocobase/flow-engine';
 import { Button, Segmented, Typography } from 'antd';
 import React, { useMemo } from 'react';
-import { useTranslation } from '../../../locale';
-import { getLunarDay } from '../../calendar/utils';
+import { tExpr, useT } from '../../locale';
+import { getLunarDay } from '../../../shared/calendar';
 import { useCalendarViewContext } from '../components/CalendarViewContext';
 import dayjs from 'dayjs';
 
@@ -97,16 +97,16 @@ const CalendarTitleAction = observer(() => {
   }
 
   return (
-    <Typography.Text strong style={{ fontSize: 16, lineHeight: 2 }}>
+    <Typography.Text strong>
       {calendarView.label}
-      {lunarLabel ? <span style={{ marginLeft: 8, fontWeight: 400 }}>{lunarLabel}</span> : null}
+      {lunarLabel ? <Typography.Text type="secondary"> {lunarLabel}</Typography.Text> : null}
     </Typography.Text>
   );
 });
 
 const CalendarViewSelectAction = observer(() => {
   const calendarView = useCalendarViewContext();
-  const { t } = useTranslation();
+  const t = useT();
 
   if (!calendarView) {
     return null;
@@ -159,7 +159,7 @@ export class CalendarTodayActionModel extends ActionModel {
 
   defaultProps = {
     type: 'default' as const,
-    title: tExpr('Today', { ns: 'calendar' }),
+    title: tExpr('Today'),
   };
 
   render() {
@@ -168,7 +168,7 @@ export class CalendarTodayActionModel extends ActionModel {
 }
 
 CalendarTodayActionModel.define({
-  label: tExpr('Today', { ns: 'calendar' }),
+  label: tExpr('Today'),
   toggleable: true,
   sort: 10,
 });
@@ -188,7 +188,7 @@ export class CalendarNavActionModel extends ActionModel {
 }
 
 CalendarNavActionModel.define({
-  label: tExpr('Turn pages', { ns: 'calendar' }),
+  label: tExpr('Turn pages'),
   toggleable: true,
   sort: 20,
 });
@@ -208,7 +208,7 @@ export class CalendarTitleActionModel extends ActionModel {
 }
 
 CalendarTitleActionModel.define({
-  label: tExpr('Title', { ns: 'calendar' }),
+  label: tExpr('Title'),
   toggleable: true,
   sort: 30,
 });
@@ -228,7 +228,7 @@ export class CalendarViewSelectActionModel extends ActionModel {
 }
 
 CalendarViewSelectActionModel.define({
-  label: tExpr('Select view', { ns: 'calendar' }),
+  label: tExpr('Select view'),
   toggleable: true,
   sort: 40,
 });

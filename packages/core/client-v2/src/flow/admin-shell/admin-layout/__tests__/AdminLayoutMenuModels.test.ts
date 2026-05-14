@@ -311,7 +311,7 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children[1]._model).toBe(adminLayoutModel.subModels.menuItems?.[1]);
   });
 
-  it('should filter legacy page menu routes in v2 admin layout', () => {
+  it('should filter legacy page menu routes but keep empty groups in v2 admin layout', () => {
     const adminLayoutModel = engine.createModel<AdminLayoutModel>({
       uid: 'admin-layout-model',
       use: AdminLayoutModel,
@@ -369,22 +369,30 @@ describe('AdminLayoutModel menu items', () => {
       t: (title) => title,
     });
 
-    expect(route.children).toHaveLength(2);
+    expect(route.children).toHaveLength(3);
     expect(route.children[0]).toMatchObject({
+      path: '/admin/2',
+      redirect: '/admin/2',
+      _runtimePath: null,
+      _navigationMode: 'spa',
+      _isLegacy: false,
+    });
+    expect(route.children[0].routes).toBeUndefined();
+    expect(route.children[1]).toMatchObject({
       path: '/admin/3',
       redirect: '/admin/nested-flow-page',
       _runtimePath: '/apps/demo/v2/admin/nested-flow-page',
       _navigationMode: 'spa',
       _isLegacy: false,
     });
-    expect(route.children[0].routes).toHaveLength(1);
-    expect(route.children[0].routes?.[0]).toMatchObject({
+    expect(route.children[1].routes).toHaveLength(1);
+    expect(route.children[1].routes?.[0]).toMatchObject({
       path: '/admin/nested-flow-page',
       _runtimePath: '/apps/demo/v2/admin/nested-flow-page',
       _navigationMode: 'spa',
       _isLegacy: false,
     });
-    expect(route.children[1]).toMatchObject({
+    expect(route.children[2]).toMatchObject({
       path: '/admin/__admin_layout__/link/4',
     });
   });
