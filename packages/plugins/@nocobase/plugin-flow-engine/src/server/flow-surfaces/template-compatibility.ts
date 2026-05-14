@@ -38,6 +38,7 @@ export type FlowSurfaceTemplateResourceInfo = {
 
 export type FlowSurfaceTemplateAssociationMatchMode =
   | 'none'
+  | 'exact'
   | 'exactIfTemplateHasAssociationName'
   | 'associationResourceOnly';
 
@@ -67,8 +68,13 @@ export function buildTemplateCollectionMismatchReason(expectedCollectionName: st
   return `collection mismatch: expected '${expectedCollectionName}', got '${actualCollectionName}'`;
 }
 
-export function buildTemplateAssociationMismatchReason(expectedAssociationName?: string, actualAssociationName?: string) {
-  return `association mismatch: expected '${expectedAssociationName || '(none)'}', got '${actualAssociationName || '(none)'}'`;
+export function buildTemplateAssociationMismatchReason(
+  expectedAssociationName?: string,
+  actualAssociationName?: string,
+) {
+  return `association mismatch: expected '${expectedAssociationName || '(none)'}', got '${
+    actualAssociationName || '(none)'
+  }'`;
 }
 
 export function buildTemplateMissingContextReason(param: string) {
@@ -111,8 +117,7 @@ export function resolveAssociationTargetResourceInfo(
   );
 
   return {
-    dataSourceKey:
-      targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
+    dataSourceKey: targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
     collectionName:
       getCollectionName(targetCollection) || getFieldTarget(associationField) || collectionName || baseCollectionName,
     associationName,
@@ -159,6 +164,12 @@ export function getTemplateResourceCompatibilityDisabledReason(
   const getAssociationMismatchReason = () => {
     if (associationMatch === 'none') {
       return undefined;
+    }
+    if (associationMatch === 'exact') {
+      if (templateAssociationName === expectedAssociationName) {
+        return undefined;
+      }
+      return buildTemplateAssociationMismatchReason(expectedAssociationName, templateAssociationName);
     }
     if (associationMatch === 'exactIfTemplateHasAssociationName') {
       if (!templateAssociationName || templateAssociationName === expectedAssociationName) {

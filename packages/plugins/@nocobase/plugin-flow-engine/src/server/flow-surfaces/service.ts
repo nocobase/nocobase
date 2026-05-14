@@ -3927,7 +3927,7 @@ export class FlowSurfacesService {
     template: FlowSurfaceTemplateRow,
     expected: FlowSurfaceTemplateResourceInfo,
     options: {
-      associationMatch?: 'none' | 'exactIfTemplateHasAssociationName' | 'associationResourceOnly';
+      associationMatch?: 'none' | 'exact' | 'exactIfTemplateHasAssociationName' | 'associationResourceOnly';
       checkResource?: boolean;
     } = {},
   ) {
@@ -3935,6 +3935,10 @@ export class FlowSurfacesService {
       ...options,
       resolveTemplateResourceInfo: (input) => this.resolveTemplateResourceInfo(input),
     });
+  }
+
+  private getPopupTemplateAssociationMatchMode(expectedAssociationName?: string) {
+    return String(expectedAssociationName || '').trim() ? 'exact' : 'exactIfTemplateHasAssociationName';
   }
 
   private getFieldsTemplateDisabledReason(hostBlock: any, template: FlowSurfaceTemplateRow) {
@@ -4239,15 +4243,16 @@ export class FlowSurfacesService {
 
     const popupProfile = targetContext.popupProfile;
     if (popupProfile?.isPopupSurface) {
+      const expectedAssociationName = String(popupProfile.associationName || '').trim() || undefined;
       const resourceReason = this.getTemplateResourceCompatibilityDisabledReason(
         template,
         {
           dataSourceKey: popupProfile.dataSourceKey,
           collectionName: popupProfile.collectionName,
-          associationName: popupProfile.associationName,
+          associationName: expectedAssociationName,
         },
         {
-          associationMatch: 'exactIfTemplateHasAssociationName',
+          associationMatch: this.getPopupTemplateAssociationMatchMode(expectedAssociationName),
         },
       );
       if (resourceReason) {
@@ -4261,15 +4266,16 @@ export class FlowSurfacesService {
     }
 
     const expectedResourceInit = targetContext.resourceContext?.resourceInit || {};
+    const expectedAssociationName = String(expectedResourceInit.associationName || '').trim() || undefined;
     const resourceReason = this.getTemplateResourceCompatibilityDisabledReason(
       template,
       {
         dataSourceKey: String(expectedResourceInit.dataSourceKey || '').trim() || undefined,
         collectionName: String(expectedResourceInit.collectionName || '').trim() || undefined,
-        associationName: String(expectedResourceInit.associationName || '').trim() || undefined,
+        associationName: expectedAssociationName,
       },
       {
-        associationMatch: 'exactIfTemplateHasAssociationName',
+        associationMatch: this.getPopupTemplateAssociationMatchMode(expectedAssociationName),
       },
     );
     if (resourceReason) {

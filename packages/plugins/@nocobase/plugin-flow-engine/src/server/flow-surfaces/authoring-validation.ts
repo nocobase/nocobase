@@ -265,9 +265,12 @@ const CONFIGURE_OPEN_VIEW_ACTION_TYPE_BY_MODEL_USE: Record<string, GeneratedPopu
   EditActionModel: 'edit',
 };
 const DEFAULTS_ALLOWED_KEYS = ['collections'];
-const DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups'];
+const DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups', 'formBehavior'];
 const DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
 const DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
+const DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS = ['addNew', 'edit'];
+const DEFAULT_FORM_BEHAVIOR_SCENE_ALLOWED_KEYS = ['fields', 'fieldLinkageRules'];
+const DEFAULT_FORM_BEHAVIOR_FIELD_ALLOWED_KEYS = ['settings'];
 const DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
@@ -827,6 +830,7 @@ function collectDefaultCollectionShapeErrors(collectionDefaults: any, path: stri
   );
   collectDefaultFieldGroupsShapeErrors(collectionDefaults.fieldGroups, `${path}.fieldGroups`, errors);
   collectDefaultPopupsShapeErrors(collectionDefaults.popups, `${path}.popups`, errors);
+  collectDefaultFormBehaviorShapeErrors(collectionDefaults.formBehavior, `${path}.formBehavior`, errors);
 }
 
 function collectDefaultFieldGroupsShapeErrors(fieldGroups: any, path: string, errors: AuthoringErrorInput[]) {
@@ -918,6 +922,115 @@ function collectDefaultFieldShapeErrors(field: any, path: string, errors: Author
       ruleId: 'defaults-fieldGroups-field-titleField-required',
       message: `flowSurfaces authoring ${path}.titleField must be a non-empty string`,
     });
+  }
+}
+
+function collectDefaultFormBehaviorShapeErrors(formBehavior: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(formBehavior)) {
+    return;
+  }
+  if (!_.isPlainObject(formBehavior)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-formBehavior-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(
+    formBehavior,
+    path,
+    DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS,
+    'defaults-formBehavior-unsupported-key',
+    errors,
+  );
+  ['addNew', 'edit'].forEach((action) =>
+    collectDefaultFormBehaviorSceneShapeErrors(formBehavior[action], `${path}.${action}`, errors),
+  );
+}
+
+function collectDefaultFormBehaviorSceneShapeErrors(scene: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(scene)) {
+    return;
+  }
+  if (!_.isPlainObject(scene)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-formBehavior-scene-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(
+    scene,
+    path,
+    DEFAULT_FORM_BEHAVIOR_SCENE_ALLOWED_KEYS,
+    'defaults-formBehavior-scene-unsupported-key',
+    errors,
+  );
+  if (!_.isUndefined(scene.fields)) {
+    if (!_.isPlainObject(scene.fields)) {
+      pushAuthoringError(errors, {
+        path: `${path}.fields`,
+        ruleId: 'defaults-formBehavior-fields-invalid-shape',
+        message: `flowSurfaces authoring ${path}.fields must be an object`,
+      });
+    } else {
+      Object.entries(scene.fields).forEach(([fieldPath, fieldConfig]) => {
+        const normalizedFieldPath = String(fieldPath || '').trim();
+        if (!normalizedFieldPath) {
+          pushAuthoringError(errors, {
+            path: `${path}.fields`,
+            ruleId: 'defaults-formBehavior-field-name-required',
+            message: `flowSurfaces authoring ${path}.fields keys must be non-empty field paths`,
+          });
+          return;
+        }
+        collectDefaultFormBehaviorFieldShapeErrors(fieldConfig, `${path}.fields.${normalizedFieldPath}`, errors);
+      });
+    }
+  }
+  if (!_.isUndefined(scene.fieldLinkageRules) && !Array.isArray(scene.fieldLinkageRules)) {
+    pushAuthoringError(errors, {
+      path: `${path}.fieldLinkageRules`,
+      ruleId: 'defaults-formBehavior-linkageRules-invalid-shape',
+      message: `flowSurfaces authoring ${path}.fieldLinkageRules must be an array`,
+    });
+  }
+}
+
+function collectDefaultFormBehaviorFieldShapeErrors(fieldConfig: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(fieldConfig)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-formBehavior-field-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  collectUnsupportedKeysErrors(
+    fieldConfig,
+    path,
+    DEFAULT_FORM_BEHAVIOR_FIELD_ALLOWED_KEYS,
+    'defaults-formBehavior-field-unsupported-key',
+    errors,
+  );
+  if (!_.isUndefined(fieldConfig.settings)) {
+    if (!_.isPlainObject(fieldConfig.settings)) {
+      pushAuthoringError(errors, {
+        path: `${path}.settings`,
+        ruleId: 'defaults-formBehavior-field-settings-invalid-shape',
+        message: `flowSurfaces authoring ${path}.settings must be an object`,
+      });
+      return;
+    }
+    if (!_.isUndefined(fieldConfig.settings.rules) && !Array.isArray(fieldConfig.settings.rules)) {
+      pushAuthoringError(errors, {
+        path: `${path}.settings.rules`,
+        ruleId: 'defaults-formBehavior-field-rules-invalid-shape',
+        message: `flowSurfaces authoring ${path}.settings.rules must be an array`,
+      });
+    }
   }
 }
 

@@ -2481,6 +2481,168 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(linkageRules?.[0]?.key).toBe('requireRelatedApprovalComment');
   });
 
+  it('should filter default formBehavior linkage rules that reference fields absent from generated relation field edit popups', async () => {
+    const unique = Date.now();
+    const sourceCollection = `bp_field_popup_filter_src_${unique}`;
+    const targetCollection = `bp_field_popup_filter_target_${unique}`;
+    const ownerCollection = `bp_field_popup_filter_owner_${unique}`;
+    const editPopupName = `Edit filtered related behavior ${unique}`;
+
+    await rootAgent.resource('collections').create({
+      values: {
+        name: ownerCollection,
+        title: 'Blueprint field popup filter owner',
+        titleField: 'name',
+        filterTargetKey: 'name',
+        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: 'Blueprint field popup filter target',
+        titleField: 'name',
+        filterTargetKey: 'name',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'approvalComment', type: 'text', interface: 'textarea' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', targetCollection).create({
+      values: {
+        name: 'owner',
+        type: 'belongsTo',
+        target: ownerCollection,
+        foreignKey: 'ownerId',
+        interface: 'm2o',
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: 'Blueprint field popup filter source',
+        titleField: 'title',
+        filterTargetKey: 'title',
+        fields: [{ name: 'title', type: 'string', interface: 'input' }],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'target',
+        type: 'belongsTo',
+        target: targetCollection,
+        foreignKey: 'targetId',
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [ownerCollection]: ['name'],
+      [targetCollection]: ['name', 'approvalComment', 'ownerId'],
+      [sourceCollection]: ['title', 'targetId'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint field popup filtered behavior runtime ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            [targetCollection]: {
+              popups: {
+                edit: {
+                  name: editPopupName,
+                  description: 'Edit one filtered related behavior record.',
+                },
+              },
+              formBehavior: {
+                edit: {
+                  fields: {
+                    approvalComment: {
+                      settings: {
+                        extra: '当 owner 为 Alice 时必填。',
+                      },
+                    },
+                  },
+                  fieldLinkageRules: [
+                    {
+                      key: 'requireApprovalCommentWhenOwner',
+                      when: {
+                        logic: '$and',
+                        items: [
+                          {
+                            path: 'formValues.owner',
+                            operator: '$notEmpty',
+                          },
+                        ],
+                      },
+                      then: [
+                        {
+                          type: 'setFieldState',
+                          fieldPaths: ['approvalComment'],
+                          state: 'required',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'sourceTable',
+                type: 'table',
+                collection: sourceCollection,
+                fields: [
+                  'title',
+                  {
+                    field: 'target',
+                    popup: {
+                      defaultType: 'edit',
+                    },
+                  },
+                ],
+                actions: ['refresh'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const targetField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'target' &&
+        (!!item?.subModels?.page?.uid || !!item?.popup?.template?.uid || !!item?.stepParams?.popupSettings?.openView),
+    )[0];
+    expect(targetField?.uid).toBeTruthy();
+
+    const fieldPopup = await readPrimaryPopupBlockFromField(targetField.uid);
+    expect(fieldPopup.fieldReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(editPopupName);
+    expect(fieldPopup.popupBlock?.use).toBe('EditFormModel');
+    expect(collectFieldPaths(fieldPopup.popupBlock)).not.toContain('owner');
+    const approvalItem = collectDescendantNodes(
+      fieldPopup.popupBlock,
+      (item) => item?.use === 'FormItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'approvalComment',
+    )[0];
+    expect(approvalItem?.props?.extra).toBe('当 owner 为 Alice 时必填。');
+    const linkageRules = fieldPopup.popupBlock?.subModels?.grid?.stepParams?.eventSettings?.linkageRules?.value;
+    expect(linkageRules || []).toEqual([]);
+  });
+
   it('should use source association popup names for generated associated-record action popups', async () => {
     const unique = Date.now();
     const roleAddName = `User role add ${unique}`;
@@ -3177,6 +3339,263 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(rows.filter((row: any) => row.name === relationEditTemplateName && !row.associationName)).toHaveLength(0);
     await expectTemplateUsage(rootAgent, relationTemplates[0].uid, 3);
     await expectTemplateUsage(rootAgent, relationEditTemplates[0].uid, 2);
+  });
+
+  it('should keep relation context when applyBlueprint binds an explicit relation popup template', async () => {
+    const unique = Date.now();
+    const sourceCollection = `pre_src_${unique}`;
+    const targetCollection = `pre_target_${unique}`;
+    const associationName = `${sourceCollection}.roles`;
+    const relationPopupTitle = `显式角色详情复用 ${unique}`;
+    await createPopupRelationTestCollections(sourceCollection, targetCollection);
+
+    const roleDetailsBlock = (key: string) => ({
+      key,
+      type: 'details',
+      resource: {
+        binding: 'currentRecord',
+        collectionName: targetCollection,
+      },
+      fields: ['title', 'name'],
+    });
+
+    const setupRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Relation explicit popup template source ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'usersDetails',
+                type: 'details',
+                collection: sourceCollection,
+                fields: [
+                  'username',
+                  {
+                    field: 'roles',
+                    popup: {
+                      title: relationPopupTitle,
+                      blocks: [roleDetailsBlock('sourceRoleDetails')],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(setupRes.status, readErrorMessage(setupRes)).toBe(200);
+
+    const relationTemplate = await findPopupTemplateByName(`${relationPopupTitle}(${associationName})`);
+    expect(relationTemplate).toMatchObject({
+      collectionName: targetCollection,
+      associationName,
+    });
+    await expectTemplateUsage(rootAgent, relationTemplate.uid, 1);
+
+    const explicitRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Relation explicit popup template use ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'usersDetails',
+                type: 'details',
+                collection: sourceCollection,
+                fields: [
+                  'username',
+                  {
+                    field: 'roles',
+                    popup: {
+                      title: `显式字段角色详情 ${unique}`,
+                      template: {
+                        uid: relationTemplate.uid,
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    key: 'userDetailAction',
+                    type: 'view',
+                    title: '详情',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'userDetailsPopup',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: sourceCollection,
+                          },
+                          fields: ['username'],
+                        },
+                        {
+                          key: 'userRolesTable',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                            collectionName: targetCollection,
+                          },
+                          fields: ['title', 'name'],
+                          recordActions: [
+                            {
+                              key: 'tableRoleView',
+                              type: 'view',
+                              title: '角色详情',
+                              popup: {
+                                title: `显式操作角色详情 ${unique}`,
+                                template: {
+                                  uid: relationTemplate.uid,
+                                  mode: 'reference',
+                                },
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(explicitRes.status, readErrorMessage(explicitRes)).toBe(200);
+    const data = getData(explicitRes);
+    const relationField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'roles' &&
+        item?.popup?.template?.uid === relationTemplate.uid,
+    )[0];
+    expect(relationField?.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: targetCollection,
+      associationName,
+    });
+    await expectTemplateUsage(rootAgent, relationTemplate.uid, 3);
+  });
+
+  it('should reject direct popup templates when explicitly used in relation applyBlueprint popups', async () => {
+    const unique = Date.now();
+    const sourceCollection = `prd_src_${unique}`;
+    const targetCollection = `prd_target_${unique}`;
+    const associationName = `${sourceCollection}.roles`;
+    const directPopupTitle = `直接角色详情 ${unique}`;
+    await createPopupRelationTestCollections(sourceCollection, targetCollection);
+
+    const setupRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Direct popup template source ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Roles',
+            blocks: [
+              {
+                key: 'rolesDetails',
+                type: 'details',
+                collection: targetCollection,
+                fields: [
+                  {
+                    field: 'title',
+                    popup: {
+                      title: directPopupTitle,
+                      blocks: [
+                        {
+                          key: 'directRoleDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                            collectionName: targetCollection,
+                          },
+                          fields: ['title', 'name'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(setupRes.status, readErrorMessage(setupRes)).toBe(200);
+
+    const directTemplate = await findPopupTemplateByName(`${directPopupTitle}弹窗模板`);
+    expect(directTemplate).toMatchObject({
+      collectionName: targetCollection,
+    });
+    expect(directTemplate.associationName).toBeFalsy();
+
+    const rejectedRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Relation direct popup template rejection ${unique}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                key: 'usersDetails',
+                type: 'details',
+                collection: sourceCollection,
+                fields: [
+                  'username',
+                  {
+                    field: 'roles',
+                    popup: {
+                      title: `错误复用角色详情 ${unique}`,
+                      template: {
+                        uid: directTemplate.uid,
+                        mode: 'reference',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(rejectedRes.status).toBe(400);
+    expect(readErrorMessage(rejectedRes)).toContain('association mismatch');
+    expect(readErrorMessage(rejectedRes)).toContain(`expected '${associationName}', got '(none)'`);
   });
 
   it('should keep applying popup template reuse after a template is saved earlier in the same blueprint', async () => {
@@ -5807,6 +6226,32 @@ describe('flowSurfaces applyBlueprint contract', () => {
       },
       'flowSurfaces applyBlueprint defaults.collections.users.popups.view',
       'unsupported keys: fieldGroups',
+    ],
+    [
+      'formBehavior invalid rules',
+      {
+        defaults: {
+          collections: {
+            users: {
+              formBehavior: {
+                edit: {
+                  fields: {
+                    nickname: {
+                      settings: {
+                        rules: {
+                          max: 50,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '$.defaults.collections.users.formBehavior.edit.fields.nickname.settings.rules',
+      'must be an array',
     ],
   ])('should reject invalid applyBlueprint defaults %s', async (_label, partial, expectedPath, expectedMessage) => {
     const res = await rootAgent.resource('flowSurfaces').applyBlueprint({

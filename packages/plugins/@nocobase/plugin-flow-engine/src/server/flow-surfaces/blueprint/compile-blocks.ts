@@ -1655,17 +1655,16 @@ function compilePopup(
     throwBadRequest(`${context}.saveAsTemplate cannot be combined with ${context}.template`);
   }
   if (hasTemplateReference) {
+    const openViewContext = buildPopupOpenViewContext(options);
+    const openView = buildDefinedPayload({
+      ...openViewContext,
+      ...(popupMode.displayMode ? { mode: popupMode.displayMode } : {}),
+    });
     return {
-      popup: {
+      popup: buildDefinedPayload({
         template,
-        ...(popupMode.displayMode
-          ? {
-              openView: {
-                mode: popupMode.displayMode,
-              },
-            }
-          : {}),
-      },
+        ...(Object.keys(openView).length ? { openView } : {}),
+      }),
       popupTitle,
     };
   }
