@@ -13,6 +13,7 @@ import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue
 import {
   getCollectionFields,
   getCollectionTitleFieldName,
+  getFieldFilterable,
   getFieldInterface,
   getFieldName,
   isAssociationField,
@@ -119,7 +120,7 @@ export function resolveFlowSurfaceDefaultFilterCandidateFieldNames(
     return [];
   }
 
-  const availableFields = getCollectionFields(collection).filter(isDefaultFilterCandidateBusinessField);
+  const availableFields = getCollectionFields(collection).filter(isFlowSurfaceDefaultFilterEligibleField);
   const fieldsByName = new Map<string, any>();
   availableFields.forEach((field) => {
     const fieldName = normalizeText(getFieldName(field));
@@ -370,7 +371,7 @@ export function backfillFlowSurfaceFilterActionDefaultFilter<
   });
 }
 
-function isDefaultFilterCandidateBusinessField(field: any) {
+export function isFlowSurfaceDefaultFilterEligibleField(field: any) {
   const fieldName = normalizeText(getFieldName(field));
   const fieldInterface = normalizeText(getFieldInterface(field));
   if (!fieldName || !fieldInterface) {
@@ -383,6 +384,9 @@ function isDefaultFilterCandidateBusinessField(field: any) {
     return false;
   }
   if (field?.hidden === true || field?.options?.hidden === true) {
+    return false;
+  }
+  if (getFieldFilterable(field) === false) {
     return false;
   }
   return !isAssociationField(field);

@@ -42,7 +42,7 @@ describe('flowSurfaces public data surface default filters', () => {
     expect(resolveFlowSurfaceDefaultFilterRequiredFieldCount(widerCollection)).toBe(3);
   });
 
-  it('excludes hidden fields and option-only association metadata from generated candidates', () => {
+  it('excludes hidden, unfilterable, and option-only association metadata from generated candidates', () => {
     const collection = createCollection('users', [
       { name: 'nickname', type: 'string', interface: 'input' },
       { name: 'email', type: 'string', interface: 'email' },
@@ -50,6 +50,8 @@ describe('flowSurfaces public data surface default filters', () => {
       { name: 'createdAt', type: 'date', interface: 'createdAt' },
       { name: 'hiddenTopLevel', type: 'string', interface: 'input', hidden: true },
       { options: { name: 'hiddenInOptions', type: 'string', interface: 'input', hidden: true } },
+      { name: 'blockedTopLevel', type: 'string', interface: 'input', filterable: false },
+      { options: { name: 'blockedInOptions', type: 'string', interface: 'input', filterable: false } },
       { options: { name: 'rolesByTarget', type: 'string', interface: 'input', target: 'roles' } },
       { options: { name: 'rolesByInterface', type: 'string', interface: 'm2m' } },
     ]);

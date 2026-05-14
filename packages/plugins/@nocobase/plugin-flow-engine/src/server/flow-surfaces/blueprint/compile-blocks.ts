@@ -56,6 +56,7 @@ import type {
   FlowSurfaceApplyBlueprintFieldGroupSpec,
   FlowSurfaceApplyBlueprintFieldObjectSpec,
   FlowSurfaceApplyBlueprintLayout,
+  FlowSurfaceApplyBlueprintMode,
   FlowSurfaceApplyBlueprintPopup,
   FlowSurfaceApplyBlueprintTabDocument,
 } from './public-types';
@@ -84,6 +85,15 @@ type FlowSurfaceCompiledBlocks = {
 type FlowSurfaceCompiledPopup = {
   popup?: Record<string, any>;
   popupTitle?: string;
+};
+
+type FlowSurfaceReadableBlockResource = {
+  binding?: FlowSurfaceResourceBindingKey;
+  dataSourceKey?: string;
+  collectionName?: string;
+  associationName?: string;
+  associationField?: string;
+  associationPathName?: string;
 };
 
 type FlowSurfaceCompilePopupOptions = {
@@ -1138,7 +1148,7 @@ function resolveApplyBlueprintAssociationContext(input: {
 }
 
 function getApplyBlueprintBlockResourceObject(block?: FlowSurfaceApplyBlueprintBlockSpec) {
-  return _.isPlainObject(block?.resource) ? block?.resource : undefined;
+  return _.isPlainObject(block?.resource) ? (block.resource as FlowSurfaceReadableBlockResource) : undefined;
 }
 
 function getApplyBlueprintBlockBinding(block?: FlowSurfaceApplyBlueprintBlockSpec) {

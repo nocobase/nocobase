@@ -38,6 +38,7 @@ import {
 import {
   buildFlowSurfaceDefaultFilterFromCollection,
   FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT,
+  isFlowSurfaceDefaultFilterEligibleField,
   isFlowSurfacePublicDataSurfaceBlockType,
   resolveFlowSurfaceDefaultFilterFieldNames,
   resolveFlowSurfaceDefaultFilterRequiredFieldCount,
@@ -66,6 +67,8 @@ export interface FlowSurfaceAuthoringValidationContext {
   hostBlockType?: string;
   hostCollectionName?: string;
   hostDataSourceKey?: string;
+  currentCollectionName?: string;
+  currentDataSourceKey?: string;
   enabledPackages?: ReadonlySet<string>;
   currentNode?: any;
   skipGeneratedPopupDefaultFieldGroups?: boolean;
@@ -1151,7 +1154,10 @@ function collectDefaultCollectionFieldGroupSemanticErrors(
   }
   Object.entries(defaults.collections).forEach(([collectionName, collectionDefaults]) => {
     const normalizedCollectionName = String(collectionName || '').trim();
-    const fieldGroups = _.isPlainObject(collectionDefaults) ? collectionDefaults.fieldGroups : undefined;
+    const collectionDefaultsObject = _.isPlainObject(collectionDefaults)
+      ? (collectionDefaults as { fieldGroups?: unknown })
+      : undefined;
+    const fieldGroups = collectionDefaultsObject?.fieldGroups;
     if (!normalizedCollectionName || !Array.isArray(fieldGroups)) {
       return;
     }
@@ -1746,6 +1752,7 @@ function collectBlockGeneratedPopupRequirements(
     return;
   }
   const blockType = String(block.type || '').trim();
+  const descendantContext = getBlockDescendantValidationContext(block, context);
   collectDefaultBlockActionGeneratedPopupRequirements(block, blockType, path, context, requirements);
   collectActionListGeneratedPopupRequirements(block.actions, `${path}.actions`, block, context, requirements);
   collectActionListGeneratedPopupRequirements(
@@ -1758,7 +1765,7 @@ function collectBlockGeneratedPopupRequirements(
   collectHiddenPopupGeneratedPopupRequirements(block.settings, `${path}.settings`, block, context, requirements);
   collectFieldListGeneratedPopupRequirements(block.fields, `${path}.fields`, block, context, requirements);
   collectFieldGroupsGeneratedPopupRequirements(block.fieldGroups, `${path}.fieldGroups`, block, context, requirements);
-  collectNestedBlocksGeneratedPopupRequirements(block.blocks, `${path}.blocks`, context, requirements);
+  collectNestedBlocksGeneratedPopupRequirements(block.blocks, `${path}.blocks`, descendantContext, requirements);
 }
 
 function collectDefaultBlockActionGeneratedPopupRequirements(
@@ -1819,6 +1826,7 @@ function collectActionListGeneratedPopupRequirements(
   if (!Array.isArray(actions)) {
     return;
   }
+  const popupContext = getBlockDescendantValidationContext(block, context);
   actions.forEach((action, index) => {
     const actionPath = `${path}[${index}]`;
     const actionType = resolveDefaultPopupActionType(resolveAuthoringActionType(action, block));
@@ -1827,8 +1835,8 @@ function collectActionListGeneratedPopupRequirements(
       addGeneratedPopupRequirementForBlock(block, context, `${actionPath}.popup`, requirements, defaultActionType);
     }
     if (_.isPlainObject(action)) {
-      collectPopupGeneratedPopupRequirements(action.popup, `${actionPath}.popup`, context, requirements);
-      collectPopupGeneratedPopupRequirements(action.openView, `${actionPath}.openView`, context, requirements);
+      collectPopupGeneratedPopupRequirements(action.popup, `${actionPath}.popup`, popupContext, requirements);
+      collectPopupGeneratedPopupRequirements(action.openView, `${actionPath}.openView`, popupContext, requirements);
     }
   });
 }
@@ -1845,6 +1853,7 @@ function collectHiddenPopupGeneratedPopupRequirements(
   }
   const blockType = String(block?.type || '').trim();
   const keys = HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE[blockType] || [];
+  const popupContext = getBlockDescendantValidationContext(block, context);
   keys.forEach((key) => {
     if (!Object.prototype.hasOwnProperty.call(settings, key)) {
       return;
@@ -1853,7 +1862,7 @@ function collectHiddenPopupGeneratedPopupRequirements(
     if (doesDefaultActionPopupGenerate(settings[key])) {
       addGeneratedPopupRequirementForBlock(block, context, `${path}.${key}`, requirements, actionType);
     }
-    collectPopupGeneratedPopupRequirements(settings[key], `${path}.${key}`, context, requirements);
+    collectPopupGeneratedPopupRequirements(settings[key], `${path}.${key}`, popupContext, requirements);
   });
 }
 
@@ -1886,7 +1895,12 @@ function collectFieldListGeneratedPopupRequirements(
         getRelationFieldGeneratedPopupActionType(field),
       );
     }
-    collectPopupGeneratedPopupRequirements(field.popup, `${fieldPath}.popup`, context, requirements);
+    collectPopupGeneratedPopupRequirements(
+      field.popup,
+      `${fieldPath}.popup`,
+      getFieldPopupValidationContext(field, block, context),
+      requirements,
+    );
   });
 }
 
@@ -2194,6 +2208,62 @@ function getDefaultCollectionFieldGroups(defaults: any, collectionName: string) 
   return collectionDefaults?.fieldGroups;
 }
 
+function getBlockDescendantValidationContext(
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+): FlowSurfaceAuthoringValidationContext {
+  const collectionName = getBlockCollectionName(block, context);
+  if (!collectionName) {
+    return context;
+  }
+  const dataSourceKey = getBlockDataSourceKey(block, context);
+  if (context.currentCollectionName === collectionName && context.currentDataSourceKey === dataSourceKey) {
+    return context;
+  }
+  return {
+    ...context,
+    currentCollectionName: collectionName,
+    currentDataSourceKey: dataSourceKey,
+  };
+}
+
+function getFieldPopupValidationContext(
+  fieldSpec: any,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+): FlowSurfaceAuthoringValidationContext {
+  const fallbackContext = getBlockDescendantValidationContext(block, context);
+  const fieldPath = getFieldPathInput(fieldSpec);
+  if (!fieldPath || fieldPath.includes('.') || !context.getCollection) {
+    return fallbackContext;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return fallbackContext;
+  }
+  const associationField = resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  if (!associationField || !isAssociationField(associationField)) {
+    return fallbackContext;
+  }
+  const dataSourceKey = getBlockDataSourceKey(block, context);
+  const targetCollection = resolveFieldTargetCollection(
+    associationField,
+    dataSourceKey,
+    (nextDataSourceKey, collectionName) => context.getCollection?.(nextDataSourceKey, collectionName),
+  );
+  const targetCollectionName = getCollectionName(targetCollection) || getFieldTargetName(associationField);
+  if (!targetCollectionName) {
+    return fallbackContext;
+  }
+  return {
+    ...context,
+    currentCollectionName: targetCollectionName,
+    currentDataSourceKey:
+      String(targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey).trim() ||
+      dataSourceKey,
+  };
+}
+
 function collectBlockErrors(
   block: any,
   path: string,
@@ -2256,11 +2326,19 @@ function collectBlockErrors(
   collectChartBuilderRelationFieldErrors(block, blockType, path, errors);
   collectTreeConnectFieldsErrors(block.settings?.connectFields, `${path}.settings.connectFields`, errors);
   collectGridCardSettingsErrors(block, blockType, path, errors);
-  collectActionListErrors(block.actions, `${path}.actions`, errors, block, context, 'actions');
-  collectActionListErrors(block.recordActions, `${path}.recordActions`, errors, block, context, 'recordActions');
-  collectPopupErrors(block.popup, `${path}.popup`, errors, localKeys, context);
-  collectNestedBlockErrors(block.blocks, `${path}.blocks`, errors, localKeys, context);
-  collectHiddenPopupSettingsErrors(block.settings, `${path}.settings`, blockType, errors, context);
+  const descendantContext = getBlockDescendantValidationContext(block, context);
+  collectActionListErrors(block.actions, `${path}.actions`, errors, block, descendantContext, 'actions');
+  collectActionListErrors(
+    block.recordActions,
+    `${path}.recordActions`,
+    errors,
+    block,
+    descendantContext,
+    'recordActions',
+  );
+  collectPopupErrors(block.popup, `${path}.popup`, errors, localKeys, descendantContext);
+  collectNestedBlockErrors(block.blocks, `${path}.blocks`, errors, localKeys, descendantContext);
+  collectHiddenPopupSettingsErrors(block.settings, `${path}.settings`, blockType, errors, descendantContext);
   collectReactionErrors(block.reaction, `${path}.reaction`, localKeys, errors);
   collectFieldListErrors(block.fields, `${path}.fields`, errors, localKeys, context, block);
 }
@@ -2895,7 +2973,9 @@ function collectDefaultFilterFieldCountErrors(
   block?: any,
   context: FlowSurfaceAuthoringValidationContext = {},
 ) {
-  const fieldNames = resolveFlowSurfaceDefaultFilterFieldNames(value);
+  const fieldNames = resolveFlowSurfaceDefaultFilterFieldNames(value).filter((fieldName) =>
+    isFlowSurfaceDefaultFilterFieldPathEligible(fieldName, block, context),
+  );
   const requiredFieldCount = resolveDefaultFilterRequiredFieldCount(block, context);
   if (fieldNames.length >= requiredFieldCount) {
     return;
@@ -2910,6 +2990,31 @@ function collectDefaultFilterFieldCountErrors(
       fieldNames,
     },
   });
+}
+
+function isFlowSurfaceDefaultFilterFieldPathEligible(
+  fieldPath: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!isDirectDefaultFilterFieldPath(fieldPath)) {
+    return false;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return false;
+  }
+  const resolved = resolveDefaultFilterFieldPath(
+    collection,
+    normalizeFieldPath(fieldPath),
+    getBlockDataSourceKey(block, context),
+    context,
+  );
+  return !!resolved.field && isFlowSurfaceDefaultFilterEligibleField(resolved.field);
+}
+
+function isDirectDefaultFilterFieldPath(fieldPath: string) {
+  return normalizeFieldPath(fieldPath).split('.').filter(Boolean).length === 1;
 }
 
 function resolveDefaultFilterRequiredFieldCount(block?: any, context: FlowSurfaceAuthoringValidationContext = {}) {
@@ -4383,7 +4488,13 @@ function collectFieldListErrors(
     }
     collectRelationTitleFieldErrors(field, `${path}[${index}]`, block, context, errors);
     collectRelationPopupResourceErrors(field, `${path}[${index}]`, block, context, errors);
-    collectPopupErrors(field.popup, `${path}[${index}].popup`, errors, localKeys, context);
+    collectPopupErrors(
+      field.popup,
+      `${path}[${index}].popup`,
+      errors,
+      localKeys,
+      getFieldPopupValidationContext(field, block, context),
+    );
     collectActionListErrors(field.actions, `${path}[${index}].actions`, errors, block, context);
     collectReactionErrors(field.reaction, `${path}[${index}].reaction`, localKeys, errors);
   });
@@ -4511,14 +4622,21 @@ function collectRelationPopupResourceErrors(
           popupBlock.resource?.associationPathName ||
           '',
       ).trim();
-      if (popupAssociationField && popupAssociationField !== fieldPath) {
+      const targetPopupAssociationField =
+        targetCollection && popupAssociationField
+          ? resolveFieldFromCollection(targetCollection, normalizeFieldPath(popupAssociationField))
+          : null;
+      const isTargetCollectionAssociation =
+        targetPopupAssociationField && isAssociationField(targetPopupAssociationField);
+      if (popupAssociationField && popupAssociationField !== fieldPath && !isTargetCollectionAssociation) {
         pushAuthoringError(errors, {
           path: `${popupBlockPath}.resource.associationField`,
           ruleId: 'relation-popup-associated-records-association-field-required',
-          message: `flowSurfaces authoring ${popupBlockPath} must use resource.associationField='${fieldPath}'`,
+          message: `flowSurfaces authoring ${popupBlockPath} must use resource.associationField='${fieldPath}' or an association on relation target collection '${targetCollectionName}'`,
           details: {
             expectedAssociationField: fieldPath,
             actualAssociationField: popupAssociationField,
+            targetCollectionName,
           },
         });
       }
@@ -4628,6 +4746,17 @@ function collectDefaultFilterFieldPathError(
   if (!collection) {
     return;
   }
+  if (!isDirectDefaultFilterFieldPath(fieldPath)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaultFilter-field-ineligible',
+      message: `flowSurfaces authoring ${path} references field '${fieldPath}' that is not eligible for defaultFilter`,
+      details: {
+        fieldPath,
+      },
+    });
+    return;
+  }
   const resolved = resolveDefaultFilterFieldPath(
     collection,
     normalizeFieldPath(fieldPath),
@@ -4653,7 +4782,7 @@ function collectDefaultFilterFieldPathError(
     pushAuthoringError(errors, {
       path,
       ruleId: 'defaultFilter-relation-field-unsupported',
-      message: `flowSurfaces authoring ${path} cannot use relation field '${fieldPath}' itself; use a relation child path such as '${fieldPath}.title'`,
+      message: `flowSurfaces authoring ${path} cannot use relation field '${fieldPath}' itself; use a direct scalar field instead`,
       details: {
         fieldPath,
         fieldName: getFieldName(resolved.field),
@@ -4661,11 +4790,11 @@ function collectDefaultFilterFieldPathError(
     });
     return;
   }
-  if (!getFieldInterface(resolved.field) || getFieldFilterable(resolved.field) === false) {
+  if (!isFlowSurfaceDefaultFilterEligibleField(resolved.field)) {
     pushAuthoringError(errors, {
       path,
-      ruleId: 'defaultFilter-field-unfilterable',
-      message: `flowSurfaces authoring ${path} references field '${fieldPath}' that is not filterable by UI Builder`,
+      ruleId: 'defaultFilter-field-ineligible',
+      message: `flowSurfaces authoring ${path} references field '${fieldPath}' that is not eligible for defaultFilter`,
       details: {
         fieldPath,
         fieldName: getFieldName(resolved.field),
@@ -4759,13 +4888,49 @@ function getBlockCollection(block: any, context: FlowSurfaceAuthoringValidationC
 
 function getBlockCollectionName(block: any, context: FlowSurfaceAuthoringValidationContext) {
   const resourceInit = _.isPlainObject(block?.resourceInit) ? block.resourceInit : undefined;
+  const associatedRecordsCollectionName = getBlockAssociatedRecordsTargetCollectionName(block, context);
+  if (associatedRecordsCollectionName) {
+    return associatedRecordsCollectionName;
+  }
   return String(
     block?.collection ||
       block?.resource?.collectionName ||
       resourceInit?.collectionName ||
+      context.currentCollectionName ||
       context.hostCollectionName ||
       '',
   ).trim();
+}
+
+function getBlockAssociatedRecordsTargetCollectionName(block: any, context: FlowSurfaceAuthoringValidationContext) {
+  if (getResourceBinding(block) !== 'associatedrecords') {
+    return '';
+  }
+  const associationFieldPath = String(
+    block?.associationField || block?.resource?.associationField || block?.resource?.associationPathName || '',
+  ).trim();
+  if (!associationFieldPath || !context.getCollection) {
+    return '';
+  }
+  const sourceCollectionName = String(context.currentCollectionName || context.hostCollectionName || '').trim();
+  if (!sourceCollectionName) {
+    return '';
+  }
+  const hostDataSourceKey = getBlockDataSourceKey(block, context);
+  const hostCollection = context.getCollection(hostDataSourceKey, sourceCollectionName) || null;
+  if (!hostCollection) {
+    return '';
+  }
+  const associationField = resolveFieldFromCollection(hostCollection, normalizeFieldPath(associationFieldPath));
+  if (!associationField || !isAssociationField(associationField)) {
+    return '';
+  }
+  const targetCollection = resolveFieldTargetCollection(
+    associationField,
+    hostDataSourceKey,
+    (nextDataSourceKey, collectionName) => context.getCollection?.(nextDataSourceKey, collectionName),
+  );
+  return getCollectionName(targetCollection) || getFieldTargetName(associationField) || '';
 }
 
 function getBlockDataSourceKey(block: any, context: FlowSurfaceAuthoringValidationContext) {
@@ -4775,6 +4940,7 @@ function getBlockDataSourceKey(block: any, context: FlowSurfaceAuthoringValidati
       block?.dataSourceKey ||
         block?.resource?.dataSourceKey ||
         resourceInit?.dataSourceKey ||
+        context.currentDataSourceKey ||
         context.hostDataSourceKey ||
         'main',
     ).trim() || 'main'

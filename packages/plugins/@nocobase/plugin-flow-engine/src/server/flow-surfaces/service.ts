@@ -7188,35 +7188,12 @@ export class FlowSurfacesService {
     const rawResourceInit = _.isUndefined(values.resourceInit)
       ? undefined
       : normalizeSimpleResourceInit(values.resourceInit);
-    const defaultFilterResourceRequest = {
-      blockType,
-      template: templateRef,
-      resource:
-        semanticResource?.kind === 'raw'
-          ? semanticResource
-          : rawResourceInit
-            ? {
-                kind: 'raw' as const,
-                value: rawResourceInit,
-              }
-            : semanticResource,
-    };
-    let defaultFilterRequiredFieldCount =
-      this.getDefaultFilterRequiredFieldCountFromResourceInput(defaultFilterResourceRequest);
-    let effectiveBlockDefaultFilter = !_.isUndefined(blockDefaultFilter)
-      ? blockDefaultFilter
-      : this.buildDefaultFilterFromResourceInput(defaultFilterResourceRequest);
-    effectiveBlockDefaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(effectiveBlockDefaultFilter, {
-      requiredFieldCount: defaultFilterRequiredFieldCount,
-    });
     const normalizedDefaultActionSettings = this.normalizeDefaultActionSettings(
       'addBlock',
       values.defaultActionSettings,
     );
-    let defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
-      normalizedDefaultActionSettings,
-      effectiveBlockDefaultFilter,
-    );
+    let effectiveBlockDefaultFilter = blockDefaultFilter;
+    let defaultActionSettings = normalizedDefaultActionSettings;
     if (templateRef && !_.isUndefined(values.defaultActionSettings)) {
       throwBadRequest(`flowSurfaces addBlock template import does not allow defaultActionSettings`);
     }
@@ -7323,31 +7300,27 @@ export class FlowSurfacesService {
             dataSourceKey: 'main',
           }
         : resolvedResourceInit;
+    const resolvedDefaultFilterResourceRequest = {
+      blockType,
+      template: templateRef,
+      resource: {
+        kind: 'raw' as const,
+        value: effectiveResourceInit,
+      },
+    };
+    const defaultFilterRequiredFieldCount = this.getDefaultFilterRequiredFieldCountFromResourceInput(
+      resolvedDefaultFilterResourceRequest,
+    );
     if (_.isUndefined(effectiveBlockDefaultFilter)) {
-      defaultFilterRequiredFieldCount = this.getDefaultFilterRequiredFieldCountFromResourceInput({
-        blockType,
-        template: templateRef,
-        resource: {
-          kind: 'raw',
-          value: effectiveResourceInit,
-        },
-      });
-      effectiveBlockDefaultFilter = this.buildDefaultFilterFromResourceInput({
-        blockType,
-        template: templateRef,
-        resource: {
-          kind: 'raw',
-          value: effectiveResourceInit,
-        },
-      });
-      effectiveBlockDefaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(effectiveBlockDefaultFilter, {
-        requiredFieldCount: defaultFilterRequiredFieldCount,
-      });
-      defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
-        normalizedDefaultActionSettings,
-        effectiveBlockDefaultFilter,
-      );
+      effectiveBlockDefaultFilter = this.buildDefaultFilterFromResourceInput(resolvedDefaultFilterResourceRequest);
     }
+    effectiveBlockDefaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(effectiveBlockDefaultFilter, {
+      requiredFieldCount: defaultFilterRequiredFieldCount,
+    });
+    defaultActionSettings = this.backfillBlockDefaultFilterIntoDefaultActionSettings(
+      normalizedDefaultActionSettings,
+      effectiveBlockDefaultFilter,
+    );
     const blockProps =
       catalogItem.use === 'CalendarBlockModel'
         ? this.buildCalendarInitialBlockProps({

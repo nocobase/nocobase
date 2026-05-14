@@ -2648,6 +2648,172 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });
+
+  it('should resolve associatedRecords inside relation field popup from the popup target collection', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring relation popup target associatedRecords',
+          },
+        },
+        page: {
+          title: 'Authoring relation popup target associatedRecords',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'users',
+                fields: [
+                  'username',
+                  {
+                    field: 'roles',
+                    popup: {
+                      tryTemplate: false,
+                      blocks: [
+                        {
+                          key: 'roleUsersTable',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'users',
+                          },
+                          fields: ['nickname'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const rolesField = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'roles',
+    )[0];
+    const popupHost = findPopupHostNode(rolesField);
+    const persistedRolesField = await flowRepo.findModelById(popupHost.uid, { includeAsyncNode: true });
+    const popupTemplateUid =
+      readPopupTemplateUid(persistedRolesField) || readPopupTemplateUid(popupHost) || readPopupTemplateUid(rolesField);
+    const templateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, popupTemplateUid);
+    const roleUsersTable = collectDescendantNodes(
+      templateSurface,
+      (item) => item?.use === 'TableBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'users',
+    )[0];
+    expect(roleUsersTable?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      associationName: 'roles.users',
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+  });
+
+  it('should validate nested associatedRecords blocks against the current popup collection', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring nested associatedRecords source context',
+          },
+        },
+        page: {
+          title: 'Authoring nested associatedRecords source context',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'users',
+                fields: ['username', 'roles'],
+                recordActions: [
+                  {
+                    key: 'maintainUser',
+                    title: 'Maintain user',
+                    type: 'view',
+                    popup: {
+                      tryTemplate: false,
+                      saveAsTemplate: {
+                        name: 'Authoring nested associatedRecords popup',
+                        description: 'Popup template saved for nested associatedRecords source context.',
+                      },
+                      blocks: [
+                        {
+                          key: 'userDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['username', 'roles'],
+                        },
+                        {
+                          key: 'userEditForm',
+                          type: 'editForm',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: ['username', 'roles'],
+                        },
+                        {
+                          key: 'userRolesTable',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                          },
+                          fields: ['title', 'name'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.use === 'ViewActionModel' &&
+        (item?.props?.title === 'Maintain user' ||
+          item?.stepParams?.buttonSettings?.general?.title === 'Maintain user'),
+    )[0];
+    const persistedAction = await flowRepo.findModelById(viewAction.uid, { includeAsyncNode: true });
+    const templateSurface = await readPopupTemplateSurface(
+      rootAgent,
+      flowRepo,
+      persistedAction?.stepParams?.popupSettings?.openView?.popupTemplateUid,
+    );
+    const roleTable = collectDescendantNodes(
+      templateSurface,
+      (item) => item?.use === 'TableBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'roles',
+    )[0];
+    expect(roleTable?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+  });
 });
 
 function collectDescendantNodes(node: any, predicate: (input: any) => boolean, bucket: any[] = []) {

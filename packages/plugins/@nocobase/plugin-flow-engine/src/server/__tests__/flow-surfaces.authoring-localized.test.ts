@@ -467,7 +467,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
     );
   });
 
-  it('should allow relation child paths in UI Builder supplied defaultFilter', async () => {
+  it('should reject relation child paths in UI Builder supplied defaultFilter', async () => {
     const page = await createPage(rootAgent, {
       title: 'Authoring localized relation child default filter page',
       tabTitle: 'Authoring localized relation child default filter tab',
@@ -495,16 +495,15 @@ describe('flowSurfaces backend authoring localized compiler', () => {
       },
     });
 
-    expect(addRes.status).toBe(200);
-    const tableUid = getData(addRes).uid;
-    const readback = await getSurface(rootAgent, { uid: tableUid });
-    const filterAction = (readback.tree.subModels?.actions || []).find(
-      (item: any) => item?.use === 'FilterActionModel',
-    );
-
-    expect(filterAction?.props?.defaultFilterValue).toEqual(relationChildDefaultFilter);
-    expect(filterAction?.props?.defaultFilterValue?.items).toEqual(
-      expect.arrayContaining([expect.objectContaining({ path: 'department.title' })]),
+    expect(addRes.status).toBe(400);
+    expect(addRes.body?.errors).toEqual(expect.any(Array));
+    expect(addRes.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'defaultFilter-field-ineligible',
+          path: '$.defaultFilter.items[3].path',
+        }),
+      ]),
     );
   });
 
