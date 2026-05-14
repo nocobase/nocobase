@@ -8,22 +8,73 @@
  */
 
 import React from 'react';
+import { css } from '@emotion/css';
+import { theme } from 'antd';
 
 export function ScanBox({ style = {} }: { style: React.CSSProperties }) {
-  const commonStyle: React.CSSProperties = {
-    position: 'absolute',
-    backgroundColor: 'rgb(255, 255, 255)',
-  };
+  const { token } = theme.useToken();
+  const scanBoxClass = css`
+    box-sizing: border-box;
+    inset: 0;
+  `;
+  const commonClass = css`
+    position: absolute;
+    background-color: ${token.colorTextLightSolid};
+  `;
   return (
-    <div id="qr-scan-box" style={{ boxSizing: 'border-box', inset: '0px', ...style }}>
-      <div style={{ width: '40px', height: '5px', top: '-5px', left: '0px', ...commonStyle }}></div>
-      <div style={{ width: '40px', height: '5px', top: '-5px', right: '0px', ...commonStyle }}></div>
-      <div style={{ width: '40px', height: '5px', bottom: '-5px', left: '0px', ...commonStyle }}></div>
-      <div style={{ width: '40px', height: '5px', bottom: '-5px', right: '0px', ...commonStyle }}></div>
-      <div style={{ width: '5px', height: '45px', top: '-5px', left: '-5px', ...commonStyle }}></div>
-      <div style={{ width: '5px', height: '45px', bottom: '-5px', left: '-5px', ...commonStyle }}></div>
-      <div style={{ width: '5px', height: '45px', top: '-5px', right: '-5px', ...commonStyle }}></div>
-      <div style={{ width: '5px', height: '45px', bottom: '-5px', right: '-5px', ...commonStyle }}></div>
+    <div id="qr-scan-box" className={scanBoxClass} style={style}>
+      <div
+        className={commonClass}
+        style={{ width: token.controlHeightLG, height: token.lineWidth * 5, top: -token.lineWidth * 5, left: 0 }}
+      />
+      <div
+        className={commonClass}
+        style={{ width: token.controlHeightLG, height: token.lineWidth * 5, top: -token.lineWidth * 5, right: 0 }}
+      />
+      <div
+        className={commonClass}
+        style={{ width: token.controlHeightLG, height: token.lineWidth * 5, bottom: -token.lineWidth * 5, left: 0 }}
+      />
+      <div
+        className={commonClass}
+        style={{ width: token.controlHeightLG, height: token.lineWidth * 5, bottom: -token.lineWidth * 5, right: 0 }}
+      />
+      <div
+        className={commonClass}
+        style={{
+          width: token.lineWidth * 5,
+          height: token.controlHeightLG,
+          top: -token.lineWidth * 5,
+          left: -token.lineWidth * 5,
+        }}
+      />
+      <div
+        className={commonClass}
+        style={{
+          width: token.lineWidth * 5,
+          height: token.controlHeightLG,
+          bottom: -token.lineWidth * 5,
+          left: -token.lineWidth * 5,
+        }}
+      />
+      <div
+        className={commonClass}
+        style={{
+          width: token.lineWidth * 5,
+          height: token.controlHeightLG,
+          top: -token.lineWidth * 5,
+          right: -token.lineWidth * 5,
+        }}
+      />
+      <div
+        className={commonClass}
+        style={{
+          width: token.lineWidth * 5,
+          height: token.controlHeightLG,
+          bottom: -token.lineWidth * 5,
+          right: -token.lineWidth * 5,
+        }}
+      />
     </div>
   );
 }
