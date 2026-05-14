@@ -149,6 +149,7 @@ class AppGenerator extends Generator {
     if (!this.args.skipDevDependencies) {
       json['devDependencies'] = json['devDependencies'] || {};
       json['devDependencies']['@nocobase/devtools'] = context.version;
+    } else {
       delete json['resolutions']['antd'];
       delete json['resolutions']['@types/react'];
       delete json['resolutions']['@types/react-dom'];
