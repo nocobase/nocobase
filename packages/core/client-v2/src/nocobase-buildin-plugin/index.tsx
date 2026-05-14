@@ -63,7 +63,7 @@ const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
 const DataSourceBootstrapProvider: FC = ({ children }) => {
-  const app = useApp();
+  const app = useApp<Application>();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -122,7 +122,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
 };
 
 const CurrentUserProvider: FC = ({ children }) => {
-  const app = useApp();
+  const app = useApp<Application>();
   const location = useLocation();
   const [state, setState] = useState<CurrentUserState>({ loading: true });
   const pathnameRef = useRef(location.pathname);
@@ -203,7 +203,7 @@ const CurrentUserProvider: FC = ({ children }) => {
 };
 
 const RootRedirect: FC = () => {
-  const app = useApp();
+  const app = useApp<Application>();
   const hasToken = !!app?.apiClient?.auth?.token;
 
   useEffect(() => {
