@@ -15,7 +15,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
 import { parsePathString } from '../../../blocks/form/value-runtime/path';
-import { getSubTableRowIdentity, normalizeSubTableRows } from './rowIdentity';
+import { buildSubTableRowForkKey, getSubTableRowIdentity, normalizeSubTableRows } from './rowIdentity';
+import { clearSubTablePendingRowValues } from './SubTablePendingRowStore';
 
 type NamePath = Array<string | number>;
 
@@ -70,6 +71,7 @@ export function SubTableField(props) {
     getCurrentValue,
     fieldPathArray,
     formValuesChangeEmitter,
+    pendingRowValueHost,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -79,6 +81,20 @@ export function SubTableField(props) {
   const getRecordIdentity = React.useCallback(
     (record: any) => getSubTableRowIdentity(record, filterTargetKey),
     [filterTargetKey],
+  );
+  const getRowPendingKey = React.useCallback(
+    (record: any, rowIdx: number) =>
+      buildSubTableRowForkKey(parentFieldIndex, getRecordIdentity(record) ?? `row:${rowIdx}`, rowIdx),
+    [getRecordIdentity, parentFieldIndex],
+  );
+  const clearAllPendingRows = React.useCallback(() => {
+    clearSubTablePendingRowValues(pendingRowValueHost);
+  }, [pendingRowValueHost]);
+  const clearPendingRow = React.useCallback(
+    (record: any, rowIdx: number) => {
+      clearSubTablePendingRowValues(pendingRowValueHost, getRowPendingKey(record, rowIdx));
+    },
+    [getRowPendingKey, pendingRowValueHost],
   );
   useEffect(() => {
     setCurrentPageSize(pageSize);
@@ -90,13 +106,23 @@ export function SubTableField(props) {
     if (!formValuesChangeEmitter?.on || !formValuesChangeEmitter?.off) return;
     const listener = (payload: any) => {
       if (!shouldRefreshForChangedPaths(fieldPathArray, payload?.changedPaths)) return;
+      clearAllPendingRows();
       forceRefresh((v) => v + 1);
     };
     formValuesChangeEmitter.on('formValuesChange', listener);
     return () => {
       formValuesChangeEmitter.off('formValuesChange', listener);
     };
-  }, [fieldPathArray, formValuesChangeEmitter]);
+  }, [clearAllPendingRows, fieldPathArray, formValuesChangeEmitter]);
+  useEffect(() => {
+    return () => {
+      clearAllPendingRows();
+    };
+  }, [clearAllPendingRows]);
+  useEffect(() => {
+    if (!resetPage) return;
+    clearAllPendingRows();
+  }, [clearAllPendingRows, resetPage]);
   const applyValue = React.useCallback((nextValue: any) => onChange?.(normalizeSubTableRows(nextValue)), [onChange]);
   const getLatestValue = React.useCallback(() => normalizeSubTableRows(getCurrentValue()), [getCurrentValue]);
   useEffect(() => {
@@ -145,9 +171,11 @@ export function SubTableField(props) {
   // 删除行
   const handleDelete = (index: number) => {
     const newValue = [...getLatestValue()];
+    clearPendingRow(newValue[index], index);
     newValue.splice(index, 1);
     const lastPage = Math.ceil(newValue.length / currentPageSize);
     setCurrentPage(currentPage > lastPage ? lastPage : currentPage);
+    clearAllPendingRows();
     applyValue(newValue);
   };
 
@@ -178,6 +206,7 @@ export function SubTableField(props) {
           value: text,
           parentFieldIndex,
           parentItem,
+          memoKey: getRowPendingKey(record, pageRowIdx),
           onChange: (value) => {
             handleCellChange(pageRowIdx, col.dataIndex, value?.target?.value ?? value);
           },

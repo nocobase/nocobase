@@ -34,7 +34,15 @@ import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
 import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
-import { getSubTableRowIdentity } from './rowIdentity';
+import { buildSubTableRowForkKey, getSubTableRowIdentity } from './rowIdentity';
+import {
+  clearSubTablePendingRowFieldValue,
+  getSubTablePendingRowValues,
+  mergeSubTableRowPendingValues,
+  normalizeSubTableLatestValue,
+  setSubTablePendingRowFieldValue,
+  SubTableRowPendingValues,
+} from './SubTablePendingRowStore';
 
 export const SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT = 'subTableColumn';
 
@@ -83,7 +91,15 @@ export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   );
 }
 
-const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, disabled, ...others }: any) => {
+const LargeFieldEdit = observer((props: any) => {
+  const {
+    model,
+    params: { index },
+    defaultValue,
+    disabled,
+    onLatestValueChange,
+    ...others
+  } = props;
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
@@ -93,15 +109,30 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   });
 
   const FieldModelRendererCom = (props) => {
-    const { model, onChange, ...rest } = props;
+    const { model, onChange, onLatestValueChange, ...rest } = props;
 
-    const handleChange = useMemo(
+    const commitChange = useMemo(
       () =>
         debounce((val) => {
-          if (props.onChange) props.onChange(val);
           if (onChange) onChange(val);
         }, 200),
-      [props.onChange, onChange],
+      [onChange],
+    );
+
+    useEffect(() => {
+      return () => {
+        commitChange.flush();
+      };
+    }, [commitChange]);
+
+    const handleChange = React.useCallback(
+      (value: any) => {
+        const latest = normalizeSubTableLatestValue(value);
+        if (!latest.ok) return;
+        onLatestValueChange?.(latest.value);
+        commitChange(latest.value);
+      },
+      [commitChange, onLatestValueChange],
     );
 
     return <FieldModelRenderer model={model} {...rest} onChange={handleChange} />;
@@ -123,7 +154,14 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           },
         },
         content: (popover) => {
-          return <FieldModelRendererCom model={model} value={defaultValue} {...others} />;
+          return (
+            <FieldModelRendererCom
+              model={model}
+              value={defaultValue}
+              onLatestValueChange={onLatestValueChange}
+              {...others}
+            />
+          );
         },
       });
     } catch (error) {
@@ -196,10 +234,16 @@ export function buildRowPathFromFieldIndex(fieldIndex: unknown): Array<string | 
   return out.length ? out : null;
 }
 
-export function getLatestSubTableRowRecord(form: any, fieldIndex: unknown, fallbackRecord: any): any {
+export function getLatestSubTableRowRecord(
+  form: any,
+  fieldIndex: unknown,
+  fallbackRecord: any,
+  pendingValues?: SubTableRowPendingValues,
+): any {
   const latestRowPath = buildRowPathFromFieldIndex(fieldIndex);
   const latestRecord = latestRowPath ? form?.getFieldValue?.(latestRowPath) : undefined;
-  return typeof latestRecord === 'undefined' ? fallbackRecord : latestRecord;
+  const rowRecord = typeof latestRecord === 'undefined' ? fallbackRecord : latestRecord;
+  return mergeSubTableRowPendingValues(rowRecord, pendingValues);
 }
 
 function shouldCommitImmediately(value: any) {
@@ -219,26 +263,58 @@ function shouldCommitImmediately(value: any) {
 }
 
 const FieldModelRendererOptimize = React.memo((props: any) => {
-  const { model, onChange, value, commitOnChange, ...rest } = props;
+  const { model, onChange, onLatestValueChange, onCommittedValue, value, commitOnChange, ...rest } = props;
   const pendingValueRef = React.useRef<any>(props?.value);
+  const onChangeRef = React.useRef(onChange);
+  const onLatestValueChangeRef = React.useRef(onLatestValueChange);
+  const onCommittedValueRef = React.useRef(onCommittedValue);
+  const commitOnChangeRef = React.useRef(commitOnChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    onLatestValueChangeRef.current = onLatestValueChange;
+  }, [onLatestValueChange]);
+
+  useEffect(() => {
+    onCommittedValueRef.current = onCommittedValue;
+  }, [onCommittedValue]);
+
+  useEffect(() => {
+    commitOnChangeRef.current = commitOnChange;
+  }, [commitOnChange]);
 
   useEffect(() => {
     pendingValueRef.current = value;
   }, [value]);
 
+  const updateLatestValue = React.useCallback((value: any) => {
+    const latest = normalizeSubTableLatestValue(value);
+    if (!latest.ok) return false;
+
+    pendingValueRef.current = latest.value;
+    onLatestValueChangeRef.current?.(latest.value);
+    return true;
+  }, []);
+
   const handleChange = React.useCallback(
     (value: any) => {
-      pendingValueRef.current = value;
-      if (commitOnChange || shouldCommitImmediately(value)) {
-        onChange?.(value);
+      if (!updateLatestValue(value)) return;
+
+      if (commitOnChangeRef.current || shouldCommitImmediately(pendingValueRef.current)) {
+        onChangeRef.current?.(pendingValueRef.current);
       }
     },
-    [commitOnChange, onChange],
+    [updateLatestValue],
   );
 
   const handleCommit = React.useCallback(() => {
-    onChange?.(pendingValueRef.current);
-  }, [onChange]);
+    onLatestValueChangeRef.current?.(pendingValueRef.current);
+    onChangeRef.current?.(pendingValueRef.current);
+    onCommittedValueRef.current?.();
+  }, []);
 
   return (
     <div onBlur={handleCommit}>
@@ -247,8 +323,13 @@ const FieldModelRendererOptimize = React.memo((props: any) => {
         value={value}
         model={model}
         onChange={handleChange}
-        onChangeComplete={() => {
-          onChange?.(pendingValueRef.current);
+        onChangeComplete={(...args: any[]) => {
+          if (args.length) {
+            updateLatestValue(args[0]);
+          }
+          onLatestValueChangeRef.current?.(pendingValueRef.current);
+          onChangeRef.current?.(pendingValueRef.current);
+          onCommittedValueRef.current?.();
         }}
       />
     </div>
@@ -270,8 +351,9 @@ interface CellProps {
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange }) => {
+  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, memoKey, width, commitOnChange }) => {
     const isNew = record?.__is_new__;
+    const subTableFieldModel = (parent as any).parent;
     return (
       <div
         style={{
@@ -308,6 +390,14 @@ const MemoCell: React.FC<CellProps> = React.memo(
         {parent.mapSubModels('field', (action: FieldModel) => {
           const fieldPath = action.context.fieldPath.split('.');
           const namePath = fieldPath.pop();
+          const updatePendingRowValue = (nextValue: any) => {
+            setSubTablePendingRowFieldValue(subTableFieldModel, memoKey, namePath, nextValue);
+          };
+          const clearPendingRowValue = () => {
+            setTimeout(() => {
+              clearSubTablePendingRowFieldValue(subTableFieldModel, memoKey, namePath);
+            });
+          };
 
           const fork: any = action.createFork({}, `${id}`);
           fork.context.defineProperty('currentObject', { get: () => record });
@@ -365,6 +455,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
                     index: id,
                   }}
                   defaultValue={value}
+                  onLatestValueChange={updatePendingRowValue}
+                  onChange={clearPendingRowValue}
                   disabled={
                     parent.props.disabled ||
                     (!isNew && parent.props.aclDisabled) ||
@@ -376,6 +468,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   model={fork}
                   id={[(parent as any).context.fieldPath, rowIdx]}
                   commitOnChange={commitOnChange}
+                  onLatestValueChange={updatePendingRowValue}
+                  onCommittedValue={clearPendingRowValue}
                 />
               )}
             </FormItem>
@@ -593,11 +687,10 @@ export class SubTableColumnModel<
       // 这里为每一行创建一个 column fork，并注入 fieldIndex，让规则引擎能够按行解析与写入。
       const baseFieldIndex = parentFieldIndex ?? (this.parent as any)?.context?.fieldIndex ?? this.context?.fieldIndex;
       const baseArr = Array.isArray(baseFieldIndex) ? baseFieldIndex : [];
-      const baseIndexKey = baseArr.length ? baseArr.join('|') : 'root';
       const filterTargetKey =
         (this.parent as any)?.collection?.filterTargetKey ?? (this.parent as any)?.context?.collection?.filterTargetKey;
       const rowIdentity = getSubTableRowIdentity(record, filterTargetKey) ?? `row:${String(rowIdx)}`;
-      const rowForkKey = `row:${baseIndexKey}:${rowIdentity}:${String(rowIdx)}`;
+      const rowForkKey = buildSubTableRowForkKey(baseArr, rowIdentity, rowIdx);
       const rowFork: any = (() => {
         const fork = this.createFork({}, rowForkKey);
         fork.context.defineProperty('subTableRowFork', {
@@ -622,7 +715,12 @@ export class SubTableColumnModel<
         fork.context.defineProperty('item', {
           get: () => {
             const form = (fork.context as any)?.form || (this.context?.blockModel as any)?.context?.form;
-            const rowRecord = getLatestSubTableRowRecord(form, fork.context.fieldIndex, record);
+            const rowRecord = getLatestSubTableRowRecord(
+              form,
+              fork.context.fieldIndex,
+              record,
+              getSubTablePendingRowValues(this.parent, rowForkKey),
+            );
             const parentItemCtx = (parentItem ?? this.context?.item) as any;
             const isNew = rowRecord?.__is_new__;
             const isStored = rowRecord?.__is_stored__;
