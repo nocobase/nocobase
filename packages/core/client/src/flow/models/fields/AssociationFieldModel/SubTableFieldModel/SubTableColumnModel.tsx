@@ -718,8 +718,6 @@ export class SubTableColumnModel<
 SubTableColumnModel.define({
   label: tExpr('Table column'),
   icon: 'TableColumn',
-  searchable: true,
-  searchPlaceholder: tExpr('Search fields'),
   createModelOptions: {
     use: 'SubTableColumnModel',
   },
@@ -1052,4 +1050,6 @@ SubTableColumnModel.registerFlow({
 SubTableColumnModel.define({
   hide: true,
   label: tExpr('Table column'),
+  searchable: true,
+  searchPlaceholder: tExpr('Search fields'),
 });
