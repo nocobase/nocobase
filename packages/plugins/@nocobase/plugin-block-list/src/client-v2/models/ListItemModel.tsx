@@ -55,6 +55,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
     const index = this.context.index;
     const record = this.context.record;
     const grid = this.subModels.grid.createFork({}, `grid-${index}`) as any;
+    const token = this.context.themeToken;
 
     grid.gridContainerRef = React.createRef<HTMLDivElement>();
     const gridRecordMeta: PropertyMetaFactory = createRecordMetaFactory(
@@ -92,7 +93,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
         style={{ width: '100%' }}
         className={css`
           .ant-form-item {
-            margin-bottom: 5px;
+            margin-bottom: ${token.marginXXS}px;
           }
         `}
       >
@@ -101,7 +102,13 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
         </FormComponent>
         <div>
           <DndProvider>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <Space wrap>
                 {this.mapSubModels('actions', (action, i) => {
                   const fork = action.createFork({}, `${index}`);
@@ -132,8 +139,8 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                       <div
                         className={css`
                           button {
-                            padding: 5px;
-                            padding-left: ${i === 0 ? '0px' : null};
+                            padding: ${token.paddingXXS}px;
+                            padding-left: ${i === 0 ? 0 : token.paddingXXS}px;
                           }
                         `}
                       >
