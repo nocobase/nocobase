@@ -23,12 +23,9 @@ type LLMStreamOptions = {
 };
 
 export class LLMStreamCachedManager {
-  private store;
   private cachePromise?: Promise<Cache>;
 
-  constructor(private readonly plugin: PluginAIServer) {
-    this.store = this.plugin.app.options.cacheManager.defaultStore;
-  }
+  constructor(private readonly plugin: PluginAIServer) {}
 
   getCached(sessionId: string) {
     if (this.store !== 'memory') {
@@ -112,6 +109,10 @@ export class LLMStreamCachedManager {
       store: this.store,
     });
     return this.cachePromise;
+  }
+
+  private get store() {
+    return this.plugin.app.options.cacheManager?.defaultStore ?? 'memory';
   }
 }
 
