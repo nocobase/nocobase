@@ -8,16 +8,17 @@
  */
 
 import { toJS } from '@formily/reactive';
-import { EditableItemModel, DisplayItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { Checkbox, DatePicker, Form, Input, InputNumber } from 'antd';
+import { Checkbox, DatePicker, Form, Input, InputNumber, theme } from 'antd';
+import { EditableItemModel, DisplayItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import { FieldModel, getDisplayNumber, resolveDynamicNamePath } from '@nocobase/client-v2';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { dayjs, getDefaultFormat, Registry, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 
-import { toDbType } from '../utils';
+import { tExpr } from '../locale';
+import { toDbType } from '../../utils';
 
 const resolveDayjs = (value: unknown) => {
   if (!value) return null;
@@ -139,10 +140,11 @@ const EditableDatePicker = React.memo((props: any) => {
 });
 
 const ReadPrettyBoolean = ({ value, showUnchecked }: { value?: boolean; showUnchecked?: boolean }) => {
+  const { token } = theme.useToken();
   if (value) {
-    return <CheckOutlined style={{ color: '#52c41a' }} />;
+    return <CheckOutlined style={{ color: token.colorSuccess }} />;
   }
-  return showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <Checkbox disabled checked={false} />;
+  return showUnchecked ? <CloseOutlined style={{ color: token.colorError }} /> : <Checkbox disabled checked={false} />;
 };
 
 const ReadPrettyText = ({
@@ -294,13 +296,11 @@ function getValuesByFullPath(values, fieldPath) {
         .filter(Boolean);
   let currentKeyIndex = 0;
   let value = values || {};
-  //loop to get the last field
   while (currentKeyIndex < fieldPaths.length) {
     const fieldName = fieldPaths[currentKeyIndex];
     const nextPart = fieldPaths?.[currentKeyIndex + 1];
     const index = typeof nextPart === 'number' ? nextPart : parseInt(nextPart);
     value = getValuesByPath(value, fieldName, index);
-    //have index means an array, then jump 2; else 1
     currentKeyIndex = currentKeyIndex + (index >= 0 ? 2 : 1);
   }
   return value;
@@ -392,7 +392,6 @@ function FormulaCalculatedResult(props) {
   }, [value]);
 
   useEffect(() => {
-    // DefaultValue 弹窗：constant/null 时不计算
     const constantOrNull = isDefaultValueDialog && (flags?.constant || flags?.null || flags?.root === 'constant');
 
     if (form?.readPretty || isFilterContext || isDefaultValueDialog || constantOrNull) {
@@ -438,7 +437,6 @@ export function FormulaResult(props) {
   const { dataType } = collectionField?.options || {};
   const { isFilterContext, isDefaultValueDialog } = resolveFormulaUsageFlags(form, context);
 
-  // 筛选/默认值等场景下需要可编辑组件，不需要订阅整个表单重算公式。
   if (isFilterContext || isDefaultValueDialog) {
     return renderEditableValue(dataType, value, others);
   }
@@ -533,7 +531,6 @@ FilterableItemModel.bindModelToInterface('FormulaFieldModel', ['formula'], {
   },
 });
 
-// 在筛选场景下使用可编辑模型，按 dataType 选择合适的组件
 FilterableItemModel.bindModelToInterface('InputFieldModel', ['formula'], {
   isDefault: false,
   when(ctx, fieldInstance) {
@@ -557,14 +554,5 @@ FilterableItemModel.bindModelToInterface('CheckboxFieldModel', ['formula'], {
   when(ctx, fieldInstance) {
     const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
     return isFilterContext && fieldInstance?.dataType === 'boolean';
-  },
-});
-
-FilterableItemModel.bindModelToInterface('NumberFieldModel', ['formula'], {
-  isDefault: false,
-  when(ctx, fieldInstance) {
-    const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
-    if (!isFilterContext) return false;
-    return ['integer', 'bigInt', 'double', 'decimal', 'number'].includes(fieldInstance?.dataType);
   },
 });

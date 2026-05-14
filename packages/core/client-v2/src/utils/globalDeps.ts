@@ -16,6 +16,7 @@ import * as formilyCore from '@formily/core';
 import * as formilyReact from '@formily/react';
 import * as formilyReactive from '@formily/reactive';
 import * as formilyShared from '@formily/shared';
+import * as nocobaseEvaluators from '@nocobase/evaluators/client';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
 import { dayjs } from '@nocobase/utils/client';
 import * as nocobaseFlowEngine from '@nocobase/flow-engine';
@@ -71,6 +72,8 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('@nocobase/client-v2', () => nocobaseClientV2);
   requirejs.define('@nocobase/client-v2/client-v2', () => nocobaseClientV2);
   requirejs.define('@nocobase/flow-engine', () => nocobaseFlowEngine);
+  requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
+  requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
 
   // utils
   requirejs.define('ahooks', () => ahooks);

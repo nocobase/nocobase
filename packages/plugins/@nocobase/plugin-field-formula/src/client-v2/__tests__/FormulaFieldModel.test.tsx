@@ -13,7 +13,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import { dayjs } from '@nocobase/utils/client';
 
-import { FormulaResult } from '../FormulaFieldModel';
+import { FormulaResult } from '../models/FormulaFieldModel';
 
 vi.mock('@nocobase/client-v2', () => ({
   FieldModel: class FieldModel {
@@ -71,9 +71,12 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
     DisplayItemModel: MockDisplayItemModel,
     EditableItemModel: MockEditableItemModel,
     FilterableItemModel: MockFilterableItemModel,
-    tExpr: (value: string) => value,
   };
 });
+
+vi.mock('../locale', () => ({
+  tExpr: (value: string) => value,
+}));
 
 const collectionField = {
   options: {
