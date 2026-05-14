@@ -19,10 +19,14 @@ import {
 } from '../../lib/app-runtime.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
 import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from '../../lib/docker-image.ts';
 import { commandSucceeds, run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
-
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
@@ -30,6 +34,7 @@ const APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS = 5_000;
 
 type UpgradeParsedFlags = {
   env?: string;
+  yes: boolean;
   verbose: boolean;
   'skip-code-update': boolean;
   version?: string;
@@ -296,6 +301,11 @@ export default class AppUpgrade extends Command {
       char: 'e',
       description: 'CLI env name to upgrade. Defaults to the current env when omitted',
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
     'skip-code-update': Flags.boolean({
       char: 's',
       description: 'Restart with the saved local code or Docker image without downloading updates first',
@@ -477,7 +487,10 @@ export default class AppUpgrade extends Command {
       );
     }
 
-    const imageRef = `${dockerRegistry}:${downloadVersion}`;
+    const imageRef = resolveDockerImageRef(dockerRegistry, downloadVersion, {
+      defaultRegistry: DEFAULT_DOCKER_REGISTRY,
+      defaultVersion: DEFAULT_DOCKER_VERSION,
+    });
     const args = [
       'run',
       '-d',
@@ -724,6 +737,17 @@ export default class AppUpgrade extends Command {
     const { flags } = await this.parse(AppUpgrade);
     const parsed = flags as UpgradeParsedFlags;
     const requestedEnv = parsed.env?.trim() || undefined;
+    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: parsed.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
 
     const commandStdio = parsed.verbose ? 'inherit' : 'ignore';
     const runtime = await resolveManagedAppRuntime(requestedEnv);

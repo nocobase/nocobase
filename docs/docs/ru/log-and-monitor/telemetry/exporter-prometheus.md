@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-telemetry-prometheus'
 ---
 
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/log-and-monitor/telemetry/exporter-prometheus).
-:::
-
 # Экспортёр телеметрии: Prometheus
 
 ## Переменные окружения

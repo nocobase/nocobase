@@ -8,6 +8,8 @@ keywords: "nb env remove,NocoBase CLI,Umgebung entfernen,Konfiguration entfernen
 
 Entfernt eine konfigurierte env. Dieser Befehl löscht ausschließlich die CLI env-Konfiguration. Wenn Sie zusätzlich die lokale Anwendung, Container und Storage bereinigen möchten, verwenden Sie bitte [`nb app down`](../app/down.md).
 
+Wenn die entfernte env zugleich die aktuelle env ist, wählt die CLI automatisch eine neue aktuelle env aus den verbleibenden env. Wenn keine env mehr vorhanden ist, wird die aktuelle env geleert.
+
 ## Verwendung
 
 ```bash
@@ -18,7 +20,7 @@ nb env remove <name> [flags]
 
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
-| `<name>` | string | Name der zu entfernenden Umgebung |
+| `<name>` | string | Name der konfigurierten Umgebung, die entfernt werden soll |
 | `--force`, `-f` | boolean | Bestätigung überspringen und direkt löschen |
 | `--verbose` | boolean | Ausführliche Fortschrittsanzeige |
 
@@ -32,4 +34,5 @@ nb env remove staging -f
 ## Verwandte Befehle
 
 - [`nb app down`](../app/down.md)
+- [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

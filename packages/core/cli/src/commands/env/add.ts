@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { upsertEnv } from '../../lib/auth-store.js';
+import { setCurrentEnv, upsertEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import {
   buildStoredEnvConfig,
@@ -117,7 +117,7 @@ export default class EnvAdd extends Command {
   static override args = {
     name: Args.string({
       description:
-        'Label for this environment (optional first argument; in a TTY, prompted when omitted; required when not using a TTY)',
+        'Environment name to save (optional first argument; in a TTY, prompted when omitted; required when not using a TTY)',
       required: false,
     }),
   };
@@ -392,6 +392,7 @@ export default class EnvAdd extends Command {
       envConfig,
       { scope: resolveDefaultConfigScope() },
     );
+    await setCurrentEnv(envName, { scope: resolveDefaultConfigScope() });
 
     if (results.authType === 'oauth') {
       await this.config.runCommand('env:auth', [envName]);

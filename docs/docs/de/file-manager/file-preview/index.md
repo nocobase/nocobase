@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/file-manager/file-preview/index).
-:::
-
 # Dateivorschau
 
 In Oberflächen, die Dateifelder (einschließlich Anhangsfeldern) enthalten, können Sie Dateien durch Klicken auf das Vorschaubild oder das Symbol der Datei in der Vorschau anzeigen. Die integrierte Vorschaufunktion unterstützt verschiedene Dateitypen, darunter Bilder, PDFs und die meisten Dateitypen, die nativ von Browsern unterstützt werden.

@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/features/web-search).
-:::
-
 # Búsqueda en la web
 
 La búsqueda en la web se utiliza para complementar los datos de entrenamiento del modelo con información externa actualizada.

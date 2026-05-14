@@ -8,14 +8,13 @@
  */
 
 import { Command } from '@oclif/core';
-import { resolveManagedAppRuntime } from '../../lib/app-runtime.js';
-import { listEnvs } from '../../lib/auth-store.js';
+import { getCurrentEnvName, listEnvs } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { renderTable } from '../../lib/ui.js';
-import { apiStatus, appUrl, resolveApiBaseUrl } from './shared.js';
+import { resolveApiBaseUrl } from './shared.js';
 
 export default class EnvList extends Command {
-  static summary = 'List configured environments and API auth status';
+  static summary = 'List configured environments';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -24,7 +23,8 @@ export default class EnvList extends Command {
   async run(): Promise<void> {
     await this.parse(EnvList);
     const scope = resolveDefaultConfigScope();
-    const { currentEnv, envs } = await listEnvs({ scope });
+    const { envs } = await listEnvs({ scope });
+    const currentEnv = await getCurrentEnvName({ scope });
     const names = Object.keys(envs).sort();
 
     if (!names.length) {
@@ -36,23 +36,17 @@ export default class EnvList extends Command {
     const rows: string[][] = [];
     for (const name of names) {
       const env = envs[name];
-      const runtime = await resolveManagedAppRuntime(name);
-      const statusConfig = {
-        ...env,
-        ...(runtime?.env.config ?? {}),
-      };
 
       rows.push([
         name === currentEnv ? '*' : '',
         name,
-        runtime?.kind ?? env.kind ?? '-',
-        await apiStatus(name, statusConfig, { scope }),
-        runtime ? appUrl(runtime) : resolveApiBaseUrl(env),
+        env.kind ?? '-',
+        resolveApiBaseUrl(env),
         env.auth?.type ?? '',
         env.runtime?.version ?? '',
       ]);
     }
 
-    this.log(renderTable(['Current', 'Name', 'Kind', 'App Status', 'URL', 'Auth', 'Runtime'], rows));
+    this.log(renderTable(['Current', 'Name', 'Kind', 'API Base URL', 'Auth', 'Runtime'], rows));
   }
 }

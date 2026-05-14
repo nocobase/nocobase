@@ -19,7 +19,7 @@ So với các công cụ no-code khác, NocoBase có một vài triết lý cố
 
 - **Hướng theo data model**: Định nghĩa [data source](/data-sources) và cấu trúc dữ liệu trước, sau đó dùng [Block](/interface-builder/blocks) để hiển thị dữ liệu, cuối cùng dùng [Action](/interface-builder/actions) để xử lý dữ liệu — giao diện và dữ liệu được tách biệt hoàn toàn
 - **WYSIWYG**: Trang chính là canvas, click đâu sửa đó, trực quan như xây trang Notion
-- **Tất cả đều là Plugin**: Tất cả tính năng đều là [Plugin](/development/plugin), giống WordPress, cài theo nhu cầu, mở rộng linh hoạt
+- **Tất cả đều là Plugin**: Tất cả tính năng đều là [Plugin](../../plugins/index.mdx), giống WordPress, cài theo nhu cầu, mở rộng linh hoạt
 - **AI hòa nhập vào nghiệp vụ**: Tích hợp sẵn [AI Employee](/ai-employees/quick-start), có thể thực hiện các Task như phân tích, dịch thuật, nhập liệu, thực sự hòa nhập vào workflow của bạn
 - **Mã nguồn mở + triển khai riêng**: Code core hoàn toàn open source, dữ liệu hoàn toàn nằm trên server của bạn
 

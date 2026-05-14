@@ -2,17 +2,13 @@
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/workflow/nodes/javascript).
-:::
-
 # Script JavaScript
 
 ## Introduction
 
 Le nœud Script JavaScript permet aux utilisateurs d'exécuter un script JavaScript personnalisé côté serveur dans un flux de travail. Le script peut utiliser des variables en amont du flux de travail comme paramètres, et sa valeur de retour peut être fournie aux nœuds en aval.
 
-Le script s'exécute dans un thread de travail sur le serveur de l'application NocoBase. Par défaut, il utilise un bac à sable sécurisé (isolated-vm) qui ne prend pas en charge `require` ni les API natives de Node.js. Pour plus de détails, consultez [Moteur d'exécution](#moteur-dexécution) et [Liste des fonctionnalités](#liste-des-fonctionnalités).
+Le script s'exécute dans un thread de travail sur le serveur de l'application NocoBase. Par défaut, il utilise un bac à sable sécurisé (QuickJS basé sur WebAssembly) qui ne prend pas en charge `require` ni les API natives de Node.js. Pour plus de détails, consultez [Moteur d'exécution](#moteur-dexécution) et [Liste des fonctionnalités](#liste-des-fonctionnalités).
 
 ## Créer un nœud
 
@@ -54,7 +50,7 @@ Le nœud de script JavaScript prend en charge deux moteurs d'exécution, sélect
 
 ### Mode sécurisé (par défaut)
 
-Lorsque `WORKFLOW_SCRIPT_MODULES` **n'est pas configurée**, les scripts s'exécutent à l'aide du moteur [isolated-vm](https://github.com/laverdet/isolated-vm). Ce moteur exécute le code dans un environnement V8 isolé avec les caractéristiques suivantes :
+Lorsque `WORKFLOW_SCRIPT_MODULES` **n'est pas configurée**, les scripts s'exécutent à l'aide du moteur [QuickJS](https://bellard.org/quickjs/) basé sur WebAssembly. Ce moteur exécute le code dans un environnement d'exécution JavaScript isolé avec les caractéristiques suivantes :
 
 - **Ne prend pas en charge** `require` — aucun module ne peut être importé
 - **Ne prend pas en charge** les API natives de Node.js (telles que `process`, `Buffer`, `global`, etc.)

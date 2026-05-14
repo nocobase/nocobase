@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/actions/types/js-action).
-:::
-
 # JS Action
 
 ## Introduction
@@ -36,7 +32,7 @@ JS Action est utilisé pour exécuter du JavaScript lors du clic sur un bouton, 
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- Vous pouvez utiliser les employés IA pour générer/modifier des scripts : [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/features/built-in-employee)
+- Vous pouvez utiliser les employés IA pour générer/modifier des scripts : [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/)
 
 ## Cas d'utilisation courants (exemples simplifiés)
 

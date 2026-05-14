@@ -18,7 +18,7 @@ nb env auth [name]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `[name]` | string | Tên môi trường, bỏ qua thì dùng env hiện tại |
+| `[name]` | string | Tên env đã cấu hình để đăng nhập; nếu bỏ qua, dùng env hiện tại |
 
 ## Mô tả
 

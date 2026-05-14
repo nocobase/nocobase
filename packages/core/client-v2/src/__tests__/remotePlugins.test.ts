@@ -9,7 +9,7 @@
 
 import { Plugin } from '../Plugin';
 import { getRequireJs } from '../utils/requirejs';
-import { defineDevPlugins, definePluginClient, getPlugins } from '../utils/remotePlugins';
+import { configRequirejs, defineDevPlugins, getPlugins } from '../utils/remotePlugins';
 
 describe('client-v2 remotePlugins', () => {
   afterEach(() => {
@@ -27,19 +27,6 @@ describe('client-v2 remotePlugins', () => {
     });
 
     expect(mockDefine).toHaveBeenCalledWith('@nocobase/demo/client-v2', expect.any(Function));
-  });
-
-  it('should define remote plugin proxies with /client-v2 module ids', () => {
-    const mockDefine: any = vi.fn();
-    window.define = mockDefine;
-
-    definePluginClient('@nocobase/demo');
-
-    expect(mockDefine).toHaveBeenCalledWith(
-      '@nocobase/demo/client-v2',
-      ['exports', '@nocobase/demo'],
-      expect.any(Function),
-    );
   });
 
   it('should not define /client aliases when loading v2 plugins', async () => {
@@ -71,16 +58,40 @@ describe('client-v2 remotePlugins', () => {
     expect(mockDefine).not.toHaveBeenCalledWith('@nocobase/demo/client', expect.any(Function));
   });
 
+  it('should configure remote plugin paths with /client-v2 module ids', () => {
+    const requirejs: any = {
+      requirejs: {
+        config: vi.fn(),
+      },
+    };
+
+    configRequirejs(requirejs, [
+      {
+        packageName: '@nocobase/demo',
+        url: '/static/plugins/@nocobase/demo/dist/client-v2/index.js',
+      },
+    ] as any);
+
+    expect(requirejs.requirejs.config).toHaveBeenCalledWith({
+      waitSeconds: 120,
+      paths: {
+        '@nocobase/demo/client-v2': '/static/plugins/@nocobase/demo/dist/client-v2/index.js',
+      },
+    });
+  });
+
   it('should not append duplicate .js for plugin URLs without query strings', () => {
     const requirejs = getRequireJs();
 
     requirejs.requirejs.config({
       paths: {
-        '@nocobase/demo': '/static/plugins/@nocobase/demo/dist/client-v2/index.js',
+        '@nocobase/demo/client-v2': '/static/plugins/@nocobase/demo/dist/client-v2/index.js',
       },
     });
 
-    expect(requirejs.requirejs.toUrl('@nocobase/demo')).toBe('/static/plugins/@nocobase/demo/dist/client-v2/index.js');
+    expect(requirejs.requirejs.toUrl('@nocobase/demo/client-v2')).toBe(
+      '/static/plugins/@nocobase/demo/dist/client-v2/index.js',
+    );
   });
 
   it('should keep hashed plugin URLs unchanged', () => {
@@ -88,11 +99,11 @@ describe('client-v2 remotePlugins', () => {
 
     requirejs.requirejs.config({
       paths: {
-        '@nocobase/demo': '/static/plugins/@nocobase/demo/dist/client-v2/index.js?hash=12345678',
+        '@nocobase/demo/client-v2': '/static/plugins/@nocobase/demo/dist/client-v2/index.js?hash=12345678',
       },
     });
 
-    expect(requirejs.requirejs.toUrl('@nocobase/demo')).toBe(
+    expect(requirejs.requirejs.toUrl('@nocobase/demo/client-v2')).toBe(
       '/static/plugins/@nocobase/demo/dist/client-v2/index.js?hash=12345678',
     );
   });

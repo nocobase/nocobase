@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/fields/specific/js-field).
-:::
-
 # JS Field
 
 ## Einführung
@@ -58,7 +54,7 @@ Der Skript-Editor des JS Field unterstützt Syntax-Highlighting, Fehlerhinweise 
 
 Kann in Kombination mit KI-Mitarbeitern zur Code-Generierung verwendet werden:
 
-- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
+- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/)
 
 ## Häufige Anwendungsfälle
 

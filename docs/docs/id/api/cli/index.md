@@ -35,11 +35,12 @@ Grup perintah berikut akan ditampilkan di `nb --help`:
 | [`nb app`](./app/index.md) | Mengelola runtime aplikasi: start, stop, restart, logs, dan upgrade. |
 | [`nb config`](./config/index.md) | Mengelola konfigurasi default CLI. |
 | [`nb db`](./db/index.md) | Mengelola database bawaan dari env yang dipilih. |
-| [`nb env`](./env/index.md) | Mengelola lingkungan proyek NocoBase, status, detail, dan perintah runtime. |
+| [`nb env`](./env/index.md) | Mengelola environment proyek NocoBase, env saat ini, status, detail, dan runtime perintah. |
 | [`nb license`](./license/index.md) | Mengelola lisensi komersial dan plugin berlisensi. |
 | [`nb plugin`](./plugin/index.md) | Mengelola plugin dari env NocoBase yang dipilih. |
 | [`nb scaffold`](./scaffold/index.md) | Menghasilkan scaffold pengembangan plugin NocoBase. |
 | [`nb self`](./self/index.md) | Memeriksa atau memperbarui NocoBase CLI itu sendiri. |
+| [`nb session`](./session/index.md) | Mengatur `NB_SESSION_ID` agar env saat ini terisolasi per shell atau runtime agent. |
 | [`nb skills`](./skills/index.md) | Memeriksa atau menyinkronkan NocoBase AI coding skills di workspace saat ini. |
 | [`nb source`](./source/index.md) | Mengelola proyek source code lokal: download, dev, build, dan test. |
 
@@ -93,6 +94,8 @@ Menghubungkan aplikasi yang sudah ada:
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Memulai aplikasi dan memuat ulang perintah runtime:
@@ -153,6 +156,12 @@ Setelah mengatur `NB_CLI_ROOT=/your/workspace`, path file konfigurasi akan menja
 ```
 
 CLI juga kompatibel untuk membaca konfigurasi project lama di direktori kerja saat ini.
+
+
+Cache sesi untuk env saat ini disimpan di:
+
+.nocobase/sessions/<NB_SESSION_ID>.json
+Env terakhir yang digunakan secara global disimpan di field `lastEnv` pada `config.json`. Saat `NB_SESSION_ID` tidak diatur, CLI akan fallback ke nilai global tersebut.
 
 Cache perintah runtime disimpan di:
 

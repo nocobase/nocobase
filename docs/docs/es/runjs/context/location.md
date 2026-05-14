@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/location).
-:::
-
 # ctx.location
 
 Información de la ubicación de la ruta actual, equivalente al objeto `location` de React Router. Se utiliza habitualmente en conjunto con `ctx.router` y `ctx.route` para leer la ruta actual, la cadena de consulta (query string), el hash y el estado (state) pasado a través de la ruta.

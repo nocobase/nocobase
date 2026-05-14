@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/flow-engine/flow-context).
-:::
-
 # Kontextsystem-Übersicht
 
 Das Kontextsystem der NocoBase Workflow-Engine ist in drei Ebenen unterteilt, die jeweils unterschiedlichen Geltungsbereichen entsprechen. Die angemessene Verwendung ermöglicht die flexible gemeinsame Nutzung und Isolierung von Diensten, Konfigurationen und Daten, was die Wartbarkeit und Erweiterbarkeit des Geschäfts verbessert.

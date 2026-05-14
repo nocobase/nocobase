@@ -18,12 +18,9 @@ nb env info [name] [flags]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `[name]` | string | Nama env CLI yang akan dilihat, jika dilewati menggunakan env saat ini |
-| `--env`, `-e` | string | Nama env CLI yang akan dilihat, alternatif dari parameter posisi |
+| `[name]` | string | Nama env yang sudah dikonfigurasi untuk dilihat; jika dihilangkan, menggunakan env saat ini |
 | `--json` | boolean | Output JSON |
 | `--show-secrets` | boolean | Menampilkan token, password, dan kunci rahasia lainnya dalam teks biasa |
-
-Jika `[name]` dan `--env` keduanya dimasukkan, keduanya harus konsisten.
 
 ## Contoh
 
@@ -31,7 +28,6 @@ Jika `[name]` dan `--env` keduanya dimasukkan, keduanya harus konsisten.
 nb env info app1
 nb env info app1 --json
 nb env info app1 --show-secrets
-nb env info --env app1
 ```
 
 ## Perintah Terkait

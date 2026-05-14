@@ -35,11 +35,12 @@ nb [command]
 | [`nb app`](./app/index.md) | 管理应用运行态：启动、停止、重启、日志和升级。 |
 | [`nb config`](./config/index.md) | 管理 CLI 默认配置。 |
 | [`nb db`](./db/index.md) | 管理选中 env 的内置数据库。 |
-| [`nb env`](./env/index.md) | 管理 NocoBase 项目环境、状态、详情和运行时命令。 |
+| [`nb env`](./env/index.md) | 管理 NocoBase 项目环境、当前 env、状态、详情和运行时命令。 |
 | [`nb license`](./license/index.md) | 管理商业授权和授权插件。 |
 | [`nb plugin`](./plugin/index.md) | 管理选中 NocoBase env 的插件。 |
 | [`nb scaffold`](./scaffold/index.md) | 生成 NocoBase 插件开发脚手架。 |
 | [`nb self`](./self/index.md) | 检查或更新 NocoBase CLI 本身。 |
+| [`nb session`](./session/index.md) | 配置 `NB_SESSION_ID`，让 current env 按 shell 或 agent runtime 隔离。 |
 | [`nb skills`](./skills/index.md) | 检查或同步当前工作区的 NocoBase AI coding skills。 |
 | [`nb source`](./source/index.md) | 管理本地源码工程：下载、开发、构建和测试。 |
 
@@ -93,6 +94,8 @@ nb init --env app1 --yes --source docker --version alpha
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 启动应用并刷新运行时命令：
@@ -130,6 +133,7 @@ nb license plugins list -e app1
 | --- | --- |
 | `NB_CLI_ROOT` | CLI 保存 `.nocobase` 配置和本地应用文件的根目录。默认是当前用户主目录。 |
 | `NB_LOCALE` | CLI 提示语言和本地初始化 UI 语言，支持 `en-US` 和 `zh-CN`。 |
+| `NB_SESSION_ID` | 当前 shell 或 agent runtime 的会话 ID。设置后，`nb env use` 和 `nb env current` 会按会话隔离。 |
 
 示例：
 
@@ -153,6 +157,14 @@ export NB_LOCALE=zh-CN
 ```
 
 CLI 也兼容读取当前工作目录下的旧 project 配置。
+
+当前 env 的会话级缓存保存在：
+
+```text
+.nocobase/sessions/<NB_SESSION_ID>.json
+```
+
+全局最后使用的 env 保存在 `config.json` 的 `lastEnv` 字段里。没有 `NB_SESSION_ID` 时，CLI 会回退到这个全局值。
 
 运行时命令缓存保存在：
 

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-sql'
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 # Ação SQL
 

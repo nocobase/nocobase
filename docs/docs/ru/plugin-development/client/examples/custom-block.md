@@ -107,7 +107,7 @@ SimpleBlockModel.registerFlow({
 
 - **`renderComponent()`** — рендеринг UI блока, чтение HTML-содержимого через `this.props.html`
 - **`define()`** — установка отображаемого имени блока в меню «Добавить блок». `tExpr()` используется для отложенного перевода, потому что `define()` выполняется на этапе загрузки модуля, и в этот момент i18n ещё не инициализирован
-- **`registerFlow()`** — добавление панели конфигурации. `uiSchema` определяет форму через JSON Schema (синтаксис см. в [UI Schema](../../../../flow-engine/ui-schema)), `handler` записывает значения, заполненные пользователем, в `ctx.model.props`, а `renderComponent()` их читает
+- **`registerFlow()`** — добавление панели конфигурации. `uiSchema` определяет форму через JSON Schema (синтаксис см. в [UI Schema](../../../flow-engine/ui-schema.md)), `handler` записывает значения, заполненные пользователем, в `ctx.model.props`, а `renderComponent()` их читает
 
 ## Шаг 3: добавить файлы локализации
 
@@ -194,7 +194,7 @@ yarn pm enable @my-project/plugin-simple-block
 - [Написание первого плагина](../../write-your-first-plugin) — создание каркаса плагина с нуля
 - [Обзор FlowEngine](../flow-engine/index.md) — базовое использование FlowModel и registerFlow
 - [FlowEngine → Расширение блоков](../flow-engine/block) — BlockModel, DataBlockModel, CollectionBlockModel
-- [UI Schema](../../../../flow-engine/ui-schema) — справочник синтаксиса uiSchema
+- [UI Schema](../../../flow-engine/ui-schema.md) — справочник синтаксиса uiSchema
 - [Component vs FlowModel](../component-vs-flow-model) — когда использовать FlowModel
 - [Plugin (Плагин)](../plugin) — точка входа плагина и жизненный цикл load()
 - [i18n Интернационализация](../component/i18n) — формат файлов перевода и использование tExpr

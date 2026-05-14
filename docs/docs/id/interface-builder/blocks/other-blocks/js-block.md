@@ -40,7 +40,7 @@ Editor script JS Block mendukung syntax highlighting, error prompt, dan snippet 
 
 Selain itu, di sudut kanan atas editor dapat langsung memanggil AI Employee "Frontend Engineer · Nathan", biarkan dia menulis atau memodifikasi script berdasarkan konteks saat ini, satu klik "Apply to editor" untuk diterapkan ke editor kemudian dijalankan untuk melihat efeknya. Detail di:
 
-- [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Lingkungan Runtime dan Keamanan
 

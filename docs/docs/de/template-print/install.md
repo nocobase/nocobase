@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 ### Plugins installieren
 
 Beachten Sie die Dokumentation zur Installation und Aktualisierung von kommerziellen Plugins.

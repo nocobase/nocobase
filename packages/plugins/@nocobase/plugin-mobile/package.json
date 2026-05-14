@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "2.1.0-beta.25",
+  "version": "2.1.0-beta.32",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
@@ -14,7 +14,6 @@
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/plugin-acl": "2.x",
-    "@nocobase/plugin-localization": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

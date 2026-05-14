@@ -456,6 +456,7 @@ type FlowSurfacePopupSaveAsTemplate = {
 
 type FlowSurfacePopupTemplateAliasSession = Map<string, string>;
 type FlowSurfaceDefaultActionSettings = Record<string, any>;
+type FlowSurfaceModelPatchOptions = { transaction?: any };
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
@@ -657,6 +658,7 @@ const POPUP_ASSOCIATED_RECORDS_BLOCK_USES = new Set([
   'MapBlockModel',
   'CommentsBlockModel',
 ]);
+const FLOW_SURFACE_MODEL_OPTION_PATCH_OMIT_KEYS = ['uid', 'name', 'options'] as const;
 const POPUP_COLLECTION_BLOCK_SCENES: Partial<Record<string, FlowSurfaceCollectionBlockScene[]>> = {
   CreateFormModel: ['new'],
   EditFormModel: ['one', 'many'],
@@ -963,7 +965,9 @@ export class FlowSurfacesService {
   }
 
   private get routeSync() {
-    return new FlowSurfaceRouteSync(this.db, this.repository);
+    return new FlowSurfaceRouteSync(this.db, this.repository, (values, options) =>
+      this.patchFlowSurfaceModelOptions(values, options),
+    );
   }
 
   private getFlowTemplateRepository(actionName: string) {
@@ -1045,7 +1049,13 @@ export class FlowSurfacesService {
       contractGuard: this.contractGuard,
       db: this.db,
       hasDataSource: (dataSourceKey) => !!this.plugin.app.dataSourceManager?.get?.(dataSourceKey),
-      repository: this.repository,
+      repository: {
+        findModelById: (uid, options) => this.repository.findModelById(uid, options),
+        findModelByParentId: (parentUid, options) => this.repository.findModelByParentId(parentUid, options),
+        insertModel: (model, options) => this.repository.insertModel(model, options),
+        upsertModel: (model, options) => this.repository.upsertModel(model, options),
+        patch: (values, options) => this.patchFlowSurfaceModelOptions(values, options),
+      },
       setNodeAsyncFlag: (uid, asyncFlag, transaction) => this.setFlowModelNodeAsyncFlag(uid, asyncFlag, transaction),
       removeNodeTreeWithBindings: (uid, transaction) => this.removeNodeTreeWithBindings(uid, transaction),
       surfaceContext: this.surfaceContext,
@@ -1061,7 +1071,11 @@ export class FlowSurfacesService {
 
   private get hiddenPopupRuntime(): HiddenPopupHostRuntime {
     return {
-      repository: this.repository,
+      repository: {
+        findModelById: (uid, options) => this.repository.findModelById(uid, options),
+        patch: (values, options) => this.patchFlowSurfaceModelOptions(values, options),
+        upsertModel: (model, options) => this.repository.upsertModel(model, options),
+      },
       buildPopupOpenViewWithTemplate: (input) => this.buildPopupOpenViewWithTemplate(input),
       clearFlowTemplateUsagesForNodeTree: (uid, transaction) =>
         this.clearFlowTemplateUsagesForNodeTree(uid, transaction),
@@ -1071,6 +1085,43 @@ export class FlowSurfacesService {
       removeNodeTreeWithBindings: (uid, transaction) => this.removeNodeTreeWithBindings(uid, transaction),
       syncFlowTemplateUsagesForNodeTree: (uid, transaction) => this.syncFlowTemplateUsagesForNodeTree(uid, transaction),
     };
+  }
+
+  private normalizeFlowSurfaceModelOptionsPatch(values: Record<string, any>) {
+    return _.omit(_.cloneDeep(values || {}), FLOW_SURFACE_MODEL_OPTION_PATCH_OMIT_KEYS);
+  }
+
+  private async patchFlowSurfaceModelOptions(values: Record<string, any>, options: FlowSurfaceModelPatchOptions = {}) {
+    const normalizedUid = String(values?.uid || '').trim();
+    if (!normalizedUid) {
+      throwBadRequest('flowSurfaces model patch requires uid');
+    }
+
+    const model = await this.repository.model.findByPk(normalizedUid, {
+      transaction: options.transaction,
+    });
+    if (!model) {
+      throwBadRequest(`flowSurfaces model '${normalizedUid}' does not exist`);
+    }
+
+    const currentOptions = FlowModelRepository.optionsToJson(model.get('options') || {});
+    const nextOptions = {
+      ...currentOptions,
+      ...this.normalizeFlowSurfaceModelOptionsPatch(values),
+    };
+    delete nextOptions.uid;
+    delete nextOptions.name;
+    delete nextOptions.options;
+    model.set('options', nextOptions);
+    await model.save({
+      transaction: options.transaction,
+      hooks: false,
+    });
+    await this.repository.clearXUidPathCache(normalizedUid, options.transaction);
+    await this.repository.emitAfterSaveEvent(model, options);
+    if (values?.['x-server-hooks']) {
+      await this.db.emitAsync(`${this.repository.collection.name}.afterSave`, model, options);
+    }
   }
 
   private async setFlowModelNodeAsyncFlag(uid: string, asyncFlag: boolean, transaction?: any) {
@@ -3104,7 +3155,7 @@ export class FlowSurfacesService {
       _.set(nextStepParams, [slot.flowKey, slot.stepKey, slot.valuePath], _.cloneDeep(canonicalRules));
     }
 
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: targetUid,
         stepParams: nextStepParams,
@@ -3478,14 +3529,14 @@ export class FlowSurfacesService {
   private async patchDeclaredKeyModel(values: Record<string, any>, options?: { transaction?: any }) {
     const normalizedUid = String(values?.uid || '').trim();
     if (!normalizedUid) {
-      return this.repository.patch(values, options);
+      return this.patchFlowSurfaceModelOptions(values, options);
     }
 
     const persisted = await this.repository.model.findByPk(normalizedUid, {
       transaction: options?.transaction,
     });
     if (persisted) {
-      return this.repository.patch(values, options);
+      return this.patchFlowSurfaceModelOptions(values, options);
     }
 
     const currentNode = await this.repository
@@ -3512,7 +3563,7 @@ export class FlowSurfacesService {
       return;
     }
 
-    return this.repository.patch(values, options);
+    return this.patchFlowSurfaceModelOptions(values, options);
   }
 
   private async persistCreatedKeysForAction(
@@ -4682,7 +4733,7 @@ export class FlowSurfacesService {
   ) {
     const patches = this.collectDetachedPopupTemplateBlockResourceContextPatches(detachedTarget, context);
     for (const patch of patches) {
-      await this.repository.patch(
+      await this.patchFlowSurfaceModelOptions(
         {
           uid: patch.uid,
           stepParams: patch.stepParams,
@@ -4741,7 +4792,7 @@ export class FlowSurfacesService {
       if (!_.isEqual(nextOpenView, currentOpenView)) {
         currentGroup[resolvedOpenViewStep.stepKey] = nextOpenView;
         nextStepParams[resolvedOpenViewStep.flowKey] = currentGroup;
-        await this.repository.patch(
+        await this.patchFlowSurfaceModelOptions(
           {
             uid: detachedTarget.uid,
             stepParams: nextStepParams,
@@ -5063,7 +5114,7 @@ export class FlowSurfacesService {
     currentGroup[openViewStep.stepKey] = nextOpenView;
     nextStepParams[openViewStep.flowKey] = currentGroup;
     await this.cleanupLocalPopupSurfaceForHost(sourceNode.uid, transaction, sourceNode);
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: sourceNode.uid,
         stepParams: nextStepParams,
@@ -5414,7 +5465,7 @@ export class FlowSurfacesService {
       }
       nextStepParams[resolved.openViewStep.flowKey] = currentGroup;
       await this.cleanupLocalPopupSurfaceForHost(node.uid, options.transaction, node);
-      await this.repository.patch(
+      await this.patchFlowSurfaceModelOptions(
         {
           uid: node.uid,
           stepParams: nextStepParams,
@@ -6441,7 +6492,7 @@ export class FlowSurfacesService {
     if (Object.keys(nextPayload).length === 1) {
       return { uid: popupTab.uid };
     }
-    await this.repository.patch(nextPayload, { transaction: options.transaction });
+    await this.patchFlowSurfaceModelOptions(nextPayload, { transaction: options.transaction });
     return buildDefinedPayload({
       uid: popupTab.uid,
       title: values.title,
@@ -11577,7 +11628,7 @@ export class FlowSurfacesService {
       : {};
     currentGroup[openViewStep.stepKey] = nextOpenView;
     nextStepParams[openViewStep.flowKey] = currentGroup;
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: actionNode.uid,
         stepParams: nextStepParams,
@@ -11647,7 +11698,7 @@ export class FlowSurfacesService {
 
     currentGroup[stepKey] = nextOpenView;
     nextStepParams[flowKey] = currentGroup;
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: actionNode.uid,
         stepParams: nextStepParams,
@@ -11985,7 +12036,7 @@ export class FlowSurfacesService {
       };
     }
 
-    await this.repository.patch(nextPayload, { transaction: options.transaction });
+    await this.patchFlowSurfaceModelOptions(nextPayload, { transaction: options.transaction });
     if (!_.isUndefined(updateActionAssignedValues)) {
       await this.syncUpdateActionAssignFormItems(current.uid, updateActionAssignedValues, options.transaction);
     }
@@ -13190,7 +13241,7 @@ export class FlowSurfacesService {
       };
     }
 
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: target.uid,
         flowRegistry: flows,
@@ -13215,7 +13266,7 @@ export class FlowSurfacesService {
     const sizes = values.sizes || {};
     const rowOrder = values.rowOrder || Object.keys(rows);
     this.contractGuard.validateLayout(grid, { rows, sizes, rowOrder });
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: grid.uid,
         props: {
@@ -18772,7 +18823,7 @@ export class FlowSurfacesService {
     if (_.isEqual(nextConfigs, currentConfigs)) {
       return;
     }
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: blockGrid.uid,
         filterManager: nextConfigs,
@@ -18818,7 +18869,7 @@ export class FlowSurfacesService {
       targetId: input.targetBlockUid,
       filterPaths: this.buildFilterFormTargetPaths(input.resourceInit, input.fieldPath, input.associationPathName),
     });
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: blockGrid.uid,
         filterManager: nextConfigs,
@@ -18837,7 +18888,7 @@ export class FlowSurfacesService {
     if (_.isEqual(nextConfigs, currentConfigs)) {
       return;
     }
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: blockGrid.uid,
         filterManager: nextConfigs,
@@ -18856,7 +18907,7 @@ export class FlowSurfacesService {
     if (_.isEqual(nextConfigs, currentConfigs)) {
       return;
     }
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: blockGrid.uid,
         filterManager: nextConfigs,
@@ -19025,7 +19076,7 @@ export class FlowSurfacesService {
           current?.subModels?.field ||
           (await this.repository.findModelById(innerFieldUid, { transaction, includeAsyncNode: true }));
         if (innerField?.uid) {
-          await this.repository.patch(
+          await this.patchFlowSurfaceModelOptions(
             {
               uid: innerField.uid,
               stepParams: {
@@ -19062,7 +19113,7 @@ export class FlowSurfacesService {
         fieldSettings: nextFieldSettings,
       },
     };
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: parentUid,
         stepParams: nextWrapper.stepParams,
@@ -19324,7 +19375,7 @@ export class FlowSurfacesService {
     if (_.isEqual(currentOpenView, openView)) {
       return false;
     }
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: actionUid,
         stepParams: buildHiddenPopupActionStepParams(actionNode.stepParams, openView),
@@ -21465,7 +21516,7 @@ export class FlowSurfacesService {
         showIndex: input.showIndex,
       });
       if (Object.keys(props).length) {
-        await this.repository.patch(
+        await this.patchFlowSurfaceModelOptions(
           {
             uid: input.fieldUid,
             props: {
@@ -21573,7 +21624,7 @@ export class FlowSurfacesService {
       collectionName: getCollectionName(input.targetCollection),
     });
     if (Object.keys(openView).length > 2) {
-      await this.repository.patch(
+      await this.patchFlowSurfaceModelOptions(
         {
           uid: input.fieldUid,
           stepParams: _.merge({}, fieldNode?.stepParams || {}, {
@@ -21669,7 +21720,7 @@ export class FlowSurfacesService {
       },
       rowOrder: ['row1'],
     };
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: grid.uid,
         props: {
@@ -21734,7 +21785,7 @@ export class FlowSurfacesService {
         init: this.buildExactFieldSettingsInitPayload(input),
       },
     };
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: node.uid,
         stepParams: nextStepParams,
@@ -21912,7 +21963,7 @@ export class FlowSurfacesService {
         },
       },
     });
-    await this.repository.patch(
+    await this.patchFlowSurfaceModelOptions(
       {
         uid: wrapperNode.uid,
         stepParams: nextStepParams,
@@ -21945,7 +21996,7 @@ export class FlowSurfacesService {
       enabledPackages: input.enabledPackages,
     });
     if (innerField.use === normalizedTargetUse) {
-      await this.repository.patch(
+      await this.patchFlowSurfaceModelOptions(
         {
           uid: innerField.uid,
           stepParams: _.merge({}, innerField.stepParams || {}, {
@@ -21993,7 +22044,7 @@ export class FlowSurfacesService {
       }),
       subModels: nextSubModels,
     };
-    await this.repository.patch(nextFieldNode, { transaction: input.transaction });
+    await this.patchFlowSurfaceModelOptions(nextFieldNode, { transaction: input.transaction });
     return normalizedTargetUse;
   }
 

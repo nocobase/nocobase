@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/form).
-:::
-
 # ctx.form
 
 Die Ant Design Form-Instanz innerhalb des aktuellen Blocks, die zum Lesen und Schreiben von Formularfeldern sowie zum Auslösen von Validierungen und Übermittlungen verwendet wird. Sie entspricht `ctx.blockModel?.form` und kann direkt in Formular-Blöcken (Formular, Bearbeitungsformular, Unterformular usw.) verwendet werden.

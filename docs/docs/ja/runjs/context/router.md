@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/router)をご参照ください。
-:::
-
 # ctx.router
 
 React Router に基づいたルーティングインスタンスです。RunJS 内でコードを使用してナビゲーションを行うために使用されます。通常、`ctx.route` や `ctx.location` と組み合わせて使用します。

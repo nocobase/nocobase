@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/ai-employees/index).
-:::
-
 # Visão Geral
 
 ![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
@@ -34,7 +30,7 @@ Veja primeiro o [Início Rápido](/ai-employees/quick-start) e complete a config
 - [Configurar serviço de LLM](/ai-employees/features/llm-service): conecte provedores, configure e gerencie modelos disponíveis.
 - [Ativar Funcionários de IA](/ai-employees/features/enable-ai-employee): ative ou desative funcionários integrados e controle o escopo de uso.
 - [Novo Funcionário de IA](/ai-employees/features/new-ai-employees): defina funções, persona, mensagem de boas-vindas e limites de capacidade.
-- [Usar habilidades](/ai-employees/features/tool): configure permissões de habilidades (`Ask` / `Allow`) para controlar riscos de execução.
+- [Usar habilidades](./features/tools.md): configure permissões de habilidades (`Ask` / `Allow`) para controlar riscos de execução.
 
 ### B. Colaboração Diária (Usuários de Negócios)
 
@@ -45,7 +41,7 @@ Veja primeiro o [Início Rápido](/ai-employees/quick-start) e complete a config
 
 ### C. Capacidades Avançadas (Extensões)
 
-- [Funcionários de IA integrados](/ai-employees/features/built-in-employee): entenda o posicionamento e os cenários aplicáveis dos funcionários predefinidos.
+- [Funcionários de IA integrados](/ai-employees/built-in/): entenda o posicionamento e os cenários aplicáveis dos funcionários predefinidos.
 - [Controle de Permissões](/ai-employees/permission): controle o acesso a funcionários, habilidades e dados de acordo com o modelo de permissões da organização.
 - [Base de Conhecimento de IA](/ai-employees/knowledge-base/index): introduza o conhecimento da empresa para melhorar a estabilidade e a rastreabilidade das respostas.
 - [Nó de LLM no fluxo de trabalho](/ai-employees/workflow/nodes/llm/chat): orquestre capacidades de IA em fluxos de trabalho automatizados.

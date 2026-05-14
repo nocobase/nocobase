@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/solution/ticket-system/installation).
-:::
-
 # Wie man installiert
 
 > Die aktuelle Version verwendet die Form der **Sicherung und Wiederherstellung** für die Bereitstellung. In späteren Versionen werden wir möglicherweise auf die Form der **inkrementellen Migration** umsteigen, um die Integration der Lösung in Ihr bestehendes System zu erleichtern.

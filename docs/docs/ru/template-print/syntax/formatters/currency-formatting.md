@@ -1,7 +1,3 @@
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/template-print/syntax/formatters/currency-formatting).
-:::
-
 ### Форматирование валюты
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

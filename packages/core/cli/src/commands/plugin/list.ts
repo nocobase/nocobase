@@ -14,6 +14,7 @@ import {
   runDockerNocoBaseCommand,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 
 export default class PluginList extends Command {
   static override hidden = false;
@@ -29,18 +30,35 @@ export default class PluginList extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb init`). Defaults to the current env when omitted',
+      description: 'CLI env name to inspect plugins for. Defaults to the current env when omitted',
+    }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
     }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(PluginList);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
 
-    const runtime = await resolveManagedAppRuntime(flags.env);
+    const runtime = await resolveManagedAppRuntime(requestedEnv);
 
     if (!runtime) {
-      this.error(formatMissingManagedAppEnvMessage(flags.env));
+      this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
     if (runtime.kind === 'local') {
@@ -73,6 +91,8 @@ export default class PluginList extends Command {
       );
     }
 
-    await this.config.runCommand('api:pm:list', ['--mode=summary']);
+    await this.config.runCommand('api:pm:list', explicitEnvSelection
+      ? ['--mode=summary', '--env', runtime.envName, '--yes']
+      : ['--mode=summary']);
   }
 }

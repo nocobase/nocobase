@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/open-view).
-:::
-
 # ctx.openView()
 
 Abre de forma programática una vista especificada (cajón, diálogo, página incrustada, etc.). Proporcionado por `FlowModelContext`, se utiliza para abrir vistas configuradas de `ChildPage` o `PopupAction` en escenarios como `JSBlock`, celdas de tabla y flujos de trabajo.

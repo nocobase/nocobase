@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-request'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # HTTP-Anfrage
 

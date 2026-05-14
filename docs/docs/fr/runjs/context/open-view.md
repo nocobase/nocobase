@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/open-view).
-:::
-
 # ctx.openView()
 
 Ouvrez une vue spécifiée (tiroir, boîte de dialogue, page intégrée, etc.) par programmation. Fourni par `FlowModelContext`, il est utilisé pour ouvrir des vues `ChildPage` ou `PopupAction` configurées dans des scénarios tels que `JSBlock`, les cellules de tableau, les flux de travail, etc.

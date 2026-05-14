@@ -181,6 +181,29 @@ describe('flowSurfaces resource', () => {
     expect(destroyPageRes.status).toBe(200);
   });
 
+  it('should not persist FlowSurface runtime identifiers inside model options', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'FlowSurface model options page',
+      tabTitle: 'FlowSurface model options tab',
+    });
+    const blockUid = await addBlock(rootAgent, page.tabSchemaUid, 'markdown', undefined, {
+      settings: {
+        content: 'FlowSurface markdown content',
+      },
+    });
+
+    const blockRow = await flowRepo.model.findByPk(blockUid);
+    const blockOptions = blockRow?.get('options') || {};
+    expect(blockOptions).not.toHaveProperty('uid');
+    expect(blockOptions).not.toHaveProperty('name');
+    expect(blockOptions).not.toHaveProperty('options');
+    expect(blockOptions.props?.content).toBe('FlowSurface markdown content');
+
+    const readback = await flowRepo.findModelById(blockUid, { includeAsyncNode: true });
+    expect(readback.uid).toBe(blockUid);
+    expect(readback.props?.content).toBe('FlowSurface markdown content');
+  });
+
   it('should recover popup surfaces after removing the last popup child tab', async () => {
     const page = await createPage(rootAgent, {
       title: 'Popup tabs page',

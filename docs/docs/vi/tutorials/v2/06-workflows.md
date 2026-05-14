@@ -34,7 +34,7 @@ NocoBase cung cấp nhiều kiểu Trigger, chọn khi tạo Workflow:
 |-------|------|---------|
 | [**Sự kiện bảng dữ liệu**](/workflow/triggers/collection) | Trigger khi dữ liệu được thêm, cập nhật hoặc xóa | Thông báo ticket mới, ghi lại thay đổi trạng thái |
 | [**Task định kỳ**](/workflow/triggers/schedule) | Trigger theo Cron expression hoặc thời gian cố định | Tạo báo cáo ngày, dọn dẹp dữ liệu hết hạn định kỳ |
-| [**Sự kiện sau Action**](/workflow/triggers/action) | Trigger sau khi Người dùng thực hiện Action trên giao diện | Gửi thông báo sau khi submit form, ghi log thao tác |
+| [**Sự kiện sau Action**](../../workflow/triggers/post-action.md) | Trigger sau khi Người dùng thực hiện Action trên giao diện | Gửi thông báo sau khi submit form, ghi log thao tác |
 | **Phê duyệt** | Khởi động luồng phê duyệt, hỗ trợ phê duyệt nhiều cấp | Phê duyệt nghỉ phép, phê duyệt mua sắm |
 | **Action tùy chỉnh** | Gắn vào nút tùy chỉnh, click để trigger | Lưu trữ một bước, thao tác hàng loạt |
 | **Sự kiện trước Action** | Chặn thao tác Người dùng, thực thi đồng bộ trước rồi mới cho qua | Validate trước submit, tự động bổ sung Field |

@@ -91,7 +91,7 @@ nb env auth local
 
 `nb env auth` lance le flux de connexion via le navigateur. Une fois l'authentification réussie, le CLI sauvegarde les informations d'authentification dans la configuration de l'environnement courant, après quoi vous pouvez continuer à laisser l'AI Agent appeler `nb api`.
 
-La durée de validité des tokens d'accès et de rafraîchissement OAuth suit la configuration de la [politique de Token](/security/token-policy/) du système.
+La durée de validité des tokens d'accès et de rafraîchissement OAuth suit la configuration de la [politique de Token](../security/token-policy/index.md) du système.
 
 - La durée de validité du token d'accès OAuth est identique à celle du Token système, avec une valeur par défaut de **1 jour**
 - La durée de validité du token de rafraîchissement OAuth est identique à celle de la session système, avec une valeur par défaut de **7 jours**

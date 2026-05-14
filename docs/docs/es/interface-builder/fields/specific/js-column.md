@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/fields/specific/js-column).
-:::
-
 # JS Column
 
 ## Introducción
@@ -37,7 +33,7 @@ El editor de scripts de JS Column admite resaltado de sintaxis, sugerencias de e
 
 Puede combinarse con empleados de IA para generar código:
 
-- [Empleado de IA · Nathan: Ingeniero frontend](/ai-employees/features/built-in-employee)
+- [Empleado de IA · Nathan: Ingeniero frontend](/ai-employees/built-in/)
 
 ## Usos Comunes
 

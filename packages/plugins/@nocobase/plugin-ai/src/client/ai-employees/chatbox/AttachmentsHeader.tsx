@@ -10,11 +10,14 @@
 import React, { useMemo } from 'react';
 import { Attachments } from '@ant-design/x';
 import { css } from '@emotion/css';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const AttachmentsHeader: React.FC = () => {
-  const attachments = useChatMessagesStore.use.attachments();
-  const removeAttachment = useChatMessagesStore.use.removeAttachment();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const attachments = chat.use.attachments();
+  const removeAttachment = chat.removeAttachment;
 
   const items = useMemo(() => {
     return attachments?.map((item) => ({

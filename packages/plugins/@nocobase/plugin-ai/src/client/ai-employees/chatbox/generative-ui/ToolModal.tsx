@@ -46,7 +46,7 @@ export const ToolModal: React.FC = observer(() => {
   const toolsByName = useChatToolsStore.use.toolsByName();
   const readonly = useChatBoxStore.use.readonly();
 
-  const { updateToolArgs, messagesService } = useChatMessageActions();
+  const { updateToolArgs } = useChatMessageActions();
 
   const resolvedActiveTool =
     (activeMessageId && activeTool?.id ? toolsByMessageId[activeMessageId]?.[activeTool.id] : null) || activeTool;
@@ -90,7 +90,6 @@ export const ToolModal: React.FC = observer(() => {
         ...resolvedActiveTool,
         args,
       });
-      // messagesService.run(currentConversation);
     },
     [activeMessageId, currentConversation, resolvedActiveTool, setActiveTool, t, updateToolArgs],
   );

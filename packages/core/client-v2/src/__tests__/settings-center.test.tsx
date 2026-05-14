@@ -158,6 +158,36 @@ describe('settings center', () => {
     expect(await screen.findByDisplayValue('NocoBase')).toBeInTheDocument();
   });
 
+  it('should expose current language variable as enabled-language selector', async () => {
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/admin/settings/system-settings'] },
+    });
+    mockAdminRuntime(app, {
+      systemSettings: {
+        enabledLanguages: ['en-US', 'zh-CN'],
+      },
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check', 'systemSettings:get']);
+
+    await waitFor(() => {
+      const localeNode = app.flowEngine.context.getPropertyMetaTree().find((node) => node.name === 'locale');
+      expect(localeNode).toMatchObject({
+        name: 'locale',
+        title: '{{t("Current language")}}',
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { label: 'English', value: 'en-US' },
+            { label: '简体中文', value: 'zh-CN' },
+          ],
+        },
+      });
+    });
+  });
+
   it('should fallback to plugin-manager when system-settings is not allowed', async () => {
     const app = createMockClient({
       plugins: [NocoBaseBuildInPlugin, TestAclPlugin],

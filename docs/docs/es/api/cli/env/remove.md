@@ -8,6 +8,8 @@ keywords: "nb env remove,NocoBase CLI,eliminar entorno,quitar configuración"
 
 Elimina un env configurado. Este comando solo borra la configuración del env de CLI; si necesita limpiar la aplicación local, los contenedores y el storage, utilice [`nb app down`](../app/down.md).
 
+Si el env eliminado también es el env actual, la CLI selecciona automáticamente un nuevo env actual entre los env restantes. Si no quedan env, el env actual se limpia.
+
 ## Uso
 
 ```bash
@@ -18,7 +20,7 @@ nb env remove <name> [flags]
 
 | Parámetro | Tipo | Descripción |
 | --- | --- | --- |
-| `<name>` | string | Nombre del entorno a eliminar |
+| `<name>` | string | Nombre del entorno configurado que se va a eliminar |
 | `--force`, `-f` | boolean | Omite la confirmación y elimina directamente |
 | `--verbose` | boolean | Muestra el progreso detallado |
 
@@ -32,4 +34,5 @@ nb env remove staging -f
 ## Comandos relacionados
 
 - [`nb app down`](../app/down.md)
+- [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

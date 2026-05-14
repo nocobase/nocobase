@@ -19,6 +19,7 @@ nb app logs [flags]
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
 | `--env`, `-e` | string | Tên CLI env muốn xem log, bỏ qua thì dùng env hiện tại |
+| `--yes`, `-y` | boolean | Khi `--env` được truyền tường minh và trỏ tới env khác với env hiện tại, bỏ qua bước xác nhận tương tác |
 | `--tail` | integer | Số dòng log gần nhất hiển thị trước khi follow, mặc định `100` |
 | `--follow`, `-f` / `--no-follow` | boolean | Có liên tục follow log mới hay không |
 
@@ -30,6 +31,8 @@ nb app logs --env app1
 nb app logs --env app1 --tail 200
 nb app logs --env app1 --no-follow
 ```
+
+Nếu bạn truyền `--env` một cách tường minh và nó khác env hiện tại, CLI sẽ yêu cầu xác nhận trước. Trong terminal không tương tác hoặc phiên AI agent, hãy tự thêm `--yes` hoặc chạy `nb env use <name>` trước rồi thử lại.
 
 ## Lệnh liên quan
 

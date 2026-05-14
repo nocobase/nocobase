@@ -8,7 +8,7 @@
  */
 
 import { defineAction, DisplayItemModel, FlowModelContext, tExpr } from '@nocobase/flow-engine';
-import { isTitleField } from '../../flow-compat';
+import { getFlowFieldInterfaceOptions, isTitleFieldInterface } from '../../flow-compat';
 
 const normalizeFilterTargetKey = (filterTargetKey: any) => {
   if (typeof filterTargetKey === 'string') {
@@ -37,10 +37,15 @@ export const titleField = defineAction({
   title: tExpr('Title field'),
   uiMode: (ctx) => {
     const targetCollection = ctx.collectionField.targetCollection;
-    const dataSourceManager = ctx.app.dataSourceManager;
+    const dataSourceManager =
+      ctx.dataSourceManager || ctx.model?.context?.dataSourceManager || ctx.app?.dataSourceManager;
     const targetFields = targetCollection?.getFields?.() ?? [];
     const options = targetFields
-      .filter((field) => isTitleField(dataSourceManager, field.options))
+      .filter((field) =>
+        isTitleFieldInterface(
+          getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager),
+        ),
+      )
       .map((field) => ({
         value: field.name,
         label: field?.title,
@@ -54,7 +59,7 @@ export const titleField = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
-    const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+    const titleField = ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;
     return {
       label: ctx.model.parent?.props?.titleField || ctx.model.props.titleField || titleField,
     };

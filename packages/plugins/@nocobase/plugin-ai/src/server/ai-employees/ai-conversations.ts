@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Op, Transaction } from '@nocobase/database';
+import { Model, Op, Transaction, Transactionable } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
@@ -16,6 +16,7 @@ export type AIConversationsOptions = {
   systemMessage?: unknown;
   skillSettings?: unknown;
   conversationSettings?: unknown;
+  modelSettings?: unknown;
   [key: string]: unknown;
 };
 
@@ -47,6 +48,7 @@ export type GetAIConversationMessagesParams = {
   sessionId: string;
   cursor?: string;
   paginate?: boolean;
+  updateRead?: boolean;
 };
 
 export type ParsedMessageRow = AIMessage & Model;
@@ -55,6 +57,30 @@ export type GetAIConversationMessagesResult = {
   rows: any[];
   hasMore?: boolean;
   cursor?: string | null;
+};
+
+export const registerAIConversationReadNotification = (plugin: PluginAIServer) => {
+  plugin.db.on('aiConversations.beforeSave', async (model: Model, options: Transactionable) => {
+    if (model.isNewRecord || !model.changed('read')) {
+      return;
+    }
+    const values = model.toJSON();
+    if (values.from !== 'main-agent' || values.category !== 'chat') {
+      return;
+    }
+    options.transaction?.afterCommit(async () => {
+      plugin.app.emit('ws:sendToUser', {
+        userId: values.userId,
+        message: {
+          type: 'ai-conversations:read',
+          payload: {
+            sessionId: values.sessionId,
+            read: values.read,
+          },
+        },
+      });
+    });
+  });
 };
 
 export class AIConversationsManager {
@@ -93,7 +119,7 @@ export class AIConversationsManager {
       throw new Error('invalid sessionId');
     }
 
-    const { systemMessage, skillSettings, conversationSettings } = inputOptions ?? {};
+    const { systemMessage, skillSettings, conversationSettings, modelSettings } = inputOptions ?? {};
     const options = conversation.options ?? {};
     if (systemMessage) {
       options['systemMessage'] = systemMessage;
@@ -103,6 +129,9 @@ export class AIConversationsManager {
     }
     if (conversationSettings) {
       options['conversationSettings'] = conversationSettings;
+    }
+    if (modelSettings) {
+      options['modelSettings'] = modelSettings;
     }
     const values: Record<string, unknown> = { options };
     if (title) {
@@ -160,6 +189,7 @@ export class AIConversationsManager {
     sessionId,
     cursor,
     paginate = true,
+    updateRead = false,
   }: GetAIConversationMessagesParams): Promise<GetAIConversationMessagesResult> {
     const conversation = await this.getConversation({
       sessionId,
@@ -168,6 +198,17 @@ export class AIConversationsManager {
 
     if (!conversation) {
       throw new Error('invalid sessionId');
+    }
+
+    if (updateRead) {
+      await this.aiConversationsRepo.update({
+        values: {
+          read: true,
+        },
+        filter: {
+          sessionId,
+        },
+      });
     }
 
     const pageSize = 10;

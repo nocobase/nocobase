@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/log-and-monitor/logger/overview).
-:::
-
 # Registros del servidor, registros de auditoría e historial de registros
 
 ## Registros del servidor

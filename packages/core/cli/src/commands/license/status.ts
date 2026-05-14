@@ -8,7 +8,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { ensureInstanceId, licenseEnvFlag, licenseJsonFlag, requireLicenseRuntime } from './shared.js';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { createLicenseEnvFlag, ensureInstanceId, licenseJsonFlag, licenseYesFlag, requireLicenseRuntime } from './shared.js';
 
 export default class LicenseStatus extends Command {
   static override summary = 'Show commercial license status for the selected env';
@@ -21,8 +22,9 @@ export default class LicenseStatus extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --json',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to inspect. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
+    yes: licenseYesFlag,
     doctor: Flags.boolean({
       description: 'Run extra diagnostic checks and suggestions',
       default: false,
@@ -31,6 +33,20 @@ export default class LicenseStatus extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicenseStatus);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv ?? []));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        this.log('Canceled.');
+        return;
+      }
+    }
+
     const runtime = await requireLicenseRuntime(flags.env);
     const payload = {
       ok: true,

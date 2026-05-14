@@ -37,16 +37,22 @@ import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
   disabled?: boolean;
+  /**
+   * Override the internally calculated scroll container height.
+   * Used by blocks that compose additional headers/footers outside FormV2.
+   */
+  height?: number;
 }
 
 const FormComponent: React.FC<FormProps> = (props) => {
-  const { form, children, ...others } = props;
+  const { form, children, height: heightProp, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   const cardItemSchema = getCardItemSchema?.(fieldSchema);
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
-  const height = useFormBlockHeight();
+  const computedHeight = useFormBlockHeight();
+  const height = Number.isFinite(heightProp as any) ? heightProp : computedHeight;
   const { token } = theme.useToken();
   const {
     layout = 'vertical',
@@ -115,7 +121,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
 const Def = (props: any) => props.children;
 
 const FormDecorator: React.FC<FormProps> = (props) => {
-  const { form, children, disabled, ...others } = props;
+  const { form, children, disabled, height: _heightProp, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   // TODO: component 里 useField 会与当前 field 存在偏差

@@ -16,6 +16,11 @@ import {
   checkExternalDbConnection,
   readExternalDbConnectionConfig,
 } from '../../lib/db-connection-check.ts';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from '../../lib/docker-image.ts';
 import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { buildRuntimeEnvVars } from '../../lib/runtime-env-vars.js';
@@ -23,9 +28,17 @@ import { resolveLicensePkgUrlFromConfig } from '../../lib/cli-config.js';
 import { commandOutput } from '../../lib/run-npm.js';
 import { appUrl } from '../env/shared.js';
 
-export const licenseEnvFlag = Flags.string({
-  char: 'e',
-  description: 'CLI env name (from `nb env` / `nb init`). Defaults to the current env when omitted',
+export function createLicenseEnvFlag(description: string) {
+  return Flags.string({
+    char: 'e',
+    description,
+  });
+}
+
+export const licenseYesFlag = Flags.boolean({
+  char: 'y',
+  description: 'Confirm using --env when it targets a different env than the current env',
+  default: false,
 });
 
 export const licenseJsonFlag = Flags.boolean({
@@ -34,9 +47,6 @@ export const licenseJsonFlag = Flags.boolean({
 });
 
 const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
-const DEFAULT_DOCKER_VERSION = 'alpha';
-
 export const licensePkgUrlFlag = Flags.string({
   description: 'Commercial package service base URL',
   hidden: true,
@@ -132,7 +142,10 @@ function normalizeDockerPlatform(value: unknown): string | undefined {
 
 function resolveDockerLicenseImageRef(runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>): string {
   const config = runtime.env.config ?? {};
-  return `${trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY}:${trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION}`;
+  return resolveDockerImageRef(config.dockerRegistry, config.downloadVersion, {
+    defaultRegistry: DEFAULT_DOCKER_REGISTRY,
+    defaultVersion: DEFAULT_DOCKER_VERSION,
+  });
 }
 
 function buildDockerLicenseDbFlagArgs(envVars: Record<string, string>): string[] {

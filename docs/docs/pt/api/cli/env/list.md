@@ -1,33 +1,36 @@
 ---
 title: "nb env list"
-description: "Referência do comando nb env list: lista os env configurados do NocoBase CLI e o status de autenticação da API."
-keywords: "nb env list,NocoBase CLI,lista de ambientes,status de autenticação"
+description: "Referência do comando nb env list: lista os envs configurados do NocoBase CLI."
+keywords: "nb env list,NocoBase CLI,lista de ambientes,API Base URL"
 ---
 
 # nb env list
 
-Lista todos os env configurados e verifica o status de autenticação da API da aplicação utilizando as credenciais Token/OAuth já salvas.
+Lista todos os envs configurados.
+
+Este comando mostra apenas a configuração salva. Use [`nb env status`](./status.md) quando quiser verificar o status.
 
 ## Uso
 
-```bash
+
 nb env list
-```
 
 ## Saída
 
-A tabela de saída inclui o marcador do ambiente atual, nome, tipo, App Status, URL, método de autenticação e versão em tempo de execução.
+A tabela de saída inclui o marcador do ambiente atual, nome, tipo, `API Base URL`, tipo de autenticação e versão de runtime.
 
-`App Status` representa o status retornado quando o CLI acessa a API da aplicação utilizando as informações de autenticação do env atual, por exemplo `ok`, `auth failed`, `unreachable` ou `unconfigured`. Para verificar o status de execução do banco de dados, use [`nb db ps`](../db/ps.md).
+- `Current` marca com `*` o env efetivamente ativo
+- `API Base URL` mostra o endereço bruto da API salvo
+- `Runtime` mostra as informações de versão de runtime em cache
 
 ## Exemplos
 
-```bash
+
 nb env list
-```
 
 ## Comandos relacionados
 
+- [`nb env current`](./current.md)
+- [`nb env status`](./status.md)
 - [`nb env info`](./info.md)
 - [`nb env use`](./use.md)
-- [`nb db ps`](../db/ps.md)

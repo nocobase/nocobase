@@ -51,7 +51,7 @@ test('resolveManagedAppRuntime detects local, docker, and http envs', async () =
             containerPrefix: 'nb-team',
           },
         },
-        currentEnv: 'docker-env',
+        lastEnv: 'docker-env',
         envs: {
           'docker-env': {
             source: 'docker',
@@ -103,7 +103,7 @@ test('resolveManagedAppRuntime falls back to legacy name for docker defaults', a
     await saveAuthConfig(
       {
         name: 'nb-legacy',
-        currentEnv: 'docker-env',
+        lastEnv: 'docker-env',
         envs: {
           'docker-env': {
             source: 'docker',

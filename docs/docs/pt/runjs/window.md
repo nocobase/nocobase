@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/window).
-:::
-
 # window
 
 As seguintes propriedades podem ser acessadas diretamente via `window`:

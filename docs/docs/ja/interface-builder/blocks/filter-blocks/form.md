@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/blocks/filter-blocks/form)をご参照ください。
-:::
-
 # フィルターフォーム
 
 ## はじめに

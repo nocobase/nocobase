@@ -18,7 +18,6 @@ You only need to configure the LLM service and enable the corresponding employee
 | **Lexi** | Translation Assistant | Multilingual translation, communication assistance |
 | **Vera** | Research Analyst | Web search, information aggregation, deep research |
 | **Dara** | Data Visualization Expert | Chart configuration, visual report generation |
-| **Orin** | Data Modeling Expert | Assist in designing collection structures, field suggestions |
 | **Nathan** | Frontend Engineer | Assist in writing frontend code snippets, style adjustments |
 
 Click the **AI floating ball** in the bottom-right corner of the application interface to open an AI conversation and start collaborating.
@@ -45,7 +44,7 @@ In most scenarios, you can simply describe what you need. Atlas will either cont
 
 Some built-in AI employees (builder types) do not appear in the bottom-right AI employee list; they have dedicated workspaces, for example:
 
-* Orin only appears on the Data Source configuration page;
+* only appears on the Data Source configuration page;
 * Dara only appears on the chart configuration page;
 * Nathan only appears in the JS editor.
 
@@ -164,33 +163,6 @@ After sending, `Dex` will structure the data and use its skills to update the da
 
 ---
 
-## Orin: Data Modeler
-
-### Introduction
-
-> Intelligently design collections and optimize database structures.
-
-`Orin` is a data modeling expert. On the main data source configuration page, you can let `Orin` help you create or modify collections.
-
-![20251022160628](https://static-docs.nocobase.com/20251022160628.png)
-
-### Usage
-
-Enter the Data Source Manager plugin and select to configure the main data source.
-
-![20251022161146](https://static-docs.nocobase.com/20251022161146.png)
-
-Click the `Orin` avatar in the top right corner to open the AI employee dialog box.
-
-![20251022161641](https://static-docs.nocobase.com/20251022161641.png)
-
-Describe your modeling requirements to `Orin`, send, and wait for a reply. 
-
-Once `Orin` confirms your requirements, he will use his skills and reply with a preview of the data modeling.
-
-After reviewing the preview, click the **Finish review and apply** button to create collections according to `Orin`'s modeling.
-
-![20251022162142](https://static-docs.nocobase.com/20251022162142.png)
 
 ---
 

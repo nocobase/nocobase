@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/render).
-:::
-
 # Rendering im Container
 
 Verwenden Sie `ctx.render()`, um Inhalte in den aktuellen Container (`ctx.element`) zu rendern. Es werden die folgenden drei Formen unterstützt:

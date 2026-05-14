@@ -46,12 +46,14 @@ import { useAssociationTitleFieldSync } from '../components/useAssociationTitleF
 import _ from 'lodash';
 import { SubFormFieldModel, SubFormListFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
+import { enumToOptions } from '../internal/utils/enumOptionsUtils';
 import {
   findFormItemModelByFieldPath,
   getCollectionFromModel,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
+import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -117,6 +119,214 @@ const getFormFields = (ctx: any) => {
     console.warn('Failed to get form fields:', error);
     return [];
   }
+};
+
+const cloneOptions = (options: any[]) =>
+  options.map((option) => (option && typeof option === 'object' ? { ...option } : option));
+
+const LIMIT_OPTIONS_INTERFACES = new Set(['select', 'multipleSelect', 'radioGroup', 'checkboxGroup']);
+
+const getFieldInterface = (fieldModel: any) => {
+  return fieldModel?.collectionField?.interface || fieldModel?.subModels?.field?.context?.collectionField?.interface;
+};
+
+const supportsLimitOptions = (fieldModel: any) => {
+  return LIMIT_OPTIONS_INTERFACES.has(getFieldInterface(fieldModel));
+};
+
+const getOriginalFieldOptions = (fieldModel: any) => {
+  const field = fieldModel?.subModels?.field || fieldModel;
+  const enumOptions = enumToOptions(fieldModel?.collectionField?.uiSchema?.enum, (text) => text) || [];
+  if (enumOptions.length > 0) {
+    field._originalOptionsFallback = cloneOptions(enumOptions);
+    return field._originalOptionsFallback;
+  }
+  if (Array.isArray(field?._originalOptionsFallback) && field._originalOptionsFallback.length > 0) {
+    return field._originalOptionsFallback;
+  }
+  if (Array.isArray(field?.props?.options) && field.props.options.length > 0) {
+    field._originalOptionsFallback = cloneOptions(field.props.options);
+    return field._originalOptionsFallback;
+  }
+  return null;
+};
+
+const getFieldModelOptions = (fieldModel: any, t: (s: string) => string) => {
+  const originalOptions = getOriginalFieldOptions(fieldModel);
+  if (originalOptions) {
+    return originalOptions.map((option: any) =>
+      option && typeof option === 'object' && typeof option.label === 'string'
+        ? { ...option, label: t(option.label) }
+        : option,
+    );
+  }
+  return [];
+};
+
+const getFieldOptionsBySelectedFields = (fieldOptions: any[], fields: string[] = [], t: (s: string) => string) => {
+  const selected = fields
+    .map((fieldUid) => fieldOptions.find((option) => option.value === fieldUid)?.model)
+    .filter((model) => supportsLimitOptions(model))
+    .filter(Boolean);
+
+  const options = selected.flatMap((model) => getFieldModelOptions(model, t));
+  const deduped = new Map<string, any>();
+  options.forEach((option) => {
+    deduped.set(JSON.stringify(option?.value), option);
+  });
+  return Array.from(deduped.values());
+};
+
+const getFieldStateProps = (state: string, selectedOptions?: any[]) => {
+  switch (state) {
+    case 'visible':
+      return { hiddenModel: false };
+    case 'hidden':
+      return { hiddenModel: true };
+    case 'hiddenReservedValue':
+      return { hidden: true };
+    case 'required':
+      return { required: true };
+    case 'notRequired':
+      return { required: false };
+    case 'disabled':
+      return { disabled: true };
+    case 'enabled':
+      return { disabled: false };
+    case 'limitOptions':
+      return Array.isArray(selectedOptions) ? { options: selectedOptions } : {};
+    default:
+      return null;
+  }
+};
+
+const getFieldStateTargetModel = (state: string, model: any) => {
+  return state === 'limitOptions' ? model?.subModels?.field || model : model;
+};
+
+const isFieldOptionsPatch = (props: any) => {
+  return props && typeof props === 'object' && Object.keys(props).length === 1 && Array.isArray(props.options);
+};
+
+const syncFieldOptionsToForks = (model: any, props: any) => {
+  if (!isFieldOptionsPatch(props) || !model?.forks || typeof model.forks.forEach !== 'function') return;
+  model.forks.forEach((fork: any) => {
+    fork?.setProps?.({ options: cloneOptions(props.options) });
+  });
+};
+
+type FieldStateEditorValue = {
+  fields: string[];
+  state?: string;
+  selectedOptions?: any[];
+};
+
+const FieldStateEditor = ({
+  value = { fields: [] } as FieldStateEditorValue,
+  onChange,
+  includeFormStates = true,
+  fieldOptionsGetter = getFormFields,
+}) => {
+  const ctx = useFlowContext();
+  const t = ctx.model.translate.bind(ctx.model);
+
+  const fieldOptions = fieldOptionsGetter(ctx);
+  const selectedFieldModels = (value.fields || [])
+    .map((fieldUid) => fieldOptions.find((option) => option.value === fieldUid)?.model)
+    .filter(Boolean);
+  const canConfigureLimitOptions =
+    selectedFieldModels.length === 1 && selectedFieldModels.every((model: any) => supportsLimitOptions(model));
+  const stateOptions = [
+    { label: t('Visible'), value: 'visible' },
+    { label: t('Hidden'), value: 'hidden' },
+    { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
+    includeFormStates && { label: t('Required'), value: 'required' },
+    includeFormStates && { label: t('Not required'), value: 'notRequired' },
+    includeFormStates && { label: t('Disabled'), value: 'disabled' },
+    includeFormStates && { label: t('Enabled'), value: 'enabled' },
+    includeFormStates && canConfigureLimitOptions && { label: t('Options'), value: 'limitOptions' },
+  ].filter(Boolean);
+  const selectableOptions = getFieldOptionsBySelectedFields(fieldOptions, value.fields, t);
+
+  const handleFieldsChange = (selectedFields: string[]) => {
+    const nextSelectedFieldModels = selectedFields
+      .map((fieldUid) => fieldOptions.find((option) => option.value === fieldUid)?.model)
+      .filter(Boolean);
+    const nextCanConfigureLimitOptions =
+      nextSelectedFieldModels.length === 1 &&
+      nextSelectedFieldModels.every((model: any) => supportsLimitOptions(model));
+    const nextState = value.state === 'limitOptions' && !nextCanConfigureLimitOptions ? undefined : value.state;
+    const nextSelectedOptions =
+      value.state === 'limitOptions' || nextState === 'limitOptions' ? [] : value.selectedOptions;
+    onChange({
+      ...value,
+      fields: selectedFields,
+      state: nextState,
+      selectedOptions: nextSelectedOptions,
+    });
+  };
+
+  const handleStateChange = (selectedState: string) => {
+    onChange({
+      ...value,
+      state: selectedState,
+      selectedOptions: selectedState === 'limitOptions' ? value.selectedOptions || [] : undefined,
+    });
+  };
+
+  const handleSelectedOptionsChange = (selectedValues: any[]) => {
+    onChange({
+      ...value,
+      selectedOptions: selectableOptions.filter((option) => selectedValues.includes(option.value)),
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div>
+        <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
+        <Select
+          mode="multiple"
+          value={value.fields}
+          onChange={handleFieldsChange}
+          placeholder={t('Please select fields')}
+          style={{ width: '100%' }}
+          options={fieldOptions}
+          showSearch
+          // @ts-ignore
+          filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+          allowClear
+        />
+      </div>
+      <div>
+        <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
+        <Select
+          value={value.state}
+          onChange={handleStateChange}
+          placeholder={t('Please select state')}
+          style={{ width: '100%' }}
+          options={stateOptions}
+          allowClear
+        />
+      </div>
+      {value.state === 'limitOptions' && canConfigureLimitOptions && (
+        <div>
+          <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Options')}</div>
+          <Select
+            mode="multiple"
+            value={(value.selectedOptions || []).map((option: any) => option.value)}
+            onChange={handleSelectedOptionsChange}
+            style={{ width: '100%' }}
+            options={selectableOptions}
+            showSearch
+            // @ts-ignore
+            filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+            allowClear
+          />
+        </div>
+      )}
+    </div>
+  );
 };
 
 const getFormFieldsByForkModel = (ctx: any) => {
@@ -478,6 +688,41 @@ export const linkageSetActionProps = defineAction({
   },
 });
 
+export const linkageSetMenuItemProps = defineAction({
+  name: 'linkageSetMenuItemProps',
+  title: tExpr('Set menu item state'),
+  scene: ActionScene.MENU_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder={t('Please select state')}
+            style={{ width: '100%' }}
+            options={[
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
+            ]}
+            allowClear
+          />
+        );
+      },
+    },
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hidden' });
+  },
+});
+
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
   title: tExpr('Set field state'),
@@ -487,68 +732,7 @@ export const linkageSetFieldProps = defineAction({
     value: {
       type: 'object',
       'x-component': (props) => {
-        const { value = { fields: [] }, onChange } = props;
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const ctx = useFlowContext();
-        const t = ctx.model.translate.bind(ctx.model);
-
-        const fieldOptions = getFormFields(ctx);
-
-        // 状态选项
-        const stateOptions = [
-          { label: t('Visible'), value: 'visible' },
-          { label: t('Hidden'), value: 'hidden' },
-          { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
-          { label: t('Required'), value: 'required' },
-          { label: t('Not required'), value: 'notRequired' },
-          { label: t('Disabled'), value: 'disabled' },
-          { label: t('Enabled'), value: 'enabled' },
-        ];
-
-        const handleFieldsChange = (selectedFields: string[]) => {
-          onChange({
-            ...value,
-            fields: selectedFields,
-          });
-        };
-
-        const handleStateChange = (selectedState: string) => {
-          onChange({
-            ...value,
-            state: selectedState,
-          });
-        };
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
-              <Select
-                mode="multiple"
-                value={value.fields}
-                onChange={handleFieldsChange}
-                placeholder={t('Please select fields')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
-              <Select
-                value={value.state}
-                onChange={handleStateChange}
-                placeholder={t('Please select state')}
-                style={{ width: '100%' }}
-                options={stateOptions}
-                allowClear
-              />
-            </div>
-          </div>
-        );
+        return <FieldStateEditor {...props} />;
       },
     },
   },
@@ -566,36 +750,13 @@ export const linkageSetFieldProps = defineAction({
         const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
 
         if (fieldModel) {
-          let props: any = {};
-
-          switch (state) {
-            case 'visible':
-              props = { hiddenModel: false };
-              break;
-            case 'hidden':
-              props = { hiddenModel: true };
-              break;
-            case 'hiddenReservedValue':
-              props = { hidden: true };
-              break;
-            case 'required':
-              props = { required: true };
-              break;
-            case 'notRequired':
-              props = { required: false };
-              break;
-            case 'disabled':
-              props = { disabled: true };
-              break;
-            case 'enabled':
-              props = { disabled: false };
-              break;
-            default:
-              console.warn(`Unknown state: ${state}`);
-              return;
+          const props = getFieldStateProps(state, value?.selectedOptions);
+          if (!props) {
+            console.warn(`Unknown state: ${state}`);
+            return;
           }
 
-          setProps(fieldModel as FlowModel, props);
+          setProps(getFieldStateTargetModel(state, fieldModel) as FlowModel, props);
         }
       } catch (error) {
         console.warn(`Failed to set props for field ${fieldUid}:`, error);
@@ -613,68 +774,7 @@ export const subFormLinkageSetFieldProps = defineAction({
     value: {
       type: 'object',
       'x-component': (props) => {
-        const { value = { fields: [] }, onChange } = props;
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const ctx = useFlowContext();
-        const t = ctx.model.translate.bind(ctx.model);
-
-        const fieldOptions = getFormFieldsByForkModel(ctx);
-
-        // 状态选项
-        const stateOptions = [
-          { label: t('Visible'), value: 'visible' },
-          { label: t('Hidden'), value: 'hidden' },
-          { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
-          { label: t('Required'), value: 'required' },
-          { label: t('Not required'), value: 'notRequired' },
-          { label: t('Disabled'), value: 'disabled' },
-          { label: t('Enabled'), value: 'enabled' },
-        ];
-
-        const handleFieldsChange = (selectedFields: string[]) => {
-          onChange({
-            ...value,
-            fields: selectedFields,
-          });
-        };
-
-        const handleStateChange = (selectedState: string) => {
-          onChange({
-            ...value,
-            state: selectedState,
-          });
-        };
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
-              <Select
-                mode="multiple"
-                value={value.fields}
-                onChange={handleFieldsChange}
-                placeholder={t('Please select fields')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
-              <Select
-                value={value.state}
-                onChange={handleStateChange}
-                placeholder={t('Please select state')}
-                style={{ width: '100%' }}
-                options={stateOptions}
-                allowClear
-              />
-            </div>
-          </div>
-        );
+        return <FieldStateEditor {...props} fieldOptionsGetter={getFormFieldsByForkModel} />;
       },
     },
   },
@@ -712,36 +812,13 @@ export const subFormLinkageSetFieldProps = defineAction({
         }
 
         if (model) {
-          let props: any = {};
-
-          switch (state) {
-            case 'visible':
-              props = { hiddenModel: false };
-              break;
-            case 'hidden':
-              props = { hiddenModel: true };
-              break;
-            case 'hiddenReservedValue':
-              props = { hidden: true };
-              break;
-            case 'required':
-              props = { required: true };
-              break;
-            case 'notRequired':
-              props = { required: false };
-              break;
-            case 'disabled':
-              props = { disabled: true };
-              break;
-            case 'enabled':
-              props = { disabled: false };
-              break;
-            default:
-              console.warn(`Unknown state: ${state}`);
-              return;
+          const props = getFieldStateProps(state, value?.selectedOptions);
+          if (!props) {
+            console.warn(`Unknown state: ${state}`);
+            return;
           }
 
-          setProps(model as FlowModel, props);
+          setProps(getFieldStateTargetModel(state, model) as FlowModel, props);
         }
       } catch (error) {
         console.warn(`Failed to set props for field ${fieldUid}:`, error);
@@ -759,64 +836,7 @@ export const linkageSetDetailsFieldProps = defineAction({
     value: {
       type: 'object',
       'x-component': (props) => {
-        const { value = { fields: [] }, onChange } = props;
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const ctx = useFlowContext();
-        const t = ctx.model.translate.bind(ctx.model);
-
-        const fieldOptions = getFormFields(ctx);
-
-        // 状态选项
-        const stateOptions = [
-          { label: t('Visible'), value: 'visible' },
-          { label: t('Hidden'), value: 'hidden' },
-          { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
-        ];
-
-        const handleFieldsChange = (selectedFields: string[]) => {
-          onChange({
-            ...value,
-            fields: selectedFields,
-          });
-        };
-
-        const handleStateChange = (selectedState: string) => {
-          onChange({
-            ...value,
-            state: selectedState,
-          });
-        };
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
-              <Select
-                mode="multiple"
-                value={value.fields}
-                onChange={handleFieldsChange}
-                placeholder={t('Please select fields')}
-                style={{ width: '100%' }}
-                options={fieldOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-            <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
-              <Select
-                value={value.state}
-                onChange={handleStateChange}
-                placeholder={t('Please select state')}
-                style={{ width: '100%' }}
-                options={stateOptions}
-                allowClear
-              />
-            </div>
-          </div>
-        );
+        return <FieldStateEditor {...props} includeFormStates={false} />;
       },
     },
   },
@@ -834,24 +854,13 @@ export const linkageSetDetailsFieldProps = defineAction({
         const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
 
         if (fieldModel) {
-          let props: any = {};
-
-          switch (state) {
-            case 'visible':
-              props = { hiddenModel: false };
-              break;
-            case 'hidden':
-              props = { hiddenModel: true };
-              break;
-            case 'hiddenReservedValue':
-              props = { hidden: true };
-              break;
-            default:
-              console.warn(`Unknown state: ${state}`);
-              return;
+          const props = getFieldStateProps(state);
+          if (!props) {
+            console.warn(`Unknown state: ${state}`);
+            return;
           }
 
-          setProps(fieldModel as FlowModel, props);
+          setProps(getFieldStateTargetModel(state, fieldModel) as FlowModel, props);
         }
       } catch (error) {
         console.warn(`Failed to set props for field ${fieldUid}:`, error);
@@ -1287,6 +1296,7 @@ export const linkageRunjs = defineAction({
     ActionScene.BLOCK_LINKAGE_RULES,
     ActionScene.FIELD_LINKAGE_RULES,
     ActionScene.ACTION_LINKAGE_RULES,
+    ActionScene.MENU_LINKAGE_RULES,
     ActionScene.DETAILS_FIELD_LINKAGE_RULES,
     ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
@@ -1754,7 +1764,9 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
   const linkageRules: LinkageRule[] = params.value as LinkageRule[];
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
-  const directValuePatches: Array<{ path: any; value: any }> = [];
+  const modelsToApply = new Set<FlowModel>(allModels);
+  const patchPropsByModel = new Map<FlowModel, any>();
+  const directValuePatches: Array<{ path: Array<string | number>; value: any; whenEmpty?: boolean }> = [];
   const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
   const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
     if (!Array.isArray(namePath) || !namePath.length) return true;
@@ -1795,6 +1807,24 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const fieldIndex = (ctx.model as any)?.context?.fieldIndex;
     return resolveDynamicNamePath(path, fieldIndex);
   };
+  const getDefaultPatchRuntime = () => {
+    const blockModel = (ctx.model as any)?.context?.blockModel ?? ctx.model;
+    return blockModel?.formValueRuntime ?? (ctx as any)?.formValueRuntime;
+  };
+  const rememberAppliedDefaultPatches = (patches: typeof directValuePatches) => {
+    const runtime = getDefaultPatchRuntime();
+    if (typeof runtime?.recordDefaultValuePatch !== 'function') return;
+
+    const lastPatchByPathKey = new Map<string, (typeof directValuePatches)[number]>();
+    for (const patch of patches) {
+      lastPatchByPathKey.set(namePathToPathKey(patch.path), patch);
+    }
+
+    for (const patch of lastPatchByPathKey.values()) {
+      if (!patch.whenEmpty) continue;
+      runtime.recordDefaultValuePatch(patch.path, patch.value);
+    }
+  };
   const addFormValuePatch = (patch: { path: any; value: any; whenEmpty?: boolean }) => {
     if (!patch) return;
     const path = (patch as any)?.path;
@@ -1818,20 +1848,33 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       return;
     }
     const whenEmpty = !!(patch as any)?.whenEmpty;
+    const value = (patch as any)?.value;
     try {
       const form = ctx.model?.context?.form;
       const current = form?.getFieldValue?.(resolvedPath);
-      if (whenEmpty && typeof current !== 'undefined' && current !== null && current !== '') {
-        return;
+      if (whenEmpty) {
+        const runtime = getDefaultPatchRuntime();
+        if (typeof runtime?.canApplyDefaultValuePatch === 'function') {
+          const canApply = runtime.canApplyDefaultValuePatch(resolvedPath, value);
+          if (!canApply) {
+            return;
+          }
+        } else if (typeof current !== 'undefined' && current !== null && current !== '') {
+          return;
+        }
       }
-      if (_.isEqual(current, (patch as any)?.value)) {
+      if (_.isEqual(current, value)) {
         return;
       }
     } catch {
       // ignore
     }
 
-    directValuePatches.push({ path: resolvedPath, value: (patch as any)?.value });
+    directValuePatches.push({
+      path: resolvedPath,
+      value,
+      ...(whenEmpty ? { whenEmpty: true } : {}),
+    });
   };
 
   const getModelTargetPathForPatch = (model: any): string | null => {
@@ -1874,11 +1917,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     return null;
   };
 
-  allModels.forEach((model: any) => {
-    // 重置临时属性
-    model.__props = {};
-  });
-
   // 1. 运行所有的联动规则
   for (const rule of linkageRules.filter((r) => r.enable)) {
     const { condition: conditions, actions } = rule;
@@ -1887,10 +1925,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     if (!matched) continue;
 
     for (const action of actions) {
-      const setProps = (
-        model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
-        props: any,
-      ) => {
+      const setProps = (model: FlowModel & { __originalProps?: any; __shouldReset?: boolean }, props: any) => {
         // 存储原始值，用于恢复
         if (!model.__originalProps) {
           model.__originalProps = {
@@ -1903,19 +1938,16 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           };
         }
 
-        if (!model.__props) {
-          model.__props = {};
-        }
-
         // 临时存起来，遍历完所有规则后，再统一处理
-        model.__props = {
-          ...model.__props,
+        patchPropsByModel.set(model, {
+          ...(patchPropsByModel.get(model) || {}),
           ...props,
-        };
+        });
 
         if (allModels.indexOf(model) === -1) {
           allModels.push(model);
         }
+        modelsToApply.add(model);
       };
 
       // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
@@ -1924,23 +1956,26 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   }
 
   // 2. 合并去重（按 uid）后再实际更改相关 model 的状态，避免重复项把“已设置的临时属性”覆盖掉
-  const mergedByUid = new Map<
-    string,
-    FlowModel & { __originalProps?: any; __props?: any; isFork?: boolean; forkId?: number }
-  >();
+  const mergedByUid = new Map<string, FlowModel & { __originalProps?: any; isFork?: boolean; forkId?: number }>();
   const mergedPropsByUid = new Map<string, any>();
 
-  allModels.forEach((m: any) => {
+  modelsToApply.forEach((m: any) => {
     const uid = m?.uid || String(m);
-    const curProps = m.__props || {};
+    const curProps = patchPropsByModel.get(m) || {};
     if (!mergedByUid.has(uid)) {
       mergedByUid.set(uid, m);
       mergedPropsByUid.set(uid, { ...curProps });
     } else {
       // 合并属性：后写覆盖先写；优先选择 fork 模型作为应用目标
-      mergedPropsByUid.set(uid, { ...mergedPropsByUid.get(uid), ...curProps });
+      const prevProps = mergedPropsByUid.get(uid) || {};
+      const nextProps = { ...prevProps, ...curProps };
+      mergedPropsByUid.set(uid, nextProps);
       const exist = mergedByUid.get(uid) as any;
-      if (m.isFork && !exist.isFork) {
+      const hasCurrentPatch = Object.keys(curProps).length > 0;
+      const hasExistingPatch = Object.keys(prevProps).length > 0;
+      if (hasCurrentPatch && (!hasExistingPatch || !m.isFork || !exist.isFork)) {
+        mergedByUid.set(uid, m);
+      } else if (m.isFork && !exist.isFork) {
         mergedByUid.set(uid, m);
       }
     }
@@ -1951,7 +1986,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
-    model.hidden = !!newProps.hiddenModel;
+    syncFieldOptionsToForks(model, patchProps);
+    if (typeof model.setHidden === 'function') {
+      model.setHidden(!!newProps.hiddenModel);
+    } else {
+      model.hidden = !!newProps.hiddenModel;
+    }
 
     if (newProps.required === true) {
       const rules = (model.props.rules || []).filter((rule) => !rule.required);
@@ -1969,8 +2009,10 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       model.setProps('title', '');
     }
 
-    // 目前只有表单的“字段赋值”有 value 属性
-    if ('value' in newProps && model.context.form) {
+    // 只有本轮联动动作显式写入 value 时，才应执行表单赋值。
+    // 普通字段组件也会由 Form.Item/FieldModelRenderer 注入 value；如果从 __originalProps 继承该值，
+    // limitOptions/disabled 等状态联动会误把当前表单值清空。
+    if (Object.prototype.hasOwnProperty.call(patchProps, 'value') && model.context.form) {
       const targetPath = getModelTargetPathForPatch(model);
       if (!targetPath) {
         console.warn('[linkageRules] Skip linkage assignment due to missing target path', {
@@ -2013,6 +2055,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   if (typeof directSetter === 'function') {
     try {
       await trySetFormValues(directSetter, directCtx, 'linkage');
+      rememberAppliedDefaultPatches(allPatches);
       return;
     } catch (error) {
       console.warn('[linkageRules] Failed to set form values via setFormValues', {
@@ -2029,6 +2072,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   if (typeof blockSetter === 'function') {
     try {
       await trySetFormValues(blockSetter, blockCtx, 'linkage');
+      rememberAppliedDefaultPatches(allPatches);
       return;
     } catch (error) {
       console.warn('[linkageRules] Failed to set form values via setFormValues', {
@@ -2058,6 +2102,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       console.warn('[linkageRules] Failed to set form field value (fallback setFieldValue)', { path }, error);
     }
   });
+  rememberAppliedDefaultPatches(allPatches);
 };
 
 export const blockLinkageRules = defineAction({
@@ -2081,6 +2126,7 @@ export const blockLinkageRules = defineAction({
   },
   useRawParams: true,
   handler: async (ctx, params) => {
+    ensureFormValueDrivenLinkageRefresh(ctx, params, 'blockLinkageRules');
     const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
     return commonLinkageRulesHandler(ctx, resolved);
   },
@@ -2098,6 +2144,33 @@ export const actionLinkageRules = defineAction({
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.ACTION_LINKAGE_RULES),
           title: tExpr('Linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    ensureFormValueDrivenLinkageRefresh(ctx, params, 'actionLinkageRules');
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
+});
+
+export const menuLinkageRules = defineAction({
+  name: 'menuLinkageRules',
+  title: tExpr('Menu linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.MENU_LINKAGE_RULES),
+          title: tExpr('Menu linkage rules'),
         },
       },
     };
@@ -2341,33 +2414,95 @@ export const fieldLinkageRules = defineAction({
       return;
     }
 
-    const getRowScopeKeyFromModel = (model: any): string | null => {
+    const getRowFieldIndexInfoFromModel = (model: any) => {
       const fieldIndex = model?.context?.fieldIndex;
       const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
-      if (!arr.length) return null;
+      const normalized = arr.filter((it): it is string => typeof it === 'string');
       const entries: Array<{ name: string; index: number }> = [];
-      for (const it of arr) {
-        if (typeof it !== 'string') continue;
+      const path: Array<string | number> = [];
+      for (const it of normalized) {
         const [name, indexStr] = it.split(':');
         const index = Number(indexStr);
         if (!name || Number.isNaN(index)) continue;
         entries.push({ name, index });
+        path.push(name, index);
       }
+      return { normalized, entries, path };
+    };
+
+    const getRowScopeKeyFromModel = (model: any): string | null => {
+      const { entries } = getRowFieldIndexInfoFromModel(model);
       if (!entries.length) return null;
       const deepest = entries[entries.length - 1].name;
       const occurrence = entries.reduce((count, e) => (e.name === deepest ? count + 1 : count), 0);
       return `${deepest}#${occurrence}`;
     };
 
+    const getRowFieldIndexKeyFromModel = (model: any): string | null => {
+      const { normalized } = getRowFieldIndexInfoFromModel(model);
+      if (!normalized.length) return null;
+      return JSON.stringify(normalized);
+    };
+
+    const getRowPathFromModel = (model: any): Array<string | number> | null => {
+      const { path } = getRowFieldIndexInfoFromModel(model);
+      return path.length ? path : null;
+    };
+
+    const getFormForRowFork = (model: any) => {
+      return (
+        model?.context?.form ??
+        model?.context?.blockModel?.context?.form ??
+        ctx.model?.context?.form ??
+        ctx.model?.context?.blockModel?.context?.form
+      );
+    };
+
+    const isRowForkMountedInCurrentValue = (model: any): boolean => {
+      const rowPath = getRowPathFromModel(model);
+      if (!rowPath) return true;
+      const form = getFormForRowFork(model);
+      if (!form || typeof form.getFieldValue !== 'function') return true;
+      return typeof form.getFieldValue(rowPath as any) !== 'undefined';
+    };
+
+    const hasRowItemContext = (model: any): boolean => {
+      const itemOptions = model?.context?.getPropertyOptions?.('item');
+      if (itemOptions) return true;
+      return typeof model?.context?.item !== 'undefined';
+    };
+
+    const hasSubTableRowMarker = (model: any): boolean => {
+      const markerOptions = model?.context?.getPropertyOptions?.('subTableRowFork');
+      if (markerOptions) return true;
+      return (
+        typeof model?.context?.subTableRowFork !== 'undefined' ||
+        typeof model?.subTableRowFork !== 'undefined' ||
+        model?.subTableRowFork === true
+      );
+    };
+
     const isRowGridForkModel = (model: any): boolean => {
       if (!model || typeof model !== 'object') return false;
       if ((model as any)?.subModels?.field) return false;
       if (!(model as any)?.subModels?.items) return false;
-      return !!getRowScopeKeyFromModel(model);
+      return !!getRowScopeKeyFromModel(model) && !!getRowFieldIndexKeyFromModel(model);
     };
 
-    const collectRowGridForksByKey = (): Map<string, FlowModel[]> => {
+    const isSubTableRowForkModel = (model: any): boolean => {
+      if (!model || typeof model !== 'object') return false;
+      if (!hasSubTableRowMarker(model)) return false;
+      if (!getRowScopeKeyFromModel(model) || !getRowFieldIndexKeyFromModel(model)) return false;
+      return hasRowItemContext(model);
+    };
+
+    const isRowScopedForkModel = (model: any): boolean => {
+      return isRowGridForkModel(model) || isSubTableRowForkModel(model);
+    };
+
+    const collectRowScopedForksByKey = (): Map<string, FlowModel[]> => {
       const out = new Map<string, FlowModel[]>();
+      const seenByKey = new Map<string, Set<string>>();
       const engine = ctx.engine;
       if (!engine?.forEachModel) return out;
 
@@ -2376,9 +2511,15 @@ export const fieldLinkageRules = defineAction({
         if (!forks || typeof forks.forEach !== 'function') return;
         forks.forEach((fork: any) => {
           if (!fork || fork.disposed) return;
-          if (!isRowGridForkModel(fork)) return;
+          if (!isRowScopedForkModel(fork)) return;
+          if (!isRowForkMountedInCurrentValue(fork)) return;
           const rowScopeKey = getRowScopeKeyFromModel(fork);
-          if (!rowScopeKey) return;
+          const fieldIndexKey = getRowFieldIndexKeyFromModel(fork);
+          if (!rowScopeKey || !fieldIndexKey) return;
+          const seen = seenByKey.get(rowScopeKey) || new Set<string>();
+          if (seen.has(fieldIndexKey)) return;
+          seen.add(fieldIndexKey);
+          seenByKey.set(rowScopeKey, seen);
           const arr = out.get(rowScopeKey) || [];
           arr.push(fork as FlowModel);
           out.set(rowScopeKey, arr);
@@ -2389,7 +2530,7 @@ export const fieldLinkageRules = defineAction({
     };
 
     const runRowScoped = async (): Promise<boolean> => {
-      const forksByKey = collectRowGridForksByKey();
+      const forksByKey = collectRowScopedForksByKey();
       let hasAnyRowFork = false;
       for (const [rowScopeKey, rowParams] of rowParamsByKey.entries()) {
         const forks = forksByKey.get(rowScopeKey) || [];

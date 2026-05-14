@@ -175,4 +175,4 @@ Riwayat aktivitas juga akan muncul di tampilan kalender dashboard Overview.
 - [Panduan Penggunaan CRM](./index.md)
 - [Manajemen Lead](./guide-leads) — Setelah Lead dikonversi otomatis membuat Pelanggan dan Kontak
 - [Manajemen Peluang](./guide-opportunities) — Peluang yang terkait dengan Pelanggan
-- [AI Employee](./guide-ai)
+- [AI Employee](../../../ai-employees/index.md)

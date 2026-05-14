@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Extension des onglets de configuration des permissions
 
 Voici un exemple, basé sur l'élément de configuration « Menu mobile », qui montre comment étendre un nouvel onglet de configuration des permissions. Le résultat est illustré ci-dessous :

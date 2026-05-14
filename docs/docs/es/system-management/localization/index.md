@@ -1,12 +1,10 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/system-management/localization/index).
-:::
-
 # Gestión de Localización
 
 ## Introducción
 
 El plugin de Gestión de Localización le permite gestionar e implementar los recursos de localización de NocoBase. Con él, podrá traducir los menús del sistema, las colecciones, los campos y todos los plugins para adaptarse al idioma y la cultura de regiones específicas.
+
+Si desea contribuir traducciones predeterminadas del sistema y de los plugins oficiales a NocoBase, consulte [Contribución de traducciones](/get-started/translations).
 
 ## Instalación
 
@@ -40,6 +38,8 @@ Una vez completada la sincronización, el sistema le mostrará todas las entrada
 Es posible que diferentes módulos contengan los mismos términos originales, los cuales deberán traducirse de forma individual.
 :::
 
+Si las traducciones de entradas integradas del sistema o de plugins se modifican manualmente o se sobrescriben con traducción de IA, seleccione `Restablecer traducciones de entradas integradas del sistema` durante la sincronización. Después de sincronizar, el sistema sobrescribirá las traducciones integradas existentes del idioma actual con las del paquete de idioma integrado para restaurar la traducción predeterminada.
+
 ### Creación automática de entradas
 
 Al editar una página, el texto personalizado en cada bloque creará automáticamente la entrada correspondiente y generará de forma sincrónica el contenido traducido para el idioma actual.
@@ -55,6 +55,26 @@ Al definir texto en el código, es necesario especificar manualmente el ns (name
 ### Edición del contenido de la traducción
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
+
+### Usar traducción con IA
+
+La Gestión de Localización admite traducir entradas mediante la empleada de IA Lina. Después de habilitar los empleados de IA y configurar un servicio de modelo, puede usar la traducción con IA en la página de Gestión de Localización para generar traducciones por lotes para el idioma actual.
+
+![](https://static-docs.nocobase.com/202605121152196.png)
+
+Ámbitos de traducción disponibles:
+
+- **Traducción completa**: traduce todas las entradas aplicables del idioma actual.
+- **Traducción incremental**: traduce solo las entradas que aún no tienen traducción.
+- **Traducción de elementos seleccionados**: seleccione entradas en la tabla y traduzca solo el contenido seleccionado.
+
+La traducción con IA crea una tarea en segundo plano. Puede ver el progreso mientras se ejecuta. Al finalizar, las traducciones se escriben en el idioma correspondiente y todavía deben revisarse y corregirse según el contexto real.
+
+Consulte la guía completa en [Empleado de IA - Lina](/ai-employees/built-in/lina).
+
+:::warning{title=Nota}
+Las traducciones generadas por IA pueden tener desviaciones semánticas, terminología inconsistente o comprensión insuficiente del contexto. Antes de publicar, revise manualmente las páginas importantes, los términos de negocio y los textos visibles para los usuarios.
+:::
 
 ### Publicación de las traducciones
 

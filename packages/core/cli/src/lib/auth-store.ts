@@ -15,6 +15,11 @@ import {
   resolveConfiguredEnvPath,
   resolveEnvRelativePath,
 } from './cli-home.js';
+import {
+  cleanupCurrentSessionAfterEnvRemoval,
+  resolveEffectiveCurrentEnv,
+  setSessionCurrentEnv,
+} from './session-store.js';
 
 export interface TokenAuthConfig {
   type: 'token';
@@ -107,7 +112,7 @@ export interface AuthConfig {
       containerPrefix?: string;
     };
   };
-  currentEnv?: string;
+  lastEnv?: string;
   envs: Record<string, EnvConfigEntry>;
 }
 
@@ -218,7 +223,7 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
           : {}
       ),
     },
-    currentEnv: config.currentEnv || 'default',
+    lastEnv: (config as AuthConfig & { currentEnv?: string }).lastEnv || (config as { currentEnv?: string }).currentEnv || 'default',
     envs: Object.fromEntries(
       Object.entries(config.envs || {}).map(([envName, entry]) => [envName, normalizeEnvConfigEntry(entry) ?? {}]),
     ),
@@ -231,7 +236,7 @@ function getConfigFile(options: AuthStoreOptions = {}) {
 
 function createDefaultConfig(): AuthConfig {
   return {
-    currentEnv: 'default',
+    lastEnv: 'default',
     envs: {},
   };
 }
@@ -265,14 +270,17 @@ export async function saveAuthConfig(config: AuthConfig, options: AuthStoreOptio
 export async function listEnvs(options: AuthStoreOptions = {}) {
   const config = await loadAuthConfig(options);
   return {
-    currentEnv: config.currentEnv || 'default',
+    lastEnv: config.lastEnv || 'default',
     envs: config.envs,
   };
 }
 
 export async function getCurrentEnvName(options: AuthStoreOptions = {}) {
   const config = await loadAuthConfig(options);
-  return config.currentEnv || 'default';
+  return await resolveEffectiveCurrentEnv(Object.keys(config.envs).sort(), {
+    scope: options.scope,
+    lastEnv: config.lastEnv,
+  });
 }
 
 export async function setCurrentEnv(envName: string, options: AuthStoreOptions = {}) {
@@ -280,7 +288,8 @@ export async function setCurrentEnv(envName: string, options: AuthStoreOptions =
   if (!config.envs[envName]) {
     throw new Error(`Env "${envName}" is not configured`);
   }
-  config.currentEnv = envName;
+  config.lastEnv = envName;
+  await setSessionCurrentEnv(envName, options.scope);
   await saveAuthConfig(config, options);
 }
 
@@ -365,7 +374,10 @@ export class Env {
 export async function getEnv(envName?: string, options: GetEnvOptions = {}): Promise<Env | undefined> {
   const { config: snapshot, ...loadOptions } = options;
   const config = snapshot ?? (await loadAuthConfig(loadOptions));
-  const resolved = envName?.trim() || config.currentEnv || 'default';
+  const resolved = envName?.trim() || (await resolveEffectiveCurrentEnv(Object.keys(config.envs).sort(), {
+    scope: loadOptions.scope,
+    lastEnv: config.lastEnv,
+  }));
   const envConfig = config.envs[resolved];
   if (!envConfig) {
     return undefined;
@@ -409,7 +421,6 @@ async function writeEnv(
   const config = await loadExactAuthConfig(options);
   const previous = config.envs[envName];
   config.envs[envName] = updater(previous);
-  config.currentEnv = envName;
   await saveAuthConfig(config, options);
 }
 
@@ -506,7 +517,6 @@ export async function setEnvRuntime(
     ...current,
     runtime,
   };
-  config.currentEnv = envName;
   await saveAuthConfig(config, options);
 }
 
@@ -519,16 +529,28 @@ export async function removeEnv(envName: string, options: AuthStoreOptions = {})
 
   delete config.envs[envName];
 
-  if (config.currentEnv === envName) {
+  if (config.lastEnv === envName) {
     const nextEnv = Object.keys(config.envs).sort()[0];
-    config.currentEnv = nextEnv ?? 'default';
+    config.lastEnv = nextEnv ?? 'default';
   }
 
   await saveAuthConfig(config, options);
+  const remainingEnvNames = Object.keys(config.envs).sort();
+  const fallbackEnv = remainingEnvNames.length
+    ? await resolveEffectiveCurrentEnv(remainingEnvNames, {
+        scope: options.scope,
+        lastEnv: config.lastEnv,
+      })
+    : undefined;
+
+  await cleanupCurrentSessionAfterEnvRemoval(envName, {
+    scope: options.scope,
+    fallbackEnv,
+  });
 
   return {
     removed: envName,
-    currentEnv: config.currentEnv || 'default',
+    lastEnv: config.lastEnv || 'default',
     hasEnvs: Object.keys(config.envs).length > 0,
   };
 }

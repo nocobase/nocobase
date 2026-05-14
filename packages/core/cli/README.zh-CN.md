@@ -256,6 +256,20 @@ nb app down --env app1 --all --yes
 nb env
 ```
 
+只查看当前 env 名称：
+
+```bash
+nb env current
+```
+
+配置 `NB_SESSION_ID` 的 shell session 集成：
+
+```bash
+nb session setup
+nb session id
+nb session remove
+```
+
 查看已配置的 env 及 Token 验证后的 API 状态：
 
 ```bash

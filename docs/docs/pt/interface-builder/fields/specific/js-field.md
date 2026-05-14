@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/fields/specific/js-field).
-:::
-
 # JS Field
 
 ## Introdução
@@ -58,7 +54,7 @@ O editor de script do JS Field suporta realce de sintaxe, dicas de erro e trecho
 
 Pode ser combinado com o Funcionário de IA para gerar código:
 
-- [Funcionário de IA · Nathan: Engenheiro Frontend](/ai-employees/features/built-in-employee)
+- [Funcionário de IA · Nathan: Engenheiro Frontend](/ai-employees/built-in/)
 
 ## Usos comuns
 

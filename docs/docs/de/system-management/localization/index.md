@@ -1,12 +1,10 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/system-management/localization/index).
-:::
-
 # Lokalisierungsverwaltung
 
 ## Einführung
 
 Das Lokalisierungsverwaltungs-Plugin wird verwendet, um die Lokalisierungsressourcen von NocoBase zu verwalten und zu implementieren. Es kann Systemmenüs, Sammlungen, Felder sowie alle Plugins übersetzen, um sie an die Sprache und Kultur bestimmter Regionen anzupassen.
+
+Wenn Sie Standardübersetzungen für das System und offizielle Plugins zu NocoBase beitragen möchten, lesen Sie [Übersetzungsbeitrag](/get-started/translations).
 
 ## Installation
 
@@ -40,6 +38,8 @@ Nach Abschluss der Synchronisierung listet das System alle übersetzbaren Begrif
 Verschiedene Module können identische Originalbegriffe enthalten, die separat übersetzt werden müssen.
 :::
 
+Wenn Übersetzungen von system- oder pluginintegrierten Einträgen manuell geändert oder durch KI-Übersetzung überschrieben wurden, aktivieren Sie bei der Synchronisierung `Übersetzungen systemintegrierter Einträge zurücksetzen`. Nach der Synchronisierung überschreibt das System vorhandene integrierte Eintragsübersetzungen der aktuellen Sprache mit den Übersetzungen aus dem integrierten Sprachpaket, um die Standardübersetzung wiederherzustellen.
+
 ### Automatische Erstellung von Begriffen
 
 Bei der Seitenbearbeitung werden benutzerdefinierte Texte in den einzelnen Blöcken automatisch als entsprechende Begriffe erstellt und gleichzeitig Übersetzungsinhalte für die aktuelle Sprache generiert.
@@ -56,6 +56,26 @@ Wenn Texte im Code definiert werden, muss der ns (Namespace) manuell angegeben w
 ### Übersetzungsinhalte bearbeiten
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
+
+### KI-Übersetzung verwenden
+
+Die Lokalisierungsverwaltung unterstützt die Übersetzung von Einträgen über die AI-Mitarbeiterin Lina. Nachdem AI-Mitarbeiter aktiviert und ein Modelldienst konfiguriert wurde, können Sie auf der Lokalisierungsverwaltungsseite KI-Übersetzung verwenden, um Übersetzungen für die aktuelle Sprache stapelweise zu erzeugen.
+
+![](https://static-docs.nocobase.com/202605121152196.png)
+
+Unterstützte Übersetzungsbereiche:
+
+- **Vollständige Übersetzung**: übersetzt alle geeigneten Einträge der aktuellen Sprache.
+- **Inkrementelle Übersetzung**: übersetzt nur Einträge, die noch keine Übersetzung haben.
+- **Ausgewählte Einträge übersetzen**: wählen Sie Einträge in der Tabelle aus und übersetzen Sie nur diese Inhalte.
+
+Die KI-Übersetzung erstellt eine Hintergrundaufgabe. Während der Ausführung können Sie den Fortschritt verfolgen. Nach Abschluss werden die Übersetzungen in die entsprechende Sprache geschrieben und sollten weiterhin anhand des tatsächlichen Kontexts geprüft und korrigiert werden.
+
+Die vollständige Anleitung finden Sie unter [AI-Mitarbeiterin - Lina](/ai-employees/built-in/lina).
+
+:::warning{title=Hinweis}
+KI-generierte Übersetzungen können Bedeutungsabweichungen, uneinheitliche Terminologie oder unzureichendes Kontextverständnis enthalten. Prüfen Sie vor der Veröffentlichung wichtige Seiten, Fachbegriffe und benutzerseitige Texte manuell.
+:::
 
 ### Übersetzungen veröffentlichen
 

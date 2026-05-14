@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/features/llm-service).
-:::
-
 # LLM-Dienst konfigurieren
 
 Bevor Sie AI-Mitarbeiter verwenden, müssen Sie zunächst die verfügbaren LLM-Dienste konfigurieren.

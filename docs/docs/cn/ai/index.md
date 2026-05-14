@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: 开箱即用的 AI 团队
         details: NocoBase 预置的 AI 员工团队，覆盖数据建模、前端开发、数据整理等场景，无需配置直接使用。
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: 让 AI 读懂你的业务
         details: 通过 AI 知识库导入业务文档和数据，让 AI 员工的回答和操作更贴合你的实际场景。
         link: /ai-employees/knowledge-base

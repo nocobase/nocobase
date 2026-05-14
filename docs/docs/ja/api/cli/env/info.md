@@ -18,12 +18,9 @@ nb env info [name] [flags]
 
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
-| `[name]` | string | 表示する CLI env 名。省略時は現在の env を使用します |
-| `--env`, `-e` | string | 表示する CLI env 名。位置引数と二者択一です |
+| `[name]` | string | 表示する設定済み環境名。省略時は現在の env を使用します |
 | `--json` | boolean | JSON で出力します |
 | `--show-secrets` | boolean | token やパスワードなどのシークレットを平文で表示します |
-
-`[name]` と `--env` を同時に指定する場合は、両者が一致する必要があります。
 
 ## 使用例
 
@@ -31,7 +28,6 @@ nb env info [name] [flags]
 nb env info app1
 nb env info app1 --json
 nb env info app1 --show-secrets
-nb env info --env app1
 ```
 
 ## 関連コマンド

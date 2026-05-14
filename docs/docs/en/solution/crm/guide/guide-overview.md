@@ -201,10 +201,10 @@ Drill-through comes in two forms:
 
 ---
 
-After understanding the system layout and dashboards, go back to the [User Guide](./guide) for subsequent chapters.
+After understanding the system layout and dashboards, go back to the [User Guide](./index.md) for subsequent chapters.
 
 ## Related Pages
 
-- [CRM User Guide](./guide)
+- [CRM User Guide](./index.md)
 - [Solution Overview](../index)
 - [Installation](../installation)

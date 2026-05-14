@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/index).
-:::
-
 # Übersicht
 
 ![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
@@ -34,7 +30,7 @@ Sehen Sie sich zuerst den [Schnellstart](/ai-employees/quick-start) an und schli
 - [LLM-Dienst konfigurieren](/ai-employees/features/llm-service): Provider anbinden, verfügbare Modelle konfigurieren und verwalten.
 - [AI-Mitarbeiter aktivieren](/ai-employees/features/enable-ai-employee): Integrierte Mitarbeiter aktivieren/deaktivieren, Verfügbarkeitsbereich steuern.
 - [Neuen AI-Mitarbeiter erstellen](/ai-employees/features/new-ai-employees): Rollen, Rolleneinstellungen, Begrüßungen und Fähigkeitsgrenzen definieren.
-- [Fähigkeiten nutzen](/ai-employees/features/tool): Berechtigungen für Fähigkeiten konfigurieren (`Ask` / `Allow`), Ausführungsrisiken kontrollieren.
+- [Fähigkeiten nutzen](./features/tools.md): Berechtigungen für Fähigkeiten konfigurieren (`Ask` / `Allow`), Ausführungsrisiken kontrollieren.
 
 ### B. Tägliche Zusammenarbeit (Geschäftsanwender)
 
@@ -45,7 +41,7 @@ Sehen Sie sich zuerst den [Schnellstart](/ai-employees/quick-start) an und schli
 
 ### C. Fortgeschrittene Fähigkeiten (Erweiterungen)
 
-- [Integrierte AI-Mitarbeiter](/ai-employees/features/built-in-employee): Positionierung und Anwendungsszenarien vordefinierter Mitarbeiter verstehen.
+- [Integrierte AI-Mitarbeiter](/ai-employees/built-in/): Positionierung und Anwendungsszenarien vordefinierter Mitarbeiter verstehen.
 - [Berechtigungskontrolle](/ai-employees/permission): Zugriff auf Mitarbeiter, Fähigkeiten und Daten gemäß dem Organisationsberechtigungsmodell steuern.
 - [AI-Wissensdatenbank](/ai-employees/knowledge-base/index): Unternehmenswissen einbinden, Stabilität und Rückverfolgbarkeit der Antworten verbessern.
 - [Workflow-LLM-Knoten](/ai-employees/workflow/nodes/llm/chat): KI-Fähigkeiten in automatisierte Abläufe orchestrieren.

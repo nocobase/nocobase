@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/data-source-manager).
-:::
-
 # ctx.dataSourceManager
 
 El gestor de fuentes de datos (instancia de `DataSourceManager`) se utiliza para gestionar y acceder a múltiples fuentes de datos (por ejemplo, la base de datos principal `main`, la base de datos de registros `logging`, etc.). Se utiliza cuando existen múltiples fuentes de datos o cuando se requiere acceso a metadatos entre diferentes fuentes de datos.

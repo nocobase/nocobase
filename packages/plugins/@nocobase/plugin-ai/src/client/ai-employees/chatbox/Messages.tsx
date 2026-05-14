@@ -12,8 +12,8 @@ import { Bubble } from '@ant-design/x';
 import { Spin, Layout, Divider, Button, Space, Typography } from 'antd';
 import { RightOutlined, DownOutlined, LoadingOutlined } from '@ant-design/icons';
 import { namespace, useT } from '../../locale';
-import { useAPIClient, useApp, useToken } from '@nocobase/client';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useApp, useToken } from '@nocobase/client';
+import { useChat } from './hooks/useChat';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
@@ -23,17 +23,44 @@ import { useChatConversationsStore } from './stores/chat-conversations';
 
 const { Text, Link } = Typography;
 
+const STICKY_BOTTOM_THRESHOLD = 48;
+
+const isSameMessageContent = (prev: any, next: any) =>
+  prev === next ||
+  (prev?.messageId === next?.messageId &&
+    prev?.content === next?.content &&
+    prev?.reasoning === next?.reasoning &&
+    prev?.tool_calls === next?.tool_calls &&
+    prev?.metadata === next?.metadata &&
+    prev?.reference === next?.reference);
+
+const MemoBubble = React.memo(Bubble, (prevProps: any, nextProps: any) => {
+  return (
+    prevProps.loading === nextProps.loading &&
+    prevProps.placement === nextProps.placement &&
+    prevProps.variant === nextProps.variant &&
+    prevProps.avatar === nextProps.avatar &&
+    prevProps.header === nextProps.header &&
+    prevProps.footer === nextProps.footer &&
+    prevProps.messageRender === nextProps.messageRender &&
+    isSameMessageContent(prevProps.content, nextProps.content)
+  );
+});
+
 export const Messages: React.FC = () => {
   const t = useT();
   const { token } = useToken();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
   const roles = useChatBoxStore.use.roles();
 
-  const messages = useChatMessagesStore.use.messages();
+  const messages = chat.use.messages();
+  const messagesLoading = chat.use.messagesLoading();
 
   const updateTools = useChatToolsStore.use.updateTools();
 
-  const { messagesService, lastMessageRef } = useChatMessageActions();
+  const { loadMessages, lastMessageRef } = useChatMessageActions();
   const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const firstMessageIndex = renderedMessages.findIndex(
@@ -71,18 +98,33 @@ export const Messages: React.FC = () => {
   }, [renderedMessages]);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!containerRef.current) return;
+  const shouldStickToBottomRef = useRef(true);
 
+  const isNearBottom = useCallback((container: HTMLDivElement) => {
+    return container.scrollHeight - container.scrollTop - container.clientHeight <= STICKY_BOTTOM_THRESHOLD;
+  }, []);
+
+  const handleScroll = useCallback(() => {
     const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    shouldStickToBottomRef.current = isNearBottom(container);
+  }, [isNearBottom]);
 
-    const resizeObserver = new ResizeObserver(() => {
-      container.scrollTop = container.scrollHeight;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      if (shouldStickToBottomRef.current) {
+        container.scrollTop = container.scrollHeight;
+      }
     });
 
-    resizeObserver.observe(container);
-
-    return () => resizeObserver.disconnect();
+    return () => cancelAnimationFrame(frame);
   }, [messages]);
 
   const renderConversationToggleDivider = (
@@ -166,29 +208,28 @@ export const Messages: React.FC = () => {
 
     return indexPath === String(firstMessageIndex) ? (
       <div key={msg.key} ref={lastMessageRef}>
-        <Bubble {...role} loading={msg.loading} content={msg.content} />
+        <MemoBubble {...role} loading={msg.loading} content={msg.content} />
       </div>
     ) : (
-      <Bubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
+      <MemoBubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
     );
   };
 
   const app = useApp();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const setResponseLoading = chat.setResponseLoading;
   const { updateReadonly } = useWorkflowTasks();
   const onAIEmployeeTaskStatusUpdate = useCallback(
     (e: any) => {
       const { sessionId, status } = e.detail;
       if (currentConversation && currentConversation === sessionId) {
         if (status !== 'processing') {
-          messagesService.run(sessionId);
+          loadMessages(sessionId);
           setResponseLoading(false);
           updateReadonly(sessionId).catch(console.log);
         }
       }
     },
-    [messagesService, updateReadonly, setResponseLoading, currentConversation],
+    [loadMessages, updateReadonly, setResponseLoading, currentConversation],
   );
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', onAIEmployeeTaskStatusUpdate);
@@ -200,13 +241,14 @@ export const Messages: React.FC = () => {
   return (
     <Layout.Content
       ref={containerRef}
+      onScroll={handleScroll}
       style={{
         margin: '16px 0',
         overflow: 'auto',
         position: 'relative',
       }}
     >
-      {messagesService.loading && (
+      {messagesLoading && (
         <Spin
           style={{
             display: 'block',
@@ -237,42 +279,56 @@ export const Messages: React.FC = () => {
 };
 
 const BackgroundWorkingHint: React.FC = () => {
-  const api = useAPIClient();
   const t = useT();
-  const { messagesService } = useChatMessageActions();
+  const { loadMessages, getConversationLLMActiveState } = useChatMessageActions();
   const currentConversation = useChatConversationsStore.use.currentConversation?.();
+  const chat = useChat(currentConversation);
   const currentEmployee = useChatBoxStore.use.currentEmployee?.();
-  const messages = useChatMessagesStore.use.messages();
-  const [show, setShow] = useState(false);
-  const messageCount = useRef(0);
-  const { updateReadonly } = useWorkflowTasks();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
-
-  const refreshMessages = useCallback(() => {
-    if (currentConversation) {
-      messagesService.run(currentConversation);
-    }
-  }, [messagesService, currentConversation]);
+  const messages = chat.use.messages();
+  const backgroundWorking = chat.use.backgroundWorking();
+  const resumeStreamFailed = chat.use.resumeStreamFailed();
+  const setBackgroundWorking = chat.setBackgroundWorking;
+  const setResponseLoading = chat.setResponseLoading;
+  const setResumeStreamFailed = chat.setResumeStreamFailed;
 
   const doStateCheck = useCallback(async () => {
     if (currentConversation) {
-      const res = await api.resource('aiConversations').get({
-        filter: { sessionId: currentConversation },
-      });
-      if (res.data?.data?.llmActiveState === 'invoking') {
-        setShow(true);
-      } else {
-        setShow(false);
+      const llmActiveState = await getConversationLLMActiveState(currentConversation);
+      if (llmActiveState) {
+        const isBackgroundWorking =
+          llmActiveState === 'invoking' || (resumeStreamFailed && llmActiveState === 'streaming');
+        setBackgroundWorking(isBackgroundWorking);
+        if (isBackgroundWorking) {
+          setResponseLoading(true);
+        }
+
+        if (llmActiveState === 'idle' && resumeStreamFailed) {
+          setResumeStreamFailed(false);
+          setResponseLoading(false);
+        }
       }
     }
-  }, [api, currentConversation, updateReadonly, setResponseLoading]);
+  }, [
+    currentConversation,
+    getConversationLLMActiveState,
+    resumeStreamFailed,
+    setBackgroundWorking,
+    setResponseLoading,
+    setResumeStreamFailed,
+  ]);
+
+  const refreshMessages = useCallback(async () => {
+    if (currentConversation) {
+      await loadMessages(currentConversation);
+      await doStateCheck();
+    }
+  }, [doStateCheck, loadMessages, currentConversation]);
 
   useEffect(() => {
-    if (messages.length !== messageCount.current) {
-      messageCount.current = messages.length;
+    if (currentConversation) {
       doStateCheck().catch(console.error);
     }
-  }, [messages]);
+  }, [currentConversation, messages.length, doStateCheck]);
 
   if (!currentConversation) {
     return null;
@@ -292,7 +348,7 @@ const BackgroundWorkingHint: React.FC = () => {
   );
 
   return (
-    show && (
+    backgroundWorking && (
       <Bubble
         placement="start"
         variant="borderless"

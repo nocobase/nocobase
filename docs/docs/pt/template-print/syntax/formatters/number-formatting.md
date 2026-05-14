@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/template-print/syntax/formatters/number-formatting).
-:::
-
 ### Formatação de números
 
 #### 1. :formatN(precision)

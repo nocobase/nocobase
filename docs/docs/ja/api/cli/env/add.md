@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "nb env add コマンドリファレンス：NocoBase API アドレスと認証方式を保存し、現在の env に切り替えます。"
-keywords: "nb env add,NocoBase CLI,環境追加,API アドレス,認証"
+description: "nb env add コマンドリファレンス：NocoBase API URL と認証方式を保存し、その env に切り替えます。"
+keywords: "nb env add,NocoBase CLI,環境追加,API Base URL,認証"
 ---
 
 # nb env add
@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | パラメータ | 型 | 説明 |
 | --- | --- | --- |
-| `[name]` | string | 環境名。TTY 環境では省略するとプロンプトが表示されます。非 TTY 環境では必須です |
+| `[name]` | string | 保存する環境名。TTY では省略時に入力を促し、非 TTY モードでは必須です |
 | `--verbose` | boolean | 設定書き込み時に詳細な進捗を表示します |
 | `--locale` | string | CLI プロンプトの言語：`en-US` または `zh-CN` |
 | `--api-base-url`, `-u` | string | NocoBase API アドレス。`/api` プレフィックスを含みます |

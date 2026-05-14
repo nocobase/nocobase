@@ -34,7 +34,7 @@ export default class EnvRemove extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Configured environment name',
+      description: 'Configured environment name to remove',
       required: true,
     }),
   };
@@ -62,7 +62,7 @@ export default class EnvRemove extends Command {
     this.log(`Removed env "${result.removed}".`);
 
     if (result.hasEnvs) {
-      this.log(`Current env: ${result.currentEnv}`);
+      this.log(`Current env: ${await getCurrentEnvName({ scope: resolveDefaultConfigScope() })}`);
       return;
     }
 

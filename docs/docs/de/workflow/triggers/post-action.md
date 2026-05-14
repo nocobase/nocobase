@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-action-trigger'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Nach-Aktions-Ereignis

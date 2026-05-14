@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/make-resource).
-:::
-
 # ctx.makeResource()
 
 **Erstellt** eine neue Resource-Instanz und gibt diese zurück, **ohne** `ctx.resource` zu beschreiben oder zu verändern. Dies eignet sich für Szenarien, die mehrere unabhängige Ressourcen oder eine temporäre Nutzung erfordern.

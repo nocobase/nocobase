@@ -28,7 +28,6 @@ import {
   reconcileAdminLayoutMenuItems,
   shouldRenderIconInTitle,
 } from './AdminLayoutMenuUtils';
-import { findFirstPageRoute } from './AdminLayoutCompat';
 import {
   buildMenuBasicSchema,
   buildLinkSettingSchema,
@@ -41,7 +40,14 @@ import {
   matchesRoutePath,
   toTreeSelectItems,
 } from './AdminLayoutMenuFlowUtils';
-import { resolveAdminRouteRuntimeTarget, toRouterNavigationPath } from './resolveAdminRouteRuntimeTarget';
+import { ADMIN_LAYOUT_MODEL_UID } from './constants';
+import {
+  findFirstAccessiblePageRoute,
+  findFirstV2LandingRoute,
+  isV2AdminRuntime,
+  resolveAdminRouteRuntimeTarget,
+  toRouterNavigationPath,
+} from './resolveAdminRouteRuntimeTarget';
 
 export * from './AdminLayoutMenuUtils';
 const insertPositionToMethod = {
@@ -122,6 +128,15 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return this.flowRegistry.getFlows().size;
   }
 
+  hasPersistableMenuLinkageRules() {
+    const params = this.getStepParams('menuSettings', 'linkageRules') as { value?: any[] } | undefined;
+    return Array.isArray(params?.value) && params.value.length > 0;
+  }
+
+  hasCurrentPersistedMenuState() {
+    return this.getCurrentPersistedInstanceFlowCount() > 0 || this.hasPersistableMenuLinkageRules();
+  }
+
   buildRouteOptionsWithPersistedFlowFlag(hasPersistedMenuInstanceFlow: boolean) {
     const route = this.getRoute();
     const nextOptions = {
@@ -147,7 +162,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return;
     }
 
-    const hasPersistedMenuInstanceFlow = this.getCurrentPersistedInstanceFlowCount() > 0;
+    const hasPersistedMenuInstanceFlow = this.hasCurrentPersistedMenuState();
     if (this.hasPersistedMenuInstanceFlowFlag(route) === hasPersistedMenuInstanceFlow) {
       return;
     }
@@ -188,6 +203,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       if (this.isCreationSession()) {
         return;
       }
+      let shouldRerenderAfterHydrate = false;
 
       const repository = this.flowEngine.modelRepository;
       if (!repository?.findOne) {
@@ -201,6 +217,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
       if (data.stepParams && typeof data.stepParams === 'object') {
         this.setStepParams(data.stepParams);
+        shouldRerenderAfterHydrate = this.hasPersistableMenuLinkageRules();
       }
 
       if (data.flowRegistry && typeof data.flowRegistry === 'object') {
@@ -219,9 +236,11 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           return typeof flow.on === 'string' ? flow.on === 'beforeRender' : flow.on?.eventName === 'beforeRender';
         });
 
-        if (hasBeforeRenderFlow) {
-          void this.rerender();
-        }
+        shouldRerenderAfterHydrate = shouldRerenderAfterHydrate || hasBeforeRenderFlow;
+      }
+
+      if (shouldRerenderAfterHydrate) {
+        void this.rerender();
       }
     })().finally(() => {
       this.persistedStateHydrated = true;
@@ -240,6 +259,27 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const currentFlowCount = this.flowRegistry.getFlows().size;
     const initialFlowCount = Object.keys((this as any)._options?.flowRegistry || {}).length;
     return currentFlowCount > 0 || initialFlowCount > 0;
+  }
+
+  setHidden(value: boolean) {
+    const previous = this.hidden;
+    super.setHidden(value);
+    if (previous !== this.hidden) {
+      (this.flowEngine.getModel?.(ADMIN_LAYOUT_MODEL_UID) as any)?.refreshMenuRouteTree?.();
+    }
+  }
+
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    const { item, dom, options, renderType } = this.props;
+    if (!item || !renderType) {
+      return null;
+    }
+
+    return (
+      <div style={{ opacity: 0.3 }}>
+        <AdminLayoutMenuItemRenderer item={item} dom={dom} options={options} renderType={renderType} />
+      </div>
+    );
   }
 
   async createMenuRoute(
@@ -436,11 +476,11 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return true;
     }
 
-    const currentPersistedInstanceFlowCount = this.getCurrentPersistedInstanceFlowCount();
+    const hasCurrentPersistedMenuState = this.hasCurrentPersistedMenuState();
 
     // 菜单基础设置继续直接保存到 route repository；
     // 只有实例事件流需要回退到 FlowModel 默认持久化链路。
-    if (currentPersistedInstanceFlowCount > 0) {
+    if (hasCurrentPersistedMenuState) {
       await super.saveStepParams();
     } else if (this.hasPersistedMenuInstanceFlowFlag()) {
       await this.destroyPersistedState();
@@ -523,6 +563,10 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return null;
     }
 
+    if (!options.designable && this.hidden) {
+      return null;
+    }
+
     const shouldShowIconInTitle = shouldRenderIconInTitle({ depth, isMobile: options.isMobile });
     const { name, icon } = buildMenuTitleWithIcon(route, options.t, shouldShowIconInTitle);
 
@@ -546,6 +590,11 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         app: this.context.app,
         route,
       });
+
+      if (runtimeTarget.reason === 'unsupportedV2Runtime') {
+        return null;
+      }
+
       const path = route.schemaUid
         ? `/admin/${route.schemaUid}`
         : getAdminLayoutMenuVirtualPath('link', `${this.uid}-invalid`);
@@ -583,9 +632,12 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', this, route));
       }
 
+      const landingRoute = isV2AdminRuntime(this.context.app)
+        ? findFirstV2LandingRoute(itemChildren)
+        : findFirstAccessiblePageRoute(itemChildren);
       const runtimeTarget = resolveAdminRouteRuntimeTarget({
         app: this.context.app,
-        route,
+        route: isV2AdminRuntime(this.context.app) && landingRoute ? landingRoute : route,
       });
 
       const groupRoute: AdminLayoutMenuNode = {
@@ -593,9 +645,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
         icon,
         path: `/admin/${route.id}`,
         redirect:
-          children[0]?.key === 'x-designer-button'
-            ? undefined
-            : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || route.id}`,
+          children[0]?.key === 'x-designer-button' ? undefined : `/admin/${landingRoute?.schemaUid || route.id}`,
         hideInMenu: route.hideInMenu,
         _runtimePath: runtimeTarget.runtimePath,
         _navigationMode: runtimeTarget.navigationMode,
@@ -706,6 +756,10 @@ AdminLayoutMenuItemModel.registerFlow({
           hideInMenu: !!params.hideInMenu,
         });
       },
+    },
+    linkageRules: {
+      use: 'menuLinkageRules',
+      hideInSettings: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ctx.model.isCreationSession(),
     },
     moveTo: {
       title: 'Move to',

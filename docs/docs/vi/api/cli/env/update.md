@@ -18,7 +18,7 @@ nb env update [name] [flags]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `[name]` | string | Tên môi trường, bỏ qua thì dùng env hiện tại |
+| `[name]` | string | Tên env đã cấu hình để làm mới; nếu bỏ qua, dùng env hiện tại |
 | `--verbose` | boolean | Hiển thị tiến trình chi tiết |
 | `--api-base-url` | string | Ghi đè địa chỉ API NocoBase và lưu lâu dài vào env đích |
 | `--role` | string | Ghi đè role, gửi đi qua header `X-Role` |

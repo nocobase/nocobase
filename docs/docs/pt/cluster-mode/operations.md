@@ -5,10 +5,6 @@ description: "Operações em cluster: ordem de primeira inicialização, atualiz
 keywords: "operações cluster,atualização,manutenção no app,gerenciamento de plugins,backup,atualização gradual,NocoBase"
 ---
 
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Procedimentos de Manutenção
 
 ## Primeira Inicialização do Aplicativo

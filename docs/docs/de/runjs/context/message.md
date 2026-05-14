@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/message).
-:::
-
 # ctx.message
 
 Ant Design globale message API, zur Anzeige von temporären Kurzhinweisen in der oberen Mitte der Seite. Nachrichten werden nach einer bestimmten Zeit automatisch geschlossen oder können manuell vom Benutzer geschlossen werden.

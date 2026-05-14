@@ -19,9 +19,10 @@ nb license plugins sync [flags]
 | Parámetro | Tipo | Descripción |
 | --- | --- | --- |
 | `--env`, `-e` | string | Nombre del env del CLI; si se omite, se usa el env actual |
+| `--yes`, `-y` | boolean | Cuando un `--env` pasado explícitamente apunta a una env distinta de la env actual, omite la confirmación interactiva |
 | `--dry-run` | boolean | Previsualizar cambios sin instalar, actualizar ni eliminar plugins |
 | `--version` | string | Versión del registry o dist-tag que se sincronizará; por defecto se usa la versión actual del workspace |
-| `--verbose`, `-V` | boolean | Mostrar logs detallados por plugin |
+| `--verbose` | boolean | Mostrar logs detallados por plugin |
 | `--json` | boolean | Salida en JSON |
 
 ## Ejemplos
@@ -29,6 +30,7 @@ nb license plugins sync [flags]
 ```bash
 nb license plugins sync
 nb license plugins sync --env app1
+nb license plugins sync --env app1 --yes
 nb license plugins sync --env app1 --dry-run
 nb license plugins sync --env app1 --json
 ```
@@ -36,6 +38,8 @@ nb license plugins sync --env app1 --json
 ## Notas
 
 Cuando se omite `--version`, el CLI detecta automáticamente la versión actual de la aplicación y la utiliza para determinar qué versión del registry de plugins comerciales debe descargarse.
+
+Si pasa `--env` explícitamente y es diferente de la env actual, la CLI pedirá confirmación primero. En terminales no interactivos o sesiones de agentes de IA, agregue `--yes` usted mismo o ejecute antes `nb env use <name>` y vuelva a intentarlo.
 
 ## Comandos relacionados
 

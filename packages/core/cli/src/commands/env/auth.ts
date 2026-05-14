@@ -23,7 +23,7 @@ export default class EnvAuth extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Environment name (omit to use the current env)',
+      description: 'Configured environment name to sign in to. Defaults to the current env when omitted',
       required: false,
     }),
   };
