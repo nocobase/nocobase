@@ -87,10 +87,6 @@ COPY nocobase.tar.gz /app/nocobase.tar.gz
 COPY dist.tar.gz /app/nocobase-docs.tar.gz
 COPY --from=nb-unpack /opt/nb /opt/nb
 
-RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    NB_SKIP_STARTUP_UPDATE=1 nb --version; \
-  fi
-
 WORKDIR /app/nocobase
 
 RUN mkdir -p /app/nocobase/storage/uploads/ && \
