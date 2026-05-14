@@ -107,7 +107,13 @@ export class PluginAuthClientV2 extends Plugin {
       this.app.i18n.addResources(lang, NAMESPACE, resource);
     });
 
-    this.app.use(AuthProvider);
+    // `unshift` (not `app.use`/`push`) so AuthProvider becomes the outermost
+    // wrap — same as v1. Otherwise CurrentUserProvider mounts first, renders
+    // its own Spin and blocks children, and runs `/auth:check` before
+    // AuthProvider has had a chance to read the `?token=` query param the
+    // CAS / SAML server callbacks emit. The auth check then 401s and the
+    // browser bounces back to /signin.
+    this.app.providers.unshift([AuthProvider, {}]);
     this.app.flowEngine.registerModels({ UserCenterLanguageItemModel });
 
     this.addRoutes();
