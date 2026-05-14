@@ -94,7 +94,6 @@ RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
 WORKDIR /app/nocobase
 
 RUN mkdir -p /app/nocobase/storage/uploads/ && \
-  echo "$COMMIT_HASH" > /app/nocobase/storage/uploads/COMMIT_HASH && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
