@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { type APIClientOptions } from '@nocobase/sdk';
+import { type APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { createInstance, type i18n as i18next } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -46,7 +46,7 @@ export class Application extends BaseApplication<
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient({
       ...options.apiClient,
-      appName: this.name,
+      appName: options.name || getSubAppName(options.publicPath),
     });
   }
 
