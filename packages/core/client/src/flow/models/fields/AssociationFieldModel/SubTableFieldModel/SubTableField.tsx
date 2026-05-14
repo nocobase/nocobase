@@ -90,12 +90,6 @@ export function SubTableField(props) {
   const clearAllPendingRows = React.useCallback(() => {
     clearSubTablePendingRowValues(pendingRowValueHost);
   }, [pendingRowValueHost]);
-  const clearPendingRow = React.useCallback(
-    (record: any, rowIdx: number) => {
-      clearSubTablePendingRowValues(pendingRowValueHost, getRowPendingKey(record, rowIdx));
-    },
-    [getRowPendingKey, pendingRowValueHost],
-  );
   useEffect(() => {
     setCurrentPageSize(pageSize);
   }, [pageSize]);
@@ -171,7 +165,6 @@ export function SubTableField(props) {
   // 删除行
   const handleDelete = (index: number) => {
     const newValue = [...getLatestValue()];
-    clearPendingRow(newValue[index], index);
     newValue.splice(index, 1);
     const lastPage = Math.ceil(newValue.length / currentPageSize);
     setCurrentPage(currentPage > lastPage ? lastPage : currentPage);
