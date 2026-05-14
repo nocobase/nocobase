@@ -14,6 +14,87 @@ import { describe, expect, it, vi } from 'vitest';
 import { filterFormDefaultValues } from '../../../../actions/filterFormDefaultValues';
 import { FilterFormBlockModel } from '../FilterFormBlockModel';
 
+function resolveTemplateValue(raw: any, values: Record<string, any>): any {
+  if (typeof raw === 'string') {
+    const matched = raw.match(/^\{\{\s*ctx\.formValues\.([^}]+?)\s*\}\}$/);
+    return matched ? values[matched[1]] : raw;
+  }
+  if (Array.isArray(raw)) {
+    return raw.map((item) => resolveTemplateValue(item, values));
+  }
+  if (raw && typeof raw === 'object') {
+    return Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, resolveTemplateValue(value, values)]));
+  }
+  return raw;
+}
+
+function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<string, any> = {}) {
+  const values = { ...initialValues };
+  const createItem = (fieldPath: string, uid: string) => ({
+    uid,
+    fieldPath,
+    props: { name: `${fieldPath}_${uid}` },
+    getProps() {
+      return this.props;
+    },
+    getStepParams(flowKey: string, stepKey: string) {
+      if (flowKey === 'fieldSettings' && stepKey === 'init') {
+        return { fieldPath };
+      }
+      return undefined;
+    },
+    subModels: {
+      field: {},
+    },
+  });
+  const model = {
+    defaultValuesRefreshSeq: 0,
+    lastDefaultValueByFieldName: new Map<string, any>(),
+    form: {
+      getFieldValue: (name: string) => values[name],
+      setFieldValue: (name: string, value: any) => {
+        values[name] = value;
+      },
+      setFieldsValue: (next: Record<string, any>) => {
+        Object.assign(values, next);
+      },
+    },
+    context: {
+      resolveJsonTemplate: vi.fn((raw) => resolveTemplateValue(raw, values)),
+      app: {
+        jsonLogic: {
+          apply: vi.fn((logic: Record<string, any[]>) => {
+            const [[operator, args]] = Object.entries(logic);
+            if (operator === '$eq') return args[0] === args[1];
+            return true;
+          }),
+        },
+      },
+    },
+    subModels: {
+      grid: {
+        subModels: {
+          items: [createItem('nickname', 'nick'), createItem('username', 'user')],
+        },
+      },
+    },
+    getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+      if (flowKey === 'formFilterBlockModelSettings' && stepKey === 'defaultValues') {
+        return { value: rules };
+      }
+      return undefined;
+    }),
+    canApplyFormDefaultValue: (FilterFormBlockModel.prototype as any).canApplyFormDefaultValue,
+    matchDefaultValueCondition: (FilterFormBlockModel.prototype as any).matchDefaultValueCondition,
+    dispatchEvent: vi.fn(),
+    emitter: {
+      emit: vi.fn(),
+    },
+  };
+
+  return { model, values };
+}
+
 describe('filter-form defaultValues wiring', () => {
   it('loads action and model modules', () => {
     expect(filterFormDefaultValues).toBeTruthy();
@@ -177,5 +258,83 @@ describe('filter-form defaultValues wiring', () => {
         },
       },
     });
+  });
+
+  it('refreshes default values that depend on current filter form values', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel(
+      [
+        {
+          key: 'username-default',
+          enable: true,
+          targetPath: 'username',
+          mode: 'default',
+          value: '{{ ctx.formValues.nickname_nick }}',
+        },
+      ],
+      { nickname_nick: 'Alice' },
+    );
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+    expect(values.username_user).toBe('Alice');
+
+    values.nickname_nick = 'Bob';
+    model.defaultValuesRefreshSeq += 1;
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any, {
+      refreshSeq: model.defaultValuesRefreshSeq,
+    });
+    expect(values.username_user).toBe('Bob');
+
+    values.username_user = 'Manual';
+    values.nickname_nick = 'Carol';
+    model.defaultValuesRefreshSeq += 1;
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any, {
+      refreshSeq: model.defaultValuesRefreshSeq,
+    });
+    expect(values.username_user).toBe('Manual');
+  });
+
+  it('applies fixed values even when the target filter field already has a value', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel(
+      [
+        {
+          key: 'username-fixed',
+          enable: true,
+          targetPath: 'username',
+          mode: 'assign',
+          value: '{{ ctx.formValues.nickname_nick }}',
+        },
+      ],
+      { nickname_nick: 'Bob', username_user: 'Manual' },
+    );
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+
+    expect(values.username_user).toBe('Bob');
+  });
+
+  it('skips filter form field values when the rule condition does not match', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel(
+      [
+        {
+          key: 'username-condition',
+          enable: true,
+          targetPath: 'username',
+          mode: 'assign',
+          condition: {
+            logic: '$and',
+            items: [{ path: '{{ ctx.formValues.nickname_nick }}', operator: '$eq', value: 'allow' }],
+          },
+          value: 'Matched',
+        },
+      ],
+      { nickname_nick: 'deny' },
+    );
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+    expect(values.username_user).toBeUndefined();
+
+    values.nickname_nick = 'allow';
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+    expect(values.username_user).toBe('Matched');
   });
 });

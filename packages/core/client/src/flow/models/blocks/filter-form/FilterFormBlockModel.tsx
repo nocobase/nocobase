@@ -23,6 +23,7 @@ import {
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
 import { Form } from 'antd';
+import { isEqual } from 'lodash';
 import React from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import {
@@ -31,6 +32,7 @@ import {
 } from '../../../internal/utils/saveStepParamsWithSubModels';
 import { BlockSceneEnum, FilterBlockModel } from '../../base';
 import { FormComponent } from '../../blocks/form/FormBlockModel';
+import { evaluateCondition } from '../form/value-runtime/conditions';
 import { isEmptyValue } from '../form/value-runtime/utils';
 import { FilterManager, type RefreshTargetsByFilterOptions } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
@@ -227,6 +229,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   private removeTargetBlockListener?: () => void;
   private initialDefaultsPromise?: Promise<void>;
   private initialRefreshHandledTargetIds = new Set<string>();
+  private lastDefaultValueByFieldName = new Map<string, any>();
+  private defaultValuesRefreshSeq = 0;
 
   get form() {
     return this.context.form;
@@ -424,7 +428,30 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     }
   }
 
-  async applyFormDefaultValues(options?: { force?: boolean }) {
+  private canApplyFormDefaultValue(name: string, current: any, force?: boolean) {
+    if (force) return true;
+    if (isEmptyValue(current)) return true;
+    if (!this.lastDefaultValueByFieldName.has(name)) return false;
+    return isEqual(current, this.lastDefaultValueByFieldName.get(name));
+  }
+
+  private async matchDefaultValueCondition(condition: any) {
+    if (!condition) return true;
+
+    let resolvedCondition = condition;
+    try {
+      const nextCondition = await (this.context as any).resolveJsonTemplate?.(condition);
+      if (typeof nextCondition !== 'undefined') {
+        resolvedCondition = nextCondition;
+      }
+    } catch {
+      resolvedCondition = condition;
+    }
+
+    return evaluateCondition(this.context, resolvedCondition);
+  }
+
+  async applyFormDefaultValues(options?: { force?: boolean; refreshSeq?: number }) {
     const form = this.form;
     if (!form) return;
 
@@ -447,7 +474,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     for (const rule of rules) {
       if (!rule || typeof rule !== 'object') continue;
       if (rule.enable === false) continue;
-      if (rule.mode && String(rule.mode) !== 'default') continue;
+      if (!(await this.matchDefaultValueCondition(rule.condition))) continue;
+      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return;
 
       const targetPath = rule.targetPath ? String(rule.targetPath).trim() : '';
       const fieldUid = rule.field ? String(rule.field).trim() : '';
@@ -462,20 +490,45 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       if (!name) continue;
 
       const current = (form as any).getFieldValue?.(name);
-      if (!force && !isEmptyValue(current)) continue;
 
       const resolved = await resolveValue(rule.value);
+      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return;
       if (typeof resolved === 'undefined') continue;
 
       const operator = getDefaultOperator(itemModel as any);
       const normalized = normalizeFilterValueByOperator(operator, resolved);
+      const mode = String(rule.mode || 'default') === 'assign' ? 'assign' : 'default';
+      if (mode === 'default' && !this.canApplyFormDefaultValue(String(name), current, force)) continue;
+      if (isEqual(current, normalized)) {
+        if (mode === 'default') {
+          this.lastDefaultValueByFieldName.set(String(name), normalized);
+        } else {
+          this.lastDefaultValueByFieldName.delete(String(name));
+        }
+        continue;
+      }
 
       if (typeof (form as any).setFieldValue === 'function') {
         (form as any).setFieldValue(name, normalized);
       } else {
         (form as any).setFieldsValue?.({ [String(name)]: normalized });
       }
+      if (mode === 'default') {
+        this.lastDefaultValueByFieldName.set(String(name), normalized);
+      } else {
+        this.lastDefaultValueByFieldName.delete(String(name));
+      }
     }
+  }
+
+  private handleFilterFormValuesChange(changedValues: any, allValues: any) {
+    this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    this.emitter.emit('formValuesChange', { changedValues, allValues });
+
+    const refreshSeq = ++this.defaultValuesRefreshSeq;
+    void this.applyFormDefaultValues({ refreshSeq }).catch((error) => {
+      console.error('Failed to refresh filter form default values:', error);
+    });
   }
 
   private async handleTargetBlockRemoved(targetUid: string) {
@@ -523,6 +576,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
         onFinish={() => {
           this.context.refreshTargets();
         }}
+        onValuesChange={(changedValues, allValues) => this.handleFilterFormValuesChange(changedValues, allValues)}
         layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
       >
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />

@@ -101,12 +101,11 @@ const FilterFormDefaultValuesUI = observer(
         rootCollection={getCollectionFromModel(ctx.model)}
         value={value}
         onChange={handleChange}
-        fixedMode="default"
-        showCondition={false}
         showValueEditorWhenNoField
         getValueInputProps={getValueInputProps}
         isTitleFieldCandidate={isTitleFieldCandidate}
         onSyncAssociationTitleField={onSyncAssociationTitleField}
+        enableDateVariableAsConstant
       />
     );
   },
