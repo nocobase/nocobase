@@ -11,26 +11,18 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
+import { dayjs } from '@nocobase/utils/client';
 
 import { FormulaResult } from '../FormulaFieldModel';
 
-vi.mock('@nocobase/client', () => {
-  const ReadPretty = ({ value }: any) => <span data-testid="formula-value">{value == null ? '' : String(value)}</span>;
-  const Editable = ({ value, onChange }: any) => (
-    <input data-testid="formula-input" value={value ?? ''} onChange={(event) => onChange?.(event)} />
-  );
-  return {
-    Checkbox: Object.assign(Editable, { ReadPretty }),
-    DatePicker: Object.assign(Editable, { ReadPretty }),
-    FieldModel: class FieldModel {
-      static registerFlow = vi.fn();
-    },
-    Input: Object.assign(Editable, { ReadPretty }),
-    InputNumber: Object.assign(Editable, { ReadPretty }),
-  };
-});
-
 vi.mock('@nocobase/client-v2', () => ({
+  FieldModel: class FieldModel {
+    static registerFlow = vi.fn();
+  },
+  getDisplayNumber: ({ value }: any) => {
+    if (value == null) return '';
+    return String(value);
+  },
   resolveDynamicNamePath: (path: string | Array<string | number>, fieldIndex?: unknown) => {
     const segs = Array.isArray(path) ? path : String(path).split('.').filter(Boolean);
     const entries = (Array.isArray(fieldIndex) ? fieldIndex : [])
@@ -130,14 +122,138 @@ function FormulaHarness({ onForm }: { onForm: (form: any) => void }) {
   );
 }
 
+function DateFormulaHarness({ onSetFieldValueSpy }: { onSetFieldValueSpy: (spy: any) => void }) {
+  const [form] = Form.useForm();
+  const setFieldValueSpyRef = React.useRef<any>();
+  const dateValue = dayjs('2026-06-03 00:00:00');
+
+  if (!setFieldValueSpyRef.current) {
+    setFieldValueSpyRef.current = vi.spyOn(form, 'setFieldValue');
+    onSetFieldValueSpy(setFieldValueSpyRef.current);
+  }
+
+  return (
+    <Form
+      form={form}
+      initialValues={{
+        date: '2026-06-03 00:00:00',
+        formula: dateValue,
+      }}
+    >
+      <Form.Item hidden name="date">
+        <input />
+      </Form.Item>
+      <Form.Item hidden name="formula" getValueProps={() => ({ value: '' })}>
+        <input />
+      </Form.Item>
+      <FormulaResult
+        value={dateValue}
+        collectionField={{
+          options: {
+            dataType: 'date',
+            engine: 'math.js',
+            expression: 'date',
+          },
+        }}
+        form={form}
+        id={['formula']}
+      />
+    </Form>
+  );
+}
+
+function DateFormulaScopeHarness({ onForm }: { onForm: (form: any) => void }) {
+  const [form] = Form.useForm();
+
+  React.useEffect(() => {
+    onForm(form);
+  }, [form, onForm]);
+
+  return (
+    <Form
+      form={form}
+      initialValues={{
+        date: '2026-06-03 00:00:00',
+        formula: dayjs('2026-05-01 00:00:00'),
+      }}
+    >
+      <Form.Item hidden name="date">
+        <input />
+      </Form.Item>
+      <Form.Item hidden name="formula" getValueProps={() => ({ value: '' })}>
+        <input />
+      </Form.Item>
+      <FormulaResult
+        value={dayjs('2026-05-01 00:00:00')}
+        collectionField={{
+          options: {
+            dataType: 'date',
+            engine: 'math.js',
+            expression: 'date',
+          },
+        }}
+        form={form}
+        id={['formula']}
+      />
+    </Form>
+  );
+}
+
 describe('FormulaFieldModel', () => {
+  it('does not subscribe to form changes when rendering editable date values', () => {
+    const useWatchSpy = vi.spyOn(Form, 'useWatch');
+    useWatchSpy.mockClear();
+
+    render(
+      <FormulaResult
+        value={null}
+        collectionField={{
+          options: {
+            dataType: 'date',
+          },
+        }}
+        form={{
+          props: {
+            'x-flag': {
+              isInSetDefaultValueDialog: true,
+            },
+          },
+        }}
+      />,
+    );
+
+    expect(useWatchSpy).not.toHaveBeenCalled();
+    useWatchSpy.mockRestore();
+  });
+
+  it('does not write back equivalent dayjs and Date values', async () => {
+    let setFieldValueSpy: any;
+
+    render(<DateFormulaHarness onSetFieldValueSpy={(spy) => (setFieldValueSpy = spy)} />);
+
+    await waitFor(() => {
+      expect(setFieldValueSpy).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  it('uses the parent form values as scope for date formula fields', async () => {
+    let formRef: any;
+
+    render(<DateFormulaScopeHarness onForm={(form) => (formRef = form)} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('2026-06-03')).toBeInTheDocument();
+      expect(new Date(formRef.getFieldValue('formula')).getTime()).toBe(new Date('2026-06-03 00:00:00').getTime());
+    });
+  });
+
   it('recalculates with the current sub-table row scope when a sibling field changes', async () => {
     let formRef: any;
 
     render(<FormulaHarness onForm={(form) => (formRef = form)} />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('formula-value')).toHaveTextContent('100');
+      expect(screen.getByText('100')).toBeInTheDocument();
     });
 
     act(() => {
@@ -145,7 +261,7 @@ describe('FormulaFieldModel', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('formula-value')).toHaveTextContent('111111');
+      expect(screen.getByText('111111')).toBeInTheDocument();
       expect(formRef.getFieldValue(['o2m_orders', 0, 'formula'])).toBe(111111);
     });
   });

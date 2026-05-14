@@ -9,37 +9,270 @@
 
 import { toJS } from '@formily/reactive';
 import { EditableItemModel, DisplayItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
-import { Form } from 'antd';
-import { Checkbox, DatePicker, FieldModel, InputNumber, Input as InputString } from '@nocobase/client';
-import { resolveDynamicNamePath } from '@nocobase/client-v2';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Checkbox, DatePicker, Form, Input, InputNumber } from 'antd';
+import { FieldModel, getDisplayNumber, resolveDynamicNamePath } from '@nocobase/client-v2';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
-import { Registry, toFixedByStep } from '@nocobase/utils/client';
+import { dayjs, getDefaultFormat, Registry, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 
 import { toDbType } from '../utils';
 
-const TypedComponents = {
-  boolean: Checkbox.ReadPretty,
-  integer: InputNumber.ReadPretty,
-  bigInt: InputNumber.ReadPretty,
-  double: InputNumber.ReadPretty,
-  decimal: InputNumber.ReadPretty,
-  number: InputNumber.ReadPretty,
-  date: DatePicker.ReadPretty,
-  string: InputString.ReadPretty,
+const resolveDayjs = (value: unknown) => {
+  if (!value) return null;
+  if (dayjs.isDayjs(value)) return value as dayjs.Dayjs;
+  if (value instanceof Date) return dayjs(value);
+  const parsed = dayjs(value as any);
+  return parsed.isValid() ? parsed : null;
 };
 
-const EditableComponents = {
-  boolean: Checkbox,
-  integer: InputNumber,
-  bigInt: InputNumber,
-  double: InputNumber,
-  decimal: InputNumber,
-  number: InputNumber,
-  date: DatePicker,
-  string: InputString,
+const getDateValueKey = (value: unknown) => {
+  if (!value) return '';
+  if (dayjs.isDayjs(value)) return `dayjs:${value.valueOf()}`;
+  if (value instanceof Date) return `date:${value.getTime()}`;
+  return String(value);
 };
+
+const getShowTimeKey = (showTime: any) => {
+  if (!showTime || showTime === true) {
+    return String(!!showTime);
+  }
+  return [
+    getDateValueKey(showTime.defaultValue),
+    getDateValueKey(showTime.defaultOpenValue),
+    showTime.format,
+    showTime.hourStep,
+    showTime.minuteStep,
+    showTime.secondStep,
+    showTime.use12Hours,
+  ].join('|');
+};
+
+const toStringByPicker = (value: dayjs.Dayjs, picker = 'date', timezone: 'gmt' | 'local') => {
+  if (timezone === 'local') {
+    const offset = new Date().getTimezoneOffset();
+    return dayjs(toStringByPicker(value, picker, 'gmt'))
+      .add(offset, 'minutes')
+      .toISOString();
+  }
+  if (picker === 'year') {
+    return `${value.format('YYYY')}-01-01T00:00:00.000Z`;
+  }
+  if (picker === 'month') {
+    return `${value.format('YYYY-MM')}-01T00:00:00.000Z`;
+  }
+  if (picker === 'quarter') {
+    return `${value.startOf('quarter').format('YYYY-MM')}-01T00:00:00.000Z`;
+  }
+  if (picker === 'week') {
+    return `${value.startOf('week').add(1, 'day').format('YYYY-MM-DD')}T00:00:00.000Z`;
+  }
+  return `${value.format('YYYY-MM-DDTHH:mm:ss.SSS')}Z`;
+};
+
+function normalizeDatePickerChange(value: dayjs.Dayjs | null, props: any) {
+  const { dateOnly, gmt, picker = 'date', showTime, utc = true, underFilter } = props;
+  if (!value) {
+    return value;
+  }
+  if (underFilter) {
+    return value.format(showTime && picker === 'date' ? 'YYYY-MM-DD HH:mm:ss' : getDefaultFormat({ picker }));
+  }
+  if (dateOnly) {
+    return value.format('YYYY-MM-DD');
+  }
+  if (!utc) {
+    return value.format(showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD');
+  }
+  if (showTime) {
+    return gmt ? toGmt(value) : toLocal(value);
+  }
+  return gmt ? toStringByPicker(value, picker, 'gmt') : toStringByPicker(value, picker, 'local');
+}
+
+const EditableDatePicker = React.memo((props: any) => {
+  const { value, onChange, picker = 'date', showTime, ...others } = props;
+  const valueKey = getDateValueKey(value);
+  const dateValue = React.useMemo(() => {
+    return str2moment(value, { ...props, picker }) || null;
+  }, [valueKey, picker, props.dateOnly, props.gmt, props.utc]);
+
+  const showTimeKey = getShowTimeKey(showTime);
+  const stableShowTime = React.useMemo(() => {
+    if (!showTime || showTime === true) {
+      return showTime;
+    }
+    return {
+      ...showTime,
+      defaultValue: resolveDayjs(showTime.defaultValue),
+      defaultOpenValue: resolveDayjs(showTime.defaultOpenValue),
+    };
+  }, [showTimeKey]);
+
+  const format = React.useMemo(
+    () => getDefaultFormat({ ...props, picker }),
+    [props.dateFormat, props.format, picker, showTimeKey, props.timeFormat],
+  );
+
+  const handleChange = React.useCallback(
+    (next: dayjs.Dayjs | null) => {
+      const nextValue = normalizeDatePickerChange(next, { ...props, picker });
+      if (areValuesEqual(value, nextValue)) {
+        return;
+      }
+      onChange?.(nextValue);
+    },
+    [onChange, picker, props.dateOnly, props.gmt, props.showTime, props.underFilter, props.utc, value],
+  );
+
+  return (
+    <DatePicker
+      {...others}
+      format={format}
+      picker={picker}
+      showTime={stableShowTime}
+      value={dateValue as any}
+      onChange={handleChange}
+    />
+  );
+});
+
+const ReadPrettyBoolean = ({ value, showUnchecked }: { value?: boolean; showUnchecked?: boolean }) => {
+  if (value) {
+    return <CheckOutlined style={{ color: '#52c41a' }} />;
+  }
+  return showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <Checkbox disabled checked={false} />;
+};
+
+const ReadPrettyText = ({
+  value,
+  className,
+  style,
+}: {
+  value: any;
+  className?: string;
+  style?: React.CSSProperties;
+}) => {
+  if (value == null || value === '') return null;
+  return (
+    <span className={className} style={style}>
+      {String(value)}
+    </span>
+  );
+};
+
+const ReadPrettyDate = ({
+  value,
+  format,
+  className,
+  style,
+}: {
+  value: any;
+  format?: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) => {
+  if (!value) return null;
+  const d = resolveDayjs(value);
+  if (!d) {
+    return (
+      <span className={className} style={style}>
+        {String(value)}
+      </span>
+    );
+  }
+  return (
+    <span className={className} style={style}>
+      {d.format(format || 'YYYY-MM-DD')}
+    </span>
+  );
+};
+
+function renderEditableValue(dataType: string, value: any, others: any) {
+  switch (dataType) {
+    case 'boolean':
+      return (
+        <Checkbox
+          {...others}
+          checked={!!value}
+          onChange={(ev) => {
+            others?.onChange?.(ev);
+          }}
+        />
+      );
+    case 'integer':
+    case 'bigInt':
+    case 'double':
+    case 'decimal':
+    case 'number':
+      return (
+        <InputNumber
+          {...others}
+          value={value as any}
+          onChange={(v) => {
+            others?.onChange?.(v);
+          }}
+        />
+      );
+    case 'date': {
+      return <EditableDatePicker {...others} value={value} />;
+    }
+    default:
+      return (
+        <Input
+          {...others}
+          value={value ?? ''}
+          onChange={(ev) => {
+            others?.onChange?.(ev);
+          }}
+        />
+      );
+  }
+}
+
+function renderReadPrettyValue(dataType: string, value: any, others: any) {
+  switch (dataType) {
+    case 'boolean':
+      return (
+        <span className={others?.className} style={others?.style}>
+          <ReadPrettyBoolean value={!!value} showUnchecked={others?.showUnchecked} />
+        </span>
+      );
+    case 'date':
+      return (
+        <ReadPrettyDate
+          value={value}
+          format={others?.format || others?.dateFormat}
+          className={others?.className}
+          style={others?.style}
+        />
+      );
+    case 'integer':
+    case 'bigInt':
+    case 'double':
+    case 'decimal':
+    case 'number': {
+      const result = getDisplayNumber({
+        ...others,
+        value,
+        numberStep: others?.numberStep ?? others?.step ?? '1',
+      });
+      if (result == null || result === '') {
+        return null;
+      }
+      return (
+        <span className={others?.className} style={others?.style}>
+          {others?.addonBefore}
+          <span dangerouslySetInnerHTML={{ __html: String(result) }} />
+          {others?.addonAfter}
+        </span>
+      );
+    }
+    default:
+      return <ReadPrettyText value={value} className={others?.className} style={others?.style} />;
+  }
+}
 
 function getValuesByPath(values, key, index?) {
   const targetValue = values?.[key];
@@ -73,6 +306,16 @@ function getValuesByFullPath(values, fieldPath) {
   return value;
 }
 
+function getScopeByFullPath(values, fieldPath) {
+  const fieldPaths = Array.isArray(fieldPath)
+    ? fieldPath.map((part) => (typeof part === 'number' ? part : String(part)))
+    : String(fieldPath || '')
+        .split('.')
+        .filter(Boolean);
+  const parentPath = fieldPaths.slice(0, -1);
+  return parentPath.length ? getValuesByFullPath(values, parentPath) : values || {};
+}
+
 function normalizeIdPath(id) {
   if (Array.isArray(id)) {
     return id.map((part) => {
@@ -98,17 +341,25 @@ function normalizeIdPath(id) {
   return [id];
 }
 
+function getDateTimestamp(value) {
+  if (dayjs.isDayjs(value)) {
+    return value.isValid() ? value.valueOf() : undefined;
+  }
+  if (_.isDate(value)) {
+    const timestamp = value.getTime();
+    return Number.isNaN(timestamp) ? undefined : timestamp;
+  }
+  if (_.isString(value)) {
+    const timestamp = Date.parse(value);
+    return Number.isNaN(timestamp) ? undefined : timestamp;
+  }
+}
+
 function areValuesEqual(value1, value2) {
-  if (_.isString(value1) && !isNaN(Date.parse(value1))) {
-    value1 = new Date(value1);
-  }
-
-  if (_.isString(value2) && !isNaN(Date.parse(value2))) {
-    value2 = new Date(value2);
-  }
-
-  if (_.isDate(value1) && _.isDate(value2)) {
-    return value1.getTime() === value2.getTime();
+  const timestamp1 = getDateTimestamp(value1);
+  const timestamp2 = getDateTimestamp(value2);
+  if (timestamp1 !== undefined || timestamp2 !== undefined) {
+    return timestamp1 === timestamp2;
   }
 
   return _.isEqual(value1, value2);
@@ -122,7 +373,7 @@ const resolveFormulaUsageFlags = (form: any, ctx?: any) => {
   return { flags, hasFlags, isFilterContext, isDefaultValueDialog };
 };
 
-export function FormulaResult(props) {
+function FormulaCalculatedResult(props) {
   const { value, collectionField, form, id, context, ...others } = props;
   const { dataType, expression, engine = 'math.js' } = collectionField?.options || {};
   const [editingValue, setEditingValue] = useState(value);
@@ -148,7 +399,7 @@ export function FormulaResult(props) {
       return;
     }
     const formValues = typeof form?.getFieldsValue === 'function' ? form.getFieldsValue() : form?.values || {};
-    const scope = toJS(getValuesByFullPath(formValues, fieldPath));
+    const scope = toJS(getScopeByFullPath(formValues, fieldPath));
     let v;
     try {
       v = evaluate(expression, scope);
@@ -163,25 +414,36 @@ export function FormulaResult(props) {
     if (!areValuesEqual(value, editingValue) && !isFilterContext && !isDefaultValueDialog) {
       setTimeout(() => {
         if (typeof form?.setFieldValue === 'function') {
+          const currentValue =
+            typeof form?.getFieldValue === 'function'
+              ? form.getFieldValue(fieldPath)
+              : getValuesByFullPath(form?.values, fieldPath);
+          if (areValuesEqual(currentValue, editingValue)) {
+            return;
+          }
           form.setFieldValue(fieldPath, editingValue);
         }
       });
     }
   }, [editingValue, fieldPath, form, isFilterContext, isDefaultValueDialog, value]);
 
-  // 筛选/默认值等场景下需要可编辑组件
-  if (isFilterContext || isDefaultValueDialog) {
-    const EditableComp = EditableComponents[dataType] ?? InputString;
-    return <EditableComp {...others} value={value} onChange={(...args) => others?.onChange?.(...args)} />;
-  }
-
-  const Component = TypedComponents[dataType] ?? InputString;
   if (!collectionField) {
     return;
   }
-  return (
-    <Component {...others} value={dataType === 'double' ? toFixedByStep(editingValue, props.step) : editingValue} />
-  );
+  return <>{renderReadPrettyValue(dataType, editingValue, others)}</>;
+}
+
+export function FormulaResult(props) {
+  const { value, collectionField, form, context, ...others } = props;
+  const { dataType } = collectionField?.options || {};
+  const { isFilterContext, isDefaultValueDialog } = resolveFormulaUsageFlags(form, context);
+
+  // 筛选/默认值等场景下需要可编辑组件，不需要订阅整个表单重算公式。
+  if (isFilterContext || isDefaultValueDialog) {
+    return renderEditableValue(dataType, value, others);
+  }
+
+  return <FormulaCalculatedResult {...props} />;
 }
 
 export class FormulaFieldModel extends FieldModel {
