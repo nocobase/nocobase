@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { ThemeConfig } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { ConfigProvider, Grid, theme as antdTheme } from 'antd';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -21,7 +22,7 @@ export const EmbedLayoutComponent = observer((props: { model: EmbedLayoutModelV2
   const screens = Grid.useBreakpoint();
   const isMobileLayout =
     screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
-  const theme = useMemo(
+  const theme = useMemo<ThemeConfig>(
     () => ({
       token: {
         paddingPageHorizontal: token.paddingLG,
