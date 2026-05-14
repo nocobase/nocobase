@@ -901,94 +901,22 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   async retrieveKnowledgeBase(userMessage: AIMessageInput): Promise<DocumentSegmentedWithScore[]> {
-    const vectorStoreProvider = this.plugin.features.vectorStoreProvider;
-    let queryResult: DocumentSegmentedWithScore[] = [];
-    const queryString: string = userMessage.content.content as string;
-    if (!queryString || _.isEmpty(queryString)) {
-      return queryResult;
+    const { knowledgeBaseKeys } = this.employee.knowledgeBase ?? {};
+    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
+      return [];
     }
-    const { topK, score } = this.getAIEmployeeKnowledgeBaseConfig();
-    const knowledgeBaseGroup = await this.getKnowledgeBaseGroup();
-    for (const entry of knowledgeBaseGroup) {
-      const { vectorStoreConfig, knowledgeBaseType, knowledgeBaseList } = entry;
-      if (!knowledgeBaseList || _.isEmpty(knowledgeBaseList)) {
-        continue;
-      }
-
-      if (knowledgeBaseType === 'LOCAL') {
-        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-          vectorStoreConfig.vectorStoreProvider,
-          [
-            {
-              key: 'vectorStoreConfigKey',
-              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
-            },
-          ],
-        );
-        const knowledgeBaseOuterIds = knowledgeBaseList.map((x) => x.knowledgeBaseOuterId);
-        const result = await vectorStoreService.search(queryString, {
-          topK,
-          score,
-          filter: {
-            knowledgeBaseOuterId: { in: knowledgeBaseOuterIds },
-          },
-        });
-        queryResult = [...queryResult, ...result];
-      } else if (knowledgeBaseType === 'READONLY') {
-        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-          vectorStoreConfig.vectorStoreProvider,
-          [
-            {
-              key: 'vectorStoreConfigKey',
-              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
-            },
-          ],
-        );
-        const result = await vectorStoreService.search(queryString, {
-          topK,
-          score,
-        });
-        queryResult = [...queryResult, ...result];
-      } else if (knowledgeBaseType === 'EXTERNAL') {
-        for (const knowledgeBase of knowledgeBaseList) {
-          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-            vectorStoreConfig.vectorStoreProvider,
-            knowledgeBase.vectorStoreProps,
-          );
-          const result = await vectorStoreService.search(queryString, {
-            topK,
-            score,
-          });
-          queryResult = [...queryResult, ...result];
-        }
-      }
+    const query: string = userMessage.content.content as string;
+    if (!query || _.isEmpty(query)) {
+      return [];
     }
-    return queryResult;
+    const { topK, score } = this.employee.knowledgeBase ?? {};
+    return this.plugin.features.knowledgeBase.search({ knowledgeBaseKeys, query, topK, score });
   }
 
   isEnabledKnowledgeBase(): boolean {
     const featureEnabled = this.plugin.features.isFeaturesEnabled(Object.values(EEFeatures));
     const knowledgeBaseEnabled = this.employee.enableKnowledgeBase;
     return featureEnabled && knowledgeBaseEnabled;
-  }
-
-  getAIEmployeeKnowledgeBaseConfig(): {
-    topK: number;
-    score: string;
-  } {
-    const { topK, score } = this.employee.knowledgeBase ?? {};
-    return {
-      topK,
-      score,
-    };
-  }
-
-  async getKnowledgeBaseGroup(): Promise<KnowledgeBaseGroup[]> {
-    const { knowledgeBaseKeys } = this.employee.knowledgeBase ?? {};
-    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
-      return [];
-    }
-    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseKeys);
   }
 
   // === Tool calls ===
