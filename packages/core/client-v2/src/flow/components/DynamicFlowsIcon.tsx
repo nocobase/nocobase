@@ -28,6 +28,9 @@ import {
   GLOBAL_EMBED_CONTAINER_ID,
   EMBED_REPLACING_DATA_KEY,
   shouldHideEventInSettings,
+  DetachedFlowRegistry,
+  replaceFlowRegistry,
+  serializeFlowRegistry,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
@@ -35,6 +38,9 @@ import { useUpdate } from 'ahooks';
 import _ from 'lodash';
 
 type FlowOnObject = Exclude<FlowDefinition['on'], string | undefined>;
+type FlowRegistryAvailability = {
+  hasFlow(flowKey: string): boolean;
+};
 
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
   return !!on && typeof on === 'object';
@@ -93,7 +99,7 @@ function validateFlowOnPhase(onObj: FlowOnObject): 'flowKey' | 'stepKey' | undef
 
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
-  const t = model.translate.bind(model);
+  const t = React.useMemo(() => model.translate.bind(model), [model]);
 
   const handleClick = () => {
     const target = document.querySelector<HTMLDivElement>(`#${GLOBAL_EMBED_CONTAINER_ID}`);
@@ -190,7 +196,17 @@ const FieldLabel = ({
 
 // 事件配置组件 - 独立的 observer 组件确保响应式更新
 const EventConfigSection = observer(
-  ({ flow, model, flowEngine }: { flow: FlowDefinition; model: FlowModel; flowEngine: any }) => {
+  ({
+    flow,
+    model,
+    flowEngine,
+    flowRegistry,
+  }: {
+    flow: FlowDefinition;
+    model: FlowModel;
+    flowEngine: any;
+    flowRegistry: FlowRegistryAvailability;
+  }) => {
     const ctx = useFlowContext<FlowEngineContext>();
     const t = model.translate.bind(model);
     const refresh = useUpdate();
@@ -270,9 +286,9 @@ const EventConfigSection = observer(
       return staticFlows.map((f) => ({
         value: f.key,
         label: formatKeyWithTitle(String(f.key), f.title),
-        disabled: model.flowRegistry.hasFlow(f.key),
+        disabled: flowRegistry.hasFlow(f.key),
       }));
-    }, [formatKeyWithTitle, model.flowRegistry, staticFlows]);
+    }, [flowRegistry, formatKeyWithTitle, staticFlows]);
 
     const stepOptions = React.useMemo(() => {
       if (!flowKeyValue) return [];
@@ -446,12 +462,58 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const { model } = props;
   const ctx = useFlowContext<FlowEngineContext>();
   const flowEngine = model.flowEngine;
+  const latestFlows = serializeFlowRegistry(model.flowRegistry);
+  const initialFlowsRef = React.useRef(latestFlows);
+  const [draftFlowRegistry] = React.useState(() => new DetachedFlowRegistry(latestFlows));
   const [submitLoading, setSubmitLoading] = React.useState(false);
-  const t = model.translate.bind(model);
+  const t = React.useMemo(() => model.translate.bind(model), [model]);
+  const hasUnsavedChanges = React.useCallback(() => {
+    return !_.isEqual(initialFlowsRef.current, serializeFlowRegistry(draftFlowRegistry));
+  }, [draftFlowRegistry]);
+
+  React.useEffect(() => {
+    if (_.isEqual(initialFlowsRef.current, latestFlows) || hasUnsavedChanges()) {
+      return;
+    }
+
+    replaceFlowRegistry(draftFlowRegistry, latestFlows);
+    initialFlowsRef.current = latestFlows;
+  }, [draftFlowRegistry, hasUnsavedChanges, latestFlows]);
+
+  React.useEffect(() => {
+    const view = ctx.view;
+    const previousBeforeClose = view.beforeClose;
+    const beforeClose = async (payload) => {
+      if (hasUnsavedChanges()) {
+        const confirmed =
+          (await ctx.modal?.confirm?.({
+            title: t('Unsaved changes'),
+            content: t("Are you sure you don't want to save?"),
+            okText: t('Confirm'),
+            cancelText: t('Cancel'),
+          })) ?? true;
+
+        if (!confirmed) {
+          return false;
+        }
+      }
+
+      const result = await previousBeforeClose?.(payload);
+      return result !== false;
+    };
+
+    view.beforeClose = beforeClose;
+
+    return () => {
+      if (view.beforeClose === beforeClose) {
+        view.beforeClose = previousBeforeClose;
+      }
+    };
+  }, [ctx, hasUnsavedChanges, t]);
 
   // 添加新流
   const handleAddFlow = () => {
-    model.flowRegistry.addFlow(uid(), {
+    draftFlowRegistry.addFlow(uid(), {
       title: t('Event flow'),
       steps: {},
     });
@@ -516,7 +578,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   );
 
   // 生成折叠面板项
-  const collapseItems = model.flowRegistry.mapFlows((flow) => {
+  const collapseItems = draftFlowRegistry.mapFlows((flow) => {
     return {
       key: flow.key,
       label: renderPanelHeader(flow),
@@ -529,7 +591,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
       children: (
         <div>
           {/* 事件部分 */}
-          <EventConfigSection flow={flow} model={model} flowEngine={flowEngine} />
+          <EventConfigSection flow={flow} model={model} flowEngine={flowEngine} flowRegistry={draftFlowRegistry} />
 
           {/* 步骤部分 */}
           <div>
@@ -670,13 +732,13 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           flexShrink: 0,
         }}
       >
-        <Button onClick={() => ctx.view.destroy()}>{t('Cancel')}</Button>
+        <Button onClick={() => ctx.view.close()}>{t('Cancel')}</Button>
         <Button
           type="primary"
           loading={submitLoading}
           onClick={async () => {
             setSubmitLoading(true);
-            const invalid = model.flowRegistry
+            const invalid = draftFlowRegistry
               .mapFlows((flow) => {
                 if (!isFlowOnObject(flow.on)) return;
                 normalizeFlowOnPhase(flow.on);
@@ -695,10 +757,11 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
               setSubmitLoading(false);
               return;
             }
-            try {
-              const afterSaves: Array<() => Promise<void>> = [];
+            const previousFlows = serializeFlowRegistry(model.flowRegistry);
+            const afterSaves: Array<() => Promise<void>> = [];
 
-              for (const flow of model.flowRegistry.mapFlows((it) => it)) {
+            try {
+              for (const flow of draftFlowRegistry.mapFlows((it) => it)) {
                 for (const step of flow.mapSteps((it) => it)) {
                   const serialized = step.serialize();
                   const actionDef = step.use ? model.getAction(step.use) : undefined;
@@ -731,8 +794,19 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                 }
               }
 
+              replaceFlowRegistry(model.flowRegistry, serializeFlowRegistry(draftFlowRegistry));
               await model.flowRegistry.save();
+            } catch (error) {
+              replaceFlowRegistry(model.flowRegistry, previousFlows);
+              setSubmitLoading(false);
+              model.context?.message?.error?.('Steps post-save hooks failed to run');
+              console.error(error);
+              return;
+            }
 
+            initialFlowsRef.current = serializeFlowRegistry(model.flowRegistry);
+
+            try {
               for (const runAfterSave of afterSaves) {
                 await runAfterSave();
               }
