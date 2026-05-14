@@ -183,6 +183,8 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
 
 FormItemModel.define({
   label: tExpr('Display fields'),
+  searchable: true,
+  searchPlaceholder: tExpr('Search fields'),
   sort: 100,
 });
 

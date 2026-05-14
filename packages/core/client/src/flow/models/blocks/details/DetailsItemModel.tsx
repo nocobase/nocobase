@@ -227,6 +227,8 @@ export class DetailsItemModel extends DisplayItemModel<{
 
 DetailsItemModel.define({
   label: tExpr('Display fields'),
+  searchable: true,
+  searchPlaceholder: tExpr('Search fields'),
   sort: 100,
 });
 

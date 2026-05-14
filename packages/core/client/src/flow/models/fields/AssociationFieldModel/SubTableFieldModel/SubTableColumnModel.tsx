@@ -718,6 +718,8 @@ export class SubTableColumnModel<
 SubTableColumnModel.define({
   label: tExpr('Table column'),
   icon: 'TableColumn',
+  searchable: true,
+  searchPlaceholder: tExpr('Search fields'),
   createModelOptions: {
     use: 'SubTableColumnModel',
   },
