@@ -126,6 +126,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
 
   renderActions() {
     const flowSettingsEnabled = !!this.context.flowSettingsEnabled;
+    const token = this.context.themeToken;
 
     if (!flowSettingsEnabled && !this.hasSubModel('actions')) {
       return;
@@ -133,7 +134,14 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
 
     return (
       <DndProvider>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: token.margin,
+          }}
+        >
           <Space>
             {this.mapSubModels('actions', (action) => {
               // @ts-ignore

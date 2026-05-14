@@ -43,7 +43,9 @@ export const titleField = defineAction({
     const options = targetFields
       .filter((field) =>
         isTitleFieldInterface(
-          getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager),
+          typeof field.getInterfaceOptions === 'function'
+            ? field.getInterfaceOptions()
+            : getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager),
         ),
       )
       .map((field) => ({
