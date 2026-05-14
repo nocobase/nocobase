@@ -93,14 +93,7 @@ async function writePluginDevEntryFiles(entries, entryDir) {
     const sourceEntry = toPosixPath(entry.sourceEntry);
     await fs.writeFile(
       entryFile,
-      [
-        `export { default } from '${sourceEntry}';`,
-        `export * from '${sourceEntry}';`,
-        `if (import.meta.webpackHot) {`,
-        `  import.meta.webpackHot.accept();`,
-        `}`,
-        '',
-      ].join('\n'),
+      [`export { default } from '${sourceEntry}';`, `export * from '${sourceEntry}';`, ''].join('\n'),
       'utf-8',
     );
     rsbuildEntries[entry.entryName] = entryFile;

@@ -145,6 +145,8 @@ async function main() {
         cors: true,
       },
       dev: {
+        hmr: false,
+        liveReload: true,
         assetPrefix: `http://localhost:${port}/`,
         lazyCompilation: false,
         client: {
