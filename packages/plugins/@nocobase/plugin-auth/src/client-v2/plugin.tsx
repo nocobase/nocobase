@@ -12,7 +12,7 @@ import type { ComponentType } from 'react';
 import {
   getCurrentV2RedirectPath,
   Plugin,
-  redirectToLegacySignin,
+  redirectToV2Signin,
   UserCenterSelectItemModel,
   languageCodes,
 } from '@nocobase/client-v2';
@@ -215,7 +215,7 @@ export class PluginAuthClientV2 extends Plugin {
           const redirectPath = getCurrentV2RedirectPath(this.app, locationLike);
           debouncedRedirect(() => {
             this.app.apiClient.auth.setToken('');
-            redirectToLegacySignin(this.app, redirectPath, { replace: true });
+            redirectToV2Signin(this.app, redirectPath, { replace: true });
           });
           return new Promise<never>(() => undefined);
         }

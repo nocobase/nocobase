@@ -21,8 +21,6 @@ type LocationLike = {
   hash?: string;
 };
 
-const V2_PUBLIC_PATH_SUFFIX = '/v2/';
-
 function ensureLeadingSlash(value = '') {
   if (!value) {
     return '/';
@@ -111,14 +109,6 @@ function getV2PublicPath(app: AppLike) {
   return normalizePublicPath(app.getPublicPath());
 }
 
-function getRootPublicPath(app: AppLike) {
-  const publicPath = getV2PublicPath(app);
-  if (!publicPath.endsWith(V2_PUBLIC_PATH_SUFFIX)) {
-    return normalizePublicPath(publicPath.replace(/\/v2\/?$/, '/') || '/');
-  }
-  return normalizePublicPath(publicPath.slice(0, -V2_PUBLIC_PATH_SUFFIX.length) || '/');
-}
-
 function getV2BasePath(app: AppLike) {
   return trimTrailingSlashes(getV2PublicPath(app)) || '/';
 }
@@ -138,46 +128,8 @@ function joinRootRelativePath(basePath: string, pathname: string) {
   return normalizePathname(`/${trimLeadingSlashes(normalizedBasePath)}/${trimLeadingSlashes(normalizedPathname)}`);
 }
 
-function mapV2AdminPathnameToLegacyPathname(pathname: string) {
-  const normalizedPathname = normalizePathname(pathname);
-
-  if (normalizedPathname === '/admin') {
-    return '/admin';
-  }
-
-  const segments = normalizedPathname.split('/').filter(Boolean);
-  if (segments[0] !== 'admin' || segments.length < 2) {
-    return null;
-  }
-
-  const [, name, ...restSegments] = segments;
-  const legacySegments = ['admin', name];
-  let index = 0;
-
-  while (index < restSegments.length) {
-    const segment = restSegments[index];
-
-    if (segment === 'tab' && restSegments[index + 1]) {
-      legacySegments.push('tabs', restSegments[index + 1]);
-      index += 2;
-      continue;
-    }
-
-    if (segment === 'view') {
-      legacySegments.push('popups', ...restSegments.slice(index + 1));
-      index = restSegments.length;
-      continue;
-    }
-
-    return null;
-  }
-
-  return normalizePathname(`/${legacySegments.join('/')}`);
-}
-
-function getLegacySigninPath(app: AppLike) {
-  const rootPublicPath = trimTrailingSlashes(getRootPublicPath(app));
-  return `${rootPublicPath}/signin`;
+function getV2SigninPath(app: AppLike) {
+  return joinRootRelativePath(getV2PublicPath(app), '/signin');
 }
 
 function stripCurrentV2Basename(app: AppLike, pathname: string) {
@@ -202,27 +154,6 @@ function getDefaultV2AdminRedirectPath(app: AppLike) {
 }
 
 /**
- * 将 v2 admin 路径转换为对应的 v1 admin 根相对路径。
- *
- * @param app 当前 v2 应用实例
- * @param value 当前 v2 admin 路径或 location 对象
- * @returns 对应的 v1 admin 根相对路径；若无法安全转换则返回 null
- */
-export function convertV2AdminPathToLegacy(app: AppLike, value: string | LocationLike) {
-  const locationLike = splitPathLike(value);
-  const pathname = stripCurrentV2Basename(app, locationLike.pathname || '/');
-  const legacyPathname = mapV2AdminPathnameToLegacyPathname(pathname);
-
-  if (!legacyPathname) {
-    return null;
-  }
-
-  return `${joinRootRelativePath(getRootPublicPath(app), legacyPathname)}${normalizeSearch(
-    locationLike.search,
-  )}${normalizeHash(locationLike.hash)}`;
-}
-
-/**
  * 将当前 v2 页面地址转换为根相对 redirect 路径。
  *
  * @param app 当前 v2 应用实例
@@ -237,25 +168,25 @@ export function getCurrentV2RedirectPath(app: AppLike, locationLike: LocationLik
 }
 
 /**
- * 构造跳转到 v1 登录页的完整 href。
+ * 构造跳转到 v2 登录页的完整 href。
  *
  * @param app 当前 v2 应用实例
  * @param targetPath 登录后回跳地址
- * @returns 指向 v1 登录页的 href
+ * @returns 指向 v2 登录页的 href
  */
-export function buildLegacySigninHref(app: AppLike, targetPath: string) {
-  return `${getLegacySigninPath(app)}?redirect=${encodeURIComponent(targetPath)}`;
+export function buildV2SigninHref(app: AppLike, targetPath: string) {
+  return `${getV2SigninPath(app)}?redirect=${encodeURIComponent(targetPath)}`;
 }
 
 /**
- * 通过整页跳转进入 v1 登录页。
+ * 通过整页跳转进入 v2 登录页。
  *
  * @param app 当前 v2 应用实例
  * @param targetPath 登录后回跳地址
  * @param options 跳转选项
  */
-export function redirectToLegacySignin(app: AppLike, targetPath: string, options?: { replace?: boolean }) {
-  const href = buildLegacySigninHref(app, targetPath);
+export function redirectToV2Signin(app: AppLike, targetPath: string, options?: { replace?: boolean }) {
+  const href = buildV2SigninHref(app, targetPath);
   if (options?.replace === false) {
     window.location.href = href;
     return;
@@ -264,13 +195,13 @@ export function redirectToLegacySignin(app: AppLike, targetPath: string, options
 }
 
 /**
- * 解析并校验服务端返回的 v1 登录页地址。
+ * 解析并校验服务端返回的 v2 登录页地址。
  *
  * @param value 服务端返回的 redirect
  * @param app 当前 v2 应用实例
- * @returns 合法时返回完整同源 URL，否则返回 null
+ * @returns 合法时返回完整同源 URL,否则返回 null
  */
-export function resolveLegacySigninRedirect(value: string | undefined | null, app: AppLike) {
+export function resolveV2SigninRedirect(value: string | undefined | null, app: AppLike) {
   if (!value) {
     return null;
   }
@@ -286,7 +217,7 @@ export function resolveLegacySigninRedirect(value: string | undefined | null, ap
     return null;
   }
 
-  const validPathnames = new Set(['/signin', getLegacySigninPath(app)]);
+  const validPathnames = new Set(['/signin', getV2SigninPath(app)]);
   if (!validPathnames.has(url.pathname)) {
     return null;
   }

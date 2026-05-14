@@ -8,11 +8,10 @@
  */
 
 import {
-  buildLegacySigninHref,
-  convertV2AdminPathToLegacy,
+  buildV2SigninHref,
   getCurrentV2RedirectPath,
-  redirectToLegacySignin,
-  resolveLegacySigninRedirect,
+  redirectToV2Signin,
+  resolveV2SigninRedirect,
 } from '../authRedirect';
 
 describe('auth redirect helpers', () => {
@@ -60,7 +59,7 @@ describe('auth redirect helpers', () => {
     ).toBe('/nocobase/v2/admin/7vu4c2sdk6h?from=menu#tab-1');
   });
 
-  it('should derive legacy signin href from root public path', () => {
+  it('should derive v2 signin href from v2 public path', () => {
     const app = {
       getPublicPath: () => '/nocobase/v2/',
       router: {
@@ -68,12 +67,12 @@ describe('auth redirect helpers', () => {
       },
     } as any;
 
-    expect(buildLegacySigninHref(app, '/nocobase/v2/admin/7vu4c2sdk6h')).toBe(
-      '/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h',
+    expect(buildV2SigninHref(app, '/nocobase/v2/admin/7vu4c2sdk6h')).toBe(
+      '/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h',
     );
   });
 
-  it('should convert v2 admin path to legacy root-relative path', () => {
+  it('should derive v2 signin href when root public path is "/"', () => {
     const app = {
       getPublicPath: () => '/v2/',
       router: {
@@ -81,53 +80,7 @@ describe('auth redirect helpers', () => {
       },
     } as any;
 
-    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1')).toBe('/admin/page-1');
-    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1/tab/tab-1')).toBe('/admin/page-1/tabs/tab-1');
-    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1/view/detail')).toBe('/admin/page-1/popups/detail');
-    expect(convertV2AdminPathToLegacy(app, '/v2/admin/page-1/tab/tab-1/view/detail')).toBe(
-      '/admin/page-1/tabs/tab-1/popups/detail',
-    );
-  });
-
-  it('should preserve basename search and hash when converting current legacy path', () => {
-    const app = {
-      getPublicPath: () => '/nocobase/v2/',
-      router: {
-        getBasename: () => '/nocobase/v2',
-      },
-    } as any;
-
-    expect(
-      convertV2AdminPathToLegacy(app, {
-        pathname: '/nocobase/v2/admin/page-1/tab/tab-1/view/detail',
-        search: '?from=menu',
-        hash: '#dialog',
-      }),
-    ).toBe('/nocobase/admin/page-1/tabs/tab-1/popups/detail?from=menu#dialog');
-  });
-
-  it('should normalize duplicated slashes during legacy path conversion', () => {
-    const app = {
-      getPublicPath: () => '/nocobase/v2/',
-      router: {
-        getBasename: () => '/nocobase/v2/',
-      },
-    } as any;
-
-    expect(convertV2AdminPathToLegacy(app, '/nocobase//v2//admin//page-1//tab//tab-1')).toBe(
-      '/nocobase/admin/page-1/tabs/tab-1',
-    );
-  });
-
-  it('should return null for non-admin runtime paths', () => {
-    const app = {
-      getPublicPath: () => '/v2/',
-      router: {
-        getBasename: () => '/v2',
-      },
-    } as any;
-
-    expect(convertV2AdminPathToLegacy(app, '/v2/settings')).toBeNull();
+    expect(buildV2SigninHref(app, '/v2/admin/7vu4c2sdk6h')).toBe('/v2/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
   });
 
   it('should redirect with window.location.replace by default', () => {
@@ -147,12 +100,12 @@ describe('auth redirect helpers', () => {
       },
     } as any;
 
-    redirectToLegacySignin(app, '/v2/admin/7vu4c2sdk6h');
+    redirectToV2Signin(app, '/v2/admin/7vu4c2sdk6h');
 
-    expect(replace).toHaveBeenCalledWith('/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
+    expect(replace).toHaveBeenCalledWith('/v2/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
   });
 
-  it('should accept same-origin legacy signin urls only', () => {
+  it('should accept same-origin v2 signin urls only', () => {
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
       value: {
@@ -168,14 +121,14 @@ describe('auth redirect helpers', () => {
       },
     } as any;
 
-    expect(resolveLegacySigninRedirect('/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin#hash', app)).toBe(
-      'http://localhost:20000/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin#hash',
+    expect(resolveV2SigninRedirect('/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin#hash', app)).toBe(
+      'http://localhost:20000/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin#hash',
     );
-    expect(resolveLegacySigninRedirect('/signin?redirect=%2Fv2%2Fadmin', app)).toBe(
+    expect(resolveV2SigninRedirect('/signin?redirect=%2Fv2%2Fadmin', app)).toBe(
       'http://localhost:20000/signin?redirect=%2Fv2%2Fadmin',
     );
-    expect(resolveLegacySigninRedirect('/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin', app)).toBeNull();
-    expect(resolveLegacySigninRedirect('https://evil.example.com/signin?redirect=%2Fv2%2Fadmin', app)).toBeNull();
-    expect(resolveLegacySigninRedirect('/nocobase/admin', app)).toBeNull();
+    expect(resolveV2SigninRedirect('/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin', app)).toBeNull();
+    expect(resolveV2SigninRedirect('https://evil.example.com/signin?redirect=%2Fv2%2Fadmin', app)).toBeNull();
+    expect(resolveV2SigninRedirect('/nocobase/admin', app)).toBeNull();
   });
 });
