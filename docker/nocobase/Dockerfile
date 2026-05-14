@@ -8,7 +8,7 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
-  && yarn install --production \
+  && yarn install --production --ignore-peer-dependencies \
   && rm -rf yarn.lock \
   && find node_modules -type f -name "yarn.lock" -delete \
   && find node_modules -type f -name "bower.json" -delete \
