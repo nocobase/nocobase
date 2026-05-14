@@ -23,6 +23,11 @@ export interface LegacyClearer {
   (model: any): void;
 }
 
+export function hasPersistedAssignRulesValue(model: any, flowKey: string, stepKey: string): boolean {
+  const params = model?.getStepParams?.(flowKey, stepKey);
+  return !!params && Object.prototype.hasOwnProperty.call(params, 'value');
+}
+
 function getPropsInitialValue(model: any): any | undefined {
   if (!model) return undefined;
   const props = typeof model.getProps === 'function' ? model.getProps() : model.props;
@@ -70,15 +75,26 @@ function deleteStepParams(model: any, flowKey: string, stepKey: string) {
   model.emitter?.emit?.('onStepParamsChanged');
 }
 
+function deletePropsInitialValue(model: any) {
+  if (!model) return;
+
+  model.setProps?.({ initialValue: undefined });
+
+  if (model.props && Object.prototype.hasOwnProperty.call(model.props, 'initialValue')) {
+    delete model.props.initialValue;
+  }
+
+  const optionsProps = model._options?.props;
+  if (optionsProps && Object.prototype.hasOwnProperty.call(optionsProps, 'initialValue')) {
+    delete optionsProps.initialValue;
+  }
+}
+
 export function createLegacyClearer(flowKeys: string[]): LegacyClearer {
   return (model: any): void => {
     if (!model) return;
 
-    model.setProps?.({ initialValue: undefined });
-
-    if (model.props && Object.prototype.hasOwnProperty.call(model.props, 'initialValue')) {
-      delete model.props.initialValue;
-    }
+    deletePropsInitialValue(model);
 
     for (const flowKey of flowKeys) {
       deleteStepParams(model, flowKey, 'initialValue');

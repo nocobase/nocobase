@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useApp, useLazy } from '@nocobase/client';
+import { useApp } from '@nocobase/client-v2';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { get, omit } from 'lodash';
@@ -18,13 +18,12 @@ import { format, getDay, parse, startOfWeek } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import ru from 'date-fns/locale/ru';
 import zhCN from 'date-fns/locale/zh-CN';
-import { observer } from '@nocobase/flow-engine';
-import { getLabelFormatValue } from '@nocobase/client';
-import { i18nt, useTranslation } from '../../../locale';
-import GlobalStyle from '../../calendar/global.style';
-import { useCalenderHeight } from '../../calendar/hook';
-import useBaseStyle from '../../calendar/style';
-import { theme } from 'antd';
+import { observer, useFlowContext } from '@nocobase/flow-engine';
+import { useT } from '../../locale';
+import GlobalStyle from './global.style';
+import { getLabelFormatValue } from './getLabelFormatValue';
+import { useLazy } from './lazy';
+import { useCalendarHeight } from './useCalendarHeight';
 import {
   CALENDAR_RANGE_FILTER_GROUP,
   createCalendarRangeFilter,
@@ -94,7 +93,7 @@ const useCalendarEvents = (
     () => import('cron-parser'),
     'parseExpression',
   );
-  const { t } = useTranslation();
+  const t = useT();
   const app = useApp();
   const plugin = app.pm.get('calendar') as any;
   const activeCollection = collection;
@@ -254,6 +253,8 @@ type CalendarBlockProps = {
   };
   getBackgroundColor?: (value: string) => string | null;
   getFontColor?: (value: string) => string | null;
+  height?: number;
+  heightMode?: string;
   onSelectEvent?: (payload: { event: Event; record: any }) => void;
   onSelectSlot?: (payload: any) => void;
   rangeLoadEnabled?: boolean;
@@ -269,7 +270,14 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
       BigCalendar: module.Calendar,
     }),
   );
-  const height = useCalenderHeight();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const actionBarRef = useRef<HTMLDivElement>(null);
+  const height = useCalendarHeight({
+    height: props.height,
+    heightMode: props.heightMode,
+    containerRef,
+    actionBarRef,
+  });
   const [date, setDate] = useState<Date>(new Date());
   const [view, setView] = useState<View>(props.defaultView || 'month');
   const rangeRefreshKeyRef = useRef<string>();
@@ -281,12 +289,13 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     props.collection,
     props.weekStart,
   );
-  const baseStyle = useBaseStyle();
-  const overrideStyle = useStyle();
-  const apiClient = useAPIClient();
+  const { styles, cx } = useStyle();
+  const ctx = useFlowContext();
+  const t = useT();
   const locale = (
-    LOCALES[apiClient.auth.locale as CalendarCulture] ? (apiClient.auth.locale as CalendarCulture) : 'en-US'
+    LOCALES[ctx.api.auth.locale as CalendarCulture] ? (ctx.api.auth.locale as CalendarCulture) : 'en-US'
   ) as CalendarCulture;
+  const defaultHeight = ctx.themeToken.controlHeightLG * 18;
 
   const formats = useMemo(() => {
     return {
@@ -441,8 +450,6 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     };
   }, [props.resource]);
 
-  const { token } = theme.useToken();
-
   const components = useMemo(() => {
     return {
       week: {
@@ -462,22 +469,25 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     };
   }, [locale, localizer, props.showLunar]);
 
-  const messages: any = {
-    allDay: '',
-    previous: i18nt('Previous'),
-    next: i18nt('Next'),
-    today: i18nt('Today'),
-    month: i18nt('Month'),
-    week: i18nt('Week'),
-    work_week: i18nt('Work week'),
-    day: i18nt('Day'),
-    agenda: i18nt('Agenda'),
-    date: i18nt('Date'),
-    time: i18nt('Time'),
-    event: i18nt('Event'),
-    noEventsInRange: i18nt('None'),
-    showMore: (count: number) => i18nt('{{count}} more items', { count }),
-  };
+  const messages: any = useMemo(
+    () => ({
+      allDay: '',
+      previous: t('Previous'),
+      next: t('Next'),
+      today: t('Today'),
+      month: t('Month'),
+      week: t('Week'),
+      work_week: t('Work week'),
+      day: t('Day'),
+      agenda: t('Agenda'),
+      date: t('Date'),
+      time: t('Time'),
+      event: t('Event'),
+      noEventsInRange: t('None'),
+      showMore: (count: number) => t('{{count}} more items', { count }),
+    }),
+    [t],
+  );
 
   const eventPropGetter = (event: Event) => {
     if (!event.colorFieldValue) {
@@ -503,64 +513,58 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     return null;
   }
 
-  return baseStyle.wrapSSR(
-    overrideStyle.wrapSSR(
-      <CalendarViewProvider value={viewContextValue}>
-        <div
-          className={`${baseStyle.hashId} ${baseStyle.componentCls} ${overrideStyle.hashId} ${overrideStyle.componentCls}`}
-          style={{
-            height: height || 700,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            marginBottom: token.marginSM,
-          }}
-        >
-          <GlobalStyle />
-          {props.actionBar ? props.actionBar : null}
-          <div style={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden' }}>
-            <BigCalendar
-              popup
-              selectable
-              toolbar={false}
-              events={events}
-              eventPropGetter={eventPropGetter}
-              view={view}
-              views={WEEKS}
-              date={date}
-              step={60}
-              showMultiDayTimes
-              messages={messages}
-              onNavigate={setDate}
-              onView={setView}
-              onSelectSlot={(slotInfo: any) => {
-                props.onSelectSlot?.(slotInfo);
-              }}
-              onSelectEvent={(event: Event & { resource?: unknown }) => {
-                const record = props.dataSource?.find((item) => get(item, props.fieldNames.id || 'id') === event.id);
-                if (!record) {
-                  return;
-                }
-                props.onSelectEvent?.({
-                  event: {
-                    ...omit(event, 'resource'),
-                    start: formatDate(dayjs(event.start)),
-                    end: formatDate(dayjs(event.end)),
-                  } as any,
-                  record,
-                });
-              }}
-              formats={formats}
-              components={components}
-              culture={locale}
-              localizer={localizer}
-              tooltipAccessor={(value: Event) => {
-                return value.rawTitle ? value.rawTitle : '';
-              }}
-            />
-          </div>
+  return (
+    <CalendarViewProvider value={viewContextValue}>
+      <div
+        ref={containerRef}
+        className={cx(styles.calendar)}
+        style={{ ['--nb-calendar-height' as any]: `${height || defaultHeight}px` }}
+      >
+        <GlobalStyle />
+        {props.actionBar ? <div ref={actionBarRef}>{props.actionBar}</div> : null}
+        <div className="nb-calendar-body">
+          <BigCalendar
+            className={`view-${view}`}
+            popup
+            selectable
+            toolbar={false}
+            events={events}
+            eventPropGetter={eventPropGetter}
+            view={view}
+            views={WEEKS}
+            date={date}
+            step={60}
+            showMultiDayTimes
+            messages={messages}
+            onNavigate={setDate}
+            onView={setView}
+            onSelectSlot={(slotInfo: any) => {
+              props.onSelectSlot?.(slotInfo);
+            }}
+            onSelectEvent={(event: Event & { resource?: unknown }) => {
+              const record = props.dataSource?.find((item) => get(item, props.fieldNames.id || 'id') === event.id);
+              if (!record) {
+                return;
+              }
+              props.onSelectEvent?.({
+                event: {
+                  ...omit(event, 'resource'),
+                  start: formatDate(dayjs(event.start)),
+                  end: formatDate(dayjs(event.end)),
+                } as any,
+                record,
+              });
+            }}
+            formats={formats}
+            components={components}
+            culture={locale}
+            localizer={localizer}
+            tooltipAccessor={(value: Event) => {
+              return value.rawTitle ? value.rawTitle : '';
+            }}
+          />
         </div>
-      </CalendarViewProvider>,
-    ),
+      </div>
+    </CalendarViewProvider>
   );
 });

@@ -210,6 +210,7 @@ const GridCardBlockContent = observer(
     const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
     const ctx = model.context;
     const token = ctx.themeToken;
+    const actionBarGap = token.marginLG;
     const listHeight = useGridCardHeight({
       heightMode,
       containerRef,
@@ -251,14 +252,19 @@ const GridCardBlockContent = observer(
           height: '100%',
         }
       : undefined;
+    const actionBarStyle = {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start' as const,
+      marginBottom: actionBarGap,
+    };
+    const listContainerStyle = { flex: 1, minHeight: 0 };
 
     return (
       <div ref={containerRef} style={containerStyle}>
         <div ref={actionsRef}>
           <DndProvider>
-            <div
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}
-            >
+            <div style={actionBarStyle}>
               <Space wrap>
                 {model.mapSubModels('actions', (action) => {
                   // @ts-ignore
@@ -308,7 +314,7 @@ const GridCardBlockContent = observer(
             </div>
           </DndProvider>
         </div>
-        <div ref={listRef} style={{ flex: 1, minHeight: 0 }}>
+        <div ref={listRef} style={listContainerStyle}>
           <List
             {...model.props}
             className={model.props?.className ? `${model.props.className} ${listClassName}` : listClassName}

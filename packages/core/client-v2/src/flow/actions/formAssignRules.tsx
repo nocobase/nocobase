@@ -10,7 +10,8 @@
 import { defineAction, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { isEqual } from 'lodash';
 import React from 'react';
-import { FieldAssignRulesEditor, type FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
+import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import { getCollectionFromModel } from '../internal/utils/modelUtils';
@@ -18,6 +19,7 @@ import {
   collectLegacyDefaultValueRulesFromFormModel,
   mergeAssignRulesWithLegacyDefaults,
 } from '../models/blocks/form/legacyDefaultValueMigration';
+import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefaultValueMigrationBase';
 
 const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
@@ -34,8 +36,12 @@ const FormAssignRulesUI = observer(
       return collectLegacyDefaultValueRulesFromFormModel(ctx.model);
     }, [ctx.model]);
 
+    const hasPersistedValue = React.useMemo(() => {
+      return hasPersistedAssignRulesValue(ctx.model, 'formModelSettings', 'assignRules');
+    }, [ctx.model]);
+
     // 兼容：将字段级默认值（editItemSettings/formItemSettings.initialValue）合并到表单级 assignRules 里展示。
-    // 仅在首次打开时合并，后续以当前 step 表单值为准（便于用户在此处编辑/删除后统一保存）。
+    // 仅在表单级 assignRules.value 尚未持久化时合并；已保存的空数组也代表用户显式删除。
     const hasInitializedMergeRef = React.useRef(false);
     const [hasInitializedMerge, setHasInitializedMerge] = React.useState(false);
     const markInitialized = React.useCallback(() => {
@@ -49,12 +55,19 @@ const FormAssignRulesUI = observer(
       return base;
     }, [props.value]);
 
+    const legacyAwareValue = React.useMemo(() => {
+      if (hasPersistedValue) {
+        return normalizedValue;
+      }
+      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, props.value]);
+
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
-        return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
+        return legacyAwareValue;
       }
       return normalizedValue;
-    }, [canEdit, hasInitializedMerge, legacyDefaults, normalizedValue, props.value]);
+    }, [canEdit, hasInitializedMerge, legacyAwareValue, normalizedValue]);
 
     const handleChange = React.useCallback(
       (next: FieldAssignRuleItem[]) => {
@@ -70,14 +83,16 @@ const FormAssignRulesUI = observer(
       if (hasInitializedMergeRef.current) return;
       if (!canEdit) return;
 
-      const merged = mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-      const nextValue = merged;
+      if (hasPersistedValue) {
+        markInitialized();
+        return;
+      }
 
-      if (!isEqual(props.value || [], nextValue || [])) {
-        props.onChange?.(nextValue);
+      if (!isEqual(normalizedValue, legacyAwareValue)) {
+        props.onChange?.(legacyAwareValue);
       }
       markInitialized();
-    }, [canEdit, legacyDefaults, markInitialized, props.onChange, props.value]);
+    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, props.onChange]);
 
     return (
       <FieldAssignRulesEditor
