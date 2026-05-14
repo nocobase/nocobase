@@ -12,11 +12,12 @@ import React from 'react';
 import _ from 'lodash';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
+import { ImeSafeTextInput } from '../../components/ImeSafeTextInput';
 
 @largeField()
 export class TextareaFieldModel extends FieldModel {
   render() {
-    return <Input.TextArea {...this.props} />;
+    return <ImeSafeTextInput component={Input.TextArea} {...this.props} />;
   }
 }
 

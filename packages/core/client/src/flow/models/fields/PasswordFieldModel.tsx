@@ -11,10 +11,11 @@ import React from 'react';
 import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Password } from '../../../schema-component/antd/password';
 import { FieldModel } from '../base';
+import { ImeSafeTextInput } from '../../components/ImeSafeTextInput';
 
 export class PasswordFieldModel extends FieldModel {
   render() {
-    return <Password {...this.props} />;
+    return <ImeSafeTextInput component={Password} {...this.props} />;
   }
 }
 

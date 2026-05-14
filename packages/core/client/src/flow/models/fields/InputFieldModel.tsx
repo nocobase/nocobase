@@ -12,10 +12,11 @@ import { Input } from 'antd';
 import React from 'react';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base';
+import { ImeSafeTextInput } from '../../components/ImeSafeTextInput';
 
 export class InputFieldModel extends FieldModel {
   render() {
-    return <Input {...this.props} />;
+    return <ImeSafeTextInput component={Input} {...this.props} />;
   }
 }
 
