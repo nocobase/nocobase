@@ -32,7 +32,7 @@ export class CachedDocumentLoader {
     private readonly options: CachedDocumentLoaderOptions,
   ) {}
 
-  async load(file: ParseableFile): Promise<ParsedDocumentResult> {
+  async load(file: ParseableFile, options?: any): Promise<ParsedDocumentResult> {
     const sourceFile = this.toPlainObject(file);
 
     if (!this.options.supports(sourceFile)) {
@@ -59,13 +59,13 @@ export class CachedDocumentLoader {
       };
     }
 
-    const cached = await this.loadFromCache(sourceFile);
+    const cached = await this.loadFromCache(sourceFile, options);
     if (cached) {
       return cached;
     }
 
     try {
-      const documents = await this.options.loader.load(sourceFile);
+      const documents = await this.options.loader.load(sourceFile, options);
       const text = this.documentsToText(documents);
       const parsedFile = await this.persistParsedText(sourceFile, text);
       await this.updateSourceMeta(sourceFile, {
@@ -98,7 +98,7 @@ export class CachedDocumentLoader {
     }
   }
 
-  private async loadFromCache(sourceFile: ParseableFile): Promise<ParsedDocumentResult | null> {
+  private async loadFromCache(sourceFile: ParseableFile, options?: any): Promise<ParsedDocumentResult | null> {
     const meta = this.getParseMeta(sourceFile.meta);
     if (!meta || meta.status !== 'ready' || meta.parserVersion !== this.options.parserVersion || !meta.parsedFileId) {
       return null;
@@ -110,7 +110,7 @@ export class CachedDocumentLoader {
     }
 
     const parsedFile = this.toPlainObject(parsedModel);
-    const text = await this.readTextFile(parsedFile);
+    const text = await this.readTextFile(parsedFile, options);
     const extname = resolveExtname(sourceFile);
     const documents = this.toDocumentsFromText(text, sourceFile, extname);
 
@@ -185,8 +185,8 @@ export class CachedDocumentLoader {
     return storage?.name;
   }
 
-  private async readTextFile(file: ParseableFile) {
-    const { stream } = await this.fileManager.getFileStream(file as any);
+  private async readTextFile(file: ParseableFile, options?: any) {
+    const { stream } = await this.fileManager.getFileStream(file as any, options);
     const chunks: Uint8Array[] = [];
     for await (const chunk of stream) {
       chunks.push(chunk);

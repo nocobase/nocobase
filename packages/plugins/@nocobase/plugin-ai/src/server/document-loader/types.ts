@@ -43,5 +43,5 @@ export type ParseableFile = {
 };
 
 export type DocumentLoaderLike = {
-  load(file: ParseableFile): Promise<Document[]>;
+  load(file: ParseableFile, options?: any): Promise<Document[]>;
 };
