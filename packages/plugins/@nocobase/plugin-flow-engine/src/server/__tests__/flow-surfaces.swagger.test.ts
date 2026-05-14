@@ -116,6 +116,9 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceApplyBlueprintDefaultPopupName',
       'FlowSurfaceApplyBlueprintDefaultPopupActionMap',
       'FlowSurfaceApplyBlueprintDefaultPopups',
+      'FlowSurfaceApplyBlueprintDefaultFormBehaviorField',
+      'FlowSurfaceApplyBlueprintDefaultFormBehaviorScene',
+      'FlowSurfaceApplyBlueprintDefaultFormBehavior',
       'FlowSurfaceApplyBlueprintDefaultCollection',
       'FlowSurfaceApplyBlueprintDefaults',
       'FlowSurfaceApplyBlueprintRequest',
@@ -326,6 +329,28 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.popups.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultPopups',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('formBehavior');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehavior.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehavior',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehavior.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehavior.properties.addNew.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehaviorScene',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehavior.properties.edit.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehaviorScene',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorScene.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorScene.properties.fields.additionalProperties.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehaviorField',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorScene.properties.fieldLinkageRules.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceFieldLinkageRule',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorField.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorField.properties.settings.additionalProperties).toBe(
+      true,
     );
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('associations');

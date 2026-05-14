@@ -515,6 +515,7 @@ const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   associationPathName: stringOption('Association path', { example: 'department' }),
   initialValue: objectOption('Initial value'),
   required: booleanOption('Whether required', { example: false }),
+  rules: arrayOption('Validation rules'),
   disabled: booleanOption('Whether disabled', { example: false }),
   multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
   allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),

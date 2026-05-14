@@ -261,6 +261,7 @@ import {
   attachFlowSurfaceApplyBlueprintPopupDefaults,
   buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   getFlowSurfaceApplyBlueprintDefaultCollection,
+  getFlowSurfaceApplyBlueprintDefaultFormBehavior,
   readFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   resolveFlowSurfaceApplyBlueprintDefaultPopupMetadata,
 } from './blueprint/defaults';
@@ -268,6 +269,7 @@ import type {
   FlowSurfaceApplyBlueprintPopupDefaultActionType,
   FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
 } from './blueprint/defaults';
+import type { FlowSurfaceApplyBlueprintDefaultFormBehaviorScene } from './blueprint/public-types';
 import {
   assertFlowSurfaceComposeUniqueKeys,
   assertSupportedSimpleChanges,
@@ -3025,6 +3027,10 @@ export class FlowSurfacesService {
       pathToUid,
       uidToPath,
     };
+  }
+
+  private extractReactionFieldPaths(node: any, scene: FlowSurfaceReactionScene) {
+    return new Set(this.buildReactionFieldPathMaps(node, scene).pathToUid.keys());
   }
 
   private requireReactionFieldUid(pathToUid: Map<string, string>, fieldPath: string, actionName: string) {
@@ -10453,6 +10459,17 @@ export class FlowSurfacesService {
           },
           options,
         );
+        const popupState = await this.resolveDefaultFieldPopupSurfaceState(fieldHostUid, options.transaction);
+        const appliedFormBehaviorLinkage = await this.applyDefaultPopupFormBehaviorLinkageRules(
+          popupState.popupBlock,
+          popup,
+          popupContext.collectionName,
+          defaultType,
+          options,
+        );
+        if (!appliedFormBehaviorLinkage) {
+          await this.resetDefaultActionPopupFormLinkageRules(popupState.popupBlock, options);
+        }
         if (this.shouldAutoSaveDefaultFieldPopupTemplate(popup)) {
           await this.autoSaveDefaultFieldPopupAsTemplate(result, popup, options);
         }
@@ -10668,28 +10685,116 @@ export class FlowSurfacesService {
     )?.fieldGroups;
   }
 
+  private getApplyBlueprintDefaultFormBehavior(
+    popup: Record<string, any> | undefined,
+    collectionName: string | undefined,
+    actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType,
+  ) {
+    return getFlowSurfaceApplyBlueprintDefaultFormBehavior(
+      this.getApplyBlueprintPopupDefaultsMetadata(popup),
+      collectionName,
+      actionType,
+    );
+  }
+
+  private getDefaultFormBehaviorFieldSettings(
+    formBehavior: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene | undefined,
+    fieldPath: string | undefined,
+  ) {
+    const normalizedFieldPath = String(fieldPath || '').trim();
+    if (!normalizedFieldPath || !_.isPlainObject(formBehavior?.fields)) {
+      return undefined;
+    }
+    const fieldConfig = formBehavior?.fields?.[normalizedFieldPath];
+    return _.isPlainObject(fieldConfig?.settings) ? _.cloneDeep(fieldConfig.settings) : undefined;
+  }
+
+  private getDefaultPopupFieldPath(field: any) {
+    if (typeof field === 'string') {
+      return field.trim();
+    }
+    if (!_.isPlainObject(field)) {
+      return '';
+    }
+    return String(field.fieldPath || field.field || '').trim();
+  }
+
+  private applyDefaultFormBehaviorToField(
+    field: any,
+    formBehavior: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene | undefined,
+  ) {
+    const fieldPath = this.getDefaultPopupFieldPath(field);
+    const settings = this.getDefaultFormBehaviorFieldSettings(formBehavior, fieldPath);
+    if (!fieldPath || !settings) {
+      return _.cloneDeep(field);
+    }
+    if (_.isPlainObject(field)) {
+      return {
+        ..._.cloneDeep(field),
+        settings: {
+          ...settings,
+          ...(_.isPlainObject(field.settings) ? _.cloneDeep(field.settings) : {}),
+        },
+      };
+    }
+    return {
+      field: fieldPath,
+      settings,
+    };
+  }
+
+  private applyDefaultFormBehaviorToFields(
+    selectedFields: { fieldPaths?: any[]; fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] },
+    formBehavior: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene | undefined,
+  ) {
+    if (!formBehavior) {
+      return selectedFields;
+    }
+    return {
+      fieldPaths: Array.isArray(selectedFields.fieldPaths)
+        ? selectedFields.fieldPaths.map((field) => this.applyDefaultFormBehaviorToField(field, formBehavior))
+        : undefined,
+      fieldGroups: Array.isArray(selectedFields.fieldGroups)
+        ? selectedFields.fieldGroups.map((group) => ({
+            ...group,
+            fields: _.castArray(group.fields || []).map((field) =>
+              this.applyDefaultFormBehaviorToField(field, formBehavior),
+            ),
+          }))
+        : undefined,
+    };
+  }
+
   private pickDefaultPopupFields(input: {
     candidates: FlowSurfaceDefaultActionPopupFieldCandidate[];
     popup?: Record<string, any>;
     collectionName?: string;
+    actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType;
     options?: {
       excludeAuditTimestampFields?: boolean;
       excludeAssociationFields?: boolean;
     };
-  }): { fieldPaths?: string[]; fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] } {
+  }): { fieldPaths?: any[]; fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] } {
     const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, input.collectionName);
+    const formBehavior = this.getApplyBlueprintDefaultFormBehavior(input.popup, input.collectionName, input.actionType);
     if (defaultFieldGroups) {
-      return {
-        fieldGroups: pickFlowSurfaceDefaultActionPopupFieldGroups(
-          input.candidates,
-          defaultFieldGroups as FlowSurfaceDefaultActionPopupFieldGroupCandidate[],
-          input.options,
-        ),
-      };
+      return this.applyDefaultFormBehaviorToFields(
+        {
+          fieldGroups: pickFlowSurfaceDefaultActionPopupFieldGroups(
+            input.candidates,
+            defaultFieldGroups as FlowSurfaceDefaultActionPopupFieldGroupCandidate[],
+            input.options,
+          ),
+        },
+        formBehavior,
+      );
     }
-    return {
-      fieldPaths: pickFlowSurfaceDefaultActionPopupFieldPaths(input.candidates, input.options),
-    };
+    return this.applyDefaultFormBehaviorToFields(
+      {
+        fieldPaths: pickFlowSurfaceDefaultActionPopupFieldPaths(input.candidates, input.options),
+      },
+      formBehavior,
+    );
   }
 
   private resolveApplyBlueprintDefaultPopupMetadata(input: {
@@ -10792,6 +10897,7 @@ export class FlowSurfacesService {
       candidates: directCandidates,
       popup: input.popup,
       collectionName,
+      actionType: input.defaultType === 'edit' ? 'edit' : undefined,
       options: {
         excludeAuditTimestampFields: input.defaultType === 'edit',
         excludeAssociationFields: true,
@@ -11185,6 +11291,7 @@ export class FlowSurfacesService {
       candidates: directCandidates,
       popup: input.popup,
       collectionName,
+      actionType: actionConfig.type,
       options: {
         excludeAuditTimestampFields: mode === 'form',
       },
@@ -11459,11 +11566,36 @@ export class FlowSurfacesService {
     };
   }
 
+  private async resolveDefaultFieldPopupSurfaceState(fieldHostUid: string | undefined, transaction?: any) {
+    if (!fieldHostUid) {
+      return {
+        fieldHost: null,
+        popupTab: null,
+        popupBlock: null,
+      };
+    }
+    const refreshedFieldHost = await this.repository.findModelById(fieldHostUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const popupPage = getSingleNodeSubModel(refreshedFieldHost?.subModels?.page);
+    const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
+    const popupGrid = getSingleNodeSubModel(popupTab?.subModels?.grid);
+    const popupBlock = getNodeSubModelList(popupGrid?.subModels?.items)[0];
+    return {
+      fieldHost: refreshedFieldHost,
+      popupTab,
+      popupBlock,
+    };
+  }
+
   private shouldResetDefaultActionPopupFormLinkageRules(popupBlock: any) {
     if (!SIMPLE_FORM_BLOCK_USES.has(popupBlock?.use || '') || !popupBlock?.uid) {
       return false;
     }
-    const linkageRules = _.get(popupBlock, ['stepParams', 'eventSettings', 'linkageRules', 'value']);
+    const linkageRules =
+      _.get(popupBlock, ['subModels', 'grid', 'stepParams', 'eventSettings', 'linkageRules', 'value']) ??
+      _.get(popupBlock, ['stepParams', 'eventSettings', 'linkageRules', 'value']);
     return !Array.isArray(linkageRules) || linkageRules.length > 0;
   }
 
@@ -11471,21 +11603,126 @@ export class FlowSurfacesService {
     if (!this.shouldResetDefaultActionPopupFormLinkageRules(popupBlock)) {
       return;
     }
-    await this.updateSettings(
+    await this.setFieldLinkageRules(
       {
         target: {
           uid: popupBlock.uid,
         },
-        stepParams: {
-          eventSettings: {
-            linkageRules: {
-              value: [],
-            },
-          },
-        },
+        rules: [],
       },
       options,
     );
+  }
+
+  private extractDefaultPopupLinkageConditionPaths(value: any) {
+    const paths = new Set<string>();
+    const visit = (node: any) => {
+      if (!node || typeof node !== 'object') {
+        return;
+      }
+      if (Array.isArray(node)) {
+        node.forEach((item) => visit(item));
+        return;
+      }
+      if (_.isPlainObject(node)) {
+        const pathValue = String(node.path || '').trim();
+        if (pathValue.startsWith('formValues.')) {
+          const fieldPath = normalizeFieldPath(pathValue.slice('formValues.'.length));
+          if (fieldPath) {
+            paths.add(fieldPath);
+          }
+        }
+        for (const item of Object.values(node)) {
+          visit(item);
+        }
+      }
+    };
+    visit(value);
+    return Array.from(paths);
+  }
+
+  private extractDefaultPopupLinkageActionFieldPaths(action: any) {
+    const paths: string[] = [];
+    const appendPath = (value: any) => {
+      const normalized = normalizeFieldPath(value);
+      if (normalized) {
+        paths.push(normalized);
+      }
+    };
+
+    if (action?.type === 'setFieldState') {
+      _.castArray(action.fieldPaths || []).forEach(appendPath);
+      return paths;
+    }
+
+    if (action?.type === 'assignField' || action?.type === 'setFieldDefaultValue') {
+      _.castArray(action.items || []).forEach((item: any) => {
+        appendPath(item?.targetPath);
+        for (const conditionPath of this.extractDefaultPopupLinkageConditionPaths(item?.when)) {
+          paths.push(conditionPath);
+        }
+        if (_.isPlainObject(item?.value) && item.value.source === 'path') {
+          const rawPath = String(item.value.path || '').trim();
+          if (rawPath.startsWith('formValues.')) {
+            appendPath(rawPath.slice('formValues.'.length));
+          }
+        }
+      });
+    }
+
+    return paths;
+  }
+
+  private isDefaultPopupFormBehaviorLinkageRuleApplicable(
+    rule: FlowSurfaceFieldLinkageRule,
+    availableFieldPaths: ReadonlySet<string>,
+  ) {
+    const requiredPaths = [
+      ...this.extractDefaultPopupLinkageConditionPaths(rule?.when),
+      ..._.castArray(rule?.then || []).flatMap((action) => this.extractDefaultPopupLinkageActionFieldPaths(action)),
+    ];
+    return requiredPaths.every((fieldPath) => availableFieldPaths.has(fieldPath));
+  }
+
+  private filterDefaultPopupFormBehaviorLinkageRules(popupBlock: any, rules: FlowSurfaceFieldLinkageRule[]) {
+    const availableFieldPaths = this.extractReactionFieldPaths(popupBlock, 'form');
+    if (!availableFieldPaths.size) {
+      return [];
+    }
+    return _.cloneDeep(rules).filter((rule) =>
+      this.isDefaultPopupFormBehaviorLinkageRuleApplicable(rule, availableFieldPaths),
+    );
+  }
+
+  private async applyDefaultPopupFormBehaviorLinkageRules(
+    popupBlock: any,
+    popup: Record<string, any> | undefined,
+    collectionName: string | undefined,
+    actionType: FlowSurfaceApplyBlueprintPopupDefaultActionType | undefined,
+    options: { transaction?: any },
+  ) {
+    if (!SIMPLE_FORM_BLOCK_USES.has(popupBlock?.use || '') || !popupBlock?.uid) {
+      return false;
+    }
+    const formBehavior = this.getApplyBlueprintDefaultFormBehavior(popup, collectionName, actionType);
+    const rules = Array.isArray(formBehavior?.fieldLinkageRules) ? formBehavior.fieldLinkageRules : [];
+    if (!rules.length) {
+      return false;
+    }
+    const applicableRules = this.filterDefaultPopupFormBehaviorLinkageRules(popupBlock, rules);
+    if (!applicableRules.length) {
+      return false;
+    }
+    await this.setFieldLinkageRules(
+      {
+        target: {
+          uid: popupBlock.uid,
+        },
+        rules: applicableRules,
+      },
+      options,
+    );
+    return true;
   }
 
   private resolvePopupTabTitle(tabNode: any) {
@@ -11725,7 +11962,17 @@ export class FlowSurfacesService {
     );
 
     const popupState = await this.resolveDefaultActionPopupSurfaceState(actionNode.uid, options.transaction);
-    await this.resetDefaultActionPopupFormLinkageRules(popupState.popupBlock, options);
+    const actionConfig = this.getDefaultActionPopupConfigForNode(popupState.actionNode || actionNode);
+    const appliedFormBehaviorLinkage = await this.applyDefaultPopupFormBehaviorLinkageRules(
+      popupState.popupBlock,
+      popup,
+      popupProfile.collectionName,
+      actionConfig?.type,
+      options,
+    );
+    if (!appliedFormBehaviorLinkage) {
+      await this.resetDefaultActionPopupFormLinkageRules(popupState.popupBlock, options);
+    }
     await this.syncDefaultActionPopupTabTitle(popupState.actionNode || actionNode, popupState.popupTab, {
       ...options,
       popupTabTitle: generatedPopupName || options.popupTabTitle,
@@ -17185,6 +17432,7 @@ export class FlowSurfacesService {
                   showLabel: wrapperChanges.showLabel,
                   initialValue: wrapperChanges.initialValue,
                   required: wrapperChanges.required,
+                  rules: wrapperChanges.rules,
                   disabled: wrapperChanges.disabled,
                   multiple: wrapperChanges.multiple,
                   allowMultiple: wrapperChanges.allowMultiple,

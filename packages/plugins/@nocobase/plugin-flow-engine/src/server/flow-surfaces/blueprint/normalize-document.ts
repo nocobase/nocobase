@@ -14,6 +14,9 @@ import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-
 import type {
   FlowSurfaceApplyBlueprintAssets,
   FlowSurfaceApplyBlueprintDefaultCollection,
+  FlowSurfaceApplyBlueprintDefaultFormBehavior,
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorField,
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorScene,
   FlowSurfaceApplyBlueprintDefaultFieldSpec,
   FlowSurfaceApplyBlueprintDefaultFieldGroupSpec,
   FlowSurfaceApplyBlueprintDefaultPopupActionMap,
@@ -43,9 +46,12 @@ const APPLY_BLUEPRINT_REACTION_TYPES = [
   'setActionLinkageRules',
 ] as const;
 const APPLY_BLUEPRINT_REACTION_TYPE_SET = new Set<string>(APPLY_BLUEPRINT_REACTION_TYPES);
-const APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups'];
+const APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups', 'formBehavior'];
 const APPLY_BLUEPRINT_DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
 const APPLY_BLUEPRINT_DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS = ['addNew', 'edit'];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_SCENE_ALLOWED_KEYS = ['fields', 'fieldLinkageRules'];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_FIELD_ALLOWED_KEYS = ['settings'];
 const APPLY_BLUEPRINT_DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
@@ -261,12 +267,82 @@ function normalizeDefaultPopups(input: any, context: string): FlowSurfaceApplyBl
   return Object.keys(normalized).length ? normalized : undefined;
 }
 
+function normalizeDefaultFormBehaviorField(
+  input: any,
+  context: string,
+): FlowSurfaceApplyBlueprintDefaultFormBehaviorField {
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_FIELD_ALLOWED_KEYS);
+  const settings = _.isUndefined(input.settings)
+    ? undefined
+    : (() => {
+        assertPlainObject(input.settings, `${context}.settings`);
+        if (!_.isUndefined(input.settings.rules) && !Array.isArray(input.settings.rules)) {
+          throwBadRequest(`${context}.settings.rules must be an array`);
+        }
+        return _.cloneDeep(input.settings);
+      })();
+  return buildDefinedPayload({
+    settings,
+  }) as FlowSurfaceApplyBlueprintDefaultFormBehaviorField;
+}
+
+function normalizeDefaultFormBehaviorFields(input: any, context: string) {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, context);
+  const normalized = Object.fromEntries(
+    Object.entries(input).map(([fieldPath, fieldConfig]) => {
+      const normalizedFieldPath = assertNonEmptyString(fieldPath, `${context} key`);
+      return [normalizedFieldPath, normalizeDefaultFormBehaviorField(fieldConfig, `${context}.${normalizedFieldPath}`)];
+    }),
+  );
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeDefaultFormBehaviorScene(
+  input: any,
+  context: string,
+): FlowSurfaceApplyBlueprintDefaultFormBehaviorScene | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_SCENE_ALLOWED_KEYS);
+  if (!_.isUndefined(input.fieldLinkageRules) && !Array.isArray(input.fieldLinkageRules)) {
+    throwBadRequest(`${context}.fieldLinkageRules must be an array`);
+  }
+  const normalized = buildDefinedPayload({
+    fields: normalizeDefaultFormBehaviorFields(input.fields, `${context}.fields`),
+    fieldLinkageRules: Array.isArray(input.fieldLinkageRules) ? _.cloneDeep(input.fieldLinkageRules) : undefined,
+  }) as FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeDefaultFormBehavior(
+  input: any,
+  context: string,
+): FlowSurfaceApplyBlueprintDefaultFormBehavior | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS);
+  const normalized = buildDefinedPayload({
+    addNew: normalizeDefaultFormBehaviorScene(input.addNew, `${context}.addNew`),
+    edit: normalizeDefaultFormBehaviorScene(input.edit, `${context}.edit`),
+  }) as FlowSurfaceApplyBlueprintDefaultFormBehavior;
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
 function normalizeDefaultCollection(input: any, context: string): FlowSurfaceApplyBlueprintDefaultCollection {
   assertPlainObject(input, context);
   assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS);
   return buildDefinedPayload({
     fieldGroups: normalizeDefaultFieldGroups(input.fieldGroups, `${context}.fieldGroups`),
     popups: normalizeDefaultPopups(input.popups, `${context}.popups`),
+    formBehavior: normalizeDefaultFormBehavior(input.formBehavior, `${context}.formBehavior`),
   }) as FlowSurfaceApplyBlueprintDefaultCollection;
 }
 

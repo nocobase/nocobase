@@ -13,7 +13,7 @@ import type {
   FlowSurfaceSurfaceSelector,
   FlowSurfaceResourceBindingKey,
 } from '../types';
-import type { FlowSurfaceApplyBlueprintReactionItem } from '../reaction/types';
+import type { FlowSurfaceApplyBlueprintReactionItem, FlowSurfaceFieldLinkageRule } from '../reaction/types';
 
 export type FlowSurfaceApplyBlueprintMode = 'create' | 'replace';
 
@@ -160,9 +160,24 @@ export type FlowSurfaceApplyBlueprintDefaultPopups = FlowSurfaceApplyBlueprintDe
   associations?: Record<string, FlowSurfaceApplyBlueprintDefaultPopupActionMap>;
 };
 
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorField = {
+  settings?: Record<string, any>;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorScene = {
+  fields?: Record<string, FlowSurfaceApplyBlueprintDefaultFormBehaviorField>;
+  fieldLinkageRules?: FlowSurfaceFieldLinkageRule[];
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehavior = {
+  addNew?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
+  edit?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
+};
+
 export type FlowSurfaceApplyBlueprintDefaultCollection = {
   fieldGroups?: FlowSurfaceApplyBlueprintDefaultFieldGroupSpec[];
   popups?: FlowSurfaceApplyBlueprintDefaultPopups;
+  formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior;
 };
 
 export type FlowSurfaceApplyBlueprintDefaults = {

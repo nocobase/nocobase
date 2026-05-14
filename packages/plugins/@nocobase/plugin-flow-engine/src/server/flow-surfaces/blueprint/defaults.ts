@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import type {
   FlowSurfaceApplyBlueprintDefaultCollection,
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorScene,
   FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDefaultPopupActionMap,
   FlowSurfaceApplyBlueprintDefaultPopupName,
@@ -71,6 +72,18 @@ export function getFlowSurfaceApplyBlueprintDefaultCollection(
   }
   const collectionDefaults = metadata?.collections?.[normalizedCollectionName];
   return _.isPlainObject(collectionDefaults) ? collectionDefaults : undefined;
+}
+
+export function getFlowSurfaceApplyBlueprintDefaultFormBehavior(
+  metadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+  collectionName?: string,
+  actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType,
+): FlowSurfaceApplyBlueprintDefaultFormBehaviorScene | undefined {
+  if (actionType !== 'addNew' && actionType !== 'edit') {
+    return undefined;
+  }
+  const scene = getFlowSurfaceApplyBlueprintDefaultCollection(metadata, collectionName)?.formBehavior?.[actionType];
+  return _.isPlainObject(scene) ? (_.cloneDeep(scene) as FlowSurfaceApplyBlueprintDefaultFormBehaviorScene) : undefined;
 }
 
 function readPopupMetadata(

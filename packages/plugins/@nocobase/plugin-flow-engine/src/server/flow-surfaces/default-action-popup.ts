@@ -47,6 +47,7 @@ export type FlowSurfaceDefaultActionPopupFieldGroupField =
   | {
       field: string;
       titleField?: string;
+      settings?: Record<string, any>;
     };
 
 export type FlowSurfaceDefaultActionPopupFieldGroupCandidate = {
@@ -61,9 +62,9 @@ type FlowSurfaceDefaultActionPopupFieldFilterOptions = {
 };
 
 type FlowSurfaceDefaultActionPopupFieldsInput =
-  | string[]
+  | any[]
   | {
-      fieldPaths?: string[];
+      fieldPaths?: any[];
       fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[];
     };
 
@@ -336,6 +337,7 @@ function normalizeFlowSurfaceDefaultActionPopupFieldGroupField(
     {
       field: fieldPath,
       titleField: titleField || undefined,
+      settings: _.isPlainObject(fieldSpec.settings) ? _.cloneDeep(fieldSpec.settings) : undefined,
     },
     (value) => !_.isUndefined(value),
   ) as FlowSurfaceDefaultActionPopupFieldGroupField;
@@ -397,8 +399,8 @@ function normalizeDefaultActionPopupFieldsInput(input: FlowSurfaceDefaultActionP
   }
   return {
     fieldPaths: _.castArray(input?.fieldPaths || [])
-      .map((field) => String(field || '').trim())
-      .filter(Boolean),
+      .map((field) => (_.isPlainObject(field) ? _.cloneDeep(field) : String(field || '').trim()))
+      .filter((field) => (_.isPlainObject(field) ? true : !!field)),
     fieldGroups: _.castArray(input?.fieldGroups || []).filter((group) => _.isPlainObject(group)),
   };
 }

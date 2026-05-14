@@ -3806,10 +3806,47 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorField: {
+    type: 'object',
+    description: 'Generated default form field behavior for one field path.',
+    properties: {
+      settings: {
+        type: 'object',
+        description: 'Public form field settings merged into backend-generated add/edit popup fields.',
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorScene: {
+    type: 'object',
+    description:
+      'Generated default add/edit form behavior. `fields` applies field settings and `fieldLinkageRules` applies form linkage rules after backend filters them to fields present in the generated form.',
+    properties: {
+      fields: {
+        type: 'object',
+        additionalProperties: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorField'),
+      },
+      fieldLinkageRules: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageRule'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultFormBehavior: {
+    type: 'object',
+    description: 'Collection-level default behavior for backend-generated add/edit popup forms.',
+    properties: {
+      addNew: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorScene'),
+      edit: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorScene'),
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceApplyBlueprintDefaultCollection: {
     type: 'object',
     description:
-      'v1 collection-level defaults. Only `fieldGroups` and `popups` with required `name` and `description` metadata are supported; block-specific defaults are not supported.',
+      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, and `formBehavior` for backend-generated add/edit popup forms; block-specific defaults are not supported.',
     properties: {
       fieldGroups: {
         type: 'array',
@@ -3817,6 +3854,7 @@ const schemas = {
         items: ref('FlowSurfaceApplyBlueprintDefaultFieldGroup'),
       },
       popups: ref('FlowSurfaceApplyBlueprintDefaultPopups'),
+      formBehavior: ref('FlowSurfaceApplyBlueprintDefaultFormBehavior'),
     },
     additionalProperties: false,
   },
@@ -3835,7 +3873,7 @@ const schemas = {
     type: 'object',
     required: ['mode', 'tabs'],
     description:
-      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. `defaults.collections` may provide collection-level fieldGroups and popup metadata with required `name` and `description` for generated default popups; v1 does not support `defaults.blocks`.",
+      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. `defaults.collections` may provide collection-level fieldGroups, popup metadata with required `name` and `description`, and formBehavior for generated default add/edit popup forms; v1 does not support `defaults.blocks`.",
     properties: {
       version: {
         type: 'string',

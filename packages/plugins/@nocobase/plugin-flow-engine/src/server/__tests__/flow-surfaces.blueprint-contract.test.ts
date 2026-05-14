@@ -2200,6 +2200,287 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(viewTargetField?.subModels?.field?.props?.titleField).toBe('name');
   });
 
+  it('should apply default formBehavior settings and linkage rules to generated action popups', async () => {
+    const unique = Date.now();
+    const collectionName = `bp_form_behavior_${unique}`;
+    const addPopupName = `Create behavior ${unique}`;
+    const editPopupName = `Edit behavior ${unique}`;
+
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: 'Blueprint form behavior',
+        titleField: 'title',
+        filterTargetKey: 'title',
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'select' },
+          { name: 'approvalComment', type: 'text', interface: 'textarea' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [collectionName]: ['title', 'status', 'approvalComment'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint form behavior runtime ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            [collectionName]: {
+              popups: {
+                addNew: {
+                  name: addPopupName,
+                  description: 'Create one behavior record.',
+                },
+                edit: {
+                  name: editPopupName,
+                  description: 'Edit one behavior record.',
+                },
+              },
+              formBehavior: {
+                addNew: {
+                  fields: {
+                    title: {
+                      settings: {
+                        required: true,
+                        extra: '必填。最多 50 个字符。',
+                        rules: [{ max: 50, message: '最多 50 个字符。' }],
+                      },
+                    },
+                  },
+                },
+                edit: {
+                  fields: {
+                    approvalComment: {
+                      settings: {
+                        extra: '当 status 为 published 时必填。',
+                      },
+                    },
+                  },
+                  fieldLinkageRules: [
+                    {
+                      key: 'requireApprovalComment',
+                      when: {
+                        logic: '$and',
+                        items: [
+                          {
+                            path: 'formValues.status',
+                            operator: '$eq',
+                            value: 'published',
+                          },
+                        ],
+                      },
+                      then: [
+                        {
+                          type: 'setFieldState',
+                          fieldPaths: ['approvalComment'],
+                          state: 'required',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'behaviorTable',
+                type: 'table',
+                collection: collectionName,
+                fields: ['title', 'status'],
+                actions: ['addNew'],
+                recordActions: ['edit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const addNewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'AddNewActionModel')[0];
+    const editAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'EditActionModel')[0];
+    expect(addNewAction?.uid).toBeTruthy();
+    expect(editAction?.uid).toBeTruthy();
+
+    const addNewPopup = await readPrimaryPopupBlockFromAction(addNewAction.uid);
+    const titleItem = collectDescendantNodes(
+      addNewPopup.popupBlock,
+      (item) => item?.use === 'FormItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'title',
+    )[0];
+    expect(titleItem?.props?.required).toBe(true);
+    expect(titleItem?.props?.extra).toBe('必填。最多 50 个字符。');
+    expect(titleItem?.props?.rules).toEqual([{ max: 50, message: '最多 50 个字符。' }]);
+
+    const editPopup = await readPrimaryPopupBlockFromAction(editAction.uid);
+    const approvalItem = collectDescendantNodes(
+      editPopup.popupBlock,
+      (item) => item?.use === 'FormItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'approvalComment',
+    )[0];
+    expect(approvalItem?.props?.extra).toBe('当 status 为 published 时必填。');
+    const linkageRules = editPopup.popupBlock?.subModels?.grid?.stepParams?.eventSettings?.linkageRules?.value;
+    expect(linkageRules).toHaveLength(1);
+    expect(linkageRules?.[0]?.key).toBe('requireApprovalComment');
+  });
+
+  it('should apply default formBehavior linkage rules to generated relation field edit popups', async () => {
+    const unique = Date.now();
+    const sourceCollection = `bp_field_popup_behavior_src_${unique}`;
+    const targetCollection = `bp_field_popup_behavior_target_${unique}`;
+    const editPopupName = `Edit related behavior ${unique}`;
+
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: 'Blueprint field popup behavior target',
+        titleField: 'name',
+        filterTargetKey: 'name',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'select' },
+          { name: 'approvalComment', type: 'text', interface: 'textarea' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: 'Blueprint field popup behavior source',
+        titleField: 'title',
+        filterTargetKey: 'title',
+        fields: [{ name: 'title', type: 'string', interface: 'input' }],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'target',
+        type: 'belongsTo',
+        target: targetCollection,
+        foreignKey: 'targetId',
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [sourceCollection]: ['title', 'targetId'],
+      [targetCollection]: ['name', 'status', 'approvalComment'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint field popup behavior runtime ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            [targetCollection]: {
+              popups: {
+                edit: {
+                  name: editPopupName,
+                  description: 'Edit one related behavior record.',
+                },
+              },
+              formBehavior: {
+                edit: {
+                  fields: {
+                    approvalComment: {
+                      settings: {
+                        extra: '当 status 为 active 时必填。',
+                      },
+                    },
+                  },
+                  fieldLinkageRules: [
+                    {
+                      key: 'requireRelatedApprovalComment',
+                      when: {
+                        logic: '$and',
+                        items: [
+                          {
+                            path: 'formValues.status',
+                            operator: '$eq',
+                            value: 'active',
+                          },
+                        ],
+                      },
+                      then: [
+                        {
+                          type: 'setFieldState',
+                          fieldPaths: ['approvalComment'],
+                          state: 'required',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'sourceTable',
+                type: 'table',
+                collection: sourceCollection,
+                fields: [
+                  'title',
+                  {
+                    field: 'target',
+                    popup: {
+                      defaultType: 'edit',
+                    },
+                  },
+                ],
+                actions: ['refresh'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const targetField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'target' &&
+        (!!item?.subModels?.page?.uid || !!item?.popup?.template?.uid || !!item?.stepParams?.popupSettings?.openView),
+    )[0];
+    expect(targetField?.uid).toBeTruthy();
+
+    const fieldPopup = await readPrimaryPopupBlockFromField(targetField.uid);
+    expect(fieldPopup.fieldReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(editPopupName);
+    expect(fieldPopup.popupBlock?.use).toBe('EditFormModel');
+    const approvalItem = collectDescendantNodes(
+      fieldPopup.popupBlock,
+      (item) => item?.use === 'FormItemModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'approvalComment',
+    )[0];
+    expect(approvalItem?.props?.extra).toBe('当 status 为 active 时必填。');
+    const linkageRules = fieldPopup.popupBlock?.subModels?.grid?.stepParams?.eventSettings?.linkageRules?.value;
+    expect(linkageRules).toHaveLength(1);
+    expect(linkageRules?.[0]?.key).toBe('requireRelatedApprovalComment');
+  });
+
   it('should use source association popup names for generated associated-record action popups', async () => {
     const unique = Date.now();
     const roleAddName = `User role add ${unique}`;

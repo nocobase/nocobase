@@ -720,6 +720,7 @@ export function splitComposeFieldChanges(changes: Record<string, any>, wrapperUs
     'associationPathName',
     'initialValue',
     'required',
+    'rules',
     'disabled',
     'maxCount',
     'pattern',
