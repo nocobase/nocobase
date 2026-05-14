@@ -9,7 +9,7 @@
 
 import { css, useAPIClient, useCurrentAppInfo, useRequest } from '@nocobase/client';
 import { Select, Space, Spin, Typography } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
 import 'swagger-ui-dist/swagger-ui.css';
 import { useTranslation } from '../locale';
@@ -24,16 +24,19 @@ const Documentation = () => {
   const { t } = useTranslation();
   const swaggerUIRef = useRef<HTMLDivElement>(null);
   const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
-  const requestInterceptor = (req) => {
-    if (!req.headers['Authorization']) {
-      Object.assign(req.headers, apiClient.getHeaders());
-      if (appInfo?.data?.name) {
-        req.headers['X-App'] = appInfo.data.name;
+  const requestInterceptor = useCallback(
+    (req) => {
+      if (!req.headers['Authorization']) {
+        Object.assign(req.headers, apiClient.getHeaders());
+        if (appInfo?.data?.name) {
+          req.headers['X-App'] = appInfo.data.name;
+        }
+        req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
       }
-      req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
-    }
-    return req;
-  };
+      return req;
+    },
+    [apiClient, appInfo?.data?.name],
+  );
 
   const [destination, onDestinationChange] = useState<string>(getUrl());
 
@@ -54,20 +57,22 @@ const Documentation = () => {
   useEffect(() => {
     if (!swaggerUIRef.current) return;
 
-    const parameterValuePlugin = createSwaggerParameterValuePlugin(swaggerUIRef.current);
+    const mountNode = document.createElement('div');
+    swaggerUIRef.current.appendChild(mountNode);
+    const parameterValuePlugin = createSwaggerParameterValuePlugin(mountNode);
 
     SwaggerUIBundle({
       requestInterceptor,
       url: destination,
-      domNode: swaggerUIRef.current,
+      domNode: mountNode,
       plugins: [parameterValuePlugin.plugin],
     });
 
     return () => {
       parameterValuePlugin.dispose();
-      swaggerUIRef.current?.replaceChildren();
+      mountNode.remove();
     };
-  }, [destination]);
+  }, [destination, requestInterceptor]);
 
   if (!destination) {
     return <Spin />;
