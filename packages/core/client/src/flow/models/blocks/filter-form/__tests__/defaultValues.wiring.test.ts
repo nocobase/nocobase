@@ -154,7 +154,9 @@ describe('filter-form defaultValues wiring', () => {
 
     expect(options.resolveOnServer('department_department-filter')).toBe(false);
     expect(options.resolveOnServer('department_department-filter.name')).toBe(true);
+    expect(options.resolveOnServer('department_department-filter[0].name')).toBe(true);
     expect(options.resolveOnServer('department.owner_owner-filter.name')).toBe(true);
+    expect(options.serverOnlyWhenContextParams).toBe(true);
     expect(meta.title).toBe('Current form');
     expect(properties.department.properties['owner_owner-filter'].title).toBe('owner');
     expect(metaTree).toEqual(

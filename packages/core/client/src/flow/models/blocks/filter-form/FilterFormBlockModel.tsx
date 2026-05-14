@@ -192,13 +192,21 @@ function getFilterFormValues(form: any, items: any[]) {
   return values;
 }
 
+function isFilterFormFieldSubPath(fieldName: string, subPath: string) {
+  return subPath === fieldName || subPath.startsWith(`${fieldName}.`) || subPath.startsWith(`${fieldName}[`);
+}
+
+function isFilterFormFieldDeepSubPath(fieldName: string, subPath: string) {
+  return subPath.startsWith(`${fieldName}.`) || subPath.startsWith(`${fieldName}[`);
+}
+
 function findFilterFormItemByVariableSubPath(items: any[], subPath: string) {
   if (!subPath) return null;
 
   return (
     items.find((itemModel) => {
       const fieldName = getFilterFormItemFieldName(itemModel);
-      return fieldName && (subPath === fieldName || subPath.startsWith(`${fieldName}.`));
+      return fieldName && isFilterFormFieldSubPath(fieldName, subPath);
     }) || null
   );
 }
@@ -313,11 +321,12 @@ export class FilterFormBlockModel extends FilterBlockModel<{
         const collectionField = itemModel?.subModels?.field?.context?.collectionField || itemModel?.collectionField;
         return Boolean(
           fieldName &&
-            subPath.startsWith(`${fieldName}.`) &&
+            isFilterFormFieldDeepSubPath(fieldName, subPath) &&
             collectionField?.isAssociationField?.() &&
             collectionField?.targetCollection,
         );
       },
+      serverOnlyWhenContextParams: true,
     });
   }
 
