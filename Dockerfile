@@ -26,7 +26,7 @@ RUN yarn config set registry $VERDACCIO_URL && \
   yarn config set network-timeout 600000 -g && \
   yarn create nocobase-app my-nocobase-app -a --skip-dev-dependencies -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
-  yarn install --production --legacy-peer-deps && \
+  yarn install --production --ignore-peer-dependencies && \
   yarn add newrelic --production -W && \
   $BEFORE_PACK_NOCOBASE && \
   rm -rf /app/my-nocobase-app/packages/app/client/src/.umi && \
