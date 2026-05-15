@@ -137,8 +137,15 @@ export function normalizeFlowSurfaceError(error: unknown): FlowSurfaceError {
   return new FlowSurfaceInternalError(message);
 }
 
-export function throwBadRequest(message: string, code?: string): never {
-  throw new FlowSurfaceBadRequestError(message, code);
+export function throwBadRequest(
+  message: string,
+  codeOrOptions?: string | FlowSurfaceErrorOptions,
+  options: FlowSurfaceErrorOptions = {},
+): never {
+  if (typeof codeOrOptions === 'object' && codeOrOptions) {
+    throw new FlowSurfaceBadRequestError(message, undefined, codeOrOptions);
+  }
+  throw new FlowSurfaceBadRequestError(message, codeOrOptions, options);
 }
 
 export function throwAggregateBadRequest(errors: FlowSurfaceErrorItemInput[]): never {

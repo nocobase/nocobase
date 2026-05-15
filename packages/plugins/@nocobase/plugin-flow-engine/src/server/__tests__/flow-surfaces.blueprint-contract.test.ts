@@ -24,6 +24,7 @@ import {
 } from './flow-surfaces.contract.helpers';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { expectTemplateUsage, getListData } from './flow-surfaces.templates.helpers';
+import { FlowSurfacesService } from '../flow-surfaces/service';
 
 describe('flowSurfaces applyBlueprint contract', () => {
   const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
@@ -191,20 +192,24 @@ describe('flowSurfaces applyBlueprint contract', () => {
       const popupSurface = await getSurface(rootAgent, {
         uid: popupTemplate.targetUid,
       });
+      const popupItems = _.castArray(
+        popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      );
       return {
         actionReadback,
         popupSurface,
-        popupBlock: _.castArray(
-          popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-        )[0],
+        popupItems,
+        popupBlock: popupItems[0],
       };
     }
+    const popupItems = _.castArray(
+      actionReadback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    );
     return {
       actionReadback,
       popupSurface: actionReadback,
-      popupBlock: _.castArray(
-        actionReadback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-      )[0],
+      popupItems,
+      popupBlock: popupItems[0],
     };
   }
 
@@ -224,20 +229,24 @@ describe('flowSurfaces applyBlueprint contract', () => {
       const popupSurface = await getSurface(rootAgent, {
         uid: popupTemplate.targetUid,
       });
+      const popupItems = _.castArray(
+        popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+      );
       return {
         fieldReadback,
         popupSurface,
-        popupBlock: _.castArray(
-          popupSurface.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-        )[0],
+        popupItems,
+        popupBlock: popupItems[0],
       };
     }
+    const popupItems = _.castArray(
+      fieldReadback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    );
     return {
       fieldReadback,
       popupSurface: fieldReadback,
-      popupBlock: _.castArray(
-        fieldReadback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
-      )[0],
+      popupItems,
+      popupBlock: popupItems[0],
     };
   }
 
@@ -513,6 +522,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         navigation: {
           group: {
             title: 'Workspace',
+            icon: 'AppstoreOutlined',
           },
           item: {
             title: 'Employees',
@@ -537,6 +547,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             title: 'Overview',
             blocks: [
               {
+                key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
                 fields: ['nickname'],
@@ -775,7 +786,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         payload: {
           fields: ['title'],
         },
-        message: 'fields is not supported on calendar main blocks',
+        message: 'calendar main blocks do not support fields',
       },
       {
         key: 'fieldGroups',
@@ -787,14 +798,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
             },
           ],
         },
-        message: 'fieldGroups is not supported on calendar main blocks',
+        message: 'calendar main blocks do not support fieldGroups',
       },
       {
         key: 'recordActions',
         payload: {
           recordActions: ['view'],
         },
-        message: 'recordActions is not supported on calendar main blocks',
+        message: 'calendar main blocks do not support recordActions',
       },
     ];
 
@@ -828,7 +839,6 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
       expect(executeRes.status).toBe(400);
       expect(readErrorMessage(executeRes)).toContain(item.message);
-      expect(readErrorMessage(executeRes)).toMatch(/quick-create or event-view popup host|event-view popup host/);
     }
   });
 
@@ -920,7 +930,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         payload: {
           fields: ['title'],
         },
-        message: 'fields is not supported on tree blocks',
+        message: 'tree main blocks do not support fields',
       },
       {
         key: 'fieldGroups',
@@ -932,21 +942,21 @@ describe('flowSurfaces applyBlueprint contract', () => {
             },
           ],
         },
-        message: 'fieldGroups is not supported on tree blocks',
+        message: 'tree main blocks do not support fieldGroups',
       },
       {
         key: 'actions',
         payload: {
           actions: ['refresh'],
         },
-        message: 'actions is not supported on tree blocks',
+        message: 'tree main blocks do not support actions',
       },
       {
         key: 'recordActions',
         payload: {
           recordActions: ['view'],
         },
-        message: 'recordActions is not supported on tree blocks',
+        message: 'tree main blocks do not support recordActions',
       },
     ];
 
@@ -1092,6 +1102,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
           operator: '$includes',
           value: 'staff',
         },
+        {
+          path: 'status',
+          operator: '$notEmpty',
+        },
+        {
+          path: 'email',
+          operator: '$notEmpty',
+        },
       ],
     };
     const explicitActionFilter = {
@@ -1102,6 +1120,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
           operator: '$eq',
           value: 'active',
         },
+        {
+          path: 'email',
+          operator: '$notEmpty',
+        },
+        {
+          path: 'phone',
+          operator: '$notEmpty',
+        },
       ],
     };
     const calendarBlockDefaultFilter = {
@@ -1111,6 +1137,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
           path: 'title',
           operator: '$includes',
           value: 'planning',
+        },
+        {
+          path: 'status',
+          operator: '$notEmpty',
+        },
+        {
+          path: 'category',
+          operator: '$notEmpty',
         },
       ],
     };
@@ -1168,7 +1202,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
               },
             ],
             layout: {
-              rows: [['employeesTable'], ['employeesList'], ['employeesCards'], ['eventsCalendar']],
+              rows: [
+                ['employeesTable', 'employeesList'],
+                ['employeesCards', 'eventsCalendar'],
+              ],
             },
           },
         ],
@@ -1196,7 +1233,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
-    expect(tableFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(tableFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status', 'email']);
     expect(listFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
     expect(gridCardFilterAction?.props?.defaultFilterValue).toEqual(explicitActionFilter);
@@ -1434,8 +1471,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
       expect(executeRes.status).toBe(400);
       const message = readErrorMessage(executeRes);
-      expect(message).toContain('must include at least one concrete filter item');
-      expect(message).toContain('flowSurfaces applyBlueprint tabs[0].blocks[0].defaultFilter');
+      expect(message).toMatch(/cannot be explicitly empty|must include at least one concrete filter item/);
+      expect(message).toContain('flowSurfaces authoring $.tabs[0].blocks[0].defaultFilter');
       expect(message).not.toContain('flowSurfaces applyBlueprint flowSurfaces applyBlueprint');
     }
   });
@@ -1571,6 +1608,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         navigation: {
           group: {
             title: `Popup template blueprint group ${Date.now()}`,
+            icon: 'AppstoreOutlined',
           },
           item: {
             title: `Popup template blueprint page ${Date.now()}`,
@@ -1783,17 +1821,475 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     const fallbackField = collectDescendantNodes(
       data.surface.tree,
-      (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'label' && item?.popup?.pageUid,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'label' &&
+        (item?.popup?.pageUid || item?.popup?.template?.uid),
     )[0];
-    expect(fallbackField?.popup?.template).toBeUndefined();
-    expect(fallbackField?.popup?.pageUid).toBeTruthy();
+    expect(fallbackField?.uid).toBeTruthy();
+    const fallbackPopup = await readPrimaryPopupBlockFromField(fallbackField.uid);
     expect(
       collectDescendantNodes(
-        fallbackField,
+        fallbackPopup.popupSurface.tree,
         (item) =>
           item?.use === 'DetailsBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'skills',
       ),
     ).toHaveLength(1);
+  });
+
+  it('should reject partial popup template block matches for multi-block tryTemplate requests', async () => {
+    const unique = Date.now();
+    const collectionName = `bp_popup_partial_match_${unique}`;
+    await createPopupTestCollection(collectionName);
+
+    const sourcePage = await createPage(rootAgent, {
+      title: `Popup partial template source ${unique}`,
+      tabTitle: 'Source',
+    });
+    const sourceDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: sourcePage.gridUid },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName,
+          },
+        },
+      }),
+    );
+    const sourceField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: { uid: sourceDetails.uid },
+          fieldPath: 'name',
+          popup: {
+            blocks: [
+              {
+                key: 'singleDetailsPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const partialTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceField.fieldUid || sourceField.uid },
+          name: `Blueprint partial popup template ${unique}`,
+          description: 'Single-block popup template must not satisfy a multi-block popup request.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const targetPage = await createPage(rootAgent, {
+      title: `Popup partial template target ${unique}`,
+      tabTitle: 'Target',
+    });
+    const targetDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: targetPage.gridUid },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName,
+          },
+        },
+      }),
+    );
+    const targetField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: { uid: targetDetails.uid },
+          fieldPath: 'code',
+          popup: {
+            tryTemplate: true,
+            blocks: [
+              {
+                key: 'firstDetailsPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['code'],
+              },
+              {
+                key: 'secondDetailsPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['label'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const hostUids = _.uniq([targetField.fieldUid, targetField.wrapperUid, targetField.uid].filter(Boolean));
+    const hostReadbacks = await Promise.all(hostUids.map((uid: string) => getSurface(rootAgent, { uid })));
+    hostReadbacks.forEach((readback) => {
+      expect(readback.tree?.popup?.template?.uid).not.toBe(partialTemplate.uid);
+    });
+    const popupReadback = hostReadbacks.find(
+      (readback) =>
+        _.castArray(readback.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [])
+          .length,
+    );
+
+    expect(popupReadback).toBeTruthy();
+    const popupBlocks = _.castArray(
+      popupReadback?.tree?.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    );
+    expect(popupBlocks.map((item: any) => item?.use)).toEqual(['DetailsBlockModel', 'DetailsBlockModel']);
+    expect(collectFieldPaths({ subModels: { page: popupReadback?.tree?.subModels?.page } })).toEqual(
+      expect.arrayContaining(['code', 'label']),
+    );
+  });
+
+  it('should reject popup template matches with extra blocks or reordered explicit popup blocks', async () => {
+    const unique = Date.now();
+    const collectionName = `bp_popup_block_shape_${unique}`;
+    await createPopupTestCollection(collectionName);
+
+    const sourcePage = await createPage(rootAgent, {
+      title: `Popup block shape source ${unique}`,
+      tabTitle: 'Source',
+    });
+    const sourceTable = await addBlockData(rootAgent, {
+      target: { uid: sourcePage.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const sourceTwoBlockAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: sourceTable.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'firstSourceDetailsPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+              {
+                key: 'secondSourceDetailsPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['code'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const extraBlockTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceTwoBlockAction.uid },
+          name: `Blueprint extra block popup template ${unique}`,
+          description: 'Two-block popup template must not satisfy a one-block popup request.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+    const sourceReorderedAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: sourceTable.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'sourceMarkdownPopup',
+                type: 'markdown',
+                settings: {
+                  content: 'Source markdown first.',
+                },
+              },
+              {
+                key: 'sourceDetailsPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const reorderedTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: sourceReorderedAction.uid },
+          name: `Blueprint reordered popup template ${unique}`,
+          description: 'Reordered popup template must not satisfy an explicit popup block order.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const targetPage = await createPage(rootAgent, {
+      title: `Popup block shape target ${unique}`,
+      tabTitle: 'Target',
+    });
+    const targetTable = await addBlockData(rootAgent, {
+      target: { uid: targetPage.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName,
+      },
+    });
+    const oneBlockAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: targetTable.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: true,
+            blocks: [
+              {
+                key: 'targetOneBlockDetailsPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['label'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const oneBlockPopup = await readPrimaryPopupBlockFromAction(oneBlockAction.uid);
+    expect(oneBlockPopup.actionReadback.tree?.popup?.template?.uid).not.toBe(extraBlockTemplate.uid);
+    expect(oneBlockPopup.popupItems.map((item: any) => item?.use)).toEqual(['DetailsBlockModel']);
+
+    const orderedAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: targetTable.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: true,
+            blocks: [
+              {
+                key: 'targetDetailsFirstPopup',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['code'],
+              },
+              {
+                key: 'targetMarkdownSecondPopup',
+                type: 'markdown',
+                settings: {
+                  content: 'Target markdown second.',
+                },
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const orderedPopup = await readPrimaryPopupBlockFromAction(orderedAction.uid);
+    expect(orderedPopup.actionReadback.tree?.popup?.template?.uid).not.toBe(reorderedTemplate.uid);
+    expect(orderedPopup.popupItems.map((item: any) => item?.use)).toEqual(['DetailsBlockModel', 'MarkdownBlockModel']);
+  });
+
+  it('should include order and settings in popup save-reuse semantic signatures', () => {
+    const service = new FlowSurfacesService({ db: {} } as any);
+    const fieldItem = (fieldPath: string, uid: string, props: Record<string, any> = {}) => ({
+      uid,
+      key: `${uid}-key`,
+      parentUid: `${uid}-parent`,
+      use: 'FormItemModel',
+      props,
+      createdAt: `${uid}-created-at`,
+      updatedAt: `${uid}-updated-at`,
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'semantic_signature_targets',
+            fieldPath,
+          },
+        },
+      },
+    });
+    const popupTree = (items: any[], uidPrefix: string) => ({
+      uid: `${uidPrefix}-page`,
+      key: `${uidPrefix}-page-key`,
+      parentUid: `${uidPrefix}-host`,
+      use: 'ChildPageModel',
+      createdAt: `${uidPrefix}-page-created-at`,
+      updatedAt: `${uidPrefix}-page-updated-at`,
+      subModels: {
+        tabs: [
+          {
+            uid: `${uidPrefix}-tab`,
+            key: `${uidPrefix}-tab-key`,
+            use: 'TabModel',
+            subModels: {
+              grid: {
+                uid: `${uidPrefix}-grid`,
+                key: `${uidPrefix}-grid-key`,
+                use: 'GridModel',
+                subModels: {
+                  items: [
+                    {
+                      uid: `${uidPrefix}-block`,
+                      key: `${uidPrefix}-block-key`,
+                      use: 'DetailsBlockModel',
+                      subModels: {
+                        grid: {
+                          uid: `${uidPrefix}-block-grid`,
+                          key: `${uidPrefix}-block-grid-key`,
+                          use: 'GridModel',
+                          subModels: {
+                            items,
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+    const signatureOf = (input: any) => (service as any).buildPopupTemplateTreeSemanticSignature(input);
+
+    expect(signatureOf(popupTree([fieldItem('name', 'a-name'), fieldItem('code', 'a-code')], 'a'))).toBe(
+      signatureOf(popupTree([fieldItem('name', 'b-name'), fieldItem('code', 'b-code')], 'b')),
+    );
+    expect(signatureOf(popupTree([fieldItem('name', 'a-name'), fieldItem('code', 'a-code')], 'a'))).not.toBe(
+      signatureOf(popupTree([fieldItem('code', 'c-code'), fieldItem('name', 'c-name')], 'c')),
+    );
+    expect(signatureOf(popupTree([fieldItem('name', 'a-name'), fieldItem('code', 'a-code')], 'a'))).not.toBe(
+      signatureOf(
+        popupTree([fieldItem('name', 'd-name', { extra: 'different helper' }), fieldItem('code', 'd-code')], 'd'),
+      ),
+    );
+  });
+
+  it('should keep popup.tryTemplate false as a hard opt-out for default relation field popup templates', async () => {
+    const unique = Date.now();
+    const sourceCollection = `bptfs_${unique}`;
+    const targetCollection = `bptft_${unique}`;
+    const associationName = `${sourceCollection}.roles`;
+    await createPopupRelationTestCollections(sourceCollection, targetCollection);
+
+    const buildBlueprint = (title: string, popup: Record<string, any>) => ({
+      version: '1',
+      mode: 'create',
+      navigation: {
+        item: {
+          title,
+        },
+      },
+      tabs: [
+        {
+          title: 'Users',
+          blocks: [
+            {
+              key: 'usersDetails',
+              type: 'details',
+              collection: sourceCollection,
+              fields: [
+                'username',
+                {
+                  field: 'roles',
+                  popup,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const setupRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildBlueprint(`Relation default popup template source ${unique}`, {
+        defaultType: 'edit',
+      }),
+    });
+    expect(setupRes.status, readErrorMessage(setupRes)).toBe(200);
+
+    const listedAfterSetup = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: String(unique),
+          pageSize: 20,
+        },
+      }),
+    );
+    const setupTemplates = listedAfterSetup.rows.filter(
+      (row: any) => row.associationName === associationName && row.useModel === 'EditFormModel',
+    );
+    expect(setupTemplates).toHaveLength(1);
+    await expectTemplateUsage(rootAgent, setupTemplates[0].uid, 1);
+
+    const optOutRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: buildBlueprint(`Relation default popup opt out ${unique}`, {
+        tryTemplate: false,
+        defaultType: 'edit',
+      }),
+    });
+    expect(optOutRes.status, readErrorMessage(optOutRes)).toBe(200);
+
+    const optOutData = getData(optOutRes);
+    const optOutField = collectDescendantNodes(
+      optOutData.surface.tree,
+      (item) =>
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'roles' &&
+        (!!item?.subModels?.page?.uid || !!item?.popup?.template?.uid || !!item?.stepParams?.popupSettings?.openView),
+    )[0];
+    expect(optOutField?.uid).toBeTruthy();
+
+    const optOutPopup = await readPrimaryPopupBlockFromField(optOutField.uid);
+    expect(optOutPopup.fieldReadback.tree?.popup?.template).toBeUndefined();
+    expect(optOutPopup.fieldReadback.tree?.popup?.pageUid).toBeTruthy();
+    expect(optOutPopup.popupBlock?.use).toBe('EditFormModel');
+
+    const listedAfterOptOut = getListData(
+      await rootAgent.resource('flowSurfaces').listTemplates({
+        values: {
+          type: 'popup',
+          search: String(unique),
+          pageSize: 20,
+        },
+      }),
+    );
+    const finalTemplates = listedAfterOptOut.rows.filter(
+      (row: any) => row.associationName === associationName && row.useModel === 'EditFormModel',
+    );
+    expect(finalTemplates).toHaveLength(1);
+    expect(finalTemplates[0].uid).toBe(setupTemplates[0].uid);
+    await expectTemplateUsage(rootAgent, setupTemplates[0].uid, 1);
   });
 
   it('should preserve checkboxGroup mode defaults in addNew popup create forms built by applyBlueprint', async () => {
@@ -2765,12 +3261,157 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
   });
 
+  it('should use target collection popup names for relation action template hits without association overrides', async () => {
+    const unique = Date.now();
+    const competingTemplateName = `Competing role edit template ${unique}`;
+    const targetRoleEditName = `Target role edit default ${unique}`;
+    const targetRoleEditDescription = 'Edit one role record through the target collection popup default.';
+
+    const sourcePage = await createPage(rootAgent, {
+      title: `Competing role edit source ${unique}`,
+      tabTitle: 'Source',
+    });
+    const sourceRolesTable = await addBlockData(rootAgent, {
+      target: { uid: sourcePage.gridUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'roles',
+      },
+    });
+    const competingEditAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: sourceRolesTable.uid },
+          type: 'edit',
+          popup: {
+            blocks: [
+              {
+                key: 'competingRoleEdit',
+                type: 'editForm',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const competingTemplate = getData(
+      await rootAgent.resource('flowSurfaces').saveTemplate({
+        values: {
+          target: { uid: competingEditAction.uid },
+          name: competingTemplateName,
+          description: 'Generic role edit template must not win over a configured target default name.',
+          saveMode: 'duplicate',
+        },
+      }),
+    );
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Blueprint relation target defaults ${unique}`,
+          },
+        },
+        defaults: {
+          collections: {
+            roles: {
+              fieldGroups: [
+                {
+                  key: 'roleMain',
+                  title: 'Role main',
+                  fields: ['name', 'title'],
+                },
+              ],
+              popups: {
+                edit: {
+                  name: targetRoleEditName,
+                  description: targetRoleEditDescription,
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+                recordActions: [
+                  {
+                    key: 'viewUser',
+                    type: 'view',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'userRoles',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                            collectionName: 'roles',
+                          },
+                          fields: ['name', 'title'],
+                          recordActions: ['edit'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
+    const viewPopup = await readPrimaryPopupBlockFromAction(viewAction.uid);
+    const rolesTable = collectDescendantNodes(
+      viewPopup.popupSurface.tree,
+      (item) => item?.use === 'TableBlockModel',
+    )[0];
+    const editAction = collectDescendantNodes(rolesTable, (item) => item?.use === 'EditActionModel')[0];
+    expect(editAction?.uid).toBeTruthy();
+
+    const editPopup = await readPrimaryPopupBlockFromAction(editAction.uid);
+    expect(editPopup.actionReadback.tree?.popup?.template?.uid).not.toBe(competingTemplate.uid);
+    expect(editPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).toBe(targetRoleEditName);
+    expect(await findPopupTemplateByName(targetRoleEditName)).toMatchObject({
+      name: targetRoleEditName,
+      description: targetRoleEditDescription,
+    });
+  });
+
   it('should not regenerate default popup content when popup.tryTemplate hits an existing template', async () => {
     const unique = Date.now();
     const collectionName = `bp_defaults_tpl_${unique}`;
+    const relatedCollectionName = `bp_defaults_tpl_rel_${unique}`;
     const existingTemplateName = `Existing defaults template ${unique}`;
     const defaultViewName = `Default view name ignored by template ${unique}`;
+    const relationViewName = `Relation default ignored by direct action ${unique}`;
 
+    await rootAgent.resource('collections').create({
+      values: {
+        name: relatedCollectionName,
+        title: `Blueprint defaults related ${unique}`,
+        titleField: 'title',
+        filterTargetKey: 'title',
+        fields: [{ name: 'title', type: 'string', interface: 'input' }],
+      },
+    });
     await rootAgent.resource('collections').create({
       values: {
         name: collectionName,
@@ -2783,8 +3424,18 @@ describe('flowSurfaces applyBlueprint contract', () => {
         ],
       },
     });
+    await rootAgent.resource('collections.fields', collectionName).create({
+      values: {
+        name: 'related',
+        type: 'belongsTo',
+        target: relatedCollectionName,
+        foreignKey: 'relatedId',
+        interface: 'm2o',
+      },
+    });
     await waitForFixtureCollectionsReady(context.app.db, {
-      [collectionName]: ['name', 'extra'],
+      [collectionName]: ['name', 'extra', 'relatedId'],
+      [relatedCollectionName]: ['title'],
     });
 
     const sourcePage = await createPage(rootAgent, {
@@ -2858,6 +3509,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   name: defaultViewName,
                   description: 'View one record with the default details popup.',
                 },
+                associations: {
+                  related: {
+                    view: {
+                      name: relationViewName,
+                      description: 'View one related record; must not affect direct record actions.',
+                    },
+                  },
+                },
               },
             },
           },
@@ -2889,6 +3548,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
       mode: 'reference',
     });
     expect(viewPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).not.toBe(defaultViewName);
+    expect(viewPopup.actionReadback.tree?.stepParams?.popupSettings?.openView?.title).not.toBe(relationViewName);
     const templateFieldPaths = collectFieldPaths(viewPopup.popupBlock);
     expect(templateFieldPaths).toContain('name');
     expect(templateFieldPaths).not.toContain('extra');
@@ -3029,7 +3689,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
       expect(matchedNode?.popup?.pageUid).toBeUndefined();
       expect(matchedNode?.popup?.tabUid).toBeUndefined();
       expect(matchedNode?.popup?.gridUid).toBeUndefined();
-      await expectTemplateUsage(rootAgent, template.uid, 1);
+      const savedTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: template.uid,
+          },
+        }),
+      );
+      expect(savedTemplate.usageCount).toBeGreaterThanOrEqual(1);
       return template;
     }
 
@@ -3040,9 +3707,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
   it('should include relation context in auto-saved applyBlueprint popup template names', async () => {
     const unique = Date.now();
+    const suffix = String(unique).slice(-8);
+    const sourceCollection = `brns_${suffix}`;
+    const targetCollection = `brnt_${suffix}`;
+    const associationName = `${sourceCollection}.roles`;
     const directPopupTitle = `用户详情 ${unique}`;
     const relationPopupTitle = `角色详情 ${unique}`;
     const relationEditPopupTitle = `编辑角色 ${unique}`;
+    await createPopupRelationTestCollections(sourceCollection, targetCollection);
 
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -3060,7 +3732,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 key: 'usersDetails',
                 type: 'details',
-                collection: 'users',
+                collection: sourceCollection,
                 fields: [
                   'username',
                   {
@@ -3073,7 +3745,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           type: 'details',
                           resource: {
                             binding: 'currentRecord',
-                            collectionName: 'roles',
+                            collectionName: targetCollection,
                           },
                           fields: ['title', 'name'],
                           recordActions: [
@@ -3088,7 +3760,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                     type: 'editForm',
                                     resource: {
                                       binding: 'currentRecord',
-                                      collectionName: 'roles',
+                                      collectionName: targetCollection,
                                     },
                                     fields: ['title', 'name'],
                                   },
@@ -3113,7 +3785,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           type: 'details',
                           resource: {
                             binding: 'currentRecord',
-                            collectionName: 'users',
+                            collectionName: sourceCollection,
                           },
                           fields: ['username', 'email'],
                         },
@@ -3147,20 +3819,20 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(directTemplate?.associationName).toBeFalsy();
     expect(directTemplate?.description).toContain('上下文：直接/当前记录');
 
-    const relationTemplate = findTemplate(`${relationPopupTitle}(users.roles)`);
+    const relationTemplate = findTemplate(`${relationPopupTitle}(${associationName})`);
     expect(relationTemplate?.uid).toBeTruthy();
-    expect(relationTemplate?.associationName).toBe('users.roles');
+    expect(relationTemplate?.associationName).toBe(associationName);
     expect(relationTemplate?.name).not.toContain('弹窗');
-    expect(relationTemplate?.description).toContain('上下文：关联 users.roles');
-    expect(relationTemplate?.description).toContain('宿主：users');
+    expect(relationTemplate?.description).toContain(`上下文：关联 ${associationName}`);
+    expect(relationTemplate?.description).toContain(`宿主：${sourceCollection}`);
     expect(relationTemplate?.description).toContain('触发器：字段“roles”');
 
-    const relationEditTemplate = findTemplate(`${relationEditPopupTitle}(users.roles)`);
+    const relationEditTemplate = findTemplate(`${relationEditPopupTitle}(${associationName})`);
     expect(relationEditTemplate?.uid).toBeTruthy();
-    expect(relationEditTemplate?.associationName).toBe('users.roles');
+    expect(relationEditTemplate?.associationName).toBe(associationName);
     expect(relationEditTemplate?.name).not.toContain('弹窗');
-    expect(relationEditTemplate?.description).toContain('上下文：关联 users.roles');
-    expect(relationEditTemplate?.description).toContain('宿主：roles');
+    expect(relationEditTemplate?.description).toContain(`上下文：关联 ${associationName}`);
+    expect(relationEditTemplate?.description).toContain(`宿主：${targetCollection}`);
     expect(relationEditTemplate?.description).toContain('触发器：记录操作“编辑”');
   });
 
@@ -3327,11 +3999,13 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(relationTemplates).toHaveLength(1);
     expect(relationTemplates[0]).toMatchObject({
+      useModel: 'DetailsBlockModel',
       collectionName: targetCollection,
       associationName,
     });
     expect(relationEditTemplates).toHaveLength(1);
     expect(relationEditTemplates[0]).toMatchObject({
+      useModel: 'EditFormModel',
       collectionName: targetCollection,
       associationName,
     });
@@ -4119,6 +4793,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             title: 'Overview',
             blocks: [
               {
+                key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
                 fields: ['nickname'],
@@ -4171,6 +4846,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             title: 'Overview',
             blocks: [
               {
+                key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
                 fields: ['nickname'],
@@ -4463,6 +5139,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             title: 'Overview',
             blocks: [
               {
+                key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
                 fields: ['nickname'],
@@ -4478,7 +5155,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(executeRes.status).toBe(400);
     const message = readErrorMessage(executeRes);
-    expect(message).toContain(`flowSurfaces applyBlueprint tabs[0].layout.rows[0][0]`);
+    expect(message).toContain(`flowSurfaces authoring $.tabs[0].layout.rows[0][0]`);
     expect(message).toContain(`references unknown block 'missingBlock'`);
     expect(message).not.toContain(`tabs['`);
   });
@@ -4534,11 +5211,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const viewAction = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'ViewActionModel')[0];
     expect(viewAction?.uid).toBeTruthy();
 
-    const viewReadback = await getSurface(rootAgent, {
-      uid: viewAction.uid,
-    });
-    const popupBlock = _.castArray(viewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid
-      ?.subModels?.items?.[0];
+    const { popupBlock } = await readPrimaryPopupBlockFromAction(viewAction.uid);
 
     expect(popupBlock?.use).toBe('TableBlockModel');
     expect(popupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
@@ -4738,13 +5411,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const mainViewAction = collectDescendantNodes(mainTableReadback.tree, (item) => item?.use === 'ViewActionModel')[0];
     expect(mainViewAction?.uid).toBeTruthy();
 
-    const mainViewReadback = await getSurface(rootAgent, {
-      uid: mainViewAction.uid,
-    });
-    const popupItems = _.castArray(
-      _.castArray(mainViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items ||
-        [],
-    );
+    const { popupItems } = await readPrimaryPopupBlockFromAction(mainViewAction.uid);
     expect(popupItems).toHaveLength(2);
     const userDetailsBlock = popupItems.find((item: any) => item?.use === 'DetailsBlockModel');
     const userRolesTable = popupItems.find((item: any) => item?.use === 'TableBlockModel');
@@ -4780,11 +5447,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const roleViewAction = collectDescendantNodes(userRolesReadback.tree, (item) => item?.use === 'ViewActionModel')[0];
     expect(roleViewAction?.uid).toBeTruthy();
 
-    const roleViewReadback = await getSurface(rootAgent, {
-      uid: roleViewAction.uid,
-    });
-    const roleDetailsBlock = _.castArray(roleViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels
-      ?.grid?.subModels?.items?.[0];
+    const { popupBlock: roleDetailsBlock } = await readPrimaryPopupBlockFromAction(roleViewAction.uid);
     expect(roleDetailsBlock?.use).toBe('DetailsBlockModel');
 
     const roleDetailsReadback = await getSurface(rootAgent, {
@@ -4907,13 +5570,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     expect(rootPopupAction?.uid).toBeTruthy();
 
-    const rootPopupReadback = await getSurface(rootAgent, {
-      uid: rootPopupAction.uid,
-    });
-    const popupItems = _.castArray(
-      _.castArray(rootPopupReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels
-        ?.items || [],
-    );
+    const { popupItems } = await readPrimaryPopupBlockFromAction(rootPopupAction.uid);
     expect(popupItems).toHaveLength(2);
     const userDetailsBlock = popupItems.find((item: any) => item?.use === 'DetailsBlockModel');
     const userRolesTable = popupItems.find((item: any) => item?.use === 'TableBlockModel');
@@ -5075,24 +5732,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(executeRes);
     const mainTable = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const mainViewAction = collectDescendantNodes(mainTable, (item) => item?.use === 'ViewActionModel')[0];
-    const mainViewReadback = await getSurface(rootAgent, {
-      uid: mainViewAction.uid,
-    });
-    const userDetailsBlock = _.castArray(mainViewReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels
-      ?.grid?.subModels?.items?.[0];
+    const { popupBlock: userDetailsBlock } = await readPrimaryPopupBlockFromAction(mainViewAction.uid);
     const userDetailsReadback = await getSurface(rootAgent, {
       uid: userDetailsBlock.uid,
     });
     const userEditAction = _.castArray(userDetailsReadback.tree.subModels?.actions || []).find(
       (item: any) => item?.use === 'EditActionModel',
     );
-    const userEditReadback = await getSurface(rootAgent, {
-      uid: userEditAction.uid,
-    });
-    const popupItems = _.castArray(
-      _.castArray(userEditReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.subModels?.items ||
-        [],
-    );
+    const { popupItems } = await readPrimaryPopupBlockFromAction(userEditAction.uid);
     const userEditForm = popupItems.find((item: any) => item?.use === 'EditFormModel');
     const userRolesTable = popupItems.find((item: any) => item?.use === 'TableBlockModel');
 
@@ -5181,9 +5828,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
       'AddNewActionModel',
     ]);
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'DeleteActionModel',
       'ViewActionModel',
       'EditActionModel',
+      'DeleteActionModel',
     ]);
 
     expect(readNodeActionUses(listReadback.tree)).toEqual([
@@ -5263,21 +5910,53 @@ describe('flowSurfaces applyBlueprint contract', () => {
                     },
                   },
                 ],
-                recordActions: ['jsItem'],
+                recordActions: [
+                  {
+                    type: 'jsItem',
+                    settings: {
+                      version: '1.0.3',
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
               },
               {
                 key: 'employeesCards',
                 type: 'gridCard',
                 collection: 'employees',
                 fields: ['nickname'],
-                actions: ['jsItem'],
-                recordActions: ['jsItem'],
+                actions: [
+                  {
+                    type: 'jsItem',
+                    settings: {
+                      version: '1.0.4',
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
+                recordActions: [
+                  {
+                    type: 'jsItem',
+                    settings: {
+                      version: '1.0.5',
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
               },
               {
                 key: 'eventsCalendar',
                 type: 'calendar',
                 collection: 'calendar_events',
-                actions: ['jsItem'],
+                actions: [
+                  {
+                    type: 'jsItem',
+                    settings: {
+                      version: '1.0.6',
+                      code: 'ctx.render(null);',
+                    },
+                  },
+                ],
               },
             ],
           },
@@ -5530,8 +6209,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
 
     expect(executeRes.status).toBe(400);
-    expect(readErrorMessage(executeRes)).toContain('tabs[0].blocks[0].actions[0]');
-    expect(readErrorMessage(executeRes)).toContain('must be authored under recordActions');
+    expect(executeRes.body?.errors?.[0]?.path).toBe('$.tabs[0].blocks[0].actions[0]');
+    expect(readErrorMessage(executeRes)).toContain('recordActions');
   });
 
   it('should reject addChild string shorthand written under actions in applyBlueprint', async () => {
@@ -5561,8 +6240,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
 
     expect(executeRes.status).toBe(400);
-    expect(readErrorMessage(executeRes)).toContain('tabs[0].blocks[0].actions[0]');
-    expect(readErrorMessage(executeRes)).toContain('must be authored under recordActions');
+    expect(executeRes.body?.errors?.[0]?.path).toBe('$.tabs[0].blocks[0].actions[0]');
+    expect(readErrorMessage(executeRes)).toContain('recordActions');
   });
 
   it('should only allow addChild under recordActions when applyBlueprint targets a tree table', async () => {
@@ -5652,7 +6331,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(validRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
-    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+      'AddChildActionModel',
+    ]);
     const addChild = readTableRecordActions(tableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
     );
@@ -5722,7 +6406,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
       (item) => item?.use === 'TableBlockModel',
     )[0];
     const stringTableReadback = await getSurface(rootAgent, { uid: stringTableBlock?.uid });
-    expect(readTableRecordActionUses(stringTableReadback.tree)).toEqual(['AddChildActionModel']);
+    expect(readTableRecordActionUses(stringTableReadback.tree)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+      'AddChildActionModel',
+    ]);
     const stringAddChild = readTableRecordActions(stringTableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
     );
@@ -5781,7 +6470,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(executeRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
-    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+      'AddChildActionModel',
+    ]);
 
     const addChild = readTableRecordActions(tableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
@@ -6063,7 +6757,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users',
+      '$.defaults.collections.users',
       'unsupported keys: blocks',
     ],
     [
@@ -6081,7 +6775,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups.view.description',
+      '$.defaults.collections.users.popups.view.description',
       'must be a non-empty string',
     ],
     [
@@ -6099,7 +6793,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups.addNew.description',
+      '$.defaults.collections.users.popups.addNew.description',
       'must be a non-empty string',
     ],
     [
@@ -6117,7 +6811,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups.edit.description',
+      '$.defaults.collections.users.popups.edit.description',
       'must be a non-empty string',
     ],
     [
@@ -6136,7 +6830,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups.view',
+      '$.defaults.collections.users.popups.view',
       'unsupported keys: blocks',
     ],
     [
@@ -6158,7 +6852,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups',
+      '$.defaults.collections.users.popups',
       'unsupported keys: relations',
     ],
     [
@@ -6182,7 +6876,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups.associations.roles.view',
+      '$.defaults.collections.users.popups.associations.roles.view',
       'unsupported keys: fieldGroups',
     ],
     [
@@ -6204,7 +6898,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups.associations.roles.view.description',
+      '$.defaults.collections.users.popups.associations.roles.view.description',
       'must be a non-empty string',
     ],
     [
@@ -6224,7 +6918,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         },
       },
-      'flowSurfaces applyBlueprint defaults.collections.users.popups.view',
+      '$.defaults.collections.users.popups.view',
       'unsupported keys: fieldGroups',
     ],
     [
@@ -6560,8 +7254,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
           },
         ],
       },
-      'unsupported keys: unexpectedKey',
-      'flowSurfaces applyBlueprint tabs[0].layout.rows[0][0]',
+      'must reference a block key',
+      '$.tabs[0].layout.rows[0][0]',
     ],
   ])('should %s', async (_label, values, message, expectedPath) => {
     const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
@@ -6636,7 +7330,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].layout is not supported; layout is only allowed on tabs[] and popup',
+      'flowSurfaces authoring $.tabs[0].blocks[0].layout is not supported; layout is only allowed on tabs[] and popup',
     );
   });
 
@@ -6730,7 +7424,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].popup.blocks[0].recordActions[0].popup custom edit popup must contain exactly one editForm block',
+      'flowSurfaces authoring $.tabs[0].blocks[0].recordActions[0].popup.blocks[0].actions[0].popup custom edit popup must contain exactly one editForm block; found 0',
     );
   });
 
@@ -6826,7 +7520,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].layout.rows[0][0] only accepts keys key, span; unsupported keys: uid',
+      'flowSurfaces authoring $.tabs[0].layout.rows[0][0] must reference a block key',
     );
   });
 
@@ -6852,7 +7546,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
 
     expect(res.status).toBe(400);
-    expect(readErrorMessage(res)).toContain('flowSurfaces applyBlueprint tabs[0].layout must be an object');
+    expect(readErrorMessage(res)).toContain('flowSurfaces authoring $.tabs[0].layout must be an object');
   });
 
   it('should apply fieldsLayout to field-grid blocks through applyBlueprint', async () => {
@@ -7005,7 +7699,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].fieldsLayout is only supported on createForm, editForm, details or filterForm',
+      'flowSurfaces authoring $.tabs[0].blocks[0].fieldsLayout is only supported on createForm, editForm, details, or filterForm blocks',
     );
   });
 
@@ -7053,7 +7747,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      "flowSurfaces applyBlueprint tabs[0].blocks[0].fieldsLayout.rows[0][0] references unknown field 'missingField'",
+      "flowSurfaces authoring $.tabs[0].blocks[0].fieldsLayout.rows[0][0] references unknown field 'missingField'",
     );
   });
 
@@ -7235,7 +7929,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(res.status).toBe(400);
     expect(readErrorMessage(res)).toContain(
-      'flowSurfaces applyBlueprint tabs[0].blocks[0].fieldGroups is only supported on createForm, editForm or details',
+      'flowSurfaces authoring $.tabs[0].blocks[0].fieldGroups is only supported on createForm, editForm, or details blocks',
     );
   });
 

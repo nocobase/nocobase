@@ -19,6 +19,7 @@ import {
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
+import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 
 const LARGE_GENERATED_POPUP_COLLECTION = 'flow_surface_large_generated_popup_records';
 const LARGE_GENERATED_POPUP_FIELDS = Array.from({ length: 11 }, (_item, index) => `field${index + 1}`);
@@ -437,7 +438,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'js-item-action-slot-unsupported',
         'kanban-semantic-field-unknown',
         'chart-display-title-unsupported',
-        'chart-builder-relation-field-runtime-unsupported',
       ]),
     );
     for (const error of response.body.errors) {
@@ -513,6 +513,187 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       });
       expect(error.details?.keys).toEqual(expect.any(Array));
     }
+  });
+
+  it('should resolve popup-local reaction targets inside fieldGroups field popups', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'missing-target-never-resolved' },
+      blocks: [
+        {
+          key: 'employeeDetails',
+          type: 'details',
+          collection: 'employees',
+          fieldGroups: [
+            {
+              title: 'Main',
+              fields: [
+                {
+                  field: 'department',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'departmentPopupDetails',
+                        type: 'details',
+                        collection: 'departments',
+                        fields: ['title'],
+                      },
+                    ],
+                    reaction: {
+                      items: [
+                        {
+                          target: 'departmentPopupDetails',
+                          rules: [],
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('reaction-target-unknown');
+  });
+
+  it('should resolve scoped popup-local reaction targets inside applyBlueprint fieldGroups field popups', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Field group scoped popup reaction page',
+        },
+      },
+      tabs: [
+        {
+          key: 'main',
+          title: 'Main',
+          blocks: [
+            {
+              key: 'employeeDetails',
+              type: 'details',
+              collection: 'employees',
+              fieldGroups: [
+                {
+                  title: 'Main',
+                  fields: [
+                    {
+                      field: 'department',
+                      popup: {
+                        blocks: [
+                          {
+                            key: 'departmentPopupDetails',
+                            type: 'details',
+                            collection: 'departments',
+                            fields: ['title'],
+                          },
+                        ],
+                        reaction: {
+                          items: [
+                            {
+                              target: 'main.employeeDetails.department.popup.departmentPopupDetails',
+                              rules: [],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('reaction-target-unknown');
+  });
+
+  it('should resolve scoped field reaction targets inside applyBlueprint fieldGroups', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Field group scoped field reaction page',
+        },
+      },
+      tabs: [
+        {
+          key: 'main',
+          title: 'Main',
+          blocks: [
+            {
+              key: 'employeeDetails',
+              type: 'details',
+              collection: 'employees',
+              fieldGroups: [
+                {
+                  title: 'Main',
+                  fields: [
+                    {
+                      field: 'department',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      reaction: {
+        items: [
+          {
+            target: 'main.employeeDetails.department',
+            rules: [],
+          },
+        ],
+      },
+    });
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('reaction-target-unknown');
+  });
+
+  it('should resolve scoped field reaction targets for applyBlueprint fieldGroups string shorthand', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Field group string shorthand reaction page',
+        },
+      },
+      tabs: [
+        {
+          key: 'main',
+          title: 'Main',
+          blocks: [
+            {
+              key: 'employeeDetails',
+              type: 'details',
+              collection: 'employees',
+              fieldGroups: [
+                {
+                  title: 'Main',
+                  fields: ['department'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      reaction: {
+        items: [
+          {
+            target: 'main.employeeDetails.department',
+            rules: [],
+          },
+        ],
+      },
+    });
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('reaction-target-unknown');
   });
 
   it('should aggregate configure internal public field object keys before side effects', async () => {
@@ -1114,7 +1295,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'default-field-group-unknown-field',
         'default-field-groups-incomplete',
         'relation-titleField-unreadable',
-        'default-field-groups-only-for-large-generated-popups',
       ]),
     );
     expect(response.body.errors.map((error: any) => error.path)).toEqual(

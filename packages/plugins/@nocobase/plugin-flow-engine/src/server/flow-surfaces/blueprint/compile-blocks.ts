@@ -1617,6 +1617,23 @@ function attachDefaultActionPopupMetadata(
   return attachCompiledPopupDefaults(defaultPopup, metadata);
 }
 
+function hasNestedDefaultPopupMetadata(value: any): boolean {
+  if (Array.isArray(value)) {
+    return value.some((item) => hasNestedDefaultPopupMetadata(item));
+  }
+  if (!_.isPlainObject(value)) {
+    return false;
+  }
+  const popup = value.popup;
+  if (
+    _.isPlainObject(popup) &&
+    Object.prototype.hasOwnProperty.call(popup, FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY)
+  ) {
+    return true;
+  }
+  return Object.entries(value).some(([key, item]) => key !== 'popup' && hasNestedDefaultPopupMetadata(item));
+}
+
 function compilePopup(
   popup: FlowSurfaceApplyBlueprintPopup | undefined,
   scopePrefix: string,
@@ -1683,11 +1700,7 @@ function compilePopup(
     options.ownerActionType === 'edit' && rawPopupBlocks.length
       ? normalizeEditPopupBlocks(rawPopupBlocks, context)
       : rawPopupBlocks;
-  const willAutoTryTemplate =
-    _.isUndefined(popup.tryTemplate) && options.mode === 'create' && !hasTemplateDocument && popupBlocks.length > 0;
-  if (saveAsTemplate && !popupBlocks.length && tryTemplate !== true && !willAutoTryTemplate) {
-    throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
-  }
+  const isMultiBlockEditPopup = options.ownerActionType === 'edit' && popupBlocks.length > 1;
   const compiledBlocks = popupBlocks.length
     ? compileBlocks(
         popupBlocks,
@@ -1706,6 +1719,17 @@ function compilePopup(
         },
       )
     : { blocks: [], blockKeysByLocalKey: new Map<string, string>() };
+  const hasNestedDefaultPopup = hasNestedDefaultPopupMetadata(compiledBlocks.blocks);
+  const willAutoTryTemplate =
+    _.isUndefined(popup.tryTemplate) &&
+    options.mode === 'create' &&
+    !hasTemplateDocument &&
+    popupBlocks.length > 0 &&
+    !isMultiBlockEditPopup &&
+    !hasNestedDefaultPopup;
+  if (saveAsTemplate && !popupBlocks.length && tryTemplate !== true && !willAutoTryTemplate) {
+    throwBadRequest(`${context}.saveAsTemplate requires explicit popup.blocks`);
+  }
   const layout =
     popupBlocks.length || popup.layout
       ? compileLayout(
@@ -1715,7 +1739,12 @@ function compilePopup(
         )
       : undefined;
   const autoSaveAsTemplate =
-    _.isUndefined(saveAsTemplate) && options.mode === 'create' && !hasTemplateDocument && popupBlocks.length > 0
+    _.isUndefined(saveAsTemplate) &&
+    options.mode === 'create' &&
+    !hasTemplateDocument &&
+    popupBlocks.length > 0 &&
+    !isMultiBlockEditPopup &&
+    !hasNestedDefaultPopup
       ? buildApplyBlueprintAutoSaveTemplateMetadata(popup, options)
       : undefined;
   const effectiveTryTemplate = willAutoTryTemplate ? true : tryTemplate;
@@ -2154,7 +2183,7 @@ function compileBlocks(
     assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     assertApplyBlueprintKanbanMainContent(block, `${context}[${index}]`);
     assertApplyBlueprintTreeMainContent(block, `${context}[${index}]`);
-    const fields = resolveBlockFieldInputs(block, `${context}[${index}]`);
+    const fields = resolveBlockFieldInputs(block, `${context}[${index}]`, getCollection);
     collectTreeConnectTargetKeys(block.settings, `${context}[${index}]`).forEach((targetKey) => {
       referencedBlockKeys.add(targetKey);
     });

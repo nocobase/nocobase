@@ -20,6 +20,7 @@ import {
   resolveFieldTargetCollection,
 } from './service-helpers';
 import {
+  type FlowSurfaceTitleFieldErrorOptions,
   assertCollectionTitleFieldExists,
   assertFlowSurfaceTitleFieldIsNotId,
   resolveCollectionSafeTitleField,
@@ -144,8 +145,11 @@ function getAssociationCardinality(field: any): 'single' | 'multi' | null {
   return null;
 }
 
-function pickCollectionFallbackFieldName(collection: any) {
-  const safeTitleFieldName = resolveCollectionSafeTitleField(collection)?.fieldName;
+function pickCollectionFallbackFieldName(
+  collection: any,
+  titleFieldErrorOptions: FlowSurfaceTitleFieldErrorOptions = {},
+) {
+  const safeTitleFieldName = resolveCollectionSafeTitleField(collection, titleFieldErrorOptions)?.fieldName;
   if (safeTitleFieldName && resolveFieldFromCollection(collection, safeTitleFieldName)) {
     return safeTitleFieldName;
   }
@@ -177,6 +181,9 @@ export function resolveRelationFieldType(input: {
   showIndex?: any;
   applyDefaults?: boolean;
   context: string;
+  actionName?: string;
+  titleFieldPath?: string;
+  fieldPath?: string;
 }) {
   const fieldType = normalizePublicFieldType(input.fieldType, input.context);
   if (!fieldType) {
@@ -263,8 +270,16 @@ export function resolveRelationFieldType(input: {
   ) {
     throwBadRequest(`flowSurfaces ${input.context} fieldType '${fieldType}' does not support pageSize or showIndex`);
   }
+  const baseTitleFieldErrorOptions = {
+    action: input.actionName || input.context,
+    path: input.titleFieldPath,
+    fieldPath: input.fieldPath,
+    targetCollection,
+  };
   const shouldApplyDefaults = input.applyDefaults !== false;
-  const defaultTargetField = shouldApplyDefaults ? pickCollectionFallbackFieldName(targetCollection) : undefined;
+  const defaultTargetField = shouldApplyDefaults
+    ? pickCollectionFallbackFieldName(targetCollection, baseTitleFieldErrorOptions)
+    : undefined;
   const fields =
     explicitFields ??
     (shouldApplyDefaults && (usesNestedRelationFields(fieldUse) || fieldType === 'picker')
@@ -274,21 +289,19 @@ export function resolveRelationFieldType(input: {
   const titleField = _.isUndefined(input.titleField)
     ? defaultTargetField
     : String(input.titleField || '').trim() || undefined;
+  const titleFieldErrorOptions = {
+    ...baseTitleFieldErrorOptions,
+    titleField,
+  };
 
   if (titleField) {
-    assertFlowSurfaceTitleFieldIsNotId(titleField);
+    assertFlowSurfaceTitleFieldIsNotId(titleField, titleFieldErrorOptions);
   }
   if (fields?.length) {
     assertTargetFieldNamesExist(targetCollection, fields, `${input.context}.fields`);
   }
   if (titleField) {
-    try {
-      assertCollectionTitleFieldExists(targetCollection, titleField);
-    } catch {
-      throwBadRequest(
-        `flowSurfaces ${input.context}.titleField '${titleField}' does not exist on relation target collection`,
-      );
-    }
+    assertCollectionTitleFieldExists(targetCollection, titleField, titleFieldErrorOptions);
   }
 
   return {

@@ -182,10 +182,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
     });
 
     expect(response.status).toBe(400);
-    assertAggregateRuleIds(response, [
-      'chart-display-title-unsupported',
-      'chart-builder-relation-field-runtime-unsupported',
-    ]);
+    assertAggregateRuleIds(response, ['chart-display-title-unsupported']);
   });
 
   it('should aggregate configure gridCard settings errors with resolved host context', async () => {
@@ -750,15 +747,9 @@ describe('flowSurfaces backend authoring localized compiler', () => {
     });
 
     expect(response.status).toBe(400);
-    assertAggregateRuleIds(response, [
-      'chart-display-title-unsupported',
-      'chart-builder-relation-field-runtime-unsupported',
-    ]);
+    assertAggregateRuleIds(response, ['chart-display-title-unsupported']);
     expect(response.body.errors.map((error: any) => error.path)).toEqual(
-      expect.arrayContaining([
-        '$.changes.quickCreatePopup.blocks[0].settings.displayTitle',
-        '$.changes.quickCreatePopup.blocks[0].settings.query.dimensions[0].field',
-      ]),
+      expect.arrayContaining(['$.changes.quickCreatePopup.blocks[0].settings.displayTitle']),
     );
   });
 

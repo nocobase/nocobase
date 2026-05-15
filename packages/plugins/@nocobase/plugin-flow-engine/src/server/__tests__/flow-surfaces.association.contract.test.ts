@@ -16,9 +16,47 @@ import {
   expectStructuredError,
   getData,
   getSurface,
+  readErrorItem,
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+
+function expectRelationTitleFieldError(
+  response: any,
+  expected: {
+    path: string;
+    ruleId: string;
+    action?: string;
+    fieldPath?: string;
+    titleField?: string;
+    targetCollection?: string;
+    invalidReason?: string;
+  },
+) {
+  expect(response.status).toBe(400);
+  const error = readErrorItem(response);
+  expectStructuredError(error, {
+    status: 400,
+    type: 'bad_request',
+  });
+  expect(error).toMatchObject({
+    path: expected.path,
+    ruleId: expected.ruleId,
+  });
+  expect(error.details).toMatchObject(
+    _.pickBy(
+      {
+        action: expected.action,
+        fieldPath: expected.fieldPath,
+        titleField: expected.titleField,
+        targetCollection: expected.targetCollection,
+        invalidReason: expected.invalidReason,
+      },
+      (value) => !_.isUndefined(value),
+    ),
+  );
+  expect(error.details?.suggestion).toEqual(expect.any(String));
+}
 
 describe('flowSurfaces association contract', () => {
   let context: FlowSurfacesContractContext;
@@ -1295,6 +1333,173 @@ describe('flowSurfaces association contract', () => {
     expect(opaqueRes.status).toBe(400);
     expect(readErrorMessage(opaqueRes)).toContain("target collection 'opaque_targets' has no usable titleField");
 
+    const unique = Date.now();
+    const invalidLabelTargetCollection = `fs_tf_target_${unique}`;
+    const invalidExplicitTargetCollection = `fs_tf_explicit_${unique}`;
+    const invalidLabelSourceCollection = `fs_tf_source_${unique}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: invalidLabelTargetCollection,
+        title: invalidLabelTargetCollection,
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: invalidExplicitTargetCollection,
+        title: invalidExplicitTargetCollection,
+        titleField: 'id',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: invalidLabelSourceCollection,
+        title: invalidLabelSourceCollection,
+        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+      },
+    });
+    await rootAgent.resource('collections.fields', invalidLabelSourceCollection).create({
+      values: {
+        name: 'brokenTarget',
+        type: 'belongsTo',
+        target: invalidLabelTargetCollection,
+        foreignKey: 'brokenTargetId',
+        interface: 'm2o',
+        uiSchema: {
+          'x-component-props': {
+            fieldNames: {
+              label: 'id',
+              value: 'id',
+            },
+          },
+        },
+      },
+    });
+    await rootAgent.resource('collections.fields', invalidLabelSourceCollection).create({
+      values: {
+        name: 'brokenExplicitTarget',
+        type: 'belongsTo',
+        target: invalidExplicitTargetCollection,
+        foreignKey: 'brokenExplicitTargetId',
+        interface: 'm2o',
+      },
+    });
+    const invalidLabelTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: invalidLabelSourceCollection,
+      },
+    });
+    const sourceNameField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: invalidLabelTable.uid,
+          },
+          fieldPath: 'name',
+        },
+      }),
+    );
+
+    const addFieldInvalidConfiguredLabelRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: invalidLabelTable.uid,
+        },
+        fieldPath: 'brokenTarget',
+      },
+    });
+    expectRelationTitleFieldError(addFieldInvalidConfiguredLabelRes, {
+      path: '$.titleField',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'addField',
+      fieldPath: 'brokenTarget',
+      titleField: 'id',
+      targetCollection: invalidLabelTargetCollection,
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(addFieldInvalidConfiguredLabelRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['name', 'code']),
+    );
+
+    const configureInvalidConfiguredLabelRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: sourceNameField.wrapperUid,
+        },
+        changes: {
+          fieldPath: 'brokenTarget',
+        },
+      },
+    });
+    expectRelationTitleFieldError(configureInvalidConfiguredLabelRes, {
+      path: '$.changes.titleField',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'configure',
+      fieldPath: 'brokenTarget',
+      titleField: 'id',
+      targetCollection: invalidLabelTargetCollection,
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(configureInvalidConfiguredLabelRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['name', 'code']),
+    );
+
+    const addFieldInvalidExplicitTitleFieldRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: invalidLabelTable.uid,
+        },
+        fieldPath: 'brokenExplicitTarget',
+      },
+    });
+    expectRelationTitleFieldError(addFieldInvalidExplicitTitleFieldRes, {
+      path: '$.titleField',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'addField',
+      fieldPath: 'brokenExplicitTarget',
+      titleField: 'id',
+      targetCollection: invalidExplicitTargetCollection,
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(addFieldInvalidExplicitTitleFieldRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['name', 'code']),
+    );
+
+    const configureInvalidExplicitTitleFieldRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: sourceNameField.wrapperUid,
+        },
+        changes: {
+          fieldPath: 'brokenExplicitTarget',
+        },
+      },
+    });
+    expectRelationTitleFieldError(configureInvalidExplicitTitleFieldRes, {
+      path: '$.changes.titleField',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'configure',
+      fieldPath: 'brokenExplicitTarget',
+      titleField: 'id',
+      targetCollection: invalidExplicitTargetCollection,
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(configureInvalidExplicitTitleFieldRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['name', 'code']),
+    );
+
     const updateSettingsIdEditItemTitleFieldLabelRes = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -1309,7 +1514,18 @@ describe('flowSurfaces association contract', () => {
         },
       },
     });
-    expect(updateSettingsIdEditItemTitleFieldLabelRes.status).toBe(400);
+    expectRelationTitleFieldError(updateSettingsIdEditItemTitleFieldLabelRes, {
+      path: '$.stepParams.editItemSettings.titleField.label',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'updateSettings',
+      fieldPath: 'manager',
+      titleField: 'id',
+      targetCollection: 'employees',
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(updateSettingsIdEditItemTitleFieldLabelRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['nickname', 'status']),
+    );
     expect(readErrorMessage(updateSettingsIdEditItemTitleFieldLabelRes)).toContain(
       "flowSurfaces titleField cannot use 'id'",
     );
@@ -1324,7 +1540,18 @@ describe('flowSurfaces association contract', () => {
         },
       },
     });
-    expect(invalidTitleFieldRes.status).toBe(400);
+    expectRelationTitleFieldError(invalidTitleFieldRes, {
+      path: '$.changes.titleField',
+      ruleId: 'relation-titleField-unknown',
+      action: 'configure',
+      fieldPath: 'manager',
+      titleField: 'missing',
+      targetCollection: 'employees',
+      invalidReason: 'missing',
+    });
+    expect(readErrorItem(invalidTitleFieldRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['nickname', 'status']),
+    );
     expect(readErrorMessage(invalidTitleFieldRes)).toContain("collection 'employees' titleField 'missing' not found");
   });
 
@@ -1386,7 +1613,18 @@ describe('flowSurfaces association contract', () => {
         },
       },
     });
-    expect(configureIdTitleFieldRes.status).toBe(400);
+    expectRelationTitleFieldError(configureIdTitleFieldRes, {
+      path: '$.changes.titleField',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'configure',
+      fieldPath: 'manager',
+      titleField: 'id',
+      targetCollection: 'employees',
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(configureIdTitleFieldRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['nickname', 'status']),
+    );
     expect(readErrorMessage(configureIdTitleFieldRes)).toContain("flowSurfaces titleField cannot use 'id'");
 
     const updateSettingsIdTitleFieldRes = await rootAgent.resource('flowSurfaces').updateSettings({
@@ -1399,7 +1637,18 @@ describe('flowSurfaces association contract', () => {
         },
       },
     });
-    expect(updateSettingsIdTitleFieldRes.status).toBe(400);
+    expectRelationTitleFieldError(updateSettingsIdTitleFieldRes, {
+      path: '$.props.titleField',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'updateSettings',
+      fieldPath: 'manager',
+      titleField: 'id',
+      targetCollection: 'employees',
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(updateSettingsIdTitleFieldRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['nickname', 'status']),
+    );
     expect(readErrorMessage(updateSettingsIdTitleFieldRes)).toContain("flowSurfaces titleField cannot use 'id'");
 
     const updateSettingsIdFieldNamesLabelRes = await rootAgent.resource('flowSurfaces').updateSettings({
@@ -1416,7 +1665,18 @@ describe('flowSurfaces association contract', () => {
         },
       },
     });
-    expect(updateSettingsIdFieldNamesLabelRes.status).toBe(400);
+    expectRelationTitleFieldError(updateSettingsIdFieldNamesLabelRes, {
+      path: '$.stepParams.tableColumnSettings.fieldNames.label',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'updateSettings',
+      fieldPath: 'manager',
+      titleField: 'id',
+      targetCollection: 'employees',
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(updateSettingsIdFieldNamesLabelRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['nickname', 'status']),
+    );
     expect(readErrorMessage(updateSettingsIdFieldNamesLabelRes)).toContain("flowSurfaces titleField cannot use 'id'");
 
     const idTitleFieldTable = await addBlockData(rootAgent, {
@@ -1438,7 +1698,18 @@ describe('flowSurfaces association contract', () => {
         titleField: 'id',
       },
     });
-    expect(idTitleFieldRes.status).toBe(400);
+    expectRelationTitleFieldError(idTitleFieldRes, {
+      path: '$.titleField',
+      ruleId: 'relation-titleField-unreadable',
+      action: 'addField',
+      fieldPath: 'manager',
+      titleField: 'id',
+      targetCollection: 'employees',
+      invalidReason: 'id',
+    });
+    expect(readErrorItem(idTitleFieldRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['nickname', 'status']),
+    );
     expect(readErrorMessage(idTitleFieldRes)).toContain("flowSurfaces titleField cannot use 'id'");
 
     const invalidTitleFieldRes = await rootAgent.resource('flowSurfaces').addField({
@@ -1450,7 +1721,18 @@ describe('flowSurfaces association contract', () => {
         titleField: 'missing',
       },
     });
-    expect(invalidTitleFieldRes.status).toBe(400);
+    expectRelationTitleFieldError(invalidTitleFieldRes, {
+      path: '$.titleField',
+      ruleId: 'relation-titleField-unknown',
+      action: 'addField',
+      fieldPath: 'manager',
+      titleField: 'missing',
+      targetCollection: 'employees',
+      invalidReason: 'missing',
+    });
+    expect(readErrorItem(invalidTitleFieldRes).details?.availableFields).toEqual(
+      expect.arrayContaining(['nickname', 'status']),
+    );
     expect(readErrorMessage(invalidTitleFieldRes)).toContain(
       "flowSurfaces collection 'employees' titleField 'missing' not found",
     );

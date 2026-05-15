@@ -205,6 +205,18 @@ describe('flowSurfaces swagger', () => {
       'conflict',
       'internal_error',
     ]);
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.path).toMatchObject({
+      type: 'string',
+      example: '$.changes.titleField',
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.ruleId).toMatchObject({
+      type: 'string',
+      example: 'relation-titleField-unreadable',
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.details).toMatchObject({
+      type: 'object',
+      additionalProperties: true,
+    });
     expect(schemas.FlowSurfaceAddRecordActionRequest).toBeTruthy();
     expect(schemas.FlowSurfaceAddRecordActionResult).toBeTruthy();
     expect(schemas.FlowSurfaceAddBlocksRequest).toBeTruthy();

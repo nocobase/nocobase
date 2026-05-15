@@ -62,6 +62,43 @@ function createCollection(
   return collection;
 }
 
+function expectThrownTitleFieldError(
+  run: () => void,
+  expected: {
+    path?: string;
+    ruleId: string;
+    action?: string;
+    fieldPath?: string;
+    titleField?: string;
+    targetCollection?: string;
+    invalidReason?: string;
+  },
+) {
+  try {
+    run();
+    throw new Error('Expected titleField error');
+  } catch (error: any) {
+    if (error?.message === 'Expected titleField error') {
+      throw error;
+    }
+    const item = error?.toResponseBody?.()?.errors?.[0];
+    expect(item).toMatchObject({
+      ruleId: expected.ruleId,
+      details: expect.objectContaining({
+        ...(expected.action ? { action: expected.action } : {}),
+        ...(expected.fieldPath ? { fieldPath: expected.fieldPath } : {}),
+        ...(expected.titleField ? { titleField: expected.titleField } : {}),
+        ...(expected.targetCollection ? { targetCollection: expected.targetCollection } : {}),
+        ...(expected.invalidReason ? { invalidReason: expected.invalidReason } : {}),
+      }),
+    });
+    if (expected.path) {
+      expect(item.path).toBe(expected.path);
+    }
+    expect(item.details?.suggestion).toEqual(expect.any(String));
+  }
+}
+
 describe('flowSurfaces association title field helpers', () => {
   it('should prefer the explicitly configured collection titleField when it exists', () => {
     const collection = createCollection(
@@ -179,7 +216,7 @@ describe('flowSurfaces association title field helpers', () => {
     });
   });
 
-  it('should reject id as a relation field uiSchema title field', () => {
+  it('should reject id as a relation field uiSchema title field with direct-write context', () => {
     const funds = createCollection('funds', [
       createField('id', { interface: 'snowflakeId', primaryKey: true }),
       createField('name', { interface: 'input', titleable: true }),
@@ -198,11 +235,76 @@ describe('flowSurfaces association title field helpers', () => {
       },
     });
 
-    expect(() =>
-      resolveAssociationSafeTitleField(fundField, 'main', (_dataSourceKey, collectionName) =>
-        collections.get(collectionName),
-      ),
-    ).toThrow("flowSurfaces titleField cannot use 'id'");
+    expectThrownTitleFieldError(
+      () =>
+        resolveAssociationSafeTitleField(
+          fundField,
+          'main',
+          (_dataSourceKey, collectionName) => collections.get(collectionName),
+          {
+            action: 'addField',
+            path: '$.titleField',
+            fieldPath: 'fund',
+          },
+        ),
+      {
+        path: '$.titleField',
+        ruleId: 'relation-titleField-unreadable',
+        action: 'addField',
+        fieldPath: 'fund',
+        titleField: 'id',
+        targetCollection: 'funds',
+        invalidReason: 'id',
+      },
+    );
+  });
+
+  it('should reject association relation field labels with direct-write context', () => {
+    const parentField = createField('parentFund', {
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'funds',
+    });
+    const funds = createCollection('funds', [
+      createField('name', { interface: 'input', titleable: true }),
+      parentField,
+    ]);
+    const collections = new Map([['funds', funds]]);
+    const fundField = createField('fund', {
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'funds',
+      uiSchema: {
+        'x-component-props': {
+          fieldNames: {
+            label: 'parentFund',
+          },
+        },
+      },
+    });
+
+    expectThrownTitleFieldError(
+      () =>
+        resolveAssociationSafeTitleField(
+          fundField,
+          'main',
+          (_dataSourceKey, collectionName) => collections.get(collectionName),
+          {
+            action: 'configure',
+            path: '$.changes.titleField',
+            fieldPath: 'fund',
+          },
+        ),
+      {
+        path: '$.changes.titleField',
+        ruleId: 'relation-titleField-unreadable',
+        action: 'configure',
+        fieldPath: 'fund',
+        titleField: 'parentFund',
+        targetCollection: 'funds',
+        invalidReason: 'association',
+      },
+    );
   });
 
   it('should keep collection explicit titleField fallback when relation field label is absent', () => {
@@ -278,6 +380,45 @@ describe('flowSurfaces association title field helpers', () => {
     );
   });
 
+  it('should reject explicit collection titleField id through association default resolution', () => {
+    const brokenRoles = createCollection(
+      'broken_roles',
+      [createField('id', { interface: 'snowflakeId', primaryKey: true }), createField('name', { interface: 'input' })],
+      {
+        titleField: 'id',
+      },
+    );
+    const collections = new Map([['broken_roles', brokenRoles]]);
+    const rolesField = createField('roles', {
+      type: 'belongsToMany',
+      interface: 'm2m',
+      target: 'broken_roles',
+    });
+
+    expectThrownTitleFieldError(
+      () =>
+        resolveAssociationSafeTitleField(
+          rolesField,
+          'main',
+          (_dataSourceKey, collectionName) => collections.get(collectionName),
+          {
+            action: 'addField',
+            path: '$.titleField',
+            fieldPath: 'roles',
+          },
+        ),
+      {
+        path: '$.titleField',
+        ruleId: 'relation-titleField-unreadable',
+        action: 'addField',
+        fieldPath: 'roles',
+        titleField: 'id',
+        targetCollection: 'broken_roles',
+        invalidReason: 'id',
+      },
+    );
+  });
+
   it('should reject relation fieldType id titleField compatibility', () => {
     const roles = createCollection('roles', [createField('name', { interface: 'input', titleable: true })]);
     const users = createCollection('users', [
@@ -293,18 +434,99 @@ describe('flowSurfaces association title field helpers', () => {
     ]);
     const rolesField = users.getField('roles');
 
-    expect(() =>
-      resolveRelationFieldType({
-        fieldType: 'picker',
-        containerUse: 'FormItemModel',
-        field: rolesField,
-        dataSourceKey: 'main',
-        getCollection: (_dataSourceKey, collectionName) => collections.get(collectionName),
-        fields: ['name'],
+    expectThrownTitleFieldError(
+      () =>
+        resolveRelationFieldType({
+          fieldType: 'picker',
+          containerUse: 'FormItemModel',
+          field: rolesField,
+          dataSourceKey: 'main',
+          getCollection: (_dataSourceKey, collectionName) => collections.get(collectionName),
+          fields: ['name'],
+          titleField: 'id',
+          context: 'fields[0]',
+          actionName: 'addField',
+          titleFieldPath: '$.titleField',
+          fieldPath: 'roles',
+        }),
+      {
+        path: '$.titleField',
+        ruleId: 'relation-titleField-unreadable',
+        action: 'addField',
+        fieldPath: 'roles',
         titleField: 'id',
-        context: 'fields[0]',
+        targetCollection: 'roles',
+        invalidReason: 'id',
+      },
+    );
+    expectThrownTitleFieldError(
+      () =>
+        resolveRelationFieldType({
+          fieldType: 'picker',
+          containerUse: 'FormItemModel',
+          field: rolesField,
+          dataSourceKey: 'main',
+          getCollection: (_dataSourceKey, collectionName) => collections.get(collectionName),
+          fields: ['name'],
+          titleField: 'missing',
+          context: 'fields[0]',
+          actionName: 'addField',
+          titleFieldPath: '$.titleField',
+          fieldPath: 'roles',
+        }),
+      {
+        path: '$.titleField',
+        ruleId: 'relation-titleField-unknown',
+        action: 'addField',
+        fieldPath: 'roles',
+        titleField: 'missing',
+        targetCollection: 'roles',
+        invalidReason: 'missing',
+      },
+    );
+
+    const brokenRoles = createCollection(
+      'broken_roles',
+      [createField('id', { interface: 'snowflakeId', primaryKey: true }), createField('name', { interface: 'input' })],
+      {
+        titleField: 'id',
+      },
+    );
+    const usersWithBrokenRoles = createCollection('users_with_broken_roles', [
+      createField('roles', {
+        type: 'belongsToMany',
+        interface: 'm2m',
+        target: 'broken_roles',
       }),
-    ).toThrow("flowSurfaces titleField cannot use 'id'");
+    ]);
+    const brokenCollections = new Map([
+      ['broken_roles', brokenRoles],
+      ['users_with_broken_roles', usersWithBrokenRoles],
+    ]);
+
+    expectThrownTitleFieldError(
+      () =>
+        resolveRelationFieldType({
+          fieldType: 'picker',
+          containerUse: 'FormItemModel',
+          field: usersWithBrokenRoles.getField('roles'),
+          dataSourceKey: 'main',
+          getCollection: (_dataSourceKey, collectionName) => brokenCollections.get(collectionName),
+          context: 'addField',
+          actionName: 'addField',
+          titleFieldPath: '$.fieldType',
+          fieldPath: 'roles',
+        }),
+      {
+        path: '$.fieldType',
+        ruleId: 'relation-titleField-unreadable',
+        action: 'addField',
+        fieldPath: 'roles',
+        titleField: 'id',
+        targetCollection: 'broken_roles',
+        invalidReason: 'id',
+      },
+    );
   });
 
   it('should reject explicit collection titleField id', () => {
@@ -320,6 +542,66 @@ describe('flowSurfaces association title field helpers', () => {
     expect(() => resolveCollectionSafeTitleField(collection)).toThrow("flowSurfaces titleField cannot use 'id'");
   });
 
+  it('should expose structured direct-write titleField errors', () => {
+    const collection = createCollection('employees', [
+      createField('id', { interface: 'snowflakeId', primaryKey: true }),
+      createField('nickname', { interface: 'input' }),
+      createField('manager', { type: 'belongsTo', interface: 'm2o', target: 'employees' }),
+    ]);
+
+    expectThrownTitleFieldError(
+      () =>
+        assertCollectionTitleFieldExists(collection, 'id', {
+          action: 'configure',
+          path: '$.changes.titleField',
+          fieldPath: 'manager',
+        }),
+      {
+        path: '$.changes.titleField',
+        ruleId: 'relation-titleField-unreadable',
+        action: 'configure',
+        fieldPath: 'manager',
+        titleField: 'id',
+        targetCollection: 'employees',
+        invalidReason: 'id',
+      },
+    );
+    expectThrownTitleFieldError(
+      () =>
+        assertCollectionTitleFieldExists(collection, 'missing', {
+          action: 'addField',
+          path: '$.titleField',
+          fieldPath: 'manager',
+        }),
+      {
+        path: '$.titleField',
+        ruleId: 'relation-titleField-unknown',
+        action: 'addField',
+        fieldPath: 'manager',
+        titleField: 'missing',
+        targetCollection: 'employees',
+        invalidReason: 'missing',
+      },
+    );
+    expectThrownTitleFieldError(
+      () =>
+        assertCollectionTitleFieldExists(collection, 'manager', {
+          action: 'configure',
+          path: '$.changes.titleField',
+          fieldPath: 'manager',
+        }),
+      {
+        path: '$.changes.titleField',
+        ruleId: 'relation-titleField-unreadable',
+        action: 'configure',
+        fieldPath: 'manager',
+        titleField: 'manager',
+        targetCollection: 'employees',
+        invalidReason: 'association',
+      },
+    );
+  });
+
   it('should not use id as an automatic titleable fallback', () => {
     const collection = createCollection('id_only_targets', [
       createField('id', { interface: 'snowflakeId', primaryKey: true }),
@@ -327,6 +609,33 @@ describe('flowSurfaces association title field helpers', () => {
     ]);
 
     expect(resolveCollectionSafeTitleField(collection)).toBeNull();
+  });
+
+  it('should not use association fields as automatic titleable fallbacks', () => {
+    const scalarFallbackCollection = createCollection('scalar_fallback_targets', [
+      createField('parent', {
+        type: 'belongsTo',
+        interface: 'm2o',
+        target: 'scalar_fallback_targets',
+        titleable: true,
+      }),
+      createField('name', { interface: 'input', titleable: true }),
+    ]);
+    const associationOnlyCollection = createCollection('association_only_targets', [
+      createField('parent', {
+        type: 'belongsTo',
+        interface: 'm2o',
+        target: 'association_only_targets',
+        titleable: true,
+      }),
+      createField('meta', { interface: 'json' }),
+    ]);
+
+    expect(resolveCollectionSafeTitleField(scalarFallbackCollection)).toMatchObject({
+      fieldName: 'name',
+      source: 'firstTitleable',
+    });
+    expect(resolveCollectionSafeTitleField(associationOnlyCollection)).toBeNull();
   });
 
   it('should treat interface-level titleUsable metadata as a valid first titleable fallback', () => {

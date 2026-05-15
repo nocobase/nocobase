@@ -22,6 +22,15 @@ const FLOW_TEMPLATE_ROOT_USE_FAMILIES: Record<string, string> = {
   ProcessFormModel: 'approvalForm',
 };
 
+const FLOW_TEMPLATE_POPUP_USE_FAMILIES: Record<string, string> = {
+  DetailsBlockModel: 'popupDetails',
+  EditFormModel: 'popupForm',
+  CreateFormModel: 'popupForm',
+  TableBlockModel: 'popupTable',
+  ListBlockModel: 'popupTable',
+  GridCardBlockModel: 'popupTable',
+};
+
 export type FlowSurfaceTemplateCompatibilityRow = {
   uid?: string;
   useModel?: string;
@@ -54,6 +63,20 @@ export function areFlowTemplateRootUsesCompatible(hostUse: any, templateUse: any
     return true;
   }
   return getFlowTemplateRootUseFamily(normalizedHostUse) === getFlowTemplateRootUseFamily(normalizedTemplateUse);
+}
+
+export function getFlowTemplatePopupUseFamily(use: any) {
+  const normalizedUse = String(use || '').trim();
+  return FLOW_TEMPLATE_POPUP_USE_FAMILIES[normalizedUse] || normalizedUse;
+}
+
+export function areFlowTemplatePopupUsesCompatible(hostUse: any, templateUse: any) {
+  const normalizedHostUse = String(hostUse || '').trim();
+  const normalizedTemplateUse = String(templateUse || '').trim();
+  if (!normalizedHostUse || !normalizedTemplateUse) {
+    return true;
+  }
+  return getFlowTemplatePopupUseFamily(normalizedHostUse) === getFlowTemplatePopupUseFamily(normalizedTemplateUse);
 }
 
 export function buildTemplateMissingResourceReason() {

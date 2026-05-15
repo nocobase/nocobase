@@ -91,7 +91,6 @@ const MAIN_BLOCK_UNSUPPORTED_SECTIONS: Record<string, string[]> = {
 
 const FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
-const NON_COUNTED_FIELD_TYPES = new Set(['divider', 'jsitem', 'jscolumn']);
 const SORTABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'tree', 'kanban', 'gridCard', 'map']);
 const CHART_BLOCK_TYPES = new Set(['chart']);
 const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
@@ -1168,17 +1167,6 @@ function collectDefaultCollectionFieldGroupSemanticErrors(
     const basePath = `$.defaults.collections.${normalizedCollectionName}.fieldGroups`;
     collectDefaultFieldGroupUnknownFieldErrors(fieldGroups, basePath, collection, errors);
     collectDefaultFieldGroupRelationTitleFieldErrors(fieldGroups, basePath, collection, 'main', context, errors);
-    if (countDefaultFieldGroupEffectiveFields(fieldGroups) <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
-      pushAuthoringError(errors, {
-        path: basePath,
-        ruleId: 'default-field-groups-only-for-large-generated-popups',
-        message: `flowSurfaces authoring ${basePath} should be omitted for collections with ${LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD} or fewer effective fields`,
-        details: {
-          collection: normalizedCollectionName,
-          threshold: LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD,
-        },
-      });
-    }
   });
 }
 
@@ -1343,31 +1331,6 @@ function resolveDefaultFieldGroupField(collection: any, fieldPath: string) {
   return getCollectionFields(collection).find((field) => getFieldName(field) === fieldPath) || null;
 }
 
-function countDefaultFieldGroupEffectiveFields(fieldGroups: any[]) {
-  let count = 0;
-  forEachDefaultFieldGroupField(
-    fieldGroups,
-    (field, fieldPath) => {
-      if (!fieldPath) {
-        return;
-      }
-      if (
-        _.isPlainObject(field) &&
-        NON_COUNTED_FIELD_TYPES.has(
-          String(field.type || '')
-            .trim()
-            .toLowerCase(),
-        )
-      ) {
-        return;
-      }
-      count += 1;
-    },
-    '$.defaults.fieldGroups',
-  );
-  return count;
-}
-
 function collectUnsupportedKeysErrors(
   value: Record<string, any>,
   path: string,
@@ -1429,6 +1392,9 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
       continue;
     }
     const businessFieldNames = getGeneratedPopupBusinessFieldNames(collection);
+    if (businessFieldNames.length <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
+      continue;
+    }
     collectDefaultFieldGroupsCoverageErrors(
       getDefaultCollectionFieldGroups(values?.defaults, requirement.collection),
       `$.defaults.collections.${requirement.collection}.fieldGroups`,
@@ -1436,9 +1402,6 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
       businessFieldNames,
       errors,
     );
-    if (businessFieldNames.length <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
-      continue;
-    }
     if (
       hasUsableDefaultCollectionFieldGroups(
         values?.defaults,
@@ -2234,14 +2197,17 @@ function getFieldPopupValidationContext(
 ): FlowSurfaceAuthoringValidationContext {
   const fallbackContext = getBlockDescendantValidationContext(block, context);
   const fieldPath = getFieldPathInput(fieldSpec);
-  if (!fieldPath || fieldPath.includes('.') || !context.getCollection) {
+  if (!fieldPath || !context.getCollection) {
     return fallbackContext;
   }
   const collection = getBlockCollection(block, context);
   if (!collection) {
     return fallbackContext;
   }
-  const associationField = resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  const associationFieldPath = fieldPath.includes('.')
+    ? fieldPath.split('.').filter(Boolean).slice(0, -1).join('.')
+    : fieldPath;
+  const associationField = resolveFieldFromCollection(collection, normalizeFieldPath(associationFieldPath));
   if (!associationField || !isAssociationField(associationField)) {
     return fallbackContext;
   }
@@ -2309,7 +2275,7 @@ function collectBlockErrors(
   collectUnsupportedMainBlockSectionErrors(block, blockType, path, errors);
   collectUnsupportedFieldAuthoringHostErrors(block, blockType, path, errors);
   collectSortingAliasErrors(block.settings, `${path}.settings`, blockType, errors);
-  collectFieldGroupsShapeErrors(block.fieldGroups, path, errors, block, context);
+  collectFieldGroupsShapeErrors(block.fieldGroups, path, errors, block, context, localKeys);
   collectFieldsLayoutErrors(block, path, errors);
   collectTemplateBackedPublicDataSurfaceDefaultOverrideErrors(block, blockType, path, errors);
   collectDefaultFilterErrors(block.defaultFilter, `${path}.defaultFilter`, errors, block, context);
@@ -2323,7 +2289,6 @@ function collectBlockErrors(
   );
   collectSemanticBindingErrors(block, blockType, path, errors, context);
   collectChartDisplayTitleErrors(block, blockType, path, errors);
-  collectChartBuilderRelationFieldErrors(block, blockType, path, errors);
   collectTreeConnectFieldsErrors(block.settings?.connectFields, `${path}.settings.connectFields`, errors);
   collectGridCardSettingsErrors(block, blockType, path, errors);
   const descendantContext = getBlockDescendantValidationContext(block, context);
@@ -2390,6 +2355,7 @@ function collectFieldGroupsShapeErrors(
   errors: AuthoringErrorInput[],
   block?: any,
   context: FlowSurfaceAuthoringValidationContext = {},
+  localKeys: Set<string> = new Set<string>(),
 ) {
   if (typeof fieldGroups === 'undefined') {
     return;
@@ -2427,10 +2393,25 @@ function collectFieldGroupsShapeErrors(
         message: `flowSurfaces authoring ${groupPath}.fields must be a non-empty array`,
       });
     } else {
-      group.fields.forEach((fieldPath: any, fieldIndex: number) => {
+      group.fields.forEach((field: any, fieldIndex: number) => {
         const itemPath = `${groupPath}.fields[${fieldIndex}]`;
-        collectInternalFieldKeysErrors(fieldPath, itemPath, errors);
-        collectUnknownFieldPathError(fieldPath, itemPath, block, context, errors);
+        collectInternalFieldKeysErrors(field, itemPath, errors);
+        const fieldPath = getFieldPathInput(field);
+        if (fieldPath) {
+          collectUnknownFieldPathError(fieldPath, itemPath, block, context, errors);
+        }
+        if (!_.isPlainObject(field)) {
+          return;
+        }
+        collectRelationTitleFieldErrors(field, itemPath, block, context, errors);
+        collectRelationPopupResourceErrors(field, itemPath, block, context, errors);
+        collectPopupErrors(
+          field.popup,
+          `${itemPath}.popup`,
+          errors,
+          localKeys,
+          getFieldPopupValidationContext(field, block, context),
+        );
       });
     }
   });
@@ -2452,6 +2433,8 @@ async function collectConfigureErrors(
     collection: context.hostCollectionName,
     dataSourceKey: context.hostDataSourceKey,
   };
+  const localKeys = new Set<string>();
+  collectLocalKeys(changes, localKeys);
   if (
     Object.prototype.hasOwnProperty.call(changes, 'fieldsLayout') &&
     Object.prototype.hasOwnProperty.call(changes, 'fieldGroups')
@@ -2463,12 +2446,11 @@ async function collectConfigureErrors(
     });
   }
   collectUnsupportedFieldAuthoringHostErrors(changesBlock, hostBlockType, '$.changes', errors);
-  collectFieldGroupsShapeErrors(changes.fieldGroups, '$.changes', errors, changesBlock, context);
+  collectFieldGroupsShapeErrors(changes.fieldGroups, '$.changes', errors, changesBlock, context, localKeys);
   collectSortingAliasErrors(changes, '$.changes', hostBlockType, errors);
   collectDefaultFilterErrors(changes.defaultFilter, '$.changes.defaultFilter', errors, changesBlock, context);
   collectSemanticBindingErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectChartDisplayTitleErrors(changes, hostBlockType, '$.changes', errors);
-  collectChartBuilderRelationFieldErrors(changes, hostBlockType, '$.changes', errors);
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
   collectFieldListInternalKeyErrors(changes.fields, '$.changes.fields', errors);
@@ -3276,48 +3258,6 @@ function collectSemanticBindingErrors(
   });
 }
 
-function collectChartBuilderRelationFieldErrors(
-  block: any,
-  blockType: string,
-  blockPath: string,
-  errors: AuthoringErrorInput[],
-) {
-  const settingsPath = _.isPlainObject(block?.settings) ? `${blockPath}.settings` : blockPath;
-  const settings = _.isPlainObject(block?.settings) ? block.settings : block;
-  const query = blockType === 'chart' && _.isPlainObject(settings?.query) ? settings.query : null;
-  if (!query) {
-    return;
-  }
-  const mode = String(query.mode || 'builder')
-    .trim()
-    .toLowerCase();
-  if (mode && mode !== 'builder') {
-    return;
-  }
-
-  ['measures', 'dimensions', 'orders', 'sorting'].forEach((containerKey) => {
-    const container = query[containerKey];
-    if (!Array.isArray(container)) {
-      return;
-    }
-    container.forEach((item: any, index: number) => {
-      const field = _.isPlainObject(item) ? item.field : item;
-      if (!isChartBuilderRelationFieldPath(field)) {
-        return;
-      }
-      pushAuthoringError(errors, {
-        path: `${settingsPath}.query.${containerKey}[${index}].field`,
-        ruleId: 'chart-builder-relation-field-runtime-unsupported',
-        message:
-          'Builder chart query relation fields are not safe in the current charts:queryData runtime; use a SQL chart with an explicit join and stable aliases, or group by a scalar foreign-key field',
-        details: {
-          field,
-        },
-      });
-    });
-  });
-}
-
 function collectChartDisplayTitleErrors(
   block: any,
   blockType: string | undefined,
@@ -3338,13 +3278,6 @@ function collectChartDisplayTitleErrors(
     message:
       'Chart block settings do not support displayTitle in the current flowSurfaces runtime; keep settings.title and omit displayTitle.',
   });
-}
-
-function isChartBuilderRelationFieldPath(field: any) {
-  if (Array.isArray(field)) {
-    return field.filter((item) => typeof item === 'string' && item.trim()).length > 1;
-  }
-  return typeof field === 'string' && field.includes('.');
 }
 
 function visitFilterItems(
@@ -4974,12 +4907,28 @@ function collectLocalKeys(value: any, keys: Set<string>, scopePrefix = '') {
   const key = String(value.key || '').trim();
   addKey(key);
   const scopedValueKey = scopePrefix && key && !key.startsWith(`${scopePrefix}.`) ? `${scopePrefix}.${key}` : key;
-  _.castArray(value.fields || []).forEach((field) => {
+  const collectFieldLocalKeys = (field: any) => {
+    const fieldKey = _.isPlainObject(field)
+      ? String(field.key || field.name || field.path || field.fieldPath || field.field || '').trim()
+      : getFieldPathInput(field);
+    addKey(fieldKey);
+    const fieldScopePrefix = scopedValueKey || scopePrefix;
+    const scopedFieldKey =
+      fieldKey && fieldScopePrefix && !fieldKey.startsWith(`${fieldScopePrefix}.`)
+        ? `${fieldScopePrefix}.${fieldKey}`
+        : fieldKey;
+    addKey(scopedFieldKey);
     if (_.isPlainObject(field)) {
-      const fieldKey = String(field.key || field.name || field.path || '').trim();
-      addKey(fieldKey);
-      collectLocalKeys(field.popup, keys, fieldKey && scopePrefix ? `${scopePrefix}.${fieldKey}.popup` : '');
+      collectLocalKeys(field.popup, keys, scopedFieldKey ? `${scopedFieldKey}.popup` : '');
     }
+  };
+  _.castArray(value.fields || []).forEach((field) => {
+    collectFieldLocalKeys(field);
+  });
+  _.castArray(value.fieldGroups || []).forEach((group) => {
+    _.castArray(group?.fields || []).forEach((field) => {
+      collectFieldLocalKeys(field);
+    });
   });
   _.castArray(value.actions || []).forEach((action) => {
     if (_.isPlainObject(action)) {

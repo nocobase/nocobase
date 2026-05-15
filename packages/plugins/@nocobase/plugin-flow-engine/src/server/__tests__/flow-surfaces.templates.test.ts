@@ -4088,6 +4088,14 @@ describe('flowSurfaces templates', () => {
         dataSourceKey: 'main',
         collectionName: sourceCollection,
       },
+      defaultFilter: {
+        logic: '$and',
+        items: [
+          { path: 'nickname', operator: '$notEmpty' },
+          { path: 'email', operator: '$notEmpty' },
+          { path: 'status', operator: '$notEmpty' },
+        ],
+      },
       defaults: {
         collections: {
           [sourceCollection]: {
