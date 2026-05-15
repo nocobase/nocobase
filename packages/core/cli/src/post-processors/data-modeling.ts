@@ -26,6 +26,7 @@ function pickCollectionSummary(item: Record<string, any>) {
     key: item?.key,
     name: item?.name,
     title: item?.title,
+    template: item?.template,
     description: item?.description,
   };
 }
@@ -63,15 +64,34 @@ function simplifyFieldsListResult(result: any) {
   };
 }
 
+function unwrapActionData(result: any) {
+  return result?.data?.data !== undefined || result?.data?.verify !== undefined ? result.data : result;
+}
+
+function pickAppliedCollectionSummary(item: Record<string, any>) {
+  return {
+    ...pickCollectionSummary(item),
+    filterTargetKey: item?.filterTargetKey,
+    titleField: item?.titleField,
+    fields: Array.isArray(item?.fields) ? item.fields.map((field: Record<string, any>) => pickFieldSummary(field)) : [],
+  };
+}
+
 export function registerDataModelingPostProcessors() {
   postProcessorRegistry.register('collections', 'list', simplifyCollectionsListResult);
-  postProcessorRegistry.register('collections', 'apply', (result: any) => ({
-    data: pickCollectionSummary(result?.data || {}),
-    verify: result?.verify,
-  }));
+  postProcessorRegistry.register('collections', 'apply', (result: any) => {
+    const payload = unwrapActionData(result);
+    return {
+      data: pickAppliedCollectionSummary(payload?.data || {}),
+      verify: payload?.verify,
+    };
+  });
   postProcessorRegistry.register('collections', 'verify', (result: any) => result);
-  postProcessorRegistry.register('fields', 'apply', (result: any) => ({
-    data: pickFieldSummary(result?.data || {}),
-  }));
+  postProcessorRegistry.register('fields', 'apply', (result: any) => {
+    const payload = unwrapActionData(result);
+    return {
+      data: pickFieldSummary(payload?.data || {}),
+    };
+  });
   postProcessorRegistry.register('collections.fields', 'list', simplifyFieldsListResult);
 }
