@@ -903,7 +903,6 @@ type FlowSurfacePopupTemplateTreeInfo = {
   defaultType: FlowSurfacePopupTemplateSemanticType;
   primaryBlockUse?: string;
   blockUseList: readonly string[];
-  blockUses: ReadonlySet<string>;
   semanticSignature?: string;
 };
 
@@ -8097,6 +8096,15 @@ export class FlowSurfacesService {
         )}' has no interface and cannot be added via addField`,
       );
     }
+    const defaultFieldGroupsTitleField = hasOwnDefined(values, 'titleField')
+      ? undefined
+      : this.getDefaultFieldGroupRelationTitleFieldOverride(
+          this.getApplyBlueprintDefaultFieldGroupsFromMetadata(
+            readFlowSurfaceApplyBlueprintPopupDefaultsMetadata(values),
+            resolvedField.collectionName,
+          ),
+          resolvedField.fieldPath,
+        );
     const fieldMenuCandidate = isFilterFormItem
       ? null
       : this.findFieldMenuCandidate({
@@ -8128,7 +8136,11 @@ export class FlowSurfacesService {
       collectionName: resolvedField.collectionName,
       fieldPath: resolvedField.fieldPath,
       associationPathName: resolvedField.associationPathName,
-      ...(hasOwnDefined(values, 'titleField') ? { explicitTitleField: values.titleField } : {}),
+      ...(hasOwnDefined(values, 'titleField')
+        ? { explicitTitleField: values.titleField }
+        : defaultFieldGroupsTitleField
+          ? { explicitTitleField: defaultFieldGroupsTitleField }
+          : {}),
       actionName: 'addField',
       titleFieldPath: '$.titleField',
       bindingChange: true,
@@ -9838,46 +9850,25 @@ export class FlowSurfacesService {
     return String(targetContext?.node?.use || '').trim() !== 'AddChildActionModel';
   }
 
-  private hasNestedInlinePopupContent(value: any): boolean {
+  private hasNestedInlinePopupContent(value: any, options: { requireMultiBlock?: boolean } = {}): boolean {
     if (Array.isArray(value)) {
-      return value.some((item) => this.hasNestedInlinePopupContent(item));
+      return value.some((item) => this.hasNestedInlinePopupContent(item, options));
     }
     if (!_.isPlainObject(value)) {
       return false;
     }
     const nestedPopup = (value as any).popup;
     if (_.isPlainObject(nestedPopup) && hasFlowSurfaceInlinePopupBlocks(nestedPopup)) {
+      if (options.requireMultiBlock) {
+        if (_.castArray(nestedPopup.blocks || []).length > 1) {
+          return true;
+        }
+        return this.hasNestedInlinePopupContent(nestedPopup.blocks, options);
+      }
       return true;
     }
-    return Object.entries(value).some(([key, item]) => key !== 'popup' && this.hasNestedInlinePopupContent(item));
-  }
-
-  private hasNestedMultiBlockInlinePopupContent(value: any): boolean {
-    if (Array.isArray(value)) {
-      return value.some((item) => this.hasNestedMultiBlockInlinePopupContent(item));
-    }
-    if (!_.isPlainObject(value)) {
-      return false;
-    }
-    const nestedPopup = (value as any).popup;
-    if (_.isPlainObject(nestedPopup) && hasFlowSurfaceInlinePopupBlocks(nestedPopup)) {
-      if (_.castArray(nestedPopup.blocks || []).length > 1) {
-        return true;
-      }
-      return this.hasNestedMultiBlockInlinePopupContent(nestedPopup.blocks);
-    }
     return Object.entries(value).some(
-      ([key, item]) => key !== 'popup' && this.hasNestedMultiBlockInlinePopupContent(item),
-    );
-  }
-
-  private shouldRequirePopupTryTemplateSaveAsTemplateMatch(
-    targetContext: FlowSurfaceTemplateListTargetContext | undefined,
-    popup: Record<string, any> | undefined,
-  ) {
-    return (
-      this.shouldRequirePopupTryTemplateExplicitNameMatch(targetContext, popup) ||
-      (this.getExpectedBlueprintAssociationDefaultPopupTemplateName(targetContext, popup) ? true : false)
+      ([key, item]) => key !== 'popup' && this.hasNestedInlinePopupContent(item, options),
     );
   }
 
@@ -10092,7 +10083,6 @@ export class FlowSurfacesService {
       defaultType: this.inferPopupDefaultTypeFromTemplateTree(node),
       primaryBlockUse: blockUseList[0],
       blockUseList,
-      blockUses: new Set(blockUseList),
       semanticSignature: this.buildPopupTemplateTreeSemanticSignature(node),
     };
   }
@@ -10304,7 +10294,10 @@ export class FlowSurfacesService {
     if (!normalizedHostUid || !_.isPlainObject(popup) || !popup.tryTemplate || !_.isUndefined(popup.template)) {
       return null;
     }
-    if (hasFlowSurfaceInlinePopupBlocks(popup) && this.hasNestedMultiBlockInlinePopupContent(popup.blocks)) {
+    if (
+      hasFlowSurfaceInlinePopupBlocks(popup) &&
+      this.hasNestedInlinePopupContent(popup.blocks, { requireMultiBlock: true })
+    ) {
       return null;
     }
 
@@ -11313,10 +11306,17 @@ export class FlowSurfacesService {
     popup: Record<string, any> | undefined,
     collectionName: string | undefined,
   ) {
-    return getFlowSurfaceApplyBlueprintDefaultCollection(
+    return this.getApplyBlueprintDefaultFieldGroupsFromMetadata(
       this.getApplyBlueprintPopupDefaultsMetadata(popup),
       collectionName,
-    )?.fieldGroups;
+    );
+  }
+
+  private getApplyBlueprintDefaultFieldGroupsFromMetadata(
+    metadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+    collectionName: string | undefined,
+  ) {
+    return getFlowSurfaceApplyBlueprintDefaultCollection(metadata, collectionName)?.fieldGroups;
   }
 
   private getApplyBlueprintDefaultFormBehavior(
@@ -11404,12 +11404,14 @@ export class FlowSurfacesService {
     popup?: Record<string, any>;
     collectionName?: string;
     actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType;
+    defaultFieldGroups?: any;
     options?: {
       excludeAuditTimestampFields?: boolean;
       excludeAssociationFields?: boolean;
     };
   }): { fieldPaths?: any[]; fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] } {
-    const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, input.collectionName);
+    const defaultFieldGroups =
+      input.defaultFieldGroups ?? this.getApplyBlueprintDefaultFieldGroups(input.popup, input.collectionName);
     const formBehavior = this.getApplyBlueprintDefaultFormBehavior(input.popup, input.collectionName, input.actionType);
     if (defaultFieldGroups) {
       return this.applyDefaultFormBehaviorToFields(
@@ -11429,6 +11431,41 @@ export class FlowSurfacesService {
       },
       formBehavior,
     );
+  }
+
+  private getDefaultFieldGroupRelationTitleFieldOverride(fieldGroups: any, fieldPath: string) {
+    for (const group of _.castArray(fieldGroups || [])) {
+      for (const field of _.castArray(group?.fields || [])) {
+        if (!_.isPlainObject(field)) {
+          continue;
+        }
+        const currentFieldPath = String(field.field || field.fieldPath || '').trim();
+        const titleField = String(field.titleField || '').trim();
+        if (currentFieldPath === fieldPath && titleField) {
+          return titleField;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private hasUsableDefaultFieldGroupRelationTitleFieldOverride(input: {
+    fieldGroups?: any;
+    fieldPath: string;
+    field: any;
+    dataSourceKey: string;
+  }) {
+    const titleField = this.getDefaultFieldGroupRelationTitleFieldOverride(input.fieldGroups, input.fieldPath);
+    if (!titleField || titleField === 'id') {
+      return false;
+    }
+    const targetCollection = resolveAssociationTitleFieldTargetCollection(
+      input.field,
+      input.dataSourceKey,
+      (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+    );
+    const targetField = targetCollection ? resolveFieldFromCollection(targetCollection, titleField) : undefined;
+    return !!targetField && !isAssociationField(targetField);
   }
 
   private resolveApplyBlueprintDefaultPopupMetadata(input: {
@@ -11518,6 +11555,7 @@ export class FlowSurfacesService {
     }
     const mode = input.defaultType === 'edit' ? 'form' : 'details';
     const ownerUse = input.defaultType === 'edit' ? 'EditFormModel' : 'DetailsBlockModel';
+    const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, collectionName);
     const directCandidates = this.buildFieldMenuDirectCandidates({
       mode,
       ownerUse,
@@ -11526,12 +11564,14 @@ export class FlowSurfacesService {
         collectionName,
       },
       enabledPackages: input.enabledPackages,
+      defaultFieldGroups,
     });
     return this.pickDefaultPopupFields({
       candidates: directCandidates,
       popup: input.popup,
       collectionName,
       actionType: input.defaultType === 'edit' ? 'edit' : undefined,
+      defaultFieldGroups,
       options: {
         excludeAuditTimestampFields: input.defaultType === 'edit',
         excludeAssociationFields: true,
@@ -11950,6 +11990,7 @@ export class FlowSurfacesService {
       return [];
     }
     const mode = actionConfig.blockUse === 'DetailsBlockModel' ? 'details' : 'form';
+    const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, collectionName);
     const directCandidates = this.buildFieldMenuDirectCandidates({
       mode,
       ownerUse: actionConfig.blockUse,
@@ -11958,12 +11999,14 @@ export class FlowSurfacesService {
         collectionName,
       },
       enabledPackages: input.enabledPackages,
+      defaultFieldGroups,
     });
     return this.pickDefaultPopupFields({
       candidates: directCandidates,
       popup: input.popup,
       collectionName,
       actionType: actionConfig.type,
+      defaultFieldGroups,
       options: {
         excludeAuditTimestampFields: mode === 'form',
       },
@@ -19027,6 +19070,7 @@ export class FlowSurfacesService {
     ownerUse: string;
     resourceInit: Record<string, any>;
     enabledPackages?: ReadonlySet<string>;
+    defaultFieldGroups?: any;
   }) {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     return getCollectionFields(collection).flatMap((field) => {
@@ -19049,9 +19093,17 @@ export class FlowSurfacesService {
 
       if (isAssociationField(field)) {
         if (!registeredBinding?.modelClassName) {
-          const safeTitleField = this.tryGetAssociationDefaultTitleFieldName(field, input.resourceInit.dataSourceKey);
-          if (!safeTitleField) {
-            return [];
+          const hasDefaultTitleFieldOverride = this.hasUsableDefaultFieldGroupRelationTitleFieldOverride({
+            fieldGroups: input.defaultFieldGroups,
+            fieldPath: fieldName,
+            field,
+            dataSourceKey: input.resourceInit.dataSourceKey,
+          });
+          if (!hasDefaultTitleFieldOverride) {
+            const safeTitleField = this.tryGetAssociationDefaultTitleFieldName(field, input.resourceInit.dataSourceKey);
+            if (!safeTitleField) {
+              return [];
+            }
           }
         }
       } else if (!registeredBinding?.modelClassName) {

@@ -36,10 +36,6 @@ export type FlowSurfaceTitleFieldErrorOptions = {
   details?: Record<string, any>;
 };
 
-type ResolveCollectionSafeTitleFieldOptions = FlowSurfaceTitleFieldErrorOptions & {
-  fallbackOnUnsafeExplicitId?: boolean;
-};
-
 const FALLBACK_TITLE_USABLE_INTERFACES = new Set([
   'attachmentURL',
   'date',
@@ -263,7 +259,7 @@ export function assertCollectionTitleFieldExists(
 
 export function resolveCollectionSafeTitleField(
   collection: any,
-  options: ResolveCollectionSafeTitleFieldOptions = {},
+  options: FlowSurfaceTitleFieldErrorOptions = {},
 ): FlowSurfaceResolvedAssociationTitleField | null {
   if (!collection) {
     return null;
@@ -271,15 +267,13 @@ export function resolveCollectionSafeTitleField(
 
   const explicitTitleField = getExplicitCollectionTitleFieldName(collection);
   if (explicitTitleField) {
-    if (!options.fallbackOnUnsafeExplicitId || !isIdTitleFieldName(explicitTitleField)) {
-      const field = assertCollectionTitleFieldExists(collection, explicitTitleField, options);
-      return {
-        field,
-        fieldName: getFieldName(field) || explicitTitleField,
-        source: 'explicit',
-        targetCollection: collection,
-      };
-    }
+    const field = assertCollectionTitleFieldExists(collection, explicitTitleField, options);
+    return {
+      field,
+      fieldName: getFieldName(field) || explicitTitleField,
+      source: 'explicit',
+      targetCollection: collection,
+    };
   }
 
   const isSafeTitleableField = (field: any) =>

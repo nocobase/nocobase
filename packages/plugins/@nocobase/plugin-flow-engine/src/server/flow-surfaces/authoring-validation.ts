@@ -12,7 +12,7 @@ import { operators as databaseOperators } from '@nocobase/database';
 import { Op } from 'sequelize';
 import * as antDesignIconAsn from '@ant-design/icons-svg';
 import type { FlowSurfaceErrorItemInput } from './errors';
-import { throwAggregateBadRequest } from './errors';
+import { FlowSurfaceBadRequestError, throwAggregateBadRequest } from './errors';
 import {
   getCollectionFields,
   getCollectionName,
@@ -1392,14 +1392,20 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
       continue;
     }
     const businessFieldNames = getGeneratedPopupBusinessFieldNames(collection);
-    if (businessFieldNames.length <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
+    const effectiveFieldNames = getGeneratedPopupEffectiveFieldNames({
+      collection,
+      dataSourceKey: requirement.dataSourceKey,
+      actionTypes: requirement.actionTypes,
+      context,
+    });
+    if (effectiveFieldNames.length <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
       continue;
     }
     collectDefaultFieldGroupsCoverageErrors(
       getDefaultCollectionFieldGroups(values?.defaults, requirement.collection),
       `$.defaults.collections.${requirement.collection}.fieldGroups`,
       collection,
-      businessFieldNames,
+      effectiveFieldNames,
       errors,
     );
     if (
@@ -1421,14 +1427,15 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
     pushAuthoringError(errors, {
       path,
       ruleId: 'missing-default-field-groups',
-      message: `flowSurfaces authoring ${path} is required because collection '${requirement.collection}' has ${businessFieldNames.length} business fields and generated popups require collection-level fieldGroups`,
+      message: `flowSurfaces authoring ${path} is required because collection '${requirement.collection}' has ${effectiveFieldNames.length} generated popup fields and generated popups require collection-level fieldGroups`,
       details: {
         collection: requirement.collection,
         dataSourceKey: requirement.dataSourceKey,
         businessFieldCount: businessFieldNames.length,
+        effectiveFieldCount: effectiveFieldNames.length,
         threshold: LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD,
         actionTypes: requirement.actionTypes,
-        requiredFieldNames: businessFieldNames,
+        requiredFieldNames: effectiveFieldNames,
         triggerPaths: requirement.triggerPaths,
       },
     });
@@ -1465,10 +1472,12 @@ function expandGeneratedViewPopupOneHopRequirements(
     if (!collection) {
       continue;
     }
+    const defaultFieldGroups = getDefaultCollectionFieldGroups(defaults, requirement.collection);
     const runtimeCandidates = getGeneratedPopupRuntimeFieldCandidates({
       collection,
       dataSourceKey: requirement.dataSourceKey,
       actionType: 'view',
+      fieldGroups: Array.isArray(defaultFieldGroups) ? defaultFieldGroups : undefined,
       context,
     });
     const selectedFieldPaths = getGeneratedViewPopupSelectedFieldPaths(
@@ -2082,10 +2091,37 @@ function getGeneratedPopupBusinessFieldNames(collection: any) {
   });
 }
 
+function getGeneratedPopupEffectiveFieldNames(input: {
+  collection: any;
+  dataSourceKey: string;
+  actionTypes: GeneratedPopupDefaultActionType[];
+  context: FlowSurfaceAuthoringValidationContext;
+}) {
+  const requiredActionTypes: GeneratedPopupDefaultActionType[] = input.actionTypes.length
+    ? input.actionTypes
+    : ['view'];
+  const fieldNames = new Set<string>();
+  requiredActionTypes.forEach((actionType) => {
+    pickFlowSurfaceDefaultActionPopupFieldPaths(
+      getGeneratedPopupRuntimeFieldCandidates({
+        collection: input.collection,
+        dataSourceKey: input.dataSourceKey,
+        actionType,
+        context: input.context,
+      }),
+      {
+        excludeAuditTimestampFields: actionType !== 'view',
+      },
+    ).forEach((fieldName) => fieldNames.add(fieldName));
+  });
+  return Array.from(fieldNames);
+}
+
 function getGeneratedPopupRuntimeFieldCandidates(input: {
   collection: any;
   dataSourceKey: string;
   actionType: GeneratedPopupDefaultActionType;
+  fieldGroups?: any[];
   context: FlowSurfaceAuthoringValidationContext;
 }) {
   const candidateContext = DEFAULT_ACTION_POPUP_FIELD_CONTEXT_BY_TYPE[input.actionType];
@@ -2107,11 +2143,20 @@ function getGeneratedPopupRuntimeFieldCandidates(input: {
 
     if (isAssociationField(field)) {
       if (!registeredBinding?.modelClassName) {
-        const safeTitleField = resolveAssociationSafeTitleField(
+        const hasDefaultTitleFieldOverride = hasUsableDefaultFieldGroupRelationTitleFieldOverride({
+          fieldGroups: input.fieldGroups,
+          fieldPath: fieldName,
           field,
-          input.dataSourceKey,
-          (dataSourceKey, collectionName) => input.context.getCollection?.(dataSourceKey, collectionName),
-        );
+          dataSourceKey: input.dataSourceKey,
+          context: input.context,
+        });
+        const safeTitleField = hasDefaultTitleFieldOverride
+          ? { fieldName: fieldName }
+          : tryResolveAssociationSafeTitleField(
+              field,
+              input.dataSourceKey,
+              (dataSourceKey, collectionName) => input.context.getCollection?.(dataSourceKey, collectionName),
+            );
         if (!safeTitleField?.fieldName) {
           return [];
         }
@@ -2135,6 +2180,59 @@ function getGeneratedPopupRuntimeFieldCandidates(input: {
   });
 }
 
+function tryResolveAssociationSafeTitleField(
+  field: any,
+  dataSourceKey: string,
+  getCollection: (dataSourceKey: string, collectionName: string) => any,
+) {
+  try {
+    return resolveAssociationSafeTitleField(field, dataSourceKey, getCollection);
+  } catch (error) {
+    if (error instanceof FlowSurfaceBadRequestError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function getDefaultFieldGroupRelationTitleFieldOverride(fieldGroups: any[] | undefined, fieldPath: string) {
+  let result: string | undefined;
+  forEachDefaultFieldGroupField(
+    _.castArray(fieldGroups || []),
+    (field, currentFieldPath) => {
+      if (result || currentFieldPath !== fieldPath || !_.isPlainObject(field)) {
+        return;
+      }
+      const titleField = String(field.titleField || '').trim();
+      if (titleField) {
+        result = titleField;
+      }
+    },
+    '',
+  );
+  return result;
+}
+
+function hasUsableDefaultFieldGroupRelationTitleFieldOverride(input: {
+  fieldGroups?: any[];
+  fieldPath: string;
+  field: any;
+  dataSourceKey: string;
+  context: FlowSurfaceAuthoringValidationContext;
+}) {
+  const titleField = getDefaultFieldGroupRelationTitleFieldOverride(input.fieldGroups, input.fieldPath);
+  if (!titleField || titleField === 'id' || !input.context.getCollection) {
+    return false;
+  }
+  const targetCollection = resolveFieldTargetCollection(
+    input.field,
+    input.dataSourceKey,
+    (dataSourceKey, collectionName) => input.context.getCollection?.(dataSourceKey, collectionName),
+  );
+  const targetField = targetCollection ? resolveFieldFromCollection(targetCollection, titleField) : undefined;
+  return !!targetField && !isAssociationField(targetField);
+}
+
 function hasUsableDefaultCollectionFieldGroups(
   defaults: any,
   collectionName: string,
@@ -2154,6 +2252,7 @@ function hasUsableDefaultCollectionFieldGroups(
         collection,
         dataSourceKey,
         actionType,
+        fieldGroups,
         context,
       }),
       fieldGroups,
