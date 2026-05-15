@@ -55,6 +55,56 @@ export default {
         },
       },
     },
+    '/dataSourcesCollections/{associatedIndex}/fields:apply': {
+      post: {
+        tags: ['dataSourcesCollections.fields'],
+        summary: 'Create or update an external data source field',
+        description: [
+          'Upsert one external data source field from a compact request body.',
+          '',
+          'Use this endpoint for external data source field metadata, including relation fields.',
+          'The associatedIndex path parameter is `<dataSourceKey>.<collectionName>`.',
+          '',
+          'Relation fields may use compact interfaces such as `m2o`, `o2m`, `oho`, and `m2m`.',
+          'The server fills readable relation key defaults when explicit keys are omitted.',
+        ].join('\n'),
+        parameters: [
+          {
+            name: 'associatedIndex',
+            in: 'path',
+            required: true,
+            description: 'External data source collection locator, for example `external.orders`.',
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/DataSourceFieldApplyInput' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      $ref: '#/components/schemas/DataSourceFieldApplyResult',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -113,6 +163,78 @@ export default {
             additionalProperties: true,
           },
           unavailableActions: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+        additionalProperties: true,
+      },
+      DataSourceFieldApplyInput: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          dataSourceKey: {
+            type: 'string',
+            description: 'Optional when the path associatedIndex supplies the data source key.',
+          },
+          collectionName: {
+            type: 'string',
+            description: 'Optional when the path associatedIndex supplies the collection name.',
+          },
+          name: {
+            type: 'string',
+          },
+          title: {
+            type: 'string',
+          },
+          interface: {
+            type: 'string',
+            description: 'Compact field interface, for example `input`, `m2o`, `o2m`, `oho`, or `m2m`.',
+          },
+          type: {
+            type: 'string',
+            description:
+              'Raw field type. Relation types include `belongsTo`, `hasMany`, `hasOne`, and `belongsToMany`.',
+          },
+          target: {
+            type: 'string',
+          },
+          foreignKey: {
+            type: 'string',
+          },
+          sourceKey: {
+            type: 'string',
+          },
+          targetKey: {
+            type: 'string',
+          },
+          through: {
+            type: 'string',
+          },
+          otherKey: {
+            type: 'string',
+          },
+          targetTitleField: {
+            type: 'string',
+          },
+          titleField: {
+            type: 'string',
+          },
+          uiSchema: {
+            type: 'object',
+            additionalProperties: true,
+          },
+          settings: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+        additionalProperties: true,
+      },
+      DataSourceFieldApplyResult: {
+        type: 'object',
+        properties: {
+          data: {
             type: 'object',
             additionalProperties: true,
           },
