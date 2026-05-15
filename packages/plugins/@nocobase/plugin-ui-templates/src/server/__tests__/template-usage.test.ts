@@ -160,25 +160,21 @@ describe('ui templates and usages', () => {
       },
     });
 
-    await flowRepo.create({
+    const savePopupTargetResp = await agent.resource('flowModels').save({
       values: {
         uid: 'popup-template-root',
-        options: {
-          use: 'PopupActionModel',
+        use: 'PopupActionModel',
+        subModels: {
+          content: [
+            {
+              uid: 'popup-ref-block',
+              ...buildOptions('tpl-block'),
+            },
+          ],
         },
       },
     });
-    await flowRepo.create({
-      values: {
-        uid: 'popup-ref-block',
-        options: {
-          ...buildOptions('tpl-block'),
-          parentId: 'popup-template-root',
-          subKey: 'content',
-          subType: 'array',
-        },
-      },
-    });
+    expect(savePopupTargetResp.status).toBe(200);
 
     expect(await countUsage({ templateUid: 'tpl-block', modelUid: 'popup-ref-block' })).toBe(1);
     const blockTplResp = await agent.resource('flowModelTemplates').get({
