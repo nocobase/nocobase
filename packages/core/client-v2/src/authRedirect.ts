@@ -113,7 +113,7 @@ function getV2BasePath(app: AppLike) {
   return trimTrailingSlashes(getV2PublicPath(app)) || '/';
 }
 
-function getV2EffectiveBasePath(app: AppLike): string {
+export function getV2EffectiveBasePath(app: AppLike): string {
   const basename = app.router?.getBasename?.();
   if (basename) {
     return normalizePublicPath(basename);
