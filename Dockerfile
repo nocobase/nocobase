@@ -36,7 +36,7 @@ RUN yarn config set registry $VERDACCIO_URL && \
 RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
     mkdir -p /tmp/nb-cli && \
     cd /tmp/nb-cli && \
-    npm install @nocobase/cli --registry $VERDACCIO_URL --omit=dev --legacy-peer-deps && \
+    npm install @nocobase/cli --registry $VERDACCIO_URL && \
     mkdir -p /opt/nb/bin && \
     cp -a /tmp/nb-cli/node_modules /opt/nb/ && \
     ln -sf /opt/nb/node_modules/.bin/nb /opt/nb/bin/nb && \
@@ -52,44 +52,64 @@ COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
 COPY --from=app-builder /nb.tar.gz /nb.tar.gz
 
 FROM node:22-bookworm-slim AS nb-unpack
+ARG INSTALL_NB_CLI=0
 COPY nb.tar.gz /tmp/nb.tar.gz
 RUN mkdir -p /opt/nb && \
-  tar -zxf /tmp/nb.tar.gz -C /opt && \
+  if [ "$INSTALL_NB_CLI" = "1" ]; then \
+    tar -zxf /tmp/nb.tar.gz -C /opt; \
+  fi && \
   rm -f /tmp/nb.tar.gz
+
+FROM node:22-bookworm-slim AS docs-archive
+ARG INCLUDE_DOCS_ARCHIVE=1
+RUN mkdir -p /out
+COPY dist.tar.gz /tmp/dist.tar.gz
+RUN if [ "$INCLUDE_DOCS_ARCHIVE" = "1" ]; then \
+    cp /tmp/dist.tar.gz /out/nocobase-docs.tar.gz; \
+  fi && \
+  rm -f /tmp/dist.tar.gz
 
 FROM node:22-bookworm-slim AS runtime
 ARG COMMIT_HASH
 ARG INSTALL_NB_CLI=0
+ARG INCLUDE_DOCS_ARCHIVE=1
+ARG INSTALL_POSTGRES_16_CLIENT=1
+ARG INSTALL_CJK_FONTS=1
 
 ENV PATH="/opt/nb/bin:${PATH}"
 
-RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-RUN wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  nginx \
-  libaio1 \
-  postgresql-client-16 \
-  postgresql-client-17 \
-  libfreetype6 \
-  fontconfig \
-  libgssapi-krb5-2 \
-  fonts-liberation \
-  fonts-noto-cjk \
-  && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
+  echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+  wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends \
+    nginx \
+    libaio1 \
+    postgresql-client-17 \
+    libfreetype6 \
+    fontconfig \
+    libgssapi-krb5-2 \
+    fonts-liberation; \
+  if [ "$INSTALL_POSTGRES_16_CLIENT" = "1" ]; then \
+    apt-get install -y --no-install-recommends postgresql-client-16; \
+  fi; \
+  if [ "$INSTALL_CJK_FONTS" = "1" ]; then \
+    apt-get install -y --no-install-recommends fonts-noto-cjk; \
+  fi; \
+  apt-get purge -y --auto-remove wget gnupg dirmngr; \
+  rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/*
 
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY nocobase.tar.gz /app/nocobase.tar.gz
-COPY dist.tar.gz /app/nocobase-docs.tar.gz
 COPY --from=nb-unpack /opt/nb /opt/nb
+COPY --from=docs-archive /out/ /app/
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/storage/uploads/ && \
+RUN mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads/ && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
