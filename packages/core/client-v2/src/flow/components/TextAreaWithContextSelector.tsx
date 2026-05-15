@@ -93,10 +93,11 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
       const next = prev.slice(0, start) + toInsert + prev.slice(end);
       setInnerValue(next);
       onChange?.(next);
-      // 恢复光标位置并聚焦
+      // 插入后选中刚插入的变量文本，与 v1 RawTextArea 行为一致：
+      // 用户可立即按删除键移除整段变量，或继续输入直接替换。
       requestAnimationFrame(() => {
         const pos = start + (toInsert?.length || 0);
-        el.setSelectionRange(pos, pos);
+        el.setSelectionRange(start, pos);
         el.focus();
       });
     },
