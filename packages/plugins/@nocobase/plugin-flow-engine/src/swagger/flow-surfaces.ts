@@ -5344,10 +5344,11 @@ const schemas = {
   },
   FlowSurfaceMutateAddEventFlowValues: {
     type: 'object',
-    required: ['target', 'key', 'eventName'],
+    required: ['target', 'key', 'flow'],
     properties: {
       target: ref('FlowSurfaceMutateWriteTarget'),
       key: ref('FlowSurfaceResolvableString'),
+      flow: ANY_OBJECT_SCHEMA,
       eventName: ref('FlowSurfaceResolvableString'),
       phase: ref('FlowSurfaceResolvableString'),
       steps: ANY_OBJECT_SCHEMA,

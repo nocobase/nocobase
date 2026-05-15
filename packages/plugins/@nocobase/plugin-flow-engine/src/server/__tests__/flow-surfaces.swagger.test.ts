@@ -326,6 +326,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddEventFlowRequest.required).toEqual(['target', 'key', 'eventName']);
     expect(schemas.FlowSurfaceSetEventFlowRequest.required).toEqual(['target', 'key', 'flow']);
     expect(schemas.FlowSurfaceRemoveEventFlowRequest.required).toEqual(['target', 'key']);
+    expect(schemas.FlowSurfaceMutateAddEventFlowValues.required).toEqual(['target', 'key', 'flow']);
     expect(schemas.FlowSurfaceAddEventFlowRequest.properties.condition.description).toContain(
       'on.defaultParams.condition',
     );
