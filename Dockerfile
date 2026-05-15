@@ -113,7 +113,8 @@ COPY --from=docs-archive /out/ /app/
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads /app/nocobase/node_modules/@nocobase/app/dist/client && \
+RUN ln -sf /app/nocobase/node_modules/.bin/nb /usr/local/bin/nb && \
+  mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads /app/nocobase/node_modules/@nocobase/app/dist/client && \
   touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
 
