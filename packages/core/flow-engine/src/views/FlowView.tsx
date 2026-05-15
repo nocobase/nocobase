@@ -84,11 +84,21 @@ export class FlowViewer {
     if (this.types[type]) {
       zIndex += 1;
       const onClose = others.onClose;
+      let zIndexReleased = false;
+      const releaseZIndex = () => {
+        if (!zIndexReleased) {
+          zIndexReleased = true;
+          zIndex -= 1;
+        }
+      };
       const _zIndex = others.zIndex;
       others.onClose = (...args) => {
         onClose?.(...args);
-        zIndex -= 1;
+        releaseZIndex();
       };
+      if (type === 'embed') {
+        others.onOpenCancelled = releaseZIndex;
+      }
       // embed 不能设置过高的 zIndex，会遮挡菜单的折叠按钮图表
       if (type !== 'embed') {
         others.zIndex = _zIndex ?? this.getNextZIndex();

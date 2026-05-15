@@ -7,5 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { GridCardBlockModel } from './GridCardBlockModel';
-export { GridCardItemModel } from './GridCardItemModel';
+export { default } from './plugin';

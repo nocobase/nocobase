@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowContext, FlowContextSelector, observer } from '@nocobase/flow-engine';
+import { FlowContextSelector, observer, useFlowContext } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
-import { Card, Spin, Tooltip, Select, InputNumber } from 'antd';
+import { Card, Select, Spin, Tooltip } from 'antd';
 import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
-import React, { useEffect, useState } from 'react';
-import { CodeEditor, BlockModel, TextAreaWithContextSelector, joinUrlSearch } from '@nocobase/client-v2';
-import { tExpr, useTranslation } from '../locale';
+import React, { useCallback, useEffect, useState } from 'react';
+import { BlockModel, CodeEditor, joinUrlSearch, TextAreaWithContextSelector } from '@nocobase/client-v2';
+import { tExpr, useT } from '../locale';
 
 const HtmlEditorBase: React.FC<any> = (props) => {
   const { value, onChange } = props;
@@ -26,6 +26,7 @@ const HtmlEditorBase: React.FC<any> = (props) => {
       language="html"
       value={value}
       onChange={onChange}
+      showLogs={false}
       RightExtra={({ viewRef }) => (
         <FlowContextSelector
           onChange={(text) => {
@@ -51,6 +52,15 @@ const Iframe: any = observer(
     const [loading, setLoading] = useState(false);
     const [htmlContent, setHtmlContent] = useState<string>();
     const [src, setSrc] = useState(null);
+    const iframeHeight = !heightMode || heightMode === 'defaultHeight' ? '60vh' : '100%';
+    const renderTemplate = useCallback(
+      async (value: any) => {
+        if (typeof value !== 'string') return value;
+        const result = await ctx.liquid.renderWithFullContext(value, ctx);
+        return typeof ctx.compile === 'function' ? ctx.compile(result) : result;
+      },
+      [ctx],
+    );
 
     useEffect(() => {
       if (mode !== 'html' || !htmlId) {
@@ -88,10 +98,7 @@ const Iframe: any = observer(
         if (mode === 'html') {
           if (!content) return;
           try {
-            const liquid = ctx.liquid;
-            const result = await liquid.renderWithFullContext(content, ctx);
-            const compile = (value: string) => (typeof ctx.compile === 'function' ? ctx.compile(value) : value);
-            const targetHtmlContent = compile(result);
+            const targetHtmlContent = await renderTemplate(content);
             if (targetHtmlContent === undefined) return;
 
             const encodedHtml = encodeURIComponent(targetHtmlContent);
@@ -105,8 +112,16 @@ const Iframe: any = observer(
           }
         } else {
           try {
-            const targetUrl = joinUrlSearch(url, params);
-            if (active) setSrc(targetUrl);
+            const targetUrl = await renderTemplate(url);
+            const targetParams = await Promise.all(
+              (params || []).map(async (param) => ({
+                ...param,
+                name: await renderTemplate(param.name),
+                value: await renderTemplate(param.value),
+              })),
+            );
+            const parsedUrl = joinUrlSearch(targetUrl, targetParams);
+            if (active) setSrc(parsedUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
             if (active) setSrc('fallback-url');
@@ -120,12 +135,12 @@ const Iframe: any = observer(
       return () => {
         active = false;
       };
-    }, [ctx, htmlContent, mode, url, params, html, htmlId]);
+    }, [ctx, htmlContent, mode, url, params, html, htmlId, renderTemplate]);
     if (loading && !src) {
       return (
         <div
           style={{
-            height: heightMode === 'defaultHeight' ? '60vh' : '100%',
+            height: iframeHeight,
             border: 0,
           }}
         >
@@ -141,7 +156,7 @@ const Iframe: any = observer(
         display="block"
         position="relative"
         styles={{
-          height: heightMode === 'defaultHeight' ? '60vh' : '100%',
+          height: iframeHeight,
           border: 0,
         }}
         {...others}
@@ -152,23 +167,35 @@ const Iframe: any = observer(
 );
 
 export class IframeBlockModel extends BlockModel {
+  onInit(options: any): void {
+    super.onInit(options);
+    this.setDecoratorProps({
+      styles: {
+        ...this.decoratorProps.styles,
+        body: {
+          ...this.decoratorProps.styles?.body,
+          padding: 0,
+        },
+      },
+    });
+  }
+
   renderComponent() {
-    const { url, htmlId, mode = 'url', html, params, ...others } = this.props;
+    const { url, htmlId, mode = 'url' } = this.props;
     const { heightMode } = this.decoratorProps;
-    const token = this.context.themeToken;
     const t = this.context.t;
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
-      return <Card style={{ marginBottom: token.padding }}>{t('Please fill in the iframe URL')}</Card>;
+      return <Card>{t('Please fill in the iframe URL')}</Card>;
     }
     return <Iframe {...this.props} heightMode={heightMode} />;
   }
 }
 const AllowDescription = () => {
-  const { t, i18n } = useTranslation();
-  const helpURL =
-    i18n.language === 'zh-CN'
-      ? 'https://developer.mozilla.org/zh-CN/docs/Web/HTML/Reference/Elements/iframe#allow'
-      : 'https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe#allow';
+  const t = useT();
+  const ctx = useFlowContext();
+  const helpURL = ctx.locale?.startsWith('zh')
+    ? 'https://developer.mozilla.org/zh-CN/docs/Web/HTML/Reference/Elements/iframe#allow'
+    : 'https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe#allow';
   return (
     <span>
       {t(
@@ -182,7 +209,8 @@ const AllowDescription = () => {
 };
 
 const AllowOptionsHelp = ({ type }) => {
-  const { t, i18n } = useTranslation();
+  const t = useT();
+  const ctx = useFlowContext();
   const typeToDescription = {
     autoplay: t(
       'Controls whether the current document is allowed to autoplay media requested through the HTMLMediaElement interface. When this policy is disabled and there were no user gestures, the Promise returned by HTMLMediaElement.play() will reject with a NotAllowedError DOMException. The autoplay attribute on <audio> and <video> elements will be ignored.',
@@ -225,7 +253,7 @@ const AllowOptionsHelp = ({ type }) => {
             {description}
             <a
               href={`https://developer.mozilla.org/${
-                i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US'
+                ctx.locale?.startsWith('zh') ? 'zh-CN' : 'en-US'
               }/docs/Web/HTTP/Reference/Headers/Permissions-Policy/${type}`}
               target="_blank"
               rel="noreferrer"
@@ -244,6 +272,7 @@ const AllowOptionsHelp = ({ type }) => {
 IframeBlockModel.registerFlow({
   key: 'iframeBlockSettings',
   title: tExpr('Iframe block setting'),
+  on: 'beforeRender',
   steps: {
     editIframe: {
       title: tExpr('Edit iframe'),
@@ -306,7 +335,7 @@ IframeBlockModel.registerFlow({
             type: 'array',
             'x-component': 'ArrayItems',
             'x-decorator': 'FormItem',
-            title: `{{t("Search parameters")}}`,
+            title: tExpr('Search parameters'),
             items: {
               type: 'object',
               properties: {
@@ -335,7 +364,7 @@ IframeBlockModel.registerFlow({
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                       'x-component-props': {
-                        placeholder: `{{t("Name")}}`,
+                        placeholder: tExpr('Name'),
                       },
                     },
                     value: {
@@ -372,7 +401,7 @@ IframeBlockModel.registerFlow({
             properties: {
               add: {
                 type: 'void',
-                title: `{{t("Add parameter")}}`,
+                title: tExpr('Add parameter'),
                 'x-component': 'ArrayItems.Addition',
               },
             },
@@ -386,20 +415,6 @@ IframeBlockModel.registerFlow({
               minHeight: '320px',
               theme: 'light',
               enableLinter: true,
-              // ref:{editorRef}
-              // rightExtra: (
-              //   <FlowContextSelector
-              //     onChange={(val) => {
-              //       if (!val) return;
-              //       editorRef.current?.insertAtCursor(val);
-              //     }}
-              //     metaTree={() => ctx.getPropertyMetaTree()}
-              //   />
-              // ),
-              // wrapperStyle: {
-              //   position: 'fixed',
-              //   inset: 8,
-              // },
             },
             'x-reactions': {
               dependencies: ['mode'],
@@ -411,25 +426,9 @@ IframeBlockModel.registerFlow({
             },
             required: true,
           },
-          height: {
-            title: t('Height'),
-            type: 'string',
-            'x-decorator': 'FormItem',
-            'x-component': InputNumber,
-            'x-component-props': {
-              addonAfter: 'px',
-            },
-            'x-validator': [
-              {
-                minimum: 40,
-              },
-            ],
-          },
         };
       },
-      useRawParams: (ctx) => {
-        return ctx.model.props.model === 'html';
-      },
+      useRawParams: true,
       async beforeParamsSave(ctx, params) {
         const { mode, html, htmlId } = params;
         const saveHtml = async (html: string) => {
@@ -452,7 +451,7 @@ IframeBlockModel.registerFlow({
         }
       },
       async handler(ctx, params) {
-        const { mode, url, html, params: searchParams, allow, htmlId, height } = params;
+        const { mode, url, html, params: searchParams, allow, htmlId } = params;
         ctx.model.setProps({
           mode,
           url,
@@ -460,7 +459,6 @@ IframeBlockModel.registerFlow({
           params: searchParams,
           allow,
           htmlId,
-          height,
         });
       },
     },

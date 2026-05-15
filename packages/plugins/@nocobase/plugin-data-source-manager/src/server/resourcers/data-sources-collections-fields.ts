@@ -8,6 +8,7 @@
  */
 
 import lodash from 'lodash';
+import { applyExternalFieldDefinition, parseCollectionNameWithDataSourceKey } from '../services/external-field-apply';
 
 export default {
   name: 'dataSourcesCollections.fields',
@@ -123,6 +124,17 @@ export default {
       });
 
       ctx.body = fieldRecord.toJSON();
+
+      await next();
+    },
+
+    async apply(ctx, next) {
+      const rawValues = ctx.action.params.values || ctx.request.body || {};
+      const defaults = parseCollectionNameWithDataSourceKey(ctx.action.params.associatedIndex);
+
+      ctx.body = {
+        data: await applyExternalFieldDefinition(ctx, rawValues, defaults),
+      };
 
       await next();
     },
