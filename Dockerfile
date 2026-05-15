@@ -66,6 +66,8 @@ ARG INCLUDE_DOCS_ARCHIVE=1
 ARG INSTALL_POSTGRES_16_CLIENT=1
 ARG INSTALL_CJK_FONTS=1
 ARG USE_ALIYUN_MIRROR=0
+ENV NB_SKIP_STARTUP_UPDATE=1 \
+    NOCOBASE_RUNNING_IN_DOCKER=true
 
 RUN set -eux; \
   rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \

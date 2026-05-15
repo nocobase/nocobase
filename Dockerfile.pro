@@ -44,6 +44,8 @@ RUN echo "${COMMIT_HASH}" > /tmp/commit_hash.txt
 
 
 FROM node:22.13-bullseye-slim
+ENV NB_SKIP_STARTUP_UPDATE=1 \
+    NOCOBASE_RUNNING_IN_DOCKER=true
 RUN apt-get update && apt-get install -y nginx libaio1 \
   && apt-get install -y --no-install-recommends postgresql-common gnupg \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \

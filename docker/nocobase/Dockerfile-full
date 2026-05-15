@@ -1,11 +1,28 @@
-FROM node:22-bookworm-slim as builder
+FROM node:22-bookworm-slim AS builder
 
 ARG CNA_VERSION=latest
+ARG USE_ALIYUN_MIRROR=0
 
 WORKDIR /app
 
-RUN cd /app \
-  && yarn config set network-timeout 600000 -g \
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    yarn config set registry https://registry.npmmirror.com; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    yarn config set registry https://registry.npmjs.org; \
+  fi; \
+  yarn config set network-timeout 600000 -g \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
   && yarn install --production \
@@ -14,53 +31,98 @@ RUN cd /app \
   && find node_modules -type f -name "bower.json" -delete \
   && find node_modules -type f -name "composer.json" -delete
 
-RUN cd /app \
-  && rm -rf nocobase.tar.gz \
-  && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
+FROM node:22-bookworm-slim AS assets
+
+ARG USE_ALIYUN_MIRROR=0
+
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  fi; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends wget ca-certificates unzip; \
+  wget --no-check-certificate -O /tmp/libreoffice24.8.zip https://static-docs.nocobase.com/libreoffice24.8.zip; \
+  wget --no-check-certificate -O /tmp/instantclient_19_25.zip https://download.oracle.com/otn_software/linux/instantclient/1925000/instantclient-basic-linux.x64-19.25.0.0.0dbru.zip; \
+  unzip -q /tmp/libreoffice24.8.zip -d /opt/; \
+  unzip -q /tmp/instantclient_19_25.zip -d /opt/; \
+  rm -rf /tmp/libreoffice24.8.zip /tmp/instantclient_19_25.zip /var/lib/apt/lists/*
 
 FROM node:22-bookworm-slim
 
-ARG CNA_VERSION
-ENV NB_SKIP_STARTUP_UPDATE=1
+ARG COMMIT_HASH
+ARG USE_ALIYUN_MIRROR=0
+ENV NB_SKIP_STARTUP_UPDATE=1 \
+    NOCOBASE_RUNNING_IN_DOCKER=true
 
-RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-RUN wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  nginx \
-  libaio1 \
-  postgresql-client-16 \
-  postgresql-client-17 \
-  libfreetype6 \
-  fontconfig \
-  libgssapi-krb5-2 \
-  fonts-liberation \
-  fonts-noto-cjk \
-  unzip \
-  && npm install -g @nocobase/cli@${CNA_VERSION} \
-  && npm cache clean --force \
-  && rm -rf /root/.npm \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN rm -rf /etc/nginx/sites-enabled/default
-COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
-
-RUN wget --no-check-certificate -O /opt/libreoffice24.8.zip https://static-docs.nocobase.com/libreoffice24.8.zip
-RUN wget --no-check-certificate -O /opt/instantclient_19_25.zip https://download.oracle.com/otn_software/linux/instantclient/1925000/instantclient-basic-linux.x64-19.25.0.0.0dbru.zip
-RUN wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
-  dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
-  cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
-  cp /tmp/mysql-client/usr/bin/mysql /usr/bin/ && \
-  rm mysql-community-client-core_8.0.39-1debian12_amd64.deb
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://mirrors.aliyun.com/postgresql/repos/apt'; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://apt.postgresql.org/pub/repos/apt'; \
+  fi; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
+  echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] ${PGDG_MIRROR} bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+  wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends \
+    nginx \
+    libaio1 \
+    postgresql-client-16 \
+    postgresql-client-17 \
+    libfreetype6 \
+    fontconfig \
+    libgssapi-krb5-2 \
+    fonts-liberation \
+    fonts-noto-cjk; \
+  wget --no-check-certificate -O /tmp/mysql-community-client-core.deb https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb; \
+  dpkg -x /tmp/mysql-community-client-core.deb /tmp/mysql-client; \
+  cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/; \
+  cp /tmp/mysql-client/usr/bin/mysql /usr/bin/; \
+  rm -rf \
+    /etc/nginx/sites-enabled/default \
+    /root/.npm \
+    /tmp/mysql-client \
+    /tmp/mysql-community-client-core.deb \
+    /var/lib/apt/lists/*
 
 WORKDIR /app/nocobase
 
+COPY --from=assets /opt/libreoffice24.8 /opt/libreoffice24.8
+COPY --from=assets /opt/instantclient_19_25 /opt/instantclient_19_25
+COPY --from=builder /app/my-nocobase-app/ /app/nocobase/
 COPY docker-entrypoint.sh /app/
 # COPY docker-entrypoint.sh /usr/local/bin/
 # ENTRYPOINT ["docker-entrypoint.sh"]
+
+RUN ln -sf /app/nocobase/node_modules/.bin/nb /usr/local/bin/nb && \
+  mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads /app/nocobase/node_modules/@nocobase/app/dist/client && \
+  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html && \
+  echo "$COMMIT_HASH" > /app/commit_hash.txt && \
+  echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf && \
+  ldconfig
 
 EXPOSE 80/tcp
 
