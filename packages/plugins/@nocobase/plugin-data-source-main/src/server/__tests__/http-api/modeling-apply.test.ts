@@ -273,6 +273,7 @@ describe('modeling apply actions', () => {
     expect(comments).toBeDefined();
     expect(comments.options.template).toBe('comment');
     expect(comments.hasField('content')).toBe(true);
+    expect(comments.hasField('id')).toBe(true);
     expect(comments.hasField('createdAt')).toBe(true);
     expect(comments.hasField('createdBy')).toBe(true);
 
