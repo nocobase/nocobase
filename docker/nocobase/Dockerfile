@@ -1,10 +1,13 @@
 FROM node:22-bookworm-slim AS builder
 
 ARG CNA_VERSION
+ARG VERDACCIO_URL=https://registry.npmjs.org/
 
 WORKDIR /app
 
-RUN yarn config set network-timeout 600000 -g \
+RUN npm config set registry "$VERDACCIO_URL" \
+  && yarn config set registry "$VERDACCIO_URL" \
+  && yarn config set network-timeout 600000 -g \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
   && yarn install --production \

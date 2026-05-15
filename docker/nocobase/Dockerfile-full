@@ -1,6 +1,7 @@
 FROM node:22-bookworm-slim AS builder
 
 ARG CNA_VERSION=latest
+ARG VERDACCIO_URL=https://registry.npmjs.org/
 ARG USE_ALIYUN_MIRROR=0
 
 WORKDIR /app
@@ -13,15 +14,15 @@ RUN set -eux; \
       'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
       'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
       > /etc/apt/sources.list; \
-    yarn config set registry https://registry.npmmirror.com; \
   else \
     printf '%s\n' \
       'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
       'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
       'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
       > /etc/apt/sources.list; \
-    yarn config set registry https://registry.npmjs.org; \
   fi; \
+  npm config set registry "$VERDACCIO_URL"; \
+  yarn config set registry "$VERDACCIO_URL"; \
   yarn config set network-timeout 600000 -g \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
