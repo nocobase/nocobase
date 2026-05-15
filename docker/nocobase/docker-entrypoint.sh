@@ -22,9 +22,8 @@ if [ ! -d "/app/nocobase" ]; then
 fi
 
 if [ ! -f "/app/nocobase/package.json" ]; then
-  echo 'copying...'
-  tar -zxf /app/nocobase.tar.gz --absolute-names -C /app/nocobase
-  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
+  echo "Missing /app/nocobase/package.json; the image is expected to include a pre-extracted app directory."
+  exit 1
 fi
 
 cd /app/nocobase && yarn nocobase postinstall

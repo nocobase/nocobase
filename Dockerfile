@@ -3,11 +3,26 @@ ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
-ARG INSTALL_NB_CLI=0
+ARG USE_ALIYUN_MIRROR=0
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
-RUN apt-get update && apt-get install -y jq expect
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  fi; \
+  apt-get update && apt-get install -y jq expect
 
 SHELL ["/bin/bash", "-c"]
 
@@ -26,39 +41,15 @@ RUN yarn config set registry $VERDACCIO_URL && \
   yarn config set network-timeout 600000 -g && \
   yarn create nocobase-app my-nocobase-app -a --skip-dev-dependencies -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
-  yarn install --production --ignore-peer-dependencies && \
+  yarn install --production && \
   yarn add newrelic --production -W && \
   $BEFORE_PACK_NOCOBASE && \
   rm -rf /app/my-nocobase-app/packages/app/client/src/.umi && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
 
-RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    mkdir -p /tmp/nb-cli && \
-    cd /tmp/nb-cli && \
-    npm install @nocobase/cli --registry $VERDACCIO_URL && \
-    mkdir -p /opt/nb/bin && \
-    cp -a /tmp/nb-cli/node_modules /opt/nb/ && \
-    ln -sf /opt/nb/node_modules/.bin/nb /opt/nb/bin/nb && \
-    NB_SKIP_STARTUP_UPDATE=1 /opt/nb/bin/nb --version && \
-    tar -zcf /nb.tar.gz -C /opt nb; \
-  else \
-    mkdir -p /tmp/empty-nb-artifact && \
-    tar -zcf /nb.tar.gz -C /tmp/empty-nb-artifact .; \
-  fi
-
 FROM scratch AS app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
-COPY --from=app-builder /nb.tar.gz /nb.tar.gz
-
-FROM node:22-bookworm-slim AS nb-unpack
-ARG INSTALL_NB_CLI=0
-COPY nb.tar.gz /tmp/nb.tar.gz
-RUN mkdir -p /opt/nb && \
-  if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    tar -zxf /tmp/nb.tar.gz -C /opt; \
-  fi && \
-  rm -f /tmp/nb.tar.gz
 
 FROM node:22-bookworm-slim AS docs-archive
 ARG INCLUDE_DOCS_ARCHIVE=1
@@ -71,17 +62,31 @@ RUN if [ "$INCLUDE_DOCS_ARCHIVE" = "1" ]; then \
 
 FROM node:22-bookworm-slim AS runtime
 ARG COMMIT_HASH
-ARG INSTALL_NB_CLI=0
 ARG INCLUDE_DOCS_ARCHIVE=1
 ARG INSTALL_POSTGRES_16_CLIENT=1
 ARG INSTALL_CJK_FONTS=1
-
-ENV PATH="/opt/nb/bin:${PATH}"
+ARG USE_ALIYUN_MIRROR=0
 
 RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://mirrors.aliyun.com/postgresql/repos/apt'; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://apt.postgresql.org/pub/repos/apt'; \
+  fi; \
   apt-get update; \
   apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
-  echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+  echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] ${PGDG_MIRROR} bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
   wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
@@ -103,13 +108,13 @@ RUN set -eux; \
 
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
-COPY nocobase.tar.gz /app/nocobase.tar.gz
-COPY --from=nb-unpack /opt/nb /opt/nb
+ADD nocobase.tar.gz /app/nocobase/
 COPY --from=docs-archive /out/ /app/
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads/ && \
+RUN mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads /app/nocobase/node_modules/@nocobase/app/dist/client && \
+  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
