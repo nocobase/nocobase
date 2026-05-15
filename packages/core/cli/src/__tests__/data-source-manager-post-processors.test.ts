@@ -36,8 +36,8 @@ test('external data source fields apply returns relation summary', async () => {
         'associated-index': 'external.comments',
       },
       operation: {
-        moduleName: 'data-source-manager',
-        commandId: 'data-source-manager data-sources-collections fields apply',
+        moduleName: 'data-modeling',
+        commandId: 'data-modeling data-sources-collections fields apply',
         logicalResourceName: 'data-sources-collections.fields',
         actionName: 'apply',
         method: 'post',

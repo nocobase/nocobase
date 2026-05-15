@@ -55,6 +55,124 @@ export default {
         },
       },
     },
+    '/dataSources/{associatedIndex}/collections:list': {
+      get: {
+        tags: ['dataSources.collections'],
+        summary: 'List external data source collections',
+        description: [
+          'List loaded collections in one external data source, including field metadata.',
+          '',
+          'Use this endpoint to discover external table names before applying relation field metadata.',
+        ].join('\n'),
+        parameters: [
+          {
+            name: 'associatedIndex',
+            in: 'path',
+            required: true,
+            description: 'External data source key, for example `external`.',
+            schema: {
+              type: 'string',
+            },
+          },
+          {
+            name: 'filter',
+            in: 'query',
+            required: false,
+            description: 'Filter object matched against collection options.',
+            schema: {
+              type: 'object',
+              additionalProperties: true,
+            },
+          },
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'integer',
+            },
+          },
+          {
+            name: 'pageSize',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'integer',
+            },
+          },
+          {
+            name: 'paginate',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'boolean',
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        $ref: '#/components/schemas/DataSourceCollectionInfo',
+                      },
+                    },
+                    meta: {
+                      type: 'object',
+                      additionalProperties: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/dataSourcesCollections/{associatedIndex}/fields:list': {
+      get: {
+        tags: ['dataSourcesCollections.fields'],
+        summary: 'List external data source collection fields',
+        description: [
+          'List loaded field metadata for one external data source collection.',
+          '',
+          'The associatedIndex path parameter is `<dataSourceKey>.<collectionName>`.',
+        ].join('\n'),
+        parameters: [
+          {
+            name: 'associatedIndex',
+            in: 'path',
+            required: true,
+            description: 'External data source collection locator, for example `external.orders`.',
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/dataSourcesCollections/{associatedIndex}/fields:apply': {
       post: {
         tags: ['dataSourcesCollections.fields'],
