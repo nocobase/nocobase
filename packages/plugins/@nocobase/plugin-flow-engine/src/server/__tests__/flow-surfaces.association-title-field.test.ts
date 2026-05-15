@@ -602,6 +602,47 @@ describe('flowSurfaces association title field helpers', () => {
     );
   });
 
+  it('should expose truncated titleField candidates in structured direct-write errors', () => {
+    const readableFields = Array.from({ length: 21 }, (_item, index) =>
+      createField(`field${index + 1}`, { interface: 'input' }),
+    );
+    const collection = createCollection('wide_targets', [
+      createField('id', { interface: 'snowflakeId', primaryKey: true }),
+      ...readableFields,
+      createField('parent', { type: 'belongsTo', interface: 'm2o', target: 'wide_targets' }),
+    ]);
+
+    try {
+      assertCollectionTitleFieldExists(collection, 'missing', {
+        action: 'addField',
+        path: '$.titleField',
+        fieldPath: 'parent',
+      });
+      throw new Error('Expected titleField error');
+    } catch (error: any) {
+      if (error?.message === 'Expected titleField error') {
+        throw error;
+      }
+      const item = error?.toResponseBody?.()?.errors?.[0];
+      expect(item).toMatchObject({
+        ruleId: 'relation-titleField-unknown',
+        details: {
+          action: 'addField',
+          fieldPath: 'parent',
+          titleField: 'missing',
+          targetCollection: 'wide_targets',
+          invalidReason: 'missing',
+          availableFields: readableFields.slice(0, 20).map((field) => field.name),
+          availableFieldsTruncated: true,
+          suggestion: expect.any(String),
+        },
+      });
+      expect(item.details.availableFields).not.toContain('id');
+      expect(item.details.availableFields).not.toContain('parent');
+      expect(item.details.availableFields).not.toContain('field21');
+    }
+  });
+
   it('should not use id as an automatic titleable fallback', () => {
     const collection = createCollection('id_only_targets', [
       createField('id', { interface: 'snowflakeId', primaryKey: true }),

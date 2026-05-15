@@ -126,6 +126,24 @@ function buildDefinedTitleFieldDetails(details: Record<string, any>) {
   return Object.fromEntries(Object.entries(details).filter(([, value]) => typeof value !== 'undefined'));
 }
 
+export function buildFlowSurfaceTitleFieldErrorDetails(
+  options: FlowSurfaceTitleFieldErrorOptions = {},
+  candidates = getFlowSurfaceTitleFieldCandidateNames(options.targetCollection),
+) {
+  const { availableFields, availableFieldsTruncated } = candidates;
+  return buildDefinedTitleFieldDetails({
+    action: options.action,
+    fieldPath: options.fieldPath,
+    titleField: options.titleField,
+    targetCollection: getTitleFieldTargetCollectionName(options),
+    invalidReason: options.invalidReason,
+    availableFields: availableFields.length ? availableFields : undefined,
+    availableFieldsTruncated: availableFieldsTruncated || undefined,
+    suggestion: buildTitleFieldSuggestion(options, availableFields),
+    ...options.details,
+  });
+}
+
 function getTitleFieldTargetCollectionName(options: FlowSurfaceTitleFieldErrorOptions) {
   return String(options.targetCollectionName || '').trim() || getCollectionName(options.targetCollection) || undefined;
 }
@@ -151,26 +169,14 @@ function throwTitleFieldBadRequest(
   ruleId: string,
   options: FlowSurfaceTitleFieldErrorOptions = {},
 ): never {
-  const { availableFields, availableFieldsTruncated } = getFlowSurfaceTitleFieldCandidateNames(
-    options.targetCollection,
-  );
-  const details = buildDefinedTitleFieldDetails({
-    action: options.action,
-    fieldPath: options.fieldPath,
-    titleField: options.titleField,
-    targetCollection: getTitleFieldTargetCollectionName(options),
-    invalidReason: options.invalidReason,
-    availableFields: availableFields.length ? availableFields : undefined,
-    availableFieldsTruncated: availableFieldsTruncated || undefined,
-    suggestion: buildTitleFieldSuggestion(options, availableFields),
-    ...options.details,
-  });
+  const candidates = getFlowSurfaceTitleFieldCandidateNames(options.targetCollection);
+  const details = buildFlowSurfaceTitleFieldErrorDetails(options, candidates);
   const errorOptions: FlowSurfaceErrorOptions = buildDefinedTitleFieldDetails({
     path: options.path,
     ruleId,
     details,
   });
-  throwBadRequest(`${baseMessage}${buildTitleFieldGuidance(options, availableFields)}`, errorOptions);
+  throwBadRequest(`${baseMessage}${buildTitleFieldGuidance(options, candidates.availableFields)}`, errorOptions);
 }
 
 export function assertFlowSurfaceTitleFieldIsNotId(value: any, options: FlowSurfaceTitleFieldErrorOptions = {}) {

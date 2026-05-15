@@ -37,6 +37,10 @@ const GENERATED_POPUP_RELATION_OVERRIDE_TARGET_COLLECTION = 'flow_surface_relati
 const GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION = 'flow_surface_relation_override_sources';
 const GENERATED_POPUP_RELATION_OVERRIDE_FIELD = 'target';
 const GENERATED_POPUP_RELATION_OVERRIDE_FIELDS = Array.from({ length: 10 }, (_item, index) => `field${index + 1}`);
+const TITLE_FIELD_DIAGNOSTICS_WIDE_TARGET_COLLECTION = 'flow_surface_title_field_diagnostics_wide_targets';
+const TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION = 'flow_surface_title_field_diagnostics_wide_sources';
+const TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD = 'wideTarget';
+const TITLE_FIELD_DIAGNOSTICS_WIDE_FIELDS = Array.from({ length: 21 }, (_item, index) => `field${index + 1}`);
 const LARGE_GENERATED_POPUP_KANBAN_EXTRA_FIELDS = Array.from({ length: 9 }, (_item, index) => `extra${index + 1}`);
 const LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS = Array.from(
   { length: 11 },
@@ -231,6 +235,39 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         interface: 'm2o',
       },
     });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: TITLE_FIELD_DIAGNOSTICS_WIDE_TARGET_COLLECTION,
+        title: 'Flow surface titleField diagnostics wide targets',
+        fields: TITLE_FIELD_DIAGNOSTICS_WIDE_FIELDS.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION,
+        title: 'Flow surface titleField diagnostics wide sources',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION).create({
+      values: {
+        name: TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD,
+        type: 'belongsTo',
+        target: TITLE_FIELD_DIAGNOSTICS_WIDE_TARGET_COLLECTION,
+        foreignKey: `${TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD}Id`,
+        interface: 'm2o',
+      },
+    });
     await waitForFixtureCollectionsReady(context.db, {
       [LARGE_GENERATED_POPUP_COLLECTION]: LARGE_GENERATED_POPUP_FIELDS,
       [LARGE_GENERATED_POPUP_SOURCE_COLLECTION]: ['title', 'largeRecordId'],
@@ -250,6 +287,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         ...GENERATED_POPUP_RELATION_OVERRIDE_FIELDS,
         `${GENERATED_POPUP_RELATION_OVERRIDE_FIELD}Id`,
       ],
+      [TITLE_FIELD_DIAGNOSTICS_WIDE_TARGET_COLLECTION]: TITLE_FIELD_DIAGNOSTICS_WIDE_FIELDS,
+      [TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION]: ['title', `${TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD}Id`],
     });
   }, 120000);
 
@@ -1453,7 +1492,31 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               fieldGroups: [
                 {
                   title: 'Relation',
-                  fields: [{ field: LARGE_GENERATED_POPUP_RELATION_FIELD, titleField: 'id' }],
+                  fields: [
+                    { field: LARGE_GENERATED_POPUP_RELATION_FIELD, titleField: 'id' },
+                    { field: LARGE_GENERATED_POPUP_RELATION_FIELD, titleField: 'missingLargeRecordTitle' },
+                  ],
+                },
+              ],
+            },
+            [TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION]: {
+              fieldGroups: [
+                {
+                  title: 'Wide relation',
+                  fields: [
+                    {
+                      field: TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD,
+                      titleField: 'missingWideTargetTitle',
+                    },
+                  ],
+                },
+              ],
+            },
+            employees: {
+              fieldGroups: [
+                {
+                  title: 'Employee relation',
+                  fields: [{ field: 'manager', titleField: 'department' }],
                 },
               ],
             },
@@ -1492,6 +1555,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'default-field-group-unknown-field',
         'default-field-groups-incomplete',
         'relation-titleField-unreadable',
+        'relation-titleField-unknown',
       ]),
     );
     expect(response.body.errors.map((error: any) => error.path)).toEqual(
@@ -1499,8 +1563,91 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups[0].fields[1]`,
         `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups`,
         `$.defaults.collections.${LARGE_GENERATED_POPUP_SOURCE_COLLECTION}.fieldGroups[0].fields[0].titleField`,
+        `$.defaults.collections.${LARGE_GENERATED_POPUP_SOURCE_COLLECTION}.fieldGroups[0].fields[1].titleField`,
+        `$.defaults.collections.${TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION}.fieldGroups[0].fields[0].titleField`,
+        '$.defaults.collections.employees.fieldGroups[0].fields[0].titleField',
       ]),
     );
+    const defaultUnreadableError = response.body.errors.find(
+      (error: any) =>
+        error.path ===
+        `$.defaults.collections.${LARGE_GENERATED_POPUP_SOURCE_COLLECTION}.fieldGroups[0].fields[0].titleField`,
+    );
+    expect(defaultUnreadableError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        action: 'compose',
+        fieldPath: LARGE_GENERATED_POPUP_RELATION_FIELD,
+        titleField: 'id',
+        targetCollection: LARGE_GENERATED_POPUP_COLLECTION,
+        invalidReason: 'id',
+        availableFields: LARGE_GENERATED_POPUP_FIELDS,
+        suggestion: expect.any(String),
+      },
+    });
+    expect(defaultUnreadableError.details.availableFields).not.toContain('id');
+    expect(defaultUnreadableError.details.availableFields).not.toContain(LARGE_GENERATED_POPUP_RELATION_FIELD);
+
+    const defaultMissingError = response.body.errors.find(
+      (error: any) =>
+        error.path ===
+        `$.defaults.collections.${LARGE_GENERATED_POPUP_SOURCE_COLLECTION}.fieldGroups[0].fields[1].titleField`,
+    );
+    expect(defaultMissingError).toMatchObject({
+      ruleId: 'relation-titleField-unknown',
+      details: {
+        action: 'compose',
+        fieldPath: LARGE_GENERATED_POPUP_RELATION_FIELD,
+        titleField: 'missingLargeRecordTitle',
+        targetCollection: LARGE_GENERATED_POPUP_COLLECTION,
+        invalidReason: 'missing',
+        availableFields: LARGE_GENERATED_POPUP_FIELDS,
+        suggestion: expect.any(String),
+      },
+    });
+    expect(defaultMissingError.details.availableFields).not.toContain('id');
+    expect(defaultMissingError.details.availableFields).not.toContain(LARGE_GENERATED_POPUP_RELATION_FIELD);
+
+    const defaultWideMissingError = response.body.errors.find(
+      (error: any) =>
+        error.path ===
+        `$.defaults.collections.${TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION}.fieldGroups[0].fields[0].titleField`,
+    );
+    expect(defaultWideMissingError).toMatchObject({
+      ruleId: 'relation-titleField-unknown',
+      details: {
+        action: 'compose',
+        fieldPath: TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD,
+        titleField: 'missingWideTargetTitle',
+        targetCollection: TITLE_FIELD_DIAGNOSTICS_WIDE_TARGET_COLLECTION,
+        invalidReason: 'missing',
+        availableFields: TITLE_FIELD_DIAGNOSTICS_WIDE_FIELDS.slice(0, 20),
+        availableFieldsTruncated: true,
+        suggestion: expect.any(String),
+      },
+    });
+    expect(defaultWideMissingError.details.availableFields).not.toContain('id');
+    expect(defaultWideMissingError.details.availableFields).not.toContain(TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD);
+    expect(defaultWideMissingError.details.availableFields).not.toContain(TITLE_FIELD_DIAGNOSTICS_WIDE_FIELDS[20]);
+
+    const defaultAssociationError = response.body.errors.find(
+      (error: any) => error.path === '$.defaults.collections.employees.fieldGroups[0].fields[0].titleField',
+    );
+    expect(defaultAssociationError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        action: 'compose',
+        fieldPath: 'manager',
+        titleField: 'department',
+        targetCollection: 'employees',
+        invalidReason: 'association',
+        availableFields: expect.arrayContaining(['nickname', 'status', 'email', 'phone']),
+        suggestion: expect.any(String),
+      },
+    });
+    expect(defaultAssociationError.details.availableFields).not.toContain('id');
+    expect(defaultAssociationError.details.availableFields).not.toContain('department');
+    expect(defaultAssociationError.details.availableFields).not.toContain('manager');
   });
 
   it('should reject compose generated action popups for large collections without collection default fieldGroups', async () => {
@@ -3138,8 +3285,23 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                 titleField: 'id',
               },
               {
+                fieldPath: 'manager',
+                titleField: 'department',
+              },
+              {
                 fieldPath: 'status',
                 titleField: 'nickname',
+              },
+            ],
+          },
+          {
+            key: 'wideRelationTitleFields',
+            type: 'details',
+            collection: TITLE_FIELD_DIAGNOSTICS_WIDE_SOURCE_COLLECTION,
+            fields: [
+              {
+                fieldPath: TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD,
+                titleField: 'missingWideTargetTitle',
               },
             ],
           },
@@ -3167,8 +3329,86 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         '$.blocks[0].fields[0].popup.blocks[2].resource.associationField',
         '$.blocks[0].fields[1].titleField',
         '$.blocks[0].fields[2].titleField',
+        '$.blocks[0].fields[3].titleField',
+        '$.blocks[1].fields[0].titleField',
       ]),
     );
+    const missingTitleFieldError = response.body.errors.find(
+      (error: any) => error.path === '$.blocks[0].fields[0].titleField',
+    );
+    expect(missingTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unknown',
+      details: {
+        action: 'compose',
+        fieldPath: 'department',
+        titleField: 'missingDepartmentTitle',
+        targetCollection: 'departments',
+        invalidReason: 'missing',
+        availableFields: expect.arrayContaining(['title', 'code', 'status', 'scope']),
+        suggestion: expect.any(String),
+      },
+    });
+    expect(missingTitleFieldError.details.availableFields).not.toContain('id');
+    expect(missingTitleFieldError.details.availableFields).not.toContain('employees');
+
+    const idTitleFieldError = response.body.errors.find(
+      (error: any) => error.path === '$.blocks[0].fields[1].titleField',
+    );
+    expect(idTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        action: 'compose',
+        fieldPath: 'department',
+        titleField: 'id',
+        targetCollection: 'departments',
+        invalidReason: 'id',
+        availableFields: expect.arrayContaining(['title', 'code', 'status', 'scope']),
+        suggestion: expect.any(String),
+      },
+    });
+    expect(idTitleFieldError.details.availableFields).not.toContain('id');
+    expect(idTitleFieldError.details.availableFields).not.toContain('employees');
+
+    const associationTitleFieldError = response.body.errors.find(
+      (error: any) => error.path === '$.blocks[0].fields[2].titleField',
+    );
+    expect(associationTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        action: 'compose',
+        fieldPath: 'manager',
+        titleField: 'department',
+        targetCollection: 'employees',
+        invalidReason: 'association',
+        availableFields: expect.arrayContaining(['nickname', 'status', 'email', 'phone']),
+        suggestion: expect.any(String),
+      },
+    });
+    expect(associationTitleFieldError.details.availableFields).not.toContain('id');
+    expect(associationTitleFieldError.details.availableFields).not.toContain('department');
+    expect(associationTitleFieldError.details.availableFields).not.toContain('manager');
+
+    const wideMissingTitleFieldError = response.body.errors.find(
+      (error: any) => error.path === '$.blocks[1].fields[0].titleField',
+    );
+    expect(wideMissingTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unknown',
+      details: {
+        action: 'compose',
+        fieldPath: TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD,
+        titleField: 'missingWideTargetTitle',
+        targetCollection: TITLE_FIELD_DIAGNOSTICS_WIDE_TARGET_COLLECTION,
+        invalidReason: 'missing',
+        availableFields: TITLE_FIELD_DIAGNOSTICS_WIDE_FIELDS.slice(0, 20),
+        availableFieldsTruncated: true,
+        suggestion: expect.any(String),
+      },
+    });
+    expect(wideMissingTitleFieldError.details.availableFields).not.toContain('id');
+    expect(wideMissingTitleFieldError.details.availableFields).not.toContain(
+      TITLE_FIELD_DIAGNOSTICS_WIDE_RELATION_FIELD,
+    );
+    expect(wideMissingTitleFieldError.details.availableFields).not.toContain(TITLE_FIELD_DIAGNOSTICS_WIDE_FIELDS[20]);
   });
 
   it('should aggregate ambiguous navigation group titles before applyBlueprint writes', async () => {

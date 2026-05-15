@@ -28,7 +28,7 @@ import {
   resolveFieldTargetCollection,
 } from './service-helpers';
 import { resolveRegisteredFieldBinding } from './field-binding-registry';
-import { resolveAssociationSafeTitleField } from './association-title-field';
+import { buildFlowSurfaceTitleFieldErrorDetails, resolveAssociationSafeTitleField } from './association-title-field';
 import {
   CHART_BASIC_VISUAL_TYPES,
   CHART_QUERY_MODES,
@@ -62,6 +62,7 @@ export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'ad
 type AuthoringErrorInput = Omit<FlowSurfaceErrorItemInput, 'message'> & { message: string };
 
 export interface FlowSurfaceAuthoringValidationContext {
+  authoringActionName?: FlowSurfaceAuthoringWriteAction;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
   findMenuGroupRoutesByTitle?: (title: string, transaction?: any) => Promise<any[]>;
   transaction?: any;
@@ -297,22 +298,26 @@ export async function collectFlowSurfaceAuthoringErrors(
   context: FlowSurfaceAuthoringValidationContext = {},
 ): Promise<FlowSurfaceErrorItemInput[]> {
   const errors: AuthoringErrorInput[] = [];
+  const validationContext: FlowSurfaceAuthoringValidationContext = {
+    ...context,
+    authoringActionName: actionName,
+  };
 
   if (!_.isPlainObject(values)) {
     return errors;
   }
 
-  await collectNavigationGroupErrors(actionName, values, context, errors);
-  await collectNavigationIconErrors(actionName, values, context, errors);
+  await collectNavigationGroupErrors(actionName, values, validationContext, errors);
+  await collectNavigationIconErrors(actionName, values, validationContext, errors);
   collectTopLevelLayoutErrors(actionName, values, errors);
   collectDefaultsShapeErrors(values?.defaults, '$.defaults', errors);
-  collectDefaultCollectionFieldGroupSemanticErrors(values?.defaults, context, errors);
+  collectDefaultCollectionFieldGroupSemanticErrors(values?.defaults, validationContext, errors);
   collectApplyBlueprintChartAssetErrors(actionName, values, errors);
 
   if (actionName === 'configure') {
-    await collectConfigureErrors(values, errors, context);
-    if (!context.skipGeneratedPopupDefaultFieldGroups) {
-      collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, context, errors);
+    await collectConfigureErrors(values, errors, validationContext);
+    if (!validationContext.skipGeneratedPopupDefaultFieldGroups) {
+      collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, validationContext, errors);
     }
     return errors;
   }
@@ -327,10 +332,10 @@ export async function collectFlowSurfaceAuthoringErrors(
   } else {
     blocks.forEach(({ block }) => collectLocalKeys(block, localKeys));
   }
-  blocks.forEach(({ block, path }) => collectBlockErrors(block, path, errors, localKeys, context));
+  blocks.forEach(({ block, path }) => collectBlockErrors(block, path, errors, localKeys, validationContext));
   collectReactionErrors(values?.reaction, '$.reaction', localKeys, errors);
-  if (!context.skipGeneratedPopupDefaultFieldGroups) {
-    collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, context, errors);
+  if (!validationContext.skipGeneratedPopupDefaultFieldGroups) {
+    collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, validationContext, errors);
   }
 
   return errors;
@@ -1237,11 +1242,13 @@ function collectDefaultFieldGroupRelationTitleFieldErrors(
           path: `${path}.titleField`,
           ruleId: 'relation-titleField-unreadable',
           message: `flowSurfaces authoring ${path}.titleField cannot use unreadable relation title field '${titleField}'`,
-          details: {
+          details: buildFlowSurfaceTitleFieldErrorDetails({
+            action: context.authoringActionName,
             fieldPath,
             titleField,
-            targetCollection: getCollectionName(targetCollection),
-          },
+            targetCollection,
+            invalidReason: getRelationTitleFieldInvalidReason(titleField, targetField),
+          }),
         });
         return;
       }
@@ -1250,12 +1257,13 @@ function collectDefaultFieldGroupRelationTitleFieldErrors(
           path: `${path}.titleField`,
           ruleId: 'relation-titleField-unknown',
           message: `flowSurfaces authoring ${path}.titleField references unknown relation title field '${titleField}'`,
-          details: {
+          details: buildFlowSurfaceTitleFieldErrorDetails({
+            action: context.authoringActionName,
             fieldPath,
             titleField,
-            targetCollection: getCollectionName(targetCollection),
-            availableFields: getCollectionFields(targetCollection).map(getFieldName).filter(Boolean),
-          },
+            targetCollection,
+            invalidReason: 'missing',
+          }),
         });
       }
     },
@@ -4728,11 +4736,13 @@ function collectRelationTitleFieldErrors(
       path: `${path}.titleField`,
       ruleId: 'relation-titleField-unreadable',
       message: `flowSurfaces authoring ${path}.titleField cannot use unreadable relation title field '${titleField}'`,
-      details: {
+      details: buildFlowSurfaceTitleFieldErrorDetails({
+        action: context.authoringActionName,
         fieldPath,
         titleField,
-        targetCollection: getCollectionName(targetCollection),
-      },
+        targetCollection,
+        invalidReason: getRelationTitleFieldInvalidReason(titleField, titleFieldTarget),
+      }),
     });
     return;
   }
@@ -4743,15 +4753,24 @@ function collectRelationTitleFieldErrors(
     path: `${path}.titleField`,
     ruleId: 'relation-titleField-unknown',
     message: `flowSurfaces authoring ${path}.titleField references unknown relation title field '${titleField}'`,
-    details: {
+    details: buildFlowSurfaceTitleFieldErrorDetails({
+      action: context.authoringActionName,
       fieldPath,
       titleField,
-      targetCollection: getCollectionName(targetCollection),
-      availableFields: getCollectionFields(targetCollection)
-        .map((field) => String(field?.name || field?.options?.name || '').trim())
-        .filter(Boolean),
-    },
+      targetCollection,
+      invalidReason: 'missing',
+    }),
   });
+}
+
+function getRelationTitleFieldInvalidReason(titleField: string, targetField: any) {
+  if (titleField === 'id') {
+    return 'id';
+  }
+  if (targetField && isAssociationField(targetField)) {
+    return 'association';
+  }
+  return undefined;
 }
 
 function getResourceBinding(block: any) {
