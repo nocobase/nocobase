@@ -32,13 +32,25 @@ const renderPrintableDom = (blockModel: any) => {
 };
 
 const openPrintWindow = async (contentEl: HTMLElement) => {
-  const win = window.open('', '_blank');
-  if (!win) {
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.visibility = 'hidden';
+  document.body.appendChild(iframe);
+
+  const win = iframe.contentWindow;
+  const doc = iframe.contentDocument || win?.document;
+  if (!win || !doc) {
+    iframe.remove();
     window.print();
     return;
   }
 
-  const doc = win.document;
   doc.open();
   doc.write('<!doctype html><html><head><meta charset="utf-8" /></head><body></body></html>');
   doc.close();
@@ -62,10 +74,12 @@ const openPrintWindow = async (contentEl: HTMLElement) => {
 
   // Allow styles to load/paint.
   await new Promise((resolve) => setTimeout(resolve, 50));
+  const cleanup = () => iframe.remove();
+  win.addEventListener('afterprint', cleanup, { once: true });
   win.focus();
   win.print();
-  // Close after print starts; some browsers need a delay.
-  setTimeout(() => win.close(), 200);
+  // Remove after print starts; some browsers need a delay.
+  setTimeout(cleanup, 200);
 };
 
 export class PrintActionModel extends ActionModel {
