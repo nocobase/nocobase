@@ -1780,6 +1780,57 @@ export const flowSurfaceExamples = {
       },
     },
   },
+  getEventFlowMeta: {
+    target: {
+      uid: 'submit-action-uid',
+    },
+  },
+  addEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
+    eventName: 'submit',
+    steps: {
+      runGuard: {
+        use: 'runjs',
+        defaultParams: {
+          code: 'ctx.message.info("Submitting");',
+        },
+      },
+    },
+    condition: {
+      logic: '$and',
+      items: [],
+    },
+  },
+  setEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
+    flow: {
+      key: 'submitGuard',
+      on: {
+        eventName: 'submit',
+        phase: 'beforeAllFlows',
+      },
+      steps: {
+        runGuard: {
+          use: 'runjs',
+          defaultParams: {
+            code: 'ctx.message.success("Updated");',
+          },
+        },
+      },
+    },
+  },
+  removeEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
+  },
   setEventFlows: {
     target: {
       uid: 'view-action-uid',

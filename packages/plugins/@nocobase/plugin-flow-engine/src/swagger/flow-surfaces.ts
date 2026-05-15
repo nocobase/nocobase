@@ -402,7 +402,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -1053,11 +1053,47 @@ const actionDocs: Record<string, any> = {
     requestBody: requestBody('FlowSurfaceUpdateSettingsRequest', examples.updateSettings),
     responses: responses('FlowSurfaceUpdateSettingsResult'),
   },
+  getEventFlowMeta: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read event-flow capabilities, registry, variables, step actions and fingerprint',
+    description: valuesCompatibilityNote(
+      'Returns Event Flow discovery metadata for the target, including the current `flowRegistry`, supported direct/object events, supported phases, step-action schemas, raw context variables, and an optimistic `fingerprint`. New RunJS event steps should use `use: "runjs"` and `defaultParams.code`; legacy `params.code` is not the new write path. For localized edits, prefer `getEventFlowMeta` + `addEventFlow` / `setEventFlow` / `removeEventFlow` over full `setEventFlows` replacement.',
+    ),
+    requestBody: requestBody('FlowSurfaceEventFlowMetaRequest', examples.getEventFlowMeta),
+    responses: responses('FlowSurfaceEventFlowMetaResult'),
+  },
+  addEventFlow: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add one Event Flow without replacing neighboring flows',
+    description: valuesCompatibilityNote(
+      'Adds one Event Flow key and preserves the rest of the current `flowRegistry`. MVP creation supports only the `beforeAllFlows` phase, defaulting to it when omitted. Use `condition` for `on.defaultParams.condition`, and write RunJS steps with `use: "runjs"` plus `defaultParams.code`. `expectedFingerprint` should usually come from `getEventFlowMeta.fingerprint`.',
+    ),
+    requestBody: requestBody('FlowSurfaceAddEventFlowRequest', examples.addEventFlow),
+    responses: responses('FlowSurfaceEventFlowWriteResult'),
+  },
+  setEventFlow: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace one Event Flow without replacing neighboring flows',
+    description: valuesCompatibilityNote(
+      'Replaces one Event Flow key and preserves the rest of the current `flowRegistry`. This is the precise single-flow escape hatch when a caller needs to write a full flow object. RunJS steps should use `use: "runjs"` and `defaultParams.code`. `expectedFingerprint` should usually come from `getEventFlowMeta.fingerprint`.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetEventFlowRequest', examples.setEventFlow),
+    responses: responses('FlowSurfaceEventFlowWriteResult'),
+  },
+  removeEventFlow: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Remove one Event Flow without replacing neighboring flows',
+    description: valuesCompatibilityNote(
+      'Removes one Event Flow key and preserves the rest of the current `flowRegistry`. `expectedFingerprint` should usually come from `getEventFlowMeta.fingerprint`.',
+    ),
+    requestBody: requestBody('FlowSurfaceRemoveEventFlowRequest', examples.removeEventFlow),
+    responses: responses('FlowSurfaceEventFlowWriteResult'),
+  },
   setEventFlows: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace instance-level event flow definitions on a node',
     description: valuesCompatibilityNote(
-      'Fully replaces the instance-level event flows on the current node. The server validates whether eventName, flowKey, stepKey, and the node context are all valid.',
+      'Fully replaces the instance-level event flows on the current node. This compatibility/high-control endpoint remains available, but localized authoring should prefer `getEventFlowMeta` + `addEventFlow` / `setEventFlow` / `removeEventFlow`. New RunJS steps should use `use: "runjs"` and `defaultParams.code`. The server validates whether eventName, flowKey, stepKey, and the node context are all valid.',
     ),
     requestBody: requestBody('FlowSurfaceSetEventFlowsRequest', examples.setEventFlows),
     responses: responses('FlowSurfaceSetEventFlowsResult'),
@@ -3243,6 +3279,215 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceEventFlowStepAction: {
+    type: 'object',
+    required: ['use', 'defaultParamsSchema'],
+    properties: {
+      use: {
+        type: 'string',
+        enum: ['runjs'],
+      },
+      defaultParamsSchema: {
+        type: 'object',
+        required: ['properties'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['object'],
+          },
+          properties: {
+            type: 'object',
+            properties: {
+              code: {
+                type: 'object',
+                properties: {
+                  type: {
+                    type: 'string',
+                    enum: ['string'],
+                  },
+                },
+                additionalProperties: true,
+              },
+            },
+            additionalProperties: true,
+          },
+          required: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          additionalProperties: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceEventFlowMetaRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceEventFlowMetaResult: {
+    type: 'object',
+    required: ['target', 'flowRegistry', 'events', 'phases', 'stepActions', 'vars', 'fingerprint', 'writeCapabilities'],
+    properties: {
+      target: ref('FlowSurfaceResolvedTarget'),
+      flowRegistry: ANY_OBJECT_SCHEMA,
+      events: {
+        type: 'object',
+        required: ['direct', 'object'],
+        properties: {
+          direct: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          object: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+      phases: {
+        type: 'object',
+        required: ['supported', 'defaultAdd'],
+        properties: {
+          supported: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['beforeAllFlows', 'afterAllFlows', 'beforeFlow', 'afterFlow', 'beforeStep', 'afterStep'],
+            },
+          },
+          defaultAdd: {
+            type: 'string',
+            enum: ['beforeAllFlows'],
+          },
+        },
+        additionalProperties: false,
+      },
+      eventBindings: ANY_OBJECT_SCHEMA,
+      stepActions: {
+        type: 'array',
+        items: ref('FlowSurfaceEventFlowStepAction'),
+      },
+      vars: ANY_OBJECT_SCHEMA,
+      fingerprint: {
+        type: 'string',
+      },
+      writeCapabilities: {
+        type: 'object',
+        required: ['defaultAddPhase', 'fineGrainedActions', 'fullReplaceAction'],
+        properties: {
+          defaultAddPhase: {
+            type: 'string',
+            enum: ['beforeAllFlows'],
+          },
+          fineGrainedActions: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['addEventFlow', 'setEventFlow', 'removeEventFlow'],
+            },
+          },
+          fullReplaceAction: {
+            type: 'string',
+            enum: ['setEventFlows'],
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddEventFlowRequest: {
+    type: 'object',
+    required: ['target', 'key', 'eventName'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      key: {
+        type: 'string',
+      },
+      eventName: {
+        type: 'string',
+      },
+      phase: {
+        type: 'string',
+        enum: ['beforeAllFlows'],
+        default: 'beforeAllFlows',
+      },
+      steps: ANY_OBJECT_SCHEMA,
+      condition: {
+        allOf: [ANY_OBJECT_SCHEMA],
+        description: 'Optional condition persisted to `on.defaultParams.condition`.',
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description: 'Optional optimistic concurrency token from `getEventFlowMeta.fingerprint`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceSetEventFlowRequest: {
+    type: 'object',
+    required: ['target', 'key', 'flow'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      key: {
+        type: 'string',
+      },
+      flow: ANY_OBJECT_SCHEMA,
+      expectedFingerprint: {
+        type: 'string',
+        description: 'Optional optimistic concurrency token from `getEventFlowMeta.fingerprint`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRemoveEventFlowRequest: {
+    type: 'object',
+    required: ['target', 'key'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      key: {
+        type: 'string',
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description: 'Optional optimistic concurrency token from `getEventFlowMeta.fingerprint`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceEventFlowWriteResult: {
+    type: 'object',
+    required: ['uid', 'key', 'flowRegistry', 'fingerprint'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      key: {
+        type: 'string',
+      },
+      flow: ANY_OBJECT_SCHEMA,
+      flowRegistry: ANY_OBJECT_SCHEMA,
+      fingerprint: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceSetFieldValueRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceFieldValueRule'),
   FlowSurfaceSetFieldValueRulesResult: buildReactionWriteResultSchema('FlowSurfaceFieldValueRule'),
   FlowSurfaceSetBlockLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceBlockLinkageRule'),
@@ -5097,6 +5342,41 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceMutateAddEventFlowValues: {
+    type: 'object',
+    required: ['target', 'key', 'eventName'],
+    properties: {
+      target: ref('FlowSurfaceMutateWriteTarget'),
+      key: ref('FlowSurfaceResolvableString'),
+      eventName: ref('FlowSurfaceResolvableString'),
+      phase: ref('FlowSurfaceResolvableString'),
+      steps: ANY_OBJECT_SCHEMA,
+      condition: ANY_OBJECT_SCHEMA,
+      expectedFingerprint: ref('FlowSurfaceResolvableString'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceMutateSetEventFlowValues: {
+    type: 'object',
+    required: ['target', 'key', 'flow'],
+    properties: {
+      target: ref('FlowSurfaceMutateWriteTarget'),
+      key: ref('FlowSurfaceResolvableString'),
+      flow: ANY_OBJECT_SCHEMA,
+      expectedFingerprint: ref('FlowSurfaceResolvableString'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceMutateRemoveEventFlowValues: {
+    type: 'object',
+    required: ['target', 'key'],
+    properties: {
+      target: ref('FlowSurfaceMutateWriteTarget'),
+      key: ref('FlowSurfaceResolvableString'),
+      expectedFingerprint: ref('FlowSurfaceResolvableString'),
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceSetEventFlowsRequest: {
     type: 'object',
     required: ['target'],
@@ -5109,11 +5389,15 @@ const schemas = {
   },
   FlowSurfaceSetEventFlowsResult: {
     type: 'object',
+    required: ['uid', 'flowRegistry', 'fingerprint'],
     properties: {
       uid: {
         type: 'string',
       },
       flowRegistry: ANY_OBJECT_SCHEMA,
+      fingerprint: {
+        type: 'string',
+      },
     },
     additionalProperties: false,
   },
@@ -5448,6 +5732,7 @@ const schemas = {
       ref('FlowSurfaceAddActionResult'),
       ref('FlowSurfaceAddRecordActionResult'),
       ref('FlowSurfaceUpdateSettingsResult'),
+      ref('FlowSurfaceEventFlowWriteResult'),
       ref('FlowSurfaceSetEventFlowsResult'),
       ref('FlowSurfaceSetLayoutResult'),
       ref('FlowSurfaceMoveNodeResult'),

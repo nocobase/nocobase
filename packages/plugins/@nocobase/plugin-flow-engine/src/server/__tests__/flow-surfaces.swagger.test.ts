@@ -95,6 +95,13 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceReactionCapability',
       'FlowSurfaceGetReactionMetaRequest',
       'FlowSurfaceGetReactionMetaResult',
+      'FlowSurfaceEventFlowStepAction',
+      'FlowSurfaceEventFlowMetaRequest',
+      'FlowSurfaceEventFlowMetaResult',
+      'FlowSurfaceAddEventFlowRequest',
+      'FlowSurfaceSetEventFlowRequest',
+      'FlowSurfaceRemoveEventFlowRequest',
+      'FlowSurfaceEventFlowWriteResult',
       'FlowSurfaceSetFieldValueRulesRequest',
       'FlowSurfaceSetFieldValueRulesResult',
       'FlowSurfaceSetBlockLinkageRulesRequest',
@@ -297,6 +304,32 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.expectedFingerprint.description).toContain(
       '`getReactionMeta.capabilities[].fingerprint`',
     );
+    expect(schemas.FlowSurfaceEventFlowMetaRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceEventFlowMetaResult.required).toEqual([
+      'target',
+      'flowRegistry',
+      'events',
+      'phases',
+      'stepActions',
+      'vars',
+      'fingerprint',
+      'writeCapabilities',
+    ]);
+    expect(schemas.FlowSurfaceEventFlowMetaResult.properties.stepActions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceEventFlowStepAction',
+    );
+    expect(schemas.FlowSurfaceEventFlowStepAction.properties.use.enum).toContain('runjs');
+    expect(
+      schemas.FlowSurfaceEventFlowStepAction.properties.defaultParamsSchema.properties.properties.properties.code
+        .properties.type.enum,
+    ).toContain('string');
+    expect(schemas.FlowSurfaceAddEventFlowRequest.required).toEqual(['target', 'key', 'eventName']);
+    expect(schemas.FlowSurfaceSetEventFlowRequest.required).toEqual(['target', 'key', 'flow']);
+    expect(schemas.FlowSurfaceRemoveEventFlowRequest.required).toEqual(['target', 'key']);
+    expect(schemas.FlowSurfaceAddEventFlowRequest.properties.condition.description).toContain(
+      'on.defaultParams.condition',
+    );
+    expect(schemas.FlowSurfaceSetEventFlowsResult.required).toEqual(['uid', 'flowRegistry', 'fingerprint']);
     expect(schemas.FlowSurfaceSetFieldValueRulesResult.properties.updateAssociationValues.items.type).toBe('string');
     expect(schemas.FlowSurfaceSetFieldValueRulesResult.properties.resolvedScene.description).toContain(
       'Concrete reaction scene',
@@ -656,6 +689,14 @@ describe('flowSurfaces swagger', () => {
     expect(getReactionMetaPath.description).toContain('`targetFields`');
     expect(getReactionMetaPath.description).toContain('`supportedActions`');
     expect(getReactionMetaPath.description).toContain('outer form block uid');
+    const getEventFlowMetaPath = swaggerDocument.paths['/flowSurfaces:getEventFlowMeta'].post;
+    expect(getEventFlowMetaPath.description).toContain('current `flowRegistry`');
+    expect(getEventFlowMetaPath.description).toContain('`defaultParams.code`');
+    const addEventFlowPath = swaggerDocument.paths['/flowSurfaces:addEventFlow'].post;
+    expect(addEventFlowPath.description).toContain('beforeAllFlows');
+    const addEventFlowRequest = addEventFlowPath.requestBody.content['application/json'];
+    expect(addEventFlowRequest.example?.steps?.runGuard?.use).toBe('runjs');
+    expect(addEventFlowRequest.example?.steps?.runGuard?.defaultParams?.code).toContain('ctx');
     const setFieldValueRulesPath = swaggerDocument.paths['/flowSurfaces:setFieldValueRules'].post;
     expect(setFieldValueRulesPath.description).toContain('outer form block uid');
     expect(setFieldValueRulesPath.description).toContain('`getReactionMeta.capabilities[].fingerprint`');
@@ -1738,6 +1779,9 @@ describe('flowSurfaces swagger', () => {
       'addActions',
       'addRecordActions',
       'updateSettings',
+      'addEventFlow',
+      'setEventFlow',
+      'removeEventFlow',
       'setEventFlows',
       'setLayout',
       'moveNode',
