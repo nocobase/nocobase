@@ -356,6 +356,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintDefaults.properties.collections.additionalProperties.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultCollection',
     );
+    expect(
+      schemas.FlowSurfaceApplyBlueprintDefaults.properties.dataSources.additionalProperties.properties.collections
+        .additionalProperties.$ref,
+    ).toBe('#/components/schemas/FlowSurfaceApplyBlueprintDefaultCollection');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.fieldGroups.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFieldGroup',

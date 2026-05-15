@@ -1246,6 +1246,335 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(generatedFieldPaths).not.toContain('internalSort');
   });
 
+  it('should use datasource-aware generated popup default fieldGroups paths', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'externalLargeRecordsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'external',
+              collectionName: LARGE_GENERATED_POPUP_COLLECTION,
+            },
+            fields: ['field1'],
+            actions: [
+              {
+                key: 'createExternalLargeRecord',
+                type: 'addNew',
+                popup: {},
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (dataSourceKey, collectionName) =>
+          dataSourceKey === 'external' ? context.db.getCollection(collectionName) : null,
+      },
+    );
+
+    const missingDefaultsError = errors.find((error: any) => error.ruleId === 'missing-default-field-groups');
+    expect(missingDefaultsError).toMatchObject({
+      path: `$.defaults.dataSources.external.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups`,
+      details: {
+        collection: LARGE_GENERATED_POPUP_COLLECTION,
+        dataSourceKey: 'external',
+        businessFieldCount: 11,
+      },
+    });
+  });
+
+  it('should accept datasource-aware generated popup default fieldGroups', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        defaults: {
+          dataSources: {
+            external: {
+              collections: {
+                [LARGE_GENERATED_POPUP_COLLECTION]: {
+                  fieldGroups: [
+                    {
+                      title: 'External large fields',
+                      fields: LARGE_GENERATED_POPUP_FIELDS,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'externalLargeRecordsTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'external',
+              collectionName: LARGE_GENERATED_POPUP_COLLECTION,
+            },
+            fields: ['field1'],
+            actions: [
+              {
+                key: 'createExternalLargeRecord',
+                type: 'addNew',
+                popup: {},
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (dataSourceKey, collectionName) =>
+          dataSourceKey === 'external' ? context.db.getCollection(collectionName) : null,
+      },
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('missing-default-field-groups');
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('default-field-groups-incomplete');
+  });
+
+  it('should prefer datasource-aware main defaults over stale legacy alias defaults during validation', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'missing-target-never-resolved' },
+      defaults: {
+        collections: {
+          [LARGE_GENERATED_POPUP_COLLECTION]: {
+            fieldGroups: [
+              {
+                title: 'Stale legacy alias',
+                fields: ['field1', 'unknownLegacyField'],
+              },
+            ],
+          },
+        },
+        dataSources: {
+          main: {
+            collections: {
+              [LARGE_GENERATED_POPUP_COLLECTION]: {
+                fieldGroups: [
+                  {
+                    title: 'Main datasource',
+                    fields: LARGE_GENERATED_POPUP_FIELDS,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      blocks: [
+        {
+          key: 'largeRecordsTable',
+          type: 'table',
+          collection: LARGE_GENERATED_POPUP_COLLECTION,
+          fields: ['field1'],
+          actions: [
+            {
+              key: 'createLargeRecord',
+              type: 'addNew',
+              popup: {},
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(errors.map((error: any) => error.path)).not.toContain(
+      `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups[0].fields[1]`,
+    );
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('default-field-group-unknown-field');
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('missing-default-field-groups');
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('default-field-groups-incomplete');
+  });
+
+  it('should ignore malformed shadowed legacy main defaults during authoring validation', async () => {
+    const values = {
+      target: { uid: 'missing-target-never-resolved' },
+      defaults: {
+        collections: {
+          [LARGE_GENERATED_POPUP_COLLECTION]: {
+            fieldGroups: [
+              {
+                title: 'Malformed stale legacy alias',
+                fields: [{ titleField: 'missingFieldPath' }],
+              },
+            ],
+          },
+        },
+        dataSources: {
+          main: {
+            collections: {
+              [LARGE_GENERATED_POPUP_COLLECTION]: {
+                fieldGroups: [
+                  {
+                    title: 'Main datasource',
+                    fields: LARGE_GENERATED_POPUP_FIELDS,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      blocks: [
+        {
+          key: 'largeRecordsTable',
+          type: 'table',
+          collection: LARGE_GENERATED_POPUP_COLLECTION,
+          fields: ['field1'],
+          actions: [
+            {
+              key: 'createLargeRecord',
+              type: 'addNew',
+              popup: {},
+            },
+          ],
+        },
+      ],
+    };
+    const composeErrors = await collectFlowSurfaceAuthoringErrors('compose', values);
+    const configureErrors = await collectFlowSurfaceAuthoringErrors('configure', {
+      ...values,
+      changes: {
+        openView: {
+          dataSourceKey: 'main',
+          collectionName: LARGE_GENERATED_POPUP_COLLECTION,
+          mode: 'modal',
+        },
+      },
+    });
+
+    for (const errors of [composeErrors, configureErrors]) {
+      expect(errors.map((error: any) => error.path)).not.toContain(
+        `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups[0].fields[0].field`,
+      );
+      expect(errors.map((error: any) => error.ruleId)).not.toContain('defaults-fieldGroups-field-field-required');
+      expect(errors.map((error: any) => error.ruleId)).not.toContain('missing-default-field-groups');
+      expect(errors.map((error: any) => error.ruleId)).not.toContain('default-field-groups-incomplete');
+    }
+  });
+
+  it('should report malformed datasource-aware main defaults instead of shadowed legacy defaults', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'missing-target-never-resolved' },
+      defaults: {
+        collections: {
+          [LARGE_GENERATED_POPUP_COLLECTION]: {
+            fieldGroups: [
+              {
+                title: 'Malformed stale legacy alias',
+                fields: [{ titleField: 'missingFieldPath' }],
+              },
+            ],
+          },
+        },
+        dataSources: {
+          main: {
+            collections: {
+              [LARGE_GENERATED_POPUP_COLLECTION]: {
+                fieldGroups: [
+                  {
+                    title: 'Malformed main datasource',
+                    fields: [{ titleField: 'missingFieldPath' }],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      blocks: [
+        {
+          key: 'largeRecordsTable',
+          type: 'table',
+          collection: LARGE_GENERATED_POPUP_COLLECTION,
+          fields: ['field1'],
+          actions: [
+            {
+              key: 'createLargeRecord',
+              type: 'addNew',
+              popup: {},
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(errors.map((error: any) => error.path)).toContain(
+      `$.defaults.dataSources.main.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups[0].fields[0].field`,
+    );
+    expect(errors.map((error: any) => error.path)).not.toContain(
+      `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups[0].fields[0].field`,
+    );
+  });
+
+  it('should keep generated popup validation on malformed datasource-aware main defaults paths', async () => {
+    const cases = [
+      {
+        title: 'with legacy alias',
+        collections: {
+          [LARGE_GENERATED_POPUP_COLLECTION]: {
+            fieldGroups: [
+              {
+                title: 'Legacy alias',
+                fields: LARGE_GENERATED_POPUP_FIELDS,
+              },
+            ],
+          },
+        },
+      },
+      {
+        title: 'without legacy alias',
+        collections: undefined,
+      },
+    ];
+
+    for (const testCase of cases) {
+      const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+        target: { uid: 'missing-target-never-resolved' },
+        defaults: {
+          collections: testCase.collections,
+          dataSources: {
+            main: {
+              collections: {
+                [LARGE_GENERATED_POPUP_COLLECTION]: 1,
+              },
+            },
+          },
+        },
+        blocks: [
+          {
+            key: `largeRecordsTable-${testCase.title}`,
+            type: 'table',
+            collection: LARGE_GENERATED_POPUP_COLLECTION,
+            fields: ['field1'],
+            actions: [
+              {
+                key: 'createLargeRecord',
+                type: 'addNew',
+                popup: {},
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(errors.map((error: any) => error.path)).not.toContain(
+        `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups`,
+      );
+      expect(errors.map((error: any) => error.path)).not.toContain(
+        `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}`,
+      );
+      expect(errors.map((error: any) => error.path)).toContain(
+        `$.defaults.dataSources.main.collections.${LARGE_GENERATED_POPUP_COLLECTION}`,
+      );
+    }
+  });
+
   it('should include default relation titleField overrides when checking generated popup fieldGroups coverage', async () => {
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -1648,6 +1977,60 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(defaultAssociationError.details.availableFields).not.toContain('id');
     expect(defaultAssociationError.details.availableFields).not.toContain('department');
     expect(defaultAssociationError.details.availableFields).not.toContain('manager');
+  });
+
+  it('should validate external datasource default fieldGroups with datasource-aware paths', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        defaults: {
+          dataSources: {
+            external: {
+              collections: {
+                [LARGE_GENERATED_POPUP_SOURCE_COLLECTION]: {
+                  fieldGroups: [
+                    {
+                      title: 'External relation',
+                      fields: [
+                        'unknownField',
+                        { field: LARGE_GENERATED_POPUP_RELATION_FIELD, titleField: 'missingLargeRecordTitle' },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        getCollection: (dataSourceKey, collectionName) =>
+          dataSourceKey === 'external' ? context.db.getCollection(collectionName) : null,
+      },
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['default-field-group-unknown-field', 'relation-titleField-unknown']),
+    );
+    expect(errors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        `$.defaults.dataSources.external.collections.${LARGE_GENERATED_POPUP_SOURCE_COLLECTION}.fieldGroups[0].fields[0]`,
+        `$.defaults.dataSources.external.collections.${LARGE_GENERATED_POPUP_SOURCE_COLLECTION}.fieldGroups[0].fields[1].titleField`,
+      ]),
+    );
+    expect(
+      errors.find(
+        (error: any) =>
+          error.path ===
+          `$.defaults.dataSources.external.collections.${LARGE_GENERATED_POPUP_SOURCE_COLLECTION}.fieldGroups[0].fields[1].titleField`,
+      ),
+    ).toMatchObject({
+      details: {
+        targetCollection: LARGE_GENERATED_POPUP_COLLECTION,
+        invalidReason: 'missing',
+      },
+    });
   });
 
   it('should reject compose generated action popups for large collections without collection default fieldGroups', async () => {
@@ -2243,6 +2626,264 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       },
     });
     expect(missingDefaultsError.details.triggerPaths).toContain('$.changes.openView');
+  });
+
+  it('should reject configure generated view popups when generated relation field popups need target default fieldGroups', async () => {
+    const unique = Date.now();
+    const sourceCollection = `flow_surface_configure_generated_popup_src_${unique}`;
+    const sourceFields = Array.from({ length: 11 }, (_item, index) => `sourceField${index + 1}`);
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        fields: sourceFields.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: LARGE_GENERATED_POPUP_RELATION_FIELD,
+        type: 'belongsTo',
+        target: LARGE_GENERATED_POPUP_COLLECTION,
+        foreignKey: `${LARGE_GENERATED_POPUP_RELATION_FIELD}Id`,
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [sourceCollection]: [...sourceFields, `${LARGE_GENERATED_POPUP_RELATION_FIELD}Id`],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Authoring configure generated view relation popup page',
+      tabTitle: 'Authoring configure generated view relation popup tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.tabSchemaUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      defaultFilter: {
+        logic: '$and',
+        items: [
+          { path: 'nickname', operator: '$notEmpty' },
+          { path: 'status', operator: '$notEmpty' },
+          { path: 'email', operator: '$notEmpty' },
+          { path: 'phone', operator: '$notEmpty' },
+        ],
+      },
+    });
+    const viewAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: false,
+          },
+        },
+      }),
+    );
+    const emptyPopup = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: { uid: viewAction.uid },
+        spec: {
+          subModels: {
+            page: {
+              use: 'ChildPageModel',
+              subModels: {
+                tabs: [
+                  {
+                    use: 'ChildPageTabModel',
+                    subModels: {
+                      grid: {
+                        use: 'BlockGridModel',
+                        subModels: {
+                          items: [],
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(emptyPopup.status, readErrorMessage(emptyPopup)).toBe(200);
+
+    const response = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: viewAction.uid },
+        defaults: {
+          collections: {
+            [sourceCollection]: {
+              fieldGroups: [
+                {
+                  title: 'Source',
+                  fields: [...sourceFields, LARGE_GENERATED_POPUP_RELATION_FIELD],
+                },
+              ],
+            },
+          },
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: sourceCollection,
+            mode: 'modal',
+          },
+        },
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const missingDefaultsError = response.body.errors.find(
+      (error: any) =>
+        error.ruleId === 'missing-default-field-groups' &&
+        error.details?.collection === LARGE_GENERATED_POPUP_COLLECTION,
+    );
+    expect(missingDefaultsError).toMatchObject({
+      path: `$.defaults.collections.${LARGE_GENERATED_POPUP_COLLECTION}.fieldGroups`,
+      details: {
+        collection: LARGE_GENERATED_POPUP_COLLECTION,
+        businessFieldCount: 11,
+        actionTypes: ['view'],
+      },
+    });
+    expect(missingDefaultsError.details.triggerPaths).toContain(
+      `$.changes.openView.fields.${LARGE_GENERATED_POPUP_RELATION_FIELD}.popup`,
+    );
+  });
+
+  it('should accept configure generated view relation popups when target default fieldGroups are provided', async () => {
+    const unique = Date.now();
+    const sourceCollection = `flow_surface_configure_generated_popup_ok_src_${unique}`;
+    const sourceFields = Array.from({ length: 11 }, (_item, index) => `sourceField${index + 1}`);
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        fields: sourceFields.map((name) => ({
+          name,
+          type: 'string',
+          interface: 'input',
+        })),
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: LARGE_GENERATED_POPUP_RELATION_FIELD,
+        type: 'belongsTo',
+        target: LARGE_GENERATED_POPUP_COLLECTION,
+        foreignKey: `${LARGE_GENERATED_POPUP_RELATION_FIELD}Id`,
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [sourceCollection]: [...sourceFields, `${LARGE_GENERATED_POPUP_RELATION_FIELD}Id`],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Authoring configure generated view relation popup ok page',
+      tabTitle: 'Authoring configure generated view relation popup ok tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: { uid: page.tabSchemaUid },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      defaultFilter: {
+        logic: '$and',
+        items: [
+          { path: 'nickname', operator: '$notEmpty' },
+          { path: 'status', operator: '$notEmpty' },
+          { path: 'email', operator: '$notEmpty' },
+          { path: 'phone', operator: '$notEmpty' },
+        ],
+      },
+    });
+    const viewAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            tryTemplate: false,
+          },
+        },
+      }),
+    );
+    const emptyPopup = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: { uid: viewAction.uid },
+        spec: {
+          subModels: {
+            page: {
+              use: 'ChildPageModel',
+              subModels: {
+                tabs: [
+                  {
+                    use: 'ChildPageTabModel',
+                    subModels: {
+                      grid: {
+                        use: 'BlockGridModel',
+                        subModels: {
+                          items: [],
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(emptyPopup.status, readErrorMessage(emptyPopup)).toBe(200);
+
+    const response = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: viewAction.uid },
+        defaults: {
+          collections: {
+            [sourceCollection]: {
+              fieldGroups: [
+                {
+                  title: 'Source',
+                  fields: [...sourceFields, LARGE_GENERATED_POPUP_RELATION_FIELD],
+                },
+              ],
+            },
+            [LARGE_GENERATED_POPUP_COLLECTION]: {
+              fieldGroups: [
+                {
+                  title: 'Target core',
+                  fields: LARGE_GENERATED_POPUP_FIELDS,
+                },
+              ],
+            },
+          },
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: sourceCollection,
+            mode: 'modal',
+          },
+        },
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
   });
 
   it('should reject configure field generated popups for large relation target collections without target default fieldGroups', async () => {

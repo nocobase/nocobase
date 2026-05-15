@@ -180,8 +180,13 @@ export type FlowSurfaceApplyBlueprintDefaultCollection = {
   formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior;
 };
 
+export type FlowSurfaceApplyBlueprintDefaultDataSource = {
+  collections?: Record<string, FlowSurfaceApplyBlueprintDefaultCollection>;
+};
+
 export type FlowSurfaceApplyBlueprintDefaults = {
   collections?: Record<string, FlowSurfaceApplyBlueprintDefaultCollection>;
+  dataSources?: Record<string, FlowSurfaceApplyBlueprintDefaultDataSource>;
 };
 
 export type FlowSurfaceApplyBlueprintActionObjectSpec = {

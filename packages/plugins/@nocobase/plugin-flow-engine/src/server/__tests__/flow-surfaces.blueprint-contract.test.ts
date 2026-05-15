@@ -6973,6 +6973,58 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(readErrorMessage(res)).toContain(expectedMessage);
   });
 
+  it('should ignore malformed shadowed legacy main defaults when dataSources.main provides the collection defaults', async () => {
+    const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Datasource main defaults precedence',
+        },
+        defaults: {
+          collections: {
+            users: {
+              fieldGroups: [
+                {
+                  title: 'Malformed stale legacy alias',
+                  fields: [{ titleField: 'missingFieldPath' }],
+                },
+              ],
+            },
+          },
+          dataSources: {
+            main: {
+              collections: {
+                users: {
+                  fieldGroups: [
+                    {
+                      title: 'Main datasource',
+                      fields: ['username', 'nickname', 'email'],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'users',
+                fields: ['username'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(res.status, readErrorMessage(res)).toBe(200);
+  });
+
   it('should reject unsupported applyBlueprint top-level keys', async () => {
     const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

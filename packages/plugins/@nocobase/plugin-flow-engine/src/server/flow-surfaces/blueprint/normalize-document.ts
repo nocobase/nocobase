@@ -14,6 +14,7 @@ import { buildDefinedPayload, normalizeFlowSurfaceComposeKey } from '../service-
 import type {
   FlowSurfaceApplyBlueprintAssets,
   FlowSurfaceApplyBlueprintDefaultCollection,
+  FlowSurfaceApplyBlueprintDefaultDataSource,
   FlowSurfaceApplyBlueprintDefaultFormBehavior,
   FlowSurfaceApplyBlueprintDefaultFormBehaviorField,
   FlowSurfaceApplyBlueprintDefaultFormBehaviorScene,
@@ -346,33 +347,95 @@ function normalizeDefaultCollection(input: any, context: string): FlowSurfaceApp
   }) as FlowSurfaceApplyBlueprintDefaultCollection;
 }
 
+function normalizeDefaultCollections(input: any, context: string, options: { skipCollectionNames?: Set<string> } = {}) {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, context);
+  return Object.fromEntries(
+    Object.entries(input)
+      .map(([collectionName, collectionDefaults]) => {
+        const normalizedCollectionName = assertNonEmptyString(collectionName, `${context} key`);
+        if (options.skipCollectionNames?.has(normalizedCollectionName)) {
+          return undefined;
+        }
+        return [
+          normalizedCollectionName,
+          normalizeDefaultCollection(collectionDefaults, `${context}.${normalizedCollectionName}`),
+        ];
+      })
+      .filter((entry) => !_.isUndefined(entry)) as [string, FlowSurfaceApplyBlueprintDefaultCollection][],
+  );
+}
+
+function getMainDefaultDataSourceCollectionNames(input: any) {
+  const names = new Set<string>();
+  if (!_.isPlainObject(input?.dataSources)) {
+    return names;
+  }
+  Object.entries(input.dataSources).forEach(([dataSourceKey, dataSourceDefaults]) => {
+    if (String(dataSourceKey || '').trim() !== 'main') {
+      return;
+    }
+    if (!_.isPlainObject(dataSourceDefaults)) {
+      return;
+    }
+    const collections = (dataSourceDefaults as { collections?: unknown }).collections;
+    if (!_.isPlainObject(collections)) {
+      return;
+    }
+    Object.keys(collections).forEach((collectionName) => {
+      const normalizedCollectionName = String(collectionName || '').trim();
+      if (normalizedCollectionName) {
+        names.add(normalizedCollectionName);
+      }
+    });
+  });
+  return names;
+}
+
+function normalizeDefaultDataSource(input: any, context: string): FlowSurfaceApplyBlueprintDefaultDataSource {
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, ['collections']);
+  return buildDefinedPayload({
+    collections: normalizeDefaultCollections(input.collections, `${context}.collections`),
+  }) as FlowSurfaceApplyBlueprintDefaultDataSource;
+}
+
+function normalizeDefaultDataSources(input: any) {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, 'flowSurfaces applyBlueprint defaults.dataSources');
+  return Object.fromEntries(
+    Object.entries(input).map(([dataSourceKey, dataSourceDefaults]) => {
+      const normalizedDataSourceKey = assertNonEmptyString(
+        dataSourceKey,
+        'flowSurfaces applyBlueprint defaults.dataSources key',
+      );
+      return [
+        normalizedDataSourceKey,
+        normalizeDefaultDataSource(
+          dataSourceDefaults,
+          `flowSurfaces applyBlueprint defaults.dataSources.${normalizedDataSourceKey}`,
+        ),
+      ];
+    }),
+  );
+}
+
 function normalizeDefaults(input: any): FlowSurfaceApplyBlueprintDefaults | undefined {
   if (_.isUndefined(input)) {
     return undefined;
   }
   assertPlainObject(input, 'flowSurfaces applyBlueprint defaults');
-  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint defaults', ['collections']);
-  if (_.isUndefined(input.collections)) {
-    return {};
-  }
-  assertPlainObject(input.collections, 'flowSurfaces applyBlueprint defaults.collections');
-  return {
-    collections: Object.fromEntries(
-      Object.entries(input.collections).map(([collectionName, collectionDefaults]) => {
-        const normalizedCollectionName = assertNonEmptyString(
-          collectionName,
-          'flowSurfaces applyBlueprint defaults.collections key',
-        );
-        return [
-          normalizedCollectionName,
-          normalizeDefaultCollection(
-            collectionDefaults,
-            `flowSurfaces applyBlueprint defaults.collections.${normalizedCollectionName}`,
-          ),
-        ];
-      }),
-    ),
-  };
+  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint defaults', ['collections', 'dataSources']);
+  return buildDefinedPayload({
+    collections: normalizeDefaultCollections(input.collections, 'flowSurfaces applyBlueprint defaults.collections', {
+      skipCollectionNames: getMainDefaultDataSourceCollectionNames(input),
+    }),
+    dataSources: normalizeDefaultDataSources(input.dataSources),
+  }) as FlowSurfaceApplyBlueprintDefaults;
 }
 
 function normalizeTabs(input: any[]): FlowSurfaceApplyBlueprintDocument['tabs'] {

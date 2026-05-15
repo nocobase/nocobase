@@ -56,6 +56,11 @@ import { FIELD_WRAPPER_USES } from './node-use-sets';
 import { FLOW_SURFACE_INTERNAL_FIELD_KEYS } from './field-type-resolver';
 import { hasFlowSurfaceTemplateDocument, hasFlowSurfaceTemplateReference } from './template-reference';
 import { SINGLE_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
+import {
+  getFlowSurfaceDefaultFieldGroupRelationTitleFieldOverride,
+  normalizeFlowSurfaceApplyBlueprintDataSourceKey,
+  resolveFlowSurfaceApplyBlueprintDefaultCollection,
+} from './blueprint/defaults';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -269,7 +274,7 @@ const CONFIGURE_OPEN_VIEW_ACTION_TYPE_BY_MODEL_USE: Record<string, GeneratedPopu
   KanbanCardViewActionModel: 'view',
   EditActionModel: 'edit',
 };
-const DEFAULTS_ALLOWED_KEYS = ['collections'];
+const DEFAULTS_ALLOWED_KEYS = ['collections', 'dataSources'];
 const DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups', 'formBehavior'];
 const DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
 const DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
@@ -796,28 +801,85 @@ function collectDefaultsShapeErrors(defaults: any, path: string, errors: Authori
     return;
   }
   collectUnsupportedKeysErrors(defaults, path, DEFAULTS_ALLOWED_KEYS, 'defaults-unsupported-key', errors);
-  if (_.isUndefined(defaults.collections)) {
+  collectDefaultCollectionsShapeErrors(defaults.collections, `${path}.collections`, errors, {
+    skipCollectionNames: getMainDataSourceDefaultCollectionNames(defaults),
+  });
+  collectDefaultDataSourcesShapeErrors(defaults.dataSources, `${path}.dataSources`, errors);
+}
+
+function collectDefaultCollectionsShapeErrors(
+  collections: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  options: { skipCollectionNames?: Set<string> } = {},
+) {
+  if (_.isUndefined(collections)) {
     return;
   }
-  if (!_.isPlainObject(defaults.collections)) {
+  if (!_.isPlainObject(collections)) {
     pushAuthoringError(errors, {
-      path: `${path}.collections`,
+      path,
       ruleId: 'defaults-collections-invalid-shape',
-      message: `flowSurfaces authoring ${path}.collections must be an object`,
+      message: `flowSurfaces authoring ${path} must be an object`,
     });
     return;
   }
-  Object.entries(defaults.collections).forEach(([collectionName, collectionDefaults]) => {
+  Object.entries(collections).forEach(([collectionName, collectionDefaults]) => {
     const normalizedCollectionName = String(collectionName || '').trim();
     if (!normalizedCollectionName) {
       pushAuthoringError(errors, {
-        path: `${path}.collections`,
+        path,
         ruleId: 'defaults-collection-name-required',
-        message: `flowSurfaces authoring ${path}.collections keys must be non-empty collection names`,
+        message: `flowSurfaces authoring ${path} keys must be non-empty collection names`,
       });
       return;
     }
-    collectDefaultCollectionShapeErrors(collectionDefaults, `${path}.collections.${normalizedCollectionName}`, errors);
+    if (options.skipCollectionNames?.has(normalizedCollectionName)) {
+      return;
+    }
+    collectDefaultCollectionShapeErrors(collectionDefaults, `${path}.${normalizedCollectionName}`, errors);
+  });
+}
+
+function collectDefaultDataSourcesShapeErrors(dataSources: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(dataSources)) {
+    return;
+  }
+  if (!_.isPlainObject(dataSources)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaults-dataSources-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an object`,
+    });
+    return;
+  }
+  Object.entries(dataSources).forEach(([dataSourceKey, dataSourceDefaults]) => {
+    const normalizedDataSourceKey = String(dataSourceKey || '').trim();
+    if (!normalizedDataSourceKey) {
+      pushAuthoringError(errors, {
+        path,
+        ruleId: 'defaults-dataSource-name-required',
+        message: `flowSurfaces authoring ${path} keys must be non-empty data source names`,
+      });
+      return;
+    }
+    const dataSourcePath = `${path}.${normalizedDataSourceKey}`;
+    if (!_.isPlainObject(dataSourceDefaults)) {
+      pushAuthoringError(errors, {
+        path: dataSourcePath,
+        ruleId: 'defaults-dataSource-invalid-shape',
+        message: `flowSurfaces authoring ${dataSourcePath} must be an object`,
+      });
+      return;
+    }
+    collectUnsupportedKeysErrors(
+      dataSourceDefaults,
+      dataSourcePath,
+      ['collections'],
+      'defaults-dataSource-unsupported-key',
+      errors,
+    );
+    collectDefaultCollectionsShapeErrors(dataSourceDefaults.collections, `${dataSourcePath}.collections`, errors);
   });
 }
 
@@ -1154,26 +1216,107 @@ function collectDefaultCollectionFieldGroupSemanticErrors(
   context: FlowSurfaceAuthoringValidationContext,
   errors: AuthoringErrorInput[],
 ) {
-  if (!context.getCollection || !_.isPlainObject(defaults?.collections)) {
+  if (!context.getCollection || !_.isPlainObject(defaults)) {
     return;
   }
-  Object.entries(defaults.collections).forEach(([collectionName, collectionDefaults]) => {
-    const normalizedCollectionName = String(collectionName || '').trim();
-    const collectionDefaultsObject = _.isPlainObject(collectionDefaults)
-      ? (collectionDefaults as { fieldGroups?: unknown })
-      : undefined;
-    const fieldGroups = collectionDefaultsObject?.fieldGroups;
-    if (!normalizedCollectionName || !Array.isArray(fieldGroups)) {
+  forEachDefaultCollectionDefaults(defaults, (entry) => {
+    const fieldGroups = entry.collectionDefaults.fieldGroups;
+    if (!Array.isArray(fieldGroups)) {
       return;
     }
-    const collection = context.getCollection('main', normalizedCollectionName);
+    const collection = context.getCollection?.(entry.dataSourceKey, entry.collectionName);
     if (!collection) {
       return;
     }
-    const basePath = `$.defaults.collections.${normalizedCollectionName}.fieldGroups`;
+    const basePath = `${entry.path}.fieldGroups`;
     collectDefaultFieldGroupUnknownFieldErrors(fieldGroups, basePath, collection, errors);
-    collectDefaultFieldGroupRelationTitleFieldErrors(fieldGroups, basePath, collection, 'main', context, errors);
+    collectDefaultFieldGroupRelationTitleFieldErrors(
+      fieldGroups,
+      basePath,
+      collection,
+      entry.dataSourceKey,
+      context,
+      errors,
+    );
   });
+}
+
+function forEachDefaultCollectionDefaults(
+  defaults: any,
+  visitor: (entry: {
+    dataSourceKey: string;
+    collectionName: string;
+    collectionDefaults: Record<string, any>;
+    path: string;
+  }) => void,
+) {
+  const mainDataSourceCollectionOverrides = getMainDataSourceDefaultCollectionNames(defaults);
+  if (_.isPlainObject(defaults?.collections)) {
+    Object.entries(defaults.collections).forEach(([collectionName, collectionDefaults]) => {
+      const normalizedCollectionName = String(collectionName || '').trim();
+      if (!normalizedCollectionName || !_.isPlainObject(collectionDefaults)) {
+        return;
+      }
+      if (mainDataSourceCollectionOverrides.has(normalizedCollectionName)) {
+        return;
+      }
+      visitor({
+        dataSourceKey: 'main',
+        collectionName: normalizedCollectionName,
+        collectionDefaults: collectionDefaults as Record<string, any>,
+        path: `$.defaults.collections.${normalizedCollectionName}`,
+      });
+    });
+  }
+  if (!_.isPlainObject(defaults?.dataSources)) {
+    return;
+  }
+  Object.entries(defaults.dataSources).forEach(([dataSourceKey, dataSourceDefaults]) => {
+    const normalizedDataSourceKey = String(dataSourceKey || '').trim();
+    const collections = _.isPlainObject(dataSourceDefaults)
+      ? (dataSourceDefaults as { collections?: unknown }).collections
+      : undefined;
+    if (!normalizedDataSourceKey || !_.isPlainObject(collections)) {
+      return;
+    }
+    Object.entries(collections).forEach(([collectionName, collectionDefaults]) => {
+      const normalizedCollectionName = String(collectionName || '').trim();
+      if (!normalizedCollectionName || !_.isPlainObject(collectionDefaults)) {
+        return;
+      }
+      visitor({
+        dataSourceKey: normalizedDataSourceKey,
+        collectionName: normalizedCollectionName,
+        collectionDefaults: collectionDefaults as Record<string, any>,
+        path: `$.defaults.dataSources.${normalizedDataSourceKey}.collections.${normalizedCollectionName}`,
+      });
+    });
+  });
+}
+
+function getMainDataSourceDefaultCollectionNames(defaults: any) {
+  const names = new Set<string>();
+  if (!_.isPlainObject(defaults?.dataSources)) {
+    return names;
+  }
+  Object.entries(defaults.dataSources).forEach(([dataSourceKey, dataSourceDefaults]) => {
+    if (String(dataSourceKey || '').trim() !== 'main') {
+      return;
+    }
+    const collections = _.isPlainObject(dataSourceDefaults)
+      ? (dataSourceDefaults as { collections?: unknown }).collections
+      : undefined;
+    if (!_.isPlainObject(collections)) {
+      return;
+    }
+    Object.keys(collections).forEach((collectionName) => {
+      const normalizedCollectionName = String(collectionName || '').trim();
+      if (normalizedCollectionName) {
+        names.add(normalizedCollectionName);
+      }
+    });
+  });
+  return names;
 }
 
 function collectDefaultFieldGroupUnknownFieldErrors(
@@ -1391,16 +1534,19 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
     );
   }
 
-  if (actionName === 'applyBlueprint' || actionName === 'compose') {
-    expandGeneratedViewPopupOneHopRequirements(requirements, values?.defaults, context);
-  }
+  expandGeneratedViewPopupOneHopRequirements(requirements, values?.defaults, context);
 
   for (const requirement of requirements.values()) {
     const collection = context.getCollection(requirement.dataSourceKey, requirement.collection);
     if (!collection) {
       continue;
     }
-    const defaultFieldGroups = getDefaultCollectionFieldGroups(values?.defaults, requirement.collection);
+    const defaultCollection = resolveDefaultCollectionDefaults(
+      values?.defaults,
+      requirement.dataSourceKey,
+      requirement.collection,
+    );
+    const defaultFieldGroups = defaultCollection.collectionDefaults?.fieldGroups;
     const normalizedDefaultFieldGroups = Array.isArray(defaultFieldGroups) ? defaultFieldGroups : undefined;
     const businessFieldNames = getGeneratedPopupBusinessFieldNames(collection);
     const effectiveFieldNames = getGeneratedPopupEffectiveFieldNames({
@@ -1415,7 +1561,7 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
     }
     collectDefaultFieldGroupsCoverageErrors(
       defaultFieldGroups,
-      `$.defaults.collections.${requirement.collection}.fieldGroups`,
+      defaultCollection.fieldGroupsPath,
       collection,
       effectiveFieldNames,
       errors,
@@ -1423,6 +1569,7 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
     if (
       hasUsableDefaultCollectionFieldGroups(
         values?.defaults,
+        requirement.dataSourceKey,
         requirement.collection,
         collection,
         requirement.dataSourceKey,
@@ -1432,7 +1579,7 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
     ) {
       continue;
     }
-    const path = `$.defaults.collections.${requirement.collection}.fieldGroups`;
+    const path = defaultCollection.fieldGroupsPath;
     if (errors.some((error) => error.path === path && error.ruleId === 'missing-default-field-groups')) {
       continue;
     }
@@ -1484,7 +1631,11 @@ function expandGeneratedViewPopupOneHopRequirements(
     if (!collection) {
       continue;
     }
-    const defaultFieldGroups = getDefaultCollectionFieldGroups(defaults, requirement.collection);
+    const defaultFieldGroups = getDefaultCollectionFieldGroups(
+      defaults,
+      requirement.dataSourceKey,
+      requirement.collection,
+    );
     const runtimeCandidates = getGeneratedPopupRuntimeFieldCandidates({
       collection,
       dataSourceKey: requirement.dataSourceKey,
@@ -1495,6 +1646,7 @@ function expandGeneratedViewPopupOneHopRequirements(
     const selectedFieldPaths = getGeneratedViewPopupSelectedFieldPaths(
       runtimeCandidates,
       defaults,
+      requirement.dataSourceKey,
       requirement.collection,
     );
     if (!selectedFieldPaths.size) {
@@ -1533,9 +1685,10 @@ function expandGeneratedViewPopupOneHopRequirements(
 function getGeneratedViewPopupSelectedFieldPaths(
   runtimeCandidates: ReturnType<typeof getGeneratedPopupRuntimeFieldCandidates>,
   defaults: any,
+  dataSourceKey: string,
   collectionName: string,
 ) {
-  const defaultFieldGroups = getDefaultCollectionFieldGroups(defaults, collectionName);
+  const defaultFieldGroups = getDefaultCollectionFieldGroups(defaults, dataSourceKey, collectionName);
   if (defaultFieldGroups) {
     return new Set(
       pickFlowSurfaceDefaultActionPopupFieldGroups(runtimeCandidates, defaultFieldGroups, {
@@ -2204,24 +2357,6 @@ function tryResolveAssociationSafeTitleField(
   }
 }
 
-function getDefaultFieldGroupRelationTitleFieldOverride(fieldGroups: any[] | undefined, fieldPath: string) {
-  let result: string | undefined;
-  forEachDefaultFieldGroupField(
-    _.castArray(fieldGroups || []),
-    (field, currentFieldPath) => {
-      if (result || currentFieldPath !== fieldPath || !_.isPlainObject(field)) {
-        return;
-      }
-      const titleField = String(field.titleField || '').trim();
-      if (titleField) {
-        result = titleField;
-      }
-    },
-    '',
-  );
-  return result;
-}
-
 function hasUsableDefaultFieldGroupRelationTitleFieldOverride(input: {
   fieldGroups?: any[];
   fieldPath: string;
@@ -2229,7 +2364,7 @@ function hasUsableDefaultFieldGroupRelationTitleFieldOverride(input: {
   dataSourceKey: string;
   context: FlowSurfaceAuthoringValidationContext;
 }) {
-  const titleField = getDefaultFieldGroupRelationTitleFieldOverride(input.fieldGroups, input.fieldPath);
+  const titleField = getFlowSurfaceDefaultFieldGroupRelationTitleFieldOverride(input.fieldGroups, input.fieldPath);
   if (!titleField || titleField === 'id' || !input.context.getCollection) {
     return false;
   }
@@ -2244,13 +2379,14 @@ function hasUsableDefaultFieldGroupRelationTitleFieldOverride(input: {
 
 function hasUsableDefaultCollectionFieldGroups(
   defaults: any,
+  dataSourceKey: string,
   collectionName: string,
   collection: any,
-  dataSourceKey: string,
+  requirementDataSourceKey: string,
   actionTypes: GeneratedPopupDefaultActionType[],
   context: FlowSurfaceAuthoringValidationContext,
 ) {
-  const fieldGroups = getDefaultCollectionFieldGroups(defaults, collectionName);
+  const fieldGroups = getDefaultCollectionFieldGroups(defaults, dataSourceKey, collectionName);
   if (!Array.isArray(fieldGroups) || !fieldGroups.length) {
     return false;
   }
@@ -2259,7 +2395,7 @@ function hasUsableDefaultCollectionFieldGroups(
     const pickedGroups = pickFlowSurfaceDefaultActionPopupFieldGroups(
       getGeneratedPopupRuntimeFieldCandidates({
         collection,
-        dataSourceKey,
+        dataSourceKey: requirementDataSourceKey,
         actionType,
         fieldGroups,
         context,
@@ -2273,10 +2409,20 @@ function hasUsableDefaultCollectionFieldGroups(
   });
 }
 
-function getDefaultCollectionFieldGroups(defaults: any, collectionName: string) {
-  const collections = _.isPlainObject(defaults?.collections) ? defaults.collections : undefined;
-  const collectionDefaults = _.isPlainObject(collections?.[collectionName]) ? collections[collectionName] : undefined;
-  return collectionDefaults?.fieldGroups;
+function resolveDefaultCollectionDefaults(defaults: any, dataSourceKey: string, collectionName: string) {
+  const resolved = resolveFlowSurfaceApplyBlueprintDefaultCollection({
+    metadata: _.isPlainObject(defaults) ? defaults : undefined,
+    dataSourceKey: normalizeFlowSurfaceApplyBlueprintDataSourceKey(dataSourceKey),
+    collectionName,
+  });
+  return {
+    collectionDefaults: resolved.collectionDefaults,
+    fieldGroupsPath: resolved.path || `$.defaults.collections.${collectionName}.fieldGroups`,
+  };
+}
+
+function getDefaultCollectionFieldGroups(defaults: any, dataSourceKey: string, collectionName: string) {
+  return resolveDefaultCollectionDefaults(defaults, dataSourceKey, collectionName).collectionDefaults?.fieldGroups;
 }
 
 function getBlockDescendantValidationContext(

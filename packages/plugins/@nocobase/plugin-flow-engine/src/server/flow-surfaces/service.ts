@@ -264,6 +264,7 @@ import {
   buildFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   getFlowSurfaceApplyBlueprintDefaultCollection,
   getFlowSurfaceApplyBlueprintDefaultFormBehavior,
+  getFlowSurfaceDefaultFieldGroupRelationTitleFieldOverride,
   readFlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   resolveFlowSurfaceApplyBlueprintDefaultPopupMetadata,
 } from './blueprint/defaults';
@@ -8100,7 +8101,7 @@ export class FlowSurfacesService {
     const defaultFieldGroupsTitleField = hasOwnDefined(values, 'titleField')
       ? undefined
       : this.getDefaultFieldGroupRelationTitleFieldOverride(
-          this.getApplyBlueprintDefaultFieldGroups(values, resolvedField.collectionName),
+          this.getApplyBlueprintDefaultFieldGroups(values, resolvedField.collectionName, resolvedField.dataSourceKey),
           resolvedField.fieldPath,
         );
     const fieldMenuCandidate = isFilterFormItem
@@ -9150,12 +9151,16 @@ export class FlowSurfacesService {
 
   private buildDefaultsFromPopupMetadata(popup: Record<string, any> | undefined) {
     const metadata = readFlowSurfaceApplyBlueprintPopupDefaultsMetadata(popup);
-    if (!metadata?.collections) {
+    if (!metadata) {
       return undefined;
     }
-    return {
-      collections: _.cloneDeep(metadata.collections),
-    } as FlowSurfaceApplyBlueprintDefaults;
+    return _.pickBy(
+      {
+        collections: _.isPlainObject(metadata.collections) ? _.cloneDeep(metadata.collections) : undefined,
+        dataSources: _.isPlainObject(metadata.dataSources) ? _.cloneDeep(metadata.dataSources) : undefined,
+      },
+      (value) => !_.isUndefined(value),
+    ) as FlowSurfaceApplyBlueprintDefaults;
   }
 
   private stripPopupDefaultsMetadata<T extends Record<string, any> | undefined>(popup: T): T {
@@ -11088,6 +11093,7 @@ export class FlowSurfacesService {
         const appliedFormBehaviorLinkage = await this.applyDefaultPopupFormBehaviorLinkageRules(
           popupState.popupBlock,
           popup,
+          popupContext.dataSourceKey,
           popupContext.collectionName,
           defaultType,
           options,
@@ -11303,10 +11309,12 @@ export class FlowSurfacesService {
   private getApplyBlueprintDefaultFieldGroups(
     popup: Record<string, any> | undefined,
     collectionName: string | undefined,
+    dataSourceKey?: string,
   ) {
     return getFlowSurfaceApplyBlueprintDefaultCollection(
       this.getApplyBlueprintPopupDefaultsMetadata(popup),
       collectionName,
+      dataSourceKey,
     )?.fieldGroups;
   }
 
@@ -11314,11 +11322,13 @@ export class FlowSurfacesService {
     popup: Record<string, any> | undefined,
     collectionName: string | undefined,
     actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType,
+    dataSourceKey?: string,
   ) {
     return getFlowSurfaceApplyBlueprintDefaultFormBehavior(
       this.getApplyBlueprintPopupDefaultsMetadata(popup),
       collectionName,
       actionType,
+      dataSourceKey,
     );
   }
 
@@ -11393,6 +11403,7 @@ export class FlowSurfacesService {
   private pickDefaultPopupFields(input: {
     candidates: FlowSurfaceDefaultActionPopupFieldCandidate[];
     popup?: Record<string, any>;
+    dataSourceKey?: string;
     collectionName?: string;
     actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType;
     defaultFieldGroups?: any;
@@ -11402,8 +11413,14 @@ export class FlowSurfacesService {
     };
   }): { fieldPaths?: any[]; fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] } {
     const defaultFieldGroups =
-      input.defaultFieldGroups ?? this.getApplyBlueprintDefaultFieldGroups(input.popup, input.collectionName);
-    const formBehavior = this.getApplyBlueprintDefaultFormBehavior(input.popup, input.collectionName, input.actionType);
+      input.defaultFieldGroups ??
+      this.getApplyBlueprintDefaultFieldGroups(input.popup, input.collectionName, input.dataSourceKey);
+    const formBehavior = this.getApplyBlueprintDefaultFormBehavior(
+      input.popup,
+      input.collectionName,
+      input.actionType,
+      input.dataSourceKey,
+    );
     if (defaultFieldGroups) {
       return this.applyDefaultFormBehaviorToFields(
         {
@@ -11425,19 +11442,7 @@ export class FlowSurfacesService {
   }
 
   private getDefaultFieldGroupRelationTitleFieldOverride(fieldGroups: any, fieldPath: string) {
-    for (const group of _.castArray(fieldGroups || [])) {
-      for (const field of _.castArray(group?.fields || [])) {
-        if (!_.isPlainObject(field)) {
-          continue;
-        }
-        const currentFieldPath = String(field.field || field.fieldPath || '').trim();
-        const titleField = String(field.titleField || '').trim();
-        if (currentFieldPath === fieldPath && titleField) {
-          return titleField;
-        }
-      }
-    }
-    return undefined;
+    return getFlowSurfaceDefaultFieldGroupRelationTitleFieldOverride(fieldGroups, fieldPath);
   }
 
   private hasUsableDefaultFieldGroupRelationTitleFieldOverride(input: {
@@ -11462,6 +11467,7 @@ export class FlowSurfacesService {
   private resolveApplyBlueprintDefaultPopupMetadata(input: {
     popup?: Record<string, any>;
     actionType?: FlowSurfaceApplyBlueprintPopupDefaultActionType;
+    dataSourceKey?: string;
     sourceCollectionName?: string;
     associationField?: string;
     targetCollectionName?: string;
@@ -11469,6 +11475,7 @@ export class FlowSurfacesService {
     return resolveFlowSurfaceApplyBlueprintDefaultPopupMetadata({
       metadata: this.getApplyBlueprintPopupDefaultsMetadata(input.popup),
       actionType: input.actionType,
+      dataSourceKey: input.dataSourceKey,
       sourceCollectionName: input.sourceCollectionName,
       associationField: input.associationField,
       targetCollectionName: input.targetCollectionName,
@@ -11527,6 +11534,7 @@ export class FlowSurfacesService {
     return this.resolveApplyBlueprintDefaultPopupMetadata({
       popup: input.popup,
       actionType: input.defaultType,
+      dataSourceKey: bindingContext.dataSourceKey || input.popupContext?.dataSourceKey,
       sourceCollectionName: bindingContext.collectionName,
       associationField: normalizeFieldPath(bindingContext.fieldPath || '', bindingContext.associationPathName),
       targetCollectionName: bindingContext.targetCollectionName || String(input.popupContext?.collectionName || ''),
@@ -11546,12 +11554,13 @@ export class FlowSurfacesService {
     }
     const mode = input.defaultType === 'edit' ? 'form' : 'details';
     const ownerUse = input.defaultType === 'edit' ? 'EditFormModel' : 'DetailsBlockModel';
-    const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, collectionName);
+    const dataSourceKey = input.popupContext.dataSourceKey || 'main';
+    const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, collectionName, dataSourceKey);
     const directCandidates = this.buildFieldMenuDirectCandidates({
       mode,
       ownerUse,
       resourceInit: {
-        dataSourceKey: input.popupContext.dataSourceKey || 'main',
+        dataSourceKey,
         collectionName,
       },
       enabledPackages: input.enabledPackages,
@@ -11561,6 +11570,7 @@ export class FlowSurfacesService {
     return this.pickDefaultPopupFields({
       candidates: directCandidates,
       popup: input.popup,
+      dataSourceKey,
       collectionName,
       actionType: input.defaultType === 'edit' ? 'edit' : undefined,
       defaultFieldGroups,
@@ -11930,6 +11940,7 @@ export class FlowSurfacesService {
       return this.resolveApplyBlueprintDefaultPopupMetadata({
         popup,
         actionType: actionConfig.type,
+        dataSourceKey: popupProfile?.dataSourceKey || inlinePopupContext.dataSourceKey,
         sourceCollectionName: associationDefaultContext.sourceCollectionName,
         associationField: associationDefaultContext.associationField,
         targetCollectionName: popupProfile?.collectionName || inlinePopupContext.collectionName,
@@ -11938,6 +11949,7 @@ export class FlowSurfacesService {
     return this.resolveApplyBlueprintDefaultPopupMetadata({
       popup,
       actionType: actionConfig.type,
+      dataSourceKey: popupProfile?.dataSourceKey || inlinePopupContext.dataSourceKey,
       targetCollectionName: popupProfile?.collectionName || inlinePopupContext.collectionName,
     });
   }
@@ -11982,12 +11994,13 @@ export class FlowSurfacesService {
       return [];
     }
     const mode = actionConfig.blockUse === 'DetailsBlockModel' ? 'details' : 'form';
-    const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, collectionName);
+    const dataSourceKey = input.popupProfile?.dataSourceKey || 'main';
+    const defaultFieldGroups = this.getApplyBlueprintDefaultFieldGroups(input.popup, collectionName, dataSourceKey);
     const directCandidates = this.buildFieldMenuDirectCandidates({
       mode,
       ownerUse: actionConfig.blockUse,
       resourceInit: {
-        dataSourceKey: input.popupProfile?.dataSourceKey || 'main',
+        dataSourceKey,
         collectionName,
       },
       enabledPackages: input.enabledPackages,
@@ -11997,6 +12010,7 @@ export class FlowSurfacesService {
     return this.pickDefaultPopupFields({
       candidates: directCandidates,
       popup: input.popup,
+      dataSourceKey,
       collectionName,
       actionType: actionConfig.type,
       defaultFieldGroups,
@@ -12405,6 +12419,7 @@ export class FlowSurfacesService {
   private async applyDefaultPopupFormBehaviorLinkageRules(
     popupBlock: any,
     popup: Record<string, any> | undefined,
+    dataSourceKey: string | undefined,
     collectionName: string | undefined,
     actionType: FlowSurfaceApplyBlueprintPopupDefaultActionType | undefined,
     options: { transaction?: any },
@@ -12412,7 +12427,7 @@ export class FlowSurfacesService {
     if (!SIMPLE_FORM_BLOCK_USES.has(popupBlock?.use || '') || !popupBlock?.uid) {
       return false;
     }
-    const formBehavior = this.getApplyBlueprintDefaultFormBehavior(popup, collectionName, actionType);
+    const formBehavior = this.getApplyBlueprintDefaultFormBehavior(popup, collectionName, actionType, dataSourceKey);
     const rules = Array.isArray(formBehavior?.fieldLinkageRules) ? formBehavior.fieldLinkageRules : [];
     if (!rules.length) {
       return false;
@@ -12674,6 +12689,7 @@ export class FlowSurfacesService {
     const appliedFormBehaviorLinkage = await this.applyDefaultPopupFormBehaviorLinkageRules(
       popupState.popupBlock,
       popup,
+      popupProfile.dataSourceKey,
       popupProfile.collectionName,
       actionConfig?.type,
       options,
