@@ -7,14 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
-import { Formula } from './components';
-import { FormulaComponentFieldSettings } from './FormulaComponentFieldSettings';
+import { Application, Plugin } from '@nocobase/client-v2';
 import { FormulaFieldInterface } from './interfaces/formula';
-import { renderExpressionDescription } from './scopes';
-import { FormulaFieldModel } from '../client-v2/models/FormulaFieldModel';
+import { FormulaExpression } from './components';
 
-export class PluginFieldFormulaClient extends Plugin {
+export class PluginFieldFormulaClient extends Plugin<any, Application> {
   expressionFields = [
     'checkbox',
     'number',
@@ -37,6 +34,7 @@ export class PluginFieldFormulaClient extends Plugin {
     'select',
     'multipleSelect',
   ];
+
   registerExpressionFieldInterface(data: string | string[]) {
     if (Array.isArray(data)) {
       const result = this.expressionFields.concat(data);
@@ -45,17 +43,22 @@ export class PluginFieldFormulaClient extends Plugin {
       this.expressionFields.push(data);
     }
   }
+
   async load() {
     this.app.addComponents({
-      Formula,
+      FormulaExpression,
     });
-    this.app.addScopes({
-      renderExpressionDescription,
+    this.app.addFieldInterfaces([FormulaFieldInterface]);
+    this.flowEngine.context.defineProperty('fieldFormula', {
+      get: () => ({
+        expressionFields: this.expressionFields,
+        registerExpressionFieldInterface: this.registerExpressionFieldInterface.bind(this),
+      }),
     });
-    this.app.dataSourceManager.addFieldInterfaces([FormulaFieldInterface]);
-    this.app.schemaSettingsManager.add(FormulaComponentFieldSettings);
-    this.flowEngine.registerModels({
-      FormulaFieldModel,
+    this.flowEngine.registerModelLoaders({
+      FormulaFieldModel: {
+        loader: () => import('./models/FormulaFieldModel'),
+      },
     });
   }
 }
