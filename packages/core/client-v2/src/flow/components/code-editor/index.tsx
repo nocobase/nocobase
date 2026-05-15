@@ -42,6 +42,7 @@ interface CodeEditorProps {
   language?: string;
   scene?: string | string[];
   RightExtra?: React.FC<any>;
+  showLogs?: boolean;
 }
 
 export * from './types';
@@ -64,6 +65,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   language,
   scene,
   RightExtra,
+  showLogs = true,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -249,14 +251,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         completionSource={completionSource}
         viewRef={viewRef}
       />
-      <LogsPanel
-        logs={logs}
-        onJumpTo={(line, column) => {
-          const view = viewRef.current;
-          if (view) jumpTo(view, line, column);
-        }}
-        tr={tr}
-      />
+      {showLogs ? (
+        <LogsPanel
+          logs={logs}
+          onJumpTo={(line, column) => {
+            const view = viewRef.current;
+            if (view) jumpTo(view, line, column);
+          }}
+          tr={tr}
+        />
+      ) : null}
       <SnippetsDrawer
         open={snippetOpen}
         onClose={() => setSnippetOpen(false)}

@@ -24,6 +24,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
     title: _title,
     styles = {},
     zIndex = 4, // 这个默认值是为了防止表格的阴影显示到子页面上面
+    onClose,
   } = mergedProps;
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
@@ -86,10 +87,12 @@ export const PageComponent = forwardRef((props: any, ref) => {
             type="text"
             size="small"
             icon={<CloseOutlined />}
-            onClick={() => {
+            onClick={async () => {
               if (!closedRef.current) {
-                closedRef.current = true;
-                props.onClose?.();
+                const closed = await onClose?.();
+                if (closed !== false) {
+                  closedRef.current = true;
+                }
               }
             }}
             style={{
@@ -111,7 +114,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
         {extra && <div>{extra}</div>}
       </div>
     );
-  }, [header, _title, flowEngine.context.themeToken, styles.header, props.onClose]);
+  }, [header, _title, flowEngine.context.themeToken, styles.header, onClose]);
 
   // Footer 组件
   const FooterComponent = useMemo(() => {

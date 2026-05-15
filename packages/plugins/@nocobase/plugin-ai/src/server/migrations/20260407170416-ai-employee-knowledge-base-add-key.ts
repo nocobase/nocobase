@@ -11,7 +11,7 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   on = 'afterSync'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<2.1.0';
+  appVersion = '<2.2.0';
 
   async up() {
     const aiEmployeesRepo = this.app.db.getRepository('aiEmployees');
