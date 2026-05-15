@@ -103,19 +103,6 @@
   dependencies:
     "@alicloud/tea-typescript" "^1.5.1"
 
-"@alicloud/dingtalk@2.2.24":
-  version "2.2.24"
-  resolved "https://registry.npmjs.org/@alicloud/dingtalk/-/dingtalk-2.2.24.tgz#df986380bf6a832ef85d02a63c1ba9234e1c67e5"
-  integrity sha512-OHhYAbIyVhug6bm4pNVElJmZYpgHkvKL6QEkpRFE0geduOUhwB6hY3iLNW2C7RjijUmsWsSvyQRkKWHYgw+8Rg==
-  dependencies:
-    "@alicloud/endpoint-util" "^0.0.2"
-    "@alicloud/gateway-dingtalk" "^1.0.2"
-    "@alicloud/gateway-spi" "^0.0.8"
-    "@alicloud/openapi-client" "^0.4.14"
-    "@alicloud/openapi-util" "^0.3.2"
-    "@alicloud/tea-typescript" "^1.7.1"
-    "@alicloud/tea-util" "^1.4.9"
-
 "@alicloud/dysmsapi20170525@2.0.17":
   version "2.0.17"
   resolved "https://registry.npmmirror.com/@alicloud/dysmsapi20170525/-/dysmsapi20170525-2.0.17.tgz#a350a443f52456b823772345dd57cc5fe2e6c8da"
@@ -134,20 +121,6 @@
   dependencies:
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
-
-"@alicloud/endpoint-util@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.npmjs.org/@alicloud/endpoint-util/-/endpoint-util-0.0.2.tgz#a86fade1fac4242442e1d19e030f5aa31070d2d3"
-  integrity sha512-7aqVtcRzM0dVUE7bHLP2wKFuZygx5V6MTHBIbhGH3gfkN3/VZ9LlrxhkEfOCYtWfAyo9q0t9ScxQ4khvhweMqw==
-
-"@alicloud/gateway-dingtalk@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.npmjs.org/@alicloud/gateway-dingtalk/-/gateway-dingtalk-1.0.2.tgz#3970f07324c59935892f5b9abce66e6c2ae29dfc"
-  integrity sha512-T8ml6kth/nCRthrtHIYnCYv7+q/41SnJaR8c99491azNSPcmMmgxis5ujYIl5irKm0cvoOCCjI9EWUFb2Tx7JA==
-  dependencies:
-    "@alicloud/gateway-spi" "^0.0.8"
-    "@alicloud/tea-typescript" "^1.7.1"
-    "@alicloud/tea-util" "^1.4.5"
 
 "@alicloud/gateway-pop@0.0.6":
   version "0.0.6"
@@ -186,7 +159,7 @@
     "@alicloud/tea-util" "^1.4.9"
     "@alicloud/tea-xml" "0.0.3"
 
-"@alicloud/openapi-client@^0.4.12", "@alicloud/openapi-client@^0.4.14", "@alicloud/openapi-client@^0.4.8", "@alicloud/openapi-client@^0.4.9":
+"@alicloud/openapi-client@^0.4.12", "@alicloud/openapi-client@^0.4.8":
   version "0.4.15"
   resolved "https://registry.npmjs.org/@alicloud/openapi-client/-/openapi-client-0.4.15.tgz#fde48ae16af661897883db920a3242e6466447d8"
   integrity sha512-4VE0/k5ZdQbAhOSTqniVhuX1k5DUeUMZv74degn3wIWjLY6Bq+hxjaGsaHYlLZ2gA5wUrs8NcI5TE+lIQS3iiA==
@@ -252,7 +225,7 @@
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
 
-"@alicloud/tea-util@^1.4.5", "@alicloud/tea-util@^1.4.8":
+"@alicloud/tea-util@^1.4.8":
   version "1.4.11"
   resolved "https://registry.npmjs.org/@alicloud/tea-util/-/tea-util-1.4.11.tgz#17fee4f84f41730ba196c27824f8d0d16f9753b5"
   integrity sha512-HyPEEQ8F0WoZegiCp7sVdrdm6eBOB+GCvGl4182u69LDFktxfirGLcAx3WExUr1zFWkq2OSmBroTwKQ4w/+Yww==
@@ -25568,11 +25541,6 @@ ms@2.1.3, ms@^2.0.0, ms@^2.1.1, ms@^2.1.3:
   version "2.1.3"
   resolved "https://registry.npmmirror.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
-
-multer-cos@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.npmmirror.com/multer-cos/-/multer-cos-1.0.3.tgz#f8998b9a16d2e6e2d3f00cd811ef0bcf14e804b6"
-  integrity sha512-KD1/ZUHcmjYtsPHlosOsned8u6a1xYgUYmnU0659rRue4fjVSbEBo6BKyI2N6BbUNHAWMz18NUb9a5Gn5GcgvQ==
 
 multer-s3@^3.0.1:
   version "3.0.1"
