@@ -113,6 +113,14 @@ function getV2BasePath(app: AppLike) {
   return trimTrailingSlashes(getV2PublicPath(app)) || '/';
 }
 
+function getV2EffectiveBasePath(app: AppLike): string {
+  const basename = app.router?.getBasename?.();
+  if (basename) {
+    return normalizePublicPath(basename);
+  }
+  return getV2PublicPath(app);
+}
+
 function joinRootRelativePath(basePath: string, pathname: string) {
   const normalizedBasePath = normalizePublicPath(basePath);
   const normalizedPathname = normalizePathname(pathname);
@@ -129,7 +137,7 @@ function joinRootRelativePath(basePath: string, pathname: string) {
 }
 
 function getV2SigninPath(app: AppLike) {
-  return joinRootRelativePath(getV2PublicPath(app), '/signin');
+  return joinRootRelativePath(getV2EffectiveBasePath(app), '/signin');
 }
 
 function stripCurrentV2Basename(app: AppLike, pathname: string) {
@@ -150,7 +158,7 @@ function stripCurrentV2Basename(app: AppLike, pathname: string) {
 }
 
 function getDefaultV2AdminRedirectPath(app: AppLike) {
-  return joinRootRelativePath(getV2PublicPath(app), '/admin');
+  return joinRootRelativePath(getV2EffectiveBasePath(app), '/admin');
 }
 
 /**
@@ -164,7 +172,7 @@ export function getCurrentV2RedirectPath(app: AppLike, locationLike: LocationLik
   const pathname = stripCurrentV2Basename(app, locationLike?.pathname || '/');
   const search = normalizeSearch(locationLike?.search || '');
   const hash = normalizeHash(locationLike?.hash || '');
-  return `${joinRootRelativePath(getV2PublicPath(app), pathname)}${search}${hash}`;
+  return `${joinRootRelativePath(getV2EffectiveBasePath(app), pathname)}${search}${hash}`;
 }
 
 /**
