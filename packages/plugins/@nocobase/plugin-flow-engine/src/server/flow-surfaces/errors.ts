@@ -48,8 +48,8 @@ export class FlowSurfaceError extends Error {
 }
 
 export class FlowSurfaceBadRequestError extends FlowSurfaceError {
-  constructor(message: string, code = 'FLOW_SURFACE_BAD_REQUEST', options: FlowSurfaceErrorOptions = {}) {
-    super(message, 400, 'bad_request', code, options);
+  constructor(message: string, code?: string, options: FlowSurfaceErrorOptions = {}) {
+    super(message, 400, 'bad_request', code || 'FLOW_SURFACE_BAD_REQUEST', options);
     this.name = 'FlowSurfaceBadRequestError';
   }
 }
@@ -145,7 +145,8 @@ export function throwBadRequest(
   if (typeof codeOrOptions === 'object' && codeOrOptions) {
     throw new FlowSurfaceBadRequestError(message, undefined, codeOrOptions);
   }
-  throw new FlowSurfaceBadRequestError(message, codeOrOptions, options);
+  const code = typeof codeOrOptions === 'string' ? codeOrOptions : undefined;
+  throw new FlowSurfaceBadRequestError(message, code, options);
 }
 
 export function throwAggregateBadRequest(errors: FlowSurfaceErrorItemInput[]): never {

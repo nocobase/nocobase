@@ -212,6 +212,15 @@ export function resolveFlowSurfaceDefaultActionPopupTabTitle(use?: string, curre
   return actionConfig.defaultPopupTabTitle;
 }
 
+export function isFlowSurfaceDefaultActionPopupBusinessField(field: any) {
+  const fieldInterface = String(getFieldInterface(field) || '').trim();
+  const fieldType = String(getFieldType(field) || '').trim();
+  if (!fieldInterface || field?.hidden || field?.options?.hidden) {
+    return false;
+  }
+  return fieldType !== 'sort' && fieldInterface !== 'sort';
+}
+
 function isFlowSurfaceDefaultActionPopupSystemField(field: any) {
   const fieldName = String(getFieldName(field) || '').trim();
   const fieldInterface = String(getFieldInterface(field) || '').trim();

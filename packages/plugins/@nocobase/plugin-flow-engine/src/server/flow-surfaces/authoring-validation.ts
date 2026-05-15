@@ -46,6 +46,7 @@ import {
 import {
   hasFlowSurfaceInlinePopupBlocks,
   hasFlowSurfaceInlinePopupTemplate,
+  isFlowSurfaceDefaultActionPopupBusinessField,
   pickFlowSurfaceDefaultActionPopupFieldGroups,
   pickFlowSurfaceDefaultActionPopupFieldPaths,
 } from './default-action-popup';
@@ -1391,18 +1392,21 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
     if (!collection) {
       continue;
     }
+    const defaultFieldGroups = getDefaultCollectionFieldGroups(values?.defaults, requirement.collection);
+    const normalizedDefaultFieldGroups = Array.isArray(defaultFieldGroups) ? defaultFieldGroups : undefined;
     const businessFieldNames = getGeneratedPopupBusinessFieldNames(collection);
     const effectiveFieldNames = getGeneratedPopupEffectiveFieldNames({
       collection,
       dataSourceKey: requirement.dataSourceKey,
       actionTypes: requirement.actionTypes,
+      fieldGroups: normalizedDefaultFieldGroups,
       context,
     });
     if (effectiveFieldNames.length <= LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD) {
       continue;
     }
     collectDefaultFieldGroupsCoverageErrors(
-      getDefaultCollectionFieldGroups(values?.defaults, requirement.collection),
+      defaultFieldGroups,
       `$.defaults.collections.${requirement.collection}.fieldGroups`,
       collection,
       effectiveFieldNames,
@@ -2067,12 +2071,7 @@ function doesDefaultActionPopupGenerate(popup: any) {
 function getGeneratedPopupBusinessFieldCandidates(collection: any) {
   return getCollectionFields(collection).flatMap((field) => {
     const fieldName = String(getFieldName(field) || '').trim();
-    const fieldInterface = String(getFieldInterface(field) || '').trim();
-    const fieldType = String(getFieldType(field) || '').trim();
-    if (!fieldName || !fieldInterface || field?.hidden || field?.options?.hidden) {
-      return [];
-    }
-    if (fieldType === 'sort' || fieldInterface === 'sort') {
+    if (!fieldName || !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
       return [];
     }
     return [
@@ -2095,6 +2094,7 @@ function getGeneratedPopupEffectiveFieldNames(input: {
   collection: any;
   dataSourceKey: string;
   actionTypes: GeneratedPopupDefaultActionType[];
+  fieldGroups?: any[];
   context: FlowSurfaceAuthoringValidationContext;
 }) {
   const requiredActionTypes: GeneratedPopupDefaultActionType[] = input.actionTypes.length
@@ -2107,6 +2107,7 @@ function getGeneratedPopupEffectiveFieldNames(input: {
         collection: input.collection,
         dataSourceKey: input.dataSourceKey,
         actionType,
+        fieldGroups: input.fieldGroups,
         context: input.context,
       }),
       {
@@ -2127,10 +2128,10 @@ function getGeneratedPopupRuntimeFieldCandidates(input: {
   const candidateContext = DEFAULT_ACTION_POPUP_FIELD_CONTEXT_BY_TYPE[input.actionType];
   return getCollectionFields(input.collection).flatMap((field) => {
     const fieldName = getFieldName(field);
-    const fieldInterface = getFieldInterface(field);
-    if (!fieldName || !fieldInterface) {
+    if (!fieldName || !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
       return [];
     }
+    const fieldInterface = getFieldInterface(field);
 
     const registeredBinding = resolveRegisteredFieldBinding({
       containerUse: candidateContext.ownerUse,

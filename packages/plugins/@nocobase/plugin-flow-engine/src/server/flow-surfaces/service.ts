@@ -246,6 +246,7 @@ import {
   getFlowSurfaceDefaultActionPopupConfigByUse,
   hasFlowSurfaceInlinePopupBlocks,
   hasFlowSurfaceInlinePopupTemplate,
+  isFlowSurfaceDefaultActionPopupBusinessField,
   isFlowSurfaceDefaultActionPopupType,
   pickFlowSurfaceDefaultActionPopupFieldGroups,
   pickFlowSurfaceDefaultActionPopupFieldPaths,
@@ -8099,10 +8100,7 @@ export class FlowSurfacesService {
     const defaultFieldGroupsTitleField = hasOwnDefined(values, 'titleField')
       ? undefined
       : this.getDefaultFieldGroupRelationTitleFieldOverride(
-          this.getApplyBlueprintDefaultFieldGroupsFromMetadata(
-            readFlowSurfaceApplyBlueprintPopupDefaultsMetadata(values),
-            resolvedField.collectionName,
-          ),
+          this.getApplyBlueprintDefaultFieldGroups(values, resolvedField.collectionName),
           resolvedField.fieldPath,
         );
     const fieldMenuCandidate = isFilterFormItem
@@ -11306,17 +11304,10 @@ export class FlowSurfacesService {
     popup: Record<string, any> | undefined,
     collectionName: string | undefined,
   ) {
-    return this.getApplyBlueprintDefaultFieldGroupsFromMetadata(
+    return getFlowSurfaceApplyBlueprintDefaultCollection(
       this.getApplyBlueprintPopupDefaultsMetadata(popup),
       collectionName,
-    );
-  }
-
-  private getApplyBlueprintDefaultFieldGroupsFromMetadata(
-    metadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
-    collectionName: string | undefined,
-  ) {
-    return getFlowSurfaceApplyBlueprintDefaultCollection(metadata, collectionName)?.fieldGroups;
+    )?.fieldGroups;
   }
 
   private getApplyBlueprintDefaultFormBehavior(
@@ -11565,6 +11556,7 @@ export class FlowSurfacesService {
       },
       enabledPackages: input.enabledPackages,
       defaultFieldGroups,
+      generatedPopupOnly: true,
     });
     return this.pickDefaultPopupFields({
       candidates: directCandidates,
@@ -12000,6 +11992,7 @@ export class FlowSurfacesService {
       },
       enabledPackages: input.enabledPackages,
       defaultFieldGroups,
+      generatedPopupOnly: true,
     });
     return this.pickDefaultPopupFields({
       candidates: directCandidates,
@@ -19071,12 +19064,16 @@ export class FlowSurfacesService {
     resourceInit: Record<string, any>;
     enabledPackages?: ReadonlySet<string>;
     defaultFieldGroups?: any;
+    generatedPopupOnly?: boolean;
   }) {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     return getCollectionFields(collection).flatMap((field) => {
       const fieldName = getFieldName(field);
       const fieldInterface = getFieldInterface(field);
       if (!fieldName || !fieldInterface) {
+        return [];
+      }
+      if (input.generatedPopupOnly && !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
         return [];
       }
       if (input.mode === 'table' && field?.options?.treeChildren) {
