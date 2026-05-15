@@ -7,13 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { KanbanCollectionActionGroupModel } from '../models/KanbanCollectionActionGroupModel';
 
 describe('KanbanCollectionActionGroupModel', () => {
-  test('uses imported AIEmployeeActionModel fallback when the model is not registered in the flow engine', async () => {
+  test('includes registered AIEmployeeActionModel in kanban collection actions', async () => {
+    class AIEmployeeActionModel extends ActionModel {
+      static scene = ActionSceneEnum.all;
+
+      static async defineChildren(ctx: any) {
+        const aiEmployees = await ctx.aiConfigRepository.getAIEmployees();
+
+        return aiEmployees.map((aiEmployee: any) => ({
+          key: aiEmployee.username,
+          createModelOptions: {
+            use: 'AIEmployeeButtonModel',
+          },
+        }));
+      }
+    }
+
+    AIEmployeeActionModel.define({
+      label: 'AI employees',
+      sort: 8000,
+    });
+
     const engine = new FlowEngine();
-    engine.registerModels({ KanbanCollectionActionGroupModel });
+    engine.registerModels({ KanbanCollectionActionGroupModel, AIEmployeeActionModel });
 
     const ds = engine.dataSourceManager.getDataSource('main');
     if (!ds) {

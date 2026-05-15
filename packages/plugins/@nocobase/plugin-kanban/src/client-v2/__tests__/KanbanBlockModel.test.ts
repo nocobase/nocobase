@@ -719,7 +719,7 @@ describe('KanbanBlockModel.filterCollection', () => {
     } as any);
     expect(flow.steps.defaultSorting).toMatchObject({
       use: 'sortingRule',
-      title: '{{t("Default sorting")}}',
+      title: '{{t("Default sorting", {"ns":["@nocobase/plugin-kanban","kanban","client"]})}}',
     });
     expect(flow.steps.dragEnabled.uiMode).toEqual({ type: 'switch', key: 'dragEnabled' });
     expect(inlineDragSortMode).toMatchObject({
