@@ -917,6 +917,11 @@ describe('AdminLayoutModel menu items', () => {
     });
   });
 
+  it('should keep menu configuration flows manual', () => {
+    expect(AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuCreation')?.manual).toBe(true);
+    expect(AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings')?.manual).toBe(true);
+  });
+
   it('should expose menu linkage rules only for existing menu items', async () => {
     const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
     expect(menuSettingsFlow?.steps?.linkageRules?.use).toBe('menuLinkageRules');

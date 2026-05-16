@@ -72,6 +72,11 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     ...options,
   });
 
+  it('should keep menu configuration flows manual in client v1', () => {
+    expect(AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuCreation')?.manual).toBe(true);
+    expect(AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings')?.manual).toBe(true);
+  });
+
   it('should keep legacy insert menu options in client v1', async () => {
     const groupModel = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'legacy-menu-item-group',
