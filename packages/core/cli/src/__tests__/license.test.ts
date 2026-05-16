@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -251,6 +251,10 @@ beforeEach(() => {
       name: 'nocobase',
     },
   });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 test('license commands expose -y as the cross-env confirmation short flag', async () => {

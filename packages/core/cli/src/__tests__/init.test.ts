@@ -9,6 +9,10 @@
 
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
+function stripAnsi(value: string) {
+  return value.replace(/\u001B\[[0-9;]*m/g, '');
+}
+
 const mocks = vi.hoisted(() => ({
   runPromptCatalogWebUI: vi.fn(),
   runPromptCatalog: vi.fn(),
@@ -968,9 +972,16 @@ test('nb init logs duplicate env validation errors in --yes mode', async () => {
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env "local3" already exists/);
+  let thrown = '';
+  try {
+    await Init.prototype.run.call(command);
+  } catch (error: unknown) {
+    thrown = stripAnsi(error instanceof Error ? error.message : String(error));
+  }
+
+  expect(thrown).toMatch(/Env "local3" already exists/);
   expect(mocks.error.mock.calls.length).toBe(1);
-  expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(/local3/);
+  expect(stripAnsi(String(mocks.error.mock.calls[0]?.[0] ?? ''))).toMatch(/local3/);
 });
 
 test('nb init explains that --env is required when --yes skips prompts', async () => {
