@@ -67,7 +67,6 @@
     "@nocobase/plugin-map": "2.1.0-beta.33",
     "@nocobase/plugin-mcp-server": "2.1.0-beta.33",
     "@nocobase/plugin-mobile": "2.1.0-beta.33",
-    "@nocobase/plugin-mock-collections": "2.1.0-beta.33",
     "@nocobase/plugin-multi-app-manager": "2.1.0-beta.33",
     "@nocobase/plugin-multi-keyword-filter": "2.1.0-beta.33",
     "@nocobase/plugin-notification-email": "2.1.0-beta.33",

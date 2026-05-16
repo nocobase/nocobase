@@ -11,6 +11,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
+import EnvAdd from '../commands/env/add.js';
 import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
@@ -114,6 +115,58 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '-c',
     'wal_level=logical',
   ]);
+});
+
+test('install reuses env add prompts without online apiBaseUrl validation', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi.fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      fetchSource: false,
+    })
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      name: 'app7593',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as any);
+
+  const parsed = {
+    resume: false,
+  } as any;
+
+  try {
+    await (Install.prototype as any).collectPromptResults.call(command, parsed, true);
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
+
+  const envAddCatalog = runPromptCatalogMock.mock.calls[4]?.[0];
+  expect(envAddCatalog.apiBaseUrl).toBeDefined();
+  expect(envAddCatalog.apiBaseUrl).not.toBe(EnvAdd.prompts.apiBaseUrl);
+  expect(envAddCatalog.apiBaseUrl.validate).toBe(undefined);
 });
 
 test('builtin postgres db plan uses a custom built-in database image when provided', () => {
