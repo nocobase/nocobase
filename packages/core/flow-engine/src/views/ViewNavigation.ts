@@ -18,6 +18,7 @@ export interface GeneratePathnameFromViewParamsOptions {
 }
 
 export interface ViewNavigationOptions {
+  pathPrefix?: string;
   layoutPathPrefix?: string;
 }
 
@@ -94,12 +95,12 @@ export class ViewNavigation {
   viewStack: ReadonlyArray<ViewParams>; // 只能通过 setViewStack 修改
   ctx: FlowEngineContext;
   viewParams: ViewParams;
-  private readonly layoutPathPrefix?: string;
+  private readonly pathPrefix?: string;
 
   constructor(ctx: FlowEngineContext, viewParams: ViewParams[], options: ViewNavigationOptions = {}) {
     this.setViewStack(viewParams);
     this.ctx = ctx;
-    this.layoutPathPrefix = options.layoutPathPrefix;
+    this.pathPrefix = options.pathPrefix || options.layoutPathPrefix;
 
     define(this, {
       viewParams: observable,
@@ -148,6 +149,6 @@ export class ViewNavigation {
   }
 
   private getLayoutPathPrefix() {
-    return this.layoutPathPrefix || (this.ctx as any).layoutPathPrefix || 'admin';
+    return this.pathPrefix || (this.ctx as any).layout?.normalizedPathPrefix || 'admin';
   }
 }

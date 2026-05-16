@@ -140,7 +140,7 @@ describe('AdminLayoutModel runtime', () => {
     expect(engine.context.layoutContentElement).toBeNull();
   });
 
-  it('should expose layoutPathPrefix only while mounted', async () => {
+  it('should expose layout definition only while mounted', async () => {
     const engine = new FlowEngine();
     const { unmount } = render(
       <FlowEngineProvider engine={engine}>
@@ -148,11 +148,17 @@ describe('AdminLayoutModel runtime', () => {
       </FlowEngineProvider>,
     );
 
-    expect(engine.context.layoutPathPrefix).toBe('admin');
+    expect(engine.context.layout).toMatchObject({
+      name: 'admin',
+      pathPrefix: '/admin',
+      normalizedPathPrefix: 'admin',
+      rootPageModelClass: 'RootPageModel',
+      childPageModelClass: 'ChildPageModel',
+    });
 
     unmount();
 
-    expect(engine.context.layoutPathPrefix).toBeUndefined();
+    expect(engine.context.layout).toBeUndefined();
     expect(engine.context.currentRoute).toEqual({});
     expect(engine.context.layoutContentElement).toBeNull();
   });

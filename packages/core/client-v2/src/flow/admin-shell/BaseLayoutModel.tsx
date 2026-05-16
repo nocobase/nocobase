@@ -14,6 +14,7 @@ import {
   type BaseLayoutRouteCoordinatorOptions,
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
+import type { LayoutDefinition } from '../../layout-manager/types';
 
 export type BaseLayoutStructure = {
   subModels?: Record<string, FlowModel[]>;
@@ -26,6 +27,17 @@ export type GetLayoutModelOptions<TModel extends FlowModel = BaseLayoutModel> = 
   use?: new (...args: any[]) => TModel;
 };
 
+const DEFAULT_LAYOUT_DEFINITION: LayoutDefinition = {
+  name: 'admin',
+  pathPrefix: '/admin',
+  normalizedPathPrefix: 'admin',
+  uid: 'admin-layout-model',
+  layoutModelClass: 'AdminLayoutModel',
+  rootPageModelClass: 'RootPageModel',
+  childPageModelClass: 'ChildPageModel',
+  authCheck: true,
+};
+
 /**
  * 通用 Layout 运行时模型。
  *
@@ -35,7 +47,6 @@ export type GetLayoutModelOptions<TModel extends FlowModel = BaseLayoutModel> = 
 export class BaseLayoutModel<
   TStructure extends BaseLayoutStructure = BaseLayoutStructure,
 > extends FlowModel<TStructure> {
-  layoutPathPrefix = 'admin';
   isMobileLayout = false;
   protected routeCoordinator?: BaseLayoutRouteCoordinator;
   private routeDisposer?: () => void;
@@ -88,6 +99,15 @@ export class BaseLayoutModel<
     return this.flowEngine.context.routeRepository?.getRouteBySchemaUid?.(pageUid) || {};
   }
 
+  get layout(): LayoutDefinition {
+    return (
+      (this.props.layout as LayoutDefinition) || {
+        ...DEFAULT_LAYOUT_DEFINITION,
+        uid: this.uid || DEFAULT_LAYOUT_DEFINITION.uid,
+      }
+    );
+  }
+
   getCoordinator() {
     if (!this.routeCoordinator) {
       this.routeCoordinator = this.createRouteCoordinator();
@@ -101,7 +121,7 @@ export class BaseLayoutModel<
 
   protected getRouteCoordinatorOptions(): BaseLayoutRouteCoordinatorOptions {
     return {
-      layoutPathPrefix: this.layoutPathPrefix,
+      layout: this.layout,
     };
   }
 
@@ -137,8 +157,8 @@ export class BaseLayoutModel<
       observable: true,
       cache: false,
     });
-    this.flowEngine.context.defineProperty('layoutPathPrefix', {
-      get: () => (this.contextBindingsActive ? this.layoutPathPrefix : undefined),
+    this.flowEngine.context.defineProperty('layout', {
+      get: () => (this.contextBindingsActive ? this.layout : undefined),
       cache: false,
     });
   }

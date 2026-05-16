@@ -28,6 +28,7 @@ import {
 import { AdminLayoutComponent } from './AdminLayoutComponent';
 import { TopbarActionModel } from '../../models/topbar/TopbarActionModel';
 import { TopbarActionsBar } from './TopbarActionsBar';
+import { AdminLayoutEntryGuard } from './AdminLayoutEntryGuard';
 
 export type AdminLayoutStructure = BaseLayoutStructure & {
   subModels: {
@@ -50,7 +51,6 @@ type GetAdminLayoutModelOptions<TModel extends FlowModel = AdminLayoutModel> = G
  * ```
  */
 export class AdminLayoutModel extends BaseLayoutModel<AdminLayoutStructure> {
-  layoutPathPrefix = 'admin';
   menuRouteRefreshVersion = 0;
 
   constructor(options: any) {
@@ -109,11 +109,15 @@ export class AdminLayoutModel extends BaseLayoutModel<AdminLayoutStructure> {
   }
 
   protected createRouteCoordinator() {
-    return new AdminLayoutRouteCoordinator(this.flowEngine);
+    return new AdminLayoutRouteCoordinator(this.flowEngine, this.getRouteCoordinatorOptions());
   }
 
   render() {
-    return <AdminLayoutComponent {...this.props} model={this} />;
+    return (
+      <AdminLayoutEntryGuard>
+        <AdminLayoutComponent {...this.props} model={this} />
+      </AdminLayoutEntryGuard>
+    );
   }
 }
 

@@ -14,7 +14,7 @@ import type { Application } from '../Application';
 import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToLegacySignin } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
-import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
+import { ADMIN_LAYOUT_MODEL_UID, AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
 import { AdminSettingsLayoutModel } from '../settings-center';
@@ -241,6 +241,12 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       AdminLayoutMenuItemModel,
       AdminSettingsLayoutModel,
     });
+    this.app.layoutManager.registerLayout({
+      name: 'admin',
+      pathPrefix: '/admin',
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      layoutModelClass: 'AdminLayoutModel',
+    });
 
     this.app.pluginSettingsManager.addMenuItem({
       key: 'plugin-manager',
@@ -285,10 +291,6 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       Component: AppNotFound,
     });
 
-    this.router.add('admin', {
-      path: '/admin',
-      componentLoader: () => import('../flow/components/AdminLayout'),
-    });
     this.router.add('admin.settings', {
       path: '/admin/settings',
       componentLoader: () => import('../settings-center/AdminSettingsLayout'),
@@ -296,23 +298,6 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
     this.router.add('admin.settings.route-empty', {
       path: '*',
       Component: Outlet,
-    });
-    this.router.add('admin.page', {
-      path: '/admin/:name',
-      componentLoader: () => import('../flow/components/FlowRoute'),
-    });
-
-    this.router.add('admin.page.tab', {
-      path: '/admin/:name/tab/:tabUid',
-      componentLoader: () => import('../flow/components/FlowRoute'),
-    });
-    this.router.add('admin.page.view', {
-      path: '/admin/:name/view/*',
-      componentLoader: () => import('../flow/components/FlowRoute'),
-    });
-    this.router.add('admin.page.tab.view', {
-      path: '/admin/:name/tab/:tabUid/view/*',
-      componentLoader: () => import('../flow/components/FlowRoute'),
     });
   }
 

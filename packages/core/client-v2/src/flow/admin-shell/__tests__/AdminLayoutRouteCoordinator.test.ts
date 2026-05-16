@@ -53,7 +53,7 @@ function setupRouteReplay(viewParams: Record<string, any>) {
     },
   });
 
-  const dispatchEvent = vi.fn(() => Promise.resolve());
+  const dispatchEvent = vi.fn((_eventName: string, _payload: any) => Promise.resolve());
   const viewItem = {
     params: {
       viewUid: 'popup',
@@ -137,7 +137,7 @@ describe('AdminLayoutRouteCoordinator', () => {
       viewsToOpen: [],
     });
 
-    const coordinator = new BaseLayoutRouteCoordinator(engine, { layoutPathPrefix: 'embed' });
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { pathPrefix: 'embed' });
     coordinator.registerPage('test-route', {
       active: true,
       layoutContentElement: document.createElement('div'),
@@ -148,5 +148,45 @@ describe('AdminLayoutRouteCoordinator', () => {
       [{ viewUid: 'test-route' }, { viewUid: 'popup', filterByTk: 'member' }],
       expect.anything(),
     );
+  });
+
+  it('exposes current layout on route model context', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: 'test-route' },
+        pathname: '/embed/test-route',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    mockResolveViewParamsToViewList.mockReturnValue([]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const layout = {
+      name: 'embed',
+      pathPrefix: '/embed',
+      normalizedPathPrefix: 'embed',
+      uid: 'embed-layout-model',
+      layoutModelClass: 'EmbedLayoutModelV2',
+      rootPageModelClass: 'RootPageModel',
+      childPageModelClass: 'ChildPageModel',
+      authCheck: true,
+    };
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { layout });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    expect(engine.getModel('test-route')?.context.layout).toBe(layout);
   });
 });

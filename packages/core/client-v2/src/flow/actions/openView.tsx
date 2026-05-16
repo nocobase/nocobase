@@ -230,7 +230,7 @@ export const openView = defineAction({
     return {
       mode: 'drawer',
       size: 'medium',
-      pageModelClass: 'ChildPageModel',
+      pageModelClass: ctx.layout?.childPageModelClass || 'ChildPageModel',
       uid: ctx.model?.uid,
       ...(filterByTkExpr ? { filterByTk: filterByTkExpr } : {}),
       ...(sourceIdExpr ? { sourceId: sourceIdExpr } : {}),
@@ -371,7 +371,8 @@ export const openView = defineAction({
       embed: {},
     };
 
-    const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass || 'ChildPageModel';
+    const pageModelClass =
+      ctx.inputArgs.pageModelClass || params.pageModelClass || ctx.layout?.childPageModelClass || 'ChildPageModel';
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;

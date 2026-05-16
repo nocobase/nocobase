@@ -10,6 +10,7 @@
 import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client-v2';
 import { registerCopyEmbedLinkFlow } from './copyEmbedLinkFlow';
+import { EMBED_LAYOUT_MODEL_UID, EmbedLayoutModelV2 } from './EmbedLayoutModel';
 
 const EMBED_ROUTE_PREFIX = '/embed';
 
@@ -32,41 +33,16 @@ export class PluginEmbedClientV2 extends Plugin<any, Application> {
   }
 
   async load() {
-    this.addRoutes();
+    this.app.flowEngine.registerModels({
+      EmbedLayoutModelV2,
+    });
+    this.app.layoutManager.registerLayout({
+      name: 'embed',
+      pathPrefix: EMBED_ROUTE_PREFIX,
+      uid: EMBED_LAYOUT_MODEL_UID,
+      layoutModelClass: 'EmbedLayoutModelV2',
+    });
     registerCopyEmbedLinkFlow();
-  }
-
-  private addRoutes() {
-    this.router.add('embed', {
-      path: EMBED_ROUTE_PREFIX,
-      authCheck: true,
-      componentLoader: () => import('./EmbedLayout'),
-    });
-
-    this.router.add('embed.index', {
-      index: true,
-      componentLoader: () => import('./EmbedEmptyPage'),
-    });
-
-    this.router.add('embed.page', {
-      path: `${EMBED_ROUTE_PREFIX}/:name`,
-      componentLoader: () => import('./EmbedFlowRoute'),
-    });
-
-    this.router.add('embed.page.tab', {
-      path: `${EMBED_ROUTE_PREFIX}/:name/tab/:tabUid`,
-      componentLoader: () => import('./EmbedFlowRoute'),
-    });
-
-    this.router.add('embed.page.view', {
-      path: `${EMBED_ROUTE_PREFIX}/:name/view/*`,
-      componentLoader: () => import('./EmbedFlowRoute'),
-    });
-
-    this.router.add('embed.page.tab.view', {
-      path: `${EMBED_ROUTE_PREFIX}/:name/tab/:tabUid/view/*`,
-      componentLoader: () => import('./EmbedFlowRoute'),
-    });
   }
 }
 

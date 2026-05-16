@@ -11,7 +11,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
-import { FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
+import { FlowContextProvider, FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import FlowRoute from '../components/FlowRoute';
 
 type MockAdminLayoutModel = FlowModel & {
@@ -118,6 +118,84 @@ describe('FlowRoute', () => {
 
     unmount();
     expect(adminLayoutModel.unregisterRoutePage).toHaveBeenCalledWith('test-page');
+  });
+
+  it('should derive layout model from current layout context when rendered from schema', async () => {
+    const engine = new FlowEngine();
+    const routeRepository = {
+      refreshAccessible: hookState.refresh,
+      isAccessibleLoaded: () => true,
+      ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+      getRouteBySchemaUid: vi.fn(() => ({ type: 'flowPage', schemaUid: 'test-page' })),
+    };
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: 'test-page' },
+        pathname: '/embed/test-page',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    const routeModel = engine.createModel({
+      uid: 'route-model',
+      use: 'FlowModel',
+    });
+    routeModel.context.defineProperty('layout', {
+      value: {
+        name: 'embed',
+        pathPrefix: '/embed',
+        normalizedPathPrefix: 'embed',
+        uid: 'embed-layout-model',
+        layoutModelClass: 'EmbedLayoutModelV2',
+        rootPageModelClass: 'RootPageModel',
+        childPageModelClass: 'ChildPageModel',
+        authCheck: true,
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const embedLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({
+        uid: 'embed-layout-model',
+        use: 'FlowModel',
+      }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FlowContextProvider context={routeModel.context}>
+          <MemoryRouter initialEntries={['/embed/test-page']}>
+            <Routes>
+              <Route path="/embed/:name" element={<FlowRoute />} />
+            </Routes>
+          </MemoryRouter>
+        </FlowContextProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(embedLayoutModel.registerRoutePage).toHaveBeenCalledWith(
+        'test-page',
+        expect.objectContaining({
+          active: false,
+          refreshDesktopRoutes: expect.any(Function),
+          layoutContentElement: expect.any(HTMLDivElement),
+        }),
+      );
+    });
   });
 
   it('should fail fast when admin-layout-model is missing', () => {

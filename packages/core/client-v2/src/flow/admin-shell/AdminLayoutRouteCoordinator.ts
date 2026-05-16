@@ -18,7 +18,7 @@ import { BaseLayoutRouteCoordinator, type BaseLayoutRouteCoordinatorOptions } fr
 export class AdminLayoutRouteCoordinator extends BaseLayoutRouteCoordinator {
   constructor(flowEngine: FlowEngine, options: BaseLayoutRouteCoordinatorOptions = {}) {
     super(flowEngine, {
-      layoutPathPrefix: 'admin',
+      pathPrefix: 'admin',
       ...options,
     });
   }

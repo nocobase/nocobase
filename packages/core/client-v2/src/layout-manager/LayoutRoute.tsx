@@ -1,0 +1,92 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { FlowEngine, FlowModel, FlowModelRenderer, isInheritedFrom, useFlowEngine } from '@nocobase/flow-engine';
+import type { ModelConstructor } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
+import React from 'react';
+import { SkeletonFallback } from '../flow/components/SkeletonFallback';
+import { useApp } from '../hooks/useApp';
+import { BaseLayoutModel } from '../flow/admin-shell/BaseLayoutModel';
+import type { LayoutDefinition } from './types';
+
+export interface LayoutRouteProps {
+  layoutName: string;
+}
+
+function isBaseLayoutModelClass(ModelClass: ModelConstructor) {
+  return ModelClass === BaseLayoutModel || isInheritedFrom(ModelClass, BaseLayoutModel as ModelConstructor);
+}
+
+function assertLayoutModelInstance(model: FlowModel, layout: LayoutDefinition) {
+  if (!(model instanceof BaseLayoutModel)) {
+    throw new Error(
+      `[NocoBase] Layout '${layout.name}' requires model '${layout.uid}' to be an instance of BaseLayoutModel.`,
+    );
+  }
+}
+
+async function assertLayoutModelClass(flowEngine: FlowEngine, layout: LayoutDefinition) {
+  const ModelClass = await flowEngine.getModelClassAsync(layout.layoutModelClass);
+
+  if (!ModelClass) {
+    throw new Error(`[NocoBase] Layout '${layout.name}' model class '${layout.layoutModelClass}' is not registered.`);
+  }
+
+  if (!isBaseLayoutModelClass(ModelClass)) {
+    throw new Error(
+      `[NocoBase] Layout '${layout.name}' model class '${layout.layoutModelClass}' must extend BaseLayoutModel.`,
+    );
+  }
+}
+
+export const LayoutRoute = (props: LayoutRouteProps) => {
+  const { layoutName } = props;
+  const app = useApp();
+  const flowEngine = useFlowEngine();
+  const layout = app.layoutManager.getLayout(layoutName);
+  const { loading, data, error } = useRequest(
+    async () => {
+      const existingModel = flowEngine.getModel<BaseLayoutModel>(layout.uid);
+
+      if (existingModel) {
+        assertLayoutModelInstance(existingModel, layout);
+        existingModel.setProps({ layout });
+        return existingModel;
+      }
+
+      await assertLayoutModelClass(flowEngine, layout);
+
+      const model = await flowEngine.createModelAsync<BaseLayoutModel>({
+        uid: layout.uid,
+        use: layout.layoutModelClass,
+        props: {
+          layout,
+        },
+      });
+      assertLayoutModelInstance(model, layout);
+      return model;
+    },
+    {
+      refreshDeps: [flowEngine, layout],
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  if (loading || !data) {
+    return <SkeletonFallback style={{ margin: 16 }} />;
+  }
+
+  return <FlowModelRenderer model={data} />;
+};
+
+export default LayoutRoute;

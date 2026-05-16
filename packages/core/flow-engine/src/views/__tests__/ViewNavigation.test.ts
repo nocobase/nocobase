@@ -147,12 +147,23 @@ describe('ViewNavigation', () => {
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin', { replace: true });
     });
 
-    it('should use explicit layout prefix when navigating back', () => {
-      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }], { layoutPathPrefix: 'embed' });
+    it('should use explicit path prefix when navigating back', () => {
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }], { pathPrefix: 'embed' });
 
       viewNavigation.back();
 
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/embed', { replace: true });
+    });
+
+    it('should use layout context path prefix when explicit prefix is absent', () => {
+      mockCtx.layout = {
+        normalizedPathPrefix: 'mobile',
+      };
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/mobile', { replace: true });
     });
   });
 });

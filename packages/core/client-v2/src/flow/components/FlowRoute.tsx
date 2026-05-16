@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { type FlowEngine, useFlowEngine } from '@nocobase/flow-engine';
+import { type FlowEngine, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { deviceType } from 'react-device-detect';
 import { useParams } from 'react-router-dom';
@@ -15,7 +15,7 @@ import { useApp } from '../../hooks/useApp';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
 import { resolveAdminRouteRuntimeTarget } from '../admin-shell/admin-layout/resolveAdminRouteRuntimeTarget';
 import { getAdminLayoutModel, type AdminLayoutModel } from '../admin-shell/admin-layout/AdminLayoutModel';
-import type { BaseLayoutModel } from '../admin-shell/BaseLayoutModel';
+import { getLayoutModel, type BaseLayoutModel } from '../admin-shell/BaseLayoutModel';
 import { useLayoutRoutePage } from '../admin-shell/useLayoutRoutePage';
 import { AppNotFound } from '../../components';
 
@@ -34,6 +34,26 @@ export type FlowRouteProps = {
 
 const getDefaultAdminLayoutModel = (flowEngine: FlowEngine) =>
   getAdminLayoutModel<AdminLayoutModel>(flowEngine, { required: true });
+
+const getDefaultLayoutModel = (flowEngine: FlowEngine, contextLayout?: any) => {
+  const layout = contextLayout || flowEngine.context.layout;
+
+  if (layout?.uid) {
+    return getLayoutModel<BaseLayoutModel>(flowEngine, layout.uid, { required: true });
+  }
+
+  return getDefaultAdminLayoutModel(flowEngine);
+};
+
+const getDefaultLegacyPageBehavior = (flowEngine: FlowEngine, contextLayout?: any): LegacyPageBehavior => {
+  const layout = contextLayout || flowEngine.context.layout;
+
+  if (layout?.name && layout.name !== 'admin') {
+    return 'notFound';
+  }
+
+  return 'redirect';
+};
 
 const BridgeFlowRoute = ({
   pageUid,
@@ -104,8 +124,14 @@ const BridgeFlowRoute = ({
  * @throws {Error} 当缺少 `route.params.name` 时抛出异常
  */
 const FlowRoute = (props: FlowRouteProps = {}) => {
-  const { getLayoutModel = getDefaultAdminLayoutModel, legacyPageBehavior = 'redirect' } = props;
   const flowEngine = useFlowEngine();
+  const flowContext = useFlowContext<any>();
+  const contextLayout = flowContext?.layout;
+  const getLayoutModel = useMemo(
+    () => props.getLayoutModel || ((engine: FlowEngine) => getDefaultLayoutModel(engine, contextLayout)),
+    [contextLayout, props.getLayoutModel],
+  );
+  const legacyPageBehavior = props.legacyPageBehavior || getDefaultLegacyPageBehavior(flowEngine, contextLayout);
   const app = useApp();
   const routeRepository = flowEngine.context.routeRepository;
   const params = useParams();

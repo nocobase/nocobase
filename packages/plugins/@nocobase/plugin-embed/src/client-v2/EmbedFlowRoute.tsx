@@ -7,15 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowRoute } from '@nocobase/client-v2';
-import type { FlowEngine } from '@nocobase/flow-engine';
+import { LayoutPageRoute } from '@nocobase/client-v2';
 import React from 'react';
-import { getEmbedLayoutModel } from './EmbedLayoutModel';
-
-const getLayoutModel = (flowEngine: FlowEngine) => getEmbedLayoutModel(flowEngine, { required: true });
 
 const EmbedFlowRoute = () => {
-  return <FlowRoute getLayoutModel={getLayoutModel} legacyPageBehavior="notFound" />;
+  return <LayoutPageRoute layoutName="embed" />;
 };
 
 export default EmbedFlowRoute;

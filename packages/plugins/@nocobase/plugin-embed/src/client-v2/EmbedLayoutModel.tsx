@@ -18,8 +18,6 @@ export const EMBED_LAYOUT_MODEL_UID = 'embed-layout-model';
  * Embed Layout 的 v2 运行时模型。
  */
 export class EmbedLayoutModelV2 extends BaseLayoutModel {
-  layoutPathPrefix = 'embed';
-
   render() {
     return <EmbedLayoutComponent {...this.props} model={this} />;
   }

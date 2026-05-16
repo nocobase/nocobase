@@ -7,11 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LayoutRoute } from '@nocobase/client-v2';
-import React from 'react';
-
-const EmbedLayout = () => {
-  return <LayoutRoute layoutName="embed" />;
-};
-
-export default EmbedLayout;
+export * from './LayoutManager';
+export * from './LayoutPageRoute';
+export * from './LayoutRoute';
+export * from './types';
