@@ -519,7 +519,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` has the highest priority when targeting an existing menu group. If `routeId` is present, applyBlueprint ignores `title`, `icon`, `tooltip`, and `hideInMenu` on `navigation.group`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When `routeId` is omitted and `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as `icon`, `tooltip`, and `hideInMenu` is used only when a new group is created and is ignored when an existing group is reused. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` blocks may omit `defaultFilter`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default `filter` action `settings.defaultFilter`; explicit filter-action `settings.defaultFilter` still wins. Inline popup documents may set `popup.tryTemplate=true` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine `popup.tryTemplate` with `popup.saveAsTemplate={ name, description, local? }`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through `popup.template={ local, mode }`, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved and reused. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` has the highest priority when targeting an existing menu group. If `routeId` is present, applyBlueprint ignores `title`, `icon`, `tooltip`, and `hideInMenu` on `navigation.group`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When `routeId` is omitted and `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as `icon`, `tooltip`, and `hideInMenu` is used only when a new group is created and is ignored when an existing group is reused. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. For JS blocks/fields/actions, `script` is a non-empty string asset key into `assets.scripts`; put inline JS in `settings.code` and `settings.version`. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` blocks may omit `defaultFilter`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default `filter` action `settings.defaultFilter`; explicit filter-action `settings.defaultFilter` still wins. Inline popup documents may set `popup.tryTemplate=true` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine `popup.tryTemplate` with `popup.saveAsTemplate={ name, description, local? }`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through `popup.template={ local, mode }`, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved and reused. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
     ),
     requestBody: {
       required: true,
@@ -3622,6 +3622,8 @@ const schemas = {
     properties: {
       scripts: {
         type: 'object',
+        description:
+          'Reusable JS settings keyed by asset name. Referenced script assets must provide non-empty `code`. Reference with block/field/action `script: "<key>"`; use `settings.code` and `settings.version` for inline JS code.',
         additionalProperties: ANY_OBJECT_SCHEMA,
       },
       charts: {
@@ -3737,7 +3739,10 @@ const schemas = {
           },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
-          script: { type: 'string' },
+          script: {
+            type: 'string',
+            description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+          },
           chart: { type: 'string' },
         },
         additionalProperties: false,
@@ -3763,7 +3768,10 @@ const schemas = {
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
-          script: { type: 'string' },
+          script: {
+            type: 'string',
+            description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+          },
           chart: { type: 'string' },
         },
         additionalProperties: false,
@@ -3789,7 +3797,10 @@ const schemas = {
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
-          script: { type: 'string' },
+          script: {
+            type: 'string',
+            description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+          },
           chart: { type: 'string' },
         },
         additionalProperties: false,
@@ -3855,7 +3866,10 @@ const schemas = {
         type: 'array',
         items: ref('FlowSurfaceApplyBlueprintRecordActionSpec'),
       },
-      script: { type: 'string' },
+      script: {
+        type: 'string',
+        description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+      },
       chart: { type: 'string' },
       pageSize: {
         type: 'number',
@@ -4132,7 +4146,7 @@ const schemas = {
     type: 'object',
     required: ['mode', 'tabs'],
     description:
-      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. `defaults.collections` may provide main data-source collection-level fieldGroups, popup metadata with required `name` and `description`, and formBehavior for generated default add/edit popup forms; use `defaults.dataSources.<dataSourceKey>.collections` for external data sources. v1 does not support `defaults.blocks`.",
+      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. For JS blocks/fields/actions, `script` is a non-empty string asset key into `assets.scripts`, and referenced script assets must provide non-empty `code`; put inline JS in `settings.code` and `settings.version`. `defaults.collections` may provide main data-source collection-level fieldGroups, popup metadata with required `name` and `description`, and formBehavior for generated default add/edit popup forms; use `defaults.dataSources.<dataSourceKey>.collections` for external data sources. v1 does not support `defaults.blocks`.",
     properties: {
       version: {
         type: 'string',

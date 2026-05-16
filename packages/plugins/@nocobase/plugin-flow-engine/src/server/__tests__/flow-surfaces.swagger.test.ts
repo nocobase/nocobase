@@ -349,9 +349,16 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('replace requires target.pageSchemaUid');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('defaults.collections');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('defaults.blocks');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('script` is a non-empty string asset key');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('referenced script assets must provide');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('settings.code');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.properties.defaults.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaults',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintAssets.properties.scripts.description).toContain(
+      'Reference with block/field/action `script: "<key>"`',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintAssets.properties.scripts.description).toContain('non-empty `code`');
     expect(schemas.FlowSurfaceApplyBlueprintDefaults.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaults.properties.collections.additionalProperties.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultCollection',
@@ -576,6 +583,7 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultActions).toBeUndefined();
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultRecordActions).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.script.description).toContain('assets.scripts');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.type.enum).toEqual([
       'table',
       'calendar',
@@ -604,8 +612,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintFieldSpec.oneOf[1].properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintFieldSpec.oneOf[1].properties.script.description).toContain(
+      'settings.code',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.script.description).toContain(
+      'settings.code',
     );
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[0].enum).toEqual(
       expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),

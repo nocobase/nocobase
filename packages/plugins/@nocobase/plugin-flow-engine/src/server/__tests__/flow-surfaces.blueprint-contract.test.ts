@@ -604,6 +604,355 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
+  it('should reject object-shaped applyBlueprint script payloads instead of keeping the default JS block code', async () => {
+    const cases = [
+      {
+        label: 'block script',
+        block: {
+          type: 'jsBlock',
+          script: {
+            source: 'runjs',
+            value: "ctx.render('<div>Broken</div>');",
+          },
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].script',
+      },
+      {
+        label: 'field script',
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: [
+            {
+              type: 'jsColumn',
+              script: {
+                source: 'runjs',
+                value: "ctx.render('<div>Broken</div>');",
+              },
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0].script',
+      },
+      {
+        label: 'fieldGroups field script',
+        block: {
+          type: 'details',
+          collection: 'employees',
+          fieldGroups: [
+            {
+              title: 'Profile',
+              fields: [
+                {
+                  type: 'jsColumn',
+                  script: {
+                    source: 'runjs',
+                    value: "ctx.render('<div>Broken</div>');",
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].fieldGroups[0].fields[0].script',
+      },
+      {
+        label: 'action script',
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: ['nickname'],
+          actions: [
+            {
+              type: 'jsItem',
+              script: {
+                source: 'runjs',
+                value: "ctx.render('<div>Broken</div>');",
+              },
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].actions[0].script',
+      },
+      {
+        label: 'record action script',
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: ['nickname'],
+          recordActions: [
+            {
+              type: 'jsItem',
+              script: {
+                source: 'runjs',
+                value: "ctx.render('<div>Broken</div>');",
+              },
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].script',
+      },
+    ];
+
+    for (const testCase of cases) {
+      const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          version: '1',
+          mode: 'create',
+          tabs: [
+            {
+              title: `Invalid ${testCase.label}`,
+              blocks: [testCase.block],
+            },
+          ],
+        },
+      });
+
+      expect(res.status).toBe(400);
+      expect(readErrorMessage(res)).toContain(testCase.expectedPath);
+      expect(readErrorMessage(res)).toContain('must be a string asset key');
+      expect(readErrorMessage(res)).toContain('use settings.code for inline JS code');
+    }
+  });
+
+  it('should reject empty applyBlueprint script asset keys instead of keeping default JS code', async () => {
+    const cases = [
+      {
+        label: 'empty block script',
+        block: {
+          type: 'jsBlock',
+          script: '',
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].script',
+      },
+      {
+        label: 'whitespace field script',
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: [
+            {
+              type: 'jsColumn',
+              script: '   ',
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0].script',
+      },
+      {
+        label: 'whitespace fieldGroups field script',
+        block: {
+          type: 'details',
+          collection: 'employees',
+          fieldGroups: [
+            {
+              title: 'Profile',
+              fields: [
+                {
+                  type: 'jsColumn',
+                  script: '   ',
+                },
+              ],
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].fieldGroups[0].fields[0].script',
+      },
+      {
+        label: 'empty action script',
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: ['nickname'],
+          actions: [
+            {
+              type: 'jsItem',
+              script: '',
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].actions[0].script',
+      },
+      {
+        label: 'whitespace record action script',
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: ['nickname'],
+          recordActions: [
+            {
+              type: 'jsItem',
+              script: '   ',
+            },
+          ],
+        },
+        expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].script',
+      },
+    ];
+
+    for (const testCase of cases) {
+      const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          version: '1',
+          mode: 'create',
+          tabs: [
+            {
+              title: `Invalid ${testCase.label}`,
+              blocks: [testCase.block],
+            },
+          ],
+        },
+      });
+
+      expect(res.status).toBe(400);
+      expect(readErrorMessage(res)).toContain(testCase.expectedPath);
+      expect(readErrorMessage(res)).toContain('must be a non-empty string asset key');
+      expect(readErrorMessage(res)).toContain('use settings.code for inline JS code');
+    }
+  });
+
+  it('should reject script asset references without runnable code on jsItem actions and record actions', async () => {
+    const cases = [
+      {
+        label: 'action script asset',
+        scripts: {
+          emptyActionScript: {},
+        },
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: ['nickname'],
+          actions: [
+            {
+              type: 'jsItem',
+              script: 'emptyActionScript',
+            },
+          ],
+        },
+        expected:
+          "flowSurfaces applyBlueprint tabs[0].blocks[0].actions[0].script references script asset 'emptyActionScript' without non-empty code",
+      },
+      {
+        label: 'record action script asset',
+        scripts: {
+          metadataOnlyRecordActionScript: {
+            title: 'Metadata only',
+          },
+        },
+        block: {
+          type: 'table',
+          collection: 'employees',
+          fields: ['nickname'],
+          recordActions: [
+            {
+              type: 'jsItem',
+              script: 'metadataOnlyRecordActionScript',
+            },
+          ],
+        },
+        expected:
+          "flowSurfaces applyBlueprint tabs[0].blocks[0].recordActions[0].script references script asset 'metadataOnlyRecordActionScript' without non-empty code",
+      },
+    ];
+
+    for (const testCase of cases) {
+      const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          version: '1',
+          mode: 'create',
+          assets: {
+            scripts: testCase.scripts,
+          },
+          tabs: [
+            {
+              title: `Invalid ${testCase.label}`,
+              blocks: [testCase.block],
+            },
+          ],
+        },
+      });
+
+      expect(res.status).toBe(400);
+      expect(readErrorMessage(res)).toContain(testCase.expected);
+      expect(readErrorMessage(res)).toContain('use settings.code for inline JS code');
+    }
+  });
+
+  it('should apply JS block code from an applyBlueprint script asset key', async () => {
+    const code = "ctx.render('<div>Asset KPI Cards</div>');";
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        assets: {
+          scripts: {
+            kpiCardsScript: {
+              code,
+              version: 'v2',
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'kpiCards',
+                type: 'jsBlock',
+                script: 'kpiCardsScript',
+                settings: {
+                  title: 'KPI Cards',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const jsBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'JSBlockModel')[0];
+    expect(jsBlock?.stepParams?.jsSettings?.runJs).toMatchObject({
+      code,
+      version: 'v2',
+    });
+  });
+
+  it('should apply inline JS block code from applyBlueprint settings', async () => {
+    const code = "ctx.render('<div>Inline KPI Cards</div>');";
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'kpiCards',
+                type: 'jsBlock',
+                settings: {
+                  title: 'KPI Cards',
+                  code,
+                  version: 'v2',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const jsBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'JSBlockModel')[0];
+    expect(jsBlock?.stepParams?.jsSettings?.runJs).toMatchObject({
+      code,
+      version: 'v2',
+    });
+  });
+
   it('should create flow-model calendar blocks through applyBlueprint', async () => {
     const quickCreatePopup = {
       mode: 'dialog',
@@ -5857,10 +6206,24 @@ describe('flowSurfaces applyBlueprint contract', () => {
   });
 
   it('should applyBlueprint create jsItem block and record actions on public hosts', async () => {
+    const tableActionCode = 'ctx.render("table action asset");';
+    const tableRecordActionCode = 'ctx.render("table record action asset");';
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
         mode: 'create',
+        assets: {
+          scripts: {
+            tableActionScript: {
+              version: '2.0.0',
+              code: tableActionCode,
+            },
+            tableRecordActionScript: {
+              version: '2.0.1',
+              code: tableRecordActionCode,
+            },
+          },
+        },
         navigation: {
           item: {
             title: `JS item action blueprint ${Date.now()}`,
@@ -5879,20 +6242,14 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   {
                     type: 'jsItem',
                     title: 'Table tools',
-                    settings: {
-                      version: '1.0.0',
-                      code: 'ctx.render(null);',
-                    },
+                    script: 'tableActionScript',
                   },
                 ],
                 recordActions: [
                   {
                     type: 'jsItem',
                     title: 'Row tools',
-                    settings: {
-                      version: '1.0.1',
-                      code: 'ctx.render(null);',
-                    },
+                    script: 'tableRecordActionScript',
                   },
                 ],
               },
@@ -5984,12 +6341,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
     const tableRecordJsItem = readTableRecordActions(tableBlock).find((item: any) => item?.use === 'JSItemActionModel');
     expect(tableCollectionJsItem?.stepParams?.jsSettings?.runJs).toMatchObject({
-      version: '1.0.0',
-      code: 'ctx.render(null);',
+      version: '2.0.0',
+      code: tableActionCode,
     });
     expect(tableRecordJsItem?.stepParams?.jsSettings?.runJs).toMatchObject({
-      version: '1.0.1',
-      code: 'ctx.render(null);',
+      version: '2.0.1',
+      code: tableRecordActionCode,
     });
   });
 

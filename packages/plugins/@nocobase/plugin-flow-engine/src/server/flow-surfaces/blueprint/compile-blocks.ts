@@ -536,14 +536,31 @@ function resolveAssetSettings(
   const nextSettings = cloneOptionalPlainObject<Record<string, any>>(settings, `${context}.settings`) || {};
 
   const mergeAsset = (bucket: keyof FlowSurfaceApplyBlueprintAssets, assetKey: any) => {
+    if (_.isUndefined(assetKey)) {
+      return;
+    }
+    if (typeof assetKey !== 'string') {
+      if (bucket === 'scripts') {
+        throwBadRequest(`${context}.script must be a string asset key; use settings.code for inline JS code`);
+      }
+      return;
+    }
     const normalizedKey = readOptionalString(assetKey);
     if (!normalizedKey) {
+      if (bucket === 'scripts') {
+        throwBadRequest(`${context}.script must be a non-empty string asset key; use settings.code for inline JS code`);
+      }
       return;
     }
     const registry = assets[bucket] || {};
     const asset = registry[normalizedKey];
     if (!_.isPlainObject(asset)) {
       throwBadRequest(`${context} ${bucket.slice(0, -1)} asset '${normalizedKey}' is not defined in assets.${bucket}`);
+    }
+    if (bucket === 'scripts' && !readOptionalString(asset.code)) {
+      throwBadRequest(
+        `${context}.script references script asset '${normalizedKey}' without non-empty code; use settings.code for inline JS code`,
+      );
     }
     _.merge(nextSettings, _.cloneDeep(asset));
   };

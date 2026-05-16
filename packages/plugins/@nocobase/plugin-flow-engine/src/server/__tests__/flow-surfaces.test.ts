@@ -4115,20 +4115,21 @@ describe('flowSurfaces resource', () => {
   });
 
   it('should persist compiled auto-generated popup template metadata for flowModelTemplates lookups', async () => {
+    const logsCollection: any = db.getCollection('employee_logs');
     const employeesCollection: any = db.getCollection('employees');
     const departmentsCollection: any = db.getCollection('departments');
     const departmentField: any = employeesCollection?.getField?.('department');
-    const originalEmployeesTitle = employeesCollection?.title;
-    const originalEmployeesOptionsTitle = employeesCollection?.options?.title;
+    const originalLogsTitle = logsCollection?.title;
+    const originalLogsOptionsTitle = logsCollection?.options?.title;
     const originalDepartmentsTitle = departmentsCollection?.title;
     const originalDepartmentsOptionsTitle = departmentsCollection?.options?.title;
     const originalDepartmentFieldTitle = departmentField?.title;
     const originalDepartmentFieldOptionsTitle = departmentField?.options?.title;
 
     try {
-      employeesCollection.title = '{{t("Users")}}';
-      if (employeesCollection?.options) {
-        employeesCollection.options.title = '{{t("Users")}}';
+      logsCollection.title = '{{t("Activity logs")}}';
+      if (logsCollection?.options) {
+        logsCollection.options.title = '{{t("Activity logs")}}';
       }
       departmentsCollection.title = '{{t("Organizations")}}';
       if (departmentsCollection?.options) {
@@ -4146,7 +4147,7 @@ describe('flowSurfaces resource', () => {
 
       const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
         dataSourceKey: 'main',
-        collectionName: 'employees',
+        collectionName: 'employee_logs',
       });
 
       const defaultViewPopupRes = await rootAgent.resource('flowSurfaces').addField({
@@ -4154,7 +4155,7 @@ describe('flowSurfaces resource', () => {
           target: {
             uid: detailsUid,
           },
-          fieldPath: 'department.title',
+          fieldPath: 'employee.department.title',
           popup: {
             defaultType: 'view',
           },
@@ -4173,16 +4174,16 @@ describe('flowSurfaces resource', () => {
           filterByTk: templatedPopupUid,
         }),
       );
-      expect(storedTemplate.name).toBe('Users -> Department Popup for Details (Auto generated)');
+      expect(storedTemplate.name).toBe('Activity logs -> Department Popup for Details (Auto generated)');
       expect(storedTemplate.description).toBe(
-        'Automatically generated popup template for relation field "Department" in collection "Users", targeting "Organizations" (Popup for Details). Scene: view; source collection: "Users"; association field: "Department"; target collection: "Organizations".',
+        'Automatically generated popup template for relation field "Department" in collection "Activity logs", targeting "Organizations" (Popup for Details). Scene: view; source collection: "Activity logs"; association field: "Department"; target collection: "Organizations".',
       );
       expect(storedTemplate.name).not.toContain('{{t(');
       expect(storedTemplate.description).not.toContain('{{t(');
     } finally {
-      employeesCollection.title = originalEmployeesTitle;
-      if (employeesCollection?.options) {
-        employeesCollection.options.title = originalEmployeesOptionsTitle;
+      logsCollection.title = originalLogsTitle;
+      if (logsCollection?.options) {
+        logsCollection.options.title = originalLogsOptionsTitle;
       }
       departmentsCollection.title = originalDepartmentsTitle;
       if (departmentsCollection?.options) {

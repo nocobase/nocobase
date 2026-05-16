@@ -68,6 +68,7 @@ type AuthoringErrorInput = Omit<FlowSurfaceErrorItemInput, 'message'> & { messag
 
 export interface FlowSurfaceAuthoringValidationContext {
   authoringActionName?: FlowSurfaceAuthoringWriteAction;
+  applyBlueprintScriptAssets?: Record<string, any>;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
   findMenuGroupRoutesByTitle?: (title: string, transaction?: any) => Promise<any[]>;
   transaction?: any;
@@ -310,6 +311,9 @@ export async function collectFlowSurfaceAuthoringErrors(
 
   if (!_.isPlainObject(values)) {
     return errors;
+  }
+  if (actionName === 'applyBlueprint' && _.isPlainObject(values?.assets?.scripts)) {
+    validationContext.applyBlueprintScriptAssets = values.assets.scripts;
   }
 
   await collectNavigationGroupErrors(actionName, values, validationContext, errors);
@@ -2500,6 +2504,8 @@ function collectBlockErrors(
   const hasFieldGroups = Object.prototype.hasOwnProperty.call(block, 'fieldGroups');
   const hasFieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout');
 
+  collectApplyBlueprintScriptAssetReferenceErrors(block, path, errors, context);
+
   if (Object.prototype.hasOwnProperty.call(block, 'layout')) {
     pushAuthoringError(errors, {
       path: `${path}.layout`,
@@ -2657,6 +2663,7 @@ function collectFieldGroupsShapeErrors(
         if (!_.isPlainObject(field)) {
           return;
         }
+        collectApplyBlueprintScriptAssetReferenceErrors(field, itemPath, errors, context);
         collectRelationTitleFieldErrors(field, itemPath, block, context, errors);
         collectRelationPopupResourceErrors(field, itemPath, block, context, errors);
         collectPopupErrors(
@@ -4219,6 +4226,7 @@ function collectActionErrors(
   if (!_.isPlainObject(action)) {
     return;
   }
+  collectApplyBlueprintScriptAssetReferenceErrors(action, path, errors, context);
   collectAssignValuesErrors(action.settings?.assignValues, `${path}.settings.assignValues`, errors, block, context);
   if (hasOwn(action, 'assignValues')) {
     pushAuthoringError(errors, {
@@ -4252,6 +4260,7 @@ function collectActionErrors(
     const hasRunnableSource =
       (typeof action.source === 'string' && action.source.trim()) ||
       (typeof action.code === 'string' && action.code.trim()) ||
+      hasApplyBlueprintRunnableScriptAssetReference(action.script, context) ||
       (typeof action.settings?.source === 'string' && action.settings.source.trim()) ||
       (typeof action.settings?.code === 'string' && action.settings.code.trim());
     if (!hasRunnableSource) {
@@ -4673,6 +4682,7 @@ function collectFieldListErrors(
     if (!_.isPlainObject(field)) {
       return;
     }
+    collectApplyBlueprintScriptAssetReferenceErrors(field, `${path}[${index}]`, errors, context);
     collectRelationTitleFieldErrors(field, `${path}[${index}]`, block, context, errors);
     collectRelationPopupResourceErrors(field, `${path}[${index}]`, block, context, errors);
     collectPopupErrors(
@@ -4692,6 +4702,61 @@ function collectFieldListInternalKeyErrors(fields: any, path: string, errors: Au
     return;
   }
   fields.forEach((field, index) => collectInternalFieldKeysErrors(field, `${path}[${index}]`, errors));
+}
+
+function collectApplyBlueprintScriptAssetReferenceErrors(
+  spec: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (context.authoringActionName !== 'applyBlueprint' || !_.isPlainObject(spec) || _.isUndefined(spec.script)) {
+    return;
+  }
+  const publicPath = path.replace(/^\$\./, '');
+  if (typeof spec.script === 'string') {
+    const scriptKey = spec.script.trim();
+    if (!scriptKey) {
+      pushAuthoringError(errors, {
+        path: `${path}.script`,
+        ruleId: 'apply-blueprint-script-asset-key-invalid',
+        message: `flowSurfaces applyBlueprint ${publicPath}.script must be a non-empty string asset key; use settings.code for inline JS code`,
+      });
+      return;
+    }
+    const scriptAssets = context.applyBlueprintScriptAssets;
+    if (
+      !_.isPlainObject(scriptAssets) ||
+      !hasOwn(scriptAssets, scriptKey) ||
+      !_.isPlainObject(scriptAssets[scriptKey]) ||
+      (typeof scriptAssets[scriptKey].code === 'string' && scriptAssets[scriptKey].code.trim())
+    ) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'apply-blueprint-script-asset-code-required',
+      message: `flowSurfaces applyBlueprint ${publicPath}.script references script asset '${scriptKey}' without non-empty code; use settings.code for inline JS code`,
+    });
+    return;
+  }
+  pushAuthoringError(errors, {
+    path: `${path}.script`,
+    ruleId: 'apply-blueprint-script-asset-key-invalid',
+    message: `flowSurfaces applyBlueprint ${publicPath}.script must be a string asset key; use settings.code for inline JS code`,
+  });
+}
+
+function hasApplyBlueprintRunnableScriptAssetReference(script: any, context: FlowSurfaceAuthoringValidationContext) {
+  if (context.authoringActionName !== 'applyBlueprint' || typeof script !== 'string' || !script.trim()) {
+    return false;
+  }
+  const scriptKey = script.trim();
+  const scriptAssets = context.applyBlueprintScriptAssets;
+  if (!_.isPlainObject(scriptAssets) || !hasOwn(scriptAssets, scriptKey) || !_.isPlainObject(scriptAssets[scriptKey])) {
+    return true;
+  }
+  return typeof scriptAssets[scriptKey].code === 'string' && !!scriptAssets[scriptKey].code.trim();
 }
 
 function collectInternalFieldKeysErrors(field: any, path: string, errors: AuthoringErrorInput[]) {
