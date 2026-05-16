@@ -33,6 +33,10 @@ const LARGE_GENERATED_POPUP_UNSUPPORTED_COLLECTION = 'flow_surface_large_generat
 const LARGE_GENERATED_POPUP_CODE_COLLECTION = 'flow_surface_large_generated_popup_code';
 const GENERATED_POPUP_TEN_EFFECTIVE_COLLECTION = 'flow_surface_ten_effective_generated_popup';
 const GENERATED_POPUP_TEN_EFFECTIVE_FIELDS = Array.from({ length: 10 }, (_item, index) => `field${index + 1}`);
+const DESCRIPTION_FORM_BEHAVIOR_COLLECTION = 'flow_surface_description_form_behavior';
+const DESCRIPTION_FORM_BEHAVIOR_IGNORED_COLLECTION = 'flow_surface_description_form_behavior_ignored';
+const DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION = 'flow_surface_description_form_behavior_field_group';
+const DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_FIELDS = Array.from({ length: 11 }, (_item, index) => `field${index + 1}`);
 const GENERATED_POPUP_RELATION_OVERRIDE_TARGET_COLLECTION = 'flow_surface_relation_override_targets';
 const GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION = 'flow_surface_relation_override_sources';
 const GENERATED_POPUP_RELATION_OVERRIDE_FIELD = 'target';
@@ -202,6 +206,59 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     });
     await rootAgent.resource('collections').create({
       values: {
+        name: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+        title: 'Flow surface description form behavior',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+            interface: 'input',
+            description: 'Title is required for generated add and edit forms.',
+          },
+          {
+            name: 'notes',
+            type: 'text',
+            interface: 'textarea',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: DESCRIPTION_FORM_BEHAVIOR_IGNORED_COLLECTION,
+        title: 'Flow surface description form behavior ignored',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+            interface: 'input',
+          },
+          {
+            name: 'internalNotes',
+            type: 'string',
+            interface: 'input',
+            hidden: true,
+            description: 'Hidden notes should not affect generated add and edit form defaults.',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION,
+        title: 'Flow surface description form behavior field group',
+        fields: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_FIELDS.map((fieldName, index) => ({
+          name: fieldName,
+          type: 'string',
+          interface: 'input',
+          ...(index === DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_FIELDS.length - 1
+            ? { description: 'This described field is intentionally outside the supplied generated form groups.' }
+            : {}),
+        })),
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
         name: GENERATED_POPUP_RELATION_OVERRIDE_TARGET_COLLECTION,
         title: 'Flow surface relation override targets',
         titleField: 'id',
@@ -282,6 +339,9 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       [LARGE_GENERATED_POPUP_UNSUPPORTED_COLLECTION]: LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS,
       [LARGE_GENERATED_POPUP_CODE_COLLECTION]: LARGE_GENERATED_POPUP_CODE_FIELDS,
       [GENERATED_POPUP_TEN_EFFECTIVE_COLLECTION]: [...GENERATED_POPUP_TEN_EFFECTIVE_FIELDS, 'internalSort'],
+      [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: ['title', 'notes'],
+      [DESCRIPTION_FORM_BEHAVIOR_IGNORED_COLLECTION]: ['title', 'internalNotes'],
+      [DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION]: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_FIELDS,
       [GENERATED_POPUP_RELATION_OVERRIDE_TARGET_COLLECTION]: ['name'],
       [GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION]: [
         ...GENERATED_POPUP_RELATION_OVERRIDE_FIELDS,
@@ -1244,6 +1304,368 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     ).map((item: any) => item.stepParams.fieldSettings.init.fieldPath);
     expect(generatedFieldPaths).toEqual(expect.arrayContaining(GENERATED_POPUP_TEN_EFFECTIVE_FIELDS));
     expect(generatedFieldPaths).not.toContain('internalSort');
+  });
+
+  it('should require explicit defaults formBehavior when generated add or edit popup fields have descriptions', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description form behavior missing',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    const missingFormBehaviorError = response.body.errors.find(
+      (error: any) => error.ruleId === 'missing-description-form-behavior',
+    );
+    expectStructuredError(missingFormBehaviorError, {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(missingFormBehaviorError).toMatchObject({
+      path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehavior`,
+      details: {
+        collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+        dataSourceKey: 'main',
+        describedFieldNames: ['title'],
+      },
+    });
+    expect(missingFormBehaviorError.message).toContain('formBehavior');
+    expect(missingFormBehaviorError.message).toContain('{}');
+    expect(missingFormBehaviorError.message).toContain('null');
+  });
+
+  it('should accept empty or null defaults formBehavior as explicit no-op confirmation', async () => {
+    for (const [label, formBehavior] of [
+      ['empty', {}],
+      ['null', null],
+    ] as const) {
+      const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          mode: 'create',
+          navigation: {
+            item: {
+              title: `Authoring description form behavior ${label}`,
+            },
+          },
+          defaults: {
+            collections: {
+              [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+                formBehavior,
+              },
+            },
+          },
+          tabs: [
+            {
+              title: 'Overview',
+              blocks: [
+                {
+                  key: `descriptionBehaviorTable${label}`,
+                  type: 'table',
+                  collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                  fields: ['title'],
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      expect(response.status, readErrorMessage(response)).toBe(200);
+    }
+  });
+
+  it('should keep nested null formBehavior scenes invalid', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description form behavior nested null',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehavior: {
+                addNew: null,
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorNestedNullTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehavior.addNew`,
+          ruleId: 'defaults-formBehavior-scene-invalid-shape',
+        }),
+      ]),
+    );
+  });
+
+  it('should not require defaults formBehavior when described fields are outside generated add and edit candidates', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description form behavior ignored candidate',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorIgnoredTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_IGNORED_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+  });
+
+  it('should not require defaults formBehavior for described fields excluded from generated add and edit candidates', async () => {
+    const sourceCollection = {
+      name: 'description_form_behavior_excluded_candidates',
+      getFields: () => [
+        {
+          name: 'title',
+          type: 'string',
+          interface: 'input',
+        },
+        {
+          name: 'owner',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: 'description_form_behavior_excluded_users',
+          foreignKey: 'ownerId',
+        },
+        {
+          name: 'ownerId',
+          type: 'string',
+          interface: 'input',
+          description: 'Foreign key storage should not affect generated add and edit form defaults.',
+        },
+        {
+          name: 'tags',
+          type: 'belongsToMany',
+          interface: 'm2m',
+          target: 'description_form_behavior_excluded_tags',
+          description: 'Multi-value association should not affect generated add and edit form defaults.',
+        },
+        {
+          name: 'createdById',
+          type: 'bigInt',
+          interface: 'createdById',
+          description: 'System creator id should not affect generated add and edit form defaults.',
+        },
+        {
+          name: 'createdAt',
+          type: 'datetime',
+          interface: 'createdAt',
+          description: 'Audit timestamp should not affect generated add and edit form defaults.',
+        },
+      ],
+    };
+    const collectionByName = new Map<string, any>([
+      [sourceCollection.name, sourceCollection],
+      [
+        'description_form_behavior_excluded_users',
+        {
+          name: 'description_form_behavior_excluded_users',
+          titleField: 'nickname',
+          getFields: () => [
+            {
+              name: 'nickname',
+              type: 'string',
+              interface: 'input',
+            },
+          ],
+        },
+      ],
+      [
+        'description_form_behavior_excluded_tags',
+        {
+          name: 'description_form_behavior_excluded_tags',
+          titleField: 'name',
+          getFields: () => [
+            {
+              name: 'name',
+              type: 'string',
+              interface: 'input',
+            },
+          ],
+        },
+      ],
+    ]);
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        defaults: {
+          collections: {
+            [sourceCollection.name]: {
+              popups: {
+                addNew: {
+                  name: 'Create excluded candidate',
+                  description: 'Create one excluded candidate record.',
+                },
+                edit: {
+                  name: 'Edit excluded candidate',
+                  description: 'Edit one excluded candidate record.',
+                },
+                view: {
+                  name: 'View excluded candidate',
+                  description: 'View one excluded candidate record.',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'excludedCandidateTable',
+                type: 'table',
+                collection: sourceCollection.name,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collectionByName.get(collectionName) || null,
+      },
+    );
+
+    expect(errors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${sourceCollection.name}.formBehavior`,
+          ruleId: 'missing-description-form-behavior',
+        }),
+      ]),
+    );
+  });
+
+  it('should not add missing formBehavior when the described field is outside supplied generated form fieldGroups', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description form behavior field group filtered',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION]: {
+              fieldGroups: [
+                {
+                  title: 'Visible fields',
+                  fields: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_FIELDS.slice(0, 10),
+                },
+              ],
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorFieldGroupTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION,
+                fields: ['field1'],
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: 'field1', operator: '$notEmpty' },
+                    { path: 'field2', operator: '$notEmpty' },
+                    { path: 'field3', operator: '$notEmpty' },
+                    { path: 'field4', operator: '$notEmpty' },
+                  ],
+                },
+                actions: [
+                  {
+                    key: 'createDescriptionBehaviorFieldGroupRecord',
+                    type: 'addNew',
+                    popup: {},
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION}.fieldGroups`,
+          ruleId: 'default-field-groups-incomplete',
+        }),
+      ]),
+    );
+    expect(response.body.errors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION}.formBehavior`,
+          ruleId: 'missing-description-form-behavior',
+        }),
+      ]),
+    );
   });
 
   it('should use datasource-aware generated popup default fieldGroups paths', async () => {

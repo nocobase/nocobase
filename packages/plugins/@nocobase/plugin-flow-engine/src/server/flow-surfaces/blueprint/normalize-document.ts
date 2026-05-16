@@ -328,6 +328,9 @@ function normalizeDefaultFormBehavior(
   if (_.isUndefined(input)) {
     return undefined;
   }
+  if (_.isNull(input)) {
+    return undefined;
+  }
   assertPlainObject(input, context);
   assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS);
   const normalized = buildDefinedPayload({

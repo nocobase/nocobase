@@ -388,9 +388,12 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultPopups',
     );
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('formBehavior');
-    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehavior.$ref).toBe(
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('{}');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('null');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehavior.allOf[0].$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehavior',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehavior.nullable).toBe(true);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehavior.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehavior.properties.addNew.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehaviorScene',

@@ -321,6 +321,7 @@ export async function collectFlowSurfaceAuthoringErrors(
   collectTopLevelLayoutErrors(actionName, values, errors);
   collectDefaultsShapeErrors(values?.defaults, '$.defaults', errors);
   collectDefaultCollectionFieldGroupSemanticErrors(values?.defaults, validationContext, errors);
+  collectDefaultFormBehaviorCompletenessErrors(actionName, values, validationContext, errors);
   collectApplyBlueprintChartAssetErrors(actionName, values, errors);
 
   if (actionName === 'configure') {
@@ -1001,7 +1002,7 @@ function collectDefaultFieldShapeErrors(field: any, path: string, errors: Author
 }
 
 function collectDefaultFormBehaviorShapeErrors(formBehavior: any, path: string, errors: AuthoringErrorInput[]) {
-  if (_.isUndefined(formBehavior)) {
+  if (_.isUndefined(formBehavior) || _.isNull(formBehavior)) {
     return;
   }
   if (!_.isPlainObject(formBehavior)) {
@@ -1599,6 +1600,69 @@ function collectGeneratedPopupDefaultFieldGroupErrors(
         threshold: LARGE_GENERATED_POPUP_FIELD_GROUPS_THRESHOLD,
         actionTypes: requirement.actionTypes,
         requiredFieldNames: effectiveFieldNames,
+        triggerPaths: requirement.triggerPaths,
+      },
+    });
+  }
+}
+
+function collectDefaultFormBehaviorCompletenessErrors(
+  actionName: FlowSurfaceAuthoringWriteAction,
+  values: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  if (actionName !== 'applyBlueprint' || !context.getCollection) {
+    return;
+  }
+  const requirements = new Map<string, GeneratedPopupDefaultFieldGroupRequirement>();
+  getAuthoringBlocks(actionName, values).forEach(({ block, path }) =>
+    collectBlockGeneratedPopupRequirements(block, path, context, requirements),
+  );
+  expandGeneratedViewPopupOneHopRequirements(requirements, values?.defaults, context);
+
+  for (const requirement of requirements.values()) {
+    const actionTypes = requirement.actionTypes.filter(
+      (actionType): actionType is 'addNew' | 'edit' => actionType === 'addNew' || actionType === 'edit',
+    );
+    if (!actionTypes.length) {
+      continue;
+    }
+    const collection = context.getCollection(requirement.dataSourceKey, requirement.collection);
+    if (!collection) {
+      continue;
+    }
+    const defaultCollection = resolveDefaultCollectionDefaults(
+      values?.defaults,
+      requirement.dataSourceKey,
+      requirement.collection,
+    );
+    if (Object.prototype.hasOwnProperty.call(defaultCollection.collectionDefaults || {}, 'formBehavior')) {
+      continue;
+    }
+    const describedFieldNames = getGeneratedPopupDefaultFormDescribedFieldNames({
+      collection,
+      dataSourceKey: requirement.dataSourceKey,
+      actionTypes,
+      fieldGroups: defaultCollection.collectionDefaults?.fieldGroups,
+      context,
+    });
+    if (!describedFieldNames.length) {
+      continue;
+    }
+    const path = `${defaultCollection.collectionPath}.formBehavior`;
+    if (errors.some((error) => error.path === path && error.ruleId === 'missing-description-form-behavior')) {
+      continue;
+    }
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'missing-description-form-behavior',
+      message: `flowSurfaces authoring ${path} is required because collection '${requirement.collection}' has default add/edit form fields with description metadata; provide formBehavior with structured behavior, or use {} or null to explicitly confirm no structured behavior`,
+      details: {
+        collection: requirement.collection,
+        dataSourceKey: requirement.dataSourceKey,
+        actionTypes,
+        describedFieldNames,
         triggerPaths: requirement.triggerPaths,
       },
     });
@@ -2283,6 +2347,55 @@ function getGeneratedPopupEffectiveFieldNames(input: {
   return Array.from(fieldNames);
 }
 
+function getFieldDescription(field: any) {
+  return String(field?.description || field?.options?.description || field?.uiSchema?.description || '').trim();
+}
+
+function getGeneratedPopupDefaultFormDescribedFieldNames(input: {
+  collection: any;
+  dataSourceKey: string;
+  actionTypes: ('addNew' | 'edit')[];
+  fieldGroups?: any[];
+  context: FlowSurfaceAuthoringValidationContext;
+}) {
+  const fieldNames = new Set<string>();
+  input.actionTypes.forEach((actionType) => {
+    const candidates = getGeneratedPopupRuntimeFieldCandidates({
+      collection: input.collection,
+      dataSourceKey: input.dataSourceKey,
+      actionType,
+      fieldGroups: input.fieldGroups,
+      context: input.context,
+    });
+    const candidateByFieldPath = new Map(
+      candidates.map((candidate) => [String(candidate?.fieldPath || '').trim(), candidate?.field] as const),
+    );
+    getGeneratedPopupDefaultFormFieldPaths(candidates, input.fieldGroups).forEach((fieldPath) => {
+      const normalizedFieldPath = String(fieldPath || '').trim();
+      if (!normalizedFieldPath) {
+        return;
+      }
+      const field = candidateByFieldPath.get(normalizedFieldPath);
+      if (getFieldDescription(field)) {
+        fieldNames.add(normalizedFieldPath);
+      }
+    });
+  });
+  return Array.from(fieldNames);
+}
+
+function getGeneratedPopupDefaultFormFieldPaths(candidates: any[], fieldGroups?: any[]) {
+  const options = { excludeAuditTimestampFields: true };
+  if (Array.isArray(fieldGroups) && fieldGroups.length) {
+    return pickFlowSurfaceDefaultActionPopupFieldGroups(candidates, fieldGroups, options).flatMap((group) =>
+      _.castArray(group.fields || [])
+        .map(getFieldPathInput)
+        .filter(Boolean),
+    );
+  }
+  return pickFlowSurfaceDefaultActionPopupFieldPaths(candidates, options);
+}
+
 function getGeneratedPopupRuntimeFieldCandidates(input: {
   collection: any;
   dataSourceKey: string;
@@ -2421,6 +2534,10 @@ function resolveDefaultCollectionDefaults(defaults: any, dataSourceKey: string, 
   });
   return {
     collectionDefaults: resolved.collectionDefaults,
+    collectionPath: (resolved.path || `$.defaults.collections.${collectionName}.fieldGroups`).replace(
+      /\.fieldGroups$/,
+      '',
+    ),
     fieldGroupsPath: resolved.path || `$.defaults.collections.${collectionName}.fieldGroups`,
   };
 }

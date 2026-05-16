@@ -177,7 +177,7 @@ export type FlowSurfaceApplyBlueprintDefaultFormBehavior = {
 export type FlowSurfaceApplyBlueprintDefaultCollection = {
   fieldGroups?: FlowSurfaceApplyBlueprintDefaultFieldGroupSpec[];
   popups?: FlowSurfaceApplyBlueprintDefaultPopups;
-  formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior;
+  formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior | null;
 };
 
 export type FlowSurfaceApplyBlueprintDefaultDataSource = {

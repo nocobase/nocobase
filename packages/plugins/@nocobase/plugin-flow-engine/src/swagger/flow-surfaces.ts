@@ -4105,7 +4105,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintDefaultCollection: {
     type: 'object',
     description:
-      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, and `formBehavior` for backend-generated add/edit popup forms; block-specific defaults are not supported.',
+      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, and `formBehavior` for backend-generated add/edit popup forms. When generated add/edit form candidate fields have non-empty description metadata, raw applyBlueprint payloads must include a `formBehavior` own property; use `{}` or `null` to explicitly confirm no structured behavior. Block-specific defaults are not supported.',
     properties: {
       fieldGroups: {
         type: 'array',
@@ -4113,7 +4113,10 @@ const schemas = {
         items: ref('FlowSurfaceApplyBlueprintDefaultFieldGroup'),
       },
       popups: ref('FlowSurfaceApplyBlueprintDefaultPopups'),
-      formBehavior: ref('FlowSurfaceApplyBlueprintDefaultFormBehavior'),
+      formBehavior: {
+        allOf: [ref('FlowSurfaceApplyBlueprintDefaultFormBehavior')],
+        nullable: true,
+      },
     },
     additionalProperties: false,
   },
