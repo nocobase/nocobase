@@ -39,6 +39,7 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
 });
 
 const originalNbLocale = process.env.NB_LOCALE;
@@ -194,6 +195,17 @@ test('hidden required fields are rendered disabled so browser validation does no
 
   let uiUrl = '';
   const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+  const fetchMock = vi.fn(async (input: string | URL | Request) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    if (url === 'http://localhost:13000/api/__health_check') {
+      return {
+        status: 200,
+        json: vi.fn(),
+      } as any;
+    }
+    throw new Error(`Unexpected fetch url: ${url}`);
+  });
+  vi.stubGlobal('fetch', fetchMock);
 
   try {
     const webUiPromise = runPromptCatalogWebUI({
@@ -240,6 +252,10 @@ test('hidden required fields are rendered disabled so browser validation does no
       }),
     });
     expect(submit.statusCode).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:13000/api/__health_check',
+      expect.objectContaining({ method: 'GET' }),
+    );
 
     const resolved = await Promise.race([
       webUiPromise,

@@ -12,7 +12,6 @@ import { beforeEach, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   inspectSelfStatus: vi.fn(),
   updateSelf: vi.fn(),
-  confirmAction: vi.fn(),
   printInfo: vi.fn(),
   renderTable: vi.fn(() => 'TABLE'),
   setVerboseMode: vi.fn(),
@@ -33,7 +32,6 @@ vi.mock('../lib/skills-manager.js', () => ({
 }));
 
 vi.mock('../lib/ui.js', () => ({
-  confirmAction: mocks.confirmAction,
   printInfo: mocks.printInfo,
   renderTable: mocks.renderTable,
   setVerboseMode: mocks.setVerboseMode,

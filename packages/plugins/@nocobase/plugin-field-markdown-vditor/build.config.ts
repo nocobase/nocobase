@@ -11,9 +11,5 @@ export default defineConfig({
       recursive: true,
       force: true,
     });
-    await fs.cp(vditor, path.resolve(__dirname, 'dist/client-v2/vditor/dist'), {
-      recursive: true,
-      force: true,
-    });
   },
 });

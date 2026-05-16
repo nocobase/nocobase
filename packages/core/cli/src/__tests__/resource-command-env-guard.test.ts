@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   executeResourceRequest: vi.fn(),
   confirm: vi.fn(),
-  isCancel: vi.fn(),
   setVerboseMode: vi.fn(),
 }));
 
@@ -25,9 +24,8 @@ vi.mock('../lib/resource-request.js', () => ({
   executeResourceRequest: mocks.executeResourceRequest,
 }));
 
-vi.mock('@clack/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.confirm,
-  isCancel: mocks.isCancel,
 }));
 
 vi.mock('../lib/ui.js', async (importOriginal) => {
@@ -80,7 +78,6 @@ beforeEach(() => {
     status: 200,
     data: { ok: true },
   });
-  mocks.isCancel.mockReturnValue(false);
 });
 
 test('resource base flags expose the cross-env confirmation flag', () => {
@@ -127,7 +124,7 @@ test('resource commands ask for confirmation before cross-env requests in intera
     expect(mocks.confirm).toHaveBeenCalledWith({
       message:
         'Current env is "dev", but this command targets "prod" via --env. Continue without switching the current env?',
-      initialValue: false,
+      default: false,
     });
     expect(mocks.executeResourceRequest).toHaveBeenCalledOnce();
     expect(command.log).toHaveBeenCalledWith(JSON.stringify({ ok: true }, null, 2));
@@ -139,8 +136,7 @@ test('resource commands ask for confirmation before cross-env requests in intera
 test('resource commands treat a canceled confirmation as a no-op', async () => {
   const restoreTerminal = setTerminalInteractivity(true);
   const command = createCommand();
-  mocks.confirm.mockResolvedValue(Symbol.for('cancel'));
-  mocks.isCancel.mockReturnValue(true);
+  mocks.confirm.mockRejectedValue(new Error('canceled'));
 
   try {
     await runResourceCommand(command as any, 'list', {
@@ -153,7 +149,6 @@ test('resource commands treat a canceled confirmation as a no-op', async () => {
     });
 
     expect(mocks.executeResourceRequest).not.toHaveBeenCalled();
-    expect(command.log).toHaveBeenCalledWith('Canceled.');
   } finally {
     restoreTerminal();
   }

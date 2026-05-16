@@ -3,11 +3,26 @@ ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
-ARG INSTALL_NB_CLI=0
+ARG USE_ALIYUN_MIRROR=0
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
-RUN apt-get update && apt-get install -y jq expect
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  fi; \
+  apt-get update && apt-get install -y jq expect
 
 SHELL ["/bin/bash", "-c"]
 
@@ -24,7 +39,7 @@ RUN yarn config set registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
   yarn config set network-timeout 600000 -g && \
-  yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
+  yarn create nocobase-app my-nocobase-app -a --skip-dev-dependencies -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
   yarn install --production && \
   yarn add newrelic --production -W && \
@@ -33,85 +48,76 @@ RUN yarn config set registry $VERDACCIO_URL && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
 
-RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    LICENSE_KIT_RANGE=$(npm view @nocobase/cli dependencies.@nocobase/license-kit --registry $VERDACCIO_URL) && \
-    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE#\'} && \
-    LICENSE_KIT_RANGE=${LICENSE_KIT_RANGE%\'} && \
-    LICENSE_KIT_VERSION=$(npm view "@nocobase/license-kit@${LICENSE_KIT_RANGE}" version --registry https://registry.npmjs.org/) && \
-    mkdir -p /tmp/nb-cli && \
-    printf '%s\n' \
-      '{' \
-      '  "private": true,' \
-      '  "dependencies": {' \
-      '    "@nocobase/cli": "latest"' \
-      '  },' \
-      '  "resolutions": {' \
-      "    \"@nocobase/license-kit\": \"https://registry.npmjs.org/@nocobase/license-kit/-/license-kit-${LICENSE_KIT_VERSION}.tgz\"" \
-      '  }' \
-      '}' > /tmp/nb-cli/package.json; \
-  fi
-
-RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    cd /tmp/nb-cli && \
-    yarn install --production --registry $VERDACCIO_URL && \
-    mkdir -p /opt/nb/bin && \
-    cp -a /tmp/nb-cli/node_modules /opt/nb/ && \
-    ln -sf /opt/nb/node_modules/.bin/nb /opt/nb/bin/nb && \
-    NB_SKIP_STARTUP_UPDATE=1 /opt/nb/bin/nb --version && \
-    tar -zcf /nb.tar.gz -C /opt nb; \
-  else \
-    mkdir -p /tmp/empty-nb-artifact && \
-    tar -zcf /nb.tar.gz -C /tmp/empty-nb-artifact .; \
-  fi
-
 FROM scratch AS app-artifact
 COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
-COPY --from=app-builder /nb.tar.gz /nb.tar.gz
 
-FROM node:22-bookworm-slim AS nb-unpack
-COPY nb.tar.gz /tmp/nb.tar.gz
-RUN mkdir -p /opt/nb && \
-  tar -zxf /tmp/nb.tar.gz -C /opt && \
-  rm -f /tmp/nb.tar.gz
+FROM node:22-bookworm-slim AS docs-archive
+ARG INCLUDE_DOCS_ARCHIVE=1
+RUN mkdir -p /out
+COPY dist.tar.gz /tmp/dist.tar.gz
+RUN if [ "$INCLUDE_DOCS_ARCHIVE" = "1" ]; then \
+    cp /tmp/dist.tar.gz /out/nocobase-docs.tar.gz; \
+  fi && \
+  rm -f /tmp/dist.tar.gz
 
 FROM node:22-bookworm-slim AS runtime
 ARG COMMIT_HASH
-ARG INSTALL_NB_CLI=0
+ARG INCLUDE_DOCS_ARCHIVE=1
+ARG INSTALL_POSTGRES_16_CLIENT=1
+ARG INSTALL_CJK_FONTS=1
+ARG USE_ALIYUN_MIRROR=0
+ENV NB_SKIP_STARTUP_UPDATE=1 \
+    NOCOBASE_RUNNING_IN_DOCKER=true
 
-ENV PATH="/opt/nb/bin:${PATH}"
-
-RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-RUN wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  nginx \
-  libaio1 \
-  postgresql-client-16 \
-  postgresql-client-17 \
-  libfreetype6 \
-  fontconfig \
-  libgssapi-krb5-2 \
-  fonts-liberation \
-  fonts-noto-cjk \
-  && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://mirrors.aliyun.com/postgresql/repos/apt'; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://apt.postgresql.org/pub/repos/apt'; \
+  fi; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
+  echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] ${PGDG_MIRROR} bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+  wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends \
+    nginx \
+    libaio1 \
+    postgresql-client-17 \
+    libfreetype6 \
+    fontconfig \
+    libgssapi-krb5-2 \
+    fonts-liberation; \
+  if [ "$INSTALL_POSTGRES_16_CLIENT" = "1" ]; then \
+    apt-get install -y --no-install-recommends postgresql-client-16; \
+  fi; \
+  if [ "$INSTALL_CJK_FONTS" = "1" ]; then \
+    apt-get install -y --no-install-recommends fonts-noto-cjk; \
+  fi; \
+  apt-get purge -y --auto-remove wget gnupg dirmngr; \
+  rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/*
 
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
-COPY nocobase.tar.gz /app/nocobase.tar.gz
-COPY dist.tar.gz /app/nocobase-docs.tar.gz
-COPY --from=nb-unpack /opt/nb /opt/nb
-
-RUN if [ "$INSTALL_NB_CLI" = "1" ]; then \
-    NB_SKIP_STARTUP_UPDATE=1 nb --version; \
-  fi
+ADD nocobase.tar.gz /app/nocobase/
+COPY --from=docs-archive /out/ /app/
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/storage/uploads/ && \
-  echo "$COMMIT_HASH" > /app/nocobase/storage/uploads/COMMIT_HASH && \
+RUN ln -sf /app/nocobase/node_modules/.bin/nb /usr/local/bin/nb && \
+  mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads /app/nocobase/node_modules/@nocobase/app/dist/client && \
+  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/

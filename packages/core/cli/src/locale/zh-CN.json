@@ -51,7 +51,12 @@
   "validators": {
     "apiBaseUrl": {
       "invalid": "请输入有效的 URL，例如 {{example}}。",
-      "invalidProtocol": "URL 必须以 http:// 或 https:// 开头，例如 {{example}}。"
+      "invalidProtocol": "URL 必须以 http:// 或 https:// 开头，例如 {{example}}。",
+      "healthCheckPathNotAllowed": "API 基础地址中不要包含 /__health_check。请输入应用的 API 基础地址，例如 http://localhost:13000/api。",
+      "maintaining": "该 API 地址可以访问，但应用仍在启动或维护过程中，请稍后再试。",
+      "healthCheckFailed": "该 API 地址未通过健康检查（HTTP {{status}}），请确认它指向的是一个正在运行的 NocoBase API 地址。",
+      "timeout": "等待 API 地址健康检查超时，约 {{seconds}} 秒内未收到响应。",
+      "unreachable": "无法连接到该 API 地址，请检查地址是否正确，并确认服务可访问。详情：{{details}}"
     },
     "envKey": {
       "invalid": "仅支持字母和数字。"
@@ -85,7 +90,7 @@
         },
         "apiBaseUrl": {
           "message": "API 基础地址是什么？",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
           "message": "你想使用哪种登录方式？",
@@ -302,7 +307,7 @@
         },
         "apiBaseUrl": {
           "message": "API 基础地址",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         }
       },
       "webUi": {

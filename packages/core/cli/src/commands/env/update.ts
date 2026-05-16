@@ -13,7 +13,7 @@ import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName } from '../../lib/auth-store.js';
 import { updateEnvRuntime } from '../../lib/bootstrap.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
-import { failTask, startTask, succeedTask } from '../../lib/ui.js';
+import { failTask, printVerbose, setVerboseMode, startTask, stopTask, succeedTask } from '../../lib/ui.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,6 +51,7 @@ export default class EnvUpdate extends Command {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvUpdate);
+    setVerboseMode(Boolean(flags.verbose));
     const envName = args.name;
     const envLabel = envName ?? (await getCurrentEnvName({ scope: resolveDefaultConfigScope() }));
 
@@ -67,7 +68,12 @@ export default class EnvUpdate extends Command {
         verbose: flags.verbose,
       });
 
-      succeedTask(`Updated env "${envLabel}" to runtime "${runtime.version}".`);
+      if (flags.verbose) {
+        succeedTask(`Updated env "${envLabel}" to runtime "${runtime.version}".`);
+      } else {
+        stopTask();
+        printVerbose(`Updated env "${envLabel}" to runtime "${runtime.version}".`);
+      }
     } catch (error) {
       failTask(`Failed to update env "${envLabel}".`);
       throw error;

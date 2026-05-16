@@ -7,8 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { createGunzip } from 'node:zlib';
+import * as tar from 'tar';
 import { resolveCliHomeDir } from './cli-home.js';
 import { compareVersions } from './self-manager.js';
 import { commandOutput, commandOutputViaFile, run } from './run-npm.js';
@@ -91,6 +94,18 @@ function getSkillsCacheRoot(globalRoot: string): string {
   return path.join(globalRoot, 'cache', 'skills');
 }
 
+function getCachedSkillsPackageDir(cacheRoot: string): string {
+  return path.join(cacheRoot, 'node_modules', '@nocobase', 'skills');
+}
+
+function getCachedSkillsPackRoot(cacheRoot: string): string {
+  return path.join(cacheRoot, 'pack');
+}
+
+function getCachedSkillsExtractRoot(cacheRoot: string): string {
+  return path.join(cacheRoot, 'extract');
+}
+
 export function getManagedSkillsStateFile(workspaceRoot: string): string {
   return path.join(workspaceRoot, 'skills.json');
 }
@@ -167,7 +182,7 @@ async function readPublishedSkillsVersion(
 }
 
 async function readCachedSkillsVersion(cacheRoot: string): Promise<string | undefined> {
-  const packageJsonPath = path.join(cacheRoot, 'node_modules', '@nocobase', 'skills', 'package.json');
+  const packageJsonPath = path.join(getCachedSkillsPackageDir(cacheRoot), 'package.json');
   try {
     const content = await fsp.readFile(packageJsonPath, 'utf8');
     const parsed = JSON.parse(content) as { version?: string };
@@ -178,13 +193,79 @@ async function readCachedSkillsVersion(cacheRoot: string): Promise<string | unde
   }
 }
 
+async function resolvePackedSkillsTarball(packRoot: string): Promise<string> {
+  const entries = await fsp.readdir(packRoot, { withFileTypes: true });
+  const tarballs = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.tgz'))
+    .map((entry) => path.join(packRoot, entry.name))
+    .sort();
+
+  if (tarballs.length === 1) {
+    return tarballs[0];
+  }
+
+  if (tarballs.length === 0) {
+    throw new Error(`npm pack did not produce a local tarball for ${NOCOBASE_SKILLS_PACKAGE_NAME}.`);
+  }
+
+  throw new Error(`npm pack produced multiple tarballs for ${NOCOBASE_SKILLS_PACKAGE_NAME}.`);
+}
+
+async function extractPackedSkillsTarball(
+  tarballPath: string,
+  cacheRoot: string,
+  targetVersion?: string,
+): Promise<string> {
+  const packageDir = getCachedSkillsPackageDir(cacheRoot);
+  const extractRoot = getCachedSkillsExtractRoot(cacheRoot);
+
+  await fsp.rm(extractRoot, { recursive: true, force: true });
+  await fsp.mkdir(extractRoot, { recursive: true });
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      fs.createReadStream(tarballPath)
+        .pipe(createGunzip())
+        .pipe(tar.extract({ cwd: extractRoot, strip: 1 }))
+        .on('finish', () => resolve())
+        .on('error', reject);
+    });
+
+    const packageJsonPath = path.join(extractRoot, 'package.json');
+    const packageJsonRaw = await fsp.readFile(packageJsonPath, 'utf8');
+    const manifest = JSON.parse(packageJsonRaw) as { name?: string; version?: string };
+    const packageName = String(manifest.name ?? '').trim();
+    const packageVersion = String(manifest.version ?? '').trim();
+
+    if (packageName !== NOCOBASE_SKILLS_PACKAGE_NAME) {
+      throw new Error(
+        `packed tarball resolved to ${packageName || '(missing package name)'} instead of ${NOCOBASE_SKILLS_PACKAGE_NAME}.`,
+      );
+    }
+
+    if (targetVersion && packageVersion !== targetVersion) {
+      throw new Error(`packed tarball resolved to version ${packageVersion || '(missing version)'} instead of ${targetVersion}.`);
+    }
+
+    await fsp.rm(packageDir, { recursive: true, force: true });
+    await fsp.mkdir(path.dirname(packageDir), { recursive: true });
+    await fsp.rename(extractRoot, packageDir);
+    return packageDir;
+  } catch (error: unknown) {
+    await fsp.rm(extractRoot, { recursive: true, force: true });
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`failed to extract ${NOCOBASE_SKILLS_PACKAGE_NAME} tarball: ${message}`);
+  }
+}
+
 async function prepareLocalSkillsPackage(
   globalRoot: string,
   options: SkillsSyncOptions = {},
   targetVersion?: string,
 ): Promise<{ packageDir: string; cleanup: () => Promise<void> }> {
   const cacheRoot = getSkillsCacheRoot(globalRoot);
-  const packageDir = path.join(cacheRoot, 'node_modules', '@nocobase', 'skills');
+  const packageDir = getCachedSkillsPackageDir(cacheRoot);
+  const packRoot = getCachedSkillsPackRoot(cacheRoot);
   const packageSpec = targetVersion ? `${NOCOBASE_SKILLS_PACKAGE_NAME}@${targetVersion}` : NOCOBASE_SKILLS_PACKAGE_NAME;
   const cachedVersion = await readCachedSkillsVersion(cacheRoot);
 
@@ -197,22 +278,19 @@ async function prepareLocalSkillsPackage(
     };
   }
 
-  await fsp.rm(path.join(cacheRoot, 'node_modules'), { recursive: true, force: true });
-
-  await (options.runFn ?? run)(
-    'npm',
-    ['install', '--no-save', '--ignore-scripts', '--no-package-lock', packageSpec],
-    {
-      cwd: cacheRoot,
-      stdio: options.verbose ? 'inherit' : 'ignore',
-      errorName: 'npm install',
-    },
-  );
+  await fsp.rm(packRoot, { recursive: true, force: true });
+  await fsp.mkdir(packRoot, { recursive: true });
 
   try {
-    await fsp.access(packageDir);
-  } catch {
-    throw new Error(`npm install did not produce a local ${NOCOBASE_SKILLS_PACKAGE_NAME} package.`);
+    await (options.runFn ?? run)('npm', ['pack', '--silent', packageSpec], {
+      cwd: packRoot,
+      stdio: options.verbose ? 'inherit' : 'ignore',
+      errorName: 'npm pack',
+    });
+    const tarballPath = await resolvePackedSkillsTarball(packRoot);
+    await extractPackedSkillsTarball(tarballPath, cacheRoot, targetVersion);
+  } finally {
+    await fsp.rm(packRoot, { recursive: true, force: true });
   }
 
   return {

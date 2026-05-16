@@ -14,7 +14,6 @@ const mocks = vi.hoisted(() => ({
   inspectSelfStatus: vi.fn(),
   inspectSkillsStatus: vi.fn(),
   confirm: vi.fn(),
-  isCancel: vi.fn((value: unknown) => value === Symbol.for('cancel')),
   printWarning: vi.fn(),
   run: vi.fn(),
   isInteractiveTerminal: vi.fn(),
@@ -29,9 +28,8 @@ vi.mock('../lib/skills-manager.js', () => ({
   inspectSkillsStatus: mocks.inspectSkillsStatus,
 }));
 
-vi.mock('@clack/prompts', () => ({
+vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.confirm,
-  isCancel: mocks.isCancel,
 }));
 
 vi.mock('../lib/ui.js', () => ({
@@ -157,9 +155,7 @@ describe('startup update prompt', () => {
         '- NocoBase AI skills: 1.0.4 -> 1.0.5',
         'Update now?',
       ].join('\n'),
-      active: 'Yes',
-      inactive: 'No',
-      initialValue: true,
+      default: true,
     });
     expect(mocks.run.mock.calls).toEqual([
       [

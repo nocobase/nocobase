@@ -195,7 +195,6 @@ export default class LicensePluginsSync extends Command {
         yes: flags.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }
