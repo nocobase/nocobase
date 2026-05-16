@@ -456,6 +456,29 @@ export class FlowModelRepository extends Repository {
       return;
     }
 
+    const descendants = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT descendant FROM ${this.flowModelTreePathTableName} WHERE ancestor = :uid`),
+      {
+        type: 'SELECT',
+        replacements: {
+          uid,
+        },
+        transaction,
+      },
+    )) as Array<{ descendant?: string }>;
+    const uids = descendants.map((row) => row.descendant).filter(Boolean) as string[];
+
+    if (uids.length) {
+      await this.database.emitAsync(
+        `${this.collection.name}.beforeRemoveTree`,
+        {
+          rootUid: uid,
+          uids,
+        },
+        options,
+      );
+    }
+
     await this.database.sequelize.query(
       this.sqlAdapter(`DELETE FROM ${this.flowModelsTableName} WHERE "uid" IN (
             SELECT descendant FROM ${this.flowModelTreePathTableName} WHERE ancestor = :uid
