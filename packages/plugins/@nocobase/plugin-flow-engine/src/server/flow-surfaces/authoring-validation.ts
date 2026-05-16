@@ -2571,7 +2571,7 @@ function getFieldPopupValidationContext(
   context: FlowSurfaceAuthoringValidationContext,
 ): FlowSurfaceAuthoringValidationContext {
   const fallbackContext = getBlockDescendantValidationContext(block, context);
-  const fieldPath = getFieldPathInput(fieldSpec);
+  const fieldPath = getAssociationAwareFieldPathInput(fieldSpec);
   if (!fieldPath || !context.getCollection) {
     return fallbackContext;
   }
@@ -2579,10 +2579,15 @@ function getFieldPopupValidationContext(
   if (!collection) {
     return fallbackContext;
   }
-  const associationFieldPath = fieldPath.includes('.')
+  const field = resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  const parentAssociationFieldPath = fieldPath.includes('.')
     ? fieldPath.split('.').filter(Boolean).slice(0, -1).join('.')
-    : fieldPath;
-  const associationField = resolveFieldFromCollection(collection, normalizeFieldPath(associationFieldPath));
+    : '';
+  const associationField = isAssociationField(field)
+    ? field
+    : parentAssociationFieldPath
+      ? resolveFieldFromCollection(collection, normalizeFieldPath(parentAssociationFieldPath))
+      : field;
   if (!associationField || !isAssociationField(associationField)) {
     return fallbackContext;
   }
@@ -2650,6 +2655,7 @@ function collectBlockErrors(
   }
 
   collectUnsupportedMainBlockSectionErrors(block, blockType, path, errors);
+  collectApplyBlueprintKanbanFieldLimitErrors(block, blockType, path, errors, context);
   collectUnsupportedFieldAuthoringHostErrors(block, blockType, path, errors);
   collectSortingAliasErrors(block.settings, `${path}.settings`, blockType, errors);
   collectFieldGroupsShapeErrors(block.fieldGroups, path, errors, block, context, localKeys);
@@ -2726,6 +2732,35 @@ function collectUnsupportedMainBlockSectionErrors(
   });
 }
 
+function collectApplyBlueprintKanbanFieldLimitErrors(
+  block: any,
+  blockType: string,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (
+    context.authoringActionName !== 'applyBlueprint' ||
+    blockType !== 'kanban' ||
+    hasFlowSurfaceTemplateReference(block?.template) ||
+    !Array.isArray(block.fields)
+  ) {
+    return;
+  }
+  if (block.fields.length <= 2) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path: `${path}.fields`,
+    ruleId: 'kanban-main-fields-too-many',
+    message: `flowSurfaces authoring ${path}.fields supports at most 2 fields for applyBlueprint kanban main blocks`,
+    details: {
+      max: 2,
+      count: block.fields.length,
+    },
+  });
+}
+
 function collectFieldGroupsShapeErrors(
   fieldGroups: any,
   blockPath: string,
@@ -2773,7 +2808,7 @@ function collectFieldGroupsShapeErrors(
       group.fields.forEach((field: any, fieldIndex: number) => {
         const itemPath = `${groupPath}.fields[${fieldIndex}]`;
         collectInternalFieldKeysErrors(field, itemPath, errors);
-        const fieldPath = getFieldPathInput(field);
+        const fieldPath = getAssociationAwareFieldPathInput(field);
         if (fieldPath) {
           collectUnknownFieldPathError(fieldPath, itemPath, block, context, errors);
         }
@@ -3627,6 +3662,13 @@ function collectSemanticBindingErrors(
     }
     const fieldPath = String(settings[settingKey] || '').trim();
     if (!fieldPath) {
+      if (context.authoringActionName === 'applyBlueprint' && blockType === 'kanban' && settingKey === 'groupField') {
+        pushAuthoringError(errors, {
+          path: `${settingsPath}.${settingKey}`,
+          ruleId: 'kanban-group-field-required',
+          message: `flowSurfaces authoring ${settingsPath}.${settingKey} must be a non-empty field name`,
+        });
+      }
       return;
     }
     collectUnknownFieldPathError(fieldPath, `${settingsPath}.${settingKey}`, block, context, errors, {
@@ -4698,6 +4740,9 @@ function collectPopupErrors(
       message: `flowSurfaces authoring ${path} cannot combine saveAsTemplate with template`,
     });
   }
+  if (hasFlowSurfaceTemplateReference(popup.template)) {
+    return;
+  }
   collectPublicLayoutErrors(
     popup.layout,
     `${path}.layout`,
@@ -4792,7 +4837,7 @@ function collectFieldListErrors(
   }
   fields.forEach((field, index) => {
     collectInternalFieldKeysErrors(field, `${path}[${index}]`, errors);
-    const fieldPath = getFieldPathInput(field);
+    const fieldPath = getAssociationAwareFieldPathInput(field);
     if (fieldPath) {
       collectUnknownFieldPathError(fieldPath, `${path}[${index}]`, block, context, errors);
     }
@@ -5335,6 +5380,21 @@ function getFieldPathInput(field: any): string {
     return String(field.path || field.fieldPath || field.field || field.name || '').trim();
   }
   return '';
+}
+
+function getAssociationAwareFieldPathInput(field: any): string {
+  const fieldPath = getFieldPathInput(field);
+  if (!_.isPlainObject(field)) {
+    return fieldPath;
+  }
+  const associationPathName = String(field.associationPathName || '').trim();
+  if (!associationPathName) {
+    return fieldPath;
+  }
+  if (!fieldPath || fieldPath === associationPathName || fieldPath.startsWith(`${associationPathName}.`)) {
+    return associationPathName;
+  }
+  return `${associationPathName}.${fieldPath}`;
 }
 
 function collectLocalKeys(value: any, keys: Set<string>, scopePrefix = '') {

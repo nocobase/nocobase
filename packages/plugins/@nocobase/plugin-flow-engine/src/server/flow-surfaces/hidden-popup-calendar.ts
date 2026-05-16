@@ -77,6 +77,13 @@ export type HiddenPopupHostRuntime = {
     patch: (payload: Record<string, any>, options?: any) => Promise<any>;
     upsertModel: (payload: Record<string, any>, options?: any) => Promise<any>;
   };
+  applyPopupHostLocalContent?: (input: {
+    actionName: string;
+    actionUid: string;
+    popupSettings?: Record<string, any>;
+    transaction?: any;
+    hasCurrentRecord?: boolean;
+  }) => Promise<any> | any;
   buildPopupOpenViewWithTemplate: HiddenPopupTemplateOpenViewBuilder;
   clearFlowTemplateUsagesForNodeTree: (uid: string, transaction?: any) => Promise<any>;
   ensurePopupHostDefaultContent: HiddenPopupHostDefaultContentEnsurer;

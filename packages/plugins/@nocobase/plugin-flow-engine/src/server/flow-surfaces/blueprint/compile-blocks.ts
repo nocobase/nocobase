@@ -38,11 +38,14 @@ import { normalizeBlockHiddenPopupSettings } from '../hidden-popup-contract';
 import type { FlowSurfaceResourceBindingKey } from '../types';
 import {
   getCollectionFields,
+  getCollectionName,
   getFieldInterface,
   getFieldName,
   getFieldTarget,
   getFieldType,
   resolveAssociationNameFromField,
+  resolveFieldFromCollection,
+  resolveFieldTargetCollection,
 } from '../service-helpers';
 import { hasFlowSurfaceTemplateDocument, hasFlowSurfaceTemplateReference } from '../template-reference';
 import type {
@@ -1026,7 +1029,12 @@ function normalizeBlockResourceObject(
   return normalized;
 }
 
-function buildBlockResource(block: FlowSurfaceApplyBlueprintBlockSpec, context: string) {
+function buildBlockResource(
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  context: string,
+  resourceContext?: FlowSurfaceCompileResourceContext,
+  blockType?: string,
+) {
   if (!_.isUndefined(block.resource)) {
     if (!_.isPlainObject(block.resource)) {
       throwBadRequest(`${context}.resource must be an object`);
@@ -1062,12 +1070,18 @@ function buildBlockResource(block: FlowSurfaceApplyBlueprintBlockSpec, context: 
     throwBadRequest(`${context}.associationField only works when ${context}.binding is provided`);
   }
   const collectionName = readOptionalString(block.collection);
-  if (!collectionName) {
+  if (!collectionName && !isFlowSurfacePublicDataSurfaceBlockType(blockType || '')) {
+    return undefined;
+  }
+  const inheritedCollectionName = readOptionalString(resourceContext?.surfaceCollectionName);
+  if (!collectionName && !inheritedCollectionName) {
     return undefined;
   }
   return buildDefinedPayload({
-    dataSourceKey: readOptionalString(block.dataSourceKey) || 'main',
-    collectionName,
+    binding: !collectionName && inheritedCollectionName ? 'otherRecords' : undefined,
+    dataSourceKey:
+      readOptionalString(block.dataSourceKey) || readOptionalString(resourceContext?.dataSourceKey) || 'main',
+    collectionName: collectionName || inheritedCollectionName,
     associationPathName: readOptionalString(block.associationPathName),
   });
 }
@@ -1122,15 +1136,23 @@ function isApplyBlueprintAssociationField(field: any) {
   return APPLY_BLUEPRINT_ASSOCIATION_FIELD_INTERFACES.has(fieldInterface);
 }
 
-function getApplyBlueprintCollectionField(collection: any, fieldName?: string) {
-  const normalizedFieldName = normalizeMetadataText(fieldName);
-  if (!collection || !normalizedFieldName) {
-    return undefined;
+function resolveApplyBlueprintAssociationFieldFromPath(collection: any, fieldPath?: string) {
+  const normalizedFieldPath = normalizeMetadataText(fieldPath);
+  if (!collection || !normalizedFieldPath) {
+    return { field: undefined, associationPath: '' };
   }
-  return (
-    collection?.getField?.(normalizedFieldName) ||
-    getCollectionFields(collection).find((field) => getFieldName(field) === normalizedFieldName)
-  );
+  const field = resolveFieldFromCollection(collection, normalizedFieldPath);
+  if (isApplyBlueprintAssociationField(field)) {
+    return { field, associationPath: normalizedFieldPath };
+  }
+  const parentPath = normalizedFieldPath.includes('.')
+    ? normalizedFieldPath.split('.').filter(Boolean).slice(0, -1).join('.')
+    : '';
+  if (!parentPath) {
+    return { field, associationPath: normalizedFieldPath };
+  }
+  const parentField = resolveFieldFromCollection(collection, parentPath);
+  return { field: parentField, associationPath: parentPath };
 }
 
 function resolveApplyBlueprintAssociationContext(input: {
@@ -1142,25 +1164,33 @@ function resolveApplyBlueprintAssociationContext(input: {
   requireAssociationField?: boolean;
 }): FlowSurfaceCompileResourceContext | undefined {
   const sourceCollectionName = normalizeMetadataText(input.sourceCollectionName);
-  const associationField = getApplyBlueprintAssociationFieldRoot(input.associationField);
-  if (!sourceCollectionName || !associationField) {
+  const associationFieldPath = normalizeMetadataText(input.associationField);
+  if (!sourceCollectionName || !associationFieldPath) {
     return undefined;
   }
 
   const dataSourceKey = normalizeMetadataText(input.dataSourceKey) || 'main';
   const sourceCollection = input.getCollection?.(dataSourceKey, sourceCollectionName);
-  const field = getApplyBlueprintCollectionField(sourceCollection, associationField);
+  const { field, associationPath } = resolveApplyBlueprintAssociationFieldFromPath(
+    sourceCollection,
+    associationFieldPath,
+  );
   if (input.requireAssociationField && !isApplyBlueprintAssociationField(field)) {
     return undefined;
   }
+  const targetCollection = resolveFieldTargetCollection(field, dataSourceKey, input.getCollection);
 
   const targetCollectionName =
-    normalizeMetadataText(input.targetCollectionName) || normalizeMetadataText(getFieldTarget(field));
+    normalizeMetadataText(input.targetCollectionName) ||
+    normalizeMetadataText(getCollectionName(targetCollection)) ||
+    normalizeMetadataText(getFieldTarget(field));
   return {
     dataSourceKey,
     surfaceCollectionName: targetCollectionName || undefined,
     associationName:
-      resolveAssociationNameFromField(field, sourceCollection) || `${sourceCollectionName}.${associationField}`,
+      (associationPath.includes('.') ? `${sourceCollectionName}.${associationPath}` : undefined) ||
+      resolveAssociationNameFromField(field, sourceCollection) ||
+      `${sourceCollectionName}.${associationPath || associationFieldPath}`,
   };
 }
 
@@ -1268,6 +1298,18 @@ function resolveApplyBlueprintFieldAssociationContext(input: {
     getCollection: input.getCollection,
     requireAssociationField: true,
   });
+}
+
+function getApplyBlueprintFieldAssociationPath(input: FlowSurfaceApplyBlueprintFieldObjectSpec) {
+  const associationPathName = readOptionalString(input.associationPathName);
+  const fieldPath = readOptionalString(input.field);
+  if (!associationPathName) {
+    return fieldPath;
+  }
+  if (!fieldPath || fieldPath === associationPathName || fieldPath.startsWith(`${associationPathName}.`)) {
+    return associationPathName;
+  }
+  return `${associationPathName}.${fieldPath}`;
 }
 
 function ensureLayoutRows(layout: FlowSurfaceApplyBlueprintLayout | undefined, context: string) {
@@ -1921,7 +1963,7 @@ function compileField(
     associationName: popupOptions.associationName,
   };
   const fieldAssociationContext = resolveApplyBlueprintFieldAssociationContext({
-    fieldPath,
+    fieldPath: getApplyBlueprintFieldAssociationPath(input),
     parentContext: parentResourceContext,
     getCollection,
   });
@@ -2456,7 +2498,9 @@ function compileBlocks(
     return buildDefinedPayload({
       key,
       type: isTemplateBackedBlock ? undefined : blockType,
-      resource: isTemplateBackedBlock ? undefined : buildBlockResource(block, blockContext),
+      resource: isTemplateBackedBlock
+        ? undefined
+        : buildBlockResource(block, blockContext, blockResourceContext, blockType),
       template,
       defaultFilter: !isTemplateBackedBlock ? effectiveBlockDefaultFilter : undefined,
       settings: Object.keys(settings).length

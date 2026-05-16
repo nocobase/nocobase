@@ -30,7 +30,7 @@ export const FLOW_SURFACE_ACTION_DEFINITIONS = {
   setBlockLinkageRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
   setFieldLinkageRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
   setActionLinkageRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
-  applyBlueprint: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
+  applyBlueprint: { method: 'post', read: false, transaction: false, mutate: false, valueSource: 'default' },
   applyApprovalBlueprint: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
   listTemplates: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   getTemplate: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },

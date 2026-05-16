@@ -982,6 +982,16 @@ function assertNoFlowSurfaceIdTitleFieldSettings(
   visit(value, options.basePath || []);
 }
 
+type FlowSurfaceApplyBlueprintKanbanResourceContext = {
+  dataSourceKey: string;
+  collectionName?: string;
+};
+
+type FlowSurfaceApplyBlueprintKanbanCreatedSortField = {
+  collectionName: string;
+  fieldName: string;
+};
+
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
 
@@ -1109,6 +1119,13 @@ export class FlowSurfacesService {
         patch: (values, options) => this.patchFlowSurfaceModelOptions(values, options),
         upsertModel: (model, options) => this.repository.upsertModel(model, options),
       },
+      applyPopupHostLocalContent: (input) =>
+        this.applyInlineActionPopup(input.actionName, input.actionUid, input.popupSettings, {
+          transaction: input.transaction,
+          popupActionContext: {
+            hasCurrentRecord: !!input.hasCurrentRecord,
+          },
+        }),
       buildPopupOpenViewWithTemplate: (input) => this.buildPopupOpenViewWithTemplate(input),
       clearFlowTemplateUsagesForNodeTree: (uid, transaction) =>
         this.clearFlowTemplateUsagesForNodeTree(uid, transaction),
@@ -3963,10 +3980,12 @@ export class FlowSurfacesService {
   private async prepareApplyBlueprintRequest(
     values: Record<string, any>,
     transaction?: any,
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
   ): Promise<FlowSurfaceApplyBlueprintProgram> {
     const initialDocument = prepareFlowSurfaceApplyBlueprintDocument(values);
     const groupResolvedDocument = await this.resolveApplyBlueprintCreateNavigationGroup(initialDocument, transaction);
     const document = await this.resolveApplyBlueprintCreatePageIdentity(groupResolvedDocument, transaction);
+    await this.prepareApplyBlueprintKanbanBlocks(document, transaction, createdKanbanSortFields);
     const replaceTarget =
       document.mode === 'replace' && document.target
         ? await this.resolveApplyBlueprintReplaceTargetInfo(document.target.pageSchemaUid, transaction)
@@ -3988,7 +4007,500 @@ export class FlowSurfacesService {
     });
   }
 
+  private getApplyBlueprintKanbanBlockResourceObject(block: any) {
+    return _.isPlainObject(block?.resource) ? block.resource : {};
+  }
+
+  private normalizeApplyBlueprintKanbanResourceText(value: any) {
+    return typeof value === 'string' && value.trim() ? value.trim() : '';
+  }
+
+  private getApplyBlueprintKanbanBlockBinding(block: any) {
+    const resource = this.getApplyBlueprintKanbanBlockResourceObject(block);
+    return this.normalizeApplyBlueprintKanbanResourceText(block?.binding || resource.binding).toLowerCase();
+  }
+
+  private getApplyBlueprintKanbanBlockDataSourceKey(
+    block: any,
+    parentContext?: FlowSurfaceApplyBlueprintKanbanResourceContext,
+  ) {
+    const resource = this.getApplyBlueprintKanbanBlockResourceObject(block);
+    return (
+      this.normalizeApplyBlueprintKanbanResourceText(block?.dataSourceKey) ||
+      this.normalizeApplyBlueprintKanbanResourceText(resource.dataSourceKey) ||
+      parentContext?.dataSourceKey ||
+      'main'
+    );
+  }
+
+  private getApplyBlueprintKanbanBlockDirectCollectionName(block: any) {
+    const resource = _.isPlainObject(block.resource) ? block.resource : {};
+    return (
+      this.normalizeApplyBlueprintKanbanResourceText(block?.collection) ||
+      this.normalizeApplyBlueprintKanbanResourceText(resource.collectionName) ||
+      this.normalizeApplyBlueprintKanbanResourceText(resource.collection)
+    );
+  }
+
+  private getApplyBlueprintKanbanFieldPopupAssociationPath(field: any) {
+    if (typeof field === 'string') {
+      return this.normalizeApplyBlueprintKanbanResourceText(field);
+    }
+    if (!_.isPlainObject(field)) {
+      return '';
+    }
+    const associationPathName = this.normalizeApplyBlueprintKanbanResourceText(field.associationPathName);
+    const fieldPath = this.normalizeApplyBlueprintKanbanResourceText(field.field || field.fieldPath);
+    if (!associationPathName) {
+      return fieldPath;
+    }
+    if (!fieldPath || fieldPath === associationPathName || fieldPath.startsWith(`${associationPathName}.`)) {
+      return associationPathName;
+    }
+    return `${associationPathName}.${fieldPath}`;
+  }
+
+  private getApplyBlueprintKanbanBlockAssociationField(block: any) {
+    const resource = this.getApplyBlueprintKanbanBlockResourceObject(block);
+    return (
+      this.normalizeApplyBlueprintKanbanResourceText(resource.associationField) ||
+      this.normalizeApplyBlueprintKanbanResourceText(block?.associationField) ||
+      this.normalizeApplyBlueprintKanbanResourceText(resource.associationPathName) ||
+      this.normalizeApplyBlueprintKanbanResourceText(block?.associationPathName)
+    );
+  }
+
+  private resolveApplyBlueprintKanbanAssociationFieldFromPath(collection: any, fieldPath?: string) {
+    const normalizedFieldPath = this.normalizeApplyBlueprintKanbanResourceText(fieldPath);
+    if (!collection || !normalizedFieldPath) {
+      return undefined;
+    }
+    const field = resolveFieldFromCollection(collection, normalizeFieldPath(normalizedFieldPath));
+    if (isAssociationField(field)) {
+      return field;
+    }
+    const parentPath = normalizedFieldPath.includes('.')
+      ? normalizedFieldPath.split('.').filter(Boolean).slice(0, -1).join('.')
+      : '';
+    if (!parentPath) {
+      return field;
+    }
+    return resolveFieldFromCollection(collection, normalizeFieldPath(parentPath));
+  }
+
+  private resolveApplyBlueprintKanbanAssociationResourceContext(input: {
+    dataSourceKey: string;
+    sourceCollectionName?: string;
+    associationField?: string;
+    targetCollectionName?: string;
+  }): FlowSurfaceApplyBlueprintKanbanResourceContext | undefined {
+    const dataSourceKey = input.dataSourceKey || 'main';
+    const targetCollectionName = this.normalizeApplyBlueprintKanbanResourceText(input.targetCollectionName);
+    const sourceCollectionName = this.normalizeApplyBlueprintKanbanResourceText(input.sourceCollectionName);
+    const associationFieldPath = this.normalizeApplyBlueprintKanbanResourceText(input.associationField);
+    if (targetCollectionName) {
+      return {
+        dataSourceKey,
+        collectionName: targetCollectionName,
+      };
+    }
+    if (!sourceCollectionName || !associationFieldPath) {
+      return undefined;
+    }
+    const sourceCollection = this.getCollection(dataSourceKey, sourceCollectionName);
+    const field = this.resolveApplyBlueprintKanbanAssociationFieldFromPath(sourceCollection, associationFieldPath);
+    if (!isAssociationField(field)) {
+      return undefined;
+    }
+    const targetCollection = resolveFieldTargetCollection(
+      field,
+      dataSourceKey,
+      (resolvedDataSourceKey, collectionName) => this.getCollection(resolvedDataSourceKey, collectionName),
+    );
+    const resolvedTargetCollectionName =
+      this.normalizeApplyBlueprintKanbanResourceText(getCollectionName(targetCollection)) ||
+      this.normalizeApplyBlueprintKanbanResourceText(getFieldTarget(field));
+    if (!resolvedTargetCollectionName) {
+      return undefined;
+    }
+    return {
+      dataSourceKey,
+      collectionName: resolvedTargetCollectionName,
+    };
+  }
+
+  private resolveApplyBlueprintKanbanBlockResourceContext(
+    block: any,
+    parentContext?: FlowSurfaceApplyBlueprintKanbanResourceContext,
+  ): FlowSurfaceApplyBlueprintKanbanResourceContext {
+    const dataSourceKey = this.getApplyBlueprintKanbanBlockDataSourceKey(block, parentContext);
+    const directCollectionName = this.getApplyBlueprintKanbanBlockDirectCollectionName(block);
+    if (this.getApplyBlueprintKanbanBlockBinding(block) === 'associatedrecords') {
+      const associatedContext = this.resolveApplyBlueprintKanbanAssociationResourceContext({
+        dataSourceKey,
+        sourceCollectionName: parentContext?.collectionName,
+        associationField: this.getApplyBlueprintKanbanBlockAssociationField(block),
+        targetCollectionName: directCollectionName,
+      });
+      return {
+        dataSourceKey,
+        collectionName: associatedContext?.collectionName || parentContext?.collectionName,
+      };
+    }
+    return {
+      dataSourceKey,
+      collectionName: directCollectionName || parentContext?.collectionName,
+    };
+  }
+
+  private resolveApplyBlueprintKanbanFieldPopupResourceContext(
+    field: any,
+    parentContext?: FlowSurfaceApplyBlueprintKanbanResourceContext,
+  ): FlowSurfaceApplyBlueprintKanbanResourceContext | undefined {
+    if (!parentContext?.collectionName) {
+      return parentContext;
+    }
+    const fieldPath = this.getApplyBlueprintKanbanFieldPopupAssociationPath(field);
+    const associationContext = this.resolveApplyBlueprintKanbanAssociationResourceContext({
+      dataSourceKey: parentContext.dataSourceKey,
+      sourceCollectionName: parentContext.collectionName,
+      associationField: fieldPath,
+    });
+    return associationContext || parentContext;
+  }
+
+  private getApplyBlueprintKanbanSortFieldName(collection: any, groupField: any) {
+    const groupFieldName = getFieldName(groupField);
+    const baseName = `${groupFieldName}_sort`;
+    const existingFieldNames = new Set(
+      getCollectionFields(collection)
+        .map((field) => getFieldName(field))
+        .filter(Boolean),
+    );
+    if (!existingFieldNames.has(baseName)) {
+      return baseName;
+    }
+    for (let index = 2; index < 1000; index++) {
+      const candidate = `${baseName}_${index}`;
+      if (!existingFieldNames.has(candidate)) {
+        return candidate;
+      }
+    }
+    throwBadRequest(`flowSurfaces applyBlueprint kanban could not generate a unique drag-sort field name`);
+  }
+
+  private async createApplyBlueprintKanbanSortField(input: {
+    collection: any;
+    collectionName: string;
+    groupField: any;
+    transaction?: any;
+    createdFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[];
+  }) {
+    const fieldName = this.getApplyBlueprintKanbanSortFieldName(input.collection, input.groupField);
+    const scopeKey = this.getKanbanGroupFieldSortScopeKeys(input.groupField)[0];
+    if (!scopeKey) {
+      throwBadRequest(`flowSurfaces applyBlueprint kanban could not resolve a drag-sort scopeKey`);
+    }
+    const createdField = await this.db.getRepository('collections.fields', input.collectionName).create({
+      values: {
+        name: fieldName,
+        type: 'sort',
+        interface: 'sort',
+        scopeKey,
+        hidden: true,
+      },
+      transaction: input.transaction,
+      context: {
+        app: this.plugin.app,
+      },
+    });
+    const createdFieldName = String(createdField?.get?.('name') || createdField?.name || fieldName).trim();
+    input.createdFields?.push({
+      collectionName: input.collectionName,
+      fieldName: createdFieldName,
+    });
+    if (!this.getKanbanCompatibleSortFieldNames(input.collection, input.groupField).includes(createdFieldName)) {
+      await createdField?.load?.({
+        transaction: input.transaction,
+      });
+    }
+    return createdFieldName;
+  }
+
+  private async prepareApplyBlueprintKanbanBlocks(
+    document: FlowSurfaceApplyBlueprintDocument,
+    transaction?: any,
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+  ) {
+    for (const tab of document.tabs || []) {
+      await this.prepareApplyBlueprintKanbanBlockList(tab.blocks, transaction, createdKanbanSortFields);
+    }
+  }
+
+  private async prepareApplyBlueprintKanbanBlockList(
+    blocks: any,
+    transaction?: any,
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    parentContext?: FlowSurfaceApplyBlueprintKanbanResourceContext,
+  ) {
+    for (const block of _.castArray(blocks || [])) {
+      await this.prepareApplyBlueprintKanbanBlockTree(block, transaction, createdKanbanSortFields, parentContext);
+    }
+  }
+
+  private async prepareApplyBlueprintKanbanPopupBlocks(
+    popup: any,
+    transaction?: any,
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    parentContext?: FlowSurfaceApplyBlueprintKanbanResourceContext,
+  ) {
+    if (!_.isPlainObject(popup) || hasFlowSurfaceTemplateReference(popup.template)) {
+      return;
+    }
+    await this.prepareApplyBlueprintKanbanBlockList(popup.blocks, transaction, createdKanbanSortFields, parentContext);
+  }
+
+  private async prepareApplyBlueprintKanbanBlockTree(
+    block: any,
+    transaction?: any,
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    parentContext?: FlowSurfaceApplyBlueprintKanbanResourceContext,
+  ) {
+    if (!_.isPlainObject(block)) {
+      return;
+    }
+    if (hasFlowSurfaceTemplateReference(block.template)) {
+      return;
+    }
+    const blockContext = this.resolveApplyBlueprintKanbanBlockResourceContext(block, parentContext);
+    if (block.type === 'kanban') {
+      await this.prepareApplyBlueprintKanbanBlock(block, transaction, createdKanbanSortFields, blockContext);
+    }
+    await this.prepareApplyBlueprintKanbanBlockList(block.blocks, transaction, createdKanbanSortFields, blockContext);
+    await this.prepareApplyBlueprintKanbanPopupBlocks(block.popup, transaction, createdKanbanSortFields, blockContext);
+    for (const field of _.castArray(block.fields || [])) {
+      await this.prepareApplyBlueprintKanbanPopupBlocks(
+        field?.popup,
+        transaction,
+        createdKanbanSortFields,
+        this.resolveApplyBlueprintKanbanFieldPopupResourceContext(field, blockContext),
+      );
+    }
+    for (const group of _.castArray(block.fieldGroups || [])) {
+      for (const field of _.castArray(group?.fields || [])) {
+        await this.prepareApplyBlueprintKanbanPopupBlocks(
+          field?.popup,
+          transaction,
+          createdKanbanSortFields,
+          this.resolveApplyBlueprintKanbanFieldPopupResourceContext(field, blockContext),
+        );
+      }
+    }
+    for (const action of [..._.castArray(block.actions || []), ..._.castArray(block.recordActions || [])]) {
+      await this.prepareApplyBlueprintKanbanPopupBlocks(
+        action?.popup,
+        transaction,
+        createdKanbanSortFields,
+        blockContext,
+      );
+    }
+    const settings = _.isPlainObject(block.settings) ? block.settings : {};
+    for (const popupKey of [
+      'quickCreatePopup',
+      'eventPopup',
+      'cardPopup',
+      'quickCreatePopupSettings',
+      'eventPopupSettings',
+      'cardPopupSettings',
+    ]) {
+      await this.prepareApplyBlueprintKanbanPopupBlocks(
+        settings[popupKey],
+        transaction,
+        createdKanbanSortFields,
+        blockContext,
+      );
+    }
+  }
+
+  private canCreateApplyBlueprintKanbanSortField(dataSourceKey: string, collection: any) {
+    if (dataSourceKey !== 'main') {
+      return false;
+    }
+    if (collection?.isView?.() && collection?.options?.writableView !== true) {
+      return false;
+    }
+    return true;
+  }
+
+  private async prepareApplyBlueprintKanbanBlock(
+    block: any,
+    transaction?: any,
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    resourceContext?: FlowSurfaceApplyBlueprintKanbanResourceContext,
+  ) {
+    const settings = _.isPlainObject(block.settings) ? _.cloneDeep(block.settings) : {};
+    const hasExplicitGroupField = Object.prototype.hasOwnProperty.call(settings, 'groupField');
+    if (hasExplicitGroupField && !String(settings.groupField || '').trim()) {
+      throwBadRequest(`flowSurfaces applyBlueprint kanban groupField must be a non-empty field name`);
+    }
+    const hasExplicitDragSortBy = Object.prototype.hasOwnProperty.call(settings, 'dragSortBy');
+    if (settings.dragEnabled === false && !hasExplicitDragSortBy) {
+      block.settings = settings;
+      return;
+    }
+    if (!resourceContext?.collectionName) {
+      return;
+    }
+    const { collection, collectionName, dataSourceKey } = this.assertKanbanCollectionCompatible(
+      'applyBlueprint',
+      resourceContext,
+    );
+    const groupFieldName = String(settings.groupField || this.getKanbanDefaultGroupFieldName(collection) || '').trim();
+    const groupField = this.getKanbanGroupField(collection, groupFieldName);
+    if (!groupField || !this.isKanbanGroupField(groupField)) {
+      throwBadRequest(
+        `flowSurfaces applyBlueprint kanban collection '${dataSourceKey}.${collectionName}' must resolve a supported groupField`,
+      );
+    }
+    if (hasExplicitDragSortBy) {
+      if (!String(settings.dragSortBy || '').trim()) {
+        throwBadRequest(`flowSurfaces applyBlueprint kanban dragSortBy must be a non-empty field name`);
+      }
+      const explicitDragSortBy = this.resolveKanbanCompatibleSortFieldName({
+        actionName: 'applyBlueprint',
+        collection,
+        groupField,
+        requested: settings.dragSortBy,
+      });
+      block.settings = {
+        ...settings,
+        groupField: groupFieldName,
+        dragEnabled: settings.dragEnabled === false ? false : true,
+        ...(!_.isUndefined(explicitDragSortBy) ? { dragSortBy: explicitDragSortBy } : {}),
+      };
+      return;
+    }
+    let dragSortBy = this.getKanbanCompatibleSortFieldNames(collection, groupField)[0];
+    if (!dragSortBy) {
+      if (!this.canCreateApplyBlueprintKanbanSortField(dataSourceKey, collection)) {
+        throwBadRequest(
+          `flowSurfaces applyBlueprint kanban collection '${dataSourceKey}.${collectionName}' requires a compatible drag-sort field or settings.dragEnabled=false`,
+        );
+      }
+      dragSortBy = await this.createApplyBlueprintKanbanSortField({
+        collection,
+        collectionName,
+        groupField,
+        transaction,
+        createdFields: createdKanbanSortFields,
+      });
+    }
+    block.settings = {
+      ...settings,
+      groupField: groupFieldName,
+      dragEnabled: true,
+      dragSortBy,
+    };
+  }
+
+  private async cleanupApplyBlueprintKanbanSortFields(
+    createdFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    transaction?: any,
+  ) {
+    const failedFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
+    for (const { collectionName, fieldName } of [...createdFields].reverse()) {
+      try {
+        await this.db.getRepository('collections.fields', collectionName).destroy({
+          filterByTk: fieldName,
+          filter: {
+            name: fieldName,
+          },
+          context: {
+            app: this.plugin.app,
+          },
+          transaction,
+        });
+        this.db.getCollection(collectionName)?.removeField?.(fieldName);
+      } catch (error: any) {
+        failedFields.unshift({ collectionName, fieldName });
+        this.plugin.app.logger?.warn?.(
+          'flowSurfaces applyBlueprint failed to clean up auto-created kanban sort field',
+          {
+            collectionName,
+            fieldName,
+            error: error?.message || String(error),
+          },
+        );
+      }
+    }
+    return failedFields;
+  }
+
+  private bindTransactionRollbackEmitter(transaction?: any, onRollback?: () => Promise<void>) {
+    if (!transaction?.id || typeof transaction.rollback !== 'function') {
+      return;
+    }
+    const rollbackEventName = `transactionRollback:${transaction.id}`;
+    if (onRollback) {
+      this.db.on(rollbackEventName, onRollback);
+    }
+    if (!transaction.flowSurfacesRollbackEmitterBound) {
+      const originalRollback = transaction.rollback.bind(transaction);
+      transaction.rollback = async (...args: any[]) => {
+        try {
+          return await originalRollback(...args);
+        } finally {
+          await this.db.emitAsync(rollbackEventName);
+          this.db.removeAllListeners(rollbackEventName);
+        }
+      };
+      transaction.flowSurfacesRollbackEmitterBound = true;
+    }
+    transaction.afterCommit?.(() => {
+      this.db.removeAllListeners(rollbackEventName);
+    });
+  }
+
   async applyBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
+    if (options.transaction) {
+      const createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
+      const cleanupCreatedKanbanSortFields = async (transaction?: any) => {
+        const failedFields = await this.cleanupApplyBlueprintKanbanSortFields(createdKanbanSortFields, transaction);
+        createdKanbanSortFields.splice(0, createdKanbanSortFields.length, ...failedFields);
+      };
+      this.bindTransactionRollbackEmitter(options.transaction, () => cleanupCreatedKanbanSortFields());
+      try {
+        return await this.applyBlueprintWithTransaction(values, options, createdKanbanSortFields);
+      } catch (error) {
+        await cleanupCreatedKanbanSortFields(options.transaction);
+        throw error;
+      }
+    }
+    if (!options.transaction) {
+      const createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
+      try {
+        return await this.transaction((transaction) =>
+          this.applyBlueprintWithTransaction(
+            values,
+            {
+              ...options,
+              transaction,
+            },
+            createdKanbanSortFields,
+          ),
+        );
+      } catch (error) {
+        await this.cleanupApplyBlueprintKanbanSortFields(createdKanbanSortFields);
+        throw error;
+      }
+    }
+  }
+
+  private async applyBlueprintWithTransaction(
+    values: Record<string, any>,
+    options: { transaction?: any } = {},
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+  ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
       transaction: options.transaction,
@@ -3997,7 +4509,7 @@ export class FlowSurfacesService {
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
-    const prepared = await this.prepareApplyBlueprintRequest(values, options.transaction);
+    const prepared = await this.prepareApplyBlueprintRequest(values, options.transaction, createdKanbanSortFields);
     const popupTemplateAliasSession = this.createPopupTemplateAliasSession();
     const popupTemplateTreeCache: FlowSurfacePopupTemplateTreeCache = new Map();
     this.validateApplyBlueprintPopupTemplateAliases(prepared.document, popupTemplateAliasSession);
@@ -14659,14 +15171,18 @@ export class FlowSurfacesService {
     const transactionState = transaction as typeof transaction & {
       finished?: string | null;
     };
+    const rollbackEventName = `transactionRollback:${transaction.id}`;
     try {
       const result = await callback(transaction);
       await transaction.commit();
+      this.db.removeAllListeners(rollbackEventName);
       return result;
     } catch (error) {
       if (!transactionState.finished) {
         try {
           await transaction.rollback();
+          await this.db.emitAsync(rollbackEventName);
+          this.db.removeAllListeners(rollbackEventName);
         } catch (rollbackError: any) {
           if (!String(rollbackError?.message || '').includes('Transaction cannot be rolled back')) {
             throw rollbackError;
