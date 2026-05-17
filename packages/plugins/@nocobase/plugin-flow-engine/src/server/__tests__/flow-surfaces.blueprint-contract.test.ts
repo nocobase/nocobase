@@ -104,6 +104,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
   }
 
+  function expectTriggerWorkflows(actionTree: any, groupKey: string, triggerWorkflows: any[]) {
+    expect(actionTree.stepParams?.[groupKey]?.setTriggerWorkflows?.group).toEqual(triggerWorkflows);
+  }
+
   async function createRequiredDefaultsCollection() {
     const collectionName = `flow_surface_required_blueprint_${_.uniqueId()}`;
     await rootAgent.resource('collections').create({
@@ -6385,6 +6389,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
                       assignValues: {
                         status: 'active',
                       },
+                      triggerWorkflows: [
+                        {
+                          workflowKey: 'employee_status_changed',
+                          context: 'department',
+                        },
+                      ],
                     },
                   },
                 ],
@@ -6416,6 +6426,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expectAssignedValuesMirrors(updateRecordAction, {
       status: 'active',
     });
+    expectTriggerWorkflows(updateRecordAction, 'recordTriggerWorkflowsActionSettings', [
+      {
+        workflowKey: 'employee_status_changed',
+        context: 'department',
+      },
+    ]);
     expectAssignFormGridItems(updateRecordAction, {
       status: 'active',
     });

@@ -2866,6 +2866,7 @@ async function collectConfigureErrors(
   collectChartDisplayTitleErrors(changes, hostBlockType, '$.changes', errors);
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
+  collectTriggerWorkflowsErrors(changes.triggerWorkflows, '$.changes.triggerWorkflows', errors);
   collectFieldListInternalKeyErrors(changes.fields, '$.changes.fields', errors);
   const connectFieldsTargets = collectTreeConnectFieldsErrors(changes.connectFields, '$.changes.connectFields', errors);
   await collectTreeConnectFieldsLiveErrors(connectFieldsTargets, changes, '$.changes.connectFields', errors, context);
@@ -4387,11 +4388,19 @@ function collectActionErrors(
   }
   collectApplyBlueprintScriptAssetReferenceErrors(action, path, errors, context);
   collectAssignValuesErrors(action.settings?.assignValues, `${path}.settings.assignValues`, errors, block, context);
+  collectTriggerWorkflowsErrors(action.settings?.triggerWorkflows, `${path}.settings.triggerWorkflows`, errors);
   if (hasOwn(action, 'assignValues')) {
     pushAuthoringError(errors, {
       path: `${path}.assignValues`,
       ruleId: 'assignValues-top-level-unsupported',
       message: `flowSurfaces authoring ${path}.assignValues is not supported; use ${path}.settings.assignValues`,
+    });
+  }
+  if (hasOwn(action, 'triggerWorkflows')) {
+    pushAuthoringError(errors, {
+      path: `${path}.triggerWorkflows`,
+      ruleId: 'triggerWorkflows-top-level-unsupported',
+      message: `flowSurfaces authoring ${path}.triggerWorkflows is not supported; use ${path}.settings.triggerWorkflows`,
     });
   }
   collectDefaultFilterErrors(action.defaultFilter, `${path}.defaultFilter`, errors, block, context);
@@ -4720,6 +4729,44 @@ function collectAssignValuesErrors(
   }
   Object.keys(value).forEach((fieldPath) => {
     collectUnknownFieldPathError(fieldPath, `${path}.${fieldPath}`, block, context, errors);
+  });
+}
+
+function collectTriggerWorkflowsErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(value)) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'triggerWorkflows-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an array`,
+    });
+    return;
+  }
+  value.forEach((item, index) => {
+    if (!_.isPlainObject(item)) {
+      pushAuthoringError(errors, {
+        path: `${path}[${index}]`,
+        ruleId: 'triggerWorkflows-invalid-shape',
+        message: `flowSurfaces authoring ${path}[${index}] must be an object`,
+      });
+      return;
+    }
+    if (typeof item.workflowKey !== 'string' || !item.workflowKey.trim()) {
+      pushAuthoringError(errors, {
+        path: `${path}[${index}].workflowKey`,
+        ruleId: 'triggerWorkflows-invalid-shape',
+        message: `flowSurfaces authoring ${path}[${index}].workflowKey must be a non-empty string`,
+      });
+    }
+    if (hasOwn(item, 'context') && typeof item.context !== 'string') {
+      pushAuthoringError(errors, {
+        path: `${path}[${index}].context`,
+        ruleId: 'triggerWorkflows-invalid-shape',
+        message: `flowSurfaces authoring ${path}[${index}].context must be a string`,
+      });
+    }
   });
 }
 

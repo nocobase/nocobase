@@ -913,6 +913,12 @@ export const flowSurfaceExamples = {
       assignValues: {
         status: 'active',
       },
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_status_changed',
+          context: 'department',
+        },
+      ],
     },
   },
   configureJsBlock: {
@@ -1386,12 +1392,17 @@ export const flowSurfaceExamples = {
   },
   addAction: {
     target: {
-      uid: 'filter-form-block-uid',
+      uid: 'create-form-block-uid',
     },
     type: 'submit',
     settings: {
-      title: 'Apply filters',
+      title: 'Submit user',
       confirm: false,
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_created',
+        },
+      ],
     },
   },
   addLinkAction: {
@@ -1482,6 +1493,24 @@ export const flowSurfaceExamples = {
             collectionName: 'users',
           },
           fields: ['username', 'nickname'],
+        },
+      ],
+    },
+  },
+  addRecordUpdateAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'updateRecord',
+    settings: {
+      title: 'Mark active',
+      assignValues: {
+        status: 'active',
+      },
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_status_changed',
+          context: 'department',
         },
       ],
     },

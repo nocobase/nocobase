@@ -193,6 +193,10 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(actionTree.stepParams?.apply?.apply?.assignedValues).toEqual(assignedValues);
   }
 
+  function expectTriggerWorkflows(actionTree: any, groupKey: string, triggerWorkflows: any[]) {
+    expect(actionTree.stepParams?.[groupKey]?.setTriggerWorkflows?.group).toEqual(triggerWorkflows);
+  }
+
   async function createRequiredDefaultsCollection() {
     const collectionName = `flow_surface_required_defaults_${uid()}`;
     await rootAgent.resource('collections').create({
@@ -1112,6 +1116,24 @@ describe('flowSurfaces catalog + compose contract', () => {
         type: 'object',
       },
     });
+    expect(tableCatalog.recordActions.find((item: any) => item.key === 'updateRecord')?.configureOptions).toMatchObject(
+      {
+        assignValues: {
+          type: 'object',
+        },
+        triggerWorkflows: {
+          type: 'array',
+        },
+      },
+    );
+    expect(tableCatalog.actions.find((item: any) => item.key === 'bulkUpdate')?.configureOptions).toMatchObject({
+      assignValues: {
+        type: 'object',
+      },
+    });
+    expect(tableCatalog.actions.find((item: any) => item.key === 'bulkUpdate')?.configureOptions).not.toHaveProperty(
+      'triggerWorkflows',
+    );
 
     const calendarCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -1289,12 +1311,21 @@ describe('flowSurfaces catalog + compose contract', () => {
           target: {
             uid: createForm.uid,
           },
+          expand: ['item.configureOptions'],
         },
       }),
     );
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['submit', 'js', 'jsItem', 'triggerWorkflow']),
     );
+    expect(createFormCatalog.actions.find((item: any) => item.key === 'submit')?.configureOptions).toMatchObject({
+      confirm: {
+        type: 'object',
+      },
+      triggerWorkflows: {
+        type: 'array',
+      },
+    });
 
     const detailsCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -1302,6 +1333,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           target: {
             uid: details.uid,
           },
+          expand: ['item.configureOptions'],
         },
       }),
     );
@@ -1319,6 +1351,16 @@ describe('flowSurfaces catalog + compose contract', () => {
         'triggerWorkflow',
       ]),
     );
+    expect(
+      detailsCatalog.recordActions.find((item: any) => item.key === 'updateRecord')?.configureOptions,
+    ).toMatchObject({
+      assignValues: {
+        type: 'object',
+      },
+      triggerWorkflows: {
+        type: 'array',
+      },
+    });
 
     const filterFormCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -8323,6 +8365,12 @@ describe('flowSurfaces catalog + compose contract', () => {
                   assignValues: {
                     status: 'active',
                   },
+                  triggerWorkflows: [
+                    {
+                      workflowKey: 'employee_status_changed',
+                      context: 'manager',
+                    },
+                  ],
                 },
               },
             ],
@@ -8352,9 +8400,106 @@ describe('flowSurfaces catalog + compose contract', () => {
     expectAssignedValuesMirrors(updateRecordReadback.tree, {
       status: 'active',
     });
+    expectTriggerWorkflows(updateRecordReadback.tree, 'recordTriggerWorkflowsActionSettings', [
+      {
+        workflowKey: 'employee_status_changed',
+        context: 'manager',
+      },
+    ]);
     expectAssignFormGridItems(updateRecordReadback.tree, {
       status: 'active',
     });
+
+    const bulkUpdateTriggerWorkflows = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: bulkUpdateAction.uid,
+        },
+        changes: {
+          triggerWorkflows: [
+            {
+              workflowKey: 'bulk_workflow',
+            },
+          ],
+        },
+      },
+    });
+    expect(bulkUpdateTriggerWorkflows.status).toBe(400);
+    expect(readErrorMessage(bulkUpdateTriggerWorkflows)).toContain('triggerWorkflows');
+
+    const updateTriggerWorkflowsViaStepParams = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          recordTriggerWorkflowsActionSettings: {
+            setTriggerWorkflows: {
+              group: [
+                {
+                  workflowKey: 'employee_status_reviewed',
+                },
+                {
+                  workflowKey: 'employee_department_changed',
+                  context: 'department',
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(updateTriggerWorkflowsViaStepParams.status, readErrorMessage(updateTriggerWorkflowsViaStepParams)).toBe(200);
+
+    const updateRecordTriggerWorkflowsReadback = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expectTriggerWorkflows(updateRecordTriggerWorkflowsReadback.tree, 'recordTriggerWorkflowsActionSettings', [
+      {
+        workflowKey: 'employee_status_reviewed',
+      },
+      {
+        workflowKey: 'employee_department_changed',
+        context: 'department',
+      },
+    ]);
+
+    const invalidTriggerWorkflowsViaStepParams = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          recordTriggerWorkflowsActionSettings: {
+            setTriggerWorkflows: {
+              group: [
+                {
+                  workflowKey: '',
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(invalidTriggerWorkflowsViaStepParams.status).toBe(400);
+    expect(readErrorMessage(invalidTriggerWorkflowsViaStepParams)).toContain('workflowKey');
+
+    const clearTriggerWorkflowsViaStepParams = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        stepParams: {
+          recordTriggerWorkflowsActionSettings: {
+            setTriggerWorkflows: {
+              group: [],
+            },
+          },
+        },
+      },
+    });
+    expect(clearTriggerWorkflowsViaStepParams.status, readErrorMessage(clearTriggerWorkflowsViaStepParams)).toBe(200);
+    const updateRecordTriggerWorkflowsCleared = await getSurface(rootAgent, { uid: updateRecordAction.uid });
+    expectTriggerWorkflows(updateRecordTriggerWorkflowsCleared.tree, 'recordTriggerWorkflowsActionSettings', []);
 
     const updateViaAssignSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -8688,6 +8833,11 @@ describe('flowSurfaces catalog + compose contract', () => {
                 title: 'Confirm submit',
                 content: 'Save this record now?',
               },
+              triggerWorkflows: [
+                {
+                  workflowKey: 'profile_created',
+                },
+              ],
             },
           },
         })
@@ -8731,6 +8881,12 @@ describe('flowSurfaces catalog + compose contract', () => {
               assignValues: {
                 status: 'active',
               },
+              triggerWorkflows: [
+                {
+                  workflowKey: 'employee_status_changed',
+                  context: 'manager',
+                },
+              ],
             },
           },
         })
@@ -8773,6 +8929,11 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: 'Confirm submit',
       content: 'Save this record now?',
     });
+    expectTriggerWorkflows(formActionReadback.tree, 'formTriggerWorkflowsActionSettings', [
+      {
+        workflowKey: 'profile_created',
+      },
+    ]);
 
     const tableWrapperReadback = await getSurface(rootAgent, { uid: tableField.wrapperUid });
     expect(tableWrapperReadback.tree.props).toMatchObject({
@@ -8808,9 +8969,42 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(updateActionReadback.tree.stepParams?.apply?.apply?.assignedValues).toMatchObject({
       status: 'active',
     });
+    expectTriggerWorkflows(updateActionReadback.tree, 'recordTriggerWorkflowsActionSettings', [
+      {
+        workflowKey: 'employee_status_changed',
+        context: 'manager',
+      },
+    ]);
     expectAssignFormGridItems(updateActionReadback.tree, {
       status: 'active',
     });
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: { uid: formSubmitAction.uid },
+            changes: {
+              triggerWorkflows: [],
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const formActionClearedReadback = await getSurface(rootAgent, { uid: formSubmitAction.uid });
+    expectTriggerWorkflows(formActionClearedReadback.tree, 'formTriggerWorkflowsActionSettings', []);
+
+    const invalidFormActionTriggerWorkflows = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: formSubmitAction.uid },
+        changes: {
+          triggerWorkflows: null,
+        },
+      },
+    });
+    expect(invalidFormActionTriggerWorkflows.status).toBe(400);
+    expect(readErrorMessage(invalidFormActionTriggerWorkflows)).toContain('triggerWorkflows');
 
     expect(
       (

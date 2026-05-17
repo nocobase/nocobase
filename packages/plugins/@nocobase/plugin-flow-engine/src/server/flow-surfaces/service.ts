@@ -629,6 +629,10 @@ const APPROVAL_CONFIRM_ACTION_USES = new Set([
 ]);
 const APPROVAL_ASSIGN_ACTION_USES = new Set(['ApplyFormSubmitModel', 'ApplyFormSaveDraftModel']);
 const UPDATE_ASSIGN_ACTION_USES = new Set(['UpdateRecordActionModel', 'BulkUpdateActionModel']);
+const ACTION_TRIGGER_WORKFLOWS_STEP_GROUP_BY_USE: Record<string, string> = {
+  FormSubmitActionModel: 'formTriggerWorkflowsActionSettings',
+  UpdateRecordActionModel: 'recordTriggerWorkflowsActionSettings',
+};
 const APPROVAL_COMMENT_ACTION_USES = new Set([
   'ProcessFormApproveModel',
   'ProcessFormRejectModel',
@@ -698,6 +702,7 @@ const UPDATE_ACTION_ASSIGN_SETTINGS_ASSIGNED_VALUES_PATH = [
 const UPDATE_ACTION_APPLY_ASSIGNED_VALUES_PATH = ['stepParams', 'apply', 'apply', 'assignedValues'] as const;
 const UPDATE_ACTION_ASSIGN_SETTINGS_STEP_PATH = ['assignSettings', 'assignFieldValues', 'assignedValues'] as const;
 const UPDATE_ACTION_APPLY_STEP_PATH = ['apply', 'apply', 'assignedValues'] as const;
+const ACTION_TRIGGER_WORKFLOWS_GROUP_STEP_PATH = ['setTriggerWorkflows', 'group'] as const;
 
 const TABLE_COLUMN_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
   { domain: 'props', key: 'title', stepParamsPath: ['tableColumnSettings', 'title', 'title'] },
@@ -13470,6 +13475,7 @@ export class FlowSurfacesService {
       normalizedValues,
       nextPayload,
     );
+    this.syncActionTriggerWorkflowsForUpdateSettings(current, normalizedValues, nextPayload);
     const popupActionContext =
       options.popupActionContext ||
       (await this.resolveRecordContextPopupActionContextForHost(current, options.transaction));
@@ -14112,6 +14118,23 @@ export class FlowSurfacesService {
     _.set(nextStepParams, UPDATE_ACTION_APPLY_STEP_PATH, _.cloneDeep(assignedValues));
     nextPayload.stepParams = nextStepParams;
     return assignedValues;
+  }
+
+  private syncActionTriggerWorkflowsForUpdateSettings(
+    current: any,
+    values: Record<string, any>,
+    nextPayload: Record<string, any>,
+  ) {
+    const stepParamGroupKey = ACTION_TRIGGER_WORKFLOWS_STEP_GROUP_BY_USE[current?.use || ''];
+    if (!stepParamGroupKey || !_.has(values, ['stepParams', stepParamGroupKey])) {
+      return;
+    }
+
+    const nextStepParams = _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
+    const groupPath = [stepParamGroupKey, ...ACTION_TRIGGER_WORKFLOWS_GROUP_STEP_PATH];
+    const triggerWorkflows = this.normalizeActionTriggerWorkflows('updateSettings', _.get(nextStepParams, groupPath));
+    _.set(nextStepParams, groupPath, triggerWorkflows);
+    nextPayload.stepParams = nextStepParams;
   }
 
   private async syncUpdateActionAssignFormItems(
@@ -19405,6 +19428,27 @@ export class FlowSurfacesService {
     return _.cloneDeep(value);
   }
 
+  private normalizeActionTriggerWorkflows(actionName: string, value: any) {
+    if (!Array.isArray(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} triggerWorkflows must be an array`);
+    }
+    return value.map((item, index) => {
+      if (!_.isPlainObject(item)) {
+        throwBadRequest(`flowSurfaces ${actionName} triggerWorkflows[${index}] must be an object`);
+      }
+      if (typeof item.workflowKey !== 'string' || !item.workflowKey.trim()) {
+        throwBadRequest(`flowSurfaces ${actionName} triggerWorkflows[${index}].workflowKey must be a non-empty string`);
+      }
+      if (Object.prototype.hasOwnProperty.call(item, 'context') && typeof item.context !== 'string') {
+        throwBadRequest(`flowSurfaces ${actionName} triggerWorkflows[${index}].context must be a string`);
+      }
+      return buildDefinedPayload({
+        workflowKey: item.workflowKey.trim(),
+        context: Object.prototype.hasOwnProperty.call(item, 'context') ? item.context : undefined,
+      });
+    });
+  }
+
   private async configureActionNode(
     target: FlowSurfaceWriteTarget,
     use: string,
@@ -19556,6 +19600,17 @@ export class FlowSurfacesService {
           },
         };
       }
+    }
+    if (hasOwnDefined(changes, 'triggerWorkflows')) {
+      const triggerWorkflowsGroupKey = ACTION_TRIGGER_WORKFLOWS_STEP_GROUP_BY_USE[use];
+      if (!triggerWorkflowsGroupKey) {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support triggerWorkflows`);
+      }
+      stepParams[triggerWorkflowsGroupKey] = {
+        setTriggerWorkflows: {
+          group: this.normalizeActionTriggerWorkflows('configure', changes.triggerWorkflows),
+        },
+      };
     }
     if (hasOwnDefined(changes, 'editMode')) {
       if (use !== 'BulkEditActionModel') {

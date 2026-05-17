@@ -835,6 +835,7 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('approval-specific keys');
     expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('commentFormUid');
     expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('assignValues');
+    expect(swaggerDocument.paths['/flowSurfaces:configure'].post.description).toContain('triggerWorkflows');
     const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
     expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
     expect(contextRequest.example?.path).toBe('record');
@@ -1213,6 +1214,10 @@ describe('flowSurfaces swagger', () => {
       value: 'beta',
     });
     expect(configureRequest.examples.actionSettings.value.changes.assignValues.status).toBe('active');
+    expect(configureRequest.examples.actionSettings.value.changes.triggerWorkflows[0]).toMatchObject({
+      workflowKey: 'employee_status_changed',
+      context: 'department',
+    });
     expect(configureRequest.examples.jsBlockSettings.value.changes.code).toContain('Users hero');
     expect(configureRequest.examples.jsActionSettings.value.changes.version).toBe('1.0.1');
     expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('ctx.render');
@@ -1412,6 +1417,7 @@ describe('flowSurfaces swagger', () => {
       swaggerDocument.paths['/flowSurfaces:addAction'].post.requestBody.content['application/json'];
     expect(addActionRequest.examples.submit.value.type).toBe('submit');
     expect(addActionRequest.examples.submit.value.settings.confirm).toBe(false);
+    expect(addActionRequest.examples.submit.value.settings.triggerWorkflows[0].workflowKey).toBe('employee_created');
     expect(addActionRequest.examples.link.value.type).toBe('link');
     expect(addActionRequest.examples.link.value.settings.title).toBe('Open docs');
     expect(addActionRequest.examples.js.value.type).toBe('js');
@@ -1467,6 +1473,11 @@ describe('flowSurfaces swagger', () => {
     expect(addRecordActionRequest.examples.view.value.popup.blocks[0].type).toBe('details');
     expect(addRecordActionRequest.examples.addChild.value.type).toBe('addChild');
     expect(addRecordActionRequest.examples.addChild.value.settings.openView.collectionName).toBe('categories');
+    expect(addRecordActionRequest.examples.updateRecord.value.type).toBe('updateRecord');
+    expect(addRecordActionRequest.examples.updateRecord.value.settings.triggerWorkflows[0]).toMatchObject({
+      workflowKey: 'employee_status_changed',
+      context: 'department',
+    });
     expect(addRecordActionRequest.examples.js.value.type).toBe('js');
     expect(addRecordActionRequest.examples.js.value.settings.code).toContain('currentRecord');
     expect(addRecordActionRequest.examples.autoPopupTemplate.value.popup.tryTemplate).toBe(true);

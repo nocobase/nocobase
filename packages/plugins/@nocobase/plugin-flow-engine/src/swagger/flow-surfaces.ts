@@ -628,7 +628,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. Generated default popups for collections with more than 10 business fields require `defaults.collections.<collection>.fieldGroups` or `defaults.dataSources.<dataSourceKey>.collections.<collection>.fieldGroups`; otherwise authoring returns aggregate `errors[]` with ruleId `missing-default-field-groups`. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action. On approval action nodes, this route also accepts approval-specific keys such as `confirm`, `assignValues`, `commentFormUid`, `approvalReturn`, and `assigneesScope`, and flowSurfaces persists the matching approval runtime config. It does not replace `applyApprovalBlueprint` for whole-surface approval bootstrap.',
+      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. Submit and update-record actions may bind workflows with `triggerWorkflows: [{ workflowKey, context? }]`; use `[]` to clear bindings. Generated default popups for collections with more than 10 business fields require `defaults.collections.<collection>.fieldGroups` or `defaults.dataSources.<dataSourceKey>.collections.<collection>.fieldGroups`; otherwise authoring returns aggregate `errors[]` with ruleId `missing-default-field-groups`. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action. On approval action nodes, this route also accepts approval-specific keys such as `confirm`, `assignValues`, `commentFormUid`, `approvalReturn`, and `assigneesScope`, and flowSurfaces persists the matching approval runtime config. It does not replace `applyApprovalBlueprint` for whole-surface approval bootstrap.',
     ),
     requestBody: {
       required: true,
@@ -649,7 +649,8 @@ const actionDocs: Record<string, any> = {
               value: examples.configureBlock,
             },
             actionSettings: {
-              summary: 'Configure an action with button appearance, confirm dialog and assign values',
+              summary:
+                'Configure an action with button appearance, confirm dialog, assign values and workflow bindings',
               value: examples.configureAction,
             },
             jsBlockSettings: {
@@ -921,7 +922,7 @@ const actionDocs: Record<string, any> = {
           schema: ref('FlowSurfaceAddActionRequest'),
           examples: {
             submit: {
-              summary: 'Create a submit action under a filter-form action container',
+              summary: 'Create a submit action under a form action container',
               value: examples.addAction,
             },
             link: {
@@ -970,6 +971,10 @@ const actionDocs: Record<string, any> = {
             addChild: {
               summary: 'Create an addChild record action on a tree table target',
               value: examples.addRecordAddChildAction,
+            },
+            updateRecord: {
+              summary: 'Create an update-record action with assigned values and workflow bindings',
+              value: examples.addRecordUpdateAction,
             },
             js: {
               summary: 'Create a JS record action under a details block owner target',

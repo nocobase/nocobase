@@ -69,6 +69,18 @@ const OPEN_VIEW_SCENE_SCHEMA = {
 const OBJECT_SCHEMA = { type: 'object' };
 const NUMBER_SCHEMA = { type: 'number' };
 const ARRAY_SCHEMA = { type: 'array' };
+const TRIGGER_WORKFLOWS_ARRAY_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      workflowKey: STRING_SCHEMA,
+      context: STRING_SCHEMA,
+    },
+    required: ['workflowKey'],
+    additionalProperties: false,
+  },
+};
 const BLOCK_HEIGHT_MODE_SCHEMA = {
   type: 'string',
   enum: ['defaultHeight', 'specifyValue', 'fullHeight'],
@@ -191,6 +203,27 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.danger': BOOLEAN_SCHEMA,
     'general.color': STRING_SCHEMA,
     'linkageRules.value': ARRAY_SCHEMA,
+  },
+};
+const TRIGGER_WORKFLOWS_SETTINGS_GROUP = {
+  allowedPaths: ['setTriggerWorkflows.group'],
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['setTriggerWorkflows'],
+  pathSchemas: {
+    'setTriggerWorkflows.group': TRIGGER_WORKFLOWS_ARRAY_SCHEMA,
+  },
+  schema: {
+    type: 'object',
+    properties: {
+      setTriggerWorkflows: {
+        type: 'object',
+        properties: {
+          group: TRIGGER_WORKFLOWS_ARRAY_SCHEMA,
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
   },
 };
 const RUN_JS_SETTINGS_GROUP = {
@@ -1965,7 +1998,7 @@ const UPDATE_RECORD_ACTION_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ACTION_PROP_KEYS,
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['buttonSettings', 'assignSettings', 'apply'],
+  stepParams: ['buttonSettings', 'assignSettings', 'apply', 'recordTriggerWorkflowsActionSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -1980,6 +2013,9 @@ const UPDATE_RECORD_ACTION_CONTRACT = createContract({
     },
     apply: {
       stepKeys: ['apply'],
+    },
+    recordTriggerWorkflowsActionSettings: {
+      stepKeys: ['setTriggerWorkflows'],
     },
   },
 });
@@ -2012,13 +2048,14 @@ UPDATE_RECORD_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'apply.assignedValues': OBJECT_SCHEMA,
     },
   },
+  recordTriggerWorkflowsActionSettings: TRIGGER_WORKFLOWS_SETTINGS_GROUP,
 });
 
 const SUBMIT_ACTION_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ACTION_PROP_KEYS,
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['buttonSettings', 'submitSettings'],
+  stepParams: ['buttonSettings', 'submitSettings', 'formTriggerWorkflowsActionSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -2030,6 +2067,9 @@ const SUBMIT_ACTION_CONTRACT = createContract({
     },
     submitSettings: {
       stepKeys: ['confirm'],
+    },
+    formTriggerWorkflowsActionSettings: {
+      stepKeys: ['setTriggerWorkflows'],
     },
   },
 });
@@ -2075,6 +2115,7 @@ SUBMIT_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'confirm.content': STRING_SCHEMA,
     },
   },
+  formTriggerWorkflowsActionSettings: TRIGGER_WORKFLOWS_SETTINGS_GROUP,
 });
 
 const BULK_EDIT_ACTION_CONTRACT = createContract({

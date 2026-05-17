@@ -607,6 +607,12 @@ const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
   updateMode: stringOption('Update mode', { example: 'overwrite' }),
 };
 
+const ACTION_TRIGGER_WORKFLOWS_OPTIONS: FlowSurfaceConfigureOptions = {
+  triggerWorkflows: arrayOption('Workflow bindings for submit/update actions', {
+    example: [{ workflowKey: 'workflow-key', context: 'department' }],
+  }),
+};
+
 const APPROVAL_ASSIGN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
   assignValues: objectOption('Assigned values persisted with the approval action payload', {
     example: { department: 'finance' },
@@ -758,8 +764,14 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'BulkDeleteActionModel':
       return merged(ACTION_CONFIRM_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'FormSubmitActionModel':
-      return merged(ACTION_CONFIRM_OPTIONS, ACTION_LINKAGE_OPTIONS);
+      return merged(ACTION_CONFIRM_OPTIONS, ACTION_TRIGGER_WORKFLOWS_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'UpdateRecordActionModel':
+      return merged(
+        ACTION_CONFIRM_OPTIONS,
+        ACTION_ASSIGN_OPTIONS,
+        ACTION_TRIGGER_WORKFLOWS_OPTIONS,
+        ACTION_LINKAGE_OPTIONS,
+      );
     case 'BulkUpdateActionModel':
       return merged(ACTION_CONFIRM_OPTIONS, ACTION_ASSIGN_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'BulkEditActionModel':
