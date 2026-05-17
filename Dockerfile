@@ -44,7 +44,12 @@ RUN yarn config set registry $VERDACCIO_URL && \
   yarn install --production && \
   yarn add newrelic --production -W && \
   $BEFORE_PACK_NOCOBASE && \
-  rm -rf /app/my-nocobase-app/packages/app/client/src/.umi && \
+  rm -rf /app/my-nocobase-app/packages/app/client/src/.umi
+
+COPY ./docker/nocobase/cleanup-node-modules.sh /usr/local/bin/cleanup-node-modules.sh
+
+RUN chmod +x /usr/local/bin/cleanup-node-modules.sh && \
+  cleanup-node-modules.sh /app/my-nocobase-app && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
 
