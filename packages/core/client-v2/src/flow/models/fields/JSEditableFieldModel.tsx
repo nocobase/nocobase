@@ -69,6 +69,106 @@ function resolveScriptCode(codeParam?: string) {
   return typeof raw === 'string' ? raw.trim() : '';
 }
 
+type NamePathPart = string | number;
+
+function toNamePath(input: unknown): NamePathPart[] | null {
+  if (Array.isArray(input)) {
+    return input.filter((item): item is NamePathPart => typeof item === 'string' || typeof item === 'number');
+  }
+  if (typeof input === 'number') {
+    return [input];
+  }
+  if (typeof input === 'string') {
+    return input
+      .split('.')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return null;
+}
+
+function startsWithNamePath(namePath: NamePathPart[], prefix: NamePathPart[]) {
+  return prefix.length <= namePath.length && prefix.every((item, index) => String(namePath[index]) === String(item));
+}
+
+function getFieldSettingsNamePath(model: any): NamePathPart[] | null {
+  const init =
+    model?.getStepParams?.('fieldSettings', 'init') || model?.parent?.getStepParams?.('fieldSettings', 'init');
+  const fieldPath = toNamePath(init?.fieldPath);
+  const associationPath = toNamePath(init?.associationPathName);
+
+  if (!fieldPath?.length) {
+    return null;
+  }
+
+  if (!associationPath?.length || startsWithNamePath(fieldPath, associationPath)) {
+    return fieldPath;
+  }
+
+  return [...associationPath, ...fieldPath];
+}
+
+function applyFieldIndex(namePath: NamePathPart[] | null, fieldIndex: unknown): NamePathPart[] | null {
+  if (!namePath?.length) {
+    return null;
+  }
+  if (namePath.some((item) => typeof item === 'number') || !Array.isArray(fieldIndex) || fieldIndex.length === 0) {
+    return namePath;
+  }
+
+  const indexQueues = new Map<string, number[]>();
+  for (const item of fieldIndex) {
+    if (typeof item !== 'string') continue;
+    const [fieldName, indexStr] = item.split(':');
+    const index = Number(indexStr);
+    if (!fieldName || !Number.isFinite(index)) continue;
+    const queue = indexQueues.get(fieldName) || [];
+    queue.push(index);
+    indexQueues.set(fieldName, queue);
+  }
+
+  if (!indexQueues.size) {
+    return namePath;
+  }
+
+  const result: NamePathPart[] = [];
+  for (const item of namePath) {
+    result.push(item);
+    const queue = indexQueues.get(String(item));
+    if (queue?.length) {
+      result.push(queue.shift() as number);
+    }
+  }
+  return result;
+}
+
+function resolveEffectiveNamePath(ctx: any): NamePathPart[] | null {
+  const namePath =
+    getFieldSettingsNamePath(ctx.model) || toNamePath(ctx.fieldPathArray) || toNamePath(ctx.model?.props?.name);
+  return applyFieldIndex(namePath, ctx.fieldIndex);
+}
+
+function setFormValue(form: any, namePath: NamePathPart[], value: any) {
+  if (typeof form?.setFieldValue === 'function') {
+    form.setFieldValue(namePath, value);
+    return;
+  }
+
+  if (typeof form?.setFieldsValue === 'function') {
+    const patch: any = {};
+    let cursor = patch;
+    namePath.forEach((item, index) => {
+      if (index === namePath.length - 1) {
+        cursor[item] = value;
+        return;
+      }
+      cursor[item] = typeof namePath[index + 1] === 'number' ? [] : {};
+      cursor = cursor[item];
+    });
+    form.setFieldsValue(patch);
+  }
+}
+
 const JSFormRuntime: React.FC<{
   model: JSEditableFieldModel;
   value?: any;
@@ -274,9 +374,9 @@ JSEditableFieldModel.registerFlow({
             cache: false,
           });
           ctx.defineMethod('getValue', () => {
-            const name = ctx.model.props?.name;
-            if (name !== undefined && name !== null) {
-              const fv = ctx.form?.getFieldValue?.(name);
+            const namePath = resolveEffectiveNamePath(ctx);
+            if (namePath?.length) {
+              const fv = ctx.form?.getFieldValue?.(namePath);
               return fv !== undefined ? fv : ctx.model.props?.value;
             }
             return ctx.model.props?.value;
@@ -284,15 +384,15 @@ JSEditableFieldModel.registerFlow({
           ctx.defineMethod('setValue', (v) => {
             try {
               ctx.model.setProps('value', v);
-              const name = ctx.model.props?.name;
-              if (name !== undefined && name !== null) {
-                ctx.form?.setFieldValue?.(name, v);
+              const namePath = resolveEffectiveNamePath(ctx);
+              if (namePath?.length) {
+                setFormValue(ctx.form, namePath, v);
               }
             } catch (_) {
               // ignore
             }
           });
-          ctx.defineProperty('namePath', { get: () => ctx.model.props?.name, cache: false });
+          ctx.defineProperty('namePath', { get: () => resolveEffectiveNamePath(ctx), cache: false });
           ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
           ctx.defineProperty('readOnly', {
             get: () => isReadOnlyMode(ctx.model),
