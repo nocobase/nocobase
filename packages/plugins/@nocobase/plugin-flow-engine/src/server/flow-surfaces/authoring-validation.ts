@@ -1640,13 +1640,14 @@ function collectDefaultFormBehaviorCompletenessErrors(
     if (Object.prototype.hasOwnProperty.call(defaultCollection.collectionDefaults || {}, 'formBehavior')) {
       continue;
     }
-    const describedFieldNames = getGeneratedPopupDefaultFormDescribedFieldNames({
+    const describedFields = getGeneratedPopupDefaultFormDescribedFields({
       collection,
       dataSourceKey: requirement.dataSourceKey,
       actionTypes,
       fieldGroups: defaultCollection.collectionDefaults?.fieldGroups,
       context,
     });
+    const describedFieldNames = describedFields.map((field) => field.name);
     if (!describedFieldNames.length) {
       continue;
     }
@@ -1657,12 +1658,13 @@ function collectDefaultFormBehaviorCompletenessErrors(
     pushAuthoringError(errors, {
       path,
       ruleId: 'missing-description-form-behavior',
-      message: `flowSurfaces authoring ${path} is required because collection '${requirement.collection}' has default add/edit form fields with description metadata; provide formBehavior with structured behavior, or use {} or null to explicitly confirm no structured behavior`,
+      message: `flowSurfaces authoring ${path} is required because collection '${requirement.collection}' has default add/edit form fields with description metadata. Generate structured formBehavior from each field description, or set formBehavior: {} when the descriptions have been checked and contain no structured behavior. formBehavior: null remains accepted only as an API compatibility no-op.`,
       details: {
         collection: requirement.collection,
         dataSourceKey: requirement.dataSourceKey,
         actionTypes,
         describedFieldNames,
+        describedFields,
         triggerPaths: requirement.triggerPaths,
       },
     });
@@ -2351,14 +2353,23 @@ function getFieldDescription(field: any) {
   return String(field?.description || field?.options?.description || field?.uiSchema?.description || '').trim();
 }
 
-function getGeneratedPopupDefaultFormDescribedFieldNames(input: {
+function getGeneratedPopupDefaultFormDescribedFields(input: {
   collection: any;
   dataSourceKey: string;
   actionTypes: ('addNew' | 'edit')[];
   fieldGroups?: any[];
   context: FlowSurfaceAuthoringValidationContext;
 }) {
-  const fieldNames = new Set<string>();
+  const describedFields = new Map<
+    string,
+    {
+      name: string;
+      title?: string;
+      interface?: string;
+      description: string;
+      actionTypes: ('addNew' | 'edit')[];
+    }
+  >();
   input.actionTypes.forEach((actionType) => {
     const candidates = getGeneratedPopupRuntimeFieldCandidates({
       collection: input.collection,
@@ -2376,12 +2387,37 @@ function getGeneratedPopupDefaultFormDescribedFieldNames(input: {
         return;
       }
       const field = candidateByFieldPath.get(normalizedFieldPath);
-      if (getFieldDescription(field)) {
-        fieldNames.add(normalizedFieldPath);
+      const description = getFieldDescription(field);
+      if (!description) {
+        return;
       }
+      const existingField = describedFields.get(normalizedFieldPath);
+      if (existingField) {
+        if (!existingField.actionTypes.includes(actionType)) {
+          existingField.actionTypes.push(actionType);
+        }
+        return;
+      }
+      describedFields.set(normalizedFieldPath, {
+        name: normalizedFieldPath,
+        title: String(field?.uiSchema?.title || field?.title || normalizedFieldPath).trim(),
+        interface: getFieldInterface(field) || '',
+        description,
+        actionTypes: [actionType],
+      });
     });
   });
-  return Array.from(fieldNames);
+  return Array.from(describedFields.values());
+}
+
+function getGeneratedPopupDefaultFormDescribedFieldNames(input: {
+  collection: any;
+  dataSourceKey: string;
+  actionTypes: ('addNew' | 'edit')[];
+  fieldGroups?: any[];
+  context: FlowSurfaceAuthoringValidationContext;
+}) {
+  return getGeneratedPopupDefaultFormDescribedFields(input).map((field) => field.name);
 }
 
 function getGeneratedPopupDefaultFormFieldPaths(candidates: any[], fieldGroups?: any[]) {

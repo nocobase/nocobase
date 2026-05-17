@@ -1345,15 +1345,33 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       details: {
         collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
         dataSourceKey: 'main',
+        actionTypes: ['addNew', 'edit'],
         describedFieldNames: ['title'],
+        describedFields: [
+          {
+            name: 'title',
+            title: 'title',
+            interface: 'input',
+            description: 'Title is required for generated add and edit forms.',
+            actionTypes: ['addNew', 'edit'],
+          },
+        ],
+        triggerPaths: [
+          '$.tabs[0].blocks[0].actions.addNew',
+          '$.tabs[0].blocks[0].recordActions.view',
+          '$.tabs[0].blocks[0].recordActions.edit',
+        ],
       },
     });
-    expect(missingFormBehaviorError.message).toContain('formBehavior');
+    expect(missingFormBehaviorError.message).toContain(
+      `defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehavior`,
+    );
+    expect(missingFormBehaviorError.message).toContain('Generate structured formBehavior');
     expect(missingFormBehaviorError.message).toContain('{}');
-    expect(missingFormBehaviorError.message).toContain('null');
+    expect(missingFormBehaviorError.message).toContain('API compatibility no-op');
   });
 
-  it('should accept empty or null defaults formBehavior as explicit no-op confirmation', async () => {
+  it('should accept empty defaults formBehavior no-op and null for backend API compatibility', async () => {
     for (const [label, formBehavior] of [
       ['empty', {}],
       ['null', null],
