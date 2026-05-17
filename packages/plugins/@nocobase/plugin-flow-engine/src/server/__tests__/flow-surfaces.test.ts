@@ -3147,11 +3147,7 @@ describe('flowSurfaces resource', () => {
       uid: addBlockTableUid,
     });
     expectTreeTableTitleClickDefaults(addBlockReadback.tree);
-    expect(readTableRecordActionUses(addBlockReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
-      'AddChildActionModel',
-    ]);
+    expect(readTableRecordActionUses(addBlockReadback.tree)).toEqual(['AddChildActionModel']);
 
     const tabReadback = await getSurface(rootAgent, {
       uid: page.tabSchemaUid,
@@ -3175,7 +3171,6 @@ describe('flowSurfaces resource', () => {
               treeTable: true,
             },
             fields: ['code'],
-            recordActions: ['view', 'edit'],
           },
         ],
       },
@@ -3191,11 +3186,7 @@ describe('flowSurfaces resource', () => {
     expect(
       readTableColumns(addBlocksReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['title', undefined, 'code']);
-    expect(readTableRecordActionUses(addBlocksReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
-      'AddChildActionModel',
-    ]);
+    expect(readTableRecordActionUses(addBlocksReadback.tree)).toEqual(['AddChildActionModel']);
   });
 
   it('should reject invalid addBlock defaultActionSettings payloads only when a default filter action consumes them', async () => {
@@ -7487,7 +7478,13 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
     const actionPanelUid = await addBlock(rootAgent, page.tabSchemaUid, 'actionPanel', {});
-    const jsBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'jsBlock', {});
+    const jsBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'jsBlock', undefined, {
+      settings: {
+        title: 'Users hero draft',
+        version: '1.0.0',
+        code: "return { type: 'div', children: ['Users hero draft'] };",
+      },
+    });
     const composedJsBlockRes = getData(
       await rootAgent.resource('flowSurfaces').compose({
         values: {

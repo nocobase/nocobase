@@ -193,6 +193,10 @@ describe('flowSurfaces approval API contract', () => {
             uid: triggerSurface.gridUid,
           },
           type: 'jsBlock',
+          settings: {
+            title: 'Trigger script',
+            code: "return { type: 'div', children: ['Trigger script'] };",
+          },
         },
       }),
     );
