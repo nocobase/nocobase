@@ -158,7 +158,7 @@ export class MainDataSource extends SequelizeDataSource {
       ctx.log.error(err);
     }
     const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
-    const currentSchema = db.options.schema || 'public';
+    const currentSchema = process.env.COLLECTION_MANAGER_SCHEMA || db.options.schema || 'public';
 
     for (const values of toLoadCollections) {
       if (values.schema === currentSchema) {

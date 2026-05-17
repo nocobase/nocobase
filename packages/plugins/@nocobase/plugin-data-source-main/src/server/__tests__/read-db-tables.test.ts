@@ -277,6 +277,8 @@ describe('db2cm test', () => {
     let collectionName: string;
 
     beforeEach(async () => {
+      vi.stubEnv('COLLECTION_MANAGER_SCHEMA', 'public');
+
       app = await createApp({
         database: {
           schema: `s_${uid(6)}`,
@@ -289,6 +291,7 @@ describe('db2cm test', () => {
     afterEach(async () => {
       await db.clean({ drop: true });
       await app.destroy();
+      vi.unstubAllEnvs();
     });
 
     it('should not persist current database schema into collection options when syncing fields', async () => {
