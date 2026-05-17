@@ -41,7 +41,7 @@ function formatDockerRestartFailure(envName: string, message: string): string {
 export default class AppRestart extends Command {
   static override hidden = false;
   static override description =
-    'Restart NocoBase for the selected env by stopping it first, then starting it again.';
+    'Restart NocoBase for the selected env. Local npm/git installs stop and start the app again, and Docker installs recreate the saved app container so saved env changes can take effect.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
@@ -80,10 +80,6 @@ export default class AppRestart extends Command {
       description: 'Show raw shutdown/startup output from the underlying local or Docker command',
       default: false,
     }),
-    recreate: Flags.boolean({
-      description: 'Recreate the saved Docker app container while restarting',
-      default: false,
-    }),
   };
 
   public async run(): Promise<void> {
@@ -109,22 +105,6 @@ export default class AppRestart extends Command {
     }
 
     if (runtime.kind === 'docker') {
-      if (!flags.recreate) {
-        const stopArgv: string[] = [];
-
-        pushFlag(stopArgv, '--env', requestedEnv);
-        if (flags.yes || explicitEnvSelection) {
-          stopArgv.push('--yes');
-        }
-        if (flags.verbose) {
-          stopArgv.push('--verbose');
-        }
-
-        await this.config.runCommand('app:stop', stopArgv);
-        await this.config.runCommand('app:start', stopArgv);
-        return;
-      }
-
       announceTargetEnv(runtime.envName);
 
       startTask(`Stopping NocoBase for "${runtime.envName}" before restart...`);

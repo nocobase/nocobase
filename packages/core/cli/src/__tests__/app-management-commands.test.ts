@@ -1165,7 +1165,7 @@ test('restart does not forward default daemon flag unless the user provides it',
   ]);
 });
 
-test('restart recreates docker envs with --recreate so envFile changes can take effect', async () => {
+test('restart recreates docker envs so envFile changes can take effect', async () => {
   const appManagedResources = await import('../lib/app-managed-resources.js');
   const recreateSavedDockerApp = vi
     .spyOn(appManagedResources, 'recreateSavedDockerApp')
@@ -1191,7 +1191,6 @@ test('restart recreates docker envs with --recreate so envFile changes can take 
   const command = createCommandHarness({
     flags: {
       env: 'docker-local',
-      recreate: true,
       verbose: true,
     },
   }, runCommand);
@@ -1227,7 +1226,11 @@ test('restart recreates docker envs with --recreate so envFile changes can take 
   }
 });
 
-test('restart defaults to stop and start for docker envs unless --recreate is provided', async () => {
+test('restart recreates docker envs by default', async () => {
+  const appManagedResources = await import('../lib/app-managed-resources.js');
+  const recreateSavedDockerApp = vi
+    .spyOn(appManagedResources, 'recreateSavedDockerApp')
+    .mockResolvedValue(undefined);
   const { default: Restart } = await import('../commands/app/restart.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
@@ -1235,9 +1238,13 @@ test('restart defaults to stop and start for docker envs unless --recreate is pr
     source: 'docker',
     containerName: 'nb-demo-docker-local-app',
     workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
     env: {
       appPort: 13000,
-      config: {},
+      config: {
+        envFile: './docker-local/.env',
+      },
     },
   });
   const runCommand = vi.fn(async () => undefined);
@@ -1248,18 +1255,35 @@ test('restart defaults to stop and start for docker envs unless --recreate is pr
     },
   }, runCommand);
 
-  await Restart.prototype.run.call(command);
+  try {
+    await Restart.prototype.run.call(command);
 
-  expect(mocks.stopDockerContainer).not.toHaveBeenCalled();
-  expect(mocks.run).not.toHaveBeenCalledWith(
-    'docker',
-    ['rm', '-f', 'nb-demo-docker-local-app'],
-    expect.anything(),
-  );
-  expect(runCommand.mock.calls).toEqual([
-    ['app:stop', ['--env', 'docker-local', '--verbose']],
-    ['app:start', ['--env', 'docker-local', '--verbose']],
-  ]);
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(mocks.stopDockerContainer).toHaveBeenCalledWith('nb-demo-docker-local-app', {
+      stdio: 'inherit',
+    });
+    expect(mocks.run).toHaveBeenCalledWith(
+      'docker',
+      ['rm', '-f', 'nb-demo-docker-local-app'],
+      { errorName: 'docker rm', stdio: 'inherit' },
+    );
+    expect(recreateSavedDockerApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'docker',
+        envName: 'docker-local',
+        containerName: 'nb-demo-docker-local-app',
+      }),
+      { verbose: true },
+    );
+    expect(mocks.waitForAppReady).toHaveBeenCalledWith({
+      envName: 'docker-local',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      containerName: 'nb-demo-docker-local-app',
+      logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
+    });
+  } finally {
+    recreateSavedDockerApp.mockRestore();
+  }
 });
 
 test('start rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
