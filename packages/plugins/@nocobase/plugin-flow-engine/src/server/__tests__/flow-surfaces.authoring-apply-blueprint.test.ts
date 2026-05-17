@@ -1597,7 +1597,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     await expectPopupTemplateUsage(rootAgent, firstTemplateUid, 2);
   });
 
-  it('should prefer popup templates with matching block types and still fallback to reusable templates', async () => {
+  it('should prefer popup templates with matching block types and create a new template when none match', async () => {
     const unique = Date.now();
     const collection = `authoring_popup_type_reuse_${unique}`;
     const detailsTemplateName = `Authoring popup details source ${unique}`;
@@ -1732,15 +1732,22 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
         ],
         saveAsTemplate: {
           name: `Authoring popup fallback ignored ${unique}`,
-          description: 'Unmatched block type should still reuse an existing template.',
+          description: 'Unmatched block type should create a compatible template.',
         },
       }),
     });
     expect(fallbackRes.status, readErrorMessage(fallbackRes)).toBe(200);
     const fallbackTemplateUid = readPopupTemplateUidForFieldPath(getData(fallbackRes).surface.tree, 'label');
     expect(fallbackTemplateUid).toBeTruthy();
-    expect(afterSourceTemplateUids).toContain(fallbackTemplateUid);
-    expect(await listPopupTemplateUids(context.db)).toEqual(afterSourceTemplateUids);
+    expect(fallbackTemplateUid).not.toBe(detailsTemplateUid);
+    expect(fallbackTemplateUid).not.toBe(tableTemplateUid);
+    const afterFallbackTemplateUids = await listPopupTemplateUids(context.db);
+    expect(afterFallbackTemplateUids).toEqual(
+      expect.arrayContaining([...afterSourceTemplateUids, fallbackTemplateUid]),
+    );
+    expect(afterFallbackTemplateUids.length).toBe(afterSourceTemplateUids.length + 1);
+    const fallbackTemplateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, fallbackTemplateUid);
+    expect(collectDescendantNodes(fallbackTemplateSurface, (item) => item?.use === 'CreateFormModel')).not.toEqual([]);
   });
 
   it('should normalize legacy calendar field bindings and quickCreateEnabled before writing', async () => {

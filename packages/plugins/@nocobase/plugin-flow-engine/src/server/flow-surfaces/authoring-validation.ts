@@ -858,7 +858,8 @@ function collectDefaultDataSourcesShapeErrors(dataSources: any, path: string, er
     });
     return;
   }
-  Object.entries(dataSources).forEach(([dataSourceKey, dataSourceDefaults]) => {
+  const dataSourceDefaultsByKey = dataSources as Record<string, any>;
+  Object.entries(dataSourceDefaultsByKey).forEach(([dataSourceKey, dataSourceDefaults]) => {
     const normalizedDataSourceKey = String(dataSourceKey || '').trim();
     if (!normalizedDataSourceKey) {
       pushAuthoringError(errors, {

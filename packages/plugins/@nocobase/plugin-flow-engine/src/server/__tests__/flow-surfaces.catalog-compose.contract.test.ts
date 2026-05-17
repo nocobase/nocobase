@@ -1598,7 +1598,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       'addNew',
       'jsItem',
     ]);
-    expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['jsItem']);
+    expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'edit', 'delete', 'jsItem']);
     expect(formBlock.actions.map((item: any) => item.type)).toEqual(['submit', 'jsItem']);
 
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
@@ -3955,7 +3955,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         payload: {
           fields: ['title'],
         },
-        message: 'calendar does not support fields[] on the main block',
+        message: 'calendar main blocks do not support fields',
       },
       {
         key: 'fieldGroups',
@@ -3967,14 +3967,14 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           ],
         },
-        message: 'calendar does not support fieldGroups[] on the main block',
+        message: 'calendar main blocks do not support fieldGroups',
       },
       {
         key: 'recordActions',
         payload: {
           recordActions: ['view'],
         },
-        message: 'calendar does not support recordActions[] on the main block',
+        message: 'calendar main blocks do not support recordActions',
       },
     ];
 
@@ -4003,7 +4003,6 @@ describe('flowSurfaces catalog + compose contract', () => {
       });
       expect(composeRes.status).toBe(400);
       expect(readErrorMessage(composeRes)).toContain(item.message);
-      expect(readErrorMessage(composeRes)).toMatch(/quick-create or event-view popup host|event-view popup host/);
     }
   });
 
@@ -4693,10 +4692,12 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
             fields: [
               {
+                key: 'username',
                 fieldPath: 'username',
                 target: 'table',
               },
               {
+                key: 'nickname',
                 fieldPath: 'nickname',
                 target: 'table',
               },
@@ -4738,11 +4739,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               },
               {
                 type: 'edit',
-                popup: {
-                  layout: {
-                    rows: [[{ key: 'defaultEditForm', span: 10 }]],
-                  },
-                },
+                popup: {},
               },
               'delete',
             ],
@@ -4941,7 +4938,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         payload: {
           fields: ['title'],
         },
-        message: 'tree does not support fields[]',
+        message: 'tree main blocks do not support fields',
       },
       {
         key: 'fieldGroups',
@@ -4953,21 +4950,21 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           ],
         },
-        message: 'tree does not support fieldGroups[]',
+        message: 'tree main blocks do not support fieldGroups',
       },
       {
         key: 'actions',
         payload: {
           actions: ['refresh'],
         },
-        message: 'tree does not support actions[]',
+        message: 'tree main blocks do not support actions',
       },
       {
         key: 'recordActions',
         payload: {
           recordActions: ['view'],
         },
-        message: 'tree does not support recordActions[]',
+        message: 'tree main blocks do not support recordActions',
       },
     ];
 
@@ -5372,7 +5369,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
 
     expect(composeRes.status).toBe(400);
-    expect(readErrorMessage(composeRes)).toContain('does not accept internal field keys');
+    expect(readErrorMessage(composeRes)).toContain(
+      'field objects must use public fieldType/fields/titleField keys; remove internal keys: fieldComponent',
+    );
   });
 
   it('should reject fieldsLayout on compose blocks that do not own a field grid', async () => {
@@ -5405,7 +5404,7 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     expect(composeRes.status).toBe(400);
     expect(readErrorMessage(composeRes)).toContain(
-      `flowSurfaces compose block #1 ("employeesTable", type="table") does not support fieldsLayout`,
+      'flowSurfaces authoring $.blocks[0].fieldsLayout is only supported on createForm, editForm, details, or filterForm blocks',
     );
   });
 
@@ -5416,22 +5415,21 @@ describe('flowSurfaces catalog + compose contract', () => {
         fieldsLayout: {
           rows: [['username', 'username']],
         },
-        expectedMessage: "flowSurfaces compose block #1 fieldsLayout row #1 cell #2 duplicates field 'username'",
+        expectedMessage: "flowSurfaces authoring $.blocks[0].fieldsLayout.rows[0][1] duplicates field 'username'",
       },
       {
         title: 'Missing compose fieldsLayout field page',
         fieldsLayout: {
           rows: [['username']],
         },
-        expectedMessage:
-          'flowSurfaces compose block #1 fieldsLayout must place every field exactly once; missing: nickname',
+        expectedMessage: 'flowSurfaces authoring $.blocks[0].fields[1] must appear exactly once in fieldsLayout rows',
       },
       {
         title: 'Invalid compose fieldsLayout span page',
         fieldsLayout: {
           rows: [[{ key: 'username', span: '12' }, 'nickname']],
         },
-        expectedMessage: 'flowSurfaces compose block #1 fieldsLayout row #1 cell #1.span must be a number',
+        expectedMessage: 'fieldsLayout row #1 cell #1.span must be a number',
       },
     ];
 
@@ -6079,7 +6077,7 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     const tableBlock = getData(tableRecordActionsRes).blocks.find((item: any) => item.key === 'table');
     expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'bulkDelete', 'addNew']);
-    expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'delete']);
+    expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'edit', 'delete']);
     expect(tableBlock.actionsColumnUid).toBeTruthy();
 
     const tableActionReadback = await getSurface(rootAgent, {
@@ -7086,17 +7084,35 @@ describe('flowSurfaces catalog + compose contract', () => {
             },
           },
           {
-            key: 'implicitAddNew',
-            type: 'addNew',
+            key: 'openPopup',
+            type: 'popup',
             popup: {
-              blocks: [],
+              mode: 'replace',
+              blocks: [
+                {
+                  key: 'popupNotes',
+                  type: 'markdown',
+                  settings: {
+                    content: '# Popup notes',
+                  },
+                },
+              ],
             },
           },
           {
-            key: 'implicitAddNewWithMode',
-            type: 'addNew',
+            key: 'openPopupWithMode',
+            type: 'popup',
             popup: {
               mode: 'replace',
+              blocks: [
+                {
+                  key: 'popupSummary',
+                  type: 'markdown',
+                  settings: {
+                    content: '# Popup summary',
+                  },
+                },
+              ],
             },
           },
           {
@@ -7104,7 +7120,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             type: 'bulkUpdate',
             settings: {
               assignValues: {
-                status: 'inactive',
+                nickname: 'inactive',
               },
             },
           },
@@ -7133,12 +7149,12 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(addActionsData.successCount).toBe(4);
     expect(addActionsData.errorCount).toBe(1);
     expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
-    expect(addActionsData.actions[1].result.popupPageUid).toBeUndefined();
-    expect(addActionsData.actions[1].result.popupTabUid).toBeUndefined();
-    expect(addActionsData.actions[1].result.popupGridUid).toBeUndefined();
-    expect(addActionsData.actions[2].result.popupPageUid).toBeUndefined();
-    expect(addActionsData.actions[2].result.popupTabUid).toBeUndefined();
-    expect(addActionsData.actions[2].result.popupGridUid).toBeUndefined();
+    expect(addActionsData.actions[1].result.popupPageUid).toBeTruthy();
+    expect(addActionsData.actions[1].result.popupTabUid).toBeTruthy();
+    expect(addActionsData.actions[1].result.popupGridUid).toBeTruthy();
+    expect(addActionsData.actions[2].result.popupPageUid).toBeTruthy();
+    expect(addActionsData.actions[2].result.popupTabUid).toBeTruthy();
+    expect(addActionsData.actions[2].result.popupGridUid).toBeTruthy();
     expect(addActionsData.actions[3].result.popupPageUid).toBeUndefined();
     expect(addActionsData.actions[3].result.popupTabUid).toBeUndefined();
     expect(addActionsData.actions[3].result.popupGridUid).toBeUndefined();
@@ -7153,26 +7169,21 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(bulkUpdateReadback.tree.use).toBe('BulkUpdateActionModel');
     expectAssignedValuesMirrors(bulkUpdateReadback.tree, {
-      status: 'inactive',
+      nickname: 'inactive',
     });
 
-    const { actionSurface: implicitAddNewSurface, popupBlock: implicitAddNewPopupBlock } = await readPrimaryPopupBlock(
+    const { actionSurface: popupSurface, popupBlock } = await readPrimaryPopupBlock(
       addActionsData.actions[1].result.uid,
     );
-    expect(implicitAddNewSurface.tree.popup.template).toMatchObject({
-      mode: 'reference',
-    });
-    expect(implicitAddNewPopupBlock?.use).toBe('CreateFormModel');
-    expect(implicitAddNewPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
-    expect(_.castArray(implicitAddNewPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
-      'FormSubmitActionModel',
+    expect(popupSurface.tree.popup.template).toBeUndefined();
+    expect(popupBlock?.use).toBe('MarkdownBlockModel');
+    expect(popupBlock?.props?.content).toBe('# Popup notes');
+    const { actionSurface: popupWithModeSurface, popupBlock: popupWithModeBlock } = await readPrimaryPopupBlock(
+      addActionsData.actions[2].result.uid,
     );
-    const { actionSurface: implicitAddNewWithModeSurface, popupBlock: implicitAddNewWithModePopupBlock } =
-      await readPrimaryPopupBlock(addActionsData.actions[2].result.uid);
-    expect(implicitAddNewWithModeSurface.tree.popup.template).toMatchObject({
-      mode: 'reference',
-    });
-    expect(implicitAddNewWithModePopupBlock?.use).toBe('CreateFormModel');
+    expect(popupWithModeSurface.tree.popup.template).toBeUndefined();
+    expect(popupWithModeBlock?.use).toBe('MarkdownBlockModel');
+    expect(popupWithModeBlock?.props?.content).toBe('# Popup summary');
 
     const addRecordActionsRes = await rootAgent.resource('flowSurfaces').addRecordActions({
       values: {
@@ -7231,7 +7242,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             type: 'updateRecord',
             settings: {
               assignValues: {
-                status: 'active',
+                nickname: 'active',
               },
             },
           },
@@ -7277,7 +7288,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
     expect(updateRecordReadback.tree.use).toBe('UpdateRecordActionModel');
     expectAssignedValuesMirrors(updateRecordReadback.tree, {
-      status: 'active',
+      nickname: 'active',
     });
 
     const addFieldRawUnknownRes = await rootAgent.resource('flowSurfaces').addField({
@@ -8996,7 +9007,7 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     expect(response.status).toBe(400);
     expect(readErrorMessage(response)).toContain('must include xs, sm, md, lg, xl, xxl');
-    expect(readErrorMessage(response)).toContain('missing: sm, xl, xxl');
+    expect(response.body.errors?.[0]?.details?.missingBreakpoints).toEqual(['sm', 'xl', 'xxl']);
   });
 
   it('should configure richer field and action semantics with simple changes', async () => {

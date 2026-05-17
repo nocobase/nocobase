@@ -8,6 +8,7 @@
  */
 
 import { createHash } from 'crypto';
+import type { HasManyRepository } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
@@ -4417,7 +4418,7 @@ export class FlowSurfacesService {
     const failedFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
     for (const { collectionName, fieldName } of [...createdFields].reverse()) {
       try {
-        await this.db.getRepository('collections.fields', collectionName).destroy({
+        await this.db.getRepository<HasManyRepository>('collections.fields', collectionName).destroy({
           filterByTk: fieldName,
           filter: {
             name: fieldName,
@@ -15222,9 +15223,10 @@ export class FlowSurfacesService {
   async transaction<T>(callback: (transaction: any) => Promise<T>) {
     const transaction = await this.db.sequelize.transaction();
     const transactionState = transaction as typeof transaction & {
+      id: string;
       finished?: string | null;
     };
-    const rollbackEventName = `transactionRollback:${transaction.id}`;
+    const rollbackEventName = `transactionRollback:${transactionState.id}`;
     try {
       const result = await callback(transaction);
       await transaction.commit();
