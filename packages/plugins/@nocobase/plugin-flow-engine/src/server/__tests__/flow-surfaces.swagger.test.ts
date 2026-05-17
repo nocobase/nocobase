@@ -126,6 +126,7 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceApplyBlueprintDefaultFormBehaviorField',
       'FlowSurfaceApplyBlueprintDefaultFormBehaviorScene',
       'FlowSurfaceApplyBlueprintDefaultFormBehavior',
+      'FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview',
       'FlowSurfaceApplyBlueprintDefaultCollection',
       'FlowSurfaceApplyBlueprintDefaults',
       'FlowSurfaceApplyBlueprintRequest',
@@ -388,12 +389,14 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultPopups',
     );
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('formBehavior');
-    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('{}');
-    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('null');
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.description).toContain('formBehaviorDescriptionReview');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehavior.allOf[0].$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehavior',
     );
-    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehavior.nullable).toBe(true);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehavior.nullable).toBeUndefined();
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultCollection.properties.formBehaviorDescriptionReview.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehavior.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehavior.properties.addNew.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintDefaultFormBehaviorScene',
@@ -412,6 +415,15 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorField.properties.settings.additionalProperties).toBe(
       true,
     );
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.required).toEqual([
+      'fields',
+      'hasTried',
+    ]);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.fields.minItems).toBe(1);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.hasTried.enum).toEqual([
+      true,
+    ]);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('associations');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('relations');

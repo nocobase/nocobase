@@ -1367,14 +1367,45 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       `defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehavior`,
     );
     expect(missingFormBehaviorError.message).toContain('Generate structured formBehavior');
-    expect(missingFormBehaviorError.message).toContain('{}');
-    expect(missingFormBehaviorError.message).toContain('API compatibility no-op');
+    expect(missingFormBehaviorError.message).toContain('formBehaviorDescriptionReview');
   });
 
-  it('should accept empty defaults formBehavior no-op and null for backend API compatibility', async () => {
-    for (const [label, formBehavior] of [
-      ['empty', {}],
-      ['null', null],
+  it('should accept structured formBehavior coverage or review coverage for described generated fields', async () => {
+    for (const [label, collectionDefaults] of [
+      [
+        'structured',
+        {
+          formBehavior: {
+            addNew: {
+              fields: {
+                title: {
+                  settings: {
+                    required: true,
+                  },
+                },
+              },
+            },
+            edit: {
+              fields: {
+                title: {
+                  settings: {
+                    required: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+      [
+        'review',
+        {
+          formBehaviorDescriptionReview: {
+            fields: ['title'],
+            hasTried: true,
+          },
+        },
+      ],
     ] as const) {
       const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
         values: {
@@ -1387,7 +1418,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           defaults: {
             collections: {
               [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
-                formBehavior,
+                ...collectionDefaults,
               },
             },
           },
@@ -1409,6 +1440,62 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
 
       expect(response.status, readErrorMessage(response)).toBe(200);
     }
+  });
+
+  it('should reject null defaults formBehavior and invalid review coverage', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description form behavior invalid no-op',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehavior: null,
+              formBehaviorDescriptionReview: {
+                fields: [],
+                hasTried: false,
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorNullTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehavior`,
+          ruleId: 'defaults-formBehavior-invalid-shape',
+        }),
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.fields`,
+          ruleId: 'defaults-formBehaviorDescriptionReview-fields-required',
+        }),
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.hasTried`,
+          ruleId: 'defaults-formBehaviorDescriptionReview-hasTried-required',
+        }),
+      ]),
+    );
   });
 
   it('should keep nested null formBehavior scenes invalid', async () => {

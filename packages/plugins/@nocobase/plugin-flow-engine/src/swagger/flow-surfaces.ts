@@ -4107,10 +4107,30 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview: {
+    type: 'object',
+    description:
+      'Explicit audit signal for described generated add/edit candidate fields that were reviewed and intentionally not converted into structured formBehavior.',
+    required: ['fields', 'hasTried'],
+    properties: {
+      fields: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          type: 'string',
+        },
+      },
+      hasTried: {
+        type: 'boolean',
+        enum: [true],
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceApplyBlueprintDefaultCollection: {
     type: 'object',
     description:
-      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, and `formBehavior` for backend-generated add/edit popup forms. When generated add/edit form candidate fields have non-empty description metadata, raw applyBlueprint payloads must include a `formBehavior` own property; use `{}` or `null` to explicitly confirm no structured behavior. Block-specific defaults are not supported.',
+      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, `formBehavior` for backend-generated add/edit popup forms, and `formBehaviorDescriptionReview` for described fields that were reviewed but not converted. When generated add/edit form candidate fields have non-empty description metadata, each described field must be covered by structured `formBehavior` or listed under `formBehaviorDescriptionReview.fields` with `hasTried: true`. Block-specific defaults are not supported.',
     properties: {
       fieldGroups: {
         type: 'array',
@@ -4120,8 +4140,8 @@ const schemas = {
       popups: ref('FlowSurfaceApplyBlueprintDefaultPopups'),
       formBehavior: {
         allOf: [ref('FlowSurfaceApplyBlueprintDefaultFormBehavior')],
-        nullable: true,
       },
+      formBehaviorDescriptionReview: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview'),
     },
     additionalProperties: false,
   },

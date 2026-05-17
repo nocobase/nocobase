@@ -16,6 +16,7 @@ import type {
   FlowSurfaceApplyBlueprintDefaultCollection,
   FlowSurfaceApplyBlueprintDefaultDataSource,
   FlowSurfaceApplyBlueprintDefaultFormBehavior,
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview,
   FlowSurfaceApplyBlueprintDefaultFormBehaviorField,
   FlowSurfaceApplyBlueprintDefaultFormBehaviorScene,
   FlowSurfaceApplyBlueprintDefaultFieldSpec,
@@ -47,12 +48,18 @@ const APPLY_BLUEPRINT_REACTION_TYPES = [
   'setActionLinkageRules',
 ] as const;
 const APPLY_BLUEPRINT_REACTION_TYPE_SET = new Set<string>(APPLY_BLUEPRINT_REACTION_TYPES);
-const APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS = ['fieldGroups', 'popups', 'formBehavior'];
+const APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS = [
+  'fieldGroups',
+  'popups',
+  'formBehavior',
+  'formBehaviorDescriptionReview',
+];
 const APPLY_BLUEPRINT_DEFAULT_FIELD_GROUP_ALLOWED_KEYS = ['key', 'title', 'fields'];
 const APPLY_BLUEPRINT_DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
 const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS = ['addNew', 'edit'];
 const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_SCENE_ALLOWED_KEYS = ['fields', 'fieldLinkageRules'];
 const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_FIELD_ALLOWED_KEYS = ['settings'];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS = ['fields', 'hasTried'];
 const APPLY_BLUEPRINT_DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
@@ -328,9 +335,6 @@ function normalizeDefaultFormBehavior(
   if (_.isUndefined(input)) {
     return undefined;
   }
-  if (_.isNull(input)) {
-    return undefined;
-  }
   assertPlainObject(input, context);
   assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS);
   const normalized = buildDefinedPayload({
@@ -340,6 +344,29 @@ function normalizeDefaultFormBehavior(
   return Object.keys(normalized).length ? normalized : undefined;
 }
 
+function normalizeDefaultFormBehaviorDescriptionReview(
+  input: any,
+  context: string,
+): FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview | undefined {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  assertPlainObject(input, context);
+  assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS);
+  const rawFields = _.castArray(input.fields);
+  if (!rawFields.length) {
+    throwBadRequest(`flowSurfaces authoring ${context}.fields must be a non-empty array`);
+  }
+  const fields = _.uniq(rawFields.map((field, index) => assertNonEmptyString(field, `${context}.fields[${index}]`)));
+  if (input.hasTried !== true) {
+    throwBadRequest(`flowSurfaces authoring ${context}.hasTried must be true`);
+  }
+  return {
+    fields,
+    hasTried: true,
+  };
+}
+
 function normalizeDefaultCollection(input: any, context: string): FlowSurfaceApplyBlueprintDefaultCollection {
   assertPlainObject(input, context);
   assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_COLLECTION_ALLOWED_KEYS);
@@ -347,6 +374,10 @@ function normalizeDefaultCollection(input: any, context: string): FlowSurfaceApp
     fieldGroups: normalizeDefaultFieldGroups(input.fieldGroups, `${context}.fieldGroups`),
     popups: normalizeDefaultPopups(input.popups, `${context}.popups`),
     formBehavior: normalizeDefaultFormBehavior(input.formBehavior, `${context}.formBehavior`),
+    formBehaviorDescriptionReview: normalizeDefaultFormBehaviorDescriptionReview(
+      input.formBehaviorDescriptionReview,
+      `${context}.formBehaviorDescriptionReview`,
+    ),
   }) as FlowSurfaceApplyBlueprintDefaultCollection;
 }
 

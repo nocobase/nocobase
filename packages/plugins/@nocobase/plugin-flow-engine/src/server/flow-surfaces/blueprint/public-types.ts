@@ -174,10 +174,16 @@ export type FlowSurfaceApplyBlueprintDefaultFormBehavior = {
   edit?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
 };
 
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview = {
+  fields: string[];
+  hasTried: true;
+};
+
 export type FlowSurfaceApplyBlueprintDefaultCollection = {
   fieldGroups?: FlowSurfaceApplyBlueprintDefaultFieldGroupSpec[];
   popups?: FlowSurfaceApplyBlueprintDefaultPopups;
-  formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior | null;
+  formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior;
+  formBehaviorDescriptionReview?: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview;
 };
 
 export type FlowSurfaceApplyBlueprintDefaultDataSource = {
