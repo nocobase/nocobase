@@ -274,66 +274,68 @@ describe('db2cm test', () => {
   });
 
   describe.runIf(process.env.DB_DIALECT === 'postgres')('sync fields with database schema', () => {
-    it('should not persist current database schema into collection options when syncing fields', async () => {
-      const schema = `s_${uid(6)}`;
-      const collectionName = `t_${uid(6)}`;
+    let collectionName: string;
 
+    beforeEach(async () => {
       app = await createApp({
         database: {
-          schema,
+          schema: `s_${uid(6)}`,
         },
       });
       db = app.db;
+      collectionName = `t_${uid(6)}`;
+    });
 
-      try {
-        await app
-          .agent()
-          .resource('collections')
-          .create({
-            values: {
-              name: collectionName,
-              fields: [
-                {
-                  type: 'string',
-                  name: 'title',
-                },
-              ],
-            },
-          });
+    afterEach(async () => {
+      await db.clean({ drop: true });
+      await app.destroy();
+    });
 
-        let collectionRecord = await db.getRepository('collections').findOne({
-          filter: {
+    it('should not persist current database schema into collection options when syncing fields', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
             name: collectionName,
+            fields: [
+              {
+                type: 'string',
+                name: 'title',
+              },
+            ],
           },
         });
-        expect(collectionRecord.get('schema')).toBeUndefined();
 
-        const collection = db.getCollection(collectionName);
-        await db.sequelize.getQueryInterface().addColumn(collection.getTableNameWithSchema(), 'description', {
-          type: DataTypes.TEXT,
-          allowNull: true,
-        });
+      let collectionRecord = await db.getRepository('collections').findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+      expect(collectionRecord.get('schema')).toBeUndefined();
 
-        const response = await app
-          .agent()
-          .resource('mainDataSource')
-          .syncFields({
-            values: {
-              collections: [collectionName],
-            },
-          });
-        expect(response.status).toBe(200);
+      const collection = db.getCollection(collectionName);
+      await db.sequelize.getQueryInterface().addColumn(collection.getTableNameWithSchema(), 'description', {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      });
 
-        collectionRecord = await db.getRepository('collections').findOne({
-          filter: {
-            name: collectionName,
+      const response = await app
+        .agent()
+        .resource('mainDataSource')
+        .syncFields({
+          values: {
+            collections: [collectionName],
           },
         });
-        expect(collectionRecord.get('schema')).toBeUndefined();
-      } finally {
-        await db.clean({ drop: true });
-        await app.destroy();
-      }
+      expect(response.status).toBe(200);
+
+      collectionRecord = await db.getRepository('collections').findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+      expect(collectionRecord.get('schema')).toBeUndefined();
     });
   });
 });
