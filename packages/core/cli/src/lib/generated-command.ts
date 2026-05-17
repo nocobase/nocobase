@@ -205,7 +205,6 @@ export abstract class GeneratedApiCommand extends Command {
       yes: flags.yes,
     });
     if (!confirmed) {
-      this.log('Canceled.');
       return;
     }
 

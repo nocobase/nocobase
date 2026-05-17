@@ -155,6 +155,48 @@ describe('modeling apply actions', () => {
     ]);
   });
 
+  it('should apply server-side validation rules from fields apply validator shorthand', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'contacts',
+      },
+    });
+
+    const response = await agent.resource('fields').apply({
+      values: {
+        collectionName: 'contacts',
+        name: 'email',
+        title: 'Email',
+        interface: 'email',
+        validators: ['required', 'email'],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const contacts = app.db.getCollection('contacts');
+    const emailField = contacts.getField('email');
+    expect(emailField.options.validation).toMatchObject({
+      type: 'string',
+      rules: [{ name: 'required' }, { name: 'email' }],
+    });
+    expect(emailField.options.validation.rules.every((rule) => rule.key)).toBe(true);
+
+    await expect(
+      contacts.repository.create({
+        values: {
+          email: 'invalid-email',
+        },
+      }),
+    ).rejects.toThrow();
+
+    await contacts.repository.create({
+      values: {
+        email: 'user@example.com',
+      },
+    });
+  });
+
   it('should return normalized verification result from collections apply', async () => {
     const response = await agent.resource('collections').apply({
       values: {
@@ -248,6 +290,42 @@ describe('modeling apply actions', () => {
     expect(events.hasField('exclude')).toBe(true);
     expect(events.getField('exclude').options.interface).toBe('json');
     expect(events.getField('exclude').options.type).toBe('json');
+  });
+
+  it('should apply a comment collection with content baseline', async () => {
+    await app.destroy();
+    app = await createApp({
+      plugins: ['comments', 'field-markdown-vditor'],
+    });
+    agent = app.agent();
+
+    const response = await agent.resource('collections').apply({
+      values: {
+        name: 'ticket_comments',
+        title: 'Ticket Comments',
+        template: 'comment',
+        fields: [],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.verify.valid).toBe(true);
+
+    const comments = app.db.getCollection('ticket_comments');
+    expect(comments).toBeDefined();
+    expect(comments.options.template).toBe('comment');
+    expect(comments.hasField('content')).toBe(true);
+    expect(comments.hasField('id')).toBe(true);
+    expect(comments.hasField('createdAt')).toBe(true);
+    expect(comments.hasField('createdBy')).toBe(true);
+
+    const content = comments.getField('content');
+    expect(content.options.interface).toBe('vditor');
+    expect(content.options.type).toBe('text');
+    expect(content.options.length).toBe('long');
+    expect(content.options.deletable).toBe(false);
+    expect(content.options.uiSchema.title).toBe('Comment Content');
+    expect(content.options.uiSchema['x-component']).toBe('MarkdownVditor');
   });
 
   it('should reject unknown field interfaces', async () => {

@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { buildExportFieldOptions } from '../client-v2/buildExportFieldOptions';
+export { default as FormulaExpression } from './Expression';

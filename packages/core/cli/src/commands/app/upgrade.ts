@@ -744,7 +744,6 @@ export default class AppUpgrade extends Command {
         yes: parsed.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

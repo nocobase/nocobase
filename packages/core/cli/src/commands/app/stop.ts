@@ -71,7 +71,6 @@ export default class AppStop extends Command {
         yes: flags.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

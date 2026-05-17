@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as p from '@clack/prompts';
 import type { Command } from '@oclif/core';
 import { stdin as input, stdout as output } from 'node:process';
 import { getCurrentEnvName } from './auth-store.js';
+import { confirm } from './inquirer.ts';
 
 function normalizeEnvName(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -68,13 +68,12 @@ export async function ensureCrossEnvConfirmed(options: {
     options.command.error(formatCrossEnvRefusalMessage(currentEnv, requestedEnv));
   }
 
-  const answer = await p.confirm({
-    message: formatCrossEnvPromptMessage(currentEnv, requestedEnv),
-    initialValue: false,
-  });
-  if (p.isCancel(answer)) {
+  try {
+    return Boolean(await confirm({
+      message: formatCrossEnvPromptMessage(currentEnv, requestedEnv),
+      default: false,
+    }));
+  } catch {
     return false;
   }
-
-  return Boolean(answer);
 }

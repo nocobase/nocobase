@@ -8,7 +8,6 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -36,10 +35,11 @@ import {
   installNocoBaseSkills,
   updateNocoBaseSkills,
 } from '../lib/skills-manager.js';
+import { omitKeys, pickKeys } from '../lib/object-utils.ts';
+import { isVerboseMode, printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
-import _ from 'lodash';
 
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
@@ -185,17 +185,21 @@ function shellQuoteArg(value: string): string {
 }
 
 function initTitle(): string {
-  return translateCli('commands.init.messages.title');
+  return 'Set up NocoBase';
+}
+
+function logInitStage(title: string) {
+  printStage(title);
 }
 
 function logInitUiReady(command: { log: (message: string) => void }, url: string) {
-  p.log.step(translateCli('commands.init.messages.uiReady'));
-  p.log.info(translateCli('commands.init.messages.uiReadyHelp'));
+  command.log(translateCli('commands.init.messages.uiReady'));
+  command.log(translateCli('commands.init.messages.uiReadyHelp'));
   command.log(`URL: ${url}`);
 }
 
 function logInitUiBrowserOpenFallback() {
-  p.log.warn(translateCli('commands.init.messages.uiOpenBrowserFallback'));
+  printWarning(translateCli('commands.init.messages.uiOpenBrowserFallback'));
 }
 
 function formatBrowserOpenError(error: unknown) {
@@ -385,8 +389,8 @@ Prompt modes:
       min: 0,
       max: 65535,
     }),
-    ..._.pick(EnvAdd.flags, INIT_ENV_ADD_FLAG_NAMES),
-    ..._.omit(Install.flags, ['yes', 'env']),
+    ...pickKeys(EnvAdd.flags, INIT_ENV_ADD_FLAG_NAMES),
+    ...omitKeys(Install.flags, ['yes', 'env']),
   };
 
   public async run(): Promise<void> {
@@ -416,11 +420,11 @@ Prompt modes:
     if (normalizedFlags.resume) {
       const envName = String(normalizedFlags.env ?? '').trim();
       if (!envName) {
-        p.log.error(formatResumeEnvRequiredMessage());
+        this.error(formatResumeEnvRequiredMessage());
         this.exit(1);
       }
 
-      p.intro(initTitle());
+      logInitStage(initTitle());
 
       await this.syncNocoBaseSkills({
         skip: Boolean(normalizedFlags['skip-skills']),
@@ -471,7 +475,6 @@ Prompt modes:
         this.error(message);
       }
 
-      p.outro('Workspace init finished.');
       return;
     }
 
@@ -535,23 +538,21 @@ Prompt modes:
 
     if (normalizedFlags.yes && !String(presetValues.appName ?? '').trim()) {
       const formatted = formatSkippedAppNameRequiredMessage();
-      p.log.error(highlightInitValidationMessage(formatted));
+      this.error(highlightInitValidationMessage(formatted));
       this.exit(1);
     }
 
     const appName = String(presetValues.appName ?? '').trim();
     if (useBrowserUi) {
-      p.intro(initTitle());
-      p.log.info(translateCli('commands.init.messages.uiOpening'));
+      logInitStage(initTitle());
+      this.log(translateCli('commands.init.messages.uiOpening'));
     } else {
-      p.intro(initTitle());
+      logInitStage(initTitle());
 
       if (normalizedFlags.yes) {
-        p.log.info(
-          `Prompts skipped (--yes). NocoBase will be installed for env "${appName}" using the provided flags and safe defaults.`,
-        );
+        printInfo(`Non-interactive setup for env "${appName}" (--yes).`);
       } else if (!interactive) {
-        p.log.warn(
+        printWarning(
           'No interactive terminal detected. NocoBase will be installed using the provided flags and safe defaults.',
         );
       }
@@ -582,7 +583,7 @@ Prompt modes:
         },
         onOpenBrowserError: (_url, err) => {
           logInitUiBrowserOpenFallback();
-          p.log.info(`Browser open error: ${formatBrowserOpenError(err)}`);
+          this.log(`Browser open error: ${formatBrowserOpenError(err)}`);
         },
       });
     }
@@ -593,12 +594,11 @@ Prompt modes:
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
       hooks: {
         onCancel: () => {
-          p.cancel('Init cancelled.');
           this.exit(0);
         },
         onMissingNonInteractive: (message) => {
           const formatted = formatInitValidationMessage(message);
-          p.log.error(highlightInitValidationMessage(formatted));
+          this.error(highlightInitValidationMessage(formatted));
           this.exit(1);
         },
       },
@@ -611,7 +611,7 @@ Prompt modes:
       : undefined;
 
     if (existingEnv && Boolean(normalizedFlags.force)) {
-      p.log.warn(
+      printWarning(
         `Reconfiguring existing env ${pc.cyan(pc.bold(`"${existingEnv.name}"`))} from the global config because ${pc.bold('--force')} was set. The env config will be updated before install starts, then refreshed again after install succeeds.`,
       );
     }
@@ -625,13 +625,15 @@ Prompt modes:
     try {
       // oclif explicit registry keys use `:` (e.g. `env:add`); users still type `nb env add`.
       if (hasNocobase) {
-        p.log.step('Running nb env add');
+        logInitStage('Connecting to the env');
+        printVerbose('Running nb env add');
         await this.config.runCommand('env:add', this.buildEnvAddArgv(results));
       } else {
-        p.log.step('Saving the local env config');
+        logInitStage('Saving env config');
         await this.persistManagedEnvConfig(results, normalizedFlags);
         managedInstallResults = results;
-        p.log.step('Running nb init');
+        printInfo(`Saved env config for "${String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME}".`);
+        printVerbose('Running nb init');
         await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
       }
     } catch (error: unknown) {
@@ -639,11 +641,10 @@ Prompt modes:
       const formatted = managedInstallResults
         ? this.formatManagedInstallFailureMessage(message, managedInstallResults, normalizedFlags)
         : message;
-      p.outro(pc.red(formatted));
+      this.error(pc.red(formatted));
       this.exit(1);
     }
 
-    p.outro('Workspace init finished.');
   }
 
   private static async buildDynamicInitialValuesForInstall(
@@ -944,23 +945,26 @@ Prompt modes:
 
   private async syncNocoBaseSkills(options?: { skip?: boolean }): Promise<void> {
     if (options?.skip) {
-      p.log.step('Skipped NocoBase agent skills sync.');
+      printVerbose('Skipped agent skills sync.');
       return;
     }
 
     try {
+      logInitStage('Syncing agent skills');
       const status = await inspectSkillsStatus();
       if (!status.installed) {
-        p.log.step('Installing NocoBase agent skills (nb skills install)');
+        printVerbose('Installing NocoBase agent skills (nb skills install)');
         await installNocoBaseSkills();
+        printInfo('Agent skills ready.');
         return;
       }
 
-      p.log.step('Updating NocoBase agent skills (nb skills update)');
+      printVerbose('Updating NocoBase agent skills (nb skills update)');
       await updateNocoBaseSkills();
+      printInfo('Agent skills ready.');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      p.outro(pc.red(`Skills sync failed: ${message}`));
+      this.error(pc.red(`Skills sync failed: ${message}`));
       this.exit(1);
     }
   }
@@ -1058,9 +1062,11 @@ Prompt modes:
     if (options?.nonInteractive ?? true) {
       argv.unshift('-y');
     }
+    argv.push('--skip-save-env-log');
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
+    const hasNocobase = String(results.hasNocobase ?? '').trim() === 'yes';
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim();
     const accessToken = String(results.accessToken ?? '');
@@ -1074,7 +1080,7 @@ Prompt modes:
       argv.push('--verbose');
     }
 
-    if (apiBaseUrl) {
+    if (hasNocobase && apiBaseUrl) {
       argv.push('--api-base-url', apiBaseUrl);
     }
 

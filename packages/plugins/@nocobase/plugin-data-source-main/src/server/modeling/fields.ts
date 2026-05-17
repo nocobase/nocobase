@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { Utils } from 'sequelize';
+import { uid } from '@nocobase/utils';
 import {
   ARRAY_DEFAULT_INTERFACES,
   CHOICE_INTERFACES,
@@ -137,6 +138,40 @@ const ALLOWED_FIELD_TYPES: Record<string, string[]> = {
   encryption: ['encryption', 'string'],
   tableoid: ['virtual'],
   mbm: ['belongsToArray'],
+};
+
+const VALIDATION_TYPE_BY_INTERFACE: Record<string, string> = {
+  input: 'string',
+  phone: 'string',
+  email: 'string',
+  color: 'string',
+  icon: 'string',
+  url: 'string',
+  textarea: 'string',
+  markdown: 'string',
+  vditor: 'string',
+  richText: 'string',
+  password: 'string',
+  uuid: 'string',
+  nanoid: 'string',
+  code: 'string',
+  sequence: 'string',
+  encryption: 'string',
+  integer: 'number',
+  number: 'number',
+  percent: 'number',
+  unixTimestamp: 'number',
+  snowflakeId: 'number',
+  id: 'number',
+  sort: 'number',
+  checkbox: 'boolean',
+  json: 'object',
+  datetime: 'date',
+  createdAt: 'date',
+  updatedAt: 'date',
+  datetimeNoTz: 'date',
+  dateOnly: 'date',
+  time: 'date',
 };
 
 function buildRelationComponentProps(field: PlainObject) {
@@ -369,6 +404,42 @@ function validateFieldType(field: PlainObject) {
   }
 }
 
+function inferValidationType(field: PlainObject) {
+  return field.validation?.type || VALIDATION_TYPE_BY_INTERFACE[field.interface] || 'string';
+}
+
+function normalizeValidationRule(rule: any) {
+  if (typeof rule === 'string') {
+    return {
+      key: `r_${uid()}`,
+      name: rule,
+    };
+  }
+
+  return {
+    ...rule,
+    key: rule?.key || `r_${uid()}`,
+  };
+}
+
+function normalizeFieldValidation(field: PlainObject) {
+  const rulesInput = field.validators || field.validation?.rules;
+
+  if (!rulesInput) {
+    return;
+  }
+
+  const rules = (Array.isArray(rulesInput) ? rulesInput : [rulesInput]).map(normalizeValidationRule);
+
+  field.validation = {
+    ...(field.validation || {}),
+    type: inferValidationType(field),
+    rules,
+  };
+
+  delete field.validators;
+}
+
 function buildRelationKeyName(name?: string, key = 'id') {
   return Utils.camelize([Utils.singularize(name || ''), key].join('_'));
 }
@@ -481,6 +552,7 @@ export function normalizeFieldInput(input: PlainObject, context: PlainObject = {
   }
 
   validateFieldType(field);
+  normalizeFieldValidation(field);
 
   if (RELATION_INTERFACES.has(field.interface) && !field.target) {
     throw new Error(`Relation field ${field.name} requires target`);

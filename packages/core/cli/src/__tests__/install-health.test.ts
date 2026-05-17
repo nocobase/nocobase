@@ -11,33 +11,15 @@ import { afterEach, test, vi, expect } from 'vitest';
 import Install from '../commands/install.js';
 
 const mocks = vi.hoisted(() => ({
-  promptInfo: vi.fn(),
-  startTask: vi.fn(),
-  updateTask: vi.fn(),
-  stopTask: vi.fn(),
-}));
-
-vi.mock('@clack/prompts', () => ({
-  log: {
-    info: mocks.promptInfo,
-    step: vi.fn(),
-    warn: vi.fn(),
-  },
-  outro: vi.fn(),
-  cancel: vi.fn(),
+  printInfo: vi.fn(),
 }));
 
 vi.mock('../lib/ui.js', () => ({
-  startTask: mocks.startTask,
-  updateTask: mocks.updateTask,
-  stopTask: mocks.stopTask,
+  printInfo: mocks.printInfo,
 }));
 
 afterEach(() => {
-  mocks.promptInfo.mockReset();
-  mocks.startTask.mockReset();
-  mocks.updateTask.mockReset();
-  mocks.stopTask.mockReset();
+  mocks.printInfo.mockReset();
 });
 
 test('waitForAppHealthCheck resolves after /api/__health_check returns ok', async () => {
@@ -70,10 +52,9 @@ test('waitForAppHealthCheck resolves after /api/__health_check returns ok', asyn
   expect(fetchImpl.mock.calls[0][0]).toBe('http://127.0.0.1:13000/api/__health_check');
   expect(fetchImpl.mock.calls[0][1].method).toBe('GET');
   expect(fetchImpl.mock.calls[0][1].signal).toBeTruthy();
-  expect(mocks.startTask.mock.calls.length).toBe(1);
-  expect(mocks.updateTask.mock.calls.length).toBe(0);
-  expect(mocks.stopTask.mock.calls.length).toBe(1);
-  expect(mocks.promptInfo.mock.calls.some((call) => String(call[0]).includes('/api/__health_check'))).toBe(true);
+  expect(mocks.printInfo.mock.calls).toEqual([
+    ['Waiting for NocoBase to become ready...'],
+  ]);
 });
 
 test('waitForAppHealthCheck throws when /api/__health_check never returns ok', async () => {
@@ -104,9 +85,7 @@ test('waitForAppHealthCheck throws when /api/__health_check never returns ok', a
       containerName: 'test-app',
     })).rejects.toThrow(/__health_check.*respond with `ok`.*docker logs test-app/i);
 
-  expect(mocks.startTask.mock.calls.some((call) => String(call[0]).includes('/api/__health_check'))).toBe(true);
-  expect(mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('Still starting'))).toBe(true);
-  expect(mocks.stopTask.mock.calls.length > 0).toBe(true);
+  expect(mocks.printInfo.mock.calls.some((call) => String(call[0]).includes('Waiting for NocoBase to become ready'))).toBe(true);
 });
 
 test('waitForAppHealthCheck keeps polling while the app is still booting', async () => {
@@ -146,7 +125,6 @@ test('waitForAppHealthCheck keeps polling while the app is still booting', async
   });
 
   expect(fetchImpl.mock.calls.length).toBe(3);
-  expect(mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('connection refused'))).toBe(true);
-  expect(mocks.updateTask.mock.calls.some((call) => String(call[0]).includes('HTTP 503'))).toBe(true);
-  expect(mocks.stopTask.mock.calls.length).toBe(1);
+  expect(mocks.printInfo.mock.calls.some((call) => String(call[0]).includes('connection refused'))).toBe(true);
+  expect(mocks.printInfo.mock.calls.some((call) => String(call[0]).includes('HTTP 503'))).toBe(true);
 });

@@ -186,6 +186,29 @@ export function buildTemplateBaseline(input: PlainObject) {
           }),
         ],
       };
+    case 'comment':
+      return {
+        template,
+        logging: input.logging ?? true,
+        autoGenId: false,
+        fields: [
+          normalizeFieldInput({
+            name: 'content',
+            interface: 'vditor',
+            type: 'text',
+            length: 'long',
+            deletable: false,
+            title: 'Comment Content',
+          }),
+          ...buildPresetFields({
+            includeId: true,
+            includeCreatedAt: true,
+            includeCreatedBy: true,
+            includeUpdatedAt: true,
+            includeUpdatedBy: true,
+          }),
+        ],
+      };
     case 'view':
       return { template, view: true, schema: input.schema || 'public' };
     case 'inherit':

@@ -10,9 +10,18 @@
 import _ from 'lodash';
 
 export type PlainObject = Record<string, any>;
-export type TemplateName = 'general' | 'tree' | 'file' | 'calendar' | 'sql' | 'view' | 'inherit';
+export type TemplateName = 'general' | 'tree' | 'file' | 'calendar' | 'comment' | 'sql' | 'view' | 'inherit';
 
-export const TEMPLATE_NAMES: TemplateName[] = ['general', 'tree', 'file', 'calendar', 'sql', 'view', 'inherit'];
+export const TEMPLATE_NAMES: TemplateName[] = [
+  'general',
+  'tree',
+  'file',
+  'calendar',
+  'comment',
+  'sql',
+  'view',
+  'inherit',
+];
 
 export const MULTI_COMPONENT_INTERFACES = new Set([
   'multipleSelect',
@@ -74,6 +83,11 @@ export const PLUGIN_REQUIREMENTS: Record<string, { runtimeName: string; packageN
     runtimeName: 'field-attachment-url',
     packageName: '@nocobase/plugin-field-attachment-url',
     capability: 'attachmentURL field',
+  },
+  comment: {
+    runtimeName: 'comments',
+    packageName: '@nocobase/plugin-comments',
+    capability: 'comment collection template',
   },
   vditor: {
     runtimeName: 'field-markdown-vditor',
