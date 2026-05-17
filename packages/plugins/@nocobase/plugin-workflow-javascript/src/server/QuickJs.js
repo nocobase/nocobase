@@ -8,7 +8,19 @@
  */
 
 const { parentPort, workerData } = require('node:worker_threads');
-const { getQuickJS } = require('quickjs-emscripten');
+const path = require('node:path');
+
+function loadQuickJS() {
+  const bundledPath = path.join(__dirname, '..', 'node_modules', 'quickjs-emscripten');
+  try {
+    return require(bundledPath);
+  } catch (error) {
+    const packageName = 'quickjs-emscripten';
+    return require(packageName);
+  }
+}
+
+const { getQuickJS } = loadQuickJS();
 
 const MEMORY_LIMIT_BYTES = 128 * 1024 * 1024;
 const MAX_STACK_SIZE_BYTES = 1024 * 1024;
