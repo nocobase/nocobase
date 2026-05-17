@@ -75,7 +75,6 @@ export default class AppRestart extends Command {
         yes: flags.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

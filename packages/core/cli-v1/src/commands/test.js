@@ -10,6 +10,7 @@
 const { Command } = require('commander');
 const { run, checkDBDialect } = require('../util');
 const path = require('path');
+const fs = require('fs');
 
 function stripSingleThreadArgs(argv) {
   const nextArgv = [];
@@ -33,6 +34,85 @@ function stripSingleThreadArgs(argv) {
   }
 
   return nextArgv;
+}
+
+function stripDelegatedWorkspaceArgs(argv, delegatedPath) {
+  const nextArgv = [];
+  const normalizedDelegatedPath = String(delegatedPath || '')
+    .trim()
+    .split(path.sep)
+    .join('/');
+  let skippedPath = false;
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    const normalizedToken = String(token || '')
+      .trim()
+      .split(path.sep)
+      .join('/');
+
+    if (
+      !skippedPath &&
+      normalizedDelegatedPath &&
+      !token.startsWith('-') &&
+      normalizedToken === normalizedDelegatedPath
+    ) {
+      skippedPath = true;
+      continue;
+    }
+
+    if (token === '--server' || token === '--client') {
+      continue;
+    }
+
+    if (token === '--single-thread') {
+      const next = argv[index + 1];
+      if (next && !next.startsWith('-')) {
+        index += 1;
+      }
+      continue;
+    }
+
+    if (token.startsWith('--single-thread=')) {
+      continue;
+    }
+
+    nextArgv.push(token);
+  }
+
+  return nextArgv;
+}
+
+function resolveWorkspaceTestDelegation(paths = [], argv = process.argv.slice(3), cwd = process.cwd()) {
+  const firstPath = String(paths?.[0] || '').trim();
+  if (!firstPath) {
+    return undefined;
+  }
+
+  const packageDir = path.resolve(cwd, firstPath);
+  if (packageDir === cwd) {
+    return undefined;
+  }
+
+  const packageJsonPath = path.join(packageDir, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    return undefined;
+  }
+
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    const testScript = String(packageJson?.scripts?.test || '').trim();
+    if (!testScript) {
+      return undefined;
+    }
+
+    return {
+      packageDir,
+      forwardedArgv: stripDelegatedWorkspaceArgs(argv, firstPath),
+    };
+  } catch (error) {
+    return undefined;
+  }
 }
 
 function requiresNoNodeSnapshot(nodeVersion = process.versions.node) {
@@ -69,6 +149,12 @@ function addTestCommand(name, cli) {
     .arguments('[paths...]')
     .allowUnknownOption()
     .action(async (paths, opts) => {
+      const delegation = name === 'test' ? resolveWorkspaceTestDelegation(paths, process.argv.slice(3)) : undefined;
+      if (delegation) {
+        await run('yarn', ['--cwd', delegation.packageDir, 'test', ...delegation.forwardedArgv]);
+        return;
+      }
+
       checkDBDialect();
       if (name === 'test:server') {
         process.env.TEST_ENV = 'server-side';
@@ -144,6 +230,8 @@ module.exports = (cli) => {
 
 module.exports._test = {
   stripSingleThreadArgs,
+  stripDelegatedWorkspaceArgs,
+  resolveWorkspaceTestDelegation,
   requiresNoNodeSnapshot,
   buildVitestNodeArgs,
 };

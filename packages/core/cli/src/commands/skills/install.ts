@@ -8,7 +8,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { confirmAction, setVerboseMode } from '../../lib/ui.js';
+import { confirm } from '../../lib/inquirer.ts';
+import { setVerboseMode } from '../../lib/ui.js';
 import { installNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsInstall extends Command {
@@ -42,12 +43,16 @@ export default class SkillsInstall extends Command {
     setVerboseMode(flags.verbose);
 
     if (!flags.yes) {
-      const confirmed = await confirmAction(
-        'Install the NocoBase AI coding skills globally?',
-        { defaultValue: true },
-      );
+      let confirmed = false;
+      try {
+        confirmed = await confirm({
+          message: 'Install the NocoBase AI coding skills globally?',
+          default: true,
+        });
+      } catch {
+        return;
+      }
       if (!confirmed) {
-        this.log('Skipped skills install.');
         return;
       }
     }

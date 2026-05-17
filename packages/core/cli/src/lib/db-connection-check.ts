@@ -136,27 +136,9 @@ async function checkPostgresFamilyConnection(config: ExternalDbConnectionConfig)
   }
 }
 
-async function checkMysqlConnection(config: ExternalDbConnectionConfig): Promise<void> {
+async function checkMysqlFamilyConnection(config: ExternalDbConnectionConfig): Promise<void> {
   const { default: mysql } = await import('mysql2/promise');
   const connection = await mysql.createConnection({
-    host: config.host,
-    port: config.port,
-    user: config.user,
-    password: config.password,
-    database: config.database,
-    connectTimeout: DB_CONNECTION_TIMEOUT_MS,
-  });
-
-  try {
-    await connection.query('SELECT 1');
-  } finally {
-    await Promise.resolve(connection.end()).catch(() => undefined);
-  }
-}
-
-async function checkMariaDbConnection(config: ExternalDbConnectionConfig): Promise<void> {
-  const { default: mariadb } = await import('mariadb');
-  const connection = await mariadb.createConnection({
     host: config.host,
     port: config.port,
     user: config.user,
@@ -180,12 +162,9 @@ async function performExternalDbConnectionCheck(config: ExternalDbConnectionConf
         await checkPostgresFamilyConnection(config);
         return undefined;
       }
-      case 'mysql': {
-        await checkMysqlConnection(config);
-        return undefined;
-      }
+      case 'mysql':
       case 'mariadb': {
-        await checkMariaDbConnection(config);
+        await checkMysqlFamilyConnection(config);
         return undefined;
       }
     }
