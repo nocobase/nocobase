@@ -85,10 +85,10 @@ ARG TARGETARCH
 ENV NB_SKIP_STARTUP_UPDATE=1 \
     NOCOBASE_RUNNING_IN_DOCKER=true
 
-COPY --from=assets /tmp/libreoffice.tar.gz /tmp/libreoffice.tar.gz
 COPY --from=assets /opt/instantclient_19_25 /opt/instantclient_19_25
 
-RUN --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-client-assets \
+RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.tar.gz,ro \
+  --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-client-assets,ro \
   set -eux; \
   rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
   if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
@@ -135,7 +135,10 @@ RUN --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-clie
   [ -n "$libreoffice_dir" ] || { echo 'Missing extracted LibreOffice directory' >&2; exit 1; }; \
   find "$libreoffice_dir/DEBS" -maxdepth 1 -type f -name '*.deb' -print >/tmp/libreoffice-debs.list; \
   [ -s /tmp/libreoffice-debs.list ] || { echo 'No LibreOffice deb packages found' >&2; exit 1; }; \
-  dpkg -i $(cat /tmp/libreoffice-debs.list) || apt-get -f install -y && \
+  if ! dpkg -i $(cat /tmp/libreoffice-debs.list); then \
+    apt-get -f install -y; \
+  fi; \
+  [ -x /opt/libreoffice24.8/program/oosplash ] || { echo 'LibreOffice installation is incomplete' >&2; exit 1; }; \
   apt-get purge -y --auto-remove \
   wget \
   gnupg \
@@ -152,16 +155,18 @@ RUN --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-clie
   /etc/nginx/sites-enabled/default \
   /root/.npm \
   /tmp/libreoffice-debs.list \
-  /tmp/mysql-client \
-  /tmp/mysql-community-client-core.deb \
-  /tmp/libreoffice.tar.gz \
   /tmp/LibreOffice*_Linux_*_deb \
   /var/lib/apt/lists/* && \
   printf '%s\n' \
   '#!/bin/sh' \
   'exec /opt/libreoffice24.8/program/oosplash "$@"' \
   > /usr/bin/libreoffice && \
+  printf '%s\n' \
+  '#!/bin/sh' \
+  'exec /opt/libreoffice24.8/program/oosplash "$@"' \
+  > /usr/bin/soffice && \
   chmod +x /usr/bin/libreoffice && \
+  chmod +x /usr/bin/soffice && \
   echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf && \
   ldconfig
 
