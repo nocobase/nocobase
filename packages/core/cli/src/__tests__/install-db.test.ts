@@ -37,17 +37,18 @@ type InstallStatics = {
     dbResults: Record<string, unknown>;
     rootResults: Record<string, unknown>;
     networkName: string;
-  }) => {
+  }) => Promise<{
     source: 'docker';
     networkName: string;
     containerName: string;
     imageRef: string;
     appPort: string;
     storagePath: string;
+    envFile?: string;
     appKey: string;
     timeZone: string;
     args: string[];
-  };
+  }>;
   buildSavedEnvConfig: (params: {
     envName: string;
     appResults: Record<string, unknown>;
@@ -287,11 +288,11 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
   expect(plan.args.includes(`${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
 });
 
-test('docker app plan wires app, db, network, port, and image settings', () => {
+test('docker app plan wires app, db, network, port, and image settings', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const networkName = 'nocobase';
   const containerPrefix = 'nb';
-  const plan = installStatics.buildDockerAppPlan({
+  const plan = await installStatics.buildDockerAppPlan({
     envName: 'demo',
     networkName,
     appResults: {
@@ -326,6 +327,7 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop-full');
   expect(plan.appPort).toBe('13000');
   expect(plan.storagePath).toBe(resolveEnvRelativePath('./storage/demo'));
+  expect(plan.envFile).toBe(undefined);
   expect(plan.appKey.length).toBe(64);
   expect(typeof plan.timeZone).toBe('string');
   expect(plan.timeZone.length > 0).toBe(true);
@@ -549,6 +551,7 @@ test('install saved env config records docker download settings for later upgrad
   expect(envConfig.downloadVersion).toBe('alpha');
   expect(envConfig.dockerRegistry).toBe('nocobase/nocobase');
   expect(envConfig.dockerPlatform).toBe('linux/amd64');
+  expect(envConfig.envFile).toBe(undefined);
   expect(envConfig.dbHost).toBe(undefined);
   expect(envConfig.dbPort).toBe(undefined);
 });
