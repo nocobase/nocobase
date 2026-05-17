@@ -65,6 +65,9 @@ import {
 import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
+import {
+  resolveDockerEnvFileArg,
+} from '../lib/docker-env-file.ts';
 import Download, {
   DownloadParsedFlags,
   defaultDockerRegistryForLang,
@@ -414,6 +417,7 @@ type DockerAppPlan = {
   imageRef: string;
   appPort: string;
   storagePath: string;
+  envFile?: string;
   appKey: string;
   timeZone: string;
   args: string[];
@@ -2108,7 +2112,7 @@ export default class Install extends Command {
     return plan;
   }
 
-  private static buildDockerAppPlan(params: {
+  private static async buildDockerAppPlan(params: {
     envName: string;
     workspaceName?: PromptValue;
     dockerContainerPrefix?: PromptValue;
@@ -2117,7 +2121,7 @@ export default class Install extends Command {
     dbResults: Record<string, PromptValue>;
     rootResults: Record<string, PromptValue>;
     networkName: string;
-  }): DockerAppPlan {
+  }): Promise<DockerAppPlan> {
     const dockerRegistry =
       String(downloadResultsValue(params.downloadResults, 'dockerRegistry') ?? '').trim()
       || defaultDockerRegistryForLang(process.env.NB_LOCALE);
@@ -2147,6 +2151,11 @@ export default class Install extends Command {
       params.envName,
       params.dockerContainerPrefix ?? params.workspaceName,
     );
+    const configuredEnvFile = String(params.appResults.envFile ?? '').trim();
+    const envFile = await resolveDockerEnvFileArg(
+      params.envName,
+      configuredEnvFile ? { envFile: configuredEnvFile } : undefined,
+    );
     const initEnvVars = Install.buildInitAppEnvVars({
       appResults: params.appResults,
       rootResults: params.rootResults,
@@ -2163,6 +2172,10 @@ export default class Install extends Command {
       '-p',
       `${appPort}:80`,
     ];
+
+    if (envFile) {
+      args.push('--env-file', envFile);
+    }
 
     for (const [key, value] of Object.entries(initEnvVars)) {
       args.push('-e', `${key}=${value}`);
@@ -2197,6 +2210,7 @@ export default class Install extends Command {
       imageRef,
       appPort,
       storagePath,
+      envFile,
       appKey,
       timeZone,
       args,
@@ -2241,7 +2255,7 @@ export default class Install extends Command {
         params.dockerNetworkName ?? params.workspaceName,
       );
     await this.ensureDockerNetwork(networkName);
-    const plan = Install.buildDockerAppPlan({
+    const plan = await Install.buildDockerAppPlan({
       envName: params.envName,
       workspaceName: params.workspaceName,
       dockerContainerPrefix: params.dockerContainerPrefix,
@@ -2688,6 +2702,7 @@ export default class Install extends Command {
     const storagePath =
       String(params.appResults.storagePath ?? '').trim()
       || defaultInstallStoragePath(params.envName);
+    const envFile = String(params.appResults.envFile ?? '').trim() || undefined;
     const apiBaseUrl = Install.resolveApiBaseUrl({
       appResults: params.appResults,
       envAddResults: params.envAddResults,
@@ -2711,6 +2726,7 @@ export default class Install extends Command {
       appRootPath: params.appResults.appRootPath,
       appPort,
       storagePath,
+      ...(envFile ? { envFile } : {}),
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,
       builtinDb: params.dbResults.builtinDb,

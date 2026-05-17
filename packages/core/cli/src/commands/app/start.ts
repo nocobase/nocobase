@@ -27,6 +27,7 @@ import {
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
+import { run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
@@ -116,6 +117,10 @@ export default class AppStart extends Command {
       description: 'Show raw startup output from the underlying local or Docker command',
       default: false,
     }),
+    recreate: Flags.boolean({
+      description: 'Recreate the saved Docker app container before starting it',
+      default: false,
+    }),
   };
 
   public async run(): Promise<void> {
@@ -191,29 +196,47 @@ export default class AppStart extends Command {
         ? undefined
         : String(runtime.env.appPort));
       const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime);
-      startTask(`Starting NocoBase for "${runtime.envName}"...`);
-      try {
-        const state = await startDockerContainer(runtime.containerName, {
-          stdio: commandStdio,
-        });
-        if (state === 'already-running' && await isAppReady(apiBaseUrl)) {
-          succeedTask(
-            `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`,
-          );
-          return;
-        }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (/does not exist/i.test(message)) {
-          printInfo(
-            `The saved Docker app container for "${runtime.envName}" is missing. Recreating it from the saved Docker env settings...`,
-          );
+      if (flags.recreate) {
+        startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
+        try {
+          await run('docker', ['rm', '-f', runtime.containerName], {
+            errorName: 'docker rm',
+            stdio: commandStdio,
+          }).catch(() => undefined);
           await recreateSavedDockerApp(runtime, {
             verbose: flags.verbose,
           });
-        } else {
-          failTask(`Failed to start NocoBase for "${runtime.envName}".`);
+          succeedTask(`Docker app container is ready for "${runtime.envName}".`);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          failTask(`Failed to recreate NocoBase for "${runtime.envName}".`);
           this.error(formatDockerStartFailure(runtime.envName, message));
+        }
+      } else {
+        startTask(`Starting NocoBase for "${runtime.envName}"...`);
+        try {
+          const state = await startDockerContainer(runtime.containerName, {
+            stdio: commandStdio,
+          });
+          if (state === 'already-running' && await isAppReady(apiBaseUrl)) {
+            succeedTask(
+              `NocoBase is already running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`,
+            );
+            return;
+          }
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (/does not exist/i.test(message)) {
+            printInfo(
+              `The saved Docker app container for "${runtime.envName}" is missing. Recreating it from the saved Docker env settings...`,
+            );
+            await recreateSavedDockerApp(runtime, {
+              verbose: flags.verbose,
+            });
+          } else {
+            failTask(`Failed to start NocoBase for "${runtime.envName}".`);
+            this.error(formatDockerStartFailure(runtime.envName, message));
+          }
         }
       }
       await waitForAppReady({

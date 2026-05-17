@@ -12,6 +12,7 @@ import type { ManagedAppRuntime } from './app-runtime.js';
 import { dockerContainerExists, startDockerContainer } from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
 import { resolveConfiguredEnvPath } from './cli-home.js';
+import { resolveDockerEnvFileArg } from './docker-env-file.ts';
 import {
   DEFAULT_DOCKER_REGISTRY,
   DEFAULT_DOCKER_VERSION,
@@ -103,19 +104,21 @@ async function localProjectHasFiles(projectRoot: string): Promise<boolean> {
   }
 }
 
-export function buildSavedDockerRunArgs(
+export async function buildSavedDockerRunArgs(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-): {
+): Promise<{
   appPort?: string;
   storagePath: string;
+  envFile?: string;
   imageRef: string;
   args: string[];
-} {
+}> {
   const config = runtime.env.config ?? {};
   const configuredStoragePath = trimValue(config.storagePath);
   const storagePath = configuredStoragePath
     ? trimValue(resolveConfiguredEnvPath(configuredStoragePath))
     : '';
+  const envFile = await resolveDockerEnvFileArg(runtime.envName, config);
   const appPort =
     runtime.env.appPort === undefined || runtime.env.appPort === null
       ? ''
@@ -186,6 +189,10 @@ export function buildSavedDockerRunArgs(
     args.push('-p', `${appPort}:80`);
   }
 
+  if (envFile) {
+    args.push('--env-file', envFile);
+  }
+
   args.push(
     '-e',
     `APP_KEY=${appKey}`,
@@ -211,6 +218,7 @@ export function buildSavedDockerRunArgs(
   return {
     appPort: appPort || undefined,
     storagePath,
+    envFile,
     imageRef,
     args,
   };
@@ -220,7 +228,7 @@ export async function recreateSavedDockerApp(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
   options?: { verbose?: boolean },
 ): Promise<void> {
-  const plan = buildSavedDockerRunArgs(runtime);
+  const plan = await buildSavedDockerRunArgs(runtime);
 
   try {
     await ensureDockerNetwork(runtime.workspaceName);
