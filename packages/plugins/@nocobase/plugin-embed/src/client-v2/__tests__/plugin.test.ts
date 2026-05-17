@@ -8,7 +8,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EMBED_LAYOUT_MODEL_UID } from '../EmbedLayoutModel';
+import { EMBED_LAYOUT_MODEL_CLASS, EMBED_LAYOUT_MODEL_UID } from '../constants';
 
 const { registerCopyEmbedLinkFlow } = vi.hoisted(() => ({
   registerCopyEmbedLinkFlow: vi.fn(),
@@ -28,6 +28,7 @@ describe('PluginEmbedClientV2', () => {
     const app = {
       flowEngine: {
         registerModels: vi.fn(),
+        registerModelLoaders: vi.fn(),
       },
       layoutManager: {
         registerLayout: vi.fn(),
@@ -40,14 +41,17 @@ describe('PluginEmbedClientV2', () => {
 
     await plugin.load();
 
-    expect(app.flowEngine.registerModels).toHaveBeenCalledWith({
-      EmbedLayoutModelV2: expect.any(Function),
+    expect(app.flowEngine.registerModels).not.toHaveBeenCalled();
+    expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
+      [EMBED_LAYOUT_MODEL_CLASS]: {
+        loader: expect.any(Function),
+      },
     });
     expect(app.layoutManager.registerLayout).toHaveBeenCalledWith({
       name: 'embed',
       pathPrefix: '/embed',
       uid: EMBED_LAYOUT_MODEL_UID,
-      layoutModelClass: 'EmbedLayoutModelV2',
+      layoutModelClass: EMBED_LAYOUT_MODEL_CLASS,
     });
     expect(app.router.add).not.toHaveBeenCalled();
     expect(registerCopyEmbedLinkFlow).toHaveBeenCalledTimes(1);

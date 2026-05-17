@@ -7,6 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
-export * from './plugin';
-export * from './constants';
+export const EMBED_LAYOUT_MODEL_CLASS = 'EmbedLayoutModelV2';
+export const EMBED_LAYOUT_MODEL_UID = 'embed-layout-model';

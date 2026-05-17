@@ -9,8 +9,8 @@
 
 import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client-v2';
+import { EMBED_LAYOUT_MODEL_CLASS, EMBED_LAYOUT_MODEL_UID } from './constants';
 import { registerCopyEmbedLinkFlow } from './copyEmbedLinkFlow';
-import { EMBED_LAYOUT_MODEL_UID, EmbedLayoutModelV2 } from './EmbedLayoutModel';
 
 const EMBED_ROUTE_PREFIX = '/embed';
 
@@ -33,14 +33,16 @@ export class PluginEmbedClientV2 extends Plugin<any, Application> {
   }
 
   async load() {
-    this.app.flowEngine.registerModels({
-      EmbedLayoutModelV2,
+    this.app.flowEngine.registerModelLoaders({
+      [EMBED_LAYOUT_MODEL_CLASS]: {
+        loader: () => import('./EmbedLayoutModel'),
+      },
     });
     this.app.layoutManager.registerLayout({
       name: 'embed',
       pathPrefix: EMBED_ROUTE_PREFIX,
       uid: EMBED_LAYOUT_MODEL_UID,
-      layoutModelClass: 'EmbedLayoutModelV2',
+      layoutModelClass: EMBED_LAYOUT_MODEL_CLASS,
     });
     registerCopyEmbedLinkFlow();
   }

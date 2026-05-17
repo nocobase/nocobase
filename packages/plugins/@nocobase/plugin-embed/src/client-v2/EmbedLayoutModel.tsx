@@ -10,9 +10,8 @@
 import { BaseLayoutModel, getLayoutModel, type GetLayoutModelOptions } from '@nocobase/client-v2';
 import { type FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
+import { EMBED_LAYOUT_MODEL_UID } from './constants';
 import { EmbedLayoutComponent } from './EmbedLayoutComponent';
-
-export const EMBED_LAYOUT_MODEL_UID = 'embed-layout-model';
 
 /**
  * Embed Layout 的 v2 运行时模型。
