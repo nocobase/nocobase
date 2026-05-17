@@ -896,6 +896,106 @@ describe('flowSurfaces applyBlueprint contract', () => {
     }
   });
 
+  it('should reject non-canonical applyBlueprint jsBlock authoring shapes before default JS fallback', async () => {
+    const invalidCases = [
+      {
+        label: 'top-level code',
+        block: {
+          type: 'jsBlock',
+          code: "ctx.render('<div>Ignored top-level code</div>');",
+        },
+        expectedRuleId: 'jsBlock-top-level-code-unsupported',
+      },
+      {
+        label: 'top-level version',
+        block: {
+          type: 'jsBlock',
+          version: 'v2',
+        },
+        expectedRuleId: 'jsBlock-top-level-version-unsupported',
+      },
+      {
+        label: 'handwritten stepParams',
+        block: {
+          type: 'jsBlock',
+          settings: {
+            code: "ctx.render('<div>Inline</div>');",
+            version: 'v2',
+          },
+          stepParams: {
+            jsSettings: {
+              runJs: {
+                code: "ctx.render('<div>Internal</div>');",
+                version: 'v2',
+              },
+            },
+          },
+        },
+        expectedRuleId: 'jsBlock-stepParams-unsupported',
+      },
+      {
+        label: 'mixed asset and inline code',
+        assets: {
+          scripts: {
+            kpiCardsScript: {
+              code: "ctx.render('<div>Asset</div>');",
+              version: 'v2',
+            },
+          },
+        },
+        block: {
+          type: 'jsBlock',
+          script: 'kpiCardsScript',
+          settings: {
+            code: "ctx.render('<div>Inline</div>');",
+            version: 'v2',
+          },
+        },
+        expectedRuleId: 'jsBlock-mixed-inline-and-script',
+      },
+      {
+        label: 'missing inline or asset source',
+        block: {
+          type: 'jsBlock',
+          settings: {
+            title: 'Missing source',
+          },
+        },
+        expectedRuleId: 'jsBlock-source-required',
+      },
+      {
+        label: 'deprecated js block alias',
+        block: {
+          type: 'js',
+          settings: {
+            code: "ctx.render('<div>Alias</div>');",
+          },
+        },
+        expectedRuleId: 'jsBlock-type-alias-unsupported',
+      },
+    ];
+
+    for (const testCase of invalidCases) {
+      const res = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          version: '1',
+          mode: 'create',
+          ...(testCase.assets ? { assets: testCase.assets } : {}),
+          tabs: [
+            {
+              title: `Invalid ${testCase.label}`,
+              blocks: [testCase.block],
+            },
+          ],
+        },
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body?.errors?.map((error: any) => error.ruleId)).toContain(testCase.expectedRuleId);
+      expect(readErrorMessage(res)).toContain('settings.code');
+    }
+  });
+
   it('should apply JS block code from an applyBlueprint script asset key', async () => {
     const code = "ctx.render('<div>Asset KPI Cards</div>');";
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({

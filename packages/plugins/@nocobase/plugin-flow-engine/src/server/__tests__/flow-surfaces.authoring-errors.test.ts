@@ -15,6 +15,7 @@ import {
   destroyFlowSurfacesContractContext,
   expectStructuredError,
   getData,
+  getSurface,
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
@@ -678,6 +679,318 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       });
       expect(error.details?.keys).toEqual(expect.any(Array));
     }
+  });
+
+  it('should aggregate non-canonical jsBlock public authoring shapes before writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'missing-target-never-resolved' },
+      blocks: [
+        {
+          key: 'badTopLevelCode',
+          type: 'jsBlock',
+          code: 'ctx.render(null);',
+          version: 'v2',
+        },
+        {
+          key: 'badStepParams',
+          type: 'jsBlock',
+          settings: {
+            code: 'ctx.render(null);',
+            version: 'v2',
+          },
+          stepParams: {
+            jsSettings: {
+              runJs: {
+                code: 'ctx.render(null);',
+                version: 'v2',
+              },
+            },
+          },
+        },
+        {
+          key: 'badScript',
+          type: 'jsBlock',
+          script: {
+            code: 'ctx.render(null);',
+          },
+        },
+        {
+          key: 'missingSource',
+          type: 'jsBlock',
+          settings: {
+            title: 'Missing source',
+          },
+        },
+        {
+          key: 'badAlias',
+          type: 'js',
+          settings: {
+            code: 'ctx.render(null);',
+          },
+        },
+      ],
+    });
+
+    expect(errors.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining([
+        'jsBlock-top-level-code-unsupported',
+        'jsBlock-top-level-version-unsupported',
+        'jsBlock-stepParams-unsupported',
+        'jsBlock-script-unsupported',
+        'jsBlock-source-required',
+        'jsBlock-type-alias-unsupported',
+      ]),
+    );
+    expect(errors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.blocks[0].code',
+        '$.blocks[0].version',
+        '$.blocks[1].stepParams',
+        '$.blocks[2].script',
+        '$.blocks[3]',
+        '$.blocks[4].type',
+      ]),
+    );
+    errors.forEach((error: any) => {
+      expect(error.message).toContain('settings.code');
+    });
+  });
+
+  it('should persist canonical localized jsBlock settings without falling back to default code', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring jsBlock public contract page',
+      tabTitle: 'Authoring jsBlock public contract tab',
+    });
+
+    const addBlockCode = "ctx.render('<div>Add block KPI</div>');";
+    const addBlockResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.tabSchemaUid },
+        type: 'jsBlock',
+        settings: {
+          title: 'Add block KPI',
+          code: addBlockCode,
+          version: 'v2',
+        },
+      },
+    });
+    expect(addBlockResponse.status, readErrorMessage(addBlockResponse)).toBe(200);
+    const addBlockReadback = await getSurface(rootAgent, { uid: getData(addBlockResponse).uid });
+    expect(addBlockReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
+      code: addBlockCode,
+      version: 'v2',
+    });
+
+    const composeCode = "ctx.render('<div>Compose KPI</div>');";
+    const composeResponse = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'composeKpi',
+            type: 'jsBlock',
+            settings: {
+              title: 'Compose KPI',
+              code: composeCode,
+              version: 'v2',
+            },
+          },
+        ],
+      },
+    });
+    expect(composeResponse.status, readErrorMessage(composeResponse)).toBe(200);
+    const composedUid = getData(composeResponse).blocks?.[0]?.uid;
+    const composedReadback = await getSurface(rootAgent, { uid: composedUid });
+    expect(composedReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
+      code: composeCode,
+      version: 'v2',
+    });
+
+    const configureCode = "ctx.render('<div>Configured KPI</div>');";
+    const configureResponse = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: getData(addBlockResponse).uid },
+        changes: {
+          title: 'Configured KPI',
+          code: configureCode,
+          version: 'v2',
+        },
+      },
+    });
+    expect(configureResponse.status, readErrorMessage(configureResponse)).toBe(200);
+    const configuredReadback = await getSurface(rootAgent, { uid: getData(addBlockResponse).uid });
+    expect(configuredReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
+      code: configureCode,
+      version: 'v2',
+    });
+  });
+
+  it('should reject ignored localized jsBlock code shapes without creating default JS blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring invalid jsBlock public contract page',
+      tabTitle: 'Authoring invalid jsBlock public contract tab',
+    });
+
+    const validResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'jsBlock',
+        settings: {
+          title: 'Valid JSBlock',
+          code: "ctx.render('<div>Valid</div>');",
+          version: 'v2',
+        },
+      },
+    });
+    expect(validResponse.status, readErrorMessage(validResponse)).toBe(200);
+
+    const invalidAddBlockResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'jsBlock',
+        code: "ctx.render('<div>Ignored top-level code</div>');",
+      },
+    });
+    expect(invalidAddBlockResponse.status).toBe(400);
+    expect(readErrorMessage(invalidAddBlockResponse)).toContain('settings.code');
+
+    const missingSourceAddBlockResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'jsBlock',
+        settings: {
+          title: 'Missing JS source',
+        },
+      },
+    });
+    expect(missingSourceAddBlockResponse.status).toBe(400);
+    expect(missingSourceAddBlockResponse.body?.errors?.map((error: any) => error.ruleId)).toContain(
+      'jsBlock-source-required',
+    );
+
+    const aliasAddBlockResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'js',
+        settings: {
+          code: "ctx.render('<div>Alias</div>');",
+        },
+      },
+    });
+    expect(aliasAddBlockResponse.status).toBe(400);
+    expect(aliasAddBlockResponse.body?.errors?.map((error: any) => error.ruleId)).toContain(
+      'jsBlock-type-alias-unsupported',
+    );
+
+    const invalidComposeResponse = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'ignoredTopLevelVersion',
+            type: 'jsBlock',
+            version: 'v2',
+          },
+          {
+            key: 'unsupportedScript',
+            type: 'jsBlock',
+            script: 'missingAssetKey',
+          },
+          {
+            key: 'missingSource',
+            type: 'jsBlock',
+            settings: {
+              title: 'Missing JS source',
+            },
+          },
+          {
+            key: 'aliasBlock',
+            type: 'js',
+            settings: {
+              code: "ctx.render('<div>Alias</div>');",
+            },
+          },
+        ],
+      },
+    });
+    expect(invalidComposeResponse.status).toBe(400);
+    expect(invalidComposeResponse.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining([
+        'jsBlock-top-level-version-unsupported',
+        'jsBlock-script-unsupported',
+        'jsBlock-source-required',
+        'jsBlock-type-alias-unsupported',
+      ]),
+    );
+
+    const pageReadback = await getSurface(rootAgent, { uid: page.gridUid });
+    const jsBlocks = collectDescendantNodes(pageReadback.tree, (node) => node?.use === 'JSBlockModel');
+    expect(jsBlocks).toHaveLength(1);
+  });
+
+  it('should aggregate non-canonical jsBlock configure shapes before writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring invalid jsBlock configure page',
+      tabTitle: 'Authoring invalid jsBlock configure tab',
+    });
+    const validResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'jsBlock',
+        settings: {
+          title: 'Configurable JSBlock',
+          code: "ctx.render('<div>Valid</div>');",
+          version: 'v2',
+        },
+      },
+    });
+    expect(validResponse.status, readErrorMessage(validResponse)).toBe(200);
+
+    const invalidConfigureResponse = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: getData(validResponse).uid },
+        changes: {
+          code: "ctx.render('<div>Inline</div>');",
+          version: 'v2',
+          script: 'kpiCards',
+          props: {},
+          decoratorProps: {},
+          flowRegistry: {},
+          stepParams: {
+            jsSettings: {
+              runJs: {
+                code: "ctx.render('<div>Internal</div>');",
+                version: 'v2',
+              },
+            },
+          },
+          settings: {
+            code: "ctx.render('<div>Nested settings</div>');",
+          },
+        },
+      },
+    });
+
+    expect(invalidConfigureResponse.status).toBe(400);
+    expect(invalidConfigureResponse.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining([
+        'jsBlock-script-unsupported',
+        'jsBlock-mixed-inline-and-script',
+        'jsBlock-internal-field-unsupported',
+        'jsBlock-stepParams-unsupported',
+        'jsBlock-settings-unsupported-key',
+      ]),
+    );
+    expect(invalidConfigureResponse.body?.errors?.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.changes.script',
+        '$.changes.props',
+        '$.changes.decoratorProps',
+        '$.changes.flowRegistry',
+        '$.changes.stepParams',
+        '$.changes.settings.code',
+      ]),
+    );
   });
 
   it('should resolve popup-local reaction targets inside fieldGroups field popups', async () => {

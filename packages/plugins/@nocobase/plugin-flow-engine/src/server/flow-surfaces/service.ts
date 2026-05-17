@@ -6782,7 +6782,6 @@ export class FlowSurfacesService {
       throwBadRequest('flowSurfaces configure requires a non-empty changes object');
     }
     let changes = values.changes;
-    ensureNoRawSimpleChangeKeys(changes);
 
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
@@ -6808,6 +6807,7 @@ export class FlowSurfacesService {
       findModelById: (uid, findOptions) => this.repository.findModelById(uid, findOptions),
       findOwningBlockGrid: (uid, transaction) => this.findOwningBlockGrid(uid, transaction),
     });
+    ensureNoRawSimpleChangeKeys(changes);
     changes = normalizeFlowSurfacePublicSortingAlias({
       context: 'flowSurfaces configure changes',
       use: current?.use,

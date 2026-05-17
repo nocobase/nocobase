@@ -136,6 +136,9 @@ const GRID_CARD_ALLOWED_SETTINGS_KEYS = new Set([
   'sorting',
   'layout',
 ]);
+const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
+const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
+const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 
 const CHART_QUERY_MODE_SET = new Set(CHART_QUERY_MODES);
 const CHART_VISUAL_MODE_SET = new Set(CHART_VISUAL_MODES);
@@ -2811,6 +2814,7 @@ function collectBlockErrors(
   const hasFieldGroups = Object.prototype.hasOwnProperty.call(block, 'fieldGroups');
   const hasFieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout');
 
+  collectJsBlockPublicContractErrors(block, path, errors, context);
   collectApplyBlueprintScriptAssetReferenceErrors(block, path, errors, context);
 
   if (Object.prototype.hasOwnProperty.call(block, 'layout')) {
@@ -2874,6 +2878,167 @@ function collectBlockErrors(
   collectHiddenPopupSettingsErrors(block.settings, `${path}.settings`, blockType, errors, descendantContext);
   collectReactionErrors(block.reaction, `${path}.reaction`, localKeys, errors);
   collectFieldListErrors(block.fields, `${path}.fields`, errors, localKeys, context, block);
+}
+
+function collectJsBlockPublicContractErrors(
+  block: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  const blockType = String(block?.type || '').trim();
+  if (blockType === 'js') {
+    pushAuthoringError(errors, {
+      path: `${path}.type`,
+      ruleId: 'jsBlock-type-alias-unsupported',
+      message: `flowSurfaces authoring ${path}.type must be "jsBlock"; "js" is only an action type and is not a public JSBlock block alias. Use ${path}.settings.code for inline JSBlock code`,
+    });
+    return;
+  }
+  if (blockType !== 'jsBlock') {
+    return;
+  }
+
+  JS_BLOCK_TOP_LEVEL_JS_KEYS.forEach((key) => {
+    if (!hasOwn(block, key)) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.${key}`,
+      ruleId: `jsBlock-top-level-${key}-unsupported`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+    });
+  });
+
+  JS_BLOCK_INTERNAL_AUTHORING_KEYS.forEach((key) => {
+    if (!hasOwn(block, key)) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.${key}`,
+      ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version instead of internal persisted fields`,
+      details: {
+        key,
+      },
+    });
+  });
+
+  if (hasOwn(block, 'script') && context.authoringActionName !== 'applyBlueprint') {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-script-unsupported',
+      message: `flowSurfaces authoring ${path}.script is only supported by applyBlueprint assets.scripts; use ${path}.settings.code for localized jsBlock inline JS code`,
+    });
+  }
+
+  const settings = _.isPlainObject(block.settings) ? block.settings : undefined;
+  if (settings) {
+    Object.keys(settings).forEach((key) => {
+      if (JS_BLOCK_ALLOWED_SETTINGS_KEYS.has(key)) {
+        return;
+      }
+      pushAuthoringError(errors, {
+        path: `${path}.settings.${key}`,
+        ruleId: 'jsBlock-settings-unsupported-key',
+        message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+        details: {
+          key,
+          allowedKeys: Array.from(JS_BLOCK_ALLOWED_SETTINGS_KEYS),
+        },
+      });
+    });
+  }
+
+  const inlineKeys = settings ? JS_BLOCK_TOP_LEVEL_JS_KEYS.filter((key) => hasOwn(settings, key)) : [];
+  if (hasOwn(block, 'script') && inlineKeys.length) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-mixed-inline-and-script',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with ${inlineKeys
+        .map((key) => `settings.${key}`)
+        .join(', ')}; use either applyBlueprint assets.scripts + block.script or inline ${path}.settings.code`,
+      details: {
+        inlineKeys,
+      },
+    });
+  }
+
+  const hasInlineCode = typeof settings?.code === 'string' && !!settings.code.trim();
+  const hasScriptReference =
+    context.authoringActionName === 'applyBlueprint' && typeof block.script === 'string' && !!block.script.trim();
+  if (!hasInlineCode && !hasScriptReference) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'jsBlock-source-required',
+      message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code or, for applyBlueprint only, a block.script asset reference`,
+    });
+  }
+}
+
+function collectJsBlockConfigurePublicContractErrors(changes: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(changes)) {
+    return;
+  }
+
+  JS_BLOCK_INTERNAL_AUTHORING_KEYS.forEach((key) => {
+    if (!hasOwn(changes, key)) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.${key}`,
+      ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code and ${path}.version instead of internal persisted fields`,
+      details: {
+        key,
+      },
+    });
+  });
+
+  if (hasOwn(changes, 'script')) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-script-unsupported',
+      message: `flowSurfaces authoring ${path}.script is only supported by applyBlueprint assets.scripts; use ${path}.code for localized jsBlock configure JS code`,
+    });
+  }
+
+  const inlineKeys = JS_BLOCK_TOP_LEVEL_JS_KEYS.filter((key) => hasOwn(changes, key));
+  if (hasOwn(changes, 'script') && inlineKeys.length) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-mixed-inline-and-script',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with ${inlineKeys
+        .map((key) => `${path}.${key}`)
+        .join(', ')}; use either applyBlueprint assets.scripts + block.script or localized ${path}.code`,
+      details: {
+        inlineKeys,
+      },
+    });
+  }
+
+  if (!hasOwn(changes, 'settings')) {
+    return;
+  }
+  const settings = _.isPlainObject(changes.settings) ? changes.settings : undefined;
+  if (!settings) {
+    pushAuthoringError(errors, {
+      path: `${path}.settings`,
+      ruleId: 'jsBlock-settings-unsupported-key',
+      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code and ${path}.version`,
+    });
+    return;
+  }
+  Object.keys(settings).forEach((key) => {
+    pushAuthoringError(errors, {
+      path: `${path}.settings.${key}`,
+      ruleId: 'jsBlock-settings-unsupported-key',
+      message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock configure contract; use ${path}.${key}`,
+      details: {
+        key,
+      },
+    });
+  });
 }
 
 function collectRemovedDefaultActionOptOutErrors(block: any, path: string, errors: AuthoringErrorInput[]) {
@@ -3033,6 +3198,9 @@ async function collectConfigureErrors(
   };
   const localKeys = new Set<string>();
   collectLocalKeys(changes, localKeys);
+  if (hostBlockType === 'jsBlock') {
+    collectJsBlockConfigurePublicContractErrors(changes, '$.changes', errors);
+  }
   if (
     Object.prototype.hasOwnProperty.call(changes, 'fieldsLayout') &&
     Object.prototype.hasOwnProperty.call(changes, 'fieldGroups')
