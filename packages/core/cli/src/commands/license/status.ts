@@ -42,7 +42,6 @@ export default class LicenseStatus extends Command {
         yes: flags.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

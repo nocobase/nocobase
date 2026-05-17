@@ -8,28 +8,28 @@
  */
 
 import { CacheManager } from '@nocobase/cache';
-import { LockManager } from '@nocobase/lock-manager';
 import { LLMStreamCachedManager } from '../manager/llm-stream-manager';
 
 describe('LLMStreamCachedManager', () => {
   let cacheManager: CacheManager;
-  let lockManager: LockManager;
   let llmStreamCachedManager: LLMStreamCachedManager;
 
   beforeEach(() => {
     cacheManager = new CacheManager();
-    lockManager = new LockManager();
     llmStreamCachedManager = new LLMStreamCachedManager({
       app: {
         cacheManager,
-        lockManager,
+        options: {
+          cacheManager: {
+            defaultStore: cacheManager.defaultStore,
+          },
+        },
       },
     } as any);
   });
 
   afterEach(async () => {
     await cacheManager.close();
-    await lockManager.close();
   });
 
   it('should append and clear chunks by sessionId', async () => {
@@ -102,7 +102,11 @@ describe('LLMStreamCachedManager', () => {
     const bufferedLLMStreamCachedManager = new LLMStreamCachedManager({
       app: {
         cacheManager: bufferedCacheManager,
-        lockManager,
+        options: {
+          cacheManager: {
+            defaultStore: bufferedCacheManager.defaultStore,
+          },
+        },
       },
     } as any);
     const cached = bufferedLLMStreamCachedManager.getCached('session-buffered');

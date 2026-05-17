@@ -51,7 +51,12 @@
   "validators": {
     "apiBaseUrl": {
       "invalid": "Enter a valid URL, for example {{example}}.",
-      "invalidProtocol": "URL must start with http:// or https://, for example {{example}}."
+      "invalidProtocol": "URL must start with http:// or https://, for example {{example}}.",
+      "healthCheckPathNotAllowed": "Do not include /__health_check in the API base URL. Enter the application API base URL, for example http://localhost:13000/api.",
+      "maintaining": "The API base URL is reachable, but the app is still starting or in maintenance mode. Please try again later.",
+      "healthCheckFailed": "The API base URL did not pass the health check (HTTP {{status}}). Make sure it points to a running NocoBase API endpoint.",
+      "timeout": "Timed out waiting for the API base URL health check after about {{seconds}} seconds.",
+      "unreachable": "Unable to connect to the API base URL. Check the address and make sure the server is reachable. Details: {{details}}"
     },
     "envKey": {
       "invalid": "Use letters and numbers only."
@@ -85,7 +90,7 @@
         },
         "apiBaseUrl": {
           "message": "What is the API base URL?",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
           "message": "How would you like to sign in?",
@@ -302,7 +307,7 @@
         },
         "apiBaseUrl": {
           "message": "API base URL",
-          "placeholder": "http://localhost:13000/api"
+          "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         }
       },
       "webUi": {
