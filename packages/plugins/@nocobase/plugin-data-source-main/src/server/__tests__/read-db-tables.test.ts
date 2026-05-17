@@ -10,6 +10,7 @@
 import Database, { createMockDatabase } from '@nocobase/database';
 import { MainDataSource, Plugin } from '@nocobase/server';
 import { createApp } from '.';
+import { uid } from '@nocobase/utils';
 import { DataTypes, QueryTypes, Sequelize } from 'sequelize';
 
 describe('db2cm test', () => {
@@ -269,6 +270,70 @@ describe('db2cm test', () => {
 
       const tablesAfterLoad = await mainDataSource.readTables();
       expect(tablesAfterLoad.some((table) => table.name === 'a1')).toBe(false);
+    });
+  });
+
+  describe.runIf(process.env.DB_DIALECT === 'postgres')('sync fields with database schema', () => {
+    it('should not persist current database schema into collection options when syncing fields', async () => {
+      const schema = `s_${uid(6)}`;
+      const collectionName = `t_${uid(6)}`;
+
+      app = await createApp({
+        database: {
+          schema,
+        },
+      });
+      db = app.db;
+
+      try {
+        await app
+          .agent()
+          .resource('collections')
+          .create({
+            values: {
+              name: collectionName,
+              fields: [
+                {
+                  type: 'string',
+                  name: 'title',
+                },
+              ],
+            },
+          });
+
+        let collectionRecord = await db.getRepository('collections').findOne({
+          filter: {
+            name: collectionName,
+          },
+        });
+        expect(collectionRecord.get('schema')).toBeUndefined();
+
+        const collection = db.getCollection(collectionName);
+        await db.sequelize.getQueryInterface().addColumn(collection.getTableNameWithSchema(), 'description', {
+          type: DataTypes.TEXT,
+          allowNull: true,
+        });
+
+        const response = await app
+          .agent()
+          .resource('mainDataSource')
+          .syncFields({
+            values: {
+              collections: [collectionName],
+            },
+          });
+        expect(response.status).toBe(200);
+
+        collectionRecord = await db.getRepository('collections').findOne({
+          filter: {
+            name: collectionName,
+          },
+        });
+        expect(collectionRecord.get('schema')).toBeUndefined();
+      } finally {
+        await db.clean({ drop: true });
+        await app.destroy();
+      }
     });
   });
 });
