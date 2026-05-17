@@ -129,5 +129,3 @@ COPY ./docker/nocobase/docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
 CMD ["/app/docker-entrypoint.sh"]
-
-# test
