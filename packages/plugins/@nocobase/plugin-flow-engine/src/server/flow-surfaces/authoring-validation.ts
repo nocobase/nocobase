@@ -2965,9 +2965,10 @@ function collectJsBlockPublicContractErrors(
   }
 
   const hasInlineCode = typeof settings?.code === 'string' && !!settings.code.trim();
+  const hasApplyBlueprintScriptInput = context.authoringActionName === 'applyBlueprint' && hasOwn(block, 'script');
   const hasScriptReference =
     context.authoringActionName === 'applyBlueprint' && typeof block.script === 'string' && !!block.script.trim();
-  if (!hasInlineCode && !hasScriptReference) {
+  if (!hasInlineCode && !hasScriptReference && !hasApplyBlueprintScriptInput) {
     pushAuthoringError(errors, {
       path,
       ruleId: 'jsBlock-source-required',

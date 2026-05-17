@@ -730,6 +730,10 @@ describe('flowSurfaces applyBlueprint contract', () => {
       expect(readErrorMessage(res)).toContain(testCase.expectedPath);
       expect(readErrorMessage(res)).toContain('must be a string asset key');
       expect(readErrorMessage(res)).toContain('use settings.code for inline JS code');
+      if (testCase.label === 'block script') {
+        const ruleIds = Array.isArray(res.body?.errors) ? res.body.errors.map((error) => error.ruleId) : [];
+        expect(ruleIds).not.toContain('jsBlock-source-required');
+      }
     }
   });
 
