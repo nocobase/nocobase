@@ -8,7 +8,7 @@
  */
 
 type AbortHandler = {
-  abort(): void;
+  abort(reason?: string): void;
 };
 
 export default class RunningExecutionRegistry {
@@ -22,13 +22,13 @@ export default class RunningExecutionRegistry {
     this.executions.delete(String(executionId));
   }
 
-  abort(executionId: number | string) {
+  abort(executionId: number | string, reason?: string) {
     const handler = this.executions.get(String(executionId));
     if (!handler) {
       return false;
     }
 
-    handler.abort();
+    handler.abort(reason);
     return true;
   }
 }

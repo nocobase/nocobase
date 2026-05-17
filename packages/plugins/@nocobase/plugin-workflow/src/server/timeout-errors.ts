@@ -19,9 +19,7 @@ export class WorkflowTimeoutError extends Error {
 export function isWorkflowTimeoutError(error: any) {
   return (
     error instanceof WorkflowTimeoutError ||
-    error?.name === 'AbortError' ||
     error?.name === 'WorkflowTimeoutError' ||
-    error?.code === 'WORKFLOW_TIMEOUT' ||
-    error?.code === 'ABORT_ERR'
+    error?.code === 'WORKFLOW_TIMEOUT'
   );
 }

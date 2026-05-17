@@ -193,7 +193,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (this.checker) {
       clearInterval(this.checker);
     }
-    this.timeoutManager.unload();
+    await this.timeoutManager.unload();
 
     await this.dispatcher.beforeStop();
 
@@ -238,7 +238,7 @@ export default class PluginWorkflowServer extends Plugin {
     return this.timeoutManager.abortExecutionIfExpired(execution, options);
   }
 
-  public registerRunningExecution(executionId: number | string, abort: () => void) {
+  public registerRunningExecution(executionId: number | string, abort: (reason?: string) => void) {
     this.runningExecutionRegistry.register(executionId, { abort });
   }
 
@@ -246,8 +246,8 @@ export default class PluginWorkflowServer extends Plugin {
     this.runningExecutionRegistry.unregister(executionId);
   }
 
-  public abortRunningExecution(executionId: number | string) {
-    return this.runningExecutionRegistry.abort(executionId);
+  public abortRunningExecution(executionId: number | string, reason?: string) {
+    return this.runningExecutionRegistry.abort(executionId, reason);
   }
 
   /**
@@ -508,8 +508,8 @@ export default class PluginWorkflowServer extends Plugin {
     return this.dispatcher.trigger(workflow, context, options);
   }
 
-  public async run(pending: Parameters<Dispatcher['run']>[0]): Promise<void> {
-    return this.dispatcher.run(pending);
+  public async run(pending: Parameters<Dispatcher['push']>[0]): Promise<void> {
+    return this.dispatcher.push(pending);
   }
 
   public async resume(job) {

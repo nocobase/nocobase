@@ -12,16 +12,19 @@ import type PluginWorkflowServer from './Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS } from './constants';
 import type { ExecutionModel } from './types';
 import { abortExecution } from './utils';
-import { WorkflowTimeoutError } from './timeout-errors';
-
-type EnsureStartedOptions = {
-  transaction?: Transaction;
-};
 
 const LOAD_BATCH_SIZE = 1000;
+const DEFAULT_SCAN_INTERVAL = 30_000;
+const SCAN_JITTER = 5_000;
+const MAX_TIMER_DELAY = 2_147_483_647;
 
 export default class ExecutionTimeoutManager {
   private readonly timers = new Map<string, NodeJS.Timeout>();
+  private scanTimer: NodeJS.Timeout | null = null;
+  private nextExpiresAtTimer: NodeJS.Timeout | null = null;
+  private nextExpiresAt: Date | null = null;
+  private scanning: Promise<void> | null = null;
+  private stopped = true;
 
   constructor(private readonly plugin: PluginWorkflowServer) {}
 
@@ -30,115 +33,34 @@ export default class ExecutionTimeoutManager {
     return Number.isFinite(timeout) && timeout > 0 ? timeout : 0;
   }
 
-  async ensureStarted(execution: ExecutionModel, options: EnsureStartedOptions = {}) {
-    if (execution.startedAt) {
-      this.scheduleExecutionTimeout(execution);
-      return execution;
-    }
-
-    const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction);
-
-    if (!execution.workflow) {
-      execution.workflow =
-        this.plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
-    }
-
+  getExpiresAt(execution: ExecutionModel, startedAt: Date) {
     const timeout = this.getTimeout(execution);
-    const ExecutionModelClass = this.plugin.db.getModel('executions');
-    const startedAt = new Date();
-    const expiresAt = timeout > 0 ? new Date(startedAt.getTime() + timeout) : null;
-
-    const [affected] = await ExecutionModelClass.update(
-      {
-        startedAt,
-        ...(expiresAt
-          ? {
-              expiresAt,
-            }
-          : {}),
-      },
-      {
-        where: {
-          id: execution.id,
-          startedAt: null,
-        },
-        transaction,
-      },
-    );
-
-    if (affected || !execution.startedAt) {
-      await execution.reload({ transaction });
-    }
-    this.scheduleExecutionTimeout(execution);
-    return execution;
+    return timeout > 0 ? new Date(startedAt.getTime() + timeout) : null;
   }
 
   async load() {
-    const ExecutionModelClass = this.plugin.db.getModel('executions');
-    let cursor: { expiresAt: Date; id: number | string } | null = null;
-    let hasMore = true;
-
-    while (hasMore) {
-      const where: any = {
-        status: EXECUTION_STATUS.STARTED,
-        expiresAt: {
-          [Op.not]: null,
-        },
-      };
-
-      if (cursor) {
-        where[Op.or] = [
-          {
-            expiresAt: {
-              [Op.gt]: cursor.expiresAt,
-            },
-          },
-          {
-            expiresAt: cursor.expiresAt,
-            id: {
-              [Op.gt]: cursor.id,
-            },
-          },
-        ];
-      }
-
-      const executions = (await ExecutionModelClass.findAll({
-        attributes: ['id', 'workflowId', 'status', 'expiresAt'],
-        where,
-        order: [
-          ['expiresAt', 'ASC'],
-          ['id', 'ASC'],
-        ],
-        limit: LOAD_BATCH_SIZE,
-      })) as ExecutionModel[];
-
-      if (!executions.length) {
-        hasMore = false;
-        continue;
-      }
-
-      const now = new Date();
-      for (const execution of executions) {
-        if (this.isExpired(execution, now)) {
-          await this.abortExecutionIfExpired(execution);
-        } else {
-          this.scheduleExecutionTimeout(execution);
-        }
-      }
-
-      const last = executions[executions.length - 1];
-      cursor = {
-        expiresAt: last.expiresAt as Date,
-        id: last.id,
-      };
-    }
+    this.stopped = false;
+    await this.scanExpiredExecutions();
+    await this.scheduleNextExpiresAtTimer();
+    this.scheduleScan();
   }
 
-  unload() {
+  async unload() {
+    this.stopped = true;
+    if (this.scanTimer) {
+      clearTimeout(this.scanTimer);
+      this.scanTimer = null;
+    }
+    if (this.nextExpiresAtTimer) {
+      clearTimeout(this.nextExpiresAtTimer);
+      this.nextExpiresAtTimer = null;
+      this.nextExpiresAt = null;
+    }
     for (const timer of this.timers.values()) {
       clearTimeout(timer);
     }
     this.timers.clear();
+    await this.scanning?.catch(() => {});
   }
 
   isExpired(execution: ExecutionModel, now = new Date()) {
@@ -174,16 +96,21 @@ export default class ExecutionTimeoutManager {
     this.clearExecutionTimeout(executionId);
   }
 
-  async throwIfExpired(execution: ExecutionModel) {
+  async shouldContinue(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new WorkflowTimeoutError('Workflow execution has been aborted');
+      return false;
     }
-
-    if (await this.abortExecutionIfExpired(execution)) {
-      throw new WorkflowTimeoutError();
+    if (!this.isExpired(execution)) {
+      return true;
     }
+    await this.abortExecutionIfExpired(execution, options);
+    return false;
   }
 
+  /**
+   * Owner-only per-execution timer. Only call from code paths that have acquired
+   * local execution ownership, such as Dispatcher/Processor processing paths.
+   */
   scheduleExecutionTimeout(execution: ExecutionModel) {
     const id = String(execution.id);
     this.clearExecutionTimeout(id);
@@ -191,6 +118,8 @@ export default class ExecutionTimeoutManager {
     if (execution.status !== EXECUTION_STATUS.STARTED || !execution.expiresAt) {
       return;
     }
+
+    this.scheduleNextExpiresAtIfEarlier(execution.expiresAt);
 
     const remaining = this.getRemainingMs(execution);
     if (remaining == null) {
@@ -210,14 +139,167 @@ export default class ExecutionTimeoutManager {
 
     this.timers.set(
       id,
-      setTimeout(() => {
-        this.handleExecutionTimeout(id).catch((error) => {
-          this.plugin.getLogger(execution.workflowId).error(`execution (${execution.id}) timeout handling failed`, {
-            error,
+      setTimeout(
+        () => {
+          if (execution.expiresAt && execution.expiresAt.getTime() > Date.now()) {
+            this.scheduleExecutionTimeout(execution);
+            return;
+          }
+          this.handleExecutionTimeout(id).catch((error) => {
+            this.plugin.getLogger(execution.workflowId).error(`execution (${execution.id}) timeout handling failed`, {
+              error,
+            });
           });
-        });
-      }, remaining),
+        },
+        Math.min(remaining, MAX_TIMER_DELAY),
+      ),
     );
+  }
+
+  invalidateNextExpiresAtIfMatches(expiresAt?: Date | null) {
+    if (!expiresAt || !this.nextExpiresAt || this.nextExpiresAt.getTime() !== expiresAt.getTime()) {
+      return;
+    }
+
+    this.clearNextExpiresAtTimer();
+    this.scheduleNextExpiresAtTimer().catch((error) => {
+      this.plugin.getLogger('timeout').error(`workflow execution timeout one-shot refresh failed`, { error });
+    });
+  }
+
+  private async scanExpiredExecutions() {
+    if (this.scanning) {
+      // Concurrent scan requests are intentionally deduplicated, not queued.
+      return this.scanning;
+    }
+    if (this.stopped) {
+      return;
+    }
+
+    this.scanning = (async () => {
+      const ExecutionModelClass = this.plugin.db.getModel('executions');
+      const executions = (await ExecutionModelClass.findAll({
+        attributes: ['id', 'workflowId', 'status', 'expiresAt'],
+        where: {
+          status: EXECUTION_STATUS.STARTED,
+          expiresAt: {
+            [Op.not]: null,
+            [Op.lt]: new Date(),
+          },
+        },
+        order: [
+          ['expiresAt', 'ASC'],
+          ['id', 'ASC'],
+        ],
+        limit: LOAD_BATCH_SIZE,
+      })) as ExecutionModel[];
+
+      for (const execution of executions) {
+        await this.abortExecutionIfExpired(execution);
+      }
+    })();
+
+    try {
+      await this.scanning;
+    } finally {
+      this.scanning = null;
+    }
+  }
+
+  private scheduleScan() {
+    if (this.stopped) {
+      return;
+    }
+    if (this.scanTimer) {
+      clearTimeout(this.scanTimer);
+    }
+
+    this.scanTimer = setTimeout(
+      async () => {
+        this.scanTimer = null;
+        if (this.stopped) {
+          return;
+        }
+        try {
+          await this.scanExpiredExecutions();
+          this.scheduleNextExpiresAtTimer();
+        } catch (error) {
+          this.plugin.getLogger('timeout').error(`workflow execution timeout scan failed`, { error });
+        } finally {
+          this.scheduleScan();
+        }
+      },
+      DEFAULT_SCAN_INTERVAL + Math.floor(Math.random() * SCAN_JITTER),
+    );
+  }
+
+  private async scheduleNextExpiresAtTimer() {
+    if (this.stopped) {
+      return;
+    }
+    const ExecutionModelClass = this.plugin.db.getModel('executions');
+
+    const execution = (await ExecutionModelClass.findOne({
+      attributes: ['id', 'expiresAt'],
+      where: {
+        status: EXECUTION_STATUS.STARTED,
+        expiresAt: {
+          [Op.not]: null,
+        },
+      },
+      order: [
+        ['expiresAt', 'ASC'],
+        ['id', 'ASC'],
+      ],
+    })) as ExecutionModel | null;
+
+    if (!execution?.expiresAt) {
+      this.clearNextExpiresAtTimer();
+      return;
+    }
+
+    this.scheduleNextExpiresAtIfEarlier(execution.expiresAt, true);
+  }
+
+  private scheduleNextExpiresAtIfEarlier(expiresAt: Date, force = false) {
+    if (this.stopped) {
+      return;
+    }
+    if (!force && this.nextExpiresAt && this.nextExpiresAt.getTime() <= expiresAt.getTime()) {
+      return;
+    }
+
+    this.clearNextExpiresAtTimer();
+    this.nextExpiresAt = expiresAt;
+    const remaining = expiresAt.getTime() - Date.now();
+    const delay = Math.max(0, Math.min(remaining, MAX_TIMER_DELAY));
+
+    this.nextExpiresAtTimer = setTimeout(() => {
+      this.handleNextExpiresAtTimeout(expiresAt).catch((error) => {
+        this.plugin.getLogger('timeout').error(`workflow execution timeout one-shot failed`, { error });
+      });
+    }, delay);
+  }
+
+  private async handleNextExpiresAtTimeout(expiresAt: Date) {
+    this.nextExpiresAtTimer = null;
+    this.nextExpiresAt = null;
+
+    if (expiresAt.getTime() > Date.now()) {
+      this.scheduleNextExpiresAtIfEarlier(expiresAt, true);
+      return;
+    }
+
+    await this.scanExpiredExecutions();
+    await this.scheduleNextExpiresAtTimer();
+  }
+
+  private clearNextExpiresAtTimer() {
+    if (this.nextExpiresAtTimer) {
+      clearTimeout(this.nextExpiresAtTimer);
+      this.nextExpiresAtTimer = null;
+    }
+    this.nextExpiresAt = null;
   }
 
   private clearExecutionTimeout(executionId: number | string) {
@@ -233,7 +315,7 @@ export default class ExecutionTimeoutManager {
   private async handleExecutionTimeout(executionId: string) {
     this.clearExecutionTimeout(executionId);
 
-    if (this.plugin.abortRunningExecution(executionId)) {
+    if (this.plugin.abortRunningExecution(executionId, EXECUTION_REASON.TIMEOUT)) {
       return;
     }
 

@@ -69,6 +69,8 @@ export default class Processor {
   abortController = new AbortController();
   timeoutGuard: NodeJS.Timeout | null = null;
   private runningRegistered = false;
+  private abortReason: string | null = null;
+  private aborted = false;
 
   constructor(
     public execution: ExecutionModel,
@@ -87,13 +89,19 @@ export default class Processor {
       clearTimeout(this.timeoutGuard);
     }
     this.timeoutGuard = setTimeout(() => {
-      this.abortForTimeout();
+      this.abortExecution(EXECUTION_REASON.TIMEOUT);
     }, ms);
   }
 
-  abortForTimeout() {
+  abortExecution(reason?: string) {
+    this.aborted = true;
+    this.abortReason = reason ?? null;
     if (!this.abortController.signal.aborted) {
-      this.abortController.abort(new WorkflowTimeoutError('Workflow execution has been aborted'));
+      this.abortController.abort(
+        reason === EXECUTION_REASON.TIMEOUT
+          ? new WorkflowTimeoutError('Workflow execution has been aborted')
+          : new Error('Workflow execution has been aborted'),
+      );
     }
   }
 
@@ -177,7 +185,7 @@ export default class Processor {
 
   public async start() {
     const { execution } = this;
-    if (execution.status && execution.status !== EXECUTION_STATUS.STARTED) {
+    if (!(await this.shouldContinueExecution())) {
       this.logger.warn(`execution was ended with status ${execution.status} before, could not be started again`, {
         workflowId: execution.workflowId,
       });
@@ -205,7 +213,7 @@ export default class Processor {
 
   public async resume(job: JobModel) {
     const { execution } = this;
-    if (execution.status && execution.status !== EXECUTION_STATUS.STARTED) {
+    if (!(await this.shouldContinueExecution())) {
       this.logger.warn(`execution was ended with status ${execution.status} before, could not be resumed`, {
         workflowId: execution.workflowId,
       });
@@ -223,7 +231,9 @@ export default class Processor {
 
   private async exec(instruction: Runner, node: FlowNodeModel, prevJob?: JobModel): Promise<any> {
     let job: InstructionResult;
-    await this.options.plugin.timeoutManager.throwIfExpired(this.execution);
+    if (!(await this.shouldContinueExecution())) {
+      return this.exit();
+    }
     try {
       // call instruction to get result and status
       this.logger.debug(`config of node`, { data: node.config, workflowId: node.workflowId });
@@ -235,7 +245,7 @@ export default class Processor {
         return this.exit(true);
       }
     } catch (err: any) {
-      if (isWorkflowTimeoutError(err)) {
+      if (isWorkflowTimeoutError(err) || (this.abortSignal.aborted && this.aborted)) {
         job = {
           result: {
             message: err.message,
@@ -402,12 +412,23 @@ export default class Processor {
     if (typeof s === 'number') {
       const status =
         (<typeof Processor>this.constructor).StatusMap[s as keyof typeof Processor.StatusMap] ?? Math.sign(s);
-      if (this.execution.status !== EXECUTION_STATUS.ABORTED) {
-        const values: { status: number; reason?: string } = { status };
-        if (status === EXECUTION_STATUS.ABORTED && this.isTimeoutAborted()) {
-          values.reason = EXECUTION_REASON.TIMEOUT;
-        }
-        await this.execution.update(values, { transaction: this.mainTransaction });
+      const values: { status: number; reason?: string } = { status };
+      if (status === EXECUTION_STATUS.ABORTED && this.abortReason) {
+        values.reason = this.abortReason;
+      }
+      const ExecutionModelClass = this.options.plugin.db.getModel('executions');
+      const [affected] = await ExecutionModelClass.update(values, {
+        where: {
+          id: this.execution.id,
+          status: EXECUTION_STATUS.STARTED,
+        },
+        individualHooks: true,
+        transaction: this.mainTransaction,
+      });
+      if (affected) {
+        this.execution.set(values);
+      } else {
+        await this.execution.reload({ transaction: this.mainTransaction });
       }
     }
     if (this.mainTransaction && this.mainTransaction !== this.transaction) {
@@ -418,6 +439,7 @@ export default class Processor {
       this.options.plugin.timeoutManager.scheduleExecutionTimeout(this.execution);
     } else {
       this.options.plugin.timeoutManager.clear(this.execution.id);
+      this.options.plugin.timeoutManager.invalidateNextExpiresAtIfMatches(this.execution.expiresAt);
     }
 
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`, {
@@ -473,7 +495,9 @@ export default class Processor {
 
   private enterRunningState() {
     this.options.plugin.timeoutManager.clear(this.execution.id);
-    this.options.plugin.registerRunningExecution(this.execution.id, () => this.abortForTimeout());
+    this.abortReason = null;
+    this.aborted = false;
+    this.options.plugin.registerRunningExecution(this.execution.id, (reason) => this.abortExecution(reason));
     this.runningRegistered = true;
 
     const remaining = this.execution.expiresAt ? this.execution.expiresAt.getTime() - Date.now() : null;
@@ -481,10 +505,15 @@ export default class Processor {
       return;
     }
     if (remaining <= 0) {
-      this.abortForTimeout();
+      this.abortExecution(EXECUTION_REASON.TIMEOUT);
       return;
     }
     this.setTimeoutGuard(remaining);
+  }
+
+  private async shouldContinueExecution() {
+    const transaction = this.mainTransaction ?? this.transaction;
+    return this.options.plugin.timeoutManager.shouldContinue(this.execution, { transaction });
   }
 
   private leaveRunningState() {

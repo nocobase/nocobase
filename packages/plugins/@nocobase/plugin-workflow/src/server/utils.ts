@@ -20,6 +20,15 @@ type AbortOptions = {
   reason?: (typeof EXECUTION_REASON)[keyof typeof EXECUTION_REASON];
 };
 
+function afterTransactionCommit(transaction: Transaction, callback: () => void) {
+  if (typeof (transaction as any).afterCommit === 'function') {
+    (transaction as any).afterCommit(callback);
+    return;
+  }
+
+  callback();
+}
+
 export function validateCollectionField(
   collection: string,
   dataSourceManager: DataSourceManager,
@@ -144,10 +153,12 @@ export async function abortExecution(
       await abortExecution(plugin, child, { transaction, reason: EXECUTION_REASON.PARENT_ABORTED });
     }
 
-    execution.set('status', EXECUTION_STATUS.ABORTED);
-    execution.set('reason', options.reason ?? null);
-    plugin.timeoutManager.clear(execution.id);
-    plugin.abortRunningExecution(execution.id);
+    afterTransactionCommit(transaction, () => {
+      execution.set('status', EXECUTION_STATUS.ABORTED);
+      execution.set('reason', options.reason ?? null);
+      plugin.timeoutManager.clear(execution.id);
+      plugin.abortRunningExecution(execution.id, options.reason);
+    });
 
     logger.info(`execution (${execution.id}) aborted`, {
       workflowId: execution.workflowId,
