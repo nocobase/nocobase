@@ -112,6 +112,31 @@ function createLoggerWrapperFactory(append: (level: RunLog['level'], args: any[]
   return wrap;
 }
 
+function hasPopupViewMarkers(view: any): boolean {
+  const inputArgs = view?.inputArgs || {};
+  const openerUids = inputArgs?.openerUids;
+  const viewStack = view?.navigation?.viewStack;
+
+  return (Array.isArray(openerUids) && openerUids.length > 0) || (Array.isArray(viewStack) && viewStack.length >= 2);
+}
+
+async function hasPreviewPopupContext(ctx: any): Promise<boolean> {
+  if (!ctx) return false;
+
+  try {
+    const popup = await ctx.popup;
+    if (popup) return true;
+  } catch (_) {
+    // ignore unavailable popup getters
+  }
+
+  try {
+    return hasPopupViewMarkers(await ctx.view);
+  } catch (_) {
+    return false;
+  }
+}
+
 export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [running, setRunning] = useState(false);
@@ -131,7 +156,14 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         const model = hostCtx?.model;
         if (!model) throw new Error('No model in FlowContext');
         const engine = hostCtx.engine;
-        const runtimeModel = engine.getModel(model.uid, true) || model;
+        const globalRuntimeModel = engine.getModel(model.uid, true) || model;
+        const [hostHasPopupContext, modelHasPopupContext] = await Promise.all([
+          hasPreviewPopupContext(hostCtx),
+          hasPreviewPopupContext(model.context),
+        ]);
+        const shouldPreservePopupModel = hostHasPopupContext || modelHasPopupContext;
+        const runtimeModel = shouldPreservePopupModel ? model : globalRuntimeModel;
+        const directRunCtx = hostHasPopupContext ? hostCtx : modelHasPopupContext ? model.context : hostCtx;
 
         const nativeConsole: Record<RunLog['level'], (...args: any[]) => void> = {
           log: (...args) => console.log(...args),
@@ -255,7 +287,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           if (!flow) {
             // 无可用流程（典型场景：联动规则里的 RunJS 预览），直接在当前上下文执行代码
             const navigator = createSafeNavigator();
-            await hostCtx.runjs(
+            await directRunCtx.runjs(
               code,
               { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
               { version },
