@@ -95,6 +95,20 @@ describe('flowSurfaces applyBlueprint contract', () => {
     return _.castArray(actionsColumn?.subModels?.actions || []);
   }
 
+  function readTableColumns(node: any) {
+    return _.castArray(node?.subModels?.columns || []);
+  }
+
+  function expectTreeTableTitleClickDefaults(node: any) {
+    const columns = readTableColumns(node);
+    expect(columns[0]?.use).toBe('TableColumnModel');
+    expect(columns[0]?.stepParams?.fieldSettings?.init?.fieldPath).toBe('title');
+    expect(columns[0]?.subModels?.field?.props?.clickToOpen).toBe(true);
+    expect(columns[0]?.subModels?.field?.stepParams?.displayFieldSettings?.clickToOpen?.clickToOpen).toBe(true);
+    expect(columns[0]?.subModels?.field?.stepParams?.popupSettings?.openView).toBeTruthy();
+    expect(columns[1]?.use).toBe('TableActionsColumnModel');
+  }
+
   function readCardItemRecordActionUses(node: any) {
     return _.castArray(node?.subModels?.item?.subModels?.actions || []).map((item: any) => item?.use);
   }
@@ -6705,11 +6719,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'ViewActionModel',
       'EditActionModel',
       'DeleteActionModel',
       'AddChildActionModel',
     ]);
+    expectTreeTableTitleClickDefaults(tableReadback.tree);
     const addChild = readTableRecordActions(tableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
     );
@@ -6780,11 +6794,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
     )[0];
     const stringTableReadback = await getSurface(rootAgent, { uid: stringTableBlock?.uid });
     expect(readTableRecordActionUses(stringTableReadback.tree)).toEqual([
-      'ViewActionModel',
       'EditActionModel',
       'DeleteActionModel',
       'AddChildActionModel',
     ]);
+    expectTreeTableTitleClickDefaults(stringTableReadback.tree);
     const stringAddChild = readTableRecordActions(stringTableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
     );
@@ -6844,11 +6858,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'ViewActionModel',
       'EditActionModel',
       'DeleteActionModel',
       'AddChildActionModel',
     ]);
+    expectTreeTableTitleClickDefaults(tableReadback.tree);
 
     const addChild = readTableRecordActions(tableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
@@ -6906,10 +6920,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
     const recordActionUses = readTableRecordActionUses(tableReadback.tree);
     expect(recordActionUses).toEqual(
-      expect.arrayContaining(['ViewActionModel', 'EditActionModel', 'DeleteActionModel', 'AddChildActionModel']),
+      expect.arrayContaining(['EditActionModel', 'DeleteActionModel', 'AddChildActionModel']),
     );
+    expect(recordActionUses).not.toContain('ViewActionModel');
     expect(recordActionUses.filter((item) => item === 'AddChildActionModel')).toHaveLength(1);
-    expect(recordActionUses).toHaveLength(4);
+    expect(recordActionUses).toHaveLength(3);
+    expectTreeTableTitleClickDefaults(tableReadback.tree);
   });
 
   it('should keep explicit tree table addChild record actions without duplication', async () => {
@@ -7001,6 +7017,20 @@ describe('flowSurfaces applyBlueprint contract', () => {
         treeTable: true,
       },
     });
+    const sourceTableReadback = await getSurface(rootAgent, { uid: sourceTable.uid });
+    const sourceAddChild = readTableRecordActions(sourceTableReadback.tree).find(
+      (action: any) => action?.use === 'AddChildActionModel',
+    );
+    if (sourceAddChild?.uid) {
+      const removeAddChild = await rootAgent.resource('flowSurfaces').removeNode({
+        values: {
+          target: {
+            uid: sourceAddChild.uid,
+          },
+        },
+      });
+      expect(removeAddChild.status).toBe(200);
+    }
     const blockTemplate = getData(
       await rootAgent.resource('flowSurfaces').saveTemplate({
         values: {

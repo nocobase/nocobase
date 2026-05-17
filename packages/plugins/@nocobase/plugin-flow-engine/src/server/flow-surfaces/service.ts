@@ -13,6 +13,7 @@ import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import {
+  ACTION_KEY_BY_USE,
   BLOCK_KEY_BY_USE,
   filterAvailableCatalogItems,
   getEditableDomainsForUse,
@@ -237,6 +238,7 @@ import {
   type FlowSurfaceTitleFieldErrorOptions,
   assertCollectionTitleFieldExists,
   assertFlowSurfaceTitleFieldIsNotId,
+  isTitleableCollectionField,
   normalizeFlowSurfaceTitleField,
   resolveAssociationSafeTitleField,
   resolveAssociationTitleFieldTargetCollection,
@@ -6742,6 +6744,24 @@ export class FlowSurfacesService {
       },
       setLayout: async (payload) => this.setLayout(payload, options),
     });
+    for (const [blockIndex, block] of result.blocks.entries()) {
+      const blockSpec = normalizedBlocks.find((item) => item.key === block.key);
+      if (blockSpec?.type === 'table') {
+        const appliedTreeTableDefaults = await this.applyTreeTableCreatedBlockDefaults(
+          {
+            blockUid: block.uid,
+            popupDefaultsMetadata,
+          },
+          {
+            ...runtimeOptions,
+            enabledPackages,
+          },
+        );
+        if (appliedTreeTableDefaults) {
+          result.blocks[blockIndex] = await this.refreshComposeTreeTableBlockResult(block, options.transaction);
+        }
+      }
+    }
     if (approvalRoot) {
       await this.syncApprovalRuntimeConfigForSurfaceRoot(approvalRoot, options.transaction);
     }
@@ -8455,6 +8475,16 @@ export class FlowSurfacesService {
         },
       );
     }
+    await this.applyTreeTableCreatedBlockDefaults(
+      {
+        blockUid: created,
+        popupDefaultsMetadata,
+      },
+      {
+        ...options,
+        enabledPackages,
+      },
+    );
     if (!options.deferAutoLayout && initialGrid?.uid) {
       const finalGrid = await this.repository.findModelById(parentUid, {
         transaction: options.transaction,
@@ -16014,6 +16044,419 @@ export class FlowSurfacesService {
     );
   }
 
+  private resolveTreeTableCreationContext(node?: any) {
+    if (node?.use !== 'TableBlockModel' || !this.isTreeTableEnabled(node)) {
+      return null;
+    }
+    const resourceInit = this.getDataBlockResourceInit(node);
+    const collection = this.resolveCollectionFromInit(resourceInit);
+    if (!this.isTreeCollection(collection) || !this.resolveTreeChildrenAssociationName(collection)) {
+      return null;
+    }
+    return {
+      resourceInit,
+      collection,
+    };
+  }
+
+  private isTreeTableViewRecordAction(item?: { key?: string; use?: string } | null) {
+    return item?.key === 'view' || item?.use === 'ViewActionModel';
+  }
+
+  private isDirectTreeTableTitleFieldName(fieldName: any) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    return !!normalizedFieldName && normalizedFieldName !== 'id' && !normalizedFieldName.includes('.');
+  }
+
+  private isUsableTreeTableTitleField(field?: any) {
+    return (
+      this.isDirectTreeTableTitleFieldName(getFieldName(field)) &&
+      !!getFieldInterface(field) &&
+      !isAssociationField(field) &&
+      isTitleableCollectionField(field)
+    );
+  }
+
+  private resolveTreeTableDirectField(collection: any, fieldName: string) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    if (!this.isDirectTreeTableTitleFieldName(normalizedFieldName)) {
+      return null;
+    }
+    return getCollectionFields(collection).find((field) => getFieldName(field) === normalizedFieldName) || null;
+  }
+
+  private pushTreeTableTitleFieldNameCandidate(candidates: string[], collection: any, fieldName: any) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    if (!this.isDirectTreeTableTitleFieldName(normalizedFieldName)) {
+      return;
+    }
+    const field = this.resolveTreeTableDirectField(collection, normalizedFieldName);
+    if (!field || !this.isUsableTreeTableTitleField(field)) {
+      return;
+    }
+    candidates.push(getFieldName(field) || normalizedFieldName);
+  }
+
+  private resolveTreeTableTitleFieldNames(collection?: any) {
+    if (!collection) {
+      return [];
+    }
+
+    const candidateNames: string[] = [];
+    const configuredTitleFieldName = String(collection?.options?.titleField || '').trim();
+    if (configuredTitleFieldName && configuredTitleFieldName !== 'id') {
+      this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, configuredTitleFieldName);
+    }
+    this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, 'title');
+    this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, 'name');
+    if (configuredTitleFieldName === 'id') {
+      this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, configuredTitleFieldName);
+    }
+    this.pushTreeTableTitleFieldNameCandidate(
+      candidateNames,
+      collection,
+      collection?.titleCollectionField?.name || collection?.titleCollectionField?.options?.name,
+    );
+    for (const filterTargetKey of _.castArray(collection?.filterTargetKey || collection?.options?.filterTargetKey)) {
+      this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, filterTargetKey);
+    }
+    const usableFields = getCollectionFields(collection).filter((field) => this.isUsableTreeTableTitleField(field));
+    for (const field of usableFields) {
+      this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, getFieldName(field));
+    }
+    return _.uniq(candidateNames);
+  }
+
+  private isRecoverableTreeTableTitleFieldError(error: any) {
+    return (
+      error instanceof FlowSurfaceBadRequestError &&
+      (String(error.message || '').includes(' not found') ||
+        String(error.message || '').includes(' has no interface and cannot be added via addField'))
+    );
+  }
+
+  private getTableColumns(node?: any) {
+    return _.castArray(node?.subModels?.columns || []);
+  }
+
+  private findTableFieldColumn(node: any, fieldPath: string) {
+    const normalizedFieldPath = normalizeFieldPath(fieldPath);
+    return this.getTableColumns(node).find((column: any) => {
+      const init = column?.stepParams?.fieldSettings?.init || {};
+      return (
+        column?.use === 'TableColumnModel' &&
+        normalizeFieldPath(init.fieldPath, init.associationPathName) === normalizedFieldPath
+      );
+    });
+  }
+
+  private getTableActionsColumn(node?: any) {
+    return this.getTableColumns(node).find((column: any) => column?.use === 'TableActionsColumnModel' && column?.uid);
+  }
+
+  private buildTreeTableTitlePopup(popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata) {
+    return this.attachPopupDefaultsMetadata(
+      {
+        tryTemplate: true,
+        defaultType: 'view',
+      },
+      popupDefaultsMetadata,
+    );
+  }
+
+  private async ensureTreeTableTitleFieldClickDefaults(
+    columnNode: any,
+    popupDefaultsMetadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+    },
+  ) {
+    const fieldNode = columnNode?.subModels?.field;
+    if (!columnNode?.uid || !fieldNode?.uid) {
+      return;
+    }
+    const hasOpenView = _.isPlainObject(this.resolvePopupHostOpenView(fieldNode));
+    const clickToOpen = fieldNode?.props?.clickToOpen === true;
+    if (hasOpenView && clickToOpen) {
+      return;
+    }
+    if (hasOpenView) {
+      await this.configureFieldNode(
+        {
+          uid: fieldNode.uid,
+        },
+        {
+          clickToOpen: true,
+        },
+        options,
+      );
+      return;
+    }
+    const fieldResult: FlowSurfaceAddFieldResult = {
+      uid: columnNode.uid,
+      wrapperUid: columnNode.uid,
+      fieldUid: fieldNode.uid,
+      innerFieldUid: fieldNode.uid,
+    };
+    await this.applyInlineFieldPopup(
+      'tree table title field',
+      fieldResult,
+      this.buildTreeTableTitlePopup(popupDefaultsMetadata),
+      options,
+    );
+  }
+
+  private async ensureTreeTableTitleFieldColumn(
+    tableUid: string,
+    titleFieldName: string,
+    popupDefaultsMetadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+    },
+  ) {
+    let table = await this.repository.findModelById(tableUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    let titleColumn = this.findTableFieldColumn(table, titleFieldName);
+    if (!titleColumn?.uid) {
+      await this.addField(
+        {
+          target: {
+            uid: tableUid,
+          },
+          fieldPath: titleFieldName,
+          popup: this.buildTreeTableTitlePopup(popupDefaultsMetadata),
+        },
+        options,
+      );
+      table = await this.repository.findModelById(tableUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      titleColumn = this.findTableFieldColumn(table, titleFieldName);
+    } else {
+      await this.ensureTreeTableTitleFieldClickDefaults(titleColumn, popupDefaultsMetadata, options);
+    }
+    return titleColumn?.uid;
+  }
+
+  private async removeTreeTableViewRecordActions(tableUid: string, transaction?: any) {
+    const table = await this.repository.findModelById(tableUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const actionsColumn = this.getTableActionsColumn(table);
+    for (const action of _.castArray(actionsColumn?.subModels?.actions || [])) {
+      if (action?.use === 'ViewActionModel' && action?.uid) {
+        await this.removeNodeTreeWithBindings(action.uid, transaction);
+      }
+    }
+  }
+
+  private async ensureTreeTableAddChildRecordAction(
+    tableUid: string,
+    popupDefaultsMetadata: FlowSurfaceApplyBlueprintPopupDefaultsMetadata | undefined,
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+    },
+  ) {
+    const table = await this.repository.findModelById(tableUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    const actionsColumn = this.getTableActionsColumn(table);
+    const existingAddChild = _.castArray(actionsColumn?.subModels?.actions || []).some(
+      (action: any) => action?.use === 'AddChildActionModel',
+    );
+    if (existingAddChild) {
+      return;
+    }
+    await this.addRecordAction(
+      {
+        target: {
+          uid: tableUid,
+        },
+        type: 'addChild',
+        popup: this.attachPopupDefaultsMetadata(
+          {
+            tryTemplate: true,
+            [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
+          },
+          popupDefaultsMetadata,
+        ),
+      },
+      options,
+    );
+  }
+
+  private async reorderTreeTableTitleAndActionsColumns(tableUid: string, titleColumnUid: string, transaction?: any) {
+    let table = await this.repository.findModelById(tableUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const columns = this.getTableColumns(table).filter((column: any) => column?.uid);
+    if (columns.length && columns[0]?.uid !== titleColumnUid) {
+      await this.repository.insertAdjacent('beforeBegin', columns[0].uid, { uid: titleColumnUid }, { transaction });
+      table = await this.repository.findModelById(tableUid, {
+        transaction,
+        includeAsyncNode: true,
+      });
+    }
+
+    const actionsColumnUid = await this.ensureTableActionsColumn(tableUid, transaction);
+    table = await this.repository.findModelById(tableUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const refreshedColumns = this.getTableColumns(table).filter((column: any) => column?.uid);
+    const titleIndex = refreshedColumns.findIndex((column: any) => column.uid === titleColumnUid);
+    const actionIndex = refreshedColumns.findIndex((column: any) => column.uid === actionsColumnUid);
+    if (titleIndex === -1 || actionIndex === -1 || actionIndex === titleIndex + 1) {
+      return;
+    }
+    await this.repository.insertAdjacent('afterEnd', titleColumnUid, { uid: actionsColumnUid }, { transaction });
+  }
+
+  private findPreviousComposeFieldResultForColumn(column: any, previousFields: any[] = []) {
+    const fieldNode = column?.subModels?.field;
+    const candidateUids = new Set([column?.uid, fieldNode?.uid].filter((uid) => !!uid).map((uid) => String(uid)));
+    if (!candidateUids.size) {
+      return null;
+    }
+    return (
+      previousFields.find((field) =>
+        ['uid', 'wrapperUid', 'fieldUid', 'innerFieldUid'].some((key) => candidateUids.has(String(field?.[key] || ''))),
+      ) || null
+    );
+  }
+
+  private buildComposeFieldResultFromTableColumn(column: any, previousFields: any[] = []) {
+    const init = column?.stepParams?.fieldSettings?.init || {};
+    const fieldPath = init.fieldPath;
+    const associationPathName = init.associationPathName;
+    const fieldNode = column?.subModels?.field;
+    const previous = this.findPreviousComposeFieldResultForColumn(column, previousFields);
+    return _.pickBy(
+      {
+        ...(previous || {}),
+        uid: column?.uid,
+        fieldPath,
+        associationPathName,
+        wrapperUid: column?.uid,
+        fieldUid: fieldNode?.uid,
+        innerFieldUid: fieldNode?.uid,
+      },
+      (value) => !_.isUndefined(value) && value !== '',
+    );
+  }
+
+  private async buildComposeRecordActionResultFromNode(
+    actionNode: any,
+    previousRecordActions: any[] = [],
+    transaction?: any,
+  ) {
+    const type = ACTION_KEY_BY_USE.get(String(actionNode?.use || '').trim());
+    const previous = previousRecordActions.find(
+      (action) => !!actionNode?.uid && String(action?.uid || '') === String(actionNode.uid),
+    );
+    return _.pickBy(
+      {
+        ...(previous || {}),
+        type,
+        scope: type ? 'record' : undefined,
+        uid: actionNode?.uid,
+        parentUid: actionNode?.parentId,
+        ...(actionNode?.uid ? await this.collectComposeActionKeys(actionNode.uid, transaction) : {}),
+      },
+      (value) => !_.isUndefined(value) && value !== '',
+    );
+  }
+
+  private async refreshComposeTreeTableBlockResult(blockResult: any, transaction?: any) {
+    const table = await this.repository.findModelById(blockResult?.uid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (!table?.uid || table.use !== 'TableBlockModel') {
+      return blockResult;
+    }
+
+    const columns = this.getTableColumns(table);
+    const actionsColumn = this.getTableActionsColumn(table);
+    const fieldColumns = columns.filter((column: any) => column?.use === 'TableColumnModel' && column?.uid);
+    const recordActions: any[] = [];
+    for (const action of _.castArray(actionsColumn?.subModels?.actions || [])) {
+      if (action?.uid) {
+        recordActions.push(
+          await this.buildComposeRecordActionResultFromNode(action, blockResult?.recordActions, transaction),
+        );
+      }
+    }
+
+    return {
+      ...blockResult,
+      ...(actionsColumn?.uid ? { actionsColumnUid: actionsColumn.uid } : {}),
+      fields: fieldColumns.map((column: any) =>
+        this.buildComposeFieldResultFromTableColumn(column, blockResult?.fields),
+      ),
+      recordActions,
+    };
+  }
+
+  private async applyTreeTableCreatedBlockDefaults(
+    input: {
+      blockUid: string;
+      popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
+    },
+    options: {
+      transaction?: any;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+    } = {},
+  ) {
+    const table = await this.repository.findModelById(input.blockUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    const treeTableContext = this.resolveTreeTableCreationContext(table);
+    if (!treeTableContext) {
+      return false;
+    }
+
+    let titleColumnUid: string | undefined;
+    for (const titleFieldName of this.resolveTreeTableTitleFieldNames(treeTableContext.collection)) {
+      try {
+        titleColumnUid = await this.ensureTreeTableTitleFieldColumn(
+          input.blockUid,
+          titleFieldName,
+          input.popupDefaultsMetadata,
+          options,
+        );
+      } catch (error) {
+        if (this.isRecoverableTreeTableTitleFieldError(error)) {
+          continue;
+        }
+        throw error;
+      }
+      if (titleColumnUid) {
+        break;
+      }
+    }
+    await this.removeTreeTableViewRecordActions(input.blockUid, options.transaction);
+    await this.ensureTreeTableAddChildRecordAction(input.blockUid, input.popupDefaultsMetadata, options);
+    if (titleColumnUid) {
+      await this.reorderTreeTableTitleAndActionsColumns(input.blockUid, titleColumnUid, options.transaction);
+    }
+    return true;
+  }
+
   private async resolveAddChildOwnerNode(node?: any, transaction?: any) {
     if (!node?.uid || node?.use !== 'TableActionsColumnModel') {
       return node;
@@ -16122,13 +16565,18 @@ export class FlowSurfacesService {
   }
 
   private async filterTargetRecordActions(items: any[], node: any, transaction?: any) {
-    if (!items.some((item) => this.isAddChildCatalogItem(item))) {
-      return items;
+    const ownerNode = await this.resolveAddChildOwnerNode(node, transaction);
+    let filteredItems = items;
+    if (this.resolveTreeTableCreationContext(ownerNode)) {
+      filteredItems = filteredItems.filter((item) => !this.isTreeTableViewRecordAction(item));
     }
-    if (await this.canUseAddChildOnOwnerNode(node, transaction)) {
-      return items;
+    if (!filteredItems.some((item) => this.isAddChildCatalogItem(item))) {
+      return filteredItems;
     }
-    return items.filter((item) => !this.isAddChildCatalogItem(item));
+    if (await this.canUseAddChildOnOwnerNode(ownerNode, transaction)) {
+      return filteredItems;
+    }
+    return filteredItems.filter((item) => !this.isAddChildCatalogItem(item));
   }
 
   private async inspectRecordActionContainer(target: FlowSurfaceWriteTarget, transaction?: any) {

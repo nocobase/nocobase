@@ -130,6 +130,25 @@ describe('flowSurfaces catalog + compose contract', () => {
     };
   }
 
+  function readTableColumns(node: any) {
+    return _.castArray(node?.subModels?.columns || []);
+  }
+
+  function readTableRecordActionUses(node: any) {
+    const actionsColumn = readTableColumns(node).find((column: any) => column?.use === 'TableActionsColumnModel');
+    return _.castArray(actionsColumn?.subModels?.actions || []).map((action: any) => action?.use);
+  }
+
+  function expectTreeTableTitleClickDefaults(node: any, expectedFieldPath = 'title') {
+    const columns = readTableColumns(node);
+    expect(columns[0]?.use).toBe('TableColumnModel');
+    expect(columns[0]?.stepParams?.fieldSettings?.init?.fieldPath).toBe(expectedFieldPath);
+    expect(columns[0]?.subModels?.field?.props?.clickToOpen).toBe(true);
+    expect(columns[0]?.subModels?.field?.stepParams?.displayFieldSettings?.clickToOpen?.clickToOpen).toBe(true);
+    expect(columns[0]?.subModels?.field?.stepParams?.popupSettings?.openView).toBeTruthy();
+    expect(columns[1]?.use).toBe('TableActionsColumnModel');
+  }
+
   async function expectCalendarPopupTemplateBinding(
     calendarUid: string,
     actionKey: 'quickCreateAction' | 'eventViewAction',
@@ -4312,8 +4331,31 @@ describe('flowSurfaces catalog + compose contract', () => {
       }),
     );
     expect(categoriesCatalogAfterEnable.recordActions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['addChild', 'view', 'edit', 'delete']),
+      expect.arrayContaining(['addChild', 'edit', 'delete']),
     );
+    expect(categoriesCatalogAfterEnable.recordActions.find((item: any) => item.key === 'view')).toBeUndefined();
+
+    const categoriesTableReadback = await getSurface(rootAgent, {
+      uid: categoriesTable.uid,
+    });
+    const actionsColumn = readTableColumns(categoriesTableReadback.tree).find(
+      (column: any) => column?.use === 'TableActionsColumnModel',
+    );
+    expect(actionsColumn?.uid).toBeTruthy();
+
+    const categoriesActionsColumnCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: actionsColumn.uid,
+          },
+        },
+      }),
+    );
+    expect(categoriesActionsColumnCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['addChild', 'edit', 'delete']),
+    );
+    expect(categoriesActionsColumnCatalog.recordActions.find((item: any) => item.key === 'view')).toBeUndefined();
   });
 
   it('should expose popup block resourceBindings and reject invalid popup record block bindings', async () => {
@@ -6160,7 +6202,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(readErrorMessage(gridCardRecordOnlyRes)).toContain(`must be placed under actions`);
   });
 
-  it('should only compose addChild when the target table enables treeTable on a tree collection', async () => {
+  it('treeAddChildCompose should only compose addChild when the target table enables treeTable on a tree collection', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose addChild page',
       tabTitle: 'Compose addChild tab',
@@ -6212,16 +6254,239 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(validComposeRes.status).toBe(200);
 
     const categoriesTable = getData(validComposeRes).blocks.find((item: any) => item.key === 'categoriesTable');
-    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['addChild']);
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['edit', 'delete', 'addChild']);
+    expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
+    const addChildAction = categoriesTable.recordActions.find((item: any) => item.type === 'addChild');
+    expect(addChildAction?.uid).toBeTruthy();
 
     const addChildReadback = await getSurface(rootAgent, {
-      uid: categoriesTable.recordActions[0].uid,
+      uid: addChildAction.uid,
     });
     expect(addChildReadback.tree.use).toBe('AddChildActionModel');
     expect(addChildReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
       mode: 'drawer',
       size: 'medium',
     });
+  });
+
+  it('treeTitleComposeDefaults should compose tree tables with a clickable title column and no row View action', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose tree table clickable title page',
+      tabTitle: 'Compose tree table clickable title tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'categoriesTree',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'categories',
+            },
+            settings: {
+              treeTable: true,
+            },
+            fields: ['code'],
+            recordActions: ['view', 'edit'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const categoriesTable = getComposeBlock(getData(composeRes), 'categoriesTree');
+    expect(categoriesTable.fields.map((item: any) => item.fieldPath)).toEqual(['title', 'code']);
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['edit', 'delete', 'addChild']);
+    expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
+
+    const tableReadback = await getSurface(rootAgent, {
+      uid: categoriesTable.uid,
+    });
+    expectTreeTableTitleClickDefaults(tableReadback.tree);
+    expect(
+      readTableColumns(tableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title', undefined, 'code']);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
+      'EditActionModel',
+      'DeleteActionModel',
+      'AddChildActionModel',
+    ]);
+  });
+
+  it('treeTitleComposeDuplicateRecordActionKeys should preserve duplicate tree table popup action results by uid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose tree table duplicate popup actions page',
+      tabTitle: 'Compose tree table duplicate popup actions tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'categoriesTree',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'categories',
+            },
+            settings: {
+              treeTable: true,
+            },
+            fields: ['code'],
+            recordActions: [
+              {
+                key: 'inspectA',
+                type: 'popup',
+                popup: {
+                  mode: 'drawer',
+                  blocks: [
+                    {
+                      key: 'detailsA',
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                      },
+                      fields: ['title'],
+                    },
+                  ],
+                },
+              },
+              {
+                key: 'inspectB',
+                type: 'popup',
+                popup: {
+                  mode: 'replace',
+                  blocks: [
+                    {
+                      key: 'detailsB',
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                      },
+                      fields: ['code'],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const categoriesTable = getComposeBlock(getData(composeRes), 'categoriesTree');
+    const popupActions = categoriesTable.recordActions.filter((item: any) => item.type === 'popup');
+    expect(popupActions.map((item: any) => item.key)).toEqual(['inspectA', 'inspectB']);
+    expect(popupActions.map((item: any) => item.uid)).toHaveLength(2);
+    expect(new Set(popupActions.map((item: any) => item.uid)).size).toBe(2);
+    expect(popupActions[0].popupPageUid).toBeTruthy();
+    expect(popupActions[0].popupTabUid).toBeTruthy();
+    expect(popupActions[0].popupGridUid).toBeTruthy();
+    expect(popupActions[1].popupPageUid).toBeTruthy();
+    expect(popupActions[1].popupTabUid).toBeTruthy();
+    expect(popupActions[1].popupGridUid).toBeTruthy();
+    expect(popupActions[0].popupPageUid).not.toBe(popupActions[1].popupPageUid);
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual([
+      'edit',
+      'delete',
+      'popup',
+      'popup',
+      'addChild',
+    ]);
+    expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
+
+    const tableReadback = await getSurface(rootAgent, {
+      uid: categoriesTable.uid,
+    });
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
+      'EditActionModel',
+      'DeleteActionModel',
+      'PopupCollectionActionModel',
+      'PopupCollectionActionModel',
+      'AddChildActionModel',
+    ]);
+  });
+
+  it('treeTitleFallback should fall back to a direct readable tree table title field when collection title metadata is unsafe', async () => {
+    const collectionName = `tree_title_fallback_${uid()}`;
+    const applyCollectionRes = await rootAgent.resource('collections').apply({
+      values: {
+        name: collectionName,
+        title: 'Tree title fallback',
+        template: 'tree',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input', title: 'Name' },
+          { name: 'code', type: 'string', interface: 'input', title: 'Code' },
+        ],
+      },
+    });
+    expect(applyCollectionRes.status, readErrorMessage(applyCollectionRes)).toBe(200);
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['name', 'code', 'parentId'],
+    });
+
+    const collection = app.db.getCollection(collectionName);
+    collection.options.titleField = 'parent';
+    collection.options.filterTargetKey = 'parent.title';
+
+    const page = await createPage(rootAgent, {
+      title: 'Compose tree table title fallback page',
+      tabTitle: 'Compose tree table title fallback tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'unsafeTitleTree',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName,
+            },
+            settings: {
+              treeTable: true,
+            },
+            fields: ['code'],
+            recordActions: ['view', 'edit'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const table = getComposeBlock(getData(composeRes), 'unsafeTitleTree');
+    expect(table.fields.map((item: any) => item.fieldPath)).toEqual(['name', 'code']);
+    expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('parent');
+    expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('parent.title');
+    expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('id');
+    expect(table.recordActions.map((item: any) => item.type)).toEqual(['edit', 'delete', 'addChild']);
+    expect(table.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
+
+    const tableReadback = await getSurface(rootAgent, {
+      uid: table.uid,
+    });
+    expectTreeTableTitleClickDefaults(tableReadback.tree, 'name');
+    expect(
+      readTableColumns(tableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['name', undefined, 'code']);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
+      'EditActionModel',
+      'DeleteActionModel',
+      'AddChildActionModel',
+    ]);
   });
 
   it('should bind addChild popup create form to the tree children association', async () => {

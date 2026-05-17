@@ -3123,6 +3123,81 @@ describe('flowSurfaces resource', () => {
     ]);
   });
 
+  it('treeTitleAddApisDefaults should default tree table title click behavior for addBlock and addBlocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Tree table clickable title add APIs page',
+      tabTitle: 'Tree table clickable title add APIs tab',
+    });
+
+    const addBlockTableUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'table',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'categories',
+      },
+      {
+        settings: {
+          treeTable: true,
+        },
+      },
+    );
+    const addBlockReadback = await getSurface(rootAgent, {
+      uid: addBlockTableUid,
+    });
+    expectTreeTableTitleClickDefaults(addBlockReadback.tree);
+    expect(readTableRecordActionUses(addBlockReadback.tree)).toEqual([
+      'EditActionModel',
+      'DeleteActionModel',
+      'AddChildActionModel',
+    ]);
+
+    const tabReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    const tabGridUid = tabReadback.tree?.subModels?.grid?.uid;
+    expect(tabGridUid).toBeTruthy();
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: tabGridUid,
+        },
+        blocks: [
+          {
+            key: 'categoriesTreeWithExplicitView',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'categories',
+            },
+            settings: {
+              treeTable: true,
+            },
+            fields: ['code'],
+            recordActions: ['view', 'edit'],
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status).toBe(200);
+    const addBlocksData = getData(addBlocksRes);
+    const addBlocksTableUid = addBlocksData.blocks.find((item: any) => item.key === 'categoriesTreeWithExplicitView')
+      ?.result?.uid;
+    const addBlocksReadback = await getSurface(rootAgent, {
+      uid: addBlocksTableUid,
+    });
+    expectTreeTableTitleClickDefaults(addBlocksReadback.tree);
+    expect(
+      readTableColumns(addBlocksReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title', undefined, 'code']);
+    expect(readTableRecordActionUses(addBlocksReadback.tree)).toEqual([
+      'EditActionModel',
+      'DeleteActionModel',
+      'AddChildActionModel',
+    ]);
+  });
+
   it('should reject invalid addBlock defaultActionSettings payloads only when a default filter action consumes them', async () => {
     const page = await createPage(rootAgent, {
       title: 'Default filter invalid page',
@@ -10619,6 +10694,25 @@ async function getPopupSurfaceForHost(rootAgent: any, hostUid: string) {
 function getFirstPopupBlock(popupSurface: any) {
   const popupTab = _.castArray(popupSurface?.tree?.subModels?.page?.subModels?.tabs || [])[0];
   return _.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0];
+}
+
+function readTableColumns(node: any) {
+  return _.castArray(node?.subModels?.columns || []);
+}
+
+function readTableRecordActionUses(node: any) {
+  const actionsColumn = readTableColumns(node).find((column: any) => column?.use === 'TableActionsColumnModel');
+  return _.castArray(actionsColumn?.subModels?.actions || []).map((action: any) => action?.use);
+}
+
+function expectTreeTableTitleClickDefaults(node: any) {
+  const columns = readTableColumns(node);
+  expect(columns[0]?.use).toBe('TableColumnModel');
+  expect(columns[0]?.stepParams?.fieldSettings?.init?.fieldPath).toBe('title');
+  expect(columns[0]?.subModels?.field?.props?.clickToOpen).toBe(true);
+  expect(columns[0]?.subModels?.field?.stepParams?.displayFieldSettings?.clickToOpen?.clickToOpen).toBe(true);
+  expect(columns[0]?.subModels?.field?.stepParams?.popupSettings?.openView).toBeTruthy();
+  expect(columns[1]?.use).toBe('TableActionsColumnModel');
 }
 
 async function getFlowModelSelfAsyncFlag(db: Database, uid: string) {
