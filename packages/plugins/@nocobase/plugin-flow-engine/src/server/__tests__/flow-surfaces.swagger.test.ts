@@ -590,11 +590,27 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintFieldSpec',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.description).toContain(
+      'explicit first `fields[0]` column',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.description).toContain('parentId');
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.description).toContain(
+      'business display field',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintActionSpec',
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintRecordActionSpec',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.recordActions.description).toContain(
+      'Ordinary table `recordActions`',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.recordActions.description).toContain(
+      'do not complete `view` / `edit` / `delete`',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.recordActions.description).toContain(
+      'default `addChild`',
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultActions).toBeUndefined();
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.skipDefaultRecordActions).toBeUndefined();
@@ -666,10 +682,15 @@ describe('flowSurfaces swagger', () => {
       'catalog.recordActions',
     );
     expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.description).toContain(
+      'default `addChild`',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.description).toContain(
       'exactly one `editForm` block',
     );
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.description).toContain('auto-promotes');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.description).toContain('not auto-promoted');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('Ordinary table `recordActions`');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('explicit first `fields[0]` column');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.associationPathName.description).toContain(
       'associatedRecords',
     );
@@ -807,6 +828,10 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintPath.description).toContain('popup.template={ local, mode }');
     expect(applyBlueprintPath.description).toContain('a hit binds the matched template immediately');
     expect(applyBlueprintPath.description).toContain('a miss requires explicit local `popup.blocks`');
+    expect(applyBlueprintPath.description).toContain('Ordinary table `recordActions`');
+    expect(applyBlueprintPath.description).toContain('do not complete `view` / `edit` / `delete`');
+    expect(applyBlueprintPath.description).toContain('explicit first `fields[0]` column');
+    expect(applyBlueprintPath.description).toContain('parentId');
     const applyApprovalBlueprintPath = swaggerDocument.paths['/flowSurfaces:applyApprovalBlueprint'].post;
     expect(applyApprovalBlueprintPath.summary).toContain('approval blueprint');
     expect(applyApprovalBlueprintPath.description).toContain('workflow.config.approvalUid');
@@ -888,6 +913,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCatalogResponse.properties.configureOptions).toBeUndefined();
     expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
+    );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.description).toContain(
+      'table bound to a tree collection',
     );
     expect(schemas.FlowSurfaceCatalogItem.properties.configureOptions.$ref).toBe(
       '#/components/schemas/FlowSurfaceConfigureOptions',
@@ -1085,6 +1113,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
     );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain(
+      'do not complete `view` / `edit` / `delete`',
+    );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain('default `addChild`');
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.type.enum).toEqual(
       expect.arrayContaining([
         'table',

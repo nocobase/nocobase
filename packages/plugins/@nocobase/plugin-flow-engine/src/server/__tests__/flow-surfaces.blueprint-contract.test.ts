@@ -6818,11 +6818,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(validRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
-    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
-      'AddChildActionModel',
-    ]);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
     expectTreeTableTitleClickDefaults(tableReadback.tree);
     const addChild = readTableRecordActions(tableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
@@ -6893,11 +6889,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
       (item) => item?.use === 'TableBlockModel',
     )[0];
     const stringTableReadback = await getSurface(rootAgent, { uid: stringTableBlock?.uid });
-    expect(readTableRecordActionUses(stringTableReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
-      'AddChildActionModel',
-    ]);
+    expect(readTableRecordActionUses(stringTableReadback.tree)).toEqual(['AddChildActionModel']);
     expectTreeTableTitleClickDefaults(stringTableReadback.tree);
     const stringAddChild = readTableRecordActions(stringTableReadback.tree).find(
       (action: any) => action?.use === 'AddChildActionModel',
@@ -6957,11 +6949,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(executeRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const tableReadback = await getSurface(rootAgent, { uid: tableBlock?.uid });
-    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
-      'AddChildActionModel',
-    ]);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['AddChildActionModel']);
     expectTreeTableTitleClickDefaults(tableReadback.tree);
 
     const addChild = readTableRecordActions(tableReadback.tree).find(
@@ -7026,6 +7014,44 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(recordActionUses.filter((item) => item === 'AddChildActionModel')).toHaveLength(1);
     expect(recordActionUses).toHaveLength(3);
     expectTreeTableTitleClickDefaults(tableReadback.tree);
+  });
+
+  it('should reject unreadable explicit first columns on tree tables', async () => {
+    for (const fieldName of ['id', 'parentId', 'parent', 'parent.title']) {
+      const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          version: '1',
+          mode: 'create',
+          navigation: {
+            item: {
+              title: `Invalid tree table first column ${fieldName} ${Date.now()}`,
+            },
+          },
+          tabs: [
+            {
+              title: 'Overview',
+              blocks: [
+                {
+                  type: 'table',
+                  collection: 'categories',
+                  settings: {
+                    treeTable: true,
+                  },
+                  fields: [fieldName, 'title'],
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      expect(executeRes.status).toBe(400);
+      expect(readErrorMessage(executeRes)).toContain('first column');
+      expect(readErrorMessage(executeRes)).toContain(fieldName);
+      expect(readErrorMessage(executeRes)).toContain('name');
+      expect(readErrorMessage(executeRes)).toContain('title');
+      expect(readErrorMessage(executeRes)).toContain('code');
+    }
   });
 
   it('should keep explicit tree table addChild record actions without duplication', async () => {

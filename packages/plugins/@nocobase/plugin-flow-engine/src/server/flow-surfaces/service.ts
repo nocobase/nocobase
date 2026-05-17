@@ -16234,6 +16234,39 @@ export class FlowSurfacesService {
       this.buildTreeTableTitlePopup(popupDefaultsMetadata),
       options,
     );
+    const reloaded = await this.loadFieldHostNodes(fieldNode.uid, options.transaction);
+    const reloadedFieldNode = reloaded.fieldNode || fieldNode;
+    const reloadedWrapperNode = reloaded.wrapperNode || columnNode;
+    const reloadedOpenView = this.resolvePopupHostOpenView(reloadedFieldNode);
+    if (_.isPlainObject(reloadedOpenView)) {
+      if (reloadedFieldNode?.props?.clickToOpen === true) {
+        return;
+      }
+      await this.configureFieldNode(
+        {
+          uid: fieldNode.uid,
+        },
+        {
+          clickToOpen: true,
+        },
+        options,
+      );
+      return;
+    }
+    await this.configureFieldNode(
+      {
+        uid: fieldNode.uid,
+      },
+      {
+        clickToOpen: true,
+        openView: this.buildDefaultFieldOpenView(reloadedFieldNode, reloadedWrapperNode),
+      },
+      {
+        ...options,
+        openViewActionName: 'tree table title field',
+        skipConfigureGeneratedDefaultPopup: true,
+      },
+    );
   }
 
   private async ensureTreeTableTitleFieldColumn(
@@ -16995,7 +17028,18 @@ export class FlowSurfacesService {
     const descriptors = getFlowSurfaceDefaultBlockActions({
       blockType: input.blockType,
     });
+    const blockNode =
+      input.blockType === 'table'
+        ? await this.repository.findModelById(input.blockUid, {
+            transaction: options.transaction,
+            includeAsyncNode: true,
+          })
+        : null;
+    const shouldMergeRecordActionDefaults = !this.resolveTreeTableCreationContext(blockNode);
     for (const descriptor of descriptors) {
+      if (descriptor.scope === 'recordActions' && !shouldMergeRecordActionDefaults) {
+        continue;
+      }
       let settings = input.defaultActionSettings?.[descriptor.type];
       if (descriptor.type === 'filter' && !_.isUndefined(settings)) {
         settings = this.normalizeDefaultFilterActionSettings('addBlock', settings, {
@@ -17224,6 +17268,12 @@ export class FlowSurfacesService {
       resource,
       fallback: resourceFallback,
     });
+    const blockSettings = _.isPlainObject(input.settings) ? input.settings : undefined;
+    const shouldMergeRecordActionDefaults =
+      type !== 'table' ||
+      blockSettings?.treeTable !== true ||
+      !this.isTreeCollection(fieldGridCollection) ||
+      !this.resolveTreeChildrenAssociationName(fieldGridCollection);
     const fieldsLayout =
       this.normalizeComposeFieldsLayout(input.fieldsLayout, {
         blockContext: `flowSurfaces compose block #${index + 1}`,
@@ -17236,6 +17286,7 @@ export class FlowSurfacesService {
       template,
       actions,
       recordActions,
+      mergeRecordActionDefaults: shouldMergeRecordActionDefaults,
       createAction: (descriptor) =>
         this.buildInjectedComposeDefaultActionSpec(
           descriptor,
@@ -17254,7 +17305,7 @@ export class FlowSurfacesService {
           blockType: type,
           template,
           title: input.title,
-          settings: _.isPlainObject(input.settings) ? input.settings : undefined,
+          settings: blockSettings,
           preserveTitle: preserveSingleScopeDataBlockTitle,
         }) || {},
         type,

@@ -982,6 +982,94 @@ function normalizeApplyBlueprintTreeTableDragSortBy(
   return nextSettings;
 }
 
+function isApplyBlueprintTreeTableBlock(
+  blockType: string | undefined,
+  settings: Record<string, any>,
+  template: unknown,
+  block: FlowSurfaceApplyBlueprintBlockSpec,
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver,
+) {
+  return (
+    blockType === 'table' &&
+    settings?.treeTable === true &&
+    !hasFlowSurfaceTemplateDocument(template) &&
+    canInjectTreeTableAddChildDefault(block, getCollection)
+  );
+}
+
+function getTreeTableFirstFieldPath(fields: Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec>) {
+  const firstField = fields.find((field) => {
+    if (typeof field === 'string') {
+      return !!field.trim();
+    }
+    return _.isPlainObject(field) && !!readOptionalString(field.field);
+  });
+  if (typeof firstField === 'string') {
+    return firstField.trim();
+  }
+  return readOptionalString(firstField?.field);
+}
+
+function isUnreadableTreeTableFirstColumnName(fieldPath: string) {
+  const normalizedFieldPath = String(fieldPath || '').trim();
+  if (!normalizedFieldPath || normalizedFieldPath.includes('.')) {
+    return false;
+  }
+  const normalizedLowerFieldPath = normalizedFieldPath.toLowerCase();
+  return (
+    ['id', 'uid', 'uuid', 'parentid'].includes(normalizedLowerFieldPath) ||
+    /(?:Id|ID|Uid|UID)$/.test(normalizedFieldPath) ||
+    normalizedLowerFieldPath.endsWith('_id') ||
+    normalizedLowerFieldPath.endsWith('_uid')
+  );
+}
+
+function isUnreadableTreeTableFirstColumnField(field: any) {
+  return (
+    !!field?.primaryKey ||
+    !!field?.options?.primaryKey ||
+    !!field?.foreignKey ||
+    !!field?.options?.foreignKey ||
+    isApplyBlueprintAssociationField(field) ||
+    isUnreadableTreeTableFirstColumnName(getFieldName(field))
+  );
+}
+
+function assertApplyBlueprintTreeTableReadableFirstColumn(input: {
+  blockType?: string;
+  settings: Record<string, any>;
+  template: unknown;
+  block: FlowSurfaceApplyBlueprintBlockSpec;
+  fields: Array<string | FlowSurfaceApplyBlueprintFieldObjectSpec>;
+  collection: any;
+  getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
+  context: string;
+}) {
+  if (
+    !Object.prototype.hasOwnProperty.call(input.block, 'fields') ||
+    !isApplyBlueprintTreeTableBlock(input.blockType, input.settings, input.template, input.block, input.getCollection)
+  ) {
+    return;
+  }
+  const firstFieldPath = getTreeTableFirstFieldPath(input.fields);
+  if (!firstFieldPath) {
+    return;
+  }
+  const rejectFirstField = () => {
+    throwBadRequest(
+      `${input.context}.fields[0] tree table first column '${firstFieldPath}' is not readable; choose name, title, code, or another direct business display field`,
+    );
+  };
+  if (firstFieldPath.includes('.')) {
+    rejectFirstField();
+  }
+  const firstField = input.collection ? resolveFieldFromCollection(input.collection, firstFieldPath) : undefined;
+  if (!isUnreadableTreeTableFirstColumnName(firstFieldPath) && !isUnreadableTreeTableFirstColumnField(firstField)) {
+    return;
+  }
+  rejectFirstField();
+}
+
 function normalizeBlockResourceObject(
   input: Record<string, any>,
   context: string,
@@ -2348,6 +2436,16 @@ function compileBlocks(
       getCollection && blockResourceContext.surfaceCollectionName
         ? getCollection(blockResourceContext.dataSourceKey || 'main', blockResourceContext.surfaceCollectionName)
         : null;
+    assertApplyBlueprintTreeTableReadableFirstColumn({
+      blockType,
+      settings,
+      template,
+      block,
+      fields: fieldInputs,
+      collection: fieldGridCollection,
+      getCollection,
+      context: blockContext,
+    });
     const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
       ? compileScopedLayout(
           _.isUndefined(block.fieldsLayout)
@@ -2410,11 +2508,7 @@ function compileBlocks(
         },
       ),
     );
-    const shouldInjectAddChild =
-      blockType === 'table' &&
-      !hasFlowSurfaceTemplateDocument(template) &&
-      settings?.treeTable === true &&
-      canInjectTreeTableAddChildDefault(block, getCollection);
+    const shouldInjectAddChild = isApplyBlueprintTreeTableBlock(blockType, settings, template, block, getCollection);
     const injectedActionIndexes = {
       actions: explicitActions.length,
       recordActions: explicitRecordActions.length,
@@ -2424,6 +2518,7 @@ function compileBlocks(
       template,
       actions: explicitActions,
       recordActions: explicitRecordActions,
+      mergeRecordActionDefaults: !shouldInjectAddChild,
       createAction: (descriptor) =>
         compileInjectedDefaultAction(
           descriptor,

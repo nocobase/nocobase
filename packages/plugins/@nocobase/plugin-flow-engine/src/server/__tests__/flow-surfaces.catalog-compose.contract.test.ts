@@ -6371,7 +6371,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(validComposeRes.status).toBe(200);
 
     const categoriesTable = getData(validComposeRes).blocks.find((item: any) => item.key === 'categoriesTable');
-    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['edit', 'delete', 'addChild']);
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['addChild']);
     expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
     const addChildAction = categoriesTable.recordActions.find((item: any) => item.type === 'addChild');
     expect(addChildAction?.uid).toBeTruthy();
@@ -6418,7 +6418,7 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     const categoriesTable = getComposeBlock(getData(composeRes), 'categoriesTree');
     expect(categoriesTable.fields.map((item: any) => item.fieldPath)).toEqual(['title', 'code']);
-    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['edit', 'delete', 'addChild']);
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['edit', 'addChild']);
     expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
 
     const tableReadback = await getSurface(rootAgent, {
@@ -6428,11 +6428,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(
       readTableColumns(tableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['title', undefined, 'code']);
-    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
-      'AddChildActionModel',
-    ]);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['EditActionModel', 'AddChildActionModel']);
   });
 
   it('treeTitleComposeDuplicateRecordActionKeys should preserve duplicate tree table popup action results by uid', async () => {
@@ -6512,21 +6508,13 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(popupActions[1].popupTabUid).toBeTruthy();
     expect(popupActions[1].popupGridUid).toBeTruthy();
     expect(popupActions[0].popupPageUid).not.toBe(popupActions[1].popupPageUid);
-    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual([
-      'edit',
-      'delete',
-      'popup',
-      'popup',
-      'addChild',
-    ]);
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['popup', 'popup', 'addChild']);
     expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
 
     const tableReadback = await getSurface(rootAgent, {
       uid: categoriesTable.uid,
     });
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
       'PopupCollectionActionModel',
       'PopupCollectionActionModel',
       'AddChildActionModel',
@@ -6589,7 +6577,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('parent');
     expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('parent.title');
     expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('id');
-    expect(table.recordActions.map((item: any) => item.type)).toEqual(['edit', 'delete', 'addChild']);
+    expect(table.recordActions.map((item: any) => item.type)).toEqual(['edit', 'addChild']);
     expect(table.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
 
     const tableReadback = await getSurface(rootAgent, {
@@ -6599,11 +6587,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(
       readTableColumns(tableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(['name', undefined, 'code']);
-    expect(readTableRecordActionUses(tableReadback.tree)).toEqual([
-      'EditActionModel',
-      'DeleteActionModel',
-      'AddChildActionModel',
-    ]);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['EditActionModel', 'AddChildActionModel']);
   });
 
   it('should bind addChild popup create form to the tree children association', async () => {
