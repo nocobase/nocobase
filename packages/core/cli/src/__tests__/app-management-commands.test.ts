@@ -55,9 +55,7 @@ const mocks = vi.hoisted(() => ({
   printInfo: vi.fn(),
   announceTargetEnv: vi.fn((envName: string) => mocks.printInfo(`Target env: ${envName}`)),
   isInteractiveTerminal: vi.fn(),
-  promptConfirm: vi.fn(),
-  promptIsCancel: vi.fn((value: unknown) => value === Symbol.for('cancel')),
-  promptCancel: vi.fn(),
+  crossEnvConfirm: vi.fn(),
   renderTable: vi.fn((headers: string[], rows: string[][]) => [headers.join('|'), ...rows.map((row) => row.join('|'))].join('\n')),
   listEnvs: vi.fn(),
   getCurrentEnvName: vi.fn(),
@@ -149,10 +147,8 @@ vi.mock('../lib/ui.js', () => ({
   renderTable: mocks.renderTable,
 }));
 
-vi.mock('@clack/prompts', () => ({
-  confirm: mocks.promptConfirm,
-  isCancel: mocks.promptIsCancel,
-  cancel: mocks.promptCancel,
+vi.mock('../lib/inquirer.ts', () => ({
+  confirm: mocks.crossEnvConfirm,
 }));
 
 vi.mock('../lib/run-npm.js', () => ({
@@ -249,7 +245,7 @@ beforeEach(() => {
   mocks.fsRm.mockResolvedValue(undefined);
   mocks.fsMkdir.mockResolvedValue(undefined);
   mocks.fsReaddir.mockResolvedValue(['package.json']);
-  mocks.promptIsCancel.mockImplementation((value: unknown) => value === Symbol.for('cancel'));
+  mocks.crossEnvConfirm.mockResolvedValue(true);
   mocks.childSpawnCalls.length = 0;
   mocks.childOnceHandlers.length = 0;
   vi.mocked(spawn).mockImplementation(
@@ -308,7 +304,6 @@ beforeEach(() => {
   mocks.formatDbCheckAddress.mockImplementation((config: { host: string; port: number; database: string }) =>
     `${config.host}:${config.port}/${config.database}`,
   );
-  mocks.promptConfirm.mockResolvedValue(true);
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.removeEnv.mockResolvedValue({
     removed: 'local',
@@ -2924,12 +2919,10 @@ test('down --all confirms before removing everything in interactive mode', async
 
   await Down.prototype.run.call(command);
 
-  expect(mocks.promptConfirm.mock.calls).toEqual([[
+  expect(mocks.crossEnvConfirm.mock.calls).toEqual([[
     {
       message: 'Delete everything for "docker-local"? This removes the app, managed containers, storage data, and the saved CLI env config.',
-      active: 'yes',
-      inactive: 'no',
-      initialValue: false,
+      default: false,
     },
   ]]);
   expect(mocks.fsRm.mock.calls.at(-1)).toEqual([
@@ -2954,7 +2947,7 @@ test('down --all stops when the confirmation is canceled', async () => {
       },
     },
   });
-  mocks.promptConfirm.mockResolvedValue(Symbol.for('cancel'));
+  mocks.crossEnvConfirm.mockRejectedValue(new Error('canceled'));
 
   const command = createCommandHarness({
     flags: {
@@ -2966,7 +2959,6 @@ test('down --all stops when the confirmation is canceled', async () => {
 
   await Down.prototype.run.call(command);
 
-  expect(mocks.promptCancel.mock.calls).toEqual([['Down cancelled.']]);
   expect(mocks.run.mock.calls.length).toBe(0);
   expect(mocks.fsRm.mock.calls.length).toBe(0);
   expect(mocks.removeEnv.mock.calls.length).toBe(0);
@@ -2998,12 +2990,10 @@ test('down --all confirmation calls out current env when --env is omitted', asyn
 
   await Down.prototype.run.call(command);
 
-  expect(mocks.promptConfirm.mock.calls).toEqual([[
+  expect(mocks.crossEnvConfirm.mock.calls).toEqual([[
     {
       message: 'Delete everything for current env "docker-local"? This removes the app, managed containers, storage data, and the saved CLI env config.',
-      active: 'yes',
-      inactive: 'no',
-      initialValue: false,
+      default: false,
     },
   ]]);
 });

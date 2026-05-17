@@ -11,7 +11,6 @@ import { Flags } from '@oclif/core';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getEnvAsync, getInstanceIdAsync, keyDecrypt } from '@nocobase/license-kit';
-import _ from 'lodash';
 import {
   checkExternalDbConnection,
   readExternalDbConnectionConfig,
@@ -25,6 +24,7 @@ import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { buildRuntimeEnvVars } from '../../lib/runtime-env-vars.js';
 import { resolveLicensePkgUrlFromConfig } from '../../lib/cli-config.js';
+import { deepEqual, omitKeys } from '../../lib/object-utils.ts';
 import { commandOutput } from '../../lib/run-npm.js';
 import { appUrl } from '../env/shared.js';
 
@@ -403,7 +403,7 @@ export function isDbMatch(env: any, keyData?: LicenseKeyData): boolean {
     return currentDb.id === licenseDb.id;
   }
 
-  return _.isEqual(_.omit(currentDb, ['id']), _.omit(licenseDb, ['id']));
+  return deepEqual(omitKeys(currentDb, ['id']), omitKeys(licenseDb, ['id']));
 }
 
 export function isSysMatch(env: any, keyData?: LicenseKeyData): boolean {
@@ -417,7 +417,7 @@ export function isSysMatch(env: any, keyData?: LicenseKeyData): boolean {
     osVer: item?.osVer ?? null,
   });
 
-  return _.isEqual(normalize(env), normalize(instance));
+  return deepEqual(normalize(env), normalize(instance));
 }
 
 export async function getLicenseStatus(keyData?: LicenseKeyData): Promise<LicenseStatus> {

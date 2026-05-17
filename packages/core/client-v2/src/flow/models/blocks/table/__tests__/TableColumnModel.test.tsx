@@ -12,6 +12,42 @@ import { describe, expect, it, vi } from 'vitest';
 import { TableColumnModel } from '../TableColumnModel';
 
 describe('TableColumnModel sorter settings', () => {
+  it('hides quick edit setting for relation path columns added from association groups', async () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({ uid: 'table-column-relation-path-quick-edit', flowEngine: engine } as any);
+    const quickEditStep = model.getFlow('tableColumnSettings')?.steps?.quickEdit as any;
+
+    const hidden = await quickEditStep.hideInSettings({
+      model: {
+        associationPathName: 'department',
+      },
+    });
+
+    expect(hidden).toBe(true);
+  });
+
+  it('keeps quick edit disabled for relation path columns even when params enable it', () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({
+      uid: 'table-column-relation-path-disable-quick-edit',
+      flowEngine: engine,
+    } as any);
+    const quickEditStep = model.getFlow('tableColumnSettings')?.steps?.quickEdit as any;
+    const setProps = vi.fn();
+
+    quickEditStep.handler(
+      {
+        model: {
+          associationPathName: 'department',
+          setProps,
+        },
+      },
+      { editable: true },
+    );
+
+    expect(setProps).toHaveBeenCalledWith('editable', false);
+  });
+
   it('hides sortable setting for association fields', async () => {
     const engine = new FlowEngine();
     const model = new TableColumnModel({ uid: 'table-column-association-sorter', flowEngine: engine } as any);

@@ -628,10 +628,6 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           )
           .filter(Boolean) || [];
 
-      if (isV2AdminRuntime(this.context.app) && children.length === 0) {
-        return null;
-      }
-
       if (options.designable && depth === 0) {
         children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', this, route));
       }
@@ -685,6 +681,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 AdminLayoutMenuItemModel.registerFlow({
   key: 'menuCreation',
   title: 'Add menu item',
+  manual: true,
   steps: {
     basic: {
       title: 'Add menu item',
@@ -701,6 +698,7 @@ AdminLayoutMenuItemModel.registerFlow({
 AdminLayoutMenuItemModel.registerFlow({
   key: 'menuSettings',
   title: 'Menu settings',
+  manual: true,
   steps: {
     edit: {
       title: 'Edit',

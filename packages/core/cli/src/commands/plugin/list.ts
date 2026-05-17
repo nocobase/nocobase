@@ -50,7 +50,6 @@ export default class PluginList extends Command {
         yes: flags.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

@@ -9,7 +9,6 @@
 
 import fsp from 'node:fs/promises';
 import { Command, Flags } from '@oclif/core';
-import * as p from '@clack/prompts';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
 import {
@@ -286,6 +285,11 @@ export default class SourceDownload extends Command {
     'no-intro': Flags.boolean({
       hidden: true,
       description: 'Skip command intro when invoked by another CLI command',
+      default: false,
+    }),
+    'compact-log': Flags.boolean({
+      hidden: true,
+      description: 'Reduce default logs when invoked inside another setup flow',
       default: false,
     }),
     source: Flags.string({
@@ -798,7 +802,6 @@ export default class SourceDownload extends Command {
       command: this,
       hooks: {
         onCancel: () => {
-          p.cancel('Download cancelled.');
           this.exit(0);
         },
         onMissingNonInteractive: (message: string) => {
@@ -846,6 +849,17 @@ export default class SourceDownload extends Command {
 
   private commandStdio(): 'inherit' | 'ignore' {
     return this.isVerbose() ? 'inherit' : 'ignore';
+  }
+
+  private useCompactLog(): boolean {
+    const flags = this._flags as Partial<DownloadParsedFlags> | undefined;
+    return Boolean(flags?.['compact-log']);
+  }
+
+  private logProgress(message: string): void {
+    if (this.isVerbose() || !this.useCompactLog()) {
+      this.log(message);
+    }
   }
 
   private formatCommandForLog(name: string, args: string[], cwd?: string): string {
@@ -903,7 +917,7 @@ export default class SourceDownload extends Command {
 
   private startPreparationTask(message: string): void {
     if (this.isVerbose()) {
-      p.log.step(message);
+      this.log(message);
       return;
     }
 
@@ -951,12 +965,12 @@ export default class SourceDownload extends Command {
     }
     pullArgs.push(imageRef);
     this.finishPreparationTask();
-    p.log.step(`Pulling Docker image ${imageRef}`);
+    this.logProgress(`Pulling Docker image ${imageRef}`);
     await this.runExternalCommand('docker', pullArgs, {
       errorName: 'docker pull',
       loadingMessage: 'Pulling the Docker image',
     });
-    p.log.info(`Docker image is ready: ${imageRef}`);
+    this.logProgress(`Docker image is ready: ${imageRef}`);
 
     if (!flags['docker-save']) {
       return;
@@ -971,12 +985,12 @@ export default class SourceDownload extends Command {
     }
     await fsp.mkdir(outAbs, { recursive: true });
     const tarPath = this.dockerTarPath(flags, outAbs);
-    p.log.step(`Saving Docker image tarball to ${tarPath}`);
+    this.log(`Saving Docker image tarball to ${tarPath}`);
     await this.runExternalCommand('docker', ['save', '-o', tarPath, imageRef], {
       errorName: 'docker save',
       loadingMessage: 'Saving the Docker image tarball',
     });
-    p.log.info(`Docker image tarball saved: ${tarPath}`);
+    this.log(`Docker image tarball saved: ${tarPath}`);
   }
 
   async downloadFromNpm(flags: DownloadResolvedFlags): Promise<string> {
@@ -993,7 +1007,7 @@ export default class SourceDownload extends Command {
     await fsp.mkdir(parentDir, { recursive: true });
     const registryEnv = this.npmRegistryEnv(flags);
     this.finishPreparationTask();
-    p.log.step(`Creating NocoBase app "${appName}" from npm`);
+    this.log(`Creating NocoBase app "${appName}" from npm`);
     await this.runExternalCommand('npx', npxArgs, {
       ...this.runOptionsWithCwd(parentDir, registryEnv),
       errorName: 'npx create-nocobase-app',
@@ -1003,20 +1017,20 @@ export default class SourceDownload extends Command {
     if (!flags['dev-dependencies']) {
       installArgs.push('--production');
     }
-    p.log.step(`Installing dependencies in ${projectRoot}`);
+    this.log(`Installing dependencies in ${projectRoot}`);
     await this.runExternalCommand('yarn', installArgs, {
       ...this.runOptionsWithCwd(projectRoot, registryEnv),
       errorName: 'yarn install',
       loadingMessage: 'Installing dependencies',
     });
     if (flags.build && flags['dev-dependencies']) {
-      p.log.step(`Building app in ${projectRoot}`);
+      this.log(`Building app in ${projectRoot}`);
       await this.config.runCommand('source:build', [
         ...this.buildCommandArgv(projectRoot, flags),
         ...(this.isVerbose() ? ['--verbose'] : []),
       ]);
     }
-    p.log.info(`NocoBase app is ready at ${projectRoot}`);
+    this.log(`NocoBase app is ready at ${projectRoot}`);
     return projectRoot;
   }
 
@@ -1030,7 +1044,7 @@ export default class SourceDownload extends Command {
     gitArgs.push('--branch', branch);
     gitArgs.push('--depth', '1', repoUrl, outputDir);
     this.finishPreparationTask();
-    p.log.step(
+    this.log(
       branch === versionSpec
         ? `Cloning NocoBase from ${repoUrl} (${branch})`
         : `Cloning NocoBase from ${repoUrl} (${branch}, resolved from ${versionSpec})`,
@@ -1041,20 +1055,20 @@ export default class SourceDownload extends Command {
     });
     const projectRoot = path.resolve(process.cwd(), outputDir);
     const registryEnv = this.npmRegistryEnv(flags);
-    p.log.step(`Installing dependencies in ${projectRoot}`);
+    this.log(`Installing dependencies in ${projectRoot}`);
     await this.runExternalCommand('yarn', ['install'], {
       ...this.runOptionsWithCwd(projectRoot, registryEnv),
       errorName: 'yarn install',
       loadingMessage: 'Installing dependencies',
     });
     if (flags.build) {
-      p.log.step(`Building app in ${projectRoot}`);
+      this.log(`Building app in ${projectRoot}`);
       await this.config.runCommand('source:build', [
         ...this.buildCommandArgv(projectRoot, flags),
         ...(this.isVerbose() ? ['--verbose'] : []),
       ]);
     }
-    p.log.info(`NocoBase app is ready at ${projectRoot}`);
+    this.log(`NocoBase app is ready at ${projectRoot}`);
     return projectRoot;
   }
 
@@ -1064,7 +1078,7 @@ export default class SourceDownload extends Command {
     applyCliLocale(this._flags.locale);
     setVerboseMode(Boolean(flags.verbose));
     if (!flags['no-intro']) {
-      p.intro('Get NocoBase');
+      this.log('Get NocoBase');
     }
     const resolved = await this.resolveDownloadFlags(flags);
     const source = resolved.source as DownloadSource;
@@ -1096,7 +1110,7 @@ export default class SourceDownload extends Command {
   public async run(): Promise<DownloadCommandResult> {
     try {
       const result = await this.download();
-      p.outro(`Download completed via ${downloadSourceLabel(result.resolved.source as DownloadSource)}.`);
+      this.logProgress(`Download completed via ${downloadSourceLabel(result.resolved.source as DownloadSource)}.`);
       return result;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);

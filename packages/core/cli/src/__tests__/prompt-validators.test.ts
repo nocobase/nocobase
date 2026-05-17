@@ -32,7 +32,6 @@ const mockPgConnect = vi.fn();
 const mockPgQuery = vi.fn();
 const mockPgEnd = vi.fn();
 const mockMysqlCreateConnection = vi.fn();
-const mockMariaDbCreateConnection = vi.fn();
 
 vi.mock('pg', () => ({
   default: {
@@ -47,12 +46,6 @@ vi.mock('pg', () => ({
 vi.mock('mysql2/promise', () => ({
   default: {
     createConnection: mockMysqlCreateConnection,
-  },
-}));
-
-vi.mock('mariadb', () => ({
-  default: {
-    createConnection: mockMariaDbCreateConnection,
   },
 }));
 
@@ -72,6 +65,7 @@ const originalNbLocale = process.env.NB_LOCALE;
 
 beforeEach(() => {
   process.env.NB_LOCALE = 'en-US';
+  vi.restoreAllMocks();
 });
 
 afterEach(() => {
@@ -85,17 +79,61 @@ afterEach(() => {
   mockPgQuery.mockReset();
   mockPgEnd.mockReset();
   mockMysqlCreateConnection.mockReset();
-  mockMariaDbCreateConnection.mockReset();
 });
 
-test('validateApiBaseUrl accepts http and https URLs', () => {
-  expect(validateApiBaseUrl('http://localhost:13000/api')).toBe(undefined);
-  expect(validateApiBaseUrl('https://demo.example.com/api')).toBe(undefined);
+test('validateApiBaseUrl accepts URLs whose health check returns HTTP 200', async () => {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    status: 200,
+    json: vi.fn(),
+  } as any);
+
+  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toBe(undefined);
+  await expect(validateApiBaseUrl('https://demo.example.com/api')).resolves.toBe(undefined);
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:13000/api/__health_check',
+    expect.objectContaining({ method: 'GET' }),
+  );
 });
 
-test('validateApiBaseUrl rejects malformed URLs and unsupported schemes', () => {
-  expect(validateApiBaseUrl('not a url') ?? '').toMatch(/Enter a valid URL/);
-  expect(validateApiBaseUrl('ftp://example.com/api') ?? '').toMatch(/URL must start with http:\/\/ or https:\/\//);
+test('validateApiBaseUrl rejects malformed URLs and unsupported schemes', async () => {
+  await expect(validateApiBaseUrl('not a url')).resolves.toMatch(/Enter a valid URL/);
+  await expect(validateApiBaseUrl('ftp://example.com/api')).resolves.toMatch(/URL must start with http:\/\/ or https:\/\//);
+});
+
+test('validateApiBaseUrl rejects URLs that already include the health check path', async () => {
+  await expect(validateApiBaseUrl('http://localhost:13000/api/__health_check')).resolves.toMatch(/Do not include \/__health_check/i);
+});
+
+test('validateApiBaseUrl rejects maintaining health check responses', async () => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    status: 503,
+    json: vi.fn(async () => ({
+      error: {
+        status: 503,
+        maintaining: true,
+        message: 'plugins loaded',
+        command: { name: 'start' },
+        code: 'APP_COMMANDING',
+      },
+    })),
+  } as any);
+
+  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(/still starting or in maintenance mode/i);
+});
+
+test('validateApiBaseUrl rejects unexpected health check statuses', async () => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    status: 404,
+    json: vi.fn(async () => ({ error: { message: 'not found' } })),
+  } as any);
+
+  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(/did not pass the health check \(HTTP 404\)/i);
+});
+
+test('validateApiBaseUrl reports connectivity failures', async () => {
+  vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:13000'));
+
+  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(/Unable to connect to the API base URL/i);
 });
 
 test('validateEnvKey allows only letters and numbers', () => {
@@ -192,8 +230,8 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   expect(envAddPrompt.type).toBe('text');
   expect(typeof initPrompt.validate).toBe('function');
   expect(typeof envAddPrompt.validate).toBe('function');
-  expect(initPrompt.validate?.('not-a-url', {}) ?? '').toMatch(/Enter a valid URL/);
-  expect(envAddPrompt.validate?.('ftp://example.com/api', {}) ?? '').toMatch(/http:\/\/ or https:\/\//);
+  expect(await initPrompt.validate?.('not-a-url', {}) ?? '').toMatch(/Enter a valid URL/);
+  expect(await envAddPrompt.validate?.('ftp://example.com/api', {}) ?? '').toMatch(/http:\/\/ or https:\/\//);
 });
 
 test('init appName validates global env name uniqueness', async () => {

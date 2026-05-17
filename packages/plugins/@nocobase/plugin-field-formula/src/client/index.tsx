@@ -12,8 +12,7 @@ import { Formula } from './components';
 import { FormulaComponentFieldSettings } from './FormulaComponentFieldSettings';
 import { FormulaFieldInterface } from './interfaces/formula';
 import { renderExpressionDescription } from './scopes';
-import { FormulaFieldModel } from './FormulaFieldModel';
-import { FlowModel } from '@nocobase/flow-engine';
+import { FormulaFieldModel } from '../client-v2/models/FormulaFieldModel';
 
 export class PluginFieldFormulaClient extends Plugin {
   expressionFields = [

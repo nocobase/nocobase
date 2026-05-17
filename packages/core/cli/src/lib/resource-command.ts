@@ -398,7 +398,6 @@ export async function runResourceCommand(
     yes: flags.yes,
   });
   if (!confirmed) {
-    command.log('Canceled.');
     return;
   }
 

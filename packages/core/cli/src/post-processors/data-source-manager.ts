@@ -50,10 +50,17 @@ function pickFieldSummary(item: Record<string, any>) {
   return {
     name: item?.name,
     type: item?.type,
+    interface: item?.interface,
     title: item?.uiSchema?.title,
     description: item?.description,
     dataSourceKey: item?.dataSourceKey,
     collectionName: item?.collectionName,
+    target: item?.target,
+    foreignKey: item?.foreignKey,
+    sourceKey: item?.sourceKey,
+    targetKey: item?.targetKey,
+    through: item?.through,
+    otherKey: item?.otherKey,
   };
 }
 
@@ -67,10 +74,17 @@ function pickRemoteFieldSummary(
   return {
     name: item?.name,
     type: item?.type,
+    interface: item?.interface,
     title: item?.uiSchema?.title,
     description: item?.description,
     dataSourceKey: item?.dataSourceKey,
     collectionName: item?.collectionName,
+    target: item?.target,
+    foreignKey: item?.foreignKey,
+    sourceKey: item?.sourceKey,
+    targetKey: item?.targetKey,
+    through: item?.through,
+    otherKey: item?.otherKey,
     ...defaults,
   };
 }
@@ -141,6 +155,10 @@ export function simplifyDataSourceFieldsListResult(
   };
 }
 
+function unwrapActionData(result: any) {
+  return result?.data?.data !== undefined ? result.data : result;
+}
+
 export function registerDataSourceManagerPostProcessors() {
   postProcessorRegistry.register('data-sources', 'list', simplifyDataSourceListResult);
   postProcessorRegistry.register('data-sources', 'list-enabled', simplifyDataSourceListResult);
@@ -150,4 +168,12 @@ export function registerDataSourceManagerPostProcessors() {
       flags: context.flags,
     }),
   );
+  postProcessorRegistry.register('data-sources-collections.fields', 'apply', (result, context) => {
+    const payload = unwrapActionData(result);
+    const defaults = parseAssociatedIndex(context.flags?.['associated-index']);
+
+    return {
+      data: pickRemoteFieldSummary(payload?.data || {}, defaults),
+    };
+  });
 }
