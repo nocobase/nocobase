@@ -277,11 +277,7 @@ describe('db2cm test', () => {
     let collectionName: string;
 
     beforeEach(async () => {
-      app = await createApp({
-        database: {
-          schema: `s_${uid(6)}`,
-        },
-      });
+      app = await createApp();
       db = app.db;
       collectionName = `t_${uid(6)}`;
     });
