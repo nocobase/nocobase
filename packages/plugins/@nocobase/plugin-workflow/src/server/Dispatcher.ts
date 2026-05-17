@@ -420,6 +420,8 @@ export default class Dispatcher {
           },
           sort: 'id',
           transaction: tx,
+          lock: tx.LOCK.UPDATE,
+          skipLocked: true,
         })) as ExecutionModel;
         if (execution) {
           this.plugin.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
