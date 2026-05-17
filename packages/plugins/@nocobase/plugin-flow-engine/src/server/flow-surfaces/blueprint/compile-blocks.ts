@@ -48,6 +48,7 @@ import {
   resolveFieldTargetCollection,
 } from '../service-helpers';
 import { hasFlowSurfaceTemplateDocument, hasFlowSurfaceTemplateReference } from '../template-reference';
+import { buildFlowSurfaceAutoFieldGridLayout, resolveFlowSurfaceFieldGridFieldInterface } from '../field-grid-layout';
 import type {
   FlowSurfaceApplyBlueprintCollectionResolver,
   FlowSurfaceApplyBlueprintActionSpec,
@@ -1425,56 +1426,21 @@ function compileScopedLayout(
   };
 }
 
-function buildCompactFieldLayoutRow(keys: string[], blockType?: string) {
-  const normalizedKeys = keys.filter(Boolean);
-  if (!normalizedKeys.length) {
-    return [];
-  }
-  if (blockType === 'filterForm') {
-    const span = normalizedKeys.length === 1 ? 24 : normalizedKeys.length === 2 ? 12 : 8;
-    return normalizedKeys.map((key) => ({ key, span }));
-  }
-  if (normalizedKeys.length === 1) {
-    return [{ key: normalizedKeys[0], span: 24 }];
-  }
-  return normalizedKeys.map((key) => ({ key, span: 12 }));
-}
-
-function buildAutoCompiledFieldsLayout(fields: Array<Record<string, any>>, blockType?: string) {
-  if (!APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES.has(blockType || '') || !fields.length) {
-    return undefined;
-  }
-
-  const rows: Array<Array<{ key: string; span: number }>> = [];
-  const chunkSize = blockType === 'filterForm' ? 3 : 2;
-  let pendingKeys: string[] = [];
-
-  const flushPending = () => {
-    if (!pendingKeys.length) {
-      return;
-    }
-    rows.push(buildCompactFieldLayoutRow(pendingKeys, blockType));
-    pendingKeys = [];
-  };
-
-  fields.forEach((field) => {
-    const key = readOptionalString(field?.key);
-    if (!key) {
-      return;
-    }
-    if (readOptionalString(field?.type) === 'divider') {
-      flushPending();
-      rows.push([{ key, span: 24 }]);
-      return;
-    }
-    pendingKeys.push(key);
-    if (pendingKeys.length >= chunkSize) {
-      flushPending();
-    }
-  });
-
-  flushPending();
-  return rows.length ? { rows } : undefined;
+function buildAutoCompiledFieldsLayout(fields: Array<Record<string, any>>, blockType?: string, collection?: any) {
+  return buildFlowSurfaceAutoFieldGridLayout(
+    fields.map((field) => ({
+      key: readOptionalString(field?.key),
+      type: readOptionalString(field?.type),
+      fieldPath: readOptionalString(field?.fieldPath),
+      associationPathName: readOptionalString(field?.associationPathName),
+      fieldInterface: resolveFlowSurfaceFieldGridFieldInterface({
+        collection,
+        fieldPath: readOptionalString(field?.fieldPath),
+        associationPathName: readOptionalString(field?.associationPathName),
+      }),
+    })),
+    blockType,
+  );
 }
 
 function compileFieldGroups(
@@ -2378,6 +2344,10 @@ function compileBlocks(
         },
       ),
     );
+    const fieldGridCollection =
+      getCollection && blockResourceContext.surfaceCollectionName
+        ? getCollection(blockResourceContext.dataSourceKey || 'main', blockResourceContext.surfaceCollectionName)
+        : null;
     const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
       ? compileScopedLayout(
           _.isUndefined(block.fieldsLayout)
@@ -2389,7 +2359,7 @@ function compileBlocks(
           `${blockContext}.fieldsLayout`,
           'field',
         )
-      : buildAutoCompiledFieldsLayout(fields, readOptionalString(block.type));
+      : buildAutoCompiledFieldsLayout(fields, readOptionalString(block.type), fieldGridCollection);
     const { actions, recordActions } = splitApplyBlueprintBlockActionsByScope(block, blockContext);
     const explicitActions = actions.map((action, actionIndex) =>
       compileAction(

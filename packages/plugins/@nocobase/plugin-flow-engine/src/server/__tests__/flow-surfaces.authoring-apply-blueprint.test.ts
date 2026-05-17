@@ -2545,6 +2545,77 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     ).toEqual(expect.arrayContaining(['nickname', 'status']));
   });
 
+  it('should preserve wide field rows when auto-generated fieldGroups use live richText metadata', async () => {
+    const collectionName = `flow_surface_authoring_wide_${_.uniqueId()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'input' },
+          { name: 'body', type: 'text', interface: 'richText' },
+          { name: 'summary', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [collectionName]: ['title', 'status', 'body', 'summary'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring generated wide field groups',
+          },
+        },
+        page: {
+          title: 'Authoring generated wide field groups',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'wideCreateForm',
+                type: 'createForm',
+                collection: collectionName,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const createFormBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CreateFormModel')[0];
+    const grid = createFormBlock?.subModels?.grid;
+    const items = _.castArray(grid?.subModels?.items || []);
+    const mainDivider = items.find((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')
+      ?.uid;
+    const titleWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title')?.uid;
+    const statusWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')?.uid;
+    const bodyWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'body')?.uid;
+    const summaryWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'summary')
+      ?.uid;
+
+    expect(grid?.props?.rows).toEqual({
+      row1: [[mainDivider]],
+      row2: [[titleWrapper], [statusWrapper]],
+      row3: [[bodyWrapper]],
+      row4: [[summaryWrapper]],
+    });
+    expect(grid?.props?.sizes).toEqual({
+      row1: [24],
+      row2: [12, 12],
+      row3: [24],
+      row4: [24],
+    });
+  });
+
   it('should persist default relation titleField for raw applyBlueprint relation fields', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

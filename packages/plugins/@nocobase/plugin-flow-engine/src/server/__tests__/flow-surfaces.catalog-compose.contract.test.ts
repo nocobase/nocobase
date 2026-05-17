@@ -5528,6 +5528,125 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   });
 
+  it('should auto-apply full-width richText and vditor rows in compose and addBlock', async () => {
+    const collectionName = `flow_surface_wide_compose_${uid()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'input' },
+          { name: 'body', type: 'text', interface: 'richText' },
+          { name: 'summary', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'notes', type: 'text', interface: 'vditor' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(app.db, {
+      [collectionName]: ['title', 'status', 'body', 'summary', 'code', 'notes'],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Wide compose layout page',
+      tabTitle: 'Wide compose layout tab',
+    });
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'wideEditForm',
+            type: 'editForm',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName,
+            },
+            fields: ['title', 'status', 'body', 'summary', 'code', 'notes'],
+            actions: ['submit'],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(200);
+    const composed = getData(composeRes);
+    const formReadback = await getSurface(rootAgent, {
+      uid: getComposeBlock(composed, 'wideEditForm').uid,
+    });
+    const formItems = _.castArray(formReadback.tree.subModels?.grid?.subModels?.items || []);
+    const titleWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title')
+      ?.uid;
+    const statusWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')
+      ?.uid;
+    const bodyWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'body')?.uid;
+    const summaryWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'summary')
+      ?.uid;
+    const codeWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'code')?.uid;
+    const notesWrapper = formItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'notes')
+      ?.uid;
+
+    expect(formReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[titleWrapper], [statusWrapper]],
+      row2: [[bodyWrapper]],
+      row3: [[summaryWrapper], [codeWrapper]],
+      row4: [[notesWrapper]],
+    });
+    expect(formReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [12, 12],
+      row2: [24],
+      row3: [12, 12],
+      row4: [24],
+    });
+
+    const addBlockPage = await createPage(rootAgent, {
+      title: 'Wide addBlock layout page',
+      tabTitle: 'Wide addBlock layout tab',
+    });
+    const addBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: addBlockPage.tabSchemaUid,
+        },
+        type: 'details',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName,
+        },
+        fields: ['title', 'body', 'summary'],
+      },
+    });
+
+    expect(addBlockRes.status).toBe(200);
+    const addBlockReadback = await getSurface(rootAgent, {
+      uid: getData(addBlockRes).uid,
+    });
+    const detailsItems = _.castArray(addBlockReadback.tree.subModels?.grid?.subModels?.items || []);
+    const detailsTitleWrapper = detailsItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title',
+    )?.uid;
+    const detailsBodyWrapper = detailsItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'body',
+    )?.uid;
+    const detailsSummaryWrapper = detailsItems.find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'summary',
+    )?.uid;
+
+    expect(addBlockReadback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[detailsTitleWrapper]],
+      row2: [[detailsBodyWrapper]],
+      row3: [[detailsSummaryWrapper]],
+    });
+    expect(addBlockReadback.tree.subModels?.grid?.props?.sizes).toEqual({
+      row1: [24],
+      row2: [24],
+      row3: [24],
+    });
+  });
+
   it('should compile compose fieldGroups into divider items and compact rows', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose field groups page',

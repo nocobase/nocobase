@@ -8369,6 +8369,99 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
   });
 
+  it('should auto-apply full-width richText and vditor rows when applyBlueprint fieldsLayout is omitted', async () => {
+    const collectionName = `flow_surface_wide_blueprint_${_.uniqueId()}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: collectionName,
+        title: collectionName,
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'input' },
+          { name: 'body', type: 'text', interface: 'richText' },
+          { name: 'summary', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'notes', type: 'text', interface: 'vditor' },
+        ],
+      },
+    });
+    await waitForFixtureCollectionsReady(context.app.db, {
+      [collectionName]: ['title', 'status', 'body', 'summary', 'code', 'notes'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        page: {
+          title: 'Blueprint wide field layout',
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'wideCreateForm',
+                type: 'createForm',
+                collection: collectionName,
+                fields: ['title', 'status', 'body', 'summary', 'code', 'notes'],
+                actions: ['submit'],
+              },
+              {
+                key: 'wideDetails',
+                type: 'details',
+                collection: collectionName,
+                fields: ['title', 'status', 'body', 'summary', 'code', 'notes'],
+              },
+            ],
+            layout: {
+              rows: [
+                [
+                  { key: 'wideCreateForm', span: 12 },
+                  { key: 'wideDetails', span: 12 },
+                ],
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    const overviewTab = _.castArray(data.surface?.tree?.subModels?.tabs || [])[0];
+    const blocks = _.castArray(overviewTab?.subModels?.grid?.subModels?.items || []);
+    const createFormBlock = blocks.find((item: any) => item?.use === 'CreateFormModel');
+    const detailsBlock = blocks.find((item: any) => item?.use === 'DetailsBlockModel');
+
+    for (const block of [createFormBlock, detailsBlock]) {
+      const grid = block?.subModels?.grid;
+      const items = _.castArray(grid?.subModels?.items || []);
+      const titleWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title')?.uid;
+      const statusWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')
+        ?.uid;
+      const bodyWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'body')?.uid;
+      const summaryWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'summary')
+        ?.uid;
+      const codeWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'code')?.uid;
+      const notesWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'notes')?.uid;
+
+      expect(grid?.props?.rows).toEqual({
+        row1: [[titleWrapper], [statusWrapper]],
+        row2: [[bodyWrapper]],
+        row3: [[summaryWrapper], [codeWrapper]],
+        row4: [[notesWrapper]],
+      });
+      expect(grid?.props?.sizes).toEqual({
+        row1: [12, 12],
+        row2: [24],
+        row3: [12, 12],
+        row4: [24],
+      });
+    }
+  });
+
   it('should compile fieldGroups into divider items and compact rows through applyBlueprint', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

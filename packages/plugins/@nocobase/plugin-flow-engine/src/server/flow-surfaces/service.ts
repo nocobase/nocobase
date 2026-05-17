@@ -94,6 +94,7 @@ import { persistDeclaredKeyForNode as persistPlanningDeclaredKeyForNode } from '
 import { validateFlowSurfacePayloadShape } from './payload-shape';
 import type { FlowSurfacePlanSurfaceContext } from './planning/types';
 import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
+import { buildFlowSurfaceAutoFieldGridLayout, resolveFlowSurfaceFieldGridFieldInterface } from './field-grid-layout';
 import { assertFlowSurfaceAuthoringPayload } from './authoring-validation';
 import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { resolveRegisteredFieldBinding } from './field-binding-registry';
@@ -6576,7 +6577,10 @@ export class FlowSurfacesService {
     };
     const mode = this.assertComposeMode(values?.mode);
     const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
-    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages, popupDefaultsMetadata);
+    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages, popupDefaultsMetadata, {
+      dataSourceKey: authoringContext.currentDataSourceKey,
+      collectionName: authoringContext.currentCollectionName,
+    });
     this.validateComposePopupTemplateAliases(normalizedBlocks, popupTemplateAliasSession);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
@@ -7997,6 +8001,24 @@ export class FlowSurfacesService {
     return this.getCollection(dataSourceKey, collectionName);
   }
 
+  private getFieldGridCollectionFromResourceInput(input: {
+    resource?: FlowSurfaceNormalizedResourceInput;
+    fallback?: {
+      dataSourceKey?: string;
+      collectionName?: string;
+    };
+  }) {
+    const resource =
+      input.resource?.kind === 'raw'
+        ? input.resource.value
+        : input.resource?.kind === 'semantic'
+          ? input.resource.value
+          : undefined;
+    const dataSourceKey = String(resource?.dataSourceKey || input.fallback?.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(resource?.collectionName || input.fallback?.collectionName || '').trim();
+    return collectionName ? this.getCollection(dataSourceKey, collectionName) : undefined;
+  }
+
   private getDefaultFilterRequiredFieldCountFromResourceInput(input: {
     blockType?: string;
     template?: unknown;
@@ -8170,22 +8192,6 @@ export class FlowSurfacesService {
         requireCreateSupported: true,
       },
     );
-    const inlineFields = hasInlineFields
-      ? this.normalizeComposeBlock(
-          {
-            key:
-              String(values?.key || catalogItem.key || values?.type || values?.use || 'addBlock_inline').trim() ||
-              'addBlock_inline',
-            type: catalogItem.key || values.type,
-            fields: values.fields,
-            fieldsLayout: values.fieldsLayout,
-          },
-          0,
-          enabledPackages,
-          false,
-          popupDefaultsMetadata,
-        )
-      : null;
     const resolvedResourceInit = await this.resolvePopupCollectionBlockResourceInit({
       actionName: 'addBlock',
       blockUse: catalogItem.use,
@@ -8208,6 +8214,26 @@ export class FlowSurfacesService {
             dataSourceKey: 'main',
           }
         : resolvedResourceInit;
+    const inlineFields = hasInlineFields
+      ? this.normalizeComposeBlock(
+          {
+            key:
+              String(values?.key || catalogItem.key || values?.type || values?.use || 'addBlock_inline').trim() ||
+              'addBlock_inline',
+            type: catalogItem.key || values.type,
+            fields: values.fields,
+            fieldsLayout: values.fieldsLayout,
+          },
+          0,
+          enabledPackages,
+          false,
+          popupDefaultsMetadata,
+          {
+            dataSourceKey: effectiveResourceInit?.dataSourceKey,
+            collectionName: effectiveResourceInit?.collectionName,
+          },
+        )
+      : null;
     const resolvedDefaultFilterResourceRequest = {
       blockType,
       template: templateRef,
@@ -16887,56 +16913,25 @@ export class FlowSurfacesService {
     };
   }
 
-  private buildAutoComposeFieldsLayoutRow(fieldKeys: string[], blockType?: string) {
-    const normalizedKeys = fieldKeys.filter(Boolean);
-    if (!normalizedKeys.length) {
-      return [];
-    }
-    if (blockType === 'filterForm') {
-      const span = normalizedKeys.length === 1 ? 24 : normalizedKeys.length === 2 ? 12 : 8;
-      return normalizedKeys.map((key) => ({ key, span }));
-    }
-    if (normalizedKeys.length === 1) {
-      return [{ key: normalizedKeys[0], span: 24 }];
-    }
-    return normalizedKeys.map((key) => ({ key, span: 12 }));
-  }
-
-  private buildAutoComposeFieldsLayout(fields: Array<{ key: string; type?: string }>, blockType?: string) {
-    if (!COMPOSE_FIELD_GRID_BLOCK_TYPES.has(blockType || '') || !fields.length) {
-      return undefined;
-    }
-
-    const rows: Array<Array<{ key: string; span: number }>> = [];
-    const chunkSize = blockType === 'filterForm' ? 3 : 2;
-    let pendingKeys: string[] = [];
-
-    const flushPending = () => {
-      if (!pendingKeys.length) {
-        return;
-      }
-      rows.push(this.buildAutoComposeFieldsLayoutRow(pendingKeys, blockType));
-      pendingKeys = [];
-    };
-
-    fields.forEach((field) => {
-      const key = String(field?.key || '').trim();
-      if (!key) {
-        return;
-      }
-      if (String(field?.type || '').trim() === 'divider') {
-        flushPending();
-        rows.push([{ key, span: 24 }]);
-        return;
-      }
-      pendingKeys.push(key);
-      if (pendingKeys.length >= chunkSize) {
-        flushPending();
-      }
-    });
-
-    flushPending();
-    return rows.length ? { rows } : undefined;
+  private buildAutoComposeFieldsLayout(
+    fields: Array<{ key: string; type?: string; fieldPath?: string; associationPathName?: string }>,
+    blockType?: string,
+    collection?: any,
+  ) {
+    return buildFlowSurfaceAutoFieldGridLayout(
+      fields.map((field) => ({
+        key: String(field?.key || '').trim(),
+        type: String(field?.type || '').trim() || undefined,
+        fieldPath: String(field?.fieldPath || '').trim() || undefined,
+        associationPathName: String(field?.associationPathName || '').trim() || undefined,
+        fieldInterface: resolveFlowSurfaceFieldGridFieldInterface({
+          collection,
+          fieldPath: field?.fieldPath,
+          associationPathName: field?.associationPathName,
+        }),
+      })),
+      blockType,
+    );
   }
 
   private normalizeComposeFieldGroups(input: any, blockType: string, context: string) {
@@ -17051,6 +17046,10 @@ export class FlowSurfacesService {
     enabledPackages?: ReadonlySet<string>,
     preserveSingleScopeDataBlockTitle = false,
     popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+    resourceFallback?: {
+      dataSourceKey?: string;
+      collectionName?: string;
+    },
   ) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
@@ -17221,13 +17220,17 @@ export class FlowSurfacesService {
       key,
       type,
     });
+    const fieldGridCollection = this.getFieldGridCollectionFromResourceInput({
+      resource,
+      fallback: resourceFallback,
+    });
     const fieldsLayout =
       this.normalizeComposeFieldsLayout(input.fieldsLayout, {
         blockContext: `flowSurfaces compose block #${index + 1}`,
         blockDescriptor,
         blockType: type,
         fields,
-      }) || this.buildAutoComposeFieldsLayout(fields, type);
+      }) || this.buildAutoComposeFieldsLayout(fields, type, fieldGridCollection);
     const mergedActions = mergeFlowSurfaceDefaultBlockActions({
       blockType: type,
       template,
@@ -17276,6 +17279,10 @@ export class FlowSurfacesService {
     input: any,
     enabledPackages?: ReadonlySet<string>,
     popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
+    resourceFallback?: {
+      dataSourceKey?: string;
+      collectionName?: string;
+    },
   ) {
     const rawBlocks = _.castArray(input || []);
     const preserveSingleScopeDataBlockTitle = countFlowSurfaceNonTemplateTitleCleanupDataBlocks(rawBlocks) > 1;
@@ -17286,6 +17293,7 @@ export class FlowSurfacesService {
         enabledPackages,
         preserveSingleScopeDataBlockTitle,
         popupDefaultsMetadata,
+        resourceFallback,
       ),
     );
     assertFlowSurfaceComposeUniqueKeys(normalizedBlocks, 'flowSurfaces compose blocks');
