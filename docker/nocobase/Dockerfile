@@ -10,11 +10,12 @@ RUN npm config set registry "$VERDACCIO_URL" \
   && yarn config set network-timeout 600000 -g \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
-  && yarn install --production \
-  && rm -rf yarn.lock \
-  && find node_modules -type f -name "yarn.lock" -delete \
-  && find node_modules -type f -name "bower.json" -delete \
-  && find node_modules -type f -name "composer.json" -delete
+  && yarn install --production
+
+COPY cleanup-node-modules.sh /usr/local/bin/cleanup-node-modules.sh
+
+RUN chmod +x /usr/local/bin/cleanup-node-modules.sh \
+  && cleanup-node-modules.sh /app/my-nocobase-app
 
 FROM node:22-bookworm-slim
 
