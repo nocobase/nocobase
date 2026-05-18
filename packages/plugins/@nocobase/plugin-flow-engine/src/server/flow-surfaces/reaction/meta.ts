@@ -58,6 +58,17 @@ const FIELD_STATE_BY_SCENE: Record<'form' | 'details' | 'subForm', string[]> = {
   subForm: ['visible', 'hidden', 'hiddenReservedValue', 'required', 'notRequired', 'disabled', 'enabled'],
 };
 
+const AUTHORABLE_LINKAGE_SCALAR_CONTEXT_PATHS = new Set(['role', 'locale', 'token', 'deviceType']);
+const AUTHORABLE_LINKAGE_CONTEXT_ROOTS = new Set([
+  'user',
+  'collection',
+  'formValues',
+  'record',
+  'item',
+  'popup',
+  'urlSearchParams',
+]);
+
 const CONTEXT_ROOT_BY_SCENE: Partial<Record<FlowSurfaceReactionScene, string>> = {
   form: 'formValues',
   details: 'record',
@@ -91,9 +102,26 @@ function buildReactionFingerprint(value: any) {
 function buildConditionOperatorsByPath(context: FlowSurfaceContextResponse) {
   const operatorsByPath: Record<string, string[]> = {};
   for (const [path, info] of collectContextPathEntries(context)) {
+    if (!isAuthorableLinkageContextPath(path)) {
+      continue;
+    }
     operatorsByPath[path] = getOperatorsForContextInfo(info);
   }
   return operatorsByPath;
+}
+
+function isAuthorableLinkageContextPath(path: string) {
+  const segments = String(path || '')
+    .split('.')
+    .filter(Boolean);
+  const root = segments[0];
+  if (!root) {
+    return false;
+  }
+  if (AUTHORABLE_LINKAGE_SCALAR_CONTEXT_PATHS.has(root)) {
+    return segments.length === 1;
+  }
+  return AUTHORABLE_LINKAGE_CONTEXT_ROOTS.has(root);
 }
 
 function collectContextPathEntries(context: FlowSurfaceContextResponse) {

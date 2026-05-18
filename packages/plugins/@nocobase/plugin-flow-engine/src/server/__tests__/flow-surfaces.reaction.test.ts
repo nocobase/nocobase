@@ -12,7 +12,11 @@ import { MockServer } from '@nocobase/test';
 import { describe, expect, it, beforeAll, beforeEach, afterAll } from 'vitest';
 import { compileReactionPlanSteps } from '../flow-surfaces/blueprint/compile-reaction';
 import { prepareFlowSurfaceApplyBlueprintDocument } from '../flow-surfaces/blueprint/normalize-document';
-import { FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT } from '../flow-surfaces/reaction/errors';
+import {
+  FLOW_SURFACE_REACTION_FINGERPRINT_CONFLICT,
+  FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
+  FLOW_SURFACE_REACTION_INVALID_VALUE_PATH,
+} from '../flow-surfaces/reaction/errors';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
@@ -88,7 +92,19 @@ describe('flowSurfaces reaction', () => {
     expect(fieldLinkageCapability.conditionMeta?.operatorsByPath?.role).toEqual(
       expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']),
     );
-    expect(fieldLinkageCapability.conditionMeta?.operatorsByPath?.['auth.locale']).toEqual(
+    const operatorsByPath = fieldLinkageCapability.conditionMeta?.operatorsByPath || {};
+    expect(Object.keys(operatorsByPath).filter((path) => path === 'auth' || path.startsWith('auth.'))).toEqual([]);
+    expect(Object.keys(operatorsByPath).filter((path) => path === 'location' || path.startsWith('location.'))).toEqual(
+      [],
+    );
+    expect(Object.keys(operatorsByPath).filter((path) => path === 'date' || path.startsWith('date.'))).toEqual([]);
+    expect(operatorsByPath.locale).toEqual(expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']));
+    expect(operatorsByPath.token).toEqual(expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']));
+    expect(operatorsByPath['user.nickname']).toEqual(expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']));
+    expect(operatorsByPath['collection.nickname']).toEqual(
+      expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']),
+    );
+    expect(operatorsByPath['formValues.nickname']).toEqual(
       expect.arrayContaining(['$eq', '$ne', '$empty', '$notEmpty']),
     );
     expect(fieldLinkageCapability.conditionMeta?.operatorsByPath?.deviceType).toEqual(
@@ -385,6 +401,325 @@ describe('flowSurfaces reaction', () => {
         ],
       },
     ]);
+  });
+
+  it('should restrict ordinary linkage paths while keeping RunJS context access writable', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Reaction authorable context page',
+      tabTitle: 'Reaction authorable context tab',
+    });
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    await addField(rootAgent, formUid, 'nickname');
+    await addField(rootAgent, formUid, 'status');
+    const refreshAction = await addAction(rootAgent, tableUid, 'refresh');
+    const runjsAuthRoleCode =
+      "const roleName = ctx.auth.roleName; return roleName || await ctx.getVar('ctx.auth.roleName');";
+
+    await expect(
+      service.transaction((transaction) =>
+        service.setBlockLinkageRules(
+          {
+            target: {
+              uid: tableUid,
+            },
+            rules: [
+              {
+                key: 'hideByRole',
+                when: {
+                  logic: '$and',
+                  items: [
+                    {
+                      path: 'role',
+                      operator: '$eq',
+                      value: 'admin',
+                    },
+                  ],
+                },
+                then: [
+                  {
+                    type: 'setBlockState',
+                    state: 'hidden',
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      ),
+    ).resolves.toMatchObject({
+      normalizedRules: [
+        {
+          key: 'hideByRole',
+        },
+      ],
+    });
+
+    await expect(
+      service.transaction((transaction) =>
+        service.setActionLinkageRules(
+          {
+            target: {
+              uid: refreshAction.uid,
+            },
+            rules: [
+              {
+                key: 'disableByRole',
+                when: {
+                  logic: '$and',
+                  items: [
+                    {
+                      path: 'role',
+                      operator: '$eq',
+                      value: 'admin',
+                    },
+                  ],
+                },
+                then: [
+                  {
+                    type: 'setActionState',
+                    state: 'disabled',
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      ),
+    ).resolves.toMatchObject({
+      normalizedRules: [
+        {
+          key: 'disableByRole',
+        },
+      ],
+    });
+
+    await expect(
+      service.transaction((transaction) =>
+        service.setFieldLinkageRules(
+          {
+            target: {
+              uid: formUid,
+            },
+            rules: [
+              {
+                key: 'assignByRole',
+                when: {
+                  logic: '$and',
+                  items: [
+                    {
+                      path: 'role',
+                      operator: '$eq',
+                      value: 'admin',
+                    },
+                  ],
+                },
+                then: [
+                  {
+                    type: 'assignField',
+                    items: [
+                      {
+                        targetPath: 'status',
+                        value: {
+                          source: 'path',
+                          path: 'role',
+                        },
+                      },
+                      {
+                        targetPath: 'nickname',
+                        value: {
+                          source: 'runjs',
+                          code: runjsAuthRoleCode,
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      ),
+    ).resolves.toMatchObject({
+      normalizedRules: [
+        {
+          key: 'assignByRole',
+          then: [
+            {
+              type: 'assignField',
+              items: [
+                {
+                  targetPath: 'status',
+                  value: {
+                    source: 'path',
+                    path: 'role',
+                  },
+                },
+                {
+                  targetPath: 'nickname',
+                  value: {
+                    source: 'runjs',
+                    code: expect.stringContaining('ctx.auth.roleName'),
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(
+      service.transaction((transaction) =>
+        service.setBlockLinkageRules(
+          {
+            target: {
+              uid: tableUid,
+            },
+            rules: [
+              {
+                key: 'hideByAuthRole',
+                when: {
+                  logic: '$and',
+                  items: [
+                    {
+                      path: 'auth.roleName',
+                      operator: '$eq',
+                      value: 'admin',
+                    },
+                  ],
+                },
+                then: [
+                  {
+                    type: 'setBlockState',
+                    state: 'hidden',
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      ),
+    ).rejects.toMatchObject({
+      code: FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
+    });
+
+    await expect(
+      service.transaction((transaction) =>
+        service.setActionLinkageRules(
+          {
+            target: {
+              uid: refreshAction.uid,
+            },
+            rules: [
+              {
+                key: 'disableByAuthRole',
+                when: {
+                  logic: '$and',
+                  items: [
+                    {
+                      path: 'auth.roleName',
+                      operator: '$eq',
+                      value: 'admin',
+                    },
+                  ],
+                },
+                then: [
+                  {
+                    type: 'setActionState',
+                    state: 'disabled',
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      ),
+    ).rejects.toMatchObject({
+      code: FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
+    });
+
+    await expect(
+      service.transaction((transaction) =>
+        service.setFieldLinkageRules(
+          {
+            target: {
+              uid: formUid,
+            },
+            rules: [
+              {
+                key: 'fieldByAuthRole',
+                when: {
+                  logic: '$and',
+                  items: [
+                    {
+                      path: 'auth.roleName',
+                      operator: '$eq',
+                      value: 'admin',
+                    },
+                  ],
+                },
+                then: [
+                  {
+                    type: 'setFieldState',
+                    fieldPaths: ['status'],
+                    state: 'disabled',
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      ),
+    ).rejects.toMatchObject({
+      code: FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
+    });
+
+    await expect(
+      service.transaction((transaction) =>
+        service.setFieldLinkageRules(
+          {
+            target: {
+              uid: formUid,
+            },
+            rules: [
+              {
+                key: 'assignAuthRolePath',
+                then: [
+                  {
+                    type: 'assignField',
+                    items: [
+                      {
+                        targetPath: 'status',
+                        value: {
+                          source: 'path',
+                          path: 'auth.roleName',
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          { transaction },
+        ),
+      ),
+    ).rejects.toMatchObject({
+      code: FLOW_SURFACE_REACTION_INVALID_VALUE_PATH,
+    });
   });
 
   it('should expose and persist block linkage rules for markdown and iframe blocks', async () => {
