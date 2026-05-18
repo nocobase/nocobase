@@ -16,6 +16,7 @@ const UNIT_OPTIONS = [
   { value: 1000, label: 'Seconds' },
   { value: 60_000, label: 'Minutes' },
   { value: 3600_000, label: 'Hours' },
+  { value: 86_400_000, label: 'Days' },
 ];
 
 function normalizeUnit(value?: number) {
