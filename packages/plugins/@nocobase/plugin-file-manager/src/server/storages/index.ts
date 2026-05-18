@@ -90,11 +90,15 @@ export abstract class StorageType {
     return urlJoin(keys);
   }
 
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+  async getFileStream(
+    file: AttachmentModel,
+    options?: GetFileStreamOptions,
+  ): Promise<{ stream: Readable; contentType?: string }> {
     try {
       const fileURL = await this.getFileURL(file);
       const requestOptions: AxiosRequestConfig = {
         ...this.storage.settings?.requestOptions,
+        ...(options?.requestOptions ?? {}),
         responseType: 'stream',
         validateStatus: (status) => status === 200,
         timeout: 30000, // 30 seconds timeout
@@ -113,3 +117,7 @@ export abstract class StorageType {
 }
 
 export type StorageClassType = { new (storage: StorageModel): StorageType } & typeof StorageType;
+
+export type GetFileStreamOptions = {
+  requestOptions?: any;
+};
