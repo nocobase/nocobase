@@ -39,13 +39,13 @@ export type EventOptions = {
 export default class Dispatcher {
   private ready = false;
   private executing: Promise<any> | null = null;
-  private preparing: Promise<any> | null = null;
+  private saving: Promise<any> | null = null;
   private pending: Pending[] = [];
   private events: CachedEvent[] = [];
   private eventsCount = 0;
 
   get idle() {
-    return this.ready && !this.executing && !this.preparing && !this.pending.length && !this.events.length;
+    return this.ready && !this.executing && !this.saving && !this.pending.length && !this.events.length;
   }
 
   constructor(private readonly plugin: PluginWorkflowServer) {}
@@ -112,15 +112,15 @@ export default class Dispatcher {
     logger.info(`new event triggered, now events: ${this.events.length}`);
     logger.debug(`event data:`, { context });
 
-    this.save();
+    this.saveEvent();
   }
 
-  private save() {
-    if (this.preparing) {
+  private saveEvent() {
+    if (this.saving) {
       return;
     }
 
-    this.preparing = (async () => {
+    this.saving = (async () => {
       try {
         while (this.events.length) {
           if (this.executing && this.plugin.db.options.dialect === 'sqlite') {
@@ -159,9 +159,9 @@ export default class Dispatcher {
           }
         }
       } finally {
-        this.preparing = null;
+        this.saving = null;
         if (this.events.length) {
-          this.save();
+          this.saveEvent();
         } else {
           this.dispatch();
         }
@@ -194,15 +194,15 @@ export default class Dispatcher {
     this.ready = false;
     this.plugin.getLogger('dispatcher').info('app is stopping, draining local queues...');
 
-    while (this.preparing || this.executing || this.events.length || this.pending.length) {
-      if (this.preparing) {
-        await this.preparing;
+    while (this.saving || this.executing || this.events.length || this.pending.length) {
+      if (this.saving) {
+        await this.saving;
       }
       if (this.executing) {
         await this.executing;
       }
-      if (this.events.length && !this.preparing) {
-        this.save();
+      if (this.events.length && !this.saving) {
+        this.saveEvent();
       }
       if (this.pending.length && !this.executing) {
         this.dispatch();
@@ -224,7 +224,7 @@ export default class Dispatcher {
     }
 
     if (this.events.length) {
-      this.save();
+      this.saveEvent();
       return;
     }
 
@@ -278,7 +278,9 @@ export default class Dispatcher {
     }
 
     try {
-      const entered = await this.prepare(execution, { transaction: options.transaction as Transaction });
+      const entered = await this.prepare(execution, {
+        transaction: this.plugin.useDataSourceTransaction('main', options.transaction as Transaction),
+      });
       if (!entered) {
         return null;
       }
