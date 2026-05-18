@@ -8,8 +8,10 @@
  */
 
 export * from './createFormRegistry';
+export * from './DialogFormLayout';
 export * from './DrawerFormLayout';
 export * from './EnvVariableInput';
 export * from './FileSizeInput';
 export * from './JsonTextArea';
+export * from './RemoteSelect';
 export * from './VariableInput';
