@@ -9,9 +9,9 @@
 
 import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DrawerFormLayout, Table } from '@nocobase/client-v2';
+import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
+import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Card, Dropdown, Form, Input, Space, Spin, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { cloneDeep } from 'lodash';
@@ -27,8 +27,6 @@ type StorageRecord = {
   default?: boolean;
   [key: string]: any;
 };
-
-const PAGE_SIZE = 50;
 
 function useStorageFormClassName() {
   const { token } = theme.useToken();
@@ -148,21 +146,34 @@ export default function FileStoragePage() {
   const fileManagerPlugin = ctx.app.pm.get(PluginFileManagerClientV2);
   const storageTypes = useMemo(() => [...fileManagerPlugin.storageTypes.values()], [fileManagerPlugin]);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const { data, loading, refresh } = useRequest(
     async () => {
       const response = await resource.list({
         page,
-        pageSize: PAGE_SIZE,
+        pageSize,
         sort: ['id'],
         appends: [],
       });
       return normalizeListResponse(response);
     },
     {
-      refreshDeps: [page],
+      refreshDeps: [page, pageSize],
     },
   );
+
+  // antd pagination `onChange(nextPage, nextPageSize)` fires for both
+  // page-number changes and page-size changes. When pageSize changes we reset
+  // back to page 1 so the user isn't stranded on an out-of-range page.
+  const handlePaginationChange = useMemoizedFn((nextPage: number, nextPageSize: number) => {
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      setPage(1);
+      return;
+    }
+    setPage(nextPage);
+  });
 
   const openForm = useCallback(
     (mode: 'create' | 'edit', storageType: StorageType, record?: StorageRecord) => {
@@ -281,10 +292,9 @@ export default function FileStoragePage() {
         }}
         pagination={{
           current: page,
-          pageSize: PAGE_SIZE,
+          pageSize,
           total: data?.total || 0,
-          showSizeChanger: false,
-          onChange: setPage,
+          onChange: handlePaginationChange,
         }}
       />
     </Card>
