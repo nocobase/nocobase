@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useForm } from '@formily/react';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { observer, useFlowSettingsContext, useFlowStep } from '@nocobase/flow-engine';
 import { Alert, Select, Space, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { KanbanBlockModel } from '../KanbanBlockModel';
@@ -54,7 +53,7 @@ export const KanbanGroupingSelector = observer(
     dataSourceKey?: string;
     disabled?: boolean;
   }) => {
-    const form = useForm();
+    const flowStep = useFlowStep();
     let settingsContext: any;
     try {
       settingsContext = useFlowSettingsContext<KanbanBlockModel>();
@@ -72,7 +71,9 @@ export const KanbanGroupingSelector = observer(
     );
     const [optionsLoading, setOptionsLoading] = useState(false);
     const [optionsError, setOptionsError] = useState<string>();
-    const grouping = (form?.values?.grouping || (isGroupingValue(value) ? value : {}) || {}) as KanbanGroupingValue;
+    const grouping = ((flowStep?.params as any)?.grouping ||
+      (isGroupingValue(value) ? value : {}) ||
+      {}) as KanbanGroupingValue;
     const resolvedFieldName = grouping.groupField;
     const currentField = useMemo(() => {
       return resolvedFieldName ? resolvedCollection?.getField?.(resolvedFieldName) : undefined;
@@ -87,7 +88,7 @@ export const KanbanGroupingSelector = observer(
           return;
         }
 
-        if (form?.values?.grouping || !isGroupingValue(value)) {
+        if ((flowStep?.params as any)?.grouping || !isGroupingValue(value)) {
           onChange(nextOptions as any);
           return;
         }
@@ -97,7 +98,7 @@ export const KanbanGroupingSelector = observer(
           groupOptions: nextOptions,
         } as any);
       },
-      [form, onChange, value],
+      [flowStep?.params, onChange, value],
     );
 
     useEffect(() => {
@@ -171,7 +172,7 @@ export const KanbanGroupingSelector = observer(
       };
     }, [
       currentField,
-      form,
+      flowStep?.params,
       groupOptions,
       grouping.groupColorField,
       grouping.groupTitleField,

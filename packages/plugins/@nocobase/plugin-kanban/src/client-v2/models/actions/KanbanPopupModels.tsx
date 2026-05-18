@@ -8,7 +8,7 @@
  */
 
 import { AddNewActionModel, ViewActionModel } from '@nocobase/client-v2';
-import { tExpr } from '@nocobase/flow-engine';
+import { tExpr } from '../../locale';
 
 export const createKanbanQuickCreateActionOptions = (uid?: string) => {
   return {
