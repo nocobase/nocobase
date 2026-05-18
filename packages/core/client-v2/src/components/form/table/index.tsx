@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { AuthModel, BasicAuth, buildRedirectPath, defaultTokenPolicyConfig, default, presetAuthType } from './server';
-export type { BuildRedirectPathOptions } from './server';
+// Public surface of the v2 table primitive. Internal helpers (utils, styles,
+// SelectionCell, RowOverlayPreview, etc.) stay unexported — they're
+// implementation details of `Table` and are not part of the package API.
+export * from './Table';

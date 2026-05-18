@@ -12,7 +12,7 @@ import type { ComponentType } from 'react';
 import {
   getCurrentV2RedirectPath,
   Plugin,
-  redirectToLegacySignin,
+  redirectToV2Signin,
   UserCenterSelectItemModel,
   languageCodes,
 } from '@nocobase/client-v2';
@@ -20,8 +20,6 @@ import debounce from 'lodash/debounce';
 import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
 import AuthProvider from './providers/AuthProvider';
-import { BasicSignInForm } from './forms/BasicSignInForm';
-import { BasicSignUpForm } from './forms/BasicSignUpForm';
 import { authLocaleResources, NAMESPACE } from './locale';
 
 class UserCenterLanguageItemModel extends UserCenterSelectItemModel {
@@ -49,13 +47,32 @@ class UserCenterLanguageItemModel extends UserCenterSelectItemModel {
   }
 }
 
+type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
+
+/**
+ * V2 auth-type registration. Every form/button is registered as an async
+ * `import()` loader rather than a synchronous component reference. Consumers
+ * resolve them with `React.lazy` at render time so each auth-type contributes
+ * its own webpack chunk and is only fetched when an authenticator of that
+ * type is actually shown.
+ *
+ * Migration note: this replaces the v1 `components: { SignInForm, ... }`
+ * shape — sync component refs are no longer accepted.
+ */
 export type AuthOptions = {
-  components: Partial<{
-    SignInForm: ComponentType<{ authenticator: AuthenticatorType }>;
-    SignInButton: ComponentType<{ authenticator: AuthenticatorType }>;
-    SignUpForm: ComponentType<{ authenticatorName: string }>;
-    AdminSettingsForm: ComponentType;
-  }>;
+  /** Sign-in form for an authenticator of this type. */
+  signInFormLoader?: LoaderOf<{ authenticator: AuthenticatorType }>;
+  /** Sign-up form for an authenticator of this type. */
+  signUpFormLoader?: LoaderOf<{ authenticatorName: string }>;
+  /** Optional button rendered on the sign-in page alongside the form tabs. */
+  signInButtonLoader?: LoaderOf<{ authenticator: AuthenticatorType }>;
+  /**
+   * Per-authenticator administrator settings form, embedded inside the
+   * Authenticators page drawer below the common fields. Receives no props —
+   * it should read the current record / form values via antd `Form.useWatch`
+   * + `Form.Item`.
+   */
+  adminSettingsFormLoader?: LoaderOf;
 };
 
 const AuthErrorCode = {
@@ -90,12 +107,38 @@ export class PluginAuthClientV2 extends Plugin {
       this.app.i18n.addResources(lang, NAMESPACE, resource);
     });
 
-    this.app.use(AuthProvider);
+    // `unshift` (not `app.use`/`push`) so AuthProvider becomes the outermost
+    // wrap — same as v1. Otherwise CurrentUserProvider mounts first, renders
+    // its own Spin and blocks children, and runs `/auth:check` before
+    // AuthProvider has had a chance to read the `?token=` query param the
+    // CAS / SAML server callbacks emit. The auth check then 401s and the
+    // browser bounces back to /signin.
+    this.app.providers.unshift([AuthProvider, {}]);
     this.app.flowEngine.registerModels({ UserCenterLanguageItemModel });
 
     this.addRoutes();
     this.registerPresetAuthType();
+    this.registerSettingsPages();
     this.installInterceptors();
+  }
+
+  private registerSettingsPages() {
+    const t = (key: string) => this.app.i18n.t(key, { ns: NAMESPACE });
+    this.pluginSettingsManager.addMenuItem({
+      key: NAMESPACE,
+      title: t('Authentication'),
+      icon: 'LoginOutlined',
+      aclSnippet: 'pm.auth',
+    });
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: NAMESPACE,
+      key: 'authenticators',
+      title: t('Authenticators'),
+      icon: 'LoginOutlined',
+      aclSnippet: 'pm.auth.authenticators',
+      sort: 1,
+      componentLoader: () => import('./pages/AuthenticatorsPage'),
+    });
   }
 
   private addRoutes() {
@@ -126,10 +169,9 @@ export class PluginAuthClientV2 extends Plugin {
 
   private registerPresetAuthType() {
     this.registerType(presetAuthType, {
-      components: {
-        SignInForm: BasicSignInForm,
-        SignUpForm: BasicSignUpForm,
-      },
+      signInFormLoader: () => import('./forms/BasicSignInForm'),
+      signUpFormLoader: () => import('./forms/BasicSignUpForm'),
+      adminSettingsFormLoader: () => import('./forms/BasicAuthAdminSettings'),
     });
   }
 
@@ -179,7 +221,7 @@ export class PluginAuthClientV2 extends Plugin {
           const redirectPath = getCurrentV2RedirectPath(this.app, locationLike);
           debouncedRedirect(() => {
             this.app.apiClient.auth.setToken('');
-            redirectToLegacySignin(this.app, redirectPath, { replace: true });
+            redirectToV2Signin(this.app, redirectPath, { replace: true });
           });
           return new Promise<never>(() => undefined);
         }
