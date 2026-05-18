@@ -9,7 +9,7 @@
 
 import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Card, Checkbox, Dropdown, Form, Input, Select, Space, Spin, Tag, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -30,10 +30,6 @@ type AuthenticatorRecord = {
 };
 
 type AuthTypeOption = { name: string; title?: string };
-
-function createAuthenticatorName() {
-  return `s_${Math.random().toString(36).slice(2, 12)}`;
-}
 
 function recursiveTrim(value: any): any {
   if (typeof value === 'string') return value.trim();
@@ -88,7 +84,7 @@ function AuthenticatorFormView(props: {
   const initialValues = useMemo(() => {
     if (props.mode === 'edit') return cloneDeep(props.record || {});
     return {
-      name: createAuthenticatorName(),
+      name: randomId('s_'),
       authType: props.authType,
       enabled: false,
       options: {},

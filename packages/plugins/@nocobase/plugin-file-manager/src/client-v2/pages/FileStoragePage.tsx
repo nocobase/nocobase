@@ -10,7 +10,7 @@
 import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Card, Dropdown, Form, Input, Space, Spin, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -47,10 +47,6 @@ function useStorageFormClassName() {
   );
 }
 
-function createStorageName() {
-  return `s_${Math.random().toString(36).slice(2, 12)}`;
-}
-
 function getInitialValues(options: { mode: 'create' | 'edit'; storageType: StorageType; record?: StorageRecord }) {
   if (options.mode === 'edit') {
     return cloneDeep(options.record || {});
@@ -58,7 +54,7 @@ function getInitialValues(options: { mode: 'create' | 'edit'; storageType: Stora
   return {
     ...cloneDeep(options.storageType.defaultValues || {}),
     type: options.storageType.name,
-    name: createStorageName(),
+    name: randomId('s_'),
   };
 }
 
