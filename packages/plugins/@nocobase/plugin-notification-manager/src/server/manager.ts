@@ -143,7 +143,7 @@ export class NotificationManager implements NotificationManager {
 
     if (transaction?.afterCommit) {
       transaction.afterCommit(() => {
-        this.dispatchAfterCommit(queueMessage).catch((error) => {
+        return this.dispatchAfterCommit(queueMessage).catch((error) => {
           this.plugin.logger.error('notification dispatch failed after transaction committed', {
             channelName: params.channelName,
             triggerFrom: params.triggerFrom,
