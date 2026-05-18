@@ -416,14 +416,25 @@ describe('flowSurfaces swagger', () => {
       true,
     );
     expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.additionalProperties).toBe(false);
-    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.required).toEqual([
-      'fields',
-      'hasTried',
-    ]);
-    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.fields.minItems).toBe(1);
-    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.hasTried.enum).toEqual([
-      true,
-    ]);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.required).toEqual(['fields']);
+    expect(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.fields.minProperties).toBe(
+      1,
+    );
+    expect(JSON.stringify(schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview)).not.toContain(
+      '"type":"null"',
+    );
+    expect(
+      schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.fields.additionalProperties
+        .nullable,
+    ).toBe(true);
+    expect(
+      schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.fields.additionalProperties
+        .properties.decision.enum,
+    ).toEqual(['implemented', 'noUiBehavior', 'unsupported']);
+    expect(
+      schemas.FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview.properties.fields.additionalProperties
+        .properties.reasonCode.enum,
+    ).toContain('ambiguous-description');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('associations');
     expect(schemas.FlowSurfaceApplyBlueprintDefaultPopups.description).toContain('relations');

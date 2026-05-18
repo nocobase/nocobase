@@ -100,6 +100,7 @@ const MAIN_BLOCK_UNSUPPORTED_SECTIONS: Record<string, string[]> = {
 
 const FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
+const DEFAULT_FORM_BEHAVIOR_REACTION_FORM_BLOCK_TYPES = new Set(['createForm', 'editForm']);
 const SORTABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'tree', 'kanban', 'gridCard', 'map']);
 const CHART_BLOCK_TYPES = new Set(['chart']);
 const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
@@ -286,7 +287,17 @@ const DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
 const DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS = ['addNew', 'edit'];
 const DEFAULT_FORM_BEHAVIOR_SCENE_ALLOWED_KEYS = ['fields', 'fieldLinkageRules'];
 const DEFAULT_FORM_BEHAVIOR_FIELD_ALLOWED_KEYS = ['settings'];
-const DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS = ['fields', 'hasTried'];
+const DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS = ['fields'];
+const DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_FIELD_ALLOWED_KEYS = ['decision', 'reasonCode'];
+const DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_DECISIONS = new Set(['implemented', 'noUiBehavior', 'unsupported']);
+const DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_REASON_CODES = new Set([
+  'no-ui-behavior',
+  'ambiguous-description',
+  'unsupported-cross-field-validation',
+  'unsupported-association-filter',
+  'workflow-or-ai-generation-out-of-scope',
+  'ai-generated-content-out-of-scope',
+]);
 const DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
@@ -1104,66 +1115,628 @@ function collectDefaultFormBehaviorDescriptionReviewShapeErrors(
     });
     return;
   }
-  collectUnsupportedKeysErrors(
-    review,
-    path,
-    DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS,
-    'defaults-formBehaviorDescriptionReview-unsupported-key',
-    errors,
-  );
-  if (!Array.isArray(review.fields) || !review.fields.length) {
+  collectDescriptionReviewUnsupportedKeysErrors(review, path, errors);
+  if (!_.isPlainObject(review.fields) || !Object.keys(review.fields).length) {
     pushAuthoringError(errors, {
       path: `${path}.fields`,
-      ruleId: 'defaults-formBehaviorDescriptionReview-fields-required',
-      message: `flowSurfaces authoring ${path}.fields must be a non-empty array`,
+      ruleId: 'defaults-formBehaviorDescriptionReview-fields-invalid-shape',
+      message: `flowSurfaces authoring ${path}.fields must be a non-empty object keyed by field path`,
+      details: buildDescriptionReviewMigrationDetails(),
     });
   } else {
-    review.fields.forEach((fieldPath, index) => {
-      if (!String(fieldPath || '').trim()) {
+    Object.entries(review.fields).forEach(([fieldPath, entry]) => {
+      const normalizedFieldPath = String(fieldPath || '').trim();
+      if (!normalizedFieldPath) {
         pushAuthoringError(errors, {
-          path: `${path}.fields[${index}]`,
+          path: `${path}.fields`,
           ruleId: 'defaults-formBehaviorDescriptionReview-field-required',
-          message: `flowSurfaces authoring ${path}.fields[${index}] must be a non-empty field path`,
+          message: `flowSurfaces authoring ${path}.fields keys must be non-empty field paths`,
         });
+        return;
       }
-    });
-  }
-  if (review.hasTried !== true) {
-    pushAuthoringError(errors, {
-      path: `${path}.hasTried`,
-      ruleId: 'defaults-formBehaviorDescriptionReview-hasTried-required',
-      message: `flowSurfaces authoring ${path}.hasTried must be true`,
+      if (_.isNull(entry)) {
+        return;
+      }
+      if (!_.isPlainObject(entry)) {
+        pushAuthoringError(errors, {
+          path: `${path}.fields.${normalizedFieldPath}`,
+          ruleId: 'defaults-formBehaviorDescriptionReview-field-invalid-shape',
+          message: `flowSurfaces authoring ${path}.fields.${normalizedFieldPath} must be null or an object`,
+          details: buildDescriptionReviewMigrationDetails(normalizedFieldPath),
+        });
+        return;
+      }
+      collectUnsupportedKeysErrors(
+        entry,
+        `${path}.fields.${normalizedFieldPath}`,
+        DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_FIELD_ALLOWED_KEYS,
+        'defaults-formBehaviorDescriptionReview-field-unsupported-key',
+        errors,
+      );
     });
   }
 }
 
-function collectDefaultFormBehaviorCoveredFieldNames(formBehavior: any) {
-  const covered = new Set<string>();
+function collectDescriptionReviewUnsupportedKeysErrors(
+  review: Record<string, any>,
+  path: string,
+  errors: AuthoringErrorInput[],
+) {
+  const unsupportedKeys = Object.keys(review).filter(
+    (key) => !DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS.includes(key),
+  );
+  if (!unsupportedKeys.length) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'defaults-formBehaviorDescriptionReview-unsupported-key',
+    message: `flowSurfaces authoring ${path} only accepts ${DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS.join(
+      ', ',
+    )}; unsupported keys: ${unsupportedKeys.join(', ')}`,
+    details: {
+      allowedKeys: DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS,
+      unsupportedKeys,
+      ...buildDescriptionReviewMigrationDetails(),
+    },
+  });
+}
+
+function buildDescriptionReviewMigrationDetails(field = 'fieldName') {
+  return {
+    reason:
+      'formBehaviorDescriptionReview now uses a field-keyed review map; old fields arrays and hasTried are not supported.',
+    allowedShape:
+      'formBehaviorDescriptionReview.fields must be an object keyed by field path; each value is null or a review object with decision and optional reasonCode.',
+    migrationExample: {
+      formBehaviorDescriptionReview: {
+        fields: {
+          [field]: {
+            decision: 'unsupported',
+            reasonCode: 'ambiguous-description',
+          },
+        },
+      },
+    },
+    fixOptions: [
+      {
+        type: 'migrateReviewFieldsMap',
+        whenToUse: 'Use when the payload still uses fields: string[] or hasTried.',
+        patchSkeleton: {
+          defaults: {
+            collections: {
+              collectionName: {
+                formBehaviorDescriptionReview: {
+                  fields: {
+                    [field]: {
+                      decision: 'unsupported',
+                      reasonCode: 'ambiguous-description',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ],
+  };
+}
+
+function hasEffectiveDefaultFormBehaviorSettings(settings: any) {
+  if (!_.isPlainObject(settings)) {
+    return false;
+  }
+  return Object.entries(settings).some(([key, value]) => {
+    if (_.isUndefined(value)) {
+      return false;
+    }
+    if (key === 'rules') {
+      return Array.isArray(value) && value.length > 0;
+    }
+    return true;
+  });
+}
+
+function collectDefaultFormBehaviorCoverageByField(formBehavior: any) {
+  const coverage = new Map<string, string[]>();
+  const addCoverage = (fieldPath: any, source: string) => {
+    const normalized = String(fieldPath || '').trim();
+    if (!normalized) {
+      return;
+    }
+    coverage.set(normalized, [...(coverage.get(normalized) || []), source]);
+  };
   ['addNew', 'edit'].forEach((action) => {
     const scene = formBehavior?.[action];
     if (_.isPlainObject(scene?.fields)) {
       Object.keys(scene.fields).forEach((fieldPath) => {
-        const normalized = String(fieldPath || '').trim();
-        if (normalized) {
-          covered.add(normalized);
+        if (hasEffectiveDefaultFormBehaviorSettings(scene.fields[fieldPath]?.settings)) {
+          addCoverage(fieldPath, `formBehavior.${action}.fields.${fieldPath}.settings`);
         }
       });
     }
-    _.castArray(scene?.fieldLinkageRules || []).forEach((rule) => {
+    _.castArray(scene?.fieldLinkageRules || []).forEach((rule, ruleIndex) => {
       _.castArray(rule?.then || []).forEach((thenAction) => {
         if (String(thenAction?.type || '').trim() !== 'setFieldState') {
           return;
         }
         _.castArray(thenAction?.fieldPaths || []).forEach((fieldPath) => {
-          const normalized = String(fieldPath || '').trim();
-          if (normalized) {
-            covered.add(normalized);
-          }
+          addCoverage(fieldPath, `formBehavior.${action}.fieldLinkageRules[${ruleIndex}]`);
         });
       });
     });
   });
-  return covered;
+  return coverage;
+}
+
+function getDescriptionReviewFieldsMap(review: any) {
+  return _.isPlainObject(review?.fields) ? review.fields : {};
+}
+
+function buildDescriptionReviewImplementedFixOptions(collection: string, field: string) {
+  return [
+    {
+      type: 'implementRequired',
+      whenToUse: 'Use when the description means this field is always required.',
+      patchSkeleton: {
+        defaults: {
+          collections: {
+            [collection]: {
+              formBehavior: {
+                addNew: {
+                  fields: {
+                    [field]: {
+                      settings: {
+                        required: true,
+                      },
+                    },
+                  },
+                },
+                edit: {
+                  fields: {
+                    [field]: {
+                      settings: {
+                        required: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      type: 'implementConditionalRequired',
+      whenToUse: 'Use when the description means this field is conditionally required.',
+      patchSkeleton: {
+        defaults: {
+          collections: {
+            [collection]: {
+              formBehavior: {
+                addNew: {
+                  fieldLinkageRules: [
+                    {
+                      key: `description-${field}-required`,
+                      when: {
+                        logic: '$and',
+                        items: [],
+                      },
+                      then: [
+                        {
+                          type: 'setFieldState',
+                          fieldPaths: [field],
+                          state: 'required',
+                        },
+                      ],
+                    },
+                  ],
+                },
+                edit: {
+                  fieldLinkageRules: [
+                    {
+                      key: `description-${field}-required`,
+                      when: {
+                        logic: '$and',
+                        items: [],
+                      },
+                      then: [
+                        {
+                          type: 'setFieldState',
+                          fieldPaths: [field],
+                          state: 'required',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      type: 'changeDecision',
+      whenToUse: 'Use only when the description is not UI behavior or is unsupported.',
+      patchSkeleton: {
+        defaults: {
+          collections: {
+            [collection]: {
+              formBehaviorDescriptionReview: {
+                fields: {
+                  [field]: {
+                    decision: 'unsupported',
+                    reasonCode: 'ambiguous-description',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  ];
+}
+
+function buildDescriptionReviewErrorDetails(input: {
+  collection: string;
+  dataSourceKey?: string;
+  field: string;
+  description?: string;
+  decision?: string;
+  reason?: string;
+  coverage?: string[];
+  missingCoverage?: string[];
+}) {
+  return {
+    collection: input.collection,
+    ...(input.dataSourceKey ? { dataSourceKey: input.dataSourceKey } : {}),
+    field: input.field,
+    description: input.description || '',
+    ...(input.decision ? { decision: input.decision } : {}),
+    ...(input.reason ? { reason: input.reason } : {}),
+    ...(input.coverage?.length ? { coverage: input.coverage } : {}),
+    ...(input.missingCoverage?.length ? { missingCoverage: input.missingCoverage } : {}),
+    fixOptions: buildDescriptionReviewImplementedFixOptions(input.collection, input.field),
+  };
+}
+
+type DescriptionReviewReactionCoverageTarget = {
+  values: any;
+  collection: string;
+  dataSourceKey?: string;
+  context: FlowSurfaceAuthoringValidationContext;
+};
+
+type ApplyBlueprintReactionTargetBlock = {
+  block: any;
+  context: FlowSurfaceAuthoringValidationContext;
+  path: string;
+};
+
+function collectReactionCoverageByField(reaction: any, targetOptions?: DescriptionReviewReactionCoverageTarget) {
+  const coverage = new Map<string, string[]>();
+  const addCoverage = (fieldPath: any, source: string) => {
+    const normalized = String(fieldPath || '').trim();
+    if (!normalized) {
+      return;
+    }
+    coverage.set(normalized, [...(coverage.get(normalized) || []), source]);
+  };
+  _.castArray(reaction?.items || []).forEach((item, itemIndex) => {
+    if (!_.isPlainObject(item) || String(item.type || '').trim() !== 'setFieldLinkageRules') {
+      return;
+    }
+    const targetMatch = targetOptions
+      ? resolveApplicableDescriptionReviewReactionTargetBlock(item, targetOptions)
+      : null;
+    if (targetOptions && !targetMatch) {
+      return;
+    }
+    _.castArray(item.rules || []).forEach((rule, ruleIndex) => {
+      _.castArray(rule?.then || []).forEach((thenAction) => {
+        if (String(thenAction?.type || '').trim() !== 'setFieldState') {
+          return;
+        }
+        _.castArray(thenAction?.fieldPaths || []).forEach((fieldPath) => {
+          if (targetMatch && !hasBlockFieldPath(targetMatch.block, fieldPath)) {
+            return;
+          }
+          addCoverage(fieldPath, `reaction.items[${itemIndex}].rules[${ruleIndex}]`);
+        });
+      });
+    });
+  });
+  return coverage;
+}
+
+function resolveApplicableDescriptionReviewReactionTargetBlock(
+  item: any,
+  options: DescriptionReviewReactionCoverageTarget,
+): ApplyBlueprintReactionTargetBlock | null {
+  const target = getReactionItemTarget(item);
+  if (!target) {
+    return null;
+  }
+  const match = findApplyBlueprintReactionTargetBlock(options.values, target, options.context);
+  if (!match) {
+    return null;
+  }
+  const blockType = String(match.block?.type || '').trim();
+  if (!DEFAULT_FORM_BEHAVIOR_REACTION_FORM_BLOCK_TYPES.has(blockType)) {
+    return null;
+  }
+  const targetCollection = getBlockCollectionName(match.block, match.context);
+  if (targetCollection !== options.collection) {
+    return null;
+  }
+  const targetDataSourceKey = normalizeDataSourceKey(getBlockDataSourceKey(match.block, match.context));
+  if (targetDataSourceKey !== normalizeDataSourceKey(options.dataSourceKey)) {
+    return null;
+  }
+  return match;
+}
+
+function getReactionItemTarget(item: any) {
+  const rawTarget = item?.target ?? item?.targetKey ?? item?.targetBlock;
+  return typeof rawTarget === 'string' ? rawTarget.trim() : '';
+}
+
+function findApplyBlueprintReactionTargetBlock(
+  values: any,
+  target: string,
+  context: FlowSurfaceAuthoringValidationContext,
+): ApplyBlueprintReactionTargetBlock | null {
+  const normalizedTarget = String(target || '').trim();
+  if (!normalizedTarget) {
+    return null;
+  }
+  for (const [tabIndex, tab] of _.castArray(values?.tabs || []).entries()) {
+    if (!_.isPlainObject(tab)) {
+      continue;
+    }
+    const tabScope = String(tab.key || '').trim();
+    for (const [blockIndex, block] of _.castArray(tab.blocks || []).entries()) {
+      const match = findBlockReactionTargetMatch(
+        block,
+        `$.tabs[${tabIndex}].blocks[${blockIndex}]`,
+        tabScope,
+        context,
+        normalizedTarget,
+      );
+      if (match) {
+        return match;
+      }
+    }
+  }
+  return null;
+}
+
+function findBlockReactionTargetMatch(
+  block: any,
+  path: string,
+  scopePrefix: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  target: string,
+): ApplyBlueprintReactionTargetBlock | null {
+  if (!_.isPlainObject(block)) {
+    return null;
+  }
+  const blockKey = String(block.key || '').trim();
+  if (blockKey && getScopedLocalKeyCandidates(blockKey, scopePrefix).includes(target)) {
+    return { block, context, path };
+  }
+
+  const scopedBlockKey = getScopedLocalKey(blockKey, scopePrefix);
+  const descendantContext = getBlockDescendantValidationContext(block, context);
+  const popupScopes = new Set<string>([scopePrefix]);
+  if (scopedBlockKey) {
+    popupScopes.add(`${scopedBlockKey}.popup`);
+  }
+
+  for (const popupScope of popupScopes) {
+    const match = findPopupReactionTargetMatch(block.popup, `${path}.popup`, popupScope, descendantContext, target);
+    if (match) {
+      return match;
+    }
+  }
+
+  const fieldPopupMatch = findFieldPopupReactionTargetMatch(
+    block.fields,
+    `${path}.fields`,
+    block,
+    scopedBlockKey || scopePrefix,
+    context,
+    target,
+  );
+  if (fieldPopupMatch) {
+    return fieldPopupMatch;
+  }
+  for (const [groupIndex, group] of _.castArray(block.fieldGroups || []).entries()) {
+    const match = findFieldPopupReactionTargetMatch(
+      group?.fields,
+      `${path}.fieldGroups[${groupIndex}].fields`,
+      block,
+      scopedBlockKey || scopePrefix,
+      context,
+      target,
+    );
+    if (match) {
+      return match;
+    }
+  }
+
+  for (const slot of ['actions', 'recordActions']) {
+    for (const [actionIndex, action] of _.castArray(block[slot] || []).entries()) {
+      if (!_.isPlainObject(action) || !_.isPlainObject(action.popup)) {
+        continue;
+      }
+      const actionKey = String(action.key || '').trim();
+      const actionScopes = new Set<string>([scopePrefix]);
+      if (actionKey && scopedBlockKey) {
+        actionScopes.add(`${scopedBlockKey}.${slot}.${actionKey}`);
+        actionScopes.add(`${scopedBlockKey}.${actionKey}`);
+      }
+      for (const actionScope of actionScopes) {
+        const match = findPopupReactionTargetMatch(
+          action.popup,
+          `${path}.${slot}[${actionIndex}].popup`,
+          actionScope,
+          descendantContext,
+          target,
+        );
+        if (match) {
+          return match;
+        }
+      }
+    }
+  }
+
+  const hiddenPopupKeys = HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE[String(block.type || '').trim()] || [];
+  for (const key of hiddenPopupKeys) {
+    if (!_.isPlainObject(block.settings?.[key])) {
+      continue;
+    }
+    const hiddenScope = scopedBlockKey ? `${scopedBlockKey}.settings.${key}` : scopePrefix;
+    const match = findPopupReactionTargetMatch(
+      block.settings[key],
+      `${path}.settings.${key}`,
+      hiddenScope,
+      descendantContext,
+      target,
+    );
+    if (match) {
+      return match;
+    }
+  }
+
+  for (const [childIndex, childBlock] of _.castArray(block.blocks || []).entries()) {
+    const match = findBlockReactionTargetMatch(
+      childBlock,
+      `${path}.blocks[${childIndex}]`,
+      scopePrefix,
+      descendantContext,
+      target,
+    );
+    if (match) {
+      return match;
+    }
+  }
+  return null;
+}
+
+function findPopupReactionTargetMatch(
+  popup: any,
+  path: string,
+  scopePrefix: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  target: string,
+) {
+  if (!_.isPlainObject(popup)) {
+    return null;
+  }
+  for (const [blockIndex, block] of _.castArray(popup.blocks || []).entries()) {
+    const match = findBlockReactionTargetMatch(block, `${path}.blocks[${blockIndex}]`, scopePrefix, context, target);
+    if (match) {
+      return match;
+    }
+  }
+  return null;
+}
+
+function findFieldPopupReactionTargetMatch(
+  fields: any,
+  path: string,
+  block: any,
+  fieldScopePrefix: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  target: string,
+) {
+  for (const [fieldIndex, field] of _.castArray(fields || []).entries()) {
+    if (!_.isPlainObject(field) || !_.isPlainObject(field.popup)) {
+      continue;
+    }
+    const fieldKey = getFieldReactionTargetLocalKey(field);
+    if (!fieldKey) {
+      continue;
+    }
+    const fieldPopupContext = getFieldPopupValidationContext(field, block, context);
+    const scopedFieldKey = getScopedLocalKey(fieldKey, fieldScopePrefix);
+    const fieldPopupScopes = new Set<string>();
+    if (scopedFieldKey) {
+      fieldPopupScopes.add(`${scopedFieldKey}.popup`);
+    }
+    if (fieldScopePrefix) {
+      fieldPopupScopes.add(`${fieldScopePrefix}.fields.${fieldKey}`);
+    }
+    for (const popupScope of fieldPopupScopes) {
+      const match = findPopupReactionTargetMatch(
+        field.popup,
+        `${path}[${fieldIndex}].popup`,
+        popupScope,
+        fieldPopupContext,
+        target,
+      );
+      if (match) {
+        return match;
+      }
+    }
+  }
+  return null;
+}
+
+function hasBlockFieldPath(block: any, fieldPath: any) {
+  const normalizedFieldPath = String(fieldPath || '').trim();
+  if (!normalizedFieldPath) {
+    return false;
+  }
+  const hasExplicitFields =
+    Object.prototype.hasOwnProperty.call(block || {}, 'fields') ||
+    Object.prototype.hasOwnProperty.call(block || {}, 'fieldGroups');
+  const fields = [..._.castArray(block?.fields || [])];
+  _.castArray(block?.fieldGroups || []).forEach((group) => {
+    fields.push(..._.castArray(group?.fields || []));
+  });
+  if (hasExplicitFields && !fields.length) {
+    return false;
+  }
+  if (!hasExplicitFields) {
+    return true;
+  }
+  return fields.some((field) => getFieldPathInput(field) === normalizedFieldPath);
+}
+
+function getFieldReactionTargetLocalKey(field: any) {
+  return String(field?.key || field?.name || field?.path || field?.fieldPath || field?.field || '').trim();
+}
+
+function getScopedLocalKey(localKey: string, scopePrefix: string) {
+  if (!localKey) {
+    return '';
+  }
+  return scopePrefix && !localKey.startsWith(`${scopePrefix}.`) ? `${scopePrefix}.${localKey}` : localKey;
+}
+
+function getScopedLocalKeyCandidates(localKey: string, scopePrefix: string) {
+  const candidates = [localKey];
+  const scopedKey = getScopedLocalKey(localKey, scopePrefix);
+  if (scopedKey && scopedKey !== localKey) {
+    candidates.push(scopedKey);
+  }
+  return candidates;
+}
+
+function mergeCoverageByField(...maps: Map<string, string[]>[]) {
+  const coverage = new Map<string, string[]>();
+  maps.forEach((map) => {
+    map.forEach((sources, fieldPath) => {
+      coverage.set(fieldPath, [...(coverage.get(fieldPath) || []), ...sources]);
+    });
+  });
+  return coverage;
 }
 
 function collectDefaultFormBehaviorFieldShapeErrors(fieldConfig: any, path: string, errors: AuthoringErrorInput[]) {
@@ -1728,14 +2301,16 @@ function collectDefaultFormBehaviorCompletenessErrors(
       requirement.dataSourceKey,
       requirement.collection,
     );
+    const defaultFieldGroups = defaultCollection.collectionDefaults?.fieldGroups;
     const describedFields = getGeneratedPopupDefaultFormDescribedFields({
       collection,
       dataSourceKey: requirement.dataSourceKey,
       actionTypes,
-      fieldGroups: defaultCollection.collectionDefaults?.fieldGroups,
+      fieldGroups: defaultFieldGroups,
       context,
     });
     const describedFieldNames = describedFields.map((field) => field.name);
+    const describedFieldByName = new Map(describedFields.map((field) => [field.name, field]));
     if (!describedFieldNames.length) {
       continue;
     }
@@ -1753,9 +2328,9 @@ function collectDefaultFormBehaviorCompletenessErrors(
     }
     if (!hasOwnFormBehavior && !hasOwnReview) {
       pushAuthoringError(errors, {
-        path: formBehaviorPath,
+        path: reviewPath,
         ruleId: 'missing-description-form-behavior',
-        message: `flowSurfaces authoring ${formBehaviorPath} is required because collection '${requirement.collection}' has default add/edit form fields with description metadata. Generate structured formBehavior from each field description, and list every reviewed non-convertible described field under ${reviewPath}.fields with hasTried: true.`,
+        message: `flowSurfaces authoring ${reviewPath}.fields must review every described generated add/edit field for collection '${requirement.collection}'. Use decision implemented when structured formBehavior or linkage covers the field, or noUiBehavior/unsupported with reasonCode when it does not.`,
         details: {
           collection: requirement.collection,
           dataSourceKey: requirement.dataSourceKey,
@@ -1768,61 +2343,210 @@ function collectDefaultFormBehaviorCompletenessErrors(
       continue;
     }
 
-    const coveredFieldNames = collectDefaultFormBehaviorCoveredFieldNames(collectionDefaults.formBehavior);
+    const coverageByField = mergeCoverageByField(
+      collectDefaultFormBehaviorCoverageByField(collectionDefaults.formBehavior),
+      collectReactionCoverageByField(values?.reaction, {
+        values,
+        collection: requirement.collection,
+        dataSourceKey: requirement.dataSourceKey,
+        context,
+      }),
+    );
+    const candidateFieldNames = getGeneratedPopupDefaultFormCandidateFieldNames({
+      collection,
+      dataSourceKey: requirement.dataSourceKey,
+      actionTypes,
+      fieldGroups: defaultFieldGroups,
+      context,
+    });
+    const candidateFieldNameSet = new Set(candidateFieldNames);
+    const describedFieldNameSet = new Set(describedFieldNames);
+    const reviewFields = getDescriptionReviewFieldsMap(collectionDefaults.formBehaviorDescriptionReview);
     const reviewFieldNames = new Set(
-      Array.isArray(collectionDefaults.formBehaviorDescriptionReview?.fields)
-        ? collectionDefaults.formBehaviorDescriptionReview.fields
-            .map((field: any) => String(field || '').trim())
-            .filter(Boolean)
-        : [],
+      Object.keys(reviewFields)
+        .map((field) => String(field || '').trim())
+        .filter(Boolean),
     );
-    const uncoveredFieldNames = describedFieldNames.filter((fieldName) => !coveredFieldNames.has(fieldName));
-    const missingReviewFieldNames = uncoveredFieldNames.filter((fieldName) => !reviewFieldNames.has(fieldName));
-    const duplicateReviewedFieldNames = describedFieldNames.filter(
-      (fieldName) => coveredFieldNames.has(fieldName) && reviewFieldNames.has(fieldName),
-    );
+    const missingReviewFieldNames = describedFieldNames.filter((fieldName) => !reviewFieldNames.has(fieldName));
     const invalidReviewFieldNames = Array.from(reviewFieldNames).filter(
-      (fieldName) => !describedFieldNames.includes(fieldName),
+      (fieldName) => !candidateFieldNameSet.has(fieldName),
+    );
+    const emptyDescriptionReviewFieldNames = Array.from(reviewFieldNames).filter(
+      (fieldName) => candidateFieldNameSet.has(fieldName) && !describedFieldNameSet.has(fieldName),
     );
 
     if (missingReviewFieldNames.length) {
-      pushAuthoringError(errors, {
-        path: reviewPath,
-        ruleId: 'missing-description-form-behavior-review-fields',
-        message: `flowSurfaces authoring ${reviewPath}.fields must list every described generated add/edit field not covered by structured formBehavior.`,
-        details: {
-          collection: requirement.collection,
-          dataSourceKey: requirement.dataSourceKey,
-          actionTypes,
-          describedFieldNames,
-          coveredFieldNames: Array.from(coveredFieldNames),
-          reviewFieldNames: Array.from(reviewFieldNames),
-          missingReviewFieldNames,
-          triggerPaths: requirement.triggerPaths,
-        },
-      });
-    }
-    if (duplicateReviewedFieldNames.length) {
-      pushAuthoringError(errors, {
-        path: `${reviewPath}.fields`,
-        ruleId: 'description-form-behavior-review-duplicate-covered-field',
-        message: `flowSurfaces authoring ${reviewPath}.fields must not include fields already covered by structured formBehavior.`,
-        details: {
-          duplicateReviewedFieldNames,
-        },
+      missingReviewFieldNames.forEach((fieldName) => {
+        const field = describedFieldByName.get(fieldName);
+        pushAuthoringError(errors, {
+          path: `${reviewPath}.fields.${fieldName}`,
+          ruleId: 'missing-description-form-behavior-review-field',
+          message: `flowSurfaces authoring ${reviewPath}.fields.${fieldName} must review this described generated add/edit field.`,
+          details: buildDescriptionReviewErrorDetails({
+            collection: requirement.collection,
+            dataSourceKey: requirement.dataSourceKey,
+            field: fieldName,
+            description: field?.description,
+            reason: 'missing review object',
+          }),
+        });
       });
     }
     if (invalidReviewFieldNames.length) {
-      pushAuthoringError(errors, {
-        path: `${reviewPath}.fields`,
-        ruleId: 'description-form-behavior-review-invalid-field',
-        message: `flowSurfaces authoring ${reviewPath}.fields only accepts described generated add/edit candidate fields for this collection.`,
-        details: {
-          invalidReviewFieldNames,
-          describedFieldNames,
-        },
+      invalidReviewFieldNames.forEach((fieldName) => {
+        pushAuthoringError(errors, {
+          path: `${reviewPath}.fields.${fieldName}`,
+          ruleId: 'description-form-behavior-review-invalid-field',
+          message: `flowSurfaces authoring ${reviewPath}.fields.${fieldName} only accepts described generated add/edit candidate fields for this collection.`,
+          details: {
+            invalidReviewFieldNames: [fieldName],
+            describedFieldNames,
+          },
+        });
       });
     }
+    if (emptyDescriptionReviewFieldNames.length) {
+      emptyDescriptionReviewFieldNames.forEach((fieldName) => {
+        if (_.isNull(reviewFields[fieldName])) {
+          return;
+        }
+        pushAuthoringError(errors, {
+          path: `${reviewPath}.fields.${fieldName}`,
+          ruleId: 'description-review-empty-description-must-be-null',
+          message: `flowSurfaces authoring ${reviewPath}.fields.${fieldName} may be omitted or set to null because this generated add/edit candidate field has no description.`,
+          details: buildDescriptionReviewErrorDetails({
+            collection: requirement.collection,
+            dataSourceKey: requirement.dataSourceKey,
+            field: fieldName,
+            reason: 'empty description review entries must be null when present',
+          }),
+        });
+      });
+    }
+    describedFieldNames.forEach((fieldName) => {
+      if (!reviewFieldNames.has(fieldName)) {
+        return;
+      }
+      const field = describedFieldByName.get(fieldName);
+      const reviewEntry = reviewFields[fieldName];
+      const fieldReviewPath = `${reviewPath}.fields.${fieldName}`;
+      const coverage = coverageByField.get(fieldName) || [];
+      if (_.isNull(reviewEntry)) {
+        pushAuthoringError(errors, {
+          path: fieldReviewPath,
+          ruleId: 'description-review-required',
+          message: `flowSurfaces authoring ${fieldReviewPath} must be a non-null review object because the field description is not empty.`,
+          details: buildDescriptionReviewErrorDetails({
+            collection: requirement.collection,
+            dataSourceKey: requirement.dataSourceKey,
+            field: fieldName,
+            description: field?.description,
+            reason: 'non-empty description cannot use null review',
+          }),
+        });
+        return;
+      }
+      if (!_.isPlainObject(reviewEntry) || !Object.keys(reviewEntry).length) {
+        pushAuthoringError(errors, {
+          path: fieldReviewPath,
+          ruleId: 'description-review-empty',
+          message: `flowSurfaces authoring ${fieldReviewPath} must be a non-empty review object with decision.`,
+          details: buildDescriptionReviewErrorDetails({
+            collection: requirement.collection,
+            dataSourceKey: requirement.dataSourceKey,
+            field: fieldName,
+            description: field?.description,
+            reason: 'review object is missing decision',
+          }),
+        });
+        return;
+      }
+      const decision = String(reviewEntry.decision || '').trim();
+      if (!DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_DECISIONS.has(decision)) {
+        pushAuthoringError(errors, {
+          path: `${fieldReviewPath}.decision`,
+          ruleId: 'description-review-decision-invalid',
+          message: `flowSurfaces authoring ${fieldReviewPath}.decision must be one of implemented, noUiBehavior, unsupported.`,
+          details: buildDescriptionReviewErrorDetails({
+            collection: requirement.collection,
+            dataSourceKey: requirement.dataSourceKey,
+            field: fieldName,
+            description: field?.description,
+            decision,
+            reason: 'invalid decision',
+          }),
+        });
+        return;
+      }
+      if (decision === 'implemented' && !coverage.length) {
+        pushAuthoringError(errors, {
+          path: fieldReviewPath,
+          ruleId: 'description-review-implemented-missing-coverage',
+          message: `flowSurfaces authoring ${fieldReviewPath} is marked implemented, but no structured formBehavior or linkage coverage targets this field.`,
+          details: buildDescriptionReviewErrorDetails({
+            collection: requirement.collection,
+            dataSourceKey: requirement.dataSourceKey,
+            field: fieldName,
+            description: field?.description,
+            decision,
+            missingCoverage: [
+              `formBehavior.addNew.fields.${fieldName}.settings`,
+              `formBehavior.edit.fields.${fieldName}.settings`,
+              `formBehavior.addNew.fieldLinkageRules targeting ${fieldName}`,
+              `formBehavior.edit.fieldLinkageRules targeting ${fieldName}`,
+            ],
+          }),
+        });
+      }
+      if (decision !== 'implemented') {
+        const reasonCode = String(reviewEntry.reasonCode || '').trim();
+        if (!reasonCode) {
+          pushAuthoringError(errors, {
+            path: `${fieldReviewPath}.reasonCode`,
+            ruleId: 'description-review-reason-code-required',
+            message: `flowSurfaces authoring ${fieldReviewPath}.reasonCode is required when decision is ${decision}.`,
+            details: buildDescriptionReviewErrorDetails({
+              collection: requirement.collection,
+              dataSourceKey: requirement.dataSourceKey,
+              field: fieldName,
+              description: field?.description,
+              decision,
+              reason: 'missing reasonCode',
+            }),
+          });
+        } else if (!DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_REASON_CODES.has(reasonCode)) {
+          pushAuthoringError(errors, {
+            path: `${fieldReviewPath}.reasonCode`,
+            ruleId: 'description-review-reason-code-invalid',
+            message: `flowSurfaces authoring ${fieldReviewPath}.reasonCode is not allowed.`,
+            details: buildDescriptionReviewErrorDetails({
+              collection: requirement.collection,
+              dataSourceKey: requirement.dataSourceKey,
+              field: fieldName,
+              description: field?.description,
+              decision,
+              reason: 'invalid reasonCode',
+            }),
+          });
+        }
+        if (coverage.length) {
+          pushAuthoringError(errors, {
+            path: fieldReviewPath,
+            ruleId: 'description-review-nonimplemented-conflicts-with-coverage',
+            message: `flowSurfaces authoring ${fieldReviewPath} is marked ${decision}, but structured coverage already targets this field.`,
+            details: buildDescriptionReviewErrorDetails({
+              collection: requirement.collection,
+              dataSourceKey: requirement.dataSourceKey,
+              field: fieldName,
+              description: field?.description,
+              decision,
+              coverage,
+              reason: 'non-implemented decision conflicts with existing coverage',
+            }),
+          });
+        }
+      }
+    });
   }
 }
 
@@ -2533,8 +3257,8 @@ function getGeneratedPopupDefaultFormDescribedFields(input: {
       fieldGroups: input.fieldGroups,
       context: input.context,
     });
-    const candidateByFieldPath = new Map(
-      candidates.map((candidate) => [String(candidate?.fieldPath || '').trim(), candidate?.field] as const),
+    const candidateByFieldPath = new Map<string, any>(
+      candidates.map((candidate: any) => [String(candidate?.fieldPath || '').trim(), candidate?.field] as const),
     );
     getGeneratedPopupDefaultFormFieldPaths(candidates, input.fieldGroups).forEach((fieldPath) => {
       const normalizedFieldPath = String(fieldPath || '').trim();
@@ -2573,6 +3297,34 @@ function getGeneratedPopupDefaultFormDescribedFieldNames(input: {
   context: FlowSurfaceAuthoringValidationContext;
 }) {
   return getGeneratedPopupDefaultFormDescribedFields(input).map((field) => field.name);
+}
+
+function getGeneratedPopupDefaultFormCandidateFieldNames(input: {
+  collection: any;
+  dataSourceKey: string;
+  actionTypes: ('addNew' | 'edit')[];
+  fieldGroups?: any[];
+  context: FlowSurfaceAuthoringValidationContext;
+}) {
+  const fieldNames = new Set<string>();
+  input.actionTypes.forEach((actionType) => {
+    getGeneratedPopupDefaultFormFieldPaths(
+      getGeneratedPopupRuntimeFieldCandidates({
+        collection: input.collection,
+        dataSourceKey: input.dataSourceKey,
+        actionType,
+        fieldGroups: input.fieldGroups,
+        context: input.context,
+      }),
+      input.fieldGroups,
+    ).forEach((fieldPath) => {
+      const normalizedFieldPath = String(fieldPath || '').trim();
+      if (normalizedFieldPath) {
+        fieldNames.add(normalizedFieldPath);
+      }
+    });
+  });
+  return Array.from(fieldNames);
 }
 
 function getGeneratedPopupDefaultFormFieldPaths(candidates: any[], fieldGroups?: any[]) {

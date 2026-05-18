@@ -4114,19 +4114,35 @@ const schemas = {
   FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview: {
     type: 'object',
     description:
-      'Explicit audit signal for described generated add/edit candidate fields that were reviewed and intentionally not converted into structured formBehavior.',
-    required: ['fields', 'hasTried'],
+      'Per-field review decisions for described generated add/edit candidate fields. Non-empty descriptions require a non-null review object; empty descriptions may be omitted or set to null.',
+    required: ['fields'],
     properties: {
       fields: {
-        type: 'array',
-        minItems: 1,
-        items: {
-          type: 'string',
+        type: 'object',
+        minProperties: 1,
+        additionalProperties: {
+          type: 'object',
+          nullable: true,
+          required: ['decision'],
+          properties: {
+            decision: {
+              type: 'string',
+              enum: ['implemented', 'noUiBehavior', 'unsupported'],
+            },
+            reasonCode: {
+              type: 'string',
+              enum: [
+                'no-ui-behavior',
+                'ambiguous-description',
+                'unsupported-cross-field-validation',
+                'unsupported-association-filter',
+                'workflow-or-ai-generation-out-of-scope',
+                'ai-generated-content-out-of-scope',
+              ],
+            },
+          },
+          additionalProperties: false,
         },
-      },
-      hasTried: {
-        type: 'boolean',
-        enum: [true],
       },
     },
     additionalProperties: false,
@@ -4134,7 +4150,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintDefaultCollection: {
     type: 'object',
     description:
-      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, `formBehavior` for backend-generated add/edit popup forms, and `formBehaviorDescriptionReview` for described fields that were reviewed but not converted. When generated add/edit form candidate fields have non-empty description metadata, each described field must be covered by structured `formBehavior` or listed under `formBehaviorDescriptionReview.fields` with `hasTried: true`. Block-specific defaults are not supported.',
+      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, `formBehavior` for backend-generated add/edit popup forms, and `formBehaviorDescriptionReview` for per-field review decisions. When generated add/edit form candidate fields have non-empty description metadata, each described field must have a review entry: `implemented` must match structured `formBehavior` or linkage coverage, while `noUiBehavior` / `unsupported` require a valid `reasonCode` and no conflicting coverage. Block-specific defaults are not supported.',
     properties: {
       fieldGroups: {
         type: 'array',

@@ -3100,7 +3100,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       type: 'bad_request',
     });
     expect(missingFormBehaviorError).toMatchObject({
-      path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehavior`,
+      path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview`,
       details: {
         collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
         dataSourceKey: 'main',
@@ -3123,16 +3123,16 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       },
     });
     expect(missingFormBehaviorError.message).toContain(
-      `defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehavior`,
+      `defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.fields`,
     );
-    expect(missingFormBehaviorError.message).toContain('Generate structured formBehavior');
+    expect(missingFormBehaviorError.message).toContain('review every described generated add/edit field');
     expect(missingFormBehaviorError.message).toContain('formBehaviorDescriptionReview');
   });
 
-  it('should accept structured formBehavior coverage or review coverage for described generated fields', async () => {
+  it('should accept implemented and noUiBehavior review coverage for described generated fields', async () => {
     for (const [label, collectionDefaults] of [
       [
-        'structured',
+        'implemented',
         {
           formBehavior: {
             addNew: {
@@ -3154,14 +3154,25 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               },
             },
           },
+          formBehaviorDescriptionReview: {
+            fields: {
+              title: {
+                decision: 'implemented',
+              },
+            },
+          },
         },
       ],
       [
-        'review',
+        'noUiBehavior',
         {
           formBehaviorDescriptionReview: {
-            fields: ['title'],
-            hasTried: true,
+            fields: {
+              title: {
+                decision: 'noUiBehavior',
+                reasonCode: 'no-ui-behavior',
+              },
+            },
           },
         },
       ],
@@ -3201,7 +3212,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     }
   });
 
-  it('should reject null defaults formBehavior and invalid review coverage', async () => {
+  it('should reject null defaults formBehavior and old array review coverage', async () => {
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -3216,7 +3227,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               formBehavior: null,
               formBehaviorDescriptionReview: {
                 fields: [],
-                hasTried: false,
+                hasTried: true,
               },
             },
           },
@@ -3247,11 +3258,395 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         }),
         expect.objectContaining({
           path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.fields`,
-          ruleId: 'defaults-formBehaviorDescriptionReview-fields-required',
+          ruleId: 'defaults-formBehaviorDescriptionReview-fields-invalid-shape',
+          details: expect.objectContaining({
+            migrationExample: expect.any(Object),
+            fixOptions: expect.any(Array),
+          }),
         }),
         expect.objectContaining({
-          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.hasTried`,
-          ruleId: 'defaults-formBehaviorDescriptionReview-hasTried-required',
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview`,
+          ruleId: 'defaults-formBehaviorDescriptionReview-unsupported-key',
+          details: expect.objectContaining({
+            unsupportedKeys: ['hasTried'],
+            migrationExample: expect.any(Object),
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should accept null review entries for generated add and edit candidates without descriptions', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description review empty description null',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehaviorDescriptionReview: {
+                fields: {
+                  title: {
+                    decision: 'noUiBehavior',
+                    reasonCode: 'no-ui-behavior',
+                  },
+                  notes: null,
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorEmptyDescriptionNullTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+  });
+
+  it('should reject implemented review decisions without actual structured coverage', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description review implemented missing coverage',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehaviorDescriptionReview: {
+                fields: {
+                  title: {
+                    decision: 'implemented',
+                  },
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorImplementedMissingCoverageTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const error = response.body.errors.find(
+      (item: any) => item.ruleId === 'description-review-implemented-missing-coverage',
+    );
+    expectStructuredError(error, {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(error).toMatchObject({
+      path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.fields.title`,
+      details: {
+        collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+        field: 'title',
+        description: 'Title is required for generated add and edit forms.',
+        decision: 'implemented',
+      },
+    });
+    expect(error.details.fixOptions).toEqual(expect.any(Array));
+    expect(error.details.fixOptions.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should reject implemented review decisions when field settings are empty', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description review empty settings coverage',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehavior: {
+                addNew: {
+                  fields: {
+                    title: {
+                      settings: {},
+                    },
+                  },
+                },
+                edit: {
+                  fields: {
+                    title: {
+                      settings: {},
+                    },
+                  },
+                },
+              },
+              formBehaviorDescriptionReview: {
+                fields: {
+                  title: {
+                    decision: 'implemented',
+                  },
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorEmptySettingsTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.fields.title`,
+          ruleId: 'description-review-implemented-missing-coverage',
+        }),
+      ]),
+    );
+  });
+
+  it('should accept implemented review coverage from applicable top-level form reactions', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description review reaction coverage',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehaviorDescriptionReview: {
+                fields: {
+                  title: {
+                    decision: 'implemented',
+                  },
+                },
+              },
+            },
+          },
+        },
+        reaction: {
+          items: [
+            {
+              type: 'setFieldLinkageRules',
+              target: 'main.descriptionBehaviorReactionForm',
+              rules: [
+                {
+                  key: 'requireTitle',
+                  when: {
+                    logic: '$and',
+                    items: [],
+                  },
+                  then: [
+                    {
+                      type: 'setFieldState',
+                      fieldPaths: ['title'],
+                      state: 'required',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorReactionForm',
+                type: 'createForm',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+  });
+
+  it('should reject implemented review coverage from unrelated top-level form reactions', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description review unrelated reaction coverage',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehaviorDescriptionReview: {
+                fields: {
+                  title: {
+                    decision: 'implemented',
+                  },
+                },
+              },
+            },
+          },
+        },
+        reaction: {
+          items: [
+            {
+              type: 'setFieldLinkageRules',
+              target: 'main.descriptionBehaviorUnrelatedReactionForm',
+              rules: [
+                {
+                  key: 'requireTitleElsewhere',
+                  when: {
+                    logic: '$and',
+                    items: [],
+                  },
+                  then: [
+                    {
+                      type: 'setFieldState',
+                      fieldPaths: ['title'],
+                      state: 'required',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorSourceTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+              {
+                key: 'descriptionBehaviorUnrelatedReactionForm',
+                type: 'createForm',
+                collection: DESCRIPTION_FORM_BEHAVIOR_IGNORED_COLLECTION,
+                fields: ['title'],
+                actions: ['submit'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.fields.title`,
+          ruleId: 'description-review-implemented-missing-coverage',
+        }),
+      ]),
+    );
+  });
+
+  it('should reject non-implemented review decisions that conflict with structured coverage', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring description review non implemented conflict',
+          },
+        },
+        defaults: {
+          collections: {
+            [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: {
+              formBehavior: {
+                addNew: {
+                  fields: {
+                    title: {
+                      settings: {
+                        required: true,
+                      },
+                    },
+                  },
+                },
+              },
+              formBehaviorDescriptionReview: {
+                fields: {
+                  title: {
+                    decision: 'unsupported',
+                    reasonCode: 'ambiguous-description',
+                  },
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'descriptionBehaviorNonImplementedConflictTable',
+                type: 'table',
+                collection: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
+                fields: ['title'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: `$.defaults.collections.${DESCRIPTION_FORM_BEHAVIOR_COLLECTION}.formBehaviorDescriptionReview.fields.title`,
+          ruleId: 'description-review-nonimplemented-conflicts-with-coverage',
         }),
       ]),
     );

@@ -174,9 +174,26 @@ export type FlowSurfaceApplyBlueprintDefaultFormBehavior = {
   edit?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
 };
 
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewDecision =
+  | 'implemented'
+  | 'noUiBehavior'
+  | 'unsupported';
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewReasonCode =
+  | 'no-ui-behavior'
+  | 'ambiguous-description'
+  | 'unsupported-cross-field-validation'
+  | 'unsupported-association-filter'
+  | 'workflow-or-ai-generation-out-of-scope'
+  | 'ai-generated-content-out-of-scope';
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewField = null | {
+  decision: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewDecision;
+  reasonCode?: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewReasonCode;
+};
+
 export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview = {
-  fields: string[];
-  hasTried: true;
+  fields: Record<string, FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewField>;
 };
 
 export type FlowSurfaceApplyBlueprintDefaultCollection = {

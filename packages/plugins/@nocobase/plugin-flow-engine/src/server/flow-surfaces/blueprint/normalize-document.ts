@@ -59,7 +59,21 @@ const APPLY_BLUEPRINT_DEFAULT_FIELD_ALLOWED_KEYS = ['field', 'titleField'];
 const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_ALLOWED_KEYS = ['addNew', 'edit'];
 const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_SCENE_ALLOWED_KEYS = ['fields', 'fieldLinkageRules'];
 const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_FIELD_ALLOWED_KEYS = ['settings'];
-const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS = ['fields', 'hasTried'];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS = ['fields'];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_FIELD_ALLOWED_KEYS = ['decision', 'reasonCode'];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_DECISIONS = [
+  'implemented',
+  'noUiBehavior',
+  'unsupported',
+];
+const APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_REASON_CODES = [
+  'no-ui-behavior',
+  'ambiguous-description',
+  'unsupported-cross-field-validation',
+  'unsupported-association-filter',
+  'workflow-or-ai-generation-out-of-scope',
+  'ai-generated-content-out-of-scope',
+];
 const APPLY_BLUEPRINT_DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const APPLY_BLUEPRINT_DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
@@ -353,17 +367,51 @@ function normalizeDefaultFormBehaviorDescriptionReview(
   }
   assertPlainObject(input, context);
   assertOnlyAllowedKeys(input, context, APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_ALLOWED_KEYS);
-  const rawFields = _.castArray(input.fields);
-  if (!rawFields.length) {
-    throwBadRequest(`flowSurfaces authoring ${context}.fields must be a non-empty array`);
+  assertPlainObject(input.fields, `${context}.fields`);
+  if (!Object.keys(input.fields).length) {
+    throwBadRequest(`flowSurfaces authoring ${context}.fields must be a non-empty object keyed by field path`);
   }
-  const fields = _.uniq(rawFields.map((field, index) => assertNonEmptyString(field, `${context}.fields[${index}]`)));
-  if (input.hasTried !== true) {
-    throwBadRequest(`flowSurfaces authoring ${context}.hasTried must be true`);
-  }
+  const fields: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview['fields'] = {};
+  Object.entries(input.fields).forEach(([fieldPath, value]) => {
+    const normalizedFieldPath = assertNonEmptyString(fieldPath, `${context}.fields`);
+    if (_.isNull(value)) {
+      fields[normalizedFieldPath] = null;
+      return;
+    }
+    assertPlainObject(value, `${context}.fields.${normalizedFieldPath}`);
+    assertOnlyAllowedKeys(
+      value as Record<string, any>,
+      `${context}.fields.${normalizedFieldPath}`,
+      APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_FIELD_ALLOWED_KEYS,
+    );
+    const decision = assertNonEmptyString((value as any).decision, `${context}.fields.${normalizedFieldPath}.decision`);
+    if (!APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_DECISIONS.includes(decision)) {
+      throwBadRequest(
+        `flowSurfaces authoring ${context}.fields.${normalizedFieldPath}.decision must be one of ${APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_DECISIONS.join(
+          ', ',
+        )}`,
+      );
+    }
+    const reasonCode = _.isUndefined((value as any).reasonCode)
+      ? undefined
+      : assertNonEmptyString((value as any).reasonCode, `${context}.fields.${normalizedFieldPath}.reasonCode`);
+    if (
+      !_.isUndefined(reasonCode) &&
+      !APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_REASON_CODES.includes(reasonCode)
+    ) {
+      throwBadRequest(
+        `flowSurfaces authoring ${context}.fields.${normalizedFieldPath}.reasonCode must be one of ${APPLY_BLUEPRINT_DEFAULT_FORM_BEHAVIOR_DESCRIPTION_REVIEW_REASON_CODES.join(
+          ', ',
+        )}`,
+      );
+    }
+    fields[normalizedFieldPath] = buildDefinedPayload({
+      decision,
+      reasonCode,
+    }) as NonNullable<FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview['fields'][string]>;
+  });
   return {
     fields,
-    hasTried: true,
   };
 }
 
