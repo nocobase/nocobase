@@ -8,7 +8,7 @@
  */
 
 import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { DrawerFormLayout, Table } from '@nocobase/client-v2';
+import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Card, Checkbox, Dropdown, Form, Input, Select, Space, Spin, Tag, theme } from 'antd';
@@ -30,8 +30,6 @@ type AuthenticatorRecord = {
 };
 
 type AuthTypeOption = { name: string; title?: string };
-
-const PAGE_SIZE = 50;
 
 function createAuthenticatorName() {
   return `s_${Math.random().toString(36).slice(2, 12)}`;
@@ -202,22 +200,35 @@ export default function AuthenticatorsPage() {
   const resource = useAuthenticatorsResource();
   const plugin = ctx.app.pm.get(PluginAuthClientV2);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const { data: authTypes } = useAuthTypesFromServer();
   const { data, loading, refresh } = useRequest(
     async () => {
       const response = await resource.list({
         page,
-        pageSize: PAGE_SIZE,
+        pageSize,
         sort: ['sort'],
         appends: [],
       });
       return normalizeListResponse(response);
     },
     {
-      refreshDeps: [page],
+      refreshDeps: [page, pageSize],
     },
   );
+
+  // antd's pagination `onChange(nextPage, nextPageSize)` fires for both
+  // current-page changes and page-size changes. When pageSize changes we reset
+  // to page 1 so the user is never landed on an out-of-range page.
+  const handlePaginationChange = useMemoizedFn((nextPage: number, nextPageSize: number) => {
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      setPage(1);
+      return;
+    }
+    setPage(nextPage);
+  });
 
   const authTypeOptions = useMemo<AuthTypeOption[]>(() => authTypes || [], [authTypes]);
 
@@ -367,10 +378,9 @@ export default function AuthenticatorsPage() {
         }}
         pagination={{
           current: page,
-          pageSize: PAGE_SIZE,
+          pageSize,
           total: data?.total || 0,
-          showSizeChanger: false,
-          onChange: setPage,
+          onChange: handlePaginationChange,
         }}
       />
     </Card>
