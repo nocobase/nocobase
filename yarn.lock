@@ -24271,11 +24271,6 @@ ms@2.1.3, ms@^2.0.0, ms@^2.1.1, ms@^2.1.3:
   resolved "https://registry.npmmirror.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-multer-cos@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.npmmirror.com/multer-cos/-/multer-cos-1.0.3.tgz#f8998b9a16d2e6e2d3f00cd811ef0bcf14e804b6"
-  integrity sha512-KD1/ZUHcmjYtsPHlosOsned8u6a1xYgUYmnU0659rRue4fjVSbEBo6BKyI2N6BbUNHAWMz18NUb9a5Gn5GcgvQ==
-
 multer-s3@^3.0.1:
   version "3.0.1"
   resolved "https://registry.npmmirror.com/multer-s3/-/multer-s3-3.0.1.tgz#4ba7eb8c1eb94a7a64f0de37d414a88c4876d5d8"
