@@ -8,16 +8,11 @@
  */
 
 import { css } from '@emotion/css';
-import { DetailsGridModel, FormComponent } from '@nocobase/client';
-import {
-  createRecordMetaFactory,
-  FlowModel,
-  FlowModelRenderer,
-  PropertyMetaFactory,
-  tExpr,
-} from '@nocobase/flow-engine';
+import { DetailsGridModel, FormComponent } from '@nocobase/client-v2';
+import { createRecordMetaFactory, FlowModel, FlowModelRenderer, PropertyMetaFactory } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
+import { tExpr } from '../locale';
 import {
   normalizeKanbanPopupTargetUid,
   normalizeKanbanPopupTemplateUid,
