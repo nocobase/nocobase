@@ -11,7 +11,7 @@ import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { Application } from '../Application';
-import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToLegacySignin } from '../authRedirect';
+import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToV2Signin } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
@@ -144,7 +144,7 @@ const CurrentUserProvider: FC = ({ children }) => {
 
         const user = res?.data?.data;
         if (user?.id == null) {
-          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
+          redirectToV2Signin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
           return;
         }
 
@@ -169,7 +169,7 @@ const CurrentUserProvider: FC = ({ children }) => {
       } catch (error: any) {
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (isAuthError) {
-          redirectToLegacySignin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
+          redirectToV2Signin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
           return;
         }
         if (mounted) {
@@ -199,7 +199,7 @@ const RootRedirect: FC = () => {
 
   useEffect(() => {
     if (!hasToken) {
-      redirectToLegacySignin(app, getDefaultV2AdminRedirectPath(app), { replace: true });
+      redirectToV2Signin(app, getDefaultV2AdminRedirectPath(app), { replace: true });
     }
   }, [app, hasToken]);
 
