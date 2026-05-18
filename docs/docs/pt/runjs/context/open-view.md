@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/open-view).
-:::
-
 # ctx.openView()
 
 Abre programaticamente uma visualização especificada (gaveta, diálogo, página incorporada, etc.). Fornecido pelo `FlowModelContext`, é usado para abrir visualizações `ChildPage` ou `PopupAction` configuradas em cenários como `JSBlock`, células de tabela e fluxos de trabalho.

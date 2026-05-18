@@ -21,6 +21,8 @@ import {
 import { SubModelItem, mergeSubModelItems, transformItems } from '../AddSubModelButton';
 import { App, ConfigProvider } from 'antd';
 
+const getSubmenuTitle = (label: string) => screen.getByText(label).closest('.ant-dropdown-menu-submenu-title');
+
 describe('AddSubModelButton - preset settings open on add', () => {
   test('calls openFlowSettings with preset=true for subModel with preset steps', async () => {
     // Arrange: set up engine and models
@@ -214,6 +216,68 @@ describe('AddSubModelButton - async group children (nested)', () => {
     await waitFor(() => expect(screen.getByText('G-Leaf-1')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByText('Nested-Leaf-1')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByText('Nested-Leaf-2')).toBeInTheDocument());
+  });
+
+  it('keeps root dropdown open while only the current nested group stays expanded', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-multi-open' });
+
+    const items = [
+      {
+        key: 'group-a',
+        label: 'Group A',
+        children: [
+          { key: 'a-1', label: 'A-1', createModelOptions: { use: 'Parent' } },
+          { key: 'a-2', label: 'A-2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+      {
+        key: 'group-b',
+        label: 'Group B',
+        children: [
+          { key: 'b-1', label: 'B-1', createModelOptions: { use: 'Parent' } },
+          { key: 'b-2', label: 'B-2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open Menu
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Open Menu'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Group A')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Group B')).toBeInTheDocument());
+
+    await act(async () => {
+      await userEvent.hover(screen.getByText('Group A'));
+    });
+    await waitFor(() => expect(screen.getByText('A-1')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Group A')).toHaveAttribute('aria-expanded', 'true'));
+    expect(getSubmenuTitle('Group B')).toHaveAttribute('aria-expanded', 'false');
+
+    await act(async () => {
+      await userEvent.hover(screen.getByText('Group B'));
+    });
+    await waitFor(() => expect(screen.getByText('B-1')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Group B')).toHaveAttribute('aria-expanded', 'true'));
+    expect(getSubmenuTitle('Group A')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('Group A')).toBeInTheDocument();
+    expect(screen.getByText('Group B')).toBeInTheDocument();
   });
 });
 
@@ -1202,6 +1266,7 @@ describe('AddSubModelButton toggleable behavior', () => {
       },
       { timeout: 3000 },
     );
+    await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
 
     // dropdown should remain open and children should still be visible (no flicker / reload)
     expect(screen.getByText('Async Group')).toBeInTheDocument();
@@ -1218,6 +1283,7 @@ describe('AddSubModelButton toggleable behavior', () => {
 
     // ensure destroy has been called (avoid flakiness on exact call counts)
     await waitFor(() => {
+      expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
       expect(repo.destroy).toHaveBeenCalled();
     });
   });
@@ -1371,13 +1437,76 @@ describe('AddSubModelButton toggleable behavior', () => {
     // click leaf toggle to add
     await user.click(screen.getByText('Leaf Toggle'));
 
-    // menu should remain visible; submenu parent still visible
+    // menu and submenu should remain visible after toggling a submenu leaf
     expect(screen.getByText('Fields')).toBeInTheDocument();
-
-    // 由于点击叶子项后二级子菜单可能被收起，这里先重新展开再断言开关状态
-    await user.hover(screen.getByText('Fields'));
     await waitFor(() => expect(screen.getByText('Leaf Toggle')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
+  });
+
+  test('keepDropdownOpen keeps root menu visible after clicking a nested relation-style leaf', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+
+    class Parent extends FlowModel {}
+    class RelationLeafModel extends FlowModel {}
+
+    engine.registerModels({ Parent, RelationLeafModel });
+    engine.setModelRepository(new FakeRepo());
+    vi.spyOn(engine.flowSettings, 'open').mockResolvedValue(false as any);
+
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'relation-fields',
+        label: 'Display association fields',
+        children: [
+          {
+            key: 'users',
+            label: 'Users',
+            type: 'group' as const,
+            children: [
+              {
+                key: 'user-name',
+                label: 'User name',
+                createModelOptions: { use: 'RelationLeafModel' },
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              items={items as any}
+              subModelType="array"
+              subModelKey="subs"
+              keepDropdownOpen
+            >
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Open'));
+
+    await waitFor(() => expect(screen.getByText('Display association fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Display association fields'));
+    await waitFor(() => expect(screen.getByText('Users')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Display association fields')).toHaveAttribute('aria-expanded', 'true'));
+
+    await user.click(screen.getByText('User name'));
+
+    await waitFor(() => expect(screen.getByText('Display association fields')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Display association fields')).toHaveAttribute('aria-expanded', 'true'));
   });
 
   test('top-level toggle updates after opening a second-level branch', async () => {

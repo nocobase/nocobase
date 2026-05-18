@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/libs)をご参照ください。
-:::
-
 # ctx.libs
 
 `ctx.libs` は RunJS 内蔵ライブラリの統一ネームスペースであり、React、Ant Design、dayjs、lodash などの常用ライブラリが含まれています。**`import` や非同期読み込みは不要**で、直接 `ctx.libs.xxx` を通じて使用できます。

@@ -74,4 +74,17 @@ describe('Date time interface', () => {
     expect(await interfaceInstance.toValue('42510')).toBe('2016-05-20T00:00:00.000Z');
     expect(await interfaceInstance.toValue('2016-05-20T00:00:00.000Z')).toBe('2016-05-20T00:00:00.000Z');
   });
+
+  it('should honor request timezone when parsing date-only strings and excel serials', async () => {
+    const interfaceInstance = new DatetimeInterface();
+    const ctx = {
+      get(key: string) {
+        return key === 'X-Timezone' ? '+08:00' : undefined;
+      },
+    };
+
+    expect(await interfaceInstance.toValue('2025-05-12', ctx)).toBe('2025-05-11T16:00:00.000Z');
+    // TODO(refactor): Excel value parsing should not be placed in the datetime interface, and should be handled separately. This is a temporary test to ensure that the current implementation continues to work as expected.
+    expect(await interfaceInstance.toValue(45789, ctx)).toBe('2025-05-11T16:00:00.000Z');
+  });
 });

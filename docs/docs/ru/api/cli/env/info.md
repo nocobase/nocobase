@@ -18,12 +18,9 @@ nb env info [name] [flags]
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| `[name]` | string | Имя env CLI для просмотра, при пропуске используется текущий env |
-| `--env`, `-e` | string | Имя env CLI для просмотра, альтернатива позиционному аргументу |
+| `[name]` | string | Имя настроенного env для просмотра; если не указано, используется текущий env |
 | `--json` | boolean | Вывести в формате JSON |
 | `--show-secrets` | boolean | Отображать токены, пароли и другие секреты в открытом виде |
-
-Если переданы одновременно `[name]` и `--env`, они должны совпадать.
 
 ## Примеры
 
@@ -31,7 +28,6 @@ nb env info [name] [flags]
 nb env info app1
 nb env info app1 --json
 nb env info app1 --show-secrets
-nb env info --env app1
 ```
 
 ## Связанные команды

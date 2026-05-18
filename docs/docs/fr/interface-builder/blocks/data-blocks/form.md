@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/blocks/data-blocks/form).
-:::
-
 # Bloc formulaire
 
 ## Introduction
@@ -77,7 +73,7 @@ Le bloc formulaire prend en charge deux modes de mise en page, configurés via l
 
 ### Modèle de champ
 
-Les modèles de champs sont utilisés pour réutiliser la configuration de la zone de champ dans les blocs de formulaire. Pour plus de détails, voir [Modèle de champ](/interface-builder/fields/field-template).
+Les modèles de champs sont utilisés pour réutiliser la configuration de la zone de champ dans les blocs de formulaire. Pour plus de détails, voir [Modèle de champ](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

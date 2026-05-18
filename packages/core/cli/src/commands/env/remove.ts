@@ -8,22 +8,30 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getCurrentEnvName, removeEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, loadAuthConfig, removeEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
-import { confirmAction, isInteractiveTerminal, printVerbose, setVerboseMode } from '../../lib/ui.js';
+import { confirm } from '../../lib/inquirer.ts';
+import { isInteractiveTerminal, printVerbose, setVerboseMode } from '../../lib/ui.js';
 
 export default class EnvRemove extends Command {
   static override summary = 'Remove a configured environment';
+  static override description =
+    'Remove the saved CLI env config for an environment. This command does not clean local app files, containers, or storage data.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> staging',
-    '<%= config.bin %> <%= command.id %> staging -f',
+    '<%= config.bin %> <%= command.id %> staging --yes',
   ];
 
   static override flags = {
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Skip confirmation and remove the saved CLI env config',
+      default: false,
+    }),
     force: Flags.boolean({
       char: 'f',
-      description: 'Remove without confirmation',
+      hidden: true,
       default: false,
     }),
     verbose: Flags.boolean({
@@ -34,7 +42,7 @@ export default class EnvRemove extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Configured environment name',
+      description: 'Configured environment name to remove',
       required: true,
     }),
   };
@@ -42,30 +50,48 @@ export default class EnvRemove extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvRemove);
     setVerboseMode(flags.verbose);
-    const currentEnv = await getCurrentEnvName({ scope: resolveDefaultConfigScope() });
+    const scope = resolveDefaultConfigScope();
+    const config = await loadAuthConfig({ scope });
+    if (!config.envs[args.name]) {
+      this.error(`Env "${args.name}" is not configured`);
+    }
+    const currentEnv = await getCurrentEnvName({ scope });
+    const skipConfirmation = flags.yes || flags.force;
 
-    if (args.name === currentEnv && !flags.force) {
+    if (!skipConfirmation) {
       if (!isInteractiveTerminal()) {
-        this.error('Refusing to remove the current env without confirmation. Re-run with `--force`.');
+        this.error(
+          `Refusing to remove env "${args.name}" without confirmation in non-interactive mode. Re-run with \`--yes\` to remove only the saved CLI env config.`,
+        );
       }
 
-      const confirmed = await confirmAction(`Remove current env "${args.name}"?`, { defaultValue: false });
+      const subject = args.name === currentEnv ? `current env "${args.name}"` : `env "${args.name}"`;
+      let confirmed = false;
+      try {
+        confirmed = await confirm({
+          message: `Remove ${subject}? Only the saved CLI env config will be removed.`,
+          default: false,
+        });
+      } catch {
+        return;
+      }
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }
 
     printVerbose(`Removing env "${args.name}"`);
-    const result = await removeEnv(args.name, { scope: resolveDefaultConfigScope() });
-
-    this.log(`Removed env "${result.removed}".`);
+    const result = await removeEnv(args.name, { scope });
 
     if (result.hasEnvs) {
-      this.log(`Current env: ${result.currentEnv}`);
+      if (args.name === currentEnv) {
+        this.log(`Removed env "${result.removed}". Switched current env to "${await getCurrentEnvName({ scope })}".`);
+        return;
+      }
+      this.log(`Removed env "${result.removed}".`);
       return;
     }
 
-    this.log('No envs configured.');
+    this.log(`Removed env "${result.removed}". No envs configured.`);
   }
 }

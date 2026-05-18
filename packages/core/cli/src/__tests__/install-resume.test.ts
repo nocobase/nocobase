@@ -12,17 +12,17 @@ import { beforeEach, test, vi, expect } from 'vitest';
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
   getEnv: vi.fn(),
+  upsertEnv: vi.fn(),
+  setCurrentEnv: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
-  promptInfo: vi.fn(),
-  promptStep: vi.fn(),
-  promptWarn: vi.fn(),
-  promptIntro: vi.fn(),
-  promptOutro: vi.fn(),
-  promptCancel: vi.fn(),
+  printInfo: vi.fn(),
+  printWarning: vi.fn(),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.setCurrentEnv.mockResolvedValue(undefined);
   mocks.validateExternalDbConfig.mockReset();
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
 });
@@ -46,19 +46,29 @@ vi.mock('../lib/auth-store.js', async (importOriginal) => {
       }
       return actual.getEnv(...args);
     },
+    upsertEnv: (...args: Parameters<typeof actual.upsertEnv>) => {
+      if (mocks.upsertEnv.mock.calls.length || mocks.upsertEnv.getMockImplementation()) {
+        return mocks.upsertEnv(...args);
+      }
+      return actual.upsertEnv(...args);
+    },
+    setCurrentEnv: (...args: Parameters<typeof actual.setCurrentEnv>) => {
+      if (mocks.setCurrentEnv.mock.calls.length || mocks.setCurrentEnv.getMockImplementation()) {
+        return mocks.setCurrentEnv(...args);
+      }
+      return actual.setCurrentEnv(...args);
+    },
   };
 });
 
-vi.mock('@clack/prompts', () => ({
-  intro: mocks.promptIntro,
-  log: {
-    info: mocks.promptInfo,
-    step: mocks.promptStep,
-    warn: mocks.promptWarn,
-  },
-  outro: mocks.promptOutro,
-  cancel: mocks.promptCancel,
-}));
+vi.mock('../lib/ui.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/ui.js')>();
+  return {
+    ...actual,
+    printInfo: mocks.printInfo,
+    printWarning: mocks.printWarning,
+  };
+});
 
 vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/prompt-validators.js')>();
@@ -675,4 +685,34 @@ test('install app prompt catalog seeds resume=true when resuming', async () => {
   await (catalog.seedResume as { run: (values: Record<string, string | boolean>) => Promise<void> | void }).run(values);
 
   expect(values.resume).toBe(true);
+});
+
+test('saveInstalledEnv switches current env after persisting the final env config', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  const command = Object.create(Install.prototype) as InstanceType<typeof Install>;
+
+  await (Install.prototype as unknown as {
+    saveInstalledEnv: (params: {
+      envName: string;
+      appResults: Record<string, unknown>;
+      downloadResults: Record<string, unknown>;
+      dbResults: Record<string, unknown>;
+      rootResults: Record<string, unknown>;
+      envAddResults: Record<string, unknown>;
+    }) => Promise<void>;
+  }).saveInstalledEnv.call(command, {
+    envName: 'app1',
+    appResults: {},
+    downloadResults: {},
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {},
+  });
+
+  expect(mocks.upsertEnv).toHaveBeenCalledTimes(1);
+  expect(mocks.setCurrentEnv).toHaveBeenCalledWith('app1', { scope: 'global' });
+  expect(mocks.upsertEnv.mock.invocationCallOrder[0]).toBeLessThan(
+    mocks.setCurrentEnv.mock.invocationCallOrder[0],
+  );
 });

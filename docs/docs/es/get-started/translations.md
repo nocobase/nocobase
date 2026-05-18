@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/get-started/translations).
-:::
-
 # Contribución a la traducción
 
 El idioma por defecto de NocoBase es el inglés. Actualmente, la aplicación principal es compatible con inglés, italiano, neerlandés, chino simplificado y japonés. Le invitamos cordialmente a contribuir con traducciones para otros idiomas, permitiendo que los usuarios de todo el mundo disfruten de una experiencia de NocoBase aún más accesible.

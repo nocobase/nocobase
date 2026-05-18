@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/resource/sql-resource).
-:::
-
 # SQLResource
 
 Eine Resource zum Ausführen von Abfragen basierend auf **gespeicherten SQL-Konfigurationen** oder **dynamischem SQL**. Die Datenquelle stammt von Schnittstellen wie `flowSql:run` / `flowSql:runById`. Sie eignet sich für Berichte, Statistiken, benutzerdefinierte SQL-Listen und andere Szenarien. Im Gegensatz zur [MultiRecordResource](./multi-record-resource.md) ist die SQLResource nicht von Sammlungen (Collections) abhängig; sie führt SQL-Abfragen direkt aus und unterstützt Paginierung, Parameterbindung, Vorlagenvariablen (`{{ctx.xxx}}`) sowie die Steuerung des Ergebnistyps.

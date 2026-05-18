@@ -17,20 +17,21 @@ import { useChatMessageActions } from '../../chatbox/hooks/useChatMessageActions
 import { ProfileCard } from '../../ProfileCard';
 import { RemoteSelect, TextAreaWithContextSelector, useCompile, useRequest, useToken } from '@nocobase/client';
 import { AddContextButton } from '../../AddContextButton';
-import { Schema, useField } from '@formily/react';
+import { useField } from '@formily/react';
 import { ArrayField, ObjectField, Field } from '@formily/core';
 import { ContextItem } from '../../chatbox/ContextItem';
 import { dialogController } from '../../stores/dialog-controller';
 import { namespace } from '../../../locale';
 import { ContextItem as WorkContextItem } from '../../types';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useLLMServiceCatalog } from '../../../llm-services/hooks/useLLMServiceCatalog';
-import { useLLMProviders } from '../../../llm-services/llm-providers';
 import { useT } from '../../../locale';
-import { buildProviderGroupedModelOptions, getServiceByOverride } from '../../../llm-services/utils';
+import { getServiceByOverride } from '../../../llm-services/utils';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { Skills, Tools } from '../../../components/skill-settings';
 import _ from 'lodash';
+import { getAIEmployeeModels, getAllModels } from '../../chatbox/model';
 
 const { Meta } = Card;
 
@@ -66,9 +67,11 @@ const Shortcut: React.FC<ShortcutProps> = ({
   });
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
   const aiEmployee = aiEmployeesMap[username];
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
   const { triggerTask } = useChatBoxActions();
-  const addContextItems = useChatMessagesStore.use.addContextItems();
+  const addContextItems = chat.addContextItems;
   const { syncContextAttachments } = useChatMessageActions();
 
   const currentAvatar = useMemo(() => {
@@ -196,16 +199,41 @@ const WorkContext: React.FC = () => {
 
 const TaskModelSelect: React.FC = observer(() => {
   const t = useT();
+  const ctx = useFlowContext();
   const field = useField<ObjectField>();
   const { services, loading } = useLLMServiceCatalog();
-  const providers = useLLMProviders();
-  const options = useMemo(
-    () => buildProviderGroupedModelOptions(services, providers, (label) => Schema.compile(label, { t })),
-    [services, providers, t],
+  const aiEmployeesMap = ctx.aiConfigRepository.getAIEmployeesMap();
+  const username = ctx.model.props?.aiEmployee?.username ?? '';
+  const aiEmployee = aiEmployeesMap[username];
+  const options = useMemo(() => {
+    const modelKeys = new Set(
+      getAIEmployeeModels(aiEmployee, getAllModels(services)).map((model) => `${model.llmService}:${model.model}`),
+    );
+    return services
+      .map((service) => ({
+        label: service.llmServiceTitle,
+        options: service.enabledModels
+          .filter((model) => modelKeys.has(`${service.llmService}:${model.value}`))
+          .map((model) => ({
+            label: `${service.llmServiceTitle} / ${model.label}`,
+            value: `${service.llmService}:${model.value}`,
+          })),
+      }))
+      .filter((service) => service.options.length);
+  }, [aiEmployee, services]);
+  const optionValues = useMemo(
+    () => new Set(options.flatMap((group) => group.options.map((option) => option.value))),
+    [options],
   );
 
   const selectedValue =
     field.value?.llmService && field.value?.model ? `${field.value.llmService}:${field.value.model}` : undefined;
+
+  useEffect(() => {
+    if (selectedValue && !optionValues.has(selectedValue)) {
+      field.value = null;
+    }
+  }, [field, optionValues, selectedValue]);
 
   const handleChange = (value?: string) => {
     if (!value) {

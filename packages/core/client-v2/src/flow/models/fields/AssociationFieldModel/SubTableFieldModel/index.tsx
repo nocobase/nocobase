@@ -21,7 +21,7 @@ import { uid } from '@formily/shared';
 import { FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { buildRecordPickerPopupContextInputArgs, RecordPickerContent } from '../RecordPickerFieldModel';
-import { SubTableColumnModel } from './SubTableColumnModel';
+import { isSubTableColumnFieldComponentContext, SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
 
@@ -120,6 +120,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
         parentFieldIndex={this.context.fieldIndex}
         parentItem={this.context.item}
         filterTargetKey={this.collection.filterTargetKey}
+        formValuesChangeEmitter={this.context.blockModel?.emitter}
+        fieldPathArray={this.parent?.context?.fieldPathArray}
         getCurrentValue={this.getCurrentValue}
       />
     );
@@ -387,6 +389,9 @@ export { SubTableColumnModel };
 FormItemModel.bindModelToInterface('SubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
   order: 200,
   when: (ctx, field) => {
+    if (isSubTableColumnFieldComponentContext(ctx)) {
+      return false;
+    }
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';
     }

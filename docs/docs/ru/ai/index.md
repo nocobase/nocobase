@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: Готовая команда ИИ из коробки
         details: Преднастроенная команда AI-сотрудников NocoBase покрывает моделирование данных, frontend-разработку, организацию данных и другие сценарии — без какой-либо настройки.
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: Научите ИИ понимать Ваш бизнес
         details: Загружайте бизнес-документы и данные в базу знаний ИИ, чтобы ответы и действия AI-сотрудников лучше соответствовали Вашим реальным сценариям.
         link: /ai-employees/knowledge-base

@@ -19,6 +19,7 @@ nb app restart [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `--env`, `-e` | string | Имя CLI env для перезапуска; если не указано, используется текущий env |
+| `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на env, отличающуюся от текущей env, пропускает интерактивное подтверждение |
 | `--quickstart` | boolean | Быстрый запуск приложения после остановки |
 | `--port`, `-p` | string | Переопределяет `appPort` в конфигурации env |
 | `--daemon`, `-d` / `--no-daemon` | boolean | Запускать ли в режиме демона после остановки, по умолчанию включено |
@@ -36,8 +37,11 @@ nb app restart --env local --port 12000
 nb app restart --env local --no-daemon
 nb app restart --env local --instances 2
 nb app restart --env local --launch-mode pm2
+nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
+
+Если вы явно передаёте `--env`, и она отличается от текущей env, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях AI-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
 
 ## Связанные команды
 

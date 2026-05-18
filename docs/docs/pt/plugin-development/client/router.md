@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Roteador
 
 O cliente NocoBase oferece um gerenciador de roteamento flexível que permite estender páginas e páginas de configuração de **plugins** usando `router.add()` e `pluginSettingsManager`.

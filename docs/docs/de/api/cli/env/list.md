@@ -1,33 +1,36 @@
 ---
 title: "nb env list"
-description: "nb env list Befehlsreferenz: Listet die konfigurierten NocoBase CLI env und den API-Authentifizierungsstatus auf."
-keywords: "nb env list,NocoBase CLI,Umgebungsliste,Authentifizierungsstatus"
+description: "nb env list Befehlsreferenz: Listet konfigurierte NocoBase CLI env auf."
+keywords: "nb env list,NocoBase CLI,Umgebungsliste,API Base URL"
 ---
 
 # nb env list
 
-Listet alle konfigurierten env auf und prüft den API-Authentifizierungsstatus der Anwendung anhand der gespeicherten Token-/OAuth-Anmeldedaten.
+Listet alle konfigurierten env auf.
+
+Dieser Befehl zeigt nur die gespeicherte Konfiguration an. Verwenden Sie standardmäßig [`nb env status`](./status.md), wenn Sie Statusinformationen prüfen möchten.
 
 ## Verwendung
 
-```bash
+
 nb env list
-```
 
 ## Ausgabe
 
-Die Ausgabetabelle enthält die Markierung der aktuellen Umgebung, den Namen, den Typ, den App Status, die URL, die Authentifizierungsmethode sowie die Laufzeitversion.
+Die Ausgabetabelle enthält die Markierung der aktuellen Umgebung, den Namen, den Typ, `API Base URL`, den Authentifizierungstyp und die Laufzeitversion.
 
-`App Status` zeigt den Status an, der zurückgegeben wird, wenn die CLI mit den Authentifizierungsinformationen der aktuellen env auf die Anwendungs-API zugreift, beispielsweise `ok`, `auth failed`, `unreachable` oder `unconfigured`. Den Laufzeitstatus der Datenbank prüfen Sie bitte mit [`nb db ps`](../db/ps.md).
+- `Current` markiert die aktuell wirksame env mit `*`
+- `API Base URL` zeigt die gespeicherte rohe API-Adresse
+- `Runtime` zeigt zwischengespeicherte Versionsinformationen der Runtime
 
 ## Beispiele
 
-```bash
+
 nb env list
-```
 
 ## Verwandte Befehle
 
+- [`nb env current`](./current.md)
+- [`nb env status`](./status.md)
 - [`nb env info`](./info.md)
 - [`nb env use`](./use.md)
-- [`nb db ps`](../db/ps.md)

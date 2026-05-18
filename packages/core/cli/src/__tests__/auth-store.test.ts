@@ -55,7 +55,7 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -82,6 +82,107 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
   });
 });
 
+test('getCurrentEnvName prefers the current session env over lastEnv', async () => {
+  await withTempCliHome(async () => {
+    process.env.NB_SESSION_ID = 'test-session';
+    try {
+      await saveAuthConfig(
+        {
+          lastEnv: 'app2',
+          envs: {
+            app1: {
+              baseUrl: 'http://localhost:13001/api',
+            },
+            app2: {
+              baseUrl: 'http://localhost:13002/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      await setCurrentEnv('app1', { scope: 'global' });
+
+      expect(await getCurrentEnvName({ scope: 'global' })).toBe('app1');
+
+      const config = await loadAuthConfig({ scope: 'global' });
+      expect(config.lastEnv).toBe('app1');
+    } finally {
+      delete process.env.NB_SESSION_ID;
+    }
+  });
+});
+
+test('removeEnv repairs the current session env when removing the active env', async () => {
+  await withTempCliHome(async () => {
+    process.env.NB_SESSION_ID = 'test-session';
+    try {
+      await saveAuthConfig(
+        {
+          lastEnv: 'legacy',
+          envs: {
+            legacy: {
+              baseUrl: 'http://localhost:13001/api',
+            },
+            next: {
+              baseUrl: 'http://localhost:13002/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      await setCurrentEnv('legacy', { scope: 'global' });
+      const removal = await removeEnv('legacy', { scope: 'global' });
+
+      expect(removal).toMatchObject({
+        removed: 'legacy',
+        lastEnv: 'next',
+        hasEnvs: true,
+      });
+      expect(await getCurrentEnvName({ scope: 'global' })).toBe('next');
+    } finally {
+      delete process.env.NB_SESSION_ID;
+    }
+  });
+});
+
+test('getCurrentEnvName lazily repairs an invalid session env by falling back to lastEnv', async () => {
+  await withTempCliHome(async () => {
+    process.env.NB_SESSION_ID = 'test-session';
+    try {
+      await saveAuthConfig(
+        {
+          lastEnv: 'next',
+          envs: {
+            next: {
+              baseUrl: 'http://localhost:13002/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const sessionsDir = path.join(resolveCliHomeDir('global'), 'sessions');
+      await mkdir(sessionsDir, { recursive: true });
+      await writeFile(
+        path.join(sessionsDir, 'test-session.json'),
+        JSON.stringify({
+          currentEnv: 'missing-env',
+          updatedAt: '2026-05-09T00:00:00.000Z',
+        }, null, 2),
+      );
+
+      expect(await getCurrentEnvName({ scope: 'global' })).toBe('next');
+      expect(JSON.parse(await readFile(path.join(sessionsDir, 'test-session.json'), 'utf8'))).toMatchObject({
+        currentEnv: 'next',
+      });
+    } finally {
+      delete process.env.NB_SESSION_ID;
+    }
+  });
+});
+
 test('cli config stores explicit settings under settings', async () => {
   await withTempCliHome(async () => {
     const first = await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
@@ -105,7 +206,7 @@ test('loadAuthConfig maps the legacy dockerResourcePrefix field to workspace nam
     await saveAuthConfig(
       {
         dockerResourcePrefix: 'nb-legacy',
-        currentEnv: 'default',
+        lastEnv: 'default',
         envs: {},
       } as Parameters<typeof saveAuthConfig>[0] & { dockerResourcePrefix: string },
       { scope: 'global' },
@@ -121,7 +222,7 @@ test('cli config reads docker defaults from legacy name when explicit settings a
     await saveAuthConfig(
       {
         name: 'nb-legacy',
-        currentEnv: 'default',
+        lastEnv: 'default',
         envs: {},
       },
       { scope: 'global' },
@@ -176,7 +277,7 @@ test('loadAuthConfig ignores legacy project envs and keeps global settings only'
     const config = await loadAuthConfig({ scope: 'global' });
     const globalConfigFile = path.join(globalHome, '.nocobase', 'config.json');
 
-    expect(config.currentEnv).toBe('default');
+    expect(config.lastEnv).toBe('default');
     expect(config.envs).toEqual({});
     expect(config.settings).toEqual({
       docker: {
@@ -185,7 +286,7 @@ test('loadAuthConfig ignores legacy project envs and keeps global settings only'
       },
     });
     expect(JSON.parse(await readFile(globalConfigFile, 'utf8'))).toMatchObject({
-      currentEnv: 'default',
+      lastEnv: 'default',
       envs: {},
       settings: {
         docker: {
@@ -219,7 +320,7 @@ test('upsertEnv preserves runtime metadata when connection settings are unchange
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -269,7 +370,7 @@ test('env relative paths resolve from NB_CLI_ROOT when provided', async () => {
     try {
       await saveAuthConfig(
         {
-          currentEnv: 'test',
+          lastEnv: 'test',
           envs: {
             test: {
               appRootPath: './apps/test',
@@ -293,7 +394,7 @@ test('legacy remote kind is normalized to http when loading env config', async (
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'remote',
+        lastEnv: 'remote',
         envs: {
           remote: {
             kind: 'remote' as any,
@@ -335,7 +436,7 @@ test('upsertEnv clears an OAuth session when the base URL changes', async () => 
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -365,7 +466,7 @@ test('updateEnvConnection updates only the token and preserves the current base 
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -397,7 +498,7 @@ test('updateEnvConnection preserves runtime metadata when connection settings ar
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -431,7 +532,7 @@ test('setEnvOauthSession can preserve runtime metadata during token refresh', as
   await withTempCliHome(async () => {
     await saveAuthConfig(
       {
-        currentEnv: 'test',
+        lastEnv: 'test',
         envs: {
           test: {
             baseUrl: 'http://localhost:13000/api',
@@ -507,7 +608,7 @@ test('loadAuthConfig ignores legacy project config when global config is empty',
     const currentEnv = await getCurrentEnvName({ scope: 'global' });
     const env = await getEnv(undefined, { scope: 'global' });
 
-    expect(config.currentEnv).toBe('default');
+    expect(config.lastEnv).toBe('default');
     expect(config.envs).toEqual({});
     expect(currentEnv).toBe('default');
     expect(env).toBe(undefined);
@@ -581,7 +682,7 @@ test('write operations only affect global config and ignore legacy project envs'
       await expect(setCurrentEnv('legacy', { scope: 'global' })).resolves.toBeUndefined();
 
       const globalConfig = await loadAuthConfig({ scope: 'global' });
-      expect(globalConfig.currentEnv).toBe('legacy');
+      expect(globalConfig.lastEnv).toBe('legacy');
       expect(globalConfig.envs.legacy).toEqual({
         auth: {
           type: 'token',

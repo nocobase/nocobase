@@ -19,6 +19,7 @@ nb license plugins list [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `--env`, `-e` | string | Имя CLI env; если не указано, используется текущий env |
+| `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на env, отличающуюся от текущей env, пропускает интерактивное подтверждение |
 | `--json` | boolean | Вывод JSON |
 
 ## Примеры
@@ -26,8 +27,11 @@ nb license plugins list [flags]
 ```bash
 nb license plugins list
 nb license plugins list --env app1
+nb license plugins list --env app1 --yes
 nb license plugins list --env app1 --json
 ```
+
+Если вы явно передаёте `--env`, и она отличается от текущей env, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях AI-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
 
 ## Связанные команды
 

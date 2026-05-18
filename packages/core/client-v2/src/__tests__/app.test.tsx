@@ -9,7 +9,7 @@
 
 import { Application, createMockClient, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client-v2';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 
@@ -72,29 +72,46 @@ describe('app', () => {
     });
   });
 
-  it('should mount the app and display "Not Found"', async () => {
+  it('should mount the base app with blank fallback route', async () => {
     const app = createMockClient();
     const element = document.createElement('div');
     act(() => {
       app.mount(element);
     });
-    await waitFor(() => expect(element.textContent).toContain('Sorry, the page you visited does not exist.'));
+    await waitFor(() => expect(element.querySelector('.ant-app')).not.toBeNull());
+    expect(element.textContent).toBe('');
   });
 
-  it('should render default "Not Found" view', async () => {
+  it('should render blank fallback route by default', async () => {
     const app = createMockClient();
     await renderApp(app);
-    expect(screen.getByText('Sorry, the page you visited does not exist.')).toBeInTheDocument();
+    expect(screen.queryByText('Sorry, the page you visited does not exist.')).not.toBeInTheDocument();
   });
 
-  it('should render custom "Not Found" component', async () => {
+  it('should not render custom "Not Found" component before builtin routes are added', async () => {
     class PluginHelloClient extends Plugin {}
     const app = createMockClient({
       plugins: [PluginHelloClient],
       components: { AppNotFound: () => <div>Not Found2</div> },
     });
     await renderApp(app);
-    expect(screen.getByText('Not Found2')).toBeInTheDocument();
+    expect(screen.queryByText('Not Found2')).not.toBeInTheDocument();
+  });
+
+  it('should render builtin "Not Found" view after builtin routes are added', async () => {
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin as any],
+      router: { type: 'memory', initialEntries: ['/missing'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: {
+        lang: 'en-US',
+        resources: { client: {} },
+        cron: {},
+      },
+    });
+    await renderApp(app);
+    expect(screen.getByText('Sorry, the page you visited does not exist.')).toBeInTheDocument();
   });
 
   it('should support app provider functionality', async () => {
@@ -235,6 +252,33 @@ describe('app', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('App initializing')).toBeInTheDocument();
     expect(screen.getByText('maintaining dialog message')).toBeInTheDocument();
+  });
+
+  it('should keep current content behind maintained dialog state', async () => {
+    const CurrentPage = () => {
+      const [count, setCount] = React.useState(0);
+      return <button onClick={() => setCount((value) => value + 1)}>Current page count: {count}</button>;
+    };
+
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: CurrentPage });
+      }
+    }
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    await renderApp(app);
+    fireEvent.click(screen.getByRole('button', { name: 'Current page count: 0' }));
+    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+
+    act(() => {
+      app.maintained = true;
+      app.maintaining = true;
+      app.error = { code: 'APP_COMMANDING', command: { name: 'pm.enable' }, message: 'starting sub applications...' };
+    });
+
+    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Enabling plugin')).toBeInTheDocument();
   });
 
   it('should handle long loading state gracefully', async () => {

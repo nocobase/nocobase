@@ -47,6 +47,9 @@ vi.mock('@nocobase/flow-engine', async () => {
   return { ...actual, VariableInput: MockVariableInput };
 });
 
+const getRenderedSelectTexts = (root: ParentNode = document.body) =>
+  Array.from(root.querySelectorAll('.ant-select-selection-item')).map((node) => (node.textContent || '').trim());
+
 function CreateModel() {
   const engine = new FlowEngine();
   const model = new FlowModel({ uid: 'm-variable-filter', flowEngine: engine });
@@ -121,6 +124,8 @@ describe('VariableFilterItem', () => {
     // Ensure document body for antd portals if needed
     document.body.innerHTML = '';
     delete (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    delete (globalThis as any).__TEST_PATH__;
+    delete (globalThis as any).__TEST_META__;
   });
 
   it('returns undefined path for empty left value in converter', () => {
@@ -153,9 +158,53 @@ describe('VariableFilterItem', () => {
     expect(value.value).toBe('abc');
   });
 
+  it('uses scoped context dataSourceManager when app dataSourceManager has no field interface manager', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const model = CreateModel();
+    const getRuntimeFieldInterface = vi.fn((name: string) => ({
+      name,
+      filterable: {
+        operators: [{ value: '$eq', label: 'Equals' }],
+        children: [
+          {
+            name: 'runtimeChild',
+            title: 'Runtime child',
+            schema: { 'x-component': 'Input' },
+            operators: [{ value: '$includes', label: 'contains' }],
+          },
+        ],
+      },
+    }));
+
+    model.context.dataSourceManager.setCollectionFieldInterfaceManager({
+      getFieldInterface: getRuntimeFieldInterface,
+    });
+    (model.context.app as any).dataSourceManager = {};
+    (globalThis as any).__TEST_PATH__ = 'assignee';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'belongsTo',
+      uiSchema: { 'x-component': 'RecordPicker' },
+      paths: ['collection', 'assignee'],
+      name: 'assignee',
+      title: 'Assignee',
+      type: 'object',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    const leftVariableInputProps = (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    const metaTree = await leftVariableInputProps.metaTree();
+    const nameNode = metaTree.find((node: any) => node.name === 'name');
+    expect(nameNode?.children?.some((child: any) => child.name === 'runtimeChild')).toBe(true);
+
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$eq');
+      expect(getRuntimeFieldInterface).toHaveBeenCalledWith('belongsTo');
+    });
+  });
+
   it('keeps numeric string when x-component uses InputNumber with stringMode', async () => {
-    const prevMeta = (globalThis as any).__TEST_META__;
-    const prevPath = (globalThis as any).__TEST_PATH__;
     (globalThis as any).__TEST_PATH__ = 'price';
     (globalThis as any).__TEST_META__ = {
       interface: 'input',
@@ -177,9 +226,6 @@ describe('VariableFilterItem', () => {
       expect(input.value).toBe('123.45');
       expect(value.value).toBe('123.45');
     });
-
-    (globalThis as any).__TEST_META__ = prevMeta;
-    (globalThis as any).__TEST_PATH__ = prevPath;
   });
 
   it('normalizes synthetic event value when formula field renders Input from app components', async () => {
@@ -217,6 +263,51 @@ describe('VariableFilterItem', () => {
 
     delete (globalThis as any).__TEST_PATH__;
     delete (globalThis as any).__TEST_META__;
+  });
+
+  it('does not render an empty selected option for right constant select', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const model = CreateModel();
+
+    const prevMeta = (globalThis as any).__TEST_META__;
+    const prevPath = (globalThis as any).__TEST_PATH__;
+    (globalThis as any).__TEST_PATH__ = 'status';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'select',
+      uiSchema: {
+        'x-component': 'Select',
+        enum: [{ label: 'Draft', value: 'draft' }],
+        'x-filter-operators': [
+          {
+            value: '$eq',
+            label: 'Equals',
+            selected: true,
+            schema: { 'x-component': 'Select' },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable />);
+    fireEvent.click(screen.getAllByTestId('variable-input')[0]);
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$eq');
+    });
+
+    const rightVariableInputProps = (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    const Renderer = rightVariableInputProps?.converters?.renderInputComponent?.({ paths: ['constant'] });
+    expect(Renderer).toBeTruthy();
+
+    const rendered = render(<Renderer value="" onChange={vi.fn()} />);
+    expect(getRenderedSelectTexts(rendered.container).filter((text) => text === '')).toHaveLength(0);
+
+    (globalThis as any).__TEST_META__ = prevMeta;
+    (globalThis as any).__TEST_PATH__ = prevPath;
   });
 
   it('renders right VariableInput when rightAsVariable=true and hides it for noValue operator', async () => {

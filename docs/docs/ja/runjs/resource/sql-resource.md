@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/resource/sql-resource)をご参照ください。
-:::
-
 # SQLResource
 
 **保存済みの SQL 設定**または**動的 SQL**に基づいてクエリを実行するリソース（Resource）です。データソースは `flowSql:run` / `flowSql:runById` などのインターフェースから取得されます。レポート、統計、カスタム SQL リストなどのシナリオに適しています。[MultiRecordResource](./multi-record-resource.md) とは異なり、SQLResource はデータテーブル（コレクション）に依存せず、SQL クエリを直接実行します。ページネーション、パラメータバインディング、テンプレート変数（`{{ctx.xxx}}`）、および結果タイプの制御をサポートしています。

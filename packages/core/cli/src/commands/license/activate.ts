@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as p from '@clack/prompts';
 import { Command, Flags } from '@oclif/core';
 import { readFile } from 'node:fs/promises';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { input, password as promptPassword, select } from '../../lib/inquirer.ts';
 import {
+  createLicenseEnvFlag,
   ensureInstanceId,
-  licenseEnvFlag,
   licenseJsonFlag,
   licensePkgUrlFlag,
+  licenseYesFlag,
   redactLicenseKey,
   requireLicenseRuntime,
   resolveLicenseKeyFile,
@@ -31,7 +33,6 @@ type OnlineActivationAnswers = {
   account: string;
   password: string;
   appName: string;
-  confirmed: boolean;
   serviceUrl: string;
 };
 
@@ -40,57 +41,57 @@ function resolveOnlineInputValue(value: unknown): string {
 }
 
 async function promptActivationMode(): Promise<ActivationMode> {
-  const answer = await p.select<ActivationMode>({
-    message: 'How do you want to activate the license?',
-    options: [
-      { value: 'key', label: 'Use an existing license key' },
-      { value: 'online', label: 'Request and activate a license online' },
-      { value: 'cancel', label: 'Cancel' },
-    ],
-    initialValue: 'key',
-  });
-  if (p.isCancel(answer)) {
-    p.cancel('License activation cancelled.');
+  try {
+    return await select<ActivationMode>({
+      message: 'How do you want to activate the license?',
+      choices: [
+        { value: 'key', name: 'Use an existing license key' },
+        { value: 'online', name: 'Request and activate a license online' },
+        { value: 'cancel', name: 'Cancel' },
+      ],
+      default: 'key',
+    });
+  } catch {
     return 'cancel';
   }
-  return answer;
 }
 
 async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string }> {
-  const answer = await p.select<'key' | 'file'>({
-    message: 'How do you want to provide the license key?',
-    options: [
-      { value: 'key', label: 'Paste the license key' },
-      { value: 'file', label: 'Read the key from a file' },
-    ],
-    initialValue: 'key',
-  });
-  if (p.isCancel(answer)) {
-    p.cancel('License activation cancelled.');
+  let answer: 'key' | 'file';
+  try {
+    answer = await select<'key' | 'file'>({
+      message: 'How do you want to provide the license key?',
+      choices: [
+        { value: 'key', name: 'Paste the license key' },
+        { value: 'file', name: 'Read the key from a file' },
+      ],
+      default: 'key',
+    });
+  } catch {
     return {};
   }
 
   if (answer === 'key') {
-    const key = await p.text({
-      message: 'License key',
-      validate: (value) => String(value ?? '').trim() ? undefined : 'License key is required.',
-    });
-    if (p.isCancel(key)) {
-      p.cancel('License activation cancelled.');
+    try {
+      const key = await input({
+        message: 'License key',
+        validate: (value) => String(value ?? '').trim() ? true : 'License key is required.',
+      });
+      return { key: String(key ?? '').trim() || undefined };
+    } catch {
       return {};
     }
-    return { key: String(key ?? '').trim() || undefined };
   }
 
-  const keyFile = await p.text({
-    message: 'Path to the license key file',
-    validate: (value) => String(value ?? '').trim() ? undefined : 'License key file path is required.',
-  });
-  if (p.isCancel(keyFile)) {
-    p.cancel('License activation cancelled.');
+  try {
+    const keyFile = await input({
+      message: 'Path to the license key file',
+      validate: (value) => String(value ?? '').trim() ? true : 'License key file path is required.',
+    });
+    return { keyFile: String(keyFile ?? '').trim() || undefined };
+  } catch {
     return {};
   }
-  return { keyFile: String(keyFile ?? '').trim() || undefined };
 }
 
 async function promptOnlineActivationInput(
@@ -98,63 +99,50 @@ async function promptOnlineActivationInput(
 ): Promise<OnlineActivationAnswers | undefined> {
   let account = String(initial.account ?? '').trim();
   if (!account) {
-    const answer = await p.text({
-      message: 'Service account',
-      validate: (value) => String(value ?? '').trim() ? undefined : 'Service account is required.',
-    });
-    if (p.isCancel(answer)) {
-      p.cancel('License activation cancelled.');
+    try {
+      const answer = await input({
+        message: 'Service account',
+        validate: (value) => String(value ?? '').trim() ? true : 'Service account is required.',
+      });
+      account = String(answer ?? '').trim();
+    } catch {
       return;
     }
-    account = String(answer ?? '').trim();
   }
   if (!account) {
-    p.cancel('License activation cancelled.');
     return;
   }
 
   let password = String(initial.password ?? '').trim();
   if (!password) {
-    const answer = await p.password({
-      message: 'Service password',
-      validate: (value) => String(value ?? '').trim() ? undefined : 'Service password is required.',
-    });
-    if (p.isCancel(answer)) {
-      p.cancel('License activation cancelled.');
+    try {
+      const answer = await promptPassword({
+        message: 'Service password',
+        mask: '•',
+        validate: (value) => String(value ?? '').trim() ? true : 'Service password is required.',
+      });
+      password = String(answer ?? '').trim();
+    } catch {
       return;
     }
-    password = String(answer ?? '').trim();
   }
   if (!password) {
-    p.cancel('License activation cancelled.');
     return;
   }
 
   let appName = String(initial.appName ?? '').trim();
   if (!appName) {
-    const answer = await p.text({
-      message: 'Application name',
-      validate: (value) => String(value ?? '').trim() ? undefined : 'Application name is required.',
-    });
-    if (p.isCancel(answer)) {
-      p.cancel('License activation cancelled.');
+    try {
+      const answer = await input({
+        message: 'Application name',
+        validate: (value) => String(value ?? '').trim() ? true : 'Application name is required.',
+      });
+      appName = String(answer ?? '').trim();
+    } catch {
       return;
     }
-    appName = String(answer ?? '').trim();
   }
   if (!appName) {
-    p.cancel('License activation cancelled.');
-    return;
-  }
-
-  const confirmedAnswer = typeof initial.confirmed === 'boolean'
-    ? initial.confirmed
-    : await p.confirm({
-      message: 'Confirm that the submitted license information is true and accurate?',
-      initialValue: false,
-    });
-  if (p.isCancel(confirmedAnswer)) {
-    p.cancel('License activation cancelled.');
     return;
   }
 
@@ -162,7 +150,6 @@ async function promptOnlineActivationInput(
     account,
     password,
     appName,
-    confirmed: Boolean(confirmedAnswer),
     serviceUrl: await resolveLicenseServiceUrl(initial.serviceUrl),
   };
 }
@@ -225,11 +212,12 @@ export default class LicenseActivate extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --key <licenseKey>',
     '<%= config.bin %> <%= command.id %> --env app1 --key-file ./license.txt',
     '<%= config.bin %> <%= command.id %> --env app1 --online',
+    '<%= config.bin %> <%= command.id %> --env app1 --online --account aa --password bb --desc test24',
     '<%= config.bin %> <%= command.id %> --env app1 --online --account aa --password bb --desc test24 --yes',
     '<%= config.bin %> <%= command.id %> --env app1 --json --key-file ./license.txt',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to activate a license for. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
     key: Flags.string({
       description: 'Existing license key to activate',
@@ -251,14 +239,24 @@ export default class LicenseActivate extends Command {
       description: 'Application name for online activation',
     }),
     'pkg-url': licensePkgUrlFlag,
-    yes: Flags.boolean({
-      description: 'Confirm that the submitted application information is true and accurate',
-      default: false,
-    }),
+    yes: licenseYesFlag,
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicenseActivate);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv ?? []));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
+
     const runtime = await requireLicenseRuntime(flags.env);
     if (!flags.json) {
       announceTargetEnv(runtime.envName);
@@ -274,7 +272,6 @@ export default class LicenseActivate extends Command {
 
       const mode = await promptActivationMode();
       if (mode === 'cancel') {
-        this.log('Cancelled license activation.');
         return;
       }
 
@@ -300,7 +297,6 @@ export default class LicenseActivate extends Command {
         account: resolveOnlineInputValue(flags.account),
         password: resolveOnlineInputValue(flags.password),
         appName: resolveOnlineInputValue(flags.desc),
-        confirmed: flags.yes ? true : undefined,
         serviceUrl: resolvedServiceUrl,
       };
 
@@ -309,22 +305,16 @@ export default class LicenseActivate extends Command {
         !onlineInput.account
         || !onlineInput.password
         || !onlineInput.appName
-        || !onlineInput.confirmed
       ) {
         if (!isInteractiveTerminal()) {
-          this.error('Online activation requires --account, --password, --desc, and --yes when not using a TTY.');
+          this.error('Online activation requires --account, --password, and --desc when not using a TTY.');
         }
 
         const prompted = await promptOnlineActivationInput(initialOnline);
         if (!prompted) {
-          this.log('Cancelled license activation.');
           return;
         }
         onlineInput = prompted;
-      }
-
-      if (!onlineInput.confirmed) {
-        this.error('Online activation requires confirmation that the submitted application information is true and accurate.');
       }
 
       const instanceId = await ensureInstanceId(runtime);

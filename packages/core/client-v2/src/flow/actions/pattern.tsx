@@ -7,9 +7,50 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BindingOptions, defineAction, tExpr, DisplayItemModel } from '@nocobase/flow-engine';
+import { uid } from '@formily/shared';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
-import { rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
+
+type PatternAwareFieldModelMeta = {
+  preserveOnPatternChange?: boolean;
+};
+
+type PatternAwareFieldModel = {
+  scheduleApplyJsSettings?: () => void;
+};
+
+function resolveAssociationTitleField(ctx: any) {
+  return (
+    ctx.model.subModels?.field?.props?.fieldNames?.label ||
+    ctx.model.props.titleField ||
+    ctx.collectionField?.targetCollectionTitleFieldName
+  );
+}
+
+function shouldPreserveFieldModelOnPatternChange(ctx: any) {
+  const fieldModel = ctx.model.subModels.field;
+  const fieldUse = getFieldBindingUse(fieldModel) ?? fieldModel?.use;
+  const ModelClass = typeof fieldUse === 'string' ? ctx.engine.getModelClass(fieldUse) : fieldUse;
+
+  return ((ModelClass?.meta as PatternAwareFieldModelMeta | undefined)?.preserveOnPatternChange ?? false) === true;
+}
+
+async function refreshPatternRuntime(ctx: any) {
+  ctx.model.invalidateFlowCache?.('beforeRender', true);
+  await ctx.model.rerender?.();
+
+  const parent = ctx.model.parent;
+  if (!parent) {
+    return;
+  }
+
+  parent.invalidateFlowCache?.('beforeRender', true);
+  parent.setProps?.({
+    __patternRefreshKey: uid(),
+  });
+  await parent.rerender?.();
+}
 
 export const pattern = defineAction({
   name: 'pattern',
@@ -56,14 +97,29 @@ export const pattern = defineAction({
     };
   },
   afterParamsSave: async (ctx: any, params, previousParams) => {
+    if (shouldPreserveFieldModelOnPatternChange(ctx)) {
+      if (params.pattern !== previousParams.pattern) {
+        (ctx.model.subModels.field as PatternAwareFieldModel | undefined)?.scheduleApplyJsSettings?.();
+      }
+      await refreshPatternRuntime(ctx);
+      return;
+    }
+
     const targetCollection = ctx.collectionField.targetCollection;
-    const targetCollectionTitleField = targetCollection?.getField(
-      ctx.model.subModels.field.props?.fieldNames?.label || ctx.model.props.titleField,
-    );
+    const associationTitleField = resolveAssociationTitleField(ctx);
+    const targetCollectionTitleField = targetCollection?.getField(associationTitleField);
     const { model } = ctx;
     const resolveDefaultProps = (binding, field = ctx.collectionField) => {
       if (!binding) return undefined;
-      return typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps;
+      const defaultProps =
+        typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps;
+      if (!ctx.collectionField?.isAssociationField?.() || !associationTitleField) {
+        return defaultProps;
+      }
+      return {
+        ...(defaultProps || {}),
+        titleField: associationTitleField,
+      };
     };
     if (params.pattern === 'readPretty') {
       const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField, {
@@ -88,17 +144,19 @@ export const pattern = defineAction({
         });
       }
     }
+    await refreshPatternRuntime(ctx);
   },
   async beforeParamsSave(ctx, params, previousParams) {
     if (params.pattern === 'readPretty') {
+      const titleField = resolveAssociationTitleField(ctx);
       ctx.model.setProps({
         pattern: 'readPretty',
         disabled: false,
-        titleField: (ctx.model.subModels?.field as any)?.props.fieldNames?.label || ctx.model.props.titleField,
+        titleField,
       });
       if (ctx.collectionField.isAssociationField())
         await ctx.model.setStepParams('editItemSettings', 'titleField', {
-          titleField: (ctx.model.subModels.field as any).props?.fieldNames?.label || ctx.model.props.titleField,
+          titleField,
         });
     } else {
       ctx.model.setProps({

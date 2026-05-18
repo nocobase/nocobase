@@ -8,10 +8,12 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
+  createLicenseEnvFlag,
   generateAndSaveInstanceId,
-  licenseEnvFlag,
   licenseJsonFlag,
+  licenseYesFlag,
   readSavedInstanceId,
   requireLicenseRuntime,
   resolveInstanceIdFile,
@@ -29,8 +31,9 @@ export default class LicenseId extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --json',
   ];
   static override flags = {
-    env: licenseEnvFlag,
+    env: createLicenseEnvFlag('CLI env name to inspect. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
+    yes: licenseYesFlag,
     force: Flags.boolean({
       description: 'Force regenerate the instance ID even if one is already saved',
       default: false,
@@ -39,6 +42,19 @@ export default class LicenseId extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(LicenseId);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv ?? []));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
+
     const runtime = await requireLicenseRuntime(flags.env);
     if (!flags.json) {
       announceTargetEnv(runtime.envName);

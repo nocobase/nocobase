@@ -28,7 +28,7 @@ import {
   toolInteractionMiddleware,
   workflowHistoryMiddleware,
 } from './middleware';
-import { SkillsEntry, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
+import { listSystemTools, SkillsEntry, SYSTEM_TOOLS, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
@@ -39,6 +39,7 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
 import { Context } from '@nocobase/actions';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
+import { LLMStreamCached } from '../manager/llm-stream-manager';
 
 export interface ModelRef {
   llmService: string;
@@ -85,13 +86,14 @@ export class AIEmployee {
   private db: Database;
 
   private ctx: Context;
-  private systemMessage: string;
+  private systemMessage?: string;
   private protocol: ChatStreamProtocol;
   private webSearch?: boolean;
   private model?: ModelRef;
   private legacy?: boolean;
   private tools: { name: string }[];
   private inWorkflow?: boolean;
+  private streamCached: LLMStreamCached;
 
   constructor({
     ctx,
@@ -117,11 +119,38 @@ export class AIEmployee {
     this.legacy = legacy;
     this.from = from;
     this.tools = tools;
+    this.streamCached = this.plugin.llmStreamCachedManager.getCached(sessionId);
 
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
-    this.protocol = ChatStreamProtocol.fromContext(ctx);
+    this.protocol = ChatStreamProtocol.fromContext(ctx, async (chunk) => {
+      try {
+        await this.streamCached.append(chunk);
+      } catch (error) {
+        this.logger.warn('Failed to append LLM stream cache', { sessionId: this.sessionId, error });
+      }
+    });
+  }
+
+  private get chatSettings() {
+    return (this.employee?.get?.('chatSettings') ?? (this.employee as any)?.chatSettings ?? {}) as {
+      systemPromptMode?: 'default' | 'raw' | 'none';
+      enableSkills?: boolean;
+      enableTools?: boolean;
+    };
+  }
+
+  private get systemPromptMode() {
+    return this.chatSettings.systemPromptMode ?? 'default';
+  }
+
+  private areSkillsEnabled() {
+    return this.chatSettings.enableSkills !== false;
+  }
+
+  private areToolsEnabled() {
+    return this.chatSettings.enableTools !== false;
   }
 
   async getFormatMessages(userMessages: AIMessageInput[]) {
@@ -156,7 +185,7 @@ export class AIEmployee {
     };
   }
 
-  private async initSession({ messageId, provider, model, providerName }) {
+  private async initSession({ messageId, provider, model, providerName, llmService }) {
     const { tools, baseToolNames } = await this.getAgentTools();
     const resolvedTools = provider.resolveTools(tools.map(buildTool));
     if (!messageId && this.legacy !== true) {
@@ -164,7 +193,7 @@ export class AIEmployee {
         historyMessages: [],
         tools,
         resolvedTools,
-        middleware: await this.getMiddleware({ tools, baseToolNames, model, providerName }),
+        middleware: await this.getMiddleware({ tools, baseToolNames, model, providerName, llmService }),
         config: undefined,
         state: undefined,
       };
@@ -185,6 +214,7 @@ export class AIEmployee {
         baseToolNames,
         model,
         providerName,
+        llmService,
         messageId,
         agentThread,
       }),
@@ -217,6 +247,7 @@ export class AIEmployee {
       provider,
       model,
       providerName: service.provider,
+      llmService: service.get?.('name') || (service as any).name,
     });
 
     const chatContext = await this.aiChatConversation.getChatContext({
@@ -228,7 +259,15 @@ export class AIEmployee {
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
     });
 
-    return { providerName: service.provider, model, provider, chatContext, config, state };
+    return {
+      providerName: service.provider,
+      llmService: service.get?.('name') || (service as any).name,
+      model,
+      provider,
+      chatContext,
+      config,
+      state,
+    };
   }
 
   async stream({
@@ -243,6 +282,7 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
+    await this.streamCached.clear();
     await this.aiConversationsRepo.update({
       values: { llmActiveState: 'streaming' },
       filter: {
@@ -250,7 +290,7 @@ export class AIEmployee {
       },
     });
     try {
-      const { providerName, model, provider, chatContext, config, state } = await this.buildChatContext({
+      const { providerName, llmService, model, provider, chatContext, config, state } = await this.buildChatContext({
         messageId,
         userMessages,
         userDecisions,
@@ -268,6 +308,7 @@ export class AIEmployee {
       await this.processChatStream(stream, {
         signal,
         providerName,
+        llmService,
         model,
         provider,
         responseMetadata,
@@ -280,11 +321,12 @@ export class AIEmployee {
       return false;
     } finally {
       await this.aiConversationsRepo.update({
-        values: { llmActiveState: 'idle' },
+        values: { llmActiveState: 'idle', read: false },
         filter: {
           sessionId: this.sessionId,
         },
       });
+      await this.streamCached.clear();
     }
   }
 
@@ -450,6 +492,7 @@ export class AIEmployee {
     options: {
       signal: AbortSignal;
       providerName: string;
+      llmService?: string;
       model: string;
       provider: LLMProvider;
       allowEmpty?: boolean;
@@ -457,7 +500,7 @@ export class AIEmployee {
     },
   ) {
     const aiMessageIdMap = new Map<string, string>();
-    const { signal, providerName, model, provider, responseMetadata, allowEmpty = false } = options;
+    const { signal, providerName, llmService, model, provider, responseMetadata, allowEmpty = false } = options;
 
     let isReasoning = false;
     let gathered: any;
@@ -467,6 +510,7 @@ export class AIEmployee {
           const values = convertAIMessage({
             aiEmployee: this,
             providerName,
+            llmService,
             model,
             aiMessage: gathered,
           });
@@ -480,6 +524,14 @@ export class AIEmployee {
         }
       } catch (e) {
         this.logger.error('Fail to save message after conversation abort', gathered);
+      } finally {
+        await this.aiConversationsRepo.update({
+          values: { llmActiveState: 'idle', read: true },
+          filter: {
+            sessionId: this.sessionId,
+          },
+        });
+        await this.streamCached.clear();
       }
     });
 
@@ -489,7 +541,7 @@ export class AIEmployee {
         from: this.from,
         username: this.employee.username,
       };
-      this.protocol.with(aiEmployeeConversation).startStream();
+      await this.protocol.with(aiEmployeeConversation).startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk, metadata] = chunks;
@@ -499,27 +551,27 @@ export class AIEmployee {
             if (chunk.content) {
               if (isReasoning) {
                 isReasoning = false;
-                this.protocol.with(currentConversation).stopReasoning();
+                await this.protocol.with(currentConversation).stopReasoning();
               }
               const parsedContent = provider.parseResponseChunk(chunk.content);
               if (parsedContent) {
-                this.protocol.with(currentConversation).content(parsedContent);
+                await this.protocol.with(currentConversation).content(parsedContent);
               }
             }
 
             if (chunk.tool_call_chunks?.length) {
-              this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
+              await this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
             }
 
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
-              this.protocol.with(currentConversation).webSearch(webSearch);
+              await this.protocol.with(currentConversation).webSearch(webSearch);
             }
 
             const reasoningContent = provider.parseReasoningContent(chunk);
             if (reasoningContent) {
               isReasoning = true;
-              this.protocol.with(currentConversation).reasoning(reasoningContent);
+              await this.protocol.with(currentConversation).reasoning(reasoningContent);
             }
           }
         } else if (mode === 'updates') {
@@ -529,8 +581,8 @@ export class AIEmployee {
             await this.handleInterruptedToolCalls(
               interrupt,
               (sessionId) => aiMessageIdMap.get(sessionId),
-              ({ messageId, interruptAction, toolCall, currentConversation }) => {
-                this.protocol.with(currentConversation).toolCallStatus({
+              async ({ messageId, interruptAction, toolCall, currentConversation }) => {
+                await this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
                     messageId,
                     id: toolCall.id,
@@ -546,6 +598,7 @@ export class AIEmployee {
         } else if (mode === 'custom') {
           const { currentConversation } = chunks;
           if (chunks.action === 'AfterAIMessageSaved') {
+            await this.streamCached.skipped();
             aiMessageIdMap.set(currentConversation.sessionId, chunks.body.messageId);
 
             const data = responseMetadata.get(chunks.body.id);
@@ -575,11 +628,11 @@ export class AIEmployee {
               }
             }
           } else if (chunks.action === 'initToolCalls') {
-            this.protocol.with(currentConversation).toolCalls(chunks.body);
+            await this.protocol.with(currentConversation).toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.with(currentConversation).toolCallStatus({
+            await this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -591,7 +644,7 @@ export class AIEmployee {
           } else if (chunks.action === 'afterToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.with(currentConversation).toolCallStatus({
+            await this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -615,7 +668,7 @@ export class AIEmployee {
               for (const { metadata } of messages) {
                 const tools = toolsMap.get(metadata.toolName);
                 const toolCallResult = toolCallResultMap.get(metadata.toolCallId);
-                this.protocol.with(currentConversation).toolCallStatus({
+                await this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
                     messageId,
                     id: metadata.toolCallId,
@@ -631,9 +684,9 @@ export class AIEmployee {
               }
             }
 
-            this.protocol.with(currentConversation).newMessage();
+            await this.protocol.with(currentConversation).newMessage();
           } else if (chunks.action === 'afterSubAgentInvoke') {
-            this.protocol.with(currentConversation).subAgentCompleted();
+            await this.protocol.with(currentConversation).subAgentCompleted();
           }
         }
       }
@@ -643,7 +696,7 @@ export class AIEmployee {
         return;
       }
 
-      this.protocol.with(aiEmployeeConversation).endStream();
+      await this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       this.ctx.log.error(err);
       if (err.name === 'GraphRecursionError') {
@@ -758,14 +811,21 @@ export class AIEmployee {
   }
 
   async getSystemPrompt(userMessages: AIMessageInput[]) {
+    if (this.systemPromptMode === 'none') {
+      return '';
+    }
+
+    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
+    if (this.systemPromptMode === 'raw') {
+      return about;
+    }
+
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id ?? 0,
         aiEmployee: this.employee.username,
       },
     });
-
-    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
 
     let background = '';
     if (this.systemMessage) {
@@ -835,6 +895,100 @@ If information is missing, clearly state it in the summary.</Important>`;
     } else {
       return systemPrompt;
     }
+  }
+
+  async retrieveKnowledgeBase(userMessage: AIMessageInput): Promise<DocumentSegmentedWithScore[]> {
+    const vectorStoreProvider = this.plugin.features.vectorStoreProvider;
+    let queryResult: DocumentSegmentedWithScore[] = [];
+    const queryString: string = userMessage.content.content as string;
+    if (!queryString || _.isEmpty(queryString)) {
+      return queryResult;
+    }
+    const { topK, score } = this.getAIEmployeeKnowledgeBaseConfig();
+    const knowledgeBaseGroup = await this.getKnowledgeBaseGroup();
+    for (const entry of knowledgeBaseGroup) {
+      const { vectorStoreConfig, knowledgeBaseType, knowledgeBaseList } = entry;
+      if (!knowledgeBaseList || _.isEmpty(knowledgeBaseList)) {
+        continue;
+      }
+
+      if (knowledgeBaseType === 'LOCAL') {
+        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+          vectorStoreConfig.vectorStoreProvider,
+          [
+            {
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey,
+            },
+          ],
+        );
+        const knowledgeBaseOuterIds = knowledgeBaseList.map((x) => x.knowledgeBaseOuterId);
+        const result = await vectorStoreService.search(queryString, {
+          topK,
+          score,
+          filter: {
+            knowledgeBaseOuterId: { in: knowledgeBaseOuterIds },
+          },
+        });
+        queryResult = [...queryResult, ...result];
+      } else if (knowledgeBaseType === 'READONLY') {
+        for (const knowledgeBase of knowledgeBaseList) {
+          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+            vectorStoreConfig.vectorStoreProvider,
+            [
+              ...knowledgeBase.vectorStoreProps,
+              {
+                key: 'vectorStoreConfigKey',
+                value: vectorStoreConfig.vectorStoreConfigKey,
+              },
+            ],
+          );
+          const result = await vectorStoreService.search(queryString, {
+            topK,
+            score,
+          });
+          queryResult = [...queryResult, ...result];
+        }
+      } else if (knowledgeBaseType === 'EXTERNAL') {
+        for (const knowledgeBase of knowledgeBaseList) {
+          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+            vectorStoreConfig.vectorStoreProvider,
+            knowledgeBase.vectorStoreProps,
+          );
+          const result = await vectorStoreService.search(queryString, {
+            topK,
+            score,
+          });
+          queryResult = [...queryResult, ...result];
+        }
+      }
+    }
+    return queryResult;
+  }
+
+  isEnabledKnowledgeBase(): boolean {
+    const featureEnabled = this.plugin.features.isFeaturesEnabled(Object.values(EEFeatures));
+    const knowledgeBaseEnabled = this.employee.enableKnowledgeBase;
+    return featureEnabled && knowledgeBaseEnabled;
+  }
+
+  getAIEmployeeKnowledgeBaseConfig(): {
+    topK: number;
+    score: string;
+  } {
+    const { topK, score } = this.employee.knowledgeBase ?? {};
+    return {
+      topK,
+      score,
+    };
+  }
+
+  async getKnowledgeBaseGroup(): Promise<KnowledgeBaseGroup[]> {
+    const { knowledgeBaseKeys } = this.employee.knowledgeBase ?? {};
+    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
+      return [];
+    }
+    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseKeys);
   }
 
   // === Tool calls ===
@@ -1143,7 +1297,6 @@ If information is missing, clearly state it in the summary.</Important>`;
   private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
     const formattedMessages = [];
     const workContextHandler = this.plugin.workContextHandler;
-    await this.hydrateAttachmentsMeta(messages);
 
     // 截断过长的内容
     const truncate = (text: string, maxLen = 50000) => {
@@ -1234,51 +1387,6 @@ If information is missing, clearly state it in the summary.</Important>`;
     return formattedMessages;
   }
 
-  private async hydrateAttachmentsMeta(messages: AIMessageInput[]) {
-    type AttachmentWithMeta = { id?: string | number; meta?: unknown };
-    const attachmentIds = new Set<string | number>();
-
-    for (const message of messages) {
-      if (!message.attachments?.length) {
-        continue;
-      }
-      for (const attachment of message.attachments as AttachmentWithMeta[]) {
-        if (attachment?.id != null) {
-          attachmentIds.add(attachment.id);
-        }
-      }
-    }
-
-    if (!attachmentIds.size) {
-      return;
-    }
-
-    const files = await this.aiFilesModel.findAll({
-      where: {
-        id: {
-          [Op.in]: Array.from(attachmentIds),
-        },
-      },
-      attributes: ['id', 'meta'],
-    });
-    const metaById = new Map(files.map((file) => [file.get('id') as string | number, file.get('meta')]));
-
-    for (const message of messages) {
-      if (!message.attachments?.length) {
-        continue;
-      }
-      for (const attachment of message.attachments as AttachmentWithMeta[]) {
-        if (attachment?.id == null) {
-          continue;
-        }
-        const meta = metaById.get(attachment.id);
-        if (meta !== undefined) {
-          attachment.meta = meta;
-        }
-      }
-    }
-  }
-
   private async getToolCallMap(messageId: string): Promise<
     Map<
       string,
@@ -1332,19 +1440,22 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getAIEmployeeTools() {
+    if (!this.areToolsEnabled()) {
+      return [];
+    }
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
     if (this.webSearch === true) {
-      const subAgentWebSearch = await this.toolsManager.getTools('subAgentWebSearch');
+      const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH);
       tools.push(subAgentWebSearch);
     }
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
-    const employeeTools = this.employee.skillSettings?.tools ?? [];
-    employeeTools.push(...this.tools);
+    const settingsTools = this.employee.skillSettings?.tools ?? [];
+    const employeeTools = [...settingsTools, ...this.tools];
     if (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.employee.toJSON() as AIEmployeeType)) {
-      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools('knowledge-base-retrieve');
+      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE);
       if (knowledgeBaseRetrieveTool) {
-        employeeTools.push({ name: 'knowledge-base-retrieve' });
+        employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
       }
     }
     for (const toolSetting of employeeTools) {
@@ -1357,15 +1468,19 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
       tools.push(tool);
     }
+    const systemTools = listSystemTools();
     if (!this.skillSettings) {
       return tools;
     } else if (!this.skillSettings.toolsVersion) {
       const toolFilter = this.skillSettings.tools ?? [];
-      return tools.filter((t) => toolFilter.length === 0 || toolFilter.includes(t.definition.name));
+      return tools.filter(
+        (t) =>
+          toolFilter.length === 0 || systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name),
+      );
     } else {
       const toolFilter = this.skillSettings.tools;
       if (_.isArray(toolFilter)) {
-        return tools.filter((t) => toolFilter.includes(t.definition.name));
+        return tools.filter((t) => systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name));
       } else {
         return tools;
       }
@@ -1373,6 +1488,9 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getAvailableSkills(): Promise<SkillsEntry[]> {
+    if (!this.areSkillsEnabled()) {
+      return [];
+    }
     const { skillsManager } = this.plugin.ai;
     const aIEmployeeTools = await this.getAIEmployeeTools();
     const getSkill = aIEmployeeTools.find((it) => it.definition.name === 'getSkill');
@@ -1403,6 +1521,12 @@ If information is missing, clearly state it in the summary.</Important>`;
     tools: ToolsEntry[];
     baseToolNames: Set<string>;
   }> {
+    if (!this.areToolsEnabled()) {
+      return {
+        tools: [],
+        baseToolNames: new Set(),
+      };
+    }
     const baseTools = await this.getAIEmployeeTools();
     const toolMap = await this.getToolsMap();
     const availableSkills = await this.getAvailableSkills();
@@ -1482,13 +1606,14 @@ If information is missing, clearly state it in the summary.</Important>`;
 
   private async getMiddleware(options: {
     providerName: string;
+    llmService?: string;
     model: string;
     tools: any[];
     baseToolNames: Set<string>;
     messageId?: string;
     agentThread?: AgentThread;
   }) {
-    const { providerName, model, tools, baseToolNames, messageId, agentThread } = options;
+    const { providerName, llmService, model, tools, baseToolNames, messageId, agentThread } = options;
     const inWorkflow = await this.isInWorkflow();
     return [
       skillToolBindingMiddleware(this, {
@@ -1497,7 +1622,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
       ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
-      conversationMiddleware(this, { providerName, model, messageId, agentThread }),
+      conversationMiddleware(this, { providerName, llmService, model, messageId, agentThread }),
     ];
   }
 
@@ -1651,52 +1776,56 @@ export class ChatStreamProtocol {
     },
   };
 
-  constructor(private readonly streamConsumer: StreamConsumer) {}
+  constructor(
+    private readonly streamConsumer: StreamConsumer,
+    private readonly onWrite?: (chunk: string) => Promise<void>,
+  ) {}
 
-  static fromContext(ctx: Context) {
-    return new ChatStreamProtocol(ctx.res);
+  static fromContext(ctx: Context, onWrite?: (chunk: string) => Promise<void>) {
+    return new ChatStreamProtocol(ctx.res, onWrite);
   }
 
   with(conversation: { sessionId: string; from: string; username: string }) {
-    const write = ({ type, body }: { type: string; body?: any }) => {
+    const write = async ({ type, body }: { type: string; body?: any }) => {
       const { sessionId, from, username } = conversation;
       const data = `data: ${JSON.stringify({ sessionId, from, username, type, body })}\n\n`;
+      await this.onWrite?.(data);
       this.streamConsumer.write(data);
       this._statistics.addSent(data.length);
     };
 
     return {
-      startStream: () => {
+      startStream: async () => {
         this._statistics.reset();
-        write({ type: 'stream_start' });
+        await write({ type: 'stream_start' });
       },
 
-      endStream: () => {
-        write({ type: 'stream_end' });
+      endStream: async () => {
+        await write({ type: 'stream_end' });
       },
 
-      subAgentCompleted: () => {
-        write({ type: 'sub_agent_completed' });
+      subAgentCompleted: async () => {
+        await write({ type: 'sub_agent_completed' });
       },
 
-      newMessage: (content?: unknown) => {
-        write({ type: 'new_message', body: content });
+      newMessage: async (content?: unknown) => {
+        await write({ type: 'new_message', body: content });
       },
 
-      content: (content: string): void => {
-        write({ type: 'content', body: content });
+      content: async (content: string): Promise<void> => {
+        await write({ type: 'content', body: content });
       },
 
-      webSearch: (content: { type: string; query: string }[]) => {
-        write({ type: 'web_search', body: content });
+      webSearch: async (content: { type: string; query: string }[]) => {
+        await write({ type: 'web_search', body: content });
       },
 
-      reasoning: (content: { status: string; content: string }) => {
-        write({ type: 'reasoning', body: content });
+      reasoning: async (content: { status: string; content: string }) => {
+        await write({ type: 'reasoning', body: content });
       },
 
-      stopReasoning: () => {
-        write({
+      stopReasoning: async () => {
+        await write({
           type: 'reasoning',
           body: {
             status: 'stop',
@@ -1705,15 +1834,15 @@ export class ChatStreamProtocol {
         });
       },
 
-      toolCallChunks: (content: unknown) => {
-        write({ type: 'tool_call_chunks', body: content });
+      toolCallChunks: async (content: unknown) => {
+        await write({ type: 'tool_call_chunks', body: content });
       },
 
-      toolCalls: (content: unknown) => {
-        write({ type: 'tool_calls', body: content });
+      toolCalls: async (content: unknown) => {
+        await write({ type: 'tool_calls', body: content });
       },
 
-      toolCallStatus: ({
+      toolCallStatus: async ({
         toolCall,
         invokeStatus,
         status,
@@ -1734,7 +1863,7 @@ export class ChatStreamProtocol {
           allowedDecisions: string[];
         };
       }) => {
-        write({
+        await write({
           type: 'tool_call_status',
           body: {
             toolCall,

@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # KI-Mitarbeiter · Leitfaden für Prompt Engineering
 
 > Von „wie man schreibt“ zu „gut schreiben“ – dieser Leitfaden zeigt Ihnen, wie Sie hochwertige Prompts auf einfache, stabile und wiederverwendbare Weise erstellen.

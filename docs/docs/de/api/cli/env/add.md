@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "Referenz für den Befehl nb env add: NocoBase-API-Adresse und Authentifizierungsmethode speichern und als aktuelle env festlegen."
-keywords: "nb env add,NocoBase CLI,Umgebung hinzufügen,API-Adresse,Authentifizierung"
+description: "nb env add Befehlsreferenz: Speichern Sie eine NocoBase-API-URL und Authentifizierungsmethode und wechseln Sie dann zu dieser env."
+keywords: "nb env add,NocoBase CLI,Umgebung hinzufügen,API Base URL,Authentifizierung"
 ---
 
 # nb env add
@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
-| `[name]` | string | Umgebungsname; wird in einem TTY zur Eingabe aufgefordert, wenn weggelassen, in nicht-TTY erforderlich |
+| `[name]` | string | Name der zu speichernden Umgebung; wird in einem TTY bei Weglassen abgefragt und ist im Nicht-TTY-Modus erforderlich |
 | `--verbose` | boolean | Detaillierten Fortschritt beim Schreiben der Konfiguration anzeigen |
 | `--locale` | string | Sprache der CLI-Hinweise: `en-US` oder `zh-CN` |
 | `--api-base-url`, `-u` | string | NocoBase-API-Adresse mit `/api`-Präfix |

@@ -20,8 +20,9 @@ import _, { cloneDeep, debounce, isEqual } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
+import { normalizeAssociationFieldNames } from '../../fields/AssociationFieldModel/recordSelectShared';
 import { FilterManager } from '../filter-manager';
-import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
+import { getAllDataModels, getDefaultOperator, isFilterValueEmpty } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 
@@ -58,13 +59,11 @@ const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => 
     return value;
   }
 
-  const fieldNames = fieldModel?.props?.fieldNames || collectionField?.fieldNames || {};
-  const valueKey =
-    fieldNames?.value ||
-    collectionField?.targetKey ||
-    collectionField?.targetCollection?.filterTargetKey ||
-    collectionField?.collection?.filterTargetKey ||
-    'id';
+  const normalizedFieldNames = normalizeAssociationFieldNames(
+    fieldModel?.props?.fieldNames || collectionField?.fieldNames,
+    collectionField?.targetCollection,
+  );
+  const valueKey = normalizedFieldNames.value;
   const pickValue = (item: any) => {
     const target = item && typeof item === 'object' && typeof item?.data !== 'undefined' ? item.data : item;
     if (!target || typeof target !== 'object') {
@@ -87,6 +86,30 @@ const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => 
   }
 
   return pickValue(value);
+};
+
+const hasAssociationRecordValue = (value: any) => {
+  const hasRecord = (item: any) => {
+    const target = item && typeof item === 'object' && typeof item?.data !== 'undefined' ? item.data : item;
+    return !!target && typeof target === 'object';
+  };
+
+  return Array.isArray(value) ? value.some(hasRecord) : hasRecord(value);
+};
+
+const isToOneAssociationField = (collectionField: any) => {
+  return (
+    ['belongsTo', 'hasOne'].includes(collectionField?.type) ||
+    ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'].includes(collectionField?.interface)
+  );
+};
+
+const isMultipleAssociationField = (fieldModel: any, collectionField: any) => {
+  if (fieldModel?.props?.allowMultiple === true || fieldModel?.props?.multiple === true) {
+    return true;
+  }
+
+  return !isToOneAssociationField(collectionField);
 };
 
 const buildVirtualFilterCollectionField = (ctx: FlowModelContext, filterField: any) => {
@@ -480,9 +503,21 @@ export class FilterFormItemModel extends FilterableItemModel<{
    */
   getFilterValue() {
     const fieldModel = this.subModels.field as FieldModel & { getFilterValue?: () => any };
-    const fieldValue = fieldModel.getFilterValue
-      ? fieldModel.getFilterValue()
-      : this.context.form?.getFieldValue(this.props.name);
+    const formValue = this.context.form?.getFieldValue(this.props.name);
+    const modelValue = fieldModel.getFilterValue ? fieldModel.getFilterValue() : formValue;
+    const collectionField = (fieldModel as any)?.context?.collectionField;
+    const isAssociationField =
+      typeof collectionField?.isAssociationField === 'function'
+        ? collectionField.isAssociationField()
+        : !!collectionField?.target;
+    const shouldUseFormValue =
+      isAssociationField &&
+      !this.mounted &&
+      !isFilterValueEmpty(formValue) &&
+      hasAssociationRecordValue(formValue) &&
+      !hasAssociationRecordValue(modelValue);
+    const shouldFallbackToFormValue = isFilterValueEmpty(modelValue) && !isFilterValueEmpty(formValue);
+    const fieldValue = shouldUseFormValue || shouldFallbackToFormValue ? formValue : modelValue;
 
     let rawValue = fieldValue;
 
@@ -517,10 +552,15 @@ export class FilterFormItemModel extends FilterableItemModel<{
     if (!isAssociation) {
       return value;
     }
-    const valueKey = collectionField?.targetKey || collectionField?.targetCollection?.filterTargetKey || 'id';
+    const normalizedFieldNames = normalizeAssociationFieldNames(
+      (fieldModel as any)?.props?.fieldNames || collectionField?.fieldNames,
+      collectionField?.targetCollection,
+    );
+    const valueKey = normalizedFieldNames.value;
     if (Array.isArray(value)) {
       if (value.length === 0) return value;
-      return value.map((item) => (item && typeof item === 'object' ? item[valueKey] : item));
+      const normalizedValue = value.map((item) => (item && typeof item === 'object' ? item[valueKey] : item));
+      return isMultipleAssociationField(fieldModel, collectionField) ? normalizedValue : normalizedValue[0];
     }
     if (typeof value === 'object') {
       return (value as any)?.[valueKey];

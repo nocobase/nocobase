@@ -194,6 +194,11 @@
       },
       {
         "type": "custom-link",
+        "label": "nb env current",
+        "link": "/api/cli/env/current"
+      },
+      {
+        "type": "custom-link",
         "label": "nb env update",
         "link": "/api/cli/env/update"
       },
@@ -201,6 +206,11 @@
         "type": "custom-link",
         "label": "nb env list",
         "link": "/api/cli/env/list"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb env status",
+        "link": "/api/cli/env/status"
       },
       {
         "type": "custom-link",
@@ -221,6 +231,29 @@
         "type": "custom-link",
         "label": "nb env use",
         "link": "/api/cli/env/use"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb session",
+    "link": "/api/cli/session/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb session setup",
+        "link": "/api/cli/session/setup"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb session id",
+        "link": "/api/cli/session/id"
+      },
+      {
+        "type": "custom-link",
+        "label": "nb session remove",
+        "link": "/api/cli/session/remove"
       }
     ],
     "collapsed": true

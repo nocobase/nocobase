@@ -15,8 +15,32 @@ import { translateCli } from './cli-locale.ts';
 const API_BASE_URL_EXAMPLE = 'http://localhost:13000/api';
 const ENV_KEY_PATTERN = /^[A-Za-z0-9]+$/;
 const TCP_PORT_EXAMPLE = '13000';
+const API_BASE_URL_REQUEST_TIMEOUT_MS = 5_000;
 
-export function validateApiBaseUrl(value: PromptValue): string | undefined {
+function buildHealthCheckUrl(apiBaseUrl: string): string {
+  return `${apiBaseUrl.replace(/\/+$/, '')}/__health_check`;
+}
+
+function isMaintainingHealthCheckResponse(status: number, body: unknown): boolean {
+  if (status !== 503 || !body || typeof body !== 'object') {
+    return false;
+  }
+
+  const error = (body as { error?: unknown }).error;
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const record = error as {
+    status?: unknown;
+    maintaining?: unknown;
+    code?: unknown;
+  };
+
+  return record.status === 503 && record.maintaining === true && record.code === 'APP_COMMANDING';
+}
+
+export async function validateApiBaseUrl(value: PromptValue): Promise<string | undefined> {
   const raw = String(value ?? '').trim();
   if (raw === '') {
     return undefined;
@@ -31,6 +55,51 @@ export function validateApiBaseUrl(value: PromptValue): string | undefined {
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return translateCli('validators.apiBaseUrl.invalidProtocol', { example: API_BASE_URL_EXAMPLE });
+  }
+
+  if (/\/__health_check\/?$/i.test(url.pathname)) {
+    return translateCli('validators.apiBaseUrl.healthCheckPathNotAllowed');
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, API_BASE_URL_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(buildHealthCheckUrl(url.toString()), {
+      method: 'GET',
+      signal: controller.signal,
+    });
+
+    if (response.status === 200) {
+      return undefined;
+    }
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+
+    if (isMaintainingHealthCheckResponse(response.status, body)) {
+      return translateCli('validators.apiBaseUrl.maintaining');
+    }
+
+    return translateCli('validators.apiBaseUrl.healthCheckFailed', { status: response.status });
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return translateCli('validators.apiBaseUrl.timeout', {
+        seconds: Math.ceil(API_BASE_URL_REQUEST_TIMEOUT_MS / 1000),
+      });
+    }
+
+    return translateCli('validators.apiBaseUrl.unreachable', {
+      details: error instanceof Error ? error.message : String(error),
+    });
+  } finally {
+    clearTimeout(timeout);
   }
 
   return undefined;

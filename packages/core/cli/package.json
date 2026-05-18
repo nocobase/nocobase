@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-beta.25",
+  "version": "2.1.0-beta.33",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
   "scripts": {
     "clean": "node ./scripts/clean.mjs",
     "build": "node ./scripts/build.mjs",
-    "test": "NB_CLI_ROOT=. TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli"
+    "test": "yarn cross-env NB_CLI_ROOT=. TEST_ENV=server-side yarn --cwd ../../.. vitest run packages/core/cli/src"
   },
   "keywords": [],
   "author": "",
@@ -80,12 +80,14 @@
     }
   },
   "dependencies": {
-    "@clack/prompts": "^0.9.1",
     "@nocobase/license-kit": "^0.3.8",
     "@oclif/core": "^4.10.4",
+    "@inquirer/core": "^11.1.10",
+    "@inquirer/type": "^4.0.5",
+    "@inquirer/ansi": "^2.0.5",
+    "@inquirer/confirm": "^6.0.13",
+    "@inquirer/select": "^5.1.5",
     "cross-spawn": "^7.0.6",
-    "lodash": "^4.17.21",
-    "mariadb": "^2.5.6",
     "mysql2": "^3.14.0",
     "openapi-types": "^12.1.3",
     "ora": "^8.2.0",

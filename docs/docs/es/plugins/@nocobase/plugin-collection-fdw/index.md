@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-collection-fdw/index).
-:::
-
 # Colección: conectar a datos externos (FDW)

@@ -35,11 +35,12 @@ In `nb --help` werden die folgenden Befehlsgruppen angezeigt:
 | [`nb app`](./app/index.md) | Laufzeitstatus der Anwendung verwalten: Starten, Stoppen, Neustarten, Logs und Upgrades. |
 | [`nb config`](./config/index.md) | CLI-Standardkonfiguration verwalten. |
 | [`nb db`](./db/index.md) | Eingebaute Datenbank der ausgewählten env verwalten. |
-| [`nb env`](./env/index.md) | NocoBase-Projektumgebungen, Status, Details und Laufzeitbefehle verwalten. |
+| [`nb env`](./env/index.md) | Verwalten Sie NocoBase-Projektumgebungen, aktuelle env, Status, Details und Befehlsruntimes. |
 | [`nb license`](./license/index.md) | Kommerzielle Lizenzen und lizenzierte Plugins verwalten. |
 | [`nb plugin`](./plugin/index.md) | Plugins der ausgewählten NocoBase env verwalten. |
 | [`nb scaffold`](./scaffold/index.md) | Gerüst für die Entwicklung von NocoBase-Plugins erzeugen. |
 | [`nb self`](./self/index.md) | NocoBase CLI selbst überprüfen oder aktualisieren. |
+| [`nb session`](./session/index.md) | Konfiguriert `NB_SESSION_ID`, damit die aktuelle env pro Shell oder Agent-Runtime isoliert wird. |
 | [`nb skills`](./skills/index.md) | NocoBase AI coding skills im aktuellen Arbeitsbereich überprüfen oder synchronisieren. |
 | [`nb source`](./source/index.md) | Lokale Quellcode-Projekte verwalten: Herunterladen, Entwicklung, Build und Tests. |
 
@@ -93,6 +94,8 @@ Mit einer bestehenden Anwendung verbinden:
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
+nb env current
+nb env status
 ```
 
 Anwendung starten und Laufzeitbefehle aktualisieren:

@@ -53,7 +53,7 @@ Zur Laufzeit von JS Item werden gängige Funktionen injiziert, die Sie direkt im
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- Kann mit KI-Mitarbeitern zur Generierung / Bearbeitung von Skripten kombiniert werden: [KI-Mitarbeiter · Nathan: Frontend-Engineer](/ai-employees/features/built-in-employee)
+- Kann mit KI-Mitarbeitern zur Generierung / Bearbeitung von Skripten kombiniert werden: [KI-Mitarbeiter · Nathan: Frontend-Engineer](/ai-employees/built-in/)
 
 ## Häufige Verwendungen (kompakte Beispiele)
 

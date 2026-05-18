@@ -14,6 +14,7 @@ import { AIEmployee } from '../../../ai-employees/ai-employee';
 import { AIEmployeeInstructionConfig } from './types';
 import { Files } from './files';
 import { isValidFilter } from '@nocobase/utils';
+import { SYSTEM_TOOLS } from '@nocobase/ai';
 
 export class AIEmployeeInstruction extends Instruction {
   async run(node: FlowNodeModel, input: any, processor: Processor) {
@@ -28,7 +29,7 @@ export class AIEmployeeInstruction extends Instruction {
       files,
     }: AIEmployeeInstructionConfig = processor.getParsedValue(node.config, node.id);
 
-    const toolName = 'aiEmployeeWorkflowTaskOutput';
+    const toolName = SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT;
     const workflowSystemPrompt = `
 You are operating inside a workflow.
 Your job is to complete the workflow task and return the final outcome to the workflow, not to reply freely as a normal assistant.
@@ -75,13 +76,12 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
         let currentRoles = input?.result?.roleName;
         if (!currentRoles) {
-          const defaultRole = await this.workflow.db.getRepository('rolesUsers').findOne({
+          const roles = await this.workflow.db.getRepository('rolesUsers').find({
             filter: {
               userId: input?.result?.user?.id ?? userId,
-              default: true,
             },
           });
-          currentRoles = defaultRole?.roleName;
+          currentRoles = roles.map((x) => x.roleName);
         }
 
         const employee = await this.workflow.db.getRepository('aiEmployees').findOne({
@@ -89,6 +89,8 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
             username,
           },
         });
+        const plugin = this.workflow.app.pm.get('ai') as PluginAIServer;
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx: {
@@ -106,7 +108,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
               params: {
                 values: {
                   sessionId: conversation.sessionId,
-                  model,
+                  model: resolvedModel,
                 },
               },
             },
@@ -116,14 +118,15 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
           systemMessage,
           skillSettings,
           webSearch,
-          model,
+          model: resolvedModel,
           tools: [{ name: toolName }],
         });
 
         const attachmentPart: Record<string, any> = {};
         if (files?.length) {
-          const { resolveAttachments, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
+          const { resolveAttachments, resolveFileIds, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
           await resolveAttachments(files);
+          await resolveFileIds(files);
           await resolveUrls(files);
         }
 
@@ -160,8 +163,8 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
                     role: 'user',
                     content: {
                       type: 'text',
-                      content: `You failed to call the required tool "aiEmployeeWorkflowTaskOutput" in your previous response.
-Call "aiEmployeeWorkflowTaskOutput" now to submit the workflow outcome.
+                      content: `You failed to call the required tool "${SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT}" in your previous response.
+Call "${SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT}" now to submit the workflow outcome.
 Do not send another normal assistant response without invoking it.
                   `,
                     },

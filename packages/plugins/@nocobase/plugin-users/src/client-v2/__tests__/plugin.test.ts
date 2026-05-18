@@ -21,7 +21,7 @@ describe('plugin-users client-v2', () => {
     vi.restoreAllMocks();
   });
 
-  it('should use same-origin legacy signin redirect returned by server', async () => {
+  it('should use same-origin signin redirect returned by server when whitelisted', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -58,7 +58,7 @@ describe('plugin-users client-v2', () => {
     );
   });
 
-  it('should ignore v2 signin redirect returned by server and fallback to legacy signin', async () => {
+  it('should accept server-returned v2 signin redirect under nested public path', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -89,7 +89,42 @@ describe('plugin-users client-v2', () => {
     await model.onClick();
 
     expect(replace).toHaveBeenCalledWith(
-      '/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h%3Ftab%3Doverview%23panel',
+      'http://localhost:20000/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h',
+    );
+  });
+
+  it('should fallback to v2 signin when server-returned redirect is not whitelisted', async () => {
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        origin: 'http://localhost:20000',
+        pathname: '/nocobase/v2/admin/7vu4c2sdk6h',
+        search: '?tab=overview',
+        hash: '#panel',
+        replace,
+      },
+    });
+
+    const app = createMockClient({ publicPath: '/nocobase/v2/' });
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+
+    const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as any;
+
+    app.apiClient.auth.signOut = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          redirect: '/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h',
+        },
+      },
+    });
+
+    await model.onClick();
+
+    expect(replace).toHaveBeenCalledWith(
+      '/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin%2F7vu4c2sdk6h%3Ftab%3Doverview%23panel',
     );
   });
 });

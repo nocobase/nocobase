@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/configuration/admin-configuration).
-:::
-
 # Employé IA · Guide de configuration pour les administrateurs
 
 > Cette documentation vous aide à comprendre rapidement comment configurer et gérer les employés IA, en vous guidant étape par étape à travers l'ensemble du processus, du service de modèle à la mise en service des tâches.

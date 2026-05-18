@@ -18,12 +18,9 @@ nb env info [name] [flags]
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | CLI env name to inspect; uses the current env if omitted |
-| `--env`, `-e` | string | CLI env name to inspect; alternative to the positional argument |
+| `[name]` | string | Configured environment name to inspect; uses the current env if omitted |
 | `--json` | boolean | Output JSON |
 | `--show-secrets` | boolean | Show tokens, passwords, and other secrets in plain text |
-
-If both `[name]` and `--env` are passed, they must match.
 
 ## Examples
 
@@ -31,7 +28,6 @@ If both `[name]` and `--env` are passed, they must match.
 nb env info app1
 nb env info app1 --json
 nb env info app1 --show-secrets
-nb env info --env app1
 ```
 
 ## Related Commands

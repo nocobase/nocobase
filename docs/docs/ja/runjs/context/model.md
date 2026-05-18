@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/model)をご参照ください。
-:::
-
 # ctx.model
 
 現在の RunJS 実行コンテキストが配置されている `FlowModel` インスタンスであり、JSBlock、JSField、JSAction などのシナリオにおけるデフォルトのエントリポイントです。具体的な型はコンテキストに応じて変化し、`BlockModel`、`ActionModel`、`JSEditableFieldModel` などのサブクラスになる可能性があります。

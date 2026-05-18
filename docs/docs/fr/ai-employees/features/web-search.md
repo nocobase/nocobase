@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/features/web-search).
-:::
-
 # Recherche en ligne
 
 La recherche en ligne permet de compléter les données d'entraînement du modèle avec des informations récentes.

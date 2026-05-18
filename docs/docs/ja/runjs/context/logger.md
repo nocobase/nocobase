@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/logger)をご参照ください。
-:::
-
 # ctx.logger
 
 [pino](https://github.com/pinojs/pino) に基づくログのラッパーで、高性能な構造化 JSON ログを提供します。ログの収集と分析を容易にするため、`console` の代わりに `ctx.logger` を使用することをお勧めします。

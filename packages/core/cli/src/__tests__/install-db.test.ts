@@ -11,6 +11,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
+import EnvAdd from '../commands/env/add.js';
 import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
@@ -36,17 +37,18 @@ type InstallStatics = {
     dbResults: Record<string, unknown>;
     rootResults: Record<string, unknown>;
     networkName: string;
-  }) => {
+  }) => Promise<{
     source: 'docker';
     networkName: string;
     containerName: string;
     imageRef: string;
     appPort: string;
     storagePath: string;
+    envFile?: string;
     appKey: string;
     timeZone: string;
     args: string[];
-  };
+  }>;
   buildSavedEnvConfig: (params: {
     envName: string;
     appResults: Record<string, unknown>;
@@ -114,6 +116,58 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '-c',
     'wal_level=logical',
   ]);
+});
+
+test('install reuses env add prompts without online apiBaseUrl validation', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi.fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      fetchSource: false,
+    })
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      name: 'app7593',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as any);
+
+  const parsed = {
+    resume: false,
+  } as any;
+
+  try {
+    await (Install.prototype as any).collectPromptResults.call(command, parsed, true);
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
+
+  const envAddCatalog = runPromptCatalogMock.mock.calls[4]?.[0];
+  expect(envAddCatalog.apiBaseUrl).toBeDefined();
+  expect(envAddCatalog.apiBaseUrl).not.toBe(EnvAdd.prompts.apiBaseUrl);
+  expect(envAddCatalog.apiBaseUrl.validate).toBe(undefined);
 });
 
 test('builtin postgres db plan uses a custom built-in database image when provided', () => {
@@ -234,11 +288,11 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
   expect(plan.args.includes(`${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
 });
 
-test('docker app plan wires app, db, network, port, and image settings', () => {
+test('docker app plan wires app, db, network, port, and image settings', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const networkName = 'nocobase';
   const containerPrefix = 'nb';
-  const plan = installStatics.buildDockerAppPlan({
+  const plan = await installStatics.buildDockerAppPlan({
     envName: 'demo',
     networkName,
     appResults: {
@@ -270,9 +324,10 @@ test('docker app plan wires app, db, network, port, and image settings', () => {
   expect(plan.source).toBe('docker');
   expect(plan.networkName).toBe(networkName);
   expect(plan.containerName).toBe(`${containerPrefix}-demo-app`);
-  expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop');
+  expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:develop-full');
   expect(plan.appPort).toBe('13000');
   expect(plan.storagePath).toBe(resolveEnvRelativePath('./storage/demo'));
+  expect(plan.envFile).toBe(undefined);
   expect(plan.appKey.length).toBe(64);
   expect(typeof plan.timeZone).toBe('string');
   expect(plan.timeZone.length > 0).toBe(true);
@@ -496,6 +551,7 @@ test('install saved env config records docker download settings for later upgrad
   expect(envConfig.downloadVersion).toBe('alpha');
   expect(envConfig.dockerRegistry).toBe('nocobase/nocobase');
   expect(envConfig.dockerPlatform).toBe('linux/amd64');
+  expect(envConfig.envFile).toBe(undefined);
   expect(envConfig.dbHost).toBe(undefined);
   expect(envConfig.dbPort).toBe(undefined);
 });

@@ -21,7 +21,7 @@ import { ToolCard } from './generative-ui/ToolCard';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
@@ -54,7 +54,7 @@ const MessageWrapper = React.forwardRef<
 const AITextMessageRenderer: React.FC<{
   msg: Message['content'];
   toolInlineActions?: React.ReactNode;
-}> = ({ msg, toolInlineActions }) => {
+}> = React.memo(({ msg, toolInlineActions }) => {
   const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
@@ -109,12 +109,12 @@ const AITextMessageRenderer: React.FC<{
   }
   const M = provider.components.MessageRenderer;
   return <M msg={msg} />;
-};
+});
 
 const AIMessageRenderer: React.FC<{
   msg: Message['content'];
   toolInlineActions?: React.ReactNode;
-}> = ({ msg, toolInlineActions }) => {
+}> = React.memo(({ msg, toolInlineActions }) => {
   switch (msg.type) {
     case 'greeting':
       return (
@@ -139,7 +139,7 @@ const AIMessageRenderer: React.FC<{
         />
       );
   }
-};
+});
 
 export const AIMessage: React.FC<{
   msg: Message['content'];
@@ -375,11 +375,9 @@ export const ErrorMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
   const currentConversation = useChatConversationsStore.use.currentConversation();
-
-  const messages = useChatMessagesStore.use.messages();
-
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
   const { resendMessages } = useChatMessageActions();
 
   const showAlert = msg.content !== 'GraphRecursionError';

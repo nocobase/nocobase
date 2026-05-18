@@ -18,7 +18,7 @@ nb env auth [name]
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `[name]` | string | Env name; uses the current env if omitted |
+| `[name]` | string | Configured environment name to sign in to; uses the current env if omitted |
 
 ## Notes
 

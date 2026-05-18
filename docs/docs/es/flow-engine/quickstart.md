@@ -1,8 +1,4 @@
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Inicio rápido: Construyendo un componente de botón orquestable
 

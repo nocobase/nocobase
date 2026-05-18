@@ -8,8 +8,11 @@
  */
 
 export * from './AddNewActionModel';
+export * from './AssociateActionModel';
+export * from './AssociationActionUtils';
 export * from './BulkDeleteActionModel';
 export * from './DeleteActionModel';
+export * from './DisassociateActionModel';
 export * from './EditActionModel';
 export * from './FilterActionModel';
 export * from './JSActionModel';

@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { upsertEnv } from '../../lib/auth-store.js';
+import { setCurrentEnv, upsertEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import {
   buildStoredEnvConfig,
@@ -28,8 +28,7 @@ import {
   localeText,
 } from '../../lib/cli-locale.js';
 import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
-import { printVerbose, setVerboseMode } from '../../lib/ui.js';
-import * as p from '@clack/prompts';
+import { printStage, printSuccess, printVerbose, setVerboseMode } from '../../lib/ui.js';
 
 type EnvAddParsedFlags = {
   env?: string;
@@ -117,7 +116,7 @@ export default class EnvAdd extends Command {
   static override args = {
     name: Args.string({
       description:
-        'Label for this environment (optional first argument; in a TTY, prompted when omitted; required when not using a TTY)',
+        'Environment name to save (optional first argument; in a TTY, prompted when omitted; required when not using a TTY)',
       required: false,
     }),
   };
@@ -374,7 +373,7 @@ export default class EnvAdd extends Command {
     applyCliLocale(parsedFlags.locale);
     setVerboseMode(parsedFlags.verbose);
     if (!parsedFlags['no-intro']) {
-      p.intro('Connect a NocoBase Environment');
+      printStage('Connect to NocoBase');
     }
 
     const results = await runPromptCatalog(EnvAdd.prompts, {
@@ -392,12 +391,13 @@ export default class EnvAdd extends Command {
       envConfig,
       { scope: resolveDefaultConfigScope() },
     );
+    await setCurrentEnv(envName, { scope: resolveDefaultConfigScope() });
 
     if (results.authType === 'oauth') {
       await this.config.runCommand('env:auth', [envName]);
     }
     await this.config.runCommand('env:update', [envName]);
 
-    p.outro(`Env "${envName}" added successfully.`);
+    printSuccess(`✔ Env "${envName}" is ready.`);
   }
 }

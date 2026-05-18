@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Tooltip, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
@@ -23,9 +23,10 @@ import {
 import { ToolCall, ToolsEntry, toToolsMap, useToken, lazy } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { useToolCallActions } from '../hooks/useToolCallActions';
-import { useChatMessagesStore } from '../stores/chat-messages';
+import { useChat } from '../hooks/useChat';
 import { css, keyframes } from '@emotion/css';
 import { useChatBoxStore } from '../stores/chat-box';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
 
@@ -117,7 +118,7 @@ const ToolCallRow: React.FC<{
   generating: boolean;
   defaultExpanded?: boolean;
   rightExtra?: React.ReactNode;
-}> = ({ toolCall, toolsMap, generating, defaultExpanded, rightExtra }) => {
+}> = React.memo(({ toolCall, toolsMap, generating, defaultExpanded, rightExtra }) => {
   const t = useT();
   const { token } = useToken();
   const [expanded, setExpanded] = useState(!!defaultExpanded);
@@ -127,11 +128,12 @@ const ToolCallRow: React.FC<{
     }
   }, [defaultExpanded]);
 
-  let args = toolCall.args;
+  let args: string;
   try {
-    args = JSON.stringify(args, null, 2);
+    const stringifiedArgs = JSON.stringify(toolCall.args, null, 2);
+    args = stringifiedArgs ?? '{}';
   } catch (err) {
-    // ignore
+    args = typeof toolCall.args === 'string' ? toolCall.args : '{}';
   }
   const toolsEntry = toolsMap.get(toolCall.name);
   const title = toolsEntry?.introduction?.title
@@ -152,6 +154,7 @@ const ToolCallRow: React.FC<{
   });
 
   const showLoadingTitle = generating && toolCall.invokeStatus !== 'done' && toolCall.invokeStatus !== 'confirmed';
+  const showArgs = args !== '{}';
 
   return (
     <div>
@@ -165,7 +168,7 @@ const ToolCallRow: React.FC<{
           userSelect: 'none',
         }}
         onClick={() => {
-          if (args === '{}') {
+          if (!showArgs) {
             return;
           }
           setExpanded(!expanded);
@@ -186,7 +189,7 @@ const ToolCallRow: React.FC<{
           </span>
         </Flex>
         <Flex align="center" gap={8}>
-          {args !== '{}' ? (
+          {showArgs ? (
             expanded ? (
               <UpOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary }} />
             ) : (
@@ -211,7 +214,7 @@ const ToolCallRow: React.FC<{
       )}
     </div>
   );
-};
+});
 
 export const DefaultToolCard: React.FC<{
   messageId: string;
@@ -219,9 +222,11 @@ export const DefaultToolCard: React.FC<{
   toolCalls: ToolCall[];
   inlineActions?: React.ReactNode;
 }> = ({ messageId, tools, toolCalls, inlineActions }) => {
-  const toolsMap = toToolsMap(tools);
-  const messages = useChatMessagesStore.use.messages();
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const toolsMap = useMemo(() => toToolsMap(tools), [tools]);
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
+  const responseLoading = chat.use.responseLoading();
   const generating = responseLoading && messages[messages.length - 1]?.content?.messageId === messageId;
   const hasAutoExpanded = useRef(false);
 

@@ -22,7 +22,7 @@ import {
   CalendarTitleActionModel,
   CalendarTodayActionModel,
   CalendarViewSelectActionModel,
-} from './models';
+} from '../client-v2/models';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import {
   CalendarActionInitializers_deprecated,

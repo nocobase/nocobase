@@ -32,6 +32,7 @@ nb api resource <command>
 | `--api-base-url` | string | Adresse de l'API NocoBase, par exemple `http://localhost:13000/api` |
 | `--verbose` | boolean | Afficher la progression détaillée |
 | `--env`, `-e` | string | Nom de l'environnement |
+| `--yes`, `-y` | boolean | Lorsque `--env` est passé explicitement et cible une env différente de l'env actuelle, ignore la confirmation interactive |
 | `--role` | string | Substitution du rôle, envoyée dans l'en-tête `X-Role` |
 | `--token`, `-t` | string | Substitution de l'API key |
 | `--json-output`, `-j` / `--no-json-output` | boolean | Renvoyer le JSON brut, activé par défaut |
@@ -48,6 +49,8 @@ nb api resource get --resource users --filter-by-tk 1
 nb api resource create --resource users --values '{"nickname":"Ada"}'
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 ```
+
+Si vous passez `--env` explicitement et qu'il est différent de l'env actuelle, la CLI demande d'abord une confirmation. Dans un terminal non interactif ou une session d'agent IA, ajoutez vous-même `--yes` ou exécutez d'abord `nb env use <name>` puis réessayez.
 
 ## Commandes connexes
 

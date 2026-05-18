@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { lazy } from '../../../flow-compat';
+import { getFlowFieldInterfaceOptions, lazy } from '../../../flow-compat';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
 import uniqBy from 'lodash/uniqBy';
@@ -22,7 +22,12 @@ import {
   observer,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
-import { enumToOptions, translateOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
+import {
+  enumToOptions,
+  normalizeSelectRenderValue,
+  translateOptions,
+  UiSchemaEnumItem,
+} from '../../internal/utils/enumOptionsUtils';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
@@ -82,7 +87,9 @@ function createStaticInputRenderer(
       } else if (optionsFromEnum) {
         finalProps = { ...finalProps, options: optionsFromEnum };
       }
-      return <Select {...finalProps} {...rest} value={value} onChange={onChange} />;
+      return (
+        <Select {...finalProps} {...rest} value={normalizeSelectRenderValue(value, finalProps)} onChange={onChange} />
+      );
     }
     if (xComponent === 'DateFilterDynamicComponent')
       return <DateFilterDynamicComponentLazy {...commonProps} {...rest} value={value} onChange={onChange} />;
@@ -227,11 +234,12 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   const operatorMetadataList: OperatorMeta[] = useMemo(() => {
     if (leftFieldMeta) {
-      const dataSourceManager = model.context.app.dataSourceManager;
       const fieldInterface = leftFieldMeta.interface
-        ? (dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+        ? (getFlowFieldInterfaceOptions(
             leftFieldMeta.interface,
-          ) as FieldInterfaceDef)
+            model.context.dataSourceManager,
+            model.context.app?.dataSourceManager,
+          ) as FieldInterfaceDef | undefined)
         : undefined;
       const schemaOperators = (leftFieldMeta as any)?.uiSchema?.['x-filter-operators'] as
         | Array<OperatorMeta & { visible?: (meta: MetaTreeNode) => boolean }>
@@ -392,7 +400,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     const base = Array.isArray(tree) ? tree : [];
     const merged = mergeExtraMetaTreeWithBase(base, extraMetaTree);
     const getFieldInterface = (name: string) =>
-      model.context.app?.dataSourceManager?.collectionFieldInterfaceManager?.getFieldInterface?.(name) as
+      getFlowFieldInterfaceOptions(name, model.context.dataSourceManager, model.context.app?.dataSourceManager) as
         | FieldInterfaceDef
         | undefined;
     return await enhanceMetaTreeWithFilterableChildren(merged, getFieldInterface);

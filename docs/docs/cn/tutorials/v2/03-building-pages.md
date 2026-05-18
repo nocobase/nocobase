@@ -178,7 +178,7 @@
 光看列表还不够，我们还需要能点进去查看工单详情，以及编辑工单。
 
 1. 在操作列上方，点击第二个 ”+“ 号。
-2. 点击操作：**查看**、**[编辑](/interface-builder/actions/edit)**、**[删除](/interface-builder/actions/delete)**。
+2. 点击操作：**查看**、**[编辑](../../interface-builder/actions/types/edit.md)**、**[删除](../../interface-builder/actions/types/delete.md)**。
 3. 每行数据操作栏位会出现「查看」、「编辑」和「删除」按钮。
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)

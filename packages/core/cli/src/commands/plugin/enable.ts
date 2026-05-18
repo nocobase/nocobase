@@ -14,6 +14,7 @@ import {
   runDockerNocoBaseCommand,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { announceTargetEnv } from '../../lib/ui.js';
 
 export default class PluginEnable extends Command {
@@ -38,22 +39,38 @@ export default class PluginEnable extends Command {
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description:
-        'CLI env name (from `nb env` / `nb init`). Defaults to the current env when omitted',
+      description: 'CLI env name to enable plugins for. Defaults to the current env when omitted',
+    }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
     }),
   };
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(PluginEnable);
+    const requestedEnv = flags.env?.trim() || undefined;
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
+    if (explicitEnvSelection) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
     const packages = args.packages;
     if (!Array.isArray(packages) || packages.length === 0) {
       this.error('Pass at least one plugin package name.');
     }
 
-    const runtime = await resolveManagedAppRuntime(flags.env);
+    const runtime = await resolveManagedAppRuntime(requestedEnv);
 
     if (!runtime) {
-      this.error(formatMissingManagedAppEnvMessage(flags.env));
+      this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
     announceTargetEnv(runtime.envName);
@@ -78,6 +95,8 @@ export default class PluginEnable extends Command {
       return;
     }
 
-    await this.config.runCommand('api:pm:enable', ['--await-response', '--filter-by-tk', packages.join(',')]);
+    await this.config.runCommand('api:pm:enable', explicitEnvSelection
+      ? ['--await-response', '--filter-by-tk', packages.join(','), '--env', runtime.envName, '--yes']
+      : ['--await-response', '--filter-by-tk', packages.join(',')]);
   }
 }

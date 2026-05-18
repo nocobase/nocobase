@@ -20,7 +20,7 @@ import { generatePlugins, getRsbuildAlias } from '@nocobase/devtools/rsbuildConf
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
-const devtoolsPackageJson = require('../../devtools/package.json') as { version?: string };
+const devtoolsPackageJson = require('@nocobase/devtools/package.json') as { version?: string };
 const appVersion = devtoolsPackageJson.version || '';
 const APP_PUBLIC_PATH_TEMPLATE = '{{env.APP_PUBLIC_PATH}}';
 

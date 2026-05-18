@@ -14,8 +14,9 @@ import { Schema } from '@formily/react';
 import PluginAIClient from '../..';
 import { useT } from '../../locale';
 import { ActionOptions, ContextItem, Message } from '../types';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxStore } from './stores/chat-box';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
 export const Actions: React.FC<{
   message: Message & { messageId: string };
@@ -24,20 +25,34 @@ export const Actions: React.FC<{
 }> = ({ responseType, message, value }) => {
   const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
-
-  const messages = useChatMessagesStore.use.messages();
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const responseLoading = chat.use.responseLoading();
+  const messages = chat.use.messages();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
 
-  const reversedMessages = [...messages].reverse();
-  const lastMessage = reversedMessages.find((msg) => msg.role === currentEmployee.username);
+  const lastEmployeeMessageKey = React.useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role === currentEmployee?.username) {
+        return msg.key;
+      }
+    }
+  }, [messages, currentEmployee?.username]);
+  const workContext = React.useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const workContext = messages[i].content.workContext;
+      if (workContext?.length) {
+        return workContext;
+      }
+    }
+    return null;
+  }, [messages]);
   const actions: (ActionOptions & { context: ContextItem })[] = useMemo(() => {
-    const message = reversedMessages.find((msg) => msg.content.workContext?.length > 0);
-    if (!message) {
+    if (!workContext?.length) {
       return [];
     }
-    const workContext = message.content.workContext;
     const result = [];
     for (const context of workContext) {
       const options = plugin.aiManager.getWorkContext(context.type);
@@ -59,8 +74,8 @@ export const Actions: React.FC<{
       }
     }
     return result;
-  }, [reversedMessages, responseType]);
-  if (responseLoading || !actions.length || message.messageId !== lastMessage.key) {
+  }, [plugin.aiManager, responseType, workContext]);
+  if (responseLoading || !actions.length || message.messageId !== lastEmployeeMessageKey) {
     return null;
   }
 

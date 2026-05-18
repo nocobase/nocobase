@@ -115,6 +115,11 @@ const resetStyle = css`
   .ant-pro-base-menu-vertical-collapsed .ant-pro-base-menu-vertical-menu-item {
     height: auto;
   }
+
+  .ant-menu-item:has([data-nb-hidden-menu-item='true']),
+  .ant-menu-submenu:has([data-nb-hidden-menu-item='true']) {
+    display: none !important;
+  }
 `;
 
 const contentStyle = {
@@ -395,6 +400,7 @@ export const AdminLayoutComponent = observer((props: any) => {
   const customToken = token as CustomToken;
   const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
   const isMobileSider = isMobileLayout || isMobileViewport;
+  const menuRouteRefreshVersion = adminLayoutModel?.menuRouteRefreshVersion || 0;
   const [collapsed, setCollapsed] = useState(isMobileSider);
   const [route, setRoute] = useState<{ path: string; children: AdminLayoutMenuNode[] }>({
     path: '/',
@@ -499,7 +505,7 @@ export const AdminLayoutComponent = observer((props: any) => {
       children: [],
     };
     setRoute(nextRoute);
-  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
+  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, menuRouteRefreshVersion, t]);
 
   useEffect(() => {
     const syncId = ++flowSettingsSyncRef.current;
@@ -629,6 +635,7 @@ export const AdminLayoutComponent = observer((props: any) => {
         <MobileMenuControlContext.Provider value={{ closeMobileMenu }}>
           <DndProvider collisionDetection={menuCollisionDetection} onDragEnd={handleMenuDragEnd}>
             <ProLayout
+              key={`admin-layout-menu-${menuRouteRefreshVersion}`}
               {...props}
               contentStyle={contentStyle}
               siderWidth={customToken.siderWidth || 200}

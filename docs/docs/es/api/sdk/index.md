@@ -4,10 +4,6 @@ description: "SDK frontend APIClient de NocoBase: peticiones HTTP, Auth, Storage
 keywords: "APIClient,SDK,peticiones HTTP,API frontend,Auth,Storage,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # APIClient
 
 ## Visión general

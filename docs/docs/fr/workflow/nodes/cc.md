@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-workflow-cc'
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/workflow/nodes/cc).
-:::
-
 # Copie Carbone <Badge>v1.8.2+</Badge>
 
 ## Introduction

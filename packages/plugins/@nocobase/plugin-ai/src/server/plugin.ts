@@ -21,12 +21,12 @@ import aiWorkflowTasks from './resource/aiWorkflowTasks';
 import aiTools from './resource/aiTools';
 import aiSkills from './resource/aiSkills';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
-import { AIConversationsManager } from './ai-employees/ai-conversations';
+import { AIConversationsManager, registerAIConversationReadNotification } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { getWorkflowCallers, createDocsSearchTool, createReadDocEntryTool, loadDocsIndexes } from './tools';
+import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -52,12 +52,14 @@ import {
   getWorkflowTasks,
 } from './workflow/nodes/employee';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
+import { LLMStreamCachedManager } from './manager/llm-stream-manager';
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
   aiConversationsManager = new AIConversationsManager(this);
+  llmStreamCachedManager = new LLMStreamCachedManager(this);
   builtInManager = new BuiltInManager(this);
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
   aiCodingManager = new AICodingManager(this);
@@ -65,6 +67,7 @@ export class PluginAIServer extends Plugin {
   documentLoaders = new DocumentLoaders(this);
   subAgentsDispatcher = new SubAgentsDispatcher(this);
   knowledgeBaseManager = new KnowledgeBaseManager(this);
+  docsFsCache: DocsFsCache = null;
   snowflake: Snowflake;
 
   /**
@@ -106,7 +109,6 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
-    await loadDocsIndexes();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
@@ -114,6 +116,7 @@ export class PluginAIServer extends Plugin {
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
+    registerAIConversationReadNotification(this);
     registerOnJobAbortedHandler(this);
   }
 
@@ -134,7 +137,7 @@ export class PluginAIServer extends Plugin {
   registerTools() {
     const toolsManager = this.ai.toolsManager;
 
-    toolsManager.registerTools([createDocsSearchTool(), createReadDocEntryTool()]);
+    toolsManager.registerTools([createDocsSearchTool(this)]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
     toolsManager.registerDynamicTools(getWorkflowTasks(this));

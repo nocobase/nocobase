@@ -175,4 +175,4 @@ Les enregistrements d'activité apparaissent également dans la vue calendrier d
 - [Guide d'utilisation du CRM](./index.md)
 - [Gestion des Lead](./guide-leads) — Création automatique de Customer et de Contact après conversion d'un Lead
 - [Gestion des Opportunity](./guide-opportunities) — Opportunity associées au client
-- [Employés IA](./guide-ai)
+- [Employés IA](../../../ai-employees/index.md)

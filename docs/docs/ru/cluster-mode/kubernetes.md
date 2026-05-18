@@ -5,10 +5,6 @@ description: "Развёртывание кластера NocoBase на K8s ил
 keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,развёртывание кластера,NocoBase"
 ---
 
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 # Развертывание в Kubernetes
 

@@ -14,7 +14,7 @@ import { type Authenticator } from '../authenticator';
 import { useAuthTranslation } from '../locale';
 import { useSignIn } from '../hooks';
 
-export function BasicSignInForm({ authenticator }: { authenticator: Authenticator }) {
+export default function BasicSignInForm({ authenticator }: { authenticator: Authenticator }) {
   const { t } = useAuthTranslation();
   const [form] = Form.useForm();
   const [errorMessage, setErrorMessage] = useState('');

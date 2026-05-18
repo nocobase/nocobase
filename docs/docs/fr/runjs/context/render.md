@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/render).
-:::
-
 # ctx.render()
 
 Rend des éléments React, des chaînes HTML ou des nœuds DOM dans un conteneur spécifié. Si le paramètre `container` n'est pas fourni, le rendu s'effectue par défaut dans `ctx.element` et hérite automatiquement du contexte de l'application, tel que le ConfigProvider et les thèmes.

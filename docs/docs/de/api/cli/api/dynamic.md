@@ -41,6 +41,13 @@ Dynamische Befehle mit Request-Body unterstützen:
 
 `--body` und `--body-file` schließen sich gegenseitig aus.
 
+Dynamische API-Befehle unterstützen außerdem:
+
+- `--env`, `-e`: Name der CLI-env, an die die Anfrage gesendet werden soll; wenn weggelassen, wird die aktuelle env verwendet
+- `--yes`, `-y`: Wenn ein explizit übergebenes `--env` auf eine andere env als die aktuelle env zeigt, die interaktive Bestätigung überspringen
+
+Wenn Sie `--env` explizit übergeben und es sich von der aktuellen env unterscheidet, fragt die CLI zuerst nach einer Bestätigung. In nicht interaktiven Terminals oder AI-Agent-Sitzungen fügen Sie `--yes` selbst hinzu oder führen zuerst `nb env use <name>` aus und versuchen es dann erneut.
+
 ## Verwandte Befehle
 
 - [`nb env update`](../env/update.md)

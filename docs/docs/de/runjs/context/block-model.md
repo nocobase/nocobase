@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/block-model).
-:::
-
 # ctx.blockModel
 
 Das übergeordnete Block-Modell (BlockModel-Instanz), in dem sich das aktuelle JS-Feld / der JS-Block befindet. In Szenarien wie JSField, JSItem und JSColumn zeigt `ctx.blockModel` auf den Formular-Block oder Tabellen-Block, der die aktuelle JS-Logik trägt. In einem eigenständigen JSBlock kann es `null` sein oder mit `ctx.model` übereinstimmen.

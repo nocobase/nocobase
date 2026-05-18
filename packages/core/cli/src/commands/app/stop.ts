@@ -8,6 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -49,6 +50,11 @@ export default class AppStop extends Command {
       char: 'e',
       description: 'CLI env name to stop. Defaults to the current env when omitted',
     }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
     verbose: Flags.boolean({
       description: 'Show raw shutdown output from the underlying local or Docker command',
       default: false,
@@ -58,6 +64,16 @@ export default class AppStop extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppStop);
     const requestedEnv = flags.env?.trim() || undefined;
+    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+      const confirmed = await ensureCrossEnvConfirmed({
+        command: this,
+        requestedEnv,
+        yes: flags.yes,
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';

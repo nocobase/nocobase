@@ -4,10 +4,6 @@ description: "Guide de sécurité NocoBase : authentification, stratégie de Tok
 keywords: "Sécurité NocoBase,authentification,stratégie de Token,contrôle d'accès,chiffrement,restriction IP,politique de mot de passe,journal d'audit,NocoBase"
 ---
 
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Guide de sécurité NocoBase
 
 NocoBase accorde une grande importance à la sécurité des données et de l'application, depuis la conception fonctionnelle jusqu'à la mise en œuvre. La plateforme intègre l'authentification des utilisateurs, le contrôle d'accès, le chiffrement des données et de nombreuses autres fonctions de sécurité, tout en permettant de configurer les politiques de sécurité avec souplesse selon vos besoins. Qu'il s'agisse de protéger les données des utilisateurs, de gérer les droits d'accès ou d'isoler les environnements de développement et de production, NocoBase fournit des outils et solutions pratiques. Ce guide a pour but de vous accompagner dans une utilisation sécurisée de NocoBase, afin de protéger vos données, vos applications et vos environnements tout en exploitant efficacement les fonctionnalités du système.
@@ -199,6 +195,18 @@ Par défaut, les clés sont chiffrées avec AES-256-CBC. NocoBase génère autom
 ### Stockage de fichiers
 
 Pour stocker des fichiers sensibles, nous recommandons un service de stockage cloud compatible S3, combiné avec le plugin commercial File storage: S3 (Pro), pour assurer une lecture/écriture privée. Pour une utilisation en intranet, optez pour MinIO ou une autre solution compatible S3 déployable en privé.
+
+Pour le stockage local ou tout autre stockage public accessible directement via des URL de même origine que l'application, il faut également prêter une attention particulière aux risques liés aux fichiers contenant du contenu actif. Des fichiers tels que `html`, `xhtml` et `svg` peuvent être analysés et exécutés directement par le navigateur. Si un attaquant peut téléverser un tel fichier et inciter un utilisateur à l'ouvrir, il peut utiliser le domaine de confiance de votre application pour héberger une page ou un script malveillant.
+
+En règle générale, nous recommandons aux administrateurs de :
+
+- Privilégier le stockage privé, les URL signées ou un domaine de fichiers distinct, afin que les fichiers téléversés ne soient pas servis directement depuis la même origine que l'application principale.
+- Mettre en place une liste blanche stricte de types MIME pour les téléversements et n'autoriser que les types de fichiers réellement nécessaires au métier.
+- Faire preuve de prudence avant d'autoriser des types de contenu actif tels que `text/html`, `application/xhtml+xml` et `image/svg+xml`. Même si le système tente de renvoyer ces fichiers sous forme de téléchargement, cela ne remplace pas complètement les restrictions de téléversement et l'isolation d'origine.
+- Appliquer des paramètres de sécurité cohérents au proxy inverse, au CDN, au stockage objet et à toute autre couche de diffusion de fichiers statiques, afin d'éviter qu'un fichier dangereux soit renvoyé en ligne en contournant les protections applicatives.
+- Ne pas utiliser le stockage local/public pour héberger du contenu Web non fiable. Si ce besoin existe réellement, utilisez un domaine isolé et évaluez séparément la CSP, la stratégie de téléchargement et le contrôle d'accès.
+
+Si un administrateur autorise explicitement le téléversement de types de fichiers dangereux, il doit évaluer lui-même les risques de phishing, d'exécution de scripts en same-origin et de fuite d'informations sensibles, et s'assurer que le serveur Web, la passerelle, le CDN et les services de stockage appliquent des restrictions cohérentes sur l'ensemble de la chaîne de déploiement.
 
 ![](https://static-docs.nocobase.com/202501031623549.png)
 

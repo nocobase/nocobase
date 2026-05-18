@@ -273,6 +273,17 @@ export const Tree: FC<TreeProps> = withDynamicSchemaProps(
     );
 
     useEffect(() => {
+      if (searchable || (inputValue === '' && searchValue === '')) {
+        return;
+      }
+
+      onSearch.cancel();
+      setInputValue('');
+      setSearchValue('');
+      propsOnSearch?.('');
+    }, [inputValue, onSearch, propsOnSearch, searchValue, searchable]);
+
+    useEffect(() => {
       if (deferredSearchValue) {
         if (!expandedKeysBeforeSearchRef.current) {
           expandedKeysBeforeSearchRef.current = expandedKeysRef.current;

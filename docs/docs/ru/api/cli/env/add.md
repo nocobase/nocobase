@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "Справочник по команде nb env add: сохранение адреса API NocoBase и способа аутентификации с переключением на новый env."
-keywords: "nb env add,NocoBase CLI,добавить окружение,адрес API,аутентификация"
+description: "Справочник по команде nb env add: сохранение URL API NocoBase и способа аутентификации с последующим переключением на этот env."
+keywords: "nb env add,NocoBase CLI,добавить окружение,API Base URL,аутентификация"
 ---
 
 # nb env add
@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| `[name]` | string | Имя окружения; в TTY при пропуске будет предложено ввести, в не-TTY обязательно |
+| `[name]` | string | Имя окружения, которое нужно сохранить; в TTY при отсутствии будет запрошено, в не-TTY режиме обязательно |
 | `--verbose` | boolean | Показывать подробный прогресс при записи конфигурации |
 | `--locale` | string | Язык подсказок CLI: `en-US` или `zh-CN` |
 | `--api-base-url`, `-u` | string | Адрес API NocoBase, включая префикс `/api` |

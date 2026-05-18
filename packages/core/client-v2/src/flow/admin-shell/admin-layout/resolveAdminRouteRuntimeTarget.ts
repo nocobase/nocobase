@@ -7,16 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { getV2EffectiveBasePath } from '../../../authRedirect';
 import type { BaseApplication } from '../../../BaseApplication';
-import { convertV2AdminPathToLegacy } from '../../../authRedirect';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 
 export type AdminRouteNavigationMode = 'spa' | 'document';
+export type AdminRouteRuntimeTargetReason =
+  | 'ok'
+  | 'missingSchemaUid'
+  | 'unsupportedV2Runtime'
+  | 'emptyGroup'
+  | 'unsupportedRouteType';
 
 export type AdminRouteRuntimeTarget = {
   runtimePath: string | null;
   navigationMode: AdminRouteNavigationMode;
   isLegacy: boolean;
+  reason: AdminRouteRuntimeTargetReason;
 };
 
 const V2_PUBLIC_PATH_SUFFIX = '/v2/';
@@ -45,6 +52,7 @@ const EMPTY_TARGET: AdminRouteRuntimeTarget = {
   runtimePath: null,
   navigationMode: 'spa',
   isLegacy: false,
+  reason: 'unsupportedRouteType',
 };
 
 function normalizeRootRelativePath(pathname: string) {
@@ -60,14 +68,8 @@ function normalizePublicPath(value = '/') {
   return normalized.endsWith('/') ? normalized : `${normalized}/`;
 }
 
-/**
- * 判断当前应用是否运行在需要兼容跳回 v1 的 `/v2/` 路径下。
- *
- * @param {ResolveAdminRouteRuntimeTargetOptions['app']} app 当前应用实例
- * @returns {boolean} 是否启用 v2 到 v1 的经典页跳转
- */
-function shouldUseLegacyDocumentNavigation(app: ResolveAdminRouteRuntimeTargetOptions['app']) {
-  return normalizePublicPath(app.getPublicPath()).endsWith(V2_PUBLIC_PATH_SUFFIX);
+export function isV2AdminRuntime(app?: ResolveAdminRouteRuntimeTargetOptions['app']) {
+  return !!app?.getPublicPath && normalizePublicPath(app.getPublicPath()).endsWith(V2_PUBLIC_PATH_SUFFIX);
 }
 
 export function toRouterNavigationPath(pathname: string, basename?: string) {
@@ -105,19 +107,13 @@ function joinRootRelativePath(basePath: string, pathname: string) {
 }
 
 function getV2AdminPath(app: ResolveAdminRouteRuntimeTargetOptions['app'], schemaUid: string) {
-  return joinRootRelativePath(app.getPublicPath(), `/admin/${schemaUid}`);
+  return joinRootRelativePath(getV2EffectiveBasePath(app), `/admin/${schemaUid}`);
 }
 
 function appendLocationState(pathname: string, location?: LocationLike) {
   const search = location?.search ? (location.search.startsWith('?') ? location.search : `?${location.search}`) : '';
   const hash = location?.hash ? (location.hash.startsWith('#') ? location.hash : `#${location.hash}`) : '';
   return `${pathname}${search}${hash}`;
-}
-
-function isSameOrDescendantPath(pathname: string, basePath: string) {
-  const normalizedPathname = normalizeRootRelativePath(pathname);
-  const normalizedBasePath = normalizeRootRelativePath(basePath);
-  return normalizedPathname === normalizedBasePath || normalizedPathname.startsWith(`${normalizedBasePath}/`);
 }
 
 function logInvalidTarget(
@@ -132,6 +128,47 @@ function isSkippableRoute(route: NocoBaseDesktopRoute | undefined) {
   return (
     !!route && (route.type === NocoBaseDesktopRouteType.tabs || route.hideInMenu === true || route.hidden === true)
   );
+}
+
+export function isV2MenuRoute(route: NocoBaseDesktopRoute | undefined): boolean {
+  if (!route || route.hidden === true || route.hideInMenu === true) {
+    return false;
+  }
+
+  if (route.type === NocoBaseDesktopRouteType.flowPage || route.type === NocoBaseDesktopRouteType.link) {
+    return true;
+  }
+
+  if (route.type === NocoBaseDesktopRouteType.group) {
+    return Array.isArray(route.children) && route.children.some((child) => isV2MenuRoute(child));
+  }
+
+  return false;
+}
+
+export function findFirstV2LandingRoute(routes: NocoBaseDesktopRoute[] | undefined): NocoBaseDesktopRoute | undefined {
+  if (!Array.isArray(routes)) {
+    return undefined;
+  }
+
+  for (const route of routes) {
+    if (!route || route.hidden === true || route.hideInMenu === true || route.type === NocoBaseDesktopRouteType.tabs) {
+      continue;
+    }
+
+    if (route.type === NocoBaseDesktopRouteType.flowPage) {
+      return route;
+    }
+
+    if (route.type === NocoBaseDesktopRouteType.group) {
+      const nested = findFirstV2LandingRoute(route.children);
+      if (nested) {
+        return nested;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 export function findFirstAccessiblePageRoute(
@@ -161,12 +198,18 @@ export function findFirstAccessiblePageRoute(
   return undefined;
 }
 
-function resolvePageRuntimeTarget(options: ResolveAdminRouteRuntimeTargetOptions, route: NocoBaseDesktopRoute) {
+function resolvePageRuntimeTarget(
+  options: ResolveAdminRouteRuntimeTargetOptions,
+  route: NocoBaseDesktopRoute,
+): AdminRouteRuntimeTarget {
   const { app, preserveLocationState, location, log = console.warn } = options;
 
   if (!route.schemaUid) {
     logInvalidTarget(log, 'Missing schemaUid.', route);
-    return EMPTY_TARGET;
+    return {
+      ...EMPTY_TARGET,
+      reason: 'missingSchemaUid',
+    };
   }
 
   if (route.type === NocoBaseDesktopRouteType.flowPage) {
@@ -174,51 +217,25 @@ function resolvePageRuntimeTarget(options: ResolveAdminRouteRuntimeTargetOptions
       runtimePath: getV2AdminPath(app, route.schemaUid),
       navigationMode: 'spa' as const,
       isLegacy: false,
+      reason: 'ok' as const,
     };
   }
 
-  if (!shouldUseLegacyDocumentNavigation(app)) {
+  if (isV2AdminRuntime(app)) {
     return {
-      runtimePath:
-        preserveLocationState && location
-          ? appendLocationState(getV2AdminPath(app, route.schemaUid), location)
-          : getV2AdminPath(app, route.schemaUid),
-      navigationMode: 'spa' as const,
-      isLegacy: false,
-    };
-  }
-
-  const v2RuntimePath = getV2AdminPath(app, route.schemaUid);
-  const legacyPath = convertV2AdminPathToLegacy(app, v2RuntimePath);
-
-  if (!legacyPath) {
-    logInvalidTarget(log, 'Failed to resolve legacy runtimePath.', route);
-    return EMPTY_TARGET;
-  }
-
-  if (preserveLocationState && location) {
-    if (isSameOrDescendantPath(location.pathname, v2RuntimePath)) {
-      const correctedCurrentPath = convertV2AdminPathToLegacy(app, location);
-      if (correctedCurrentPath) {
-        return {
-          runtimePath: correctedCurrentPath,
-          navigationMode: 'document' as const,
-          isLegacy: true,
-        };
-      }
-    }
-
-    return {
-      runtimePath: appendLocationState(legacyPath, location),
-      navigationMode: 'document' as const,
-      isLegacy: true,
+      ...EMPTY_TARGET,
+      reason: 'unsupportedV2Runtime',
     };
   }
 
   return {
-    runtimePath: legacyPath,
-    navigationMode: 'document' as const,
-    isLegacy: true,
+    runtimePath:
+      preserveLocationState && location
+        ? appendLocationState(getV2AdminPath(app, route.schemaUid), location)
+        : getV2AdminPath(app, route.schemaUid),
+    navigationMode: 'spa' as const,
+    isLegacy: false,
+    reason: 'ok' as const,
   };
 }
 
@@ -242,9 +259,14 @@ export function resolveAdminRouteRuntimeTarget(
   }
 
   if (route.type === NocoBaseDesktopRouteType.group) {
-    const firstAccessibleRoute = findFirstAccessiblePageRoute(route.children);
+    const firstAccessibleRoute = isV2AdminRuntime(options.app)
+      ? findFirstV2LandingRoute(route.children)
+      : findFirstAccessiblePageRoute(route.children);
     if (!firstAccessibleRoute) {
-      return EMPTY_TARGET;
+      return {
+        ...EMPTY_TARGET,
+        reason: 'emptyGroup',
+      };
     }
     return resolveAdminRouteRuntimeTarget({
       ...options,

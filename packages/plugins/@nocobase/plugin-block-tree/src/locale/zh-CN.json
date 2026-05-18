@@ -11,5 +11,6 @@
   "Tree settings": "树区块设置",
   "Tree": "树",
   "Unconnected": "未连接",
-  "Include child nodes when filtering": "筛选时包含子节点"
+  "Include child nodes when filtering": "筛选时包含子节点",
+  "The title field \"{{name}}\" may have been deleted. Please select another field.": "标题字段“{{name}}”可能已被删除，请选择其他字段。"
 }

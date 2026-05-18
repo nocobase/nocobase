@@ -51,7 +51,7 @@ features:
         link: /ai-employees
       - title: Ready-to-Use AI Team
         details: Pre-built AI employee teams in NocoBase, covering data modeling, front-end development, data processing, and more — no configuration needed, ready to use.
-        link: /ai-employees/features/built-in-employee
+        link: /ai-employees/built-in/
       - title: Let AI Understand Your Business
         details: Import business documents and data through the AI knowledge base, making AI employees' responses and actions more aligned with your actual scenarios.
         link: /ai-employees/knowledge-base

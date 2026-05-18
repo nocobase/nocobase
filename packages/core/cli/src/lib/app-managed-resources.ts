@@ -12,11 +12,14 @@ import type { ManagedAppRuntime } from './app-runtime.js';
 import { dockerContainerExists, startDockerContainer } from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
 import { resolveConfiguredEnvPath } from './cli-home.js';
+import { resolveDockerEnvFileArg } from './docker-env-file.ts';
+import {
+  DEFAULT_DOCKER_REGISTRY,
+  DEFAULT_DOCKER_VERSION,
+  resolveDockerImageRef,
+} from './docker-image.ts';
 import { commandSucceeds, run } from './run-npm.js';
 import Install from '../commands/install.js';
-
-const DEFAULT_DOCKER_REGISTRY = 'nocobase/nocobase';
-const DEFAULT_DOCKER_VERSION = 'alpha';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
 type ManagedDownloadableLocalRuntime = Extract<ManagedAppRuntime, { kind: 'local' }> & {
   source: 'npm' | 'git';
@@ -101,19 +104,21 @@ async function localProjectHasFiles(projectRoot: string): Promise<boolean> {
   }
 }
 
-export function buildSavedDockerRunArgs(
+export async function buildSavedDockerRunArgs(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-): {
+): Promise<{
   appPort?: string;
   storagePath: string;
+  envFile?: string;
   imageRef: string;
   args: string[];
-} {
+}> {
   const config = runtime.env.config ?? {};
   const configuredStoragePath = trimValue(config.storagePath);
   const storagePath = configuredStoragePath
     ? trimValue(resolveConfiguredEnvPath(configuredStoragePath))
     : '';
+  const envFile = await resolveDockerEnvFileArg(runtime.envName, config);
   const appPort =
     runtime.env.appPort === undefined || runtime.env.appPort === null
       ? ''
@@ -129,7 +134,10 @@ export function buildSavedDockerRunArgs(
   const dbPassword = trimValue(config.dbPassword);
   const dockerRegistry = trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY;
   const version = trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION;
-  const imageRef = `${dockerRegistry}:${version}`;
+  const imageRef = resolveDockerImageRef(dockerRegistry, version, {
+    defaultRegistry: DEFAULT_DOCKER_REGISTRY,
+    defaultVersion: DEFAULT_DOCKER_VERSION,
+  });
 
   const missing: string[] = [];
   if (!storagePath) {
@@ -181,6 +189,10 @@ export function buildSavedDockerRunArgs(
     args.push('-p', `${appPort}:80`);
   }
 
+  if (envFile) {
+    args.push('--env-file', envFile);
+  }
+
   args.push(
     '-e',
     `APP_KEY=${appKey}`,
@@ -206,6 +218,7 @@ export function buildSavedDockerRunArgs(
   return {
     appPort: appPort || undefined,
     storagePath,
+    envFile,
     imageRef,
     args,
   };
@@ -215,7 +228,7 @@ export async function recreateSavedDockerApp(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
   options?: { verbose?: boolean },
 ): Promise<void> {
-  const plan = buildSavedDockerRunArgs(runtime);
+  const plan = await buildSavedDockerRunArgs(runtime);
 
   try {
     await ensureDockerNetwork(runtime.workspaceName);

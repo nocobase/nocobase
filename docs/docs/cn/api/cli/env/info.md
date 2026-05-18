@@ -18,12 +18,9 @@ nb env info [name] [flags]
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `[name]` | string | 要查看的 CLI env 名称，省略时使用当前 env |
-| `--env`, `-e` | string | 要查看的 CLI env 名称，和位置参数二选一 |
+| `[name]` | string | 要查看的已配置环境名称；省略时使用当前 env |
 | `--json` | boolean | 输出 JSON |
 | `--show-secrets` | boolean | 明文显示 token、密码等密钥 |
-
-如果同时传入 `[name]` 和 `--env`，两者必须一致。
 
 ## 示例
 
@@ -31,7 +28,6 @@ nb env info [name] [flags]
 nb env info app1
 nb env info app1 --json
 nb env info app1 --show-secrets
-nb env info --env app1
 ```
 
 ## 相关命令

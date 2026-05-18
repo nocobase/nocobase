@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import ora, { type Ora } from 'ora';
 import pc from 'picocolors';
 
 let activeSpinner: Ora | undefined;
 let verboseMode = false;
+let lastStaticTaskMessage: string | undefined;
+let lastStaticTaskAt = 0;
+const STATIC_TASK_UPDATE_THROTTLE_MS = 3_000;
 
 function stringWidth(value: string) {
   return Array.from(value).length;
@@ -28,6 +30,10 @@ export function isInteractiveTerminal() {
   return Boolean(input.isTTY && output.isTTY);
 }
 
+function supportsDynamicTaskUpdates() {
+  return isInteractiveTerminal() && process.env.TERM !== 'dumb';
+}
+
 export function setVerboseMode(value: boolean) {
   verboseMode = value;
 }
@@ -36,59 +42,13 @@ export function isVerboseMode() {
   return verboseMode;
 }
 
-export async function promptText(message: string, options?: { defaultValue?: string; secret?: boolean }) {
-  if (!isInteractiveTerminal()) {
-    return options?.defaultValue ?? '';
-  }
-
-  const rl = readline.createInterface({
-    input,
-    output,
-    terminal: true,
-  });
-
-  try {
-    const suffix = options?.defaultValue ? ` (${options.defaultValue})` : '';
-    const hint = options?.secret ? ' [input visible]' : '';
-    const prompt = `${message}${suffix}${hint}: `;
-    const answer = await rl.question(prompt);
-    return answer.trim() || options?.defaultValue || '';
-  } finally {
-    rl.close();
-  }
-}
-
-export async function confirmAction(message: string, options?: { defaultValue?: boolean }) {
-  if (!isInteractiveTerminal()) {
-    return Boolean(options?.defaultValue);
-  }
-
-  stopTask();
-
-  const rl = readline.createInterface({
-    input,
-    output,
-    terminal: true,
-  });
-
-  try {
-    const suffix = options?.defaultValue ? pc.dim('[Y/n]') : pc.dim('[y/N]');
-    const prompt = `${pc.yellow('?')} ${pc.bold(message)} ${suffix} `;
-    const answer = await rl.question(prompt);
-    const normalized = answer.trim().toLowerCase();
-
-    if (!normalized) {
-      return Boolean(options?.defaultValue);
-    }
-
-    return normalized === 'y' || normalized === 'yes';
-  } finally {
-    rl.close();
-  }
-}
-
 export function printSection(title: string) {
-  console.log(pc.bold(title));
+  console.log(title);
+}
+
+export function printStage(title: string) {
+  clearActiveSpinner();
+  console.log(title);
 }
 
 export function printInfo(message: string) {
@@ -165,19 +125,32 @@ export function startTask(message: string) {
     activeSpinner.stop();
   }
 
+  lastStaticTaskMessage = message;
+  lastStaticTaskAt = Date.now();
+
+  if (!supportsDynamicTaskUpdates()) {
+    activeSpinner = undefined;
+    console.log(pc.cyan(message));
+    return;
+  }
+
   activeSpinner = ora({
     text: pc.cyan(message),
-    isSilent: !isInteractiveTerminal(),
+    isSilent: false,
   }).start();
-
-  if (!isInteractiveTerminal()) {
-    console.log(pc.cyan(message));
-  }
 }
 
 export function updateTask(message: string) {
   if (!activeSpinner) {
-    startTask(message);
+    const now = Date.now();
+    if (
+      message !== lastStaticTaskMessage
+      && now - lastStaticTaskAt >= STATIC_TASK_UPDATE_THROTTLE_MS
+    ) {
+      console.log(pc.cyan(message));
+      lastStaticTaskMessage = message;
+      lastStaticTaskAt = now;
+    }
     return;
   }
 
@@ -205,6 +178,8 @@ export function failTask(message: string) {
 }
 
 export function stopTask() {
+  lastStaticTaskMessage = undefined;
+  lastStaticTaskAt = 0;
   clearActiveSpinner();
 }
 

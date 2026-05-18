@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/block-model).
-:::
-
 # ctx.blockModel
 
 Le modèle de bloc parent (instance de `BlockModel`) dans lequel se trouve le champ JS ou le bloc JS actuel. Dans des scénarios tels que `JSField`, `JSItem` et `JSColumn`, `ctx.blockModel` pointe vers le bloc de formulaire ou le bloc de tableau portant la logique JS actuelle. Dans un `JSBlock` indépendant, il peut être `null` ou identique à `ctx.model`.

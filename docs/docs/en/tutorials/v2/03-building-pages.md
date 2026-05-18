@@ -181,7 +181,7 @@ This way, newly submitted tickets always appear at the top, making them easier t
 Viewing a list isn't enough — we also need to click into tickets to see details and make edits.
 
 1. In the actions column, click the second "+" icon.
-2. Click to add actions: **View**, **[Edit](/interface-builder/actions/edit)**, **[Delete](/interface-builder/actions/delete)**.
+2. Click to add actions: **View**, **[Edit](../../interface-builder/actions/types/edit.md)**, **[Delete](../../interface-builder/actions/types/delete.md)**.
 3. Each row will now have "View", "Edit", and "Delete" buttons in the actions column.
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)
@@ -211,7 +211,7 @@ Remember the "Categories" collection we created in Chapter 2? It's a **tree tabl
 
 Once enabled, the table will display categories in an indented hierarchy showing parent-child relationships, instead of listing all records flat.
 
-3. Check the fields you want to display (e.g., Name, Description), and configure row actions ([Add new](/interface-builder/actions/add-new), Edit, Delete).
+3. Check the fields you want to display (e.g., Name, Description), and configure row actions ([Add new](../../interface-builder/actions/types/add-new.md), Edit, Delete).
 4. **Layout tip**: Put "Name" in the first column and "Actions" in the second. The categories table doesn't have many fields, so a two-column layout is more compact and user-friendly.
 
 [Screenshot: Categories tree table configured]

@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "Tài liệu lệnh nb env add: lưu địa chỉ API NocoBase và phương thức xác thực, sau đó đặt làm env hiện tại."
-keywords: "nb env add,NocoBase CLI,Thêm môi trường,Địa chỉ API,Xác thực"
+description: "Tài liệu lệnh nb env add: lưu URL API NocoBase và phương thức xác thực, rồi chuyển sang env đó."
+keywords: "nb env add,NocoBase CLI,thêm môi trường,API Base URL,xác thực"
 ---
 
 # nb env add
@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `[name]` | string | Tên môi trường; trong TTY nếu bỏ qua sẽ hỏi, ngoài TTY thì bắt buộc |
+| `[name]` | string | Tên môi trường cần lưu; trong TTY sẽ được hỏi khi bỏ qua, và bắt buộc ở chế độ non-TTY |
 | `--verbose` | boolean | Hiển thị tiến trình chi tiết khi ghi cấu hình |
 | `--locale` | string | Ngôn ngữ CLI prompt: `en-US` hoặc `zh-CN` |
 | `--api-base-url`, `-u` | string | Địa chỉ API NocoBase, bao gồm tiền tố `/api` |

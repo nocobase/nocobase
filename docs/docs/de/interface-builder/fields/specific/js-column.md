@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/fields/specific/js-column).
-:::
-
 # JS-Spalte
 
 ## Einführung
@@ -37,7 +33,7 @@ Der Skript-Editor der JS-Spalte unterstützt Syntax-Hervorhebung, Fehlerhinweise
 
 Kann mit KI-Mitarbeitern kombiniert werden, um Code zu generieren:
 
-- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
+- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/)
 
 ## Häufige Anwendungsfälle
 

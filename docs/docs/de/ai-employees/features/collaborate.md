@@ -1,37 +1,44 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/features/collaborate).
-:::
+---
+pkg: '@nocobase/plugin-ai'
+title: 'Mit KI-Mitarbeitern zusammenarbeiten'
+description: 'Mit KI-Mitarbeitern zusammenarbeiten: Haupteinstieg unten rechts, Block-Action-Einstieg, Chat-Aktionen sowie Wechsel von Mitarbeiter und Modell in der Unterhaltung.'
+keywords: 'KI-Mitarbeiter Zusammenarbeit,Chatbereich,Mitarbeiterwechsel,Modellwechsel,NocoBase'
+---
 
-# Zusammenarbeit mit AI-Mitarbeitern
+# Mit KI-Mitarbeitern zusammenarbeiten
 
-Nachdem Sie AI-Mitarbeiter erstellt und aktiviert haben, können Sie auf den Seiten mit ihnen zusammenarbeiten.
+Nachdem KI-Mitarbeiter erstellt und aktiviert wurden, können Sie auf Seiten mit ihnen zusammenarbeiten.
 
-## Einstiegspunkte
+## Einstiege
 
-Es gibt zwei gängige Einstiegspunkte:
-
-1. **Haupteinstieg unten rechts**: Rufen Sie das AI-Chat-Panel in der unteren rechten Ecke der Geschäftsseiten auf. Geeignet für allgemeine Fragen und Antworten sowie blockübergreifende Zusammenarbeit.
-2. **Block-Aktions-Einstieg**: In Blöcken, die `Actions` unterstützen, gelangen Sie über `Actions -> AI employees` dorthin. Geeignet für Aufgaben, die sich auf den aktuellen Block beziehen (z. B. JSBlock-Szenarien).
+1. **Haupteinstieg unten rechts**: Öffnet den KI-Chatbereich unten rechts auf Geschäftsseiten. Geeignet für allgemeine Fragen und Zusammenarbeit über mehrere Blöcke hinweg.
+2. **Block-Action-Einstieg**: In Blöcken mit `Actions` können KI-Mitarbeiter über `Actions -> AI employees` hinzugefügt werden. Geeignet für Aufgaben im aktuellen Block, zum Beispiel zum Ausfüllen von Formularblöcken.
+3. **Spezifischer Einstieg**: Entwicklungsorientierte Mitarbeiter wie Nathan, Lina und Dara bieten eigene Einstiege in bestimmten Szenarien, etwa JS-Blöcken, Diagrammblöcken oder der Lokalisierungsverwaltung.
 
 ### Haupteinstieg unten rechts
 
-![ai-employees-entry-bottom-right.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employees-entry-bottom-right.png)
+![20260331165456](https://static-docs.nocobase.com/20260331165456.png)
 
-### Block-Aktions-Einstieg
+### Block-Action-Einstieg
 
 ![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
-## Grundlegende Chat-Bedienung
+### Spezifischer Einstieg
 
-Das Chat-Panel unterstützt gängige Funktionen wie das Senden von Nachrichten, das Hochladen von Anhängen, das Einsehen des Verlaufs, das Erstellen neuer Chats und das Bearbeiten von System-Prompts.
+![](https://static-docs.nocobase.com/202605121057862.png)
 
-## Wechseln innerhalb des Chats
+## Grundlegende Chat-Aktionen
 
-Am unteren Rand des Eingabebereichs können Sie direkt wechseln:
+Der Chatbereich unterstützt übliche Aktionen wie Nachrichten senden, Anhänge hochladen, Verlauf anzeigen, neue Chats erstellen und System-Prompts bearbeiten.
 
-- `AI Employee Switcher`: Wechseln des aktuellen Mitarbeiters.
-- `Model Switcher`: Wechseln des aktuellen Sitzungsmodells.
+## Wechsel innerhalb der Unterhaltung
 
-Modellpräferenzen werden pro Mitarbeiter gespeichert und beim nächsten Aufruf bevorzugt wiederhergestellt.
+In den meisten Fällen können Sie direkt mit Atlas sprechen; er koordiniert den passenden KI-Mitarbeiter für die Aufgabe.
+
+Wenn Sie einen bestimmten KI-Mitarbeiter verwenden möchten, wählen Sie ihn im Dropdown für KI-Mitarbeiter im Eingabebereich aus.
+
+![20260331174320](https://static-docs.nocobase.com/20260331174320.png)
+
+Modellpräferenzen werden pro Mitarbeiter gespeichert und beim nächsten Mal bevorzugt wiederhergestellt.
 
 ![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)

@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/blocks/other-blocks/js-block).
-:::
-
 # JS Block
 
 ## Einführung
@@ -38,7 +34,7 @@ Der Skript-Editor des JS Blocks unterstützt Syntax-Hervorhebung, Fehlerhinweise
 
 Zusätzlich können Sie in der oberen rechten Ecke des Editors direkt den KI-Mitarbeiter „Frontend-Ingenieur · Nathan“ aufrufen. Nathan kann Ihnen basierend auf dem aktuellen Kontext beim Schreiben oder Ändern von Skripten helfen. Mit einem Klick auf „Apply to editor“ können Sie die Änderungen im Editor anwenden und dann ausführen, um das Ergebnis zu sehen. Details finden Sie hier:
 
-- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
+- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/)
 
 ## Laufzeitumgebung und Sicherheit
 

@@ -26,6 +26,7 @@ describe('titleFieldQuickSync', () => {
     expect(isTitleUsableField(dm, { interface: 'formula' } as any)).toBe(false);
     expect(isTitleUsableField(dm, { interface: 'unknown' } as any)).toBe(false);
     expect(isTitleUsableField(undefined, { interface: 'input' } as any)).toBe(false);
+    expect(isTitleUsableField({} as any, { interface: 'input' } as any)).toBe(false);
   });
 
   it('syncs title field to main data source collection', async () => {

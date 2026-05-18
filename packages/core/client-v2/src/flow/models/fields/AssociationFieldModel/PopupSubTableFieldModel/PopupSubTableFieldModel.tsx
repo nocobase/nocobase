@@ -30,6 +30,7 @@ import { useTranslation } from 'react-i18next';
 import { buildRecordPickerPopupContextInputArgs, RecordPickerContent } from '../RecordPickerFieldModel';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
+import { isSubTableColumnFieldComponentContext } from '../SubTableFieldModel/SubTableColumnModel';
 import { EditFormContent } from './actions/PopupSubTableEditActionModel';
 import { QuickEditFormModel } from '../../../blocks/form/QuickEditFormModel';
 import { ActionWithoutPermission } from '../../../base/ActionModel';
@@ -901,6 +902,9 @@ PopupSubTableFieldModel.define({
 EditableItemModel.bindModelToInterface('PopupSubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
   order: 300,
   when: (ctx, field) => {
+    if (isSubTableColumnFieldComponentContext(ctx)) {
+      return false;
+    }
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';
     }

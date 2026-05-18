@@ -32,6 +32,7 @@ nb api resource <command>
 | `--api-base-url` | string | Alamat API NocoBase, misalnya `http://localhost:13000/api` |
 | `--verbose` | boolean | Menampilkan progress detail |
 | `--env`, `-e` | string | Nama lingkungan |
+| `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
 | `--role` | string | Override role, dikirim sebagai header `X-Role` |
 | `--token`, `-t` | string | Override API key |
 | `--json-output`, `-j` / `--no-json-output` | boolean | Apakah menampilkan output JSON mentah, default aktif |
@@ -48,6 +49,8 @@ nb api resource get --resource users --filter-by-tk 1
 nb api resource create --resource users --values '{"nickname":"Ada"}'
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 ```
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
 ## Perintah Terkait
 

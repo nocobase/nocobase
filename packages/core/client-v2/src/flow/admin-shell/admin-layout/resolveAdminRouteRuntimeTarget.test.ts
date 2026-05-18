@@ -10,6 +10,8 @@
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 import {
   findFirstAccessiblePageRoute,
+  findFirstV2LandingRoute,
+  isV2MenuRoute,
   resolveAdminRouteRuntimeTarget,
   toRouterNavigationPath,
 } from './resolveAdminRouteRuntimeTarget';
@@ -35,10 +37,11 @@ describe('resolveAdminRouteRuntimeTarget', () => {
       runtimePath: '/nocobase/v2/admin/flow-page-1',
       navigationMode: 'spa',
       isLegacy: false,
+      reason: 'ok',
     });
   });
 
-  it('should resolve page to legacy document runtime target', () => {
+  it('should mark page unsupported in v2 admin runtime', () => {
     expect(
       resolveAdminRouteRuntimeTarget({
         app,
@@ -48,9 +51,10 @@ describe('resolveAdminRouteRuntimeTarget', () => {
         },
       }),
     ).toEqual({
-      runtimePath: '/nocobase/admin/legacy-page-1',
-      navigationMode: 'document',
-      isLegacy: true,
+      runtimePath: null,
+      navigationMode: 'spa',
+      isLegacy: false,
+      reason: 'unsupportedV2Runtime',
     });
   });
 
@@ -74,10 +78,11 @@ describe('resolveAdminRouteRuntimeTarget', () => {
       runtimePath: '/apps/demo/admin/legacy-page-1',
       navigationMode: 'spa',
       isLegacy: false,
+      reason: 'ok',
     });
   });
 
-  it('should preserve current search and hash for direct legacy correction', () => {
+  it('should not preserve current search and hash when direct legacy page is unsupported', () => {
     expect(
       resolveAdminRouteRuntimeTarget({
         app,
@@ -93,13 +98,14 @@ describe('resolveAdminRouteRuntimeTarget', () => {
         preserveLocationState: true,
       }),
     ).toEqual({
-      runtimePath: '/nocobase/admin/legacy-page-1/tabs/tab-1/popups/detail?from=direct#dialog',
-      navigationMode: 'document',
-      isLegacy: true,
+      runtimePath: null,
+      navigationMode: 'spa',
+      isLegacy: false,
+      reason: 'unsupportedV2Runtime',
     });
   });
 
-  it('should resolve group by DFS first accessible route', () => {
+  it('should resolve group by DFS first v2 landing route in v2 runtime', () => {
     const route: NocoBaseDesktopRoute = {
       type: NocoBaseDesktopRouteType.group,
       children: [
@@ -124,9 +130,10 @@ describe('resolveAdminRouteRuntimeTarget', () => {
     };
 
     expect(resolveAdminRouteRuntimeTarget({ app, route })).toEqual({
-      runtimePath: '/nocobase/admin/legacy-page-2',
-      navigationMode: 'document',
-      isLegacy: true,
+      runtimePath: '/nocobase/v2/admin/flow-page-2',
+      navigationMode: 'spa',
+      isLegacy: false,
+      reason: 'ok',
     });
   });
 
@@ -158,6 +165,35 @@ describe('resolveAdminRouteRuntimeTarget', () => {
     });
   });
 
+  it('should find v2 landing route and skip legacy page routes', () => {
+    const routes = [
+      {
+        type: NocoBaseDesktopRouteType.page,
+        schemaUid: 'legacy-page',
+      },
+      {
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            type: NocoBaseDesktopRouteType.page,
+            schemaUid: 'nested-legacy-page',
+          },
+          {
+            type: NocoBaseDesktopRouteType.flowPage,
+            schemaUid: 'nested-flow-page',
+          },
+        ],
+      },
+    ];
+
+    expect(findFirstV2LandingRoute(routes)).toMatchObject({
+      type: NocoBaseDesktopRouteType.flowPage,
+      schemaUid: 'nested-flow-page',
+    });
+    expect(isV2MenuRoute(routes[0])).toBe(false);
+    expect(isV2MenuRoute(routes[1])).toBe(true);
+  });
+
   it('should return empty target when group has no accessible landing page', () => {
     expect(
       resolveAdminRouteRuntimeTarget({
@@ -181,6 +217,7 @@ describe('resolveAdminRouteRuntimeTarget', () => {
       runtimePath: null,
       navigationMode: 'spa',
       isLegacy: false,
+      reason: 'emptyGroup',
     });
   });
 
@@ -199,6 +236,7 @@ describe('resolveAdminRouteRuntimeTarget', () => {
       runtimePath: null,
       navigationMode: 'spa',
       isLegacy: false,
+      reason: 'missingSchemaUid',
     });
     expect(log).toHaveBeenCalledWith(
       '[NocoBase] Admin route runtime target:',
@@ -210,5 +248,116 @@ describe('resolveAdminRouteRuntimeTarget', () => {
   it('should convert root-relative path to router internal path under basename', () => {
     expect(toRouterNavigationPath('/nocobase/v2/admin/page-1', '/nocobase/v2')).toBe('/admin/page-1');
     expect(toRouterNavigationPath('/admin/page-1', '/nocobase/v2')).toBe('/admin/page-1');
+  });
+
+  describe('v2 sub-app context (router basename contains /apps/<id>/)', () => {
+    const subApp = {
+      getPublicPath: () => '/nocobase/v2/',
+      router: {
+        getBasename: () => '/nocobase/v2/apps/test-app/',
+      },
+    } as any;
+
+    it('should resolve flowPage runtime path under sub-app basename', () => {
+      expect(
+        resolveAdminRouteRuntimeTarget({
+          app: subApp,
+          route: {
+            type: NocoBaseDesktopRouteType.flowPage,
+            schemaUid: 'fp1',
+          },
+        }),
+      ).toEqual({
+        runtimePath: '/nocobase/v2/apps/test-app/admin/fp1',
+        navigationMode: 'spa',
+        isLegacy: false,
+        reason: 'ok',
+      });
+    });
+
+    it('should resolve group DFS to first flowPage under sub-app basename', () => {
+      const route: NocoBaseDesktopRoute = {
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            type: NocoBaseDesktopRouteType.tabs,
+            schemaUid: 'tabs-1',
+          },
+          {
+            type: NocoBaseDesktopRouteType.group,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.page,
+                schemaUid: 'legacy-2',
+              },
+              {
+                type: NocoBaseDesktopRouteType.flowPage,
+                schemaUid: 'nested-fp',
+              },
+            ],
+          },
+        ],
+      };
+
+      expect(resolveAdminRouteRuntimeTarget({ app: subApp, route })).toEqual({
+        runtimePath: '/nocobase/v2/apps/test-app/admin/nested-fp',
+        navigationMode: 'spa',
+        isLegacy: false,
+        reason: 'ok',
+      });
+    });
+
+    it('should strip sub-app basename when converting to router internal path', () => {
+      expect(toRouterNavigationPath('/nocobase/v2/apps/test-app/admin/page-1', '/nocobase/v2/apps/test-app')).toBe(
+        '/admin/page-1',
+      );
+      expect(toRouterNavigationPath('/nocobase/v2/apps/test-app/admin/page-1', '/nocobase/v2/apps/test-app/')).toBe(
+        '/admin/page-1',
+      );
+    });
+  });
+
+  describe('fallback when router basename is missing', () => {
+    it('should fall back to publicPath when router is undefined', () => {
+      const appNoRouter = {
+        getPublicPath: () => '/nocobase/v2/',
+        router: undefined,
+      } as any;
+
+      expect(
+        resolveAdminRouteRuntimeTarget({
+          app: appNoRouter,
+          route: {
+            type: NocoBaseDesktopRouteType.flowPage,
+            schemaUid: 'fp1',
+          },
+        }),
+      ).toMatchObject({
+        runtimePath: '/nocobase/v2/admin/fp1',
+        reason: 'ok',
+      });
+    });
+
+    it('should fall back to publicPath when getBasename returns undefined', () => {
+      const appNoBasename = {
+        getPublicPath: () => '/nocobase/v2/',
+        router: {
+          getBasename: () => undefined,
+        },
+      } as any;
+
+      expect(
+        resolveAdminRouteRuntimeTarget({
+          app: appNoBasename,
+          route: {
+            type: NocoBaseDesktopRouteType.flowPage,
+            schemaUid: 'fp1',
+          },
+        }),
+      ).toMatchObject({
+        runtimePath: '/nocobase/v2/admin/fp1',
+        reason: 'ok',
+      });
+    });
   });
 });

@@ -118,6 +118,14 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   private dragState?: DragState;
   private _memoItemFlowSettings?: Exclude<FlowModelRendererProps['showFlowSettings'], boolean>;
 
+  onInit(options) {
+    super.onInit(options);
+    // 历史数据里可能残留拖拽高亮框，初始化时立即清理，避免刷新页面后常驻显示。
+    if (this.props.dragOverlayRect) {
+      this.setProps('dragOverlayRect', null);
+    }
+  }
+
   private updateDragPointerPosition = (event: Event) => {
     if (!this.dragState) {
       return;
@@ -241,6 +249,12 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   getGridLayout(): GridLayoutV2 {
     return this.normalizeLayoutFromSource();
+  }
+
+  serialize(): Record<string, any> {
+    const data = super.serialize();
+    data.props = _.omit(data.props, ['dragOverlayRect']);
+    return data;
   }
 
   syncLayoutProps(layout: GridLayoutV2) {
@@ -801,9 +815,15 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.setProps('dragOverlayRect', null);
   }
 
-  handleDragEnd(_event: DragEndEvent) {
+  handleDragEnd(event: DragEndEvent) {
     if (!this.dragState) {
       return;
+    }
+
+    const finalPoint = this.computePointerPosition(event);
+    if (finalPoint) {
+      const finalSlot = this.resolveDragSlot(finalPoint);
+      this.applyPreview(finalSlot);
     }
 
     const previewLayout = this.dragState.previewLayout;

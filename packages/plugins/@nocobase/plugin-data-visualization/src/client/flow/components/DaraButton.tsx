@@ -11,10 +11,12 @@ import React from 'react';
 import { useT } from '../../locale';
 import { Avatar, Popover } from 'antd';
 import {
-  useChatMessagesStore,
   useAIConfigRepository,
   useChatBoxStore,
   useChatBoxActions,
+  useChat,
+  useChatConversationsStore,
+  useChatMessagesStore,
   ProfileCard,
   avatars,
 } from '@nocobase/plugin-ai/client';
@@ -27,9 +29,10 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
   const aiEmployee = aiEmployees?.find((e) => e.username === 'dara');
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
   const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
-  const addContextItems = useChatMessagesStore.use.addContextItems();
   const open = useChatBoxStore.use.open();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { triggerTask } = useChatBoxActions();
@@ -143,7 +146,7 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
       await triggerTask({ aiEmployee, tasks });
     }
     setCurrentEditorRefUid(uid);
-    addContextItems({
+    chat.addContextItems({
       type: 'chart-config',
       uid,
       title: t('Chart config'),

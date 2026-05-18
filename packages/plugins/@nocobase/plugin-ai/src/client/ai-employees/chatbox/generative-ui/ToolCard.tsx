@@ -39,7 +39,6 @@ export const ToolCard: React.FC<{
           toolCall.args = JSON.parse(repaired);
         } catch (err) {
           console.error(err, toolCall.args);
-          toolCall.args = {};
         }
       } else {
         toolCall.args = {};
@@ -48,6 +47,9 @@ export const ToolCard: React.FC<{
     const toolEntry = toolsMap.get(toolCall.name);
     const C = toolEntry?.ui?.card;
     if (C) {
+      if (typeof toolCall.args !== 'object' || toolCall.args === null) {
+        toolCall.args = {};
+      }
       toolsWithUI.push({
         C,
         messageId,

@@ -1,7 +1,7 @@
 ---
 title: "nb env add"
-description: "Referensi perintah nb env add: menyimpan alamat API NocoBase dan metode autentikasi, lalu mengubahnya menjadi env saat ini."
-keywords: "nb env add,NocoBase CLI,menambah lingkungan,alamat API,autentikasi"
+description: "Referensi perintah nb env add: simpan URL API NocoBase dan metode autentikasi, lalu beralih ke env tersebut."
+keywords: "nb env add,NocoBase CLI,tambah environment,API Base URL,autentikasi"
 ---
 
 # nb env add
@@ -18,7 +18,7 @@ nb env add [name] [flags]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `[name]` | string | Nama lingkungan; jika dilewati di TTY akan ada prompt untuk mengisi, di non-TTY wajib diisi |
+| `[name]` | string | Nama lingkungan yang akan disimpan; di TTY akan diprompt jika dihilangkan, dan wajib di mode non-TTY |
 | `--verbose` | boolean | Menampilkan progress detail saat menulis konfigurasi |
 | `--locale` | string | Bahasa prompt CLI: `en-US` atau `zh-CN` |
 | `--api-base-url`, `-u` | string | Alamat API NocoBase, termasuk prefix `/api` |

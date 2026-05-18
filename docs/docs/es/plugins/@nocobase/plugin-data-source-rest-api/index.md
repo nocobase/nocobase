@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 1
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-data-source-rest-api/index).
-:::
-
 # Origen de datos: REST API

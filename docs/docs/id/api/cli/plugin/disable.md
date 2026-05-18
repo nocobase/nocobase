@@ -20,6 +20,7 @@ nb plugin disable <packages...> [flags]
 | --- | --- | --- |
 | `<packages...>` | string[] | Nama paket plugin, wajib diisi, mendukung memasukkan beberapa |
 | `--env`, `-e` | string | Nama env CLI, jika dilewati menggunakan env saat ini |
+| `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
 
 ## Contoh
 
@@ -27,7 +28,10 @@ nb plugin disable <packages...> [flags]
 nb plugin disable @nocobase/plugin-sample
 nb plugin disable @nocobase/plugin-a @nocobase/plugin-b
 nb plugin disable -e local @nocobase/plugin-sample
+nb plugin disable -e local --yes @nocobase/plugin-sample
 ```
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
 ## Perintah Terkait
 

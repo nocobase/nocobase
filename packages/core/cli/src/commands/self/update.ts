@@ -8,7 +8,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { confirmAction, setVerboseMode } from '../../lib/ui.js';
+import { confirm } from '../../lib/inquirer.ts';
+import { setVerboseMode } from '../../lib/ui.js';
 import {
   formatSelfUpdateUnavailableMessage,
   formatUnsupportedSelfUpdateMessage,
@@ -64,12 +65,16 @@ export default class SelfUpdate extends Command {
     }
 
     if (!flags.yes && status.updateAvailable) {
-      const confirmed = await confirmAction(
-        `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion}?`,
-        { defaultValue: false },
-      );
+      let confirmed = false;
+      try {
+        confirmed = await confirm({
+          message: `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion}?`,
+          default: false,
+        });
+      } catch {
+        return;
+      }
       if (!confirmed) {
-        this.log('Skipped CLI update.');
         return;
       }
     }

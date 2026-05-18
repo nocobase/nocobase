@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/context/element)をご参照ください。
-:::
-
 # ctx.element
 
 サンドボックス内の DOM コンテナを指す `ElementProxy` インスタンスであり、`ctx.render()` のデフォルトのレンダリング先として機能します。`JSBlock`、`JSField`、`JSItem`、`JSColumn` など、レンダリングコンテナが存在するシーンで使用可能です。

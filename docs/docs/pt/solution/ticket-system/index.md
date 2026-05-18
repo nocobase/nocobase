@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/solution/ticket-system/index).
-:::
-
 # Introdução à Solução de Chamados
 
 > **Dica**: Esta é uma versão prévia inicial. As funcionalidades ainda estão sendo aprimoradas e estamos trabalhando continuamente em melhorias. Feedbacks são bem-vindos!

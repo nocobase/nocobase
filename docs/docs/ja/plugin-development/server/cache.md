@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # キャッシュ
 
 NocoBaseのキャッシュモジュールは、<a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>をベースに構築されており、プラグイン開発にキャッシュ機能を提供します。システムには以下の2種類のキャッシュが組み込まれています。

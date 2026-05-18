@@ -16,7 +16,7 @@ Avant de configurer un nœud AI Employee, vous devez comprendre comment construi
 Vous pouvez consulter les documents suivants :
   - [Workflow](/workflow)
   - [Configurer les services LLM](/ai-employees/features/llm-service)
-  - [AI Employees intégrés](/ai-employees/features/built-in-employee)
+  - [AI Employees intégrés](/ai-employees/built-in/)
   - [Créer un AI Employee](/ai-employees/features/new-ai-employees)
 
 ### Tâche

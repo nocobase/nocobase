@@ -5,10 +5,6 @@ description: "Separar servicios de larga duración (flujo de trabajo, tareas as�
 keywords: "división de servicios,WORKER_MODE,flujo asíncrono,async-task,escalado horizontal,nodo de petición,nodo de tareas,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Servicios distribuidos <Badge>v1.9.0+</Badge>
 
 ## Introducción

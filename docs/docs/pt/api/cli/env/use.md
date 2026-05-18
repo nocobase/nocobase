@@ -8,6 +8,10 @@ keywords: "nb env use,NocoBase CLI,alternar ambiente,current env"
 
 Alterna o env atual do CLI. Depois disso, comandos sem `--env` passam a usar esse env por padrão.
 
+Quando o session mode está habilitado para o shell ou runtime atual, essa mudança afeta apenas a sessão atual.
+
+Quando o session mode não está habilitado, isso volta a atualizar o `last env` global. Nesse caso, outros terminais ou runtimes de agente sem isolamento de sessão também podem ser afetados.
+
 ## Uso
 
 ```bash
@@ -18,7 +22,7 @@ nb env use <name>
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
-| `<name>` | string | Nome de um ambiente já configurado |
+| `<name>` | string | Nome do ambiente configurado para o qual alternar |
 
 ## Exemplos
 

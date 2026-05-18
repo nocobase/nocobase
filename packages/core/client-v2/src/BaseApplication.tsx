@@ -356,7 +356,7 @@ export abstract class BaseApplication<
   addRoutes() {
     this.router.add('not-found', {
       path: '*',
-      Component: this.components['AppNotFound'],
+      Component: () => null,
     });
   }
 
@@ -586,19 +586,25 @@ export class ApplicationModel extends FlowModel {
   }
 
   render() {
-    if (this.app.maintaining) {
-      return this.renderMaintaining();
+    if (this.app.maintaining && !this.app.maintained) {
+      return <>{this.renderMaintaining()}</>;
     }
-    if (this.app.error) {
-      return this.renderError();
+    if (this.app.error && !this.app.maintaining) {
+      return <>{this.renderError()}</>;
     }
-    return this.renderContent();
+    return (
+      <>
+        {this.renderContent()}
+        {this.app.maintaining && this.app.maintained ? this.renderMaintainingDialog() : null}
+      </>
+    );
   }
 
   renderMaintaining() {
-    if (!this.app.maintained) {
-      return this.app.renderComponent('AppMaintaining', { app: this.app, error: this.app.error });
-    }
+    return this.app.renderComponent('AppMaintaining', { app: this.app, error: this.app.error });
+  }
+
+  renderMaintainingDialog() {
     return this.app.renderComponent('AppMaintainingDialog', { app: this.app, error: this.app.error });
   }
 

@@ -11,7 +11,7 @@
     "nocobase": "nocobase-v1",
     "pm": "nocobase-v1 pm",
     "pm2": "nocobase-v1 pm2",
-    "dev": "nocobase-v1 dev",
+    "dev": "nocobase-v1 dev --rsbuild",
     "start": "nocobase-v1 start",
     "clean": "nocobase-v1 clean",
     "build": "nocobase-v1 build",

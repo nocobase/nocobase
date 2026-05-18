@@ -1,7 +1,3 @@
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/runjs/resource/single-record-resource)をご参照ください。
-:::
-
 # SingleRecordResource
 
 **単一のレコード**を対象とした Resource です。データは単一のオブジェクトとして扱われ、主キーによる取得、作成・更新（save）、および削除をサポートします。詳細表示やフォームなどの「単一レコード」を扱うシーンに適しています。[MultiRecordResource](./multi-record-resource.md) とは異なり、SingleRecordResource の `getData()` は単一のオブジェクトを返します。`setFilterByTk(id)` で主キーを指定し、`save()` は `isNewRecord` の状態に応じて自動的に create または update を呼び出します。

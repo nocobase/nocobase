@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/system-management/localization/index).
-:::
-
 # Gerenciamento de Localização
 
 ## Introdução
@@ -40,6 +36,8 @@ Após a sincronização, o sistema listará todos os termos traduzíveis para o 
 Diferentes módulos podem ter os mesmos termos originais, que precisam ser traduzidos separadamente.
 :::
 
+Se as traduções de entradas integradas do sistema ou dos plugins forem alteradas manualmente ou sobrescritas por tradução de IA, selecione `Redefinir traduções das entradas integradas do sistema` durante a sincronização. Após a sincronização, o sistema substituirá as traduções integradas existentes do idioma atual pelas traduções do pacote de idioma integrado para restaurar a tradução padrão.
+
 ### Criar termos automaticamente
 
 Ao editar uma página, os textos personalizados em cada bloco criarão automaticamente os termos correspondentes e gerarão simultaneamente o conteúdo da tradução para o idioma atual.
@@ -56,6 +54,26 @@ Ao definir textos no código, você precisa especificar manualmente o ns (namesp
 ### Editar conteúdo da tradução
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
+
+### Usar tradução com IA
+
+O Gerenciamento de Localização oferece suporte à tradução de entradas por meio da funcionária de IA Lina. Depois de habilitar os funcionários de IA e configurar um serviço de modelo, você pode usar a tradução com IA na página de Gerenciamento de Localização para gerar traduções em lote para o idioma atual.
+
+![](https://static-docs.nocobase.com/202605121152196.png)
+
+Escopos de tradução suportados:
+
+- **Tradução completa**: traduz todas as entradas elegíveis no idioma atual.
+- **Tradução incremental**: traduz apenas entradas que ainda não têm tradução.
+- **Tradução dos itens selecionados**: selecione entradas na tabela e traduza apenas o conteúdo selecionado.
+
+A tradução com IA cria uma tarefa em segundo plano. Você pode acompanhar o progresso enquanto a tarefa é executada. Após a conclusão, as traduções são gravadas no idioma correspondente e ainda devem ser revisadas e corrigidas de acordo com o contexto real.
+
+Para o guia completo, consulte [Funcionária de IA - Lina](/ai-employees/built-in/lina).
+
+:::warning{title=Observação}
+Traduções geradas por IA podem conter desvios semânticos, terminologia inconsistente ou compreensão insuficiente do contexto. Antes de publicar, revise manualmente páginas importantes, termos de negócio e textos voltados aos usuários.
+:::
 
 ### Publicar tradução
 

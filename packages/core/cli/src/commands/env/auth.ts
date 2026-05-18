@@ -11,7 +11,7 @@ import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { authenticateEnvWithOauth } from '../../lib/env-auth.js';
-import { failTask, startTask, succeedTask } from '../../lib/ui.js';
+import { failTask, printStage, startTask, succeedTask } from '../../lib/ui.js';
 
 export default class EnvAuth extends Command {
   static override summary = 'Sign in to a saved NocoBase environment with OAuth';
@@ -23,7 +23,7 @@ export default class EnvAuth extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Environment name (omit to use the current env)',
+      description: 'Configured environment name to sign in to. Defaults to the current env when omitted',
       required: false,
     }),
   };
@@ -49,6 +49,7 @@ export default class EnvAuth extends Command {
     }
     const envName = nameArg || nameFlag || (await getCurrentEnvName({ scope: resolveDefaultConfigScope() }));
 
+    printStage('Signing in');
     startTask(`Starting browser sign-in for "${envName}"...`);
 
     try {
@@ -56,7 +57,7 @@ export default class EnvAuth extends Command {
         envName,
         scope: resolveDefaultConfigScope(),
       });
-      succeedTask(`Signed in to "${envName}".`);
+      succeedTask(`✔ Signed in to "${envName}".`);
     } catch (error) {
       failTask(`Sign-in failed for "${envName}".`);
       throw error;

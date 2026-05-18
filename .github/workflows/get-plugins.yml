@@ -39,7 +39,7 @@ jobs:
       alpha-plugins: ${{ steps.get-plugins.outputs.alpha-plugins }}
       unreleased-plugins: ${{ steps.get-plugins.outputs.unreleased-plugins }}
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}

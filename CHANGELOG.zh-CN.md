@@ -5,6 +5,189 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.55](https://github.com/nocobase/nocobase/compare/v2.0.54...v2.0.55) - 2026-05-18
+
+### 🚀 优化
+
+- **[AI 员工]** 新增向量库写入校验：检测到同名数据表时弹出提示，避免误操作覆盖 ([#9497](https://github.com/nocobase/nocobase/pull/9497)) by @cgyrock
+
+- **[AI: 知识库]** 新增向量库写入校验：检测到同名数据表时弹出提示，避免误操作覆盖 by @cgyrock
+
+### 🐛 修复
+
+- **[client]**
+  - 修复无法在操作按钮事件流中解析当前弹窗记录变量的问题。 ([#9495](https://github.com/nocobase/nocobase/pull/9495)) by @gchust
+
+  - 修复表单提交时子表单里的 js field 值没有被正确设置的问题。 ([#9496](https://github.com/nocobase/nocobase/pull/9496)) by @gchust
+
+- **[文件管理器]** 修复文件管理器 `tx-cos` 上传后缺少文件大小元数据的问题。 ([#9499](https://github.com/nocobase/nocobase/pull/9499)) by @mytharcher
+
+- **[数据源：主数据库]** 修复同步字段后，字段选项会写入 schema 的问题 ([#9505](https://github.com/nocobase/nocobase/pull/9505)) by @2013xile
+
+- **[WEB 客户端]** 删除菜单时移除内部区块数据。 ([#9459](https://github.com/nocobase/nocobase/pull/9459)) by @gchust
+
+- **[AI 员工]** 修复 AI 员工读取 OSS 存储文件报错问题 ([#9493](https://github.com/nocobase/nocobase/pull/9493)) by @cgyrock
+
+- **[操作：导入记录]** 修复导入日期类字段后展示错误的时间的问题 ([#9463](https://github.com/nocobase/nocobase/pull/9463)) by @mytharcher
+
+- **[操作：导出记录 Pro]** 修复导出附件 URL 字段提供的附件时的报错 by @mytharcher
+
+- **[操作：导入记录 Pro]** 修复专业版 xlsx 导入的时区处理问题 by @mytharcher
+
+## [v2.0.53](https://github.com/nocobase/nocobase/compare/v2.0.52...v2.0.53) - 2026-05-14
+
+### 🚀 优化
+
+- **[flow-engine]** 关闭事件流配置页面时如果存在未保存的数据则显示未保存的提示信息。 ([#9449](https://github.com/nocobase/nocobase/pull/9449)) by @gchust
+
+### 🐛 修复
+
+- **[client]**
+  - 修复表格中关联字段显示快捷编辑允许打开编辑弹窗的问题 ([#9469](https://github.com/nocobase/nocobase/pull/9469)) by @katherinehhh
+
+  - 修复子表格中关系字段设置为仅展示后刷新不显示或不可点击的问题。 ([#9453](https://github.com/nocobase/nocobase/pull/9453)) by @jiannx
+
+  - 修复 v2 数据区块多选字段显示选项值而非选项标签的问题 ([#9472](https://github.com/nocobase/nocobase/pull/9472)) by @katherinehhh
+
+- **[区块：分步表单]** 修复 v1 分步表单区块设置全高后页面出现滚动条的问题 ([#9468](https://github.com/nocobase/nocobase/pull/9468)) by @katherinehhh
+
+## [v2.0.52](https://github.com/nocobase/nocobase/compare/v2.0.51...v2.0.52) - 2026-05-13
+
+### 🎉 新特性
+
+- **[client]**
+  - v2 增加当前用户语言变量 ([#9405](https://github.com/nocobase/nocobase/pull/9405)) by @katherinehhh
+
+  - v2 表单中日期字段增加日期范围限制设置项 ([#9400](https://github.com/nocobase/nocobase/pull/9400)) by @katherinehhh
+
+### 🚀 优化
+
+- **[client]** 一对多关系表格区块的关联操作中，弹窗选择区块应排除已关联数据 ([#9448](https://github.com/nocobase/nocobase/pull/9448)) by @katherinehhh
+
+- **[部门]** 优化部门列表样式，增加图标并调整间距 ([#9435](https://github.com/nocobase/nocobase/pull/9435)) by @katherinehhh
+
+- **[AI: 知识库]** 支持在创建知识库时指定其唯一键 by @cgyrock
+
+### 🐛 修复
+
+- **[client]**
+  - 修复旧默认值配置无法被移除的问题。 ([#9470](https://github.com/nocobase/nocobase/pull/9470)) by @gchust
+
+  - 修复字段赋值里关系字段选择字段无法选择常量字段的问题。 ([#9088](https://github.com/nocobase/nocobase/pull/9088)) by @gchust
+
+  - 修复表格区块事件流行数据取消选择时设置目标区块数据范围不正确的问题。 ([#9443](https://github.com/nocobase/nocobase/pull/9443)) by @gchust
+
+  - 修复筛选表单有默认值时表格初始化重复请求的问题 ([#9423](https://github.com/nocobase/nocobase/pull/9423)) by @zhangzhonghe
+
+  - 修复 V2 联动规则支持字段设置可选项 ([#9399](https://github.com/nocobase/nocobase/pull/9399)) by @jiannx
+
+  - 修复 v2 表格中关系字段修改标题字段时报错的问题 ([#9451](https://github.com/nocobase/nocobase/pull/9451)) by @katherinehhh
+
+  - 修复操作按钮联动规则偶现不生效的问题。 ([#9430](https://github.com/nocobase/nocobase/pull/9430)) by @gchust
+
+  - 修复 v2 子表格中的对多关系字段组件列表出现子表格组件的问题 ([#9438](https://github.com/nocobase/nocobase/pull/9438)) by @katherinehhh
+
+- **[server]** fix(file-manager): 对本地/公开存储中有风险内容的文件强制下载 ([#9437](https://github.com/nocobase/nocobase/pull/9437)) by @mytharcher
+
+- **[AI 员工]** 修复 Ollama 试运行无需 Key 却要求输入的问题 ([#9450](https://github.com/nocobase/nocobase/pull/9450)) by @cgyrock
+
+- **[可视化数据表管理]** 修复 Graphical interface 自动布局报错 “to do update action, filter or filterByTk is required” ([#9421](https://github.com/nocobase/nocobase/pull/9421)) by @katherinehhh
+
+- **[工作流]** 修复：补回 FlowModel 工作流绑定弹窗中操作类事件与自定义操作事件的提示文案 ([#9447](https://github.com/nocobase/nocobase/pull/9447)) by @mytharcher
+
+- **[部门]** 修复 Users & Permissions 设置中添加用户和添加部门按钮翻译相互影响的问题 ([#9456](https://github.com/nocobase/nocobase/pull/9456)) by @katherinehhh
+
+- **[数据表字段：Markdown(Vditor)]** 修复 markdown 字段在表单水平布局时提示信息被遮挡的问题 ([#9420](https://github.com/nocobase/nocobase/pull/9420)) by @katherinehhh
+
+- **[WEB 客户端]** 修复使用翻译后的路由类型筛选不到数据的问题 ([#9425](https://github.com/nocobase/nocobase/pull/9425)) by @zhangzhonghe
+
+- **[工作流：审批]**
+  - 修复审批处理设置中显示 JS field 的问题 by @zhangzhonghe
+
+  - 修复移动端审批表单布局显示不正确的问题 by @zhangzhonghe
+
+  - 修复审批转签时审批记录索引重复的问题。 by @mytharcher
+
+- **[备份管理器]** 修复备份时因为文件无法找到而失败报错的问题。 by @gchust
+
+## [v2.0.51](https://github.com/nocobase/nocobase/compare/v2.0.50...v2.0.51) - 2026-05-10
+
+### 🚀 优化
+
+- **[工作流：审批]** 修复审批表单必填校验的交互问题 by @zhangzhonghe
+
+### 🐛 修复
+
+- **[client]**
+  - 修复 JS field 改为只读后 js 代码无法再次被修改的问题。 ([#9404](https://github.com/nocobase/nocobase/pull/9404)) by @gchust
+
+  - 修复字段联动规则中子表格字段赋值不生效的问题。 ([#9412](https://github.com/nocobase/nocobase/pull/9412)) by @gchust
+
+  - 修复路由管理页的配置不和页面标签页的配置同步的问题 ([#9396](https://github.com/nocobase/nocobase/pull/9396)) by @zhangzhonghe
+
+  - 修复新增弹窗关系字段默认值弹窗不正确的问题。 ([#9408](https://github.com/nocobase/nocobase/pull/9408)) by @gchust
+
+- **[密码策略]** 修复永久锁定用户在服务重启后登录限制可能失效的问题 by @2013xile
+
+- **[操作：导入记录 Pro]** 修复识别重复检查针对日期字段时总是失败的问题 by @mytharcher
+
+- **[工作流：审批]** 修复审批工作流配置中选择记录抽屉被遮挡的问题 by @zhangzhonghe
+
+## [v2.0.50](https://github.com/nocobase/nocobase/compare/v2.0.49...v2.0.50) - 2026-05-09
+
+### 🎉 新特性
+
+- **[client]** 关系区块增加关联/取消关联操作 ([#9366](https://github.com/nocobase/nocobase/pull/9366)) by @katherinehhh
+
+- **[文本复制]** 阅读态文本字段支持“启用复制”配置项 ([#9394](https://github.com/nocobase/nocobase/pull/9394)) by @katherinehhh
+
+### 🚀 优化
+
+- **[undefined]** - ([#9374](https://github.com/nocobase/nocobase/pull/9374)) by @Molunerfinn
+
+- **[client]** 支持字段赋值中使用自动编码字段 ([#9397](https://github.com/nocobase/nocobase/pull/9397)) by @mytharcher
+
+### 🐛 修复
+
+- **[flow-engine]** 修复 v2 Flow 表单中数据表字段校验提示未翻译的问题 ([#9393](https://github.com/nocobase/nocobase/pull/9393)) by @jiannx
+
+- **[client]**
+  - 修复表单区块中设置为 `隐藏并保留值` 的字段在页面编辑模式下不显示的问题，并恢复在字段赋值中为这类字段设置值的输入能力 ([#9373](https://github.com/nocobase/nocobase/pull/9373)) by @jiannx
+
+  - 修复 AttachmentURL 字段在缺少文件元数据时下载文件名异常的问题。 ([#9382](https://github.com/nocobase/nocobase/pull/9382)) by @mytharcher
+
+  - 修复 v2 表格批量触发工作流在跳转到其他 tab 后返回原 tab 时选中状态不同步，且返回后可再次勾选记录的问题 ([#9388](https://github.com/nocobase/nocobase/pull/9388)) by @jiannx
+
+  - 修复筛选表单无法折叠的问题 ([#9386](https://github.com/nocobase/nocobase/pull/9386)) by @zhangzhonghe
+
+  - 修复 v1 子表格联动规则错误改变字段必填样式的问题 ([#9364](https://github.com/nocobase/nocobase/pull/9364)) by @zhangzhonghe
+
+  - 修复网格卡片区块更新数据后刷新未正确显示数据的问题 ([#9351](https://github.com/nocobase/nocobase/pull/9351)) by @katherinehhh
+
+  - 修复子表格中选项字段必填在移动端需选择两次才生效的问题 ([#9352](https://github.com/nocobase/nocobase/pull/9352)) by @katherinehhh
+
+  - 修复缓存页面切换后 URL 查询参数变量失效的问题 ([#9263](https://github.com/nocobase/nocobase/pull/9263)) by @zhangzhonghe
+
+  - 修复 v2 DividerItem 未适配主题的问题 ([#9372](https://github.com/nocobase/nocobase/pull/9372)) by @katherinehhh
+
+  - 修复 v2 子表格中关系字段下拉选项组件错误显示快捷编辑配置项的问题 ([#9358](https://github.com/nocobase/nocobase/pull/9358)) by @katherinehhh
+
+  - 修复区表单值改变时联动规则不自动运行的问题。 ([#9357](https://github.com/nocobase/nocobase/pull/9357)) by @gchust
+
+  - 修复自定义下拉多选筛选标量字段时报错的问题 ([#9387](https://github.com/nocobase/nocobase/pull/9387)) by @zhangzhonghe
+
+- **[server]** 验证插件包名称 ([#9367](https://github.com/nocobase/nocobase/pull/9367)) by @chenos
+
+- **[数据源管理]** 修复角色权限配置中外部数据源自定义范围允许编辑删除所有数据的问题 ([#9395](https://github.com/nocobase/nocobase/pull/9395)) by @katherinehhh
+
+- **[数据源：主数据库]** 修复启用表前缀时导入数据库表后错误使用带前缀表名的问题 ([#9403](https://github.com/nocobase/nocobase/pull/9403)) by @2013xile
+
+- **[通知：站内信]** 修复收到实时站内信后通知列表未及时刷新的问题 ([#9409](https://github.com/nocobase/nocobase/pull/9409)) by @mytharcher
+
+- **[区块：看板]** 修复 v1 看板区块长文本字段中单个单词被换行的问题 ([#9356](https://github.com/nocobase/nocobase/pull/9356)) by @katherinehhh
+
+- **[数据表字段：公式]** 修复 v2 子表格中公式字段未触发自动计算值的问题 ([#9354](https://github.com/nocobase/nocobase/pull/9354)) by @katherinehhh
+
 ## [v2.0.49](https://github.com/nocobase/nocobase/compare/v2.0.48...v2.0.49) - 2026-05-06
 
 ### 🚀 优化

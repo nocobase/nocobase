@@ -5,10 +5,6 @@ description: "Action Exportar Pro: funcionalidade avançada de exportação, com
 keywords: "Exportar Pro,ExportPro,exportação avançada,template personalizado,interface builder,NocoBase"
 ---
 
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Exportar Pro
 
 ## Introdução

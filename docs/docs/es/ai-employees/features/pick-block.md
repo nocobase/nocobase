@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/features/pick-block).
-:::
-
 # Añadir contexto - Bloque
 
 Al conversar con un empleado de IA, además de enviar archivos, también puede enviar información de contexto de la aplicación para que el empleado de IA responda basándose en dicha información.

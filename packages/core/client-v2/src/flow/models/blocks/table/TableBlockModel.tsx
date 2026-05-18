@@ -563,6 +563,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           columns={this.columns.value}
           pagination={this.pagination()}
           highlightedRowKey={highlightedRowKey}
+          selectedRowKeysFromResource={this.resource
+            .getSelectedRows()
+            .map((row) => getRowKey(row, this.collection.filterTargetKey))}
           defaultExpandAllRows={this.props.defaultExpandAllRows}
           expandedRowKeys={this.props.expandedRowKeys}
           heightMode={heightMode}
@@ -581,6 +584,7 @@ const TableBlockContent = (props: {
   columns: any;
   pagination: any;
   highlightedRowKey: string;
+  selectedRowKeysFromResource: string[];
   defaultExpandAllRows?: boolean;
   expandedRowKeys?: any[];
   heightMode?: string;
@@ -594,6 +598,7 @@ const TableBlockContent = (props: {
     columns,
     pagination,
     highlightedRowKey,
+    selectedRowKeysFromResource,
     defaultExpandAllRows,
     expandedRowKeys,
     heightMode,
@@ -620,6 +625,7 @@ const TableBlockContent = (props: {
           columns={columns}
           pagination={pagination}
           highlightedRowKey={highlightedRowKey}
+          selectedRowKeysFromResource={selectedRowKeysFromResource}
           defaultExpandAllRows={defaultExpandAllRows}
           expandedRowKeys={expandedRowKeys}
           tableScroll={tableScroll}
@@ -829,6 +835,7 @@ const HighPerformanceTable = React.memo(
     columns: any;
     pagination: any;
     highlightedRowKey: string;
+    selectedRowKeysFromResource: string[];
     defaultExpandAllRows?: boolean;
     expandedRowKeys?: any[];
     tableScroll;
@@ -841,6 +848,7 @@ const HighPerformanceTable = React.memo(
       columns,
       pagination: _pagination,
       highlightedRowKey,
+      selectedRowKeysFromResource,
       defaultExpandAllRows,
       expandedRowKeys,
       tableScroll,
@@ -848,9 +856,17 @@ const HighPerformanceTable = React.memo(
     const dataSourceRef = useRef(dataSource);
     dataSourceRef.current = dataSource;
 
-    const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
-      model.resource.getSelectedRows().map((row) => getRowKey(row, model.collection.filterTargetKey)),
-    );
+    const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(selectedRowKeysFromResource || []);
+
+    useEffect(() => {
+      const nextSelectedRowKeys = selectedRowKeysFromResource || [];
+      setSelectedRowKeys((prev) => {
+        if (_.isEqual(prev, nextSelectedRowKeys)) {
+          return prev;
+        }
+        return nextSelectedRowKeys;
+      });
+    }, [selectedRowKeysFromResource]);
 
     const getRowKeyFunc = useCallback(
       (record) => {
@@ -916,12 +932,12 @@ const HighPerformanceTable = React.memo(
 
         return {
           onClick: async (event) => {
-            if (highlightedRowKey !== rowKey) {
-              defineClickedRowRecordVariable(model, record);
-              await model.dispatchEvent('rowClick', { record, rowIndex, event });
+            const selected = highlightedRowKey !== rowKey;
+            defineClickedRowRecordVariable(model, selected ? record : null);
+            try {
+              await model.dispatchEvent('rowClick', { record, rowIndex, event, selected });
+            } finally {
               removeClickedRowRecordVariable(model);
-            } else {
-              await model.dispatchEvent('rowClick', { record, rowIndex, event });
             }
           },
           rowIndex,
@@ -1056,7 +1072,12 @@ TableBlockModel.registerEvents({
 
       const model = ctx.model as TableBlockModel;
       const rowKey = getRowKey(ctx.inputArgs.record, model.collection.filterTargetKey);
-      if (model.props.highlightedRowKey !== rowKey) {
+      const selected = ctx.inputArgs.selected;
+      if (selected === true) {
+        model.highlightRow(ctx.inputArgs.record);
+      } else if (selected === false) {
+        model.clearHighlight();
+      } else if (model.props.highlightedRowKey !== rowKey) {
         model.highlightRow(ctx.inputArgs.record);
       } else {
         model.clearHighlight();

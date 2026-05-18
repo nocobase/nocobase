@@ -1,17 +1,20 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/features/enable-ai-employee).
-:::
+---
+pkg: '@nocobase/plugin-ai'
+title: 'Activer les employés IA'
+description: 'Activez ou désactivez les employés IA avec l’interrupteur Enabled dans la page de gestion AI employees. Les employés activés apparaissent dans l’entrée rapide en bas à droite ou dans une entrée spécifique.'
+keywords: 'activer employés IA,AI employees,NocoBase'
+---
 
 # Activer les employés IA
 
-NocoBase propose plusieurs employés IA intégrés pour différents scénarios.
+NocoBase fournit des employés IA intégrés pour plusieurs scénarios. Pour la description complète, consultez [Employés IA intégrés](/ai-employees/built-in/).
 
-## Comment les activer
+## Comment activer
 
-Accédez à la page de gestion `AI employees` et activez l'interrupteur `Enabled` directement dans la liste.
+Après être entré dans la page de gestion `AI employees`, activez directement l’interrupteur `Enabled` dans la liste.
 
-![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
+![](https://static-docs.nocobase.com/202605121048555.png)
 
 ## Utilisation après activation
 
-Une fois activé, l'employé apparaîtra dans les points d'accès disponibles (tels que le raccourci en bas à droite ou les points d'accès spécifiques à un scénario).
+Après activation, l’employé apparaît dans les entrées disponibles, comme l’entrée rapide en bas à droite ou une entrée spécifique au scénario.

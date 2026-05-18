@@ -9,7 +9,12 @@
 
 const testCommandModule = require('../commands/test');
 
-const { buildVitestNodeArgs, requiresNoNodeSnapshot } = testCommandModule._test;
+const {
+  buildVitestNodeArgs,
+  requiresNoNodeSnapshot,
+  stripDelegatedWorkspaceArgs,
+  resolveWorkspaceTestDelegation,
+} = testCommandModule._test;
 
 describe('cli-v1 test command helpers', () => {
   test('requiresNoNodeSnapshot enables the Node 20+ compatibility flag', () => {
@@ -33,5 +38,33 @@ describe('cli-v1 test command helpers', () => {
       './node_modules/vitest/vitest.mjs',
       'foo.test.ts',
     ]);
+  });
+
+  test('stripDelegatedWorkspaceArgs removes workspace-only routing flags while preserving extra test args', () => {
+    expect(
+      stripDelegatedWorkspaceArgs(
+        [
+          'packages/core/cli',
+          '--server',
+          '--single-thread=true',
+          '--runInBand',
+          'src/__tests__/skills-manager.test.ts',
+        ],
+        'packages/core/cli',
+      ),
+    ).toEqual(['--runInBand', 'src/__tests__/skills-manager.test.ts']);
+  });
+
+  test('resolveWorkspaceTestDelegation forwards workspace package roots that define a test script', () => {
+    const delegation = resolveWorkspaceTestDelegation(
+      ['packages/core/cli'],
+      ['packages/core/cli', '--server'],
+      '/Users/chen/t300/app5/source',
+    );
+
+    expect(delegation).toEqual({
+      packageDir: '/Users/chen/t300/app5/source/packages/core/cli',
+      forwardedArgv: [],
+    });
   });
 });

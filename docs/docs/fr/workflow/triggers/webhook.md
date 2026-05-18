@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-webhook'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Webhook
 

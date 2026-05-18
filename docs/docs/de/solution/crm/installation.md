@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/solution/crm/installation).
-:::
-
 # Wie man installiert
 
 > Die aktuelle Version wird in Form von **Sicherung und Wiederherstellung** bereitgestellt. In zukünftigen Versionen werden wir möglicherweise auf **inkrementelle Migration** umstellen, um die Integration der Lösung in Ihre bestehenden Systeme zu erleichtern.

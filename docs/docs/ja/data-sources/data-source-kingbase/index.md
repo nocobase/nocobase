@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/data-sources/data-source-kingbase/index)をご参照ください。
-:::
-
 # データソース - 人大金倉 (KingbaseES)
 
 ## はじめに

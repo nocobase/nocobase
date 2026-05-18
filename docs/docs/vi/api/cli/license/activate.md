@@ -25,7 +25,7 @@ nb license activate [flags]
 | `--account` | string | Tài khoản dịch vụ cấp phép dùng cho kích hoạt trực tuyến |
 | `--password` | string | Mật khẩu dịch vụ cấp phép dùng cho kích hoạt trực tuyến |
 | `--desc` | string | Tên ứng dụng dùng cho kích hoạt trực tuyến |
-| `--yes` | boolean | Xác nhận rằng thông tin đã gửi là đúng và chính xác |
+| `--yes`, `-y` | boolean | Khi `--env` được truyền tường minh và trỏ tới env khác với env hiện tại, bỏ qua bước xác nhận tương tác |
 | `--json` | boolean | Xuất JSON |
 
 ## Ví dụ
@@ -34,6 +34,7 @@ nb license activate [flags]
 nb license activate --env app1 --key <licenseKey>
 nb license activate --env app1 --key-file ./license.txt
 nb license activate --env app1 --online
+nb license activate --env app1 --online --account aa --password bb --desc test24
 nb license activate --env app1 --online --account aa --password bb --desc test24 --yes
 nb license activate --env app1 --json --key-file ./license.txt
 ```
@@ -41,6 +42,8 @@ nb license activate --env app1 --json --key-file ./license.txt
 ## Ghi chú
 
 Khi dùng kích hoạt trực tuyến, CLI sẽ yêu cầu một license key từ dịch vụ cấp phép bằng instance ID và URL ứng dụng của env hiện tại.
+
+Nếu bạn truyền `--env` một cách tường minh và nó khác env hiện tại, CLI sẽ yêu cầu xác nhận trước. Trong terminal không tương tác hoặc phiên AI agent, hãy tự thêm `--yes` hoặc chạy `nb env use <name>` trước rồi thử lại.
 
 ## Lệnh liên quan
 

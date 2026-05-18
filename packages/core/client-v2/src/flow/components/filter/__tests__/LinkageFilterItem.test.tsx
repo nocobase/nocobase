@@ -67,6 +67,9 @@ function createModel() {
   return { model, app };
 }
 
+const getRenderedSelectTexts = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('.ant-select-selection-item')).map((node) => (node.textContent || '').trim());
+
 describe('LinkageFilterItem', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -108,6 +111,39 @@ describe('LinkageFilterItem', () => {
     fireEvent.mouseDown(view.container.querySelector('.ant-select-selector') as Element);
     expect(screen.getAllByText('custom react label').length).toBeGreaterThan(0);
     expect(screen.queryByText('[object Object]')).toBeNull();
+  });
+
+  it('uses scoped context dataSourceManager when app dataSourceManager has no field interface manager', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const { model, app } = createModel();
+    const getRuntimeFieldInterface = vi.fn((name: string) => ({
+      name,
+      filterable: {
+        operators: [{ value: '$eq', label: 'Equals', selected: true }],
+      },
+    }));
+    model.context.dataSourceManager.setCollectionFieldInterfaceManager({
+      getFieldInterface: getRuntimeFieldInterface,
+    });
+    (app as any).dataSourceManager = {};
+
+    (globalThis as any).__TEST_PATH__ = 'assignee';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'belongsTo',
+      uiSchema: { 'x-component': 'RecordPicker' },
+      paths: ['collection', 'assignee'],
+      name: 'assignee',
+      title: 'Assignee',
+      type: 'object',
+    };
+
+    render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$eq');
+      expect(getRuntimeFieldInterface).toHaveBeenCalledWith('belongsTo');
+    });
   });
 
   it('renders operator schema component for multi-keyword constants', async () => {
@@ -166,6 +202,74 @@ describe('LinkageFilterItem', () => {
     await waitFor(() => {
       expect(value.value).toEqual(['alpha', 'beta']);
     });
+  });
+
+  it('does not render an empty selected option for constant single select', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const { model } = createModel();
+
+    (globalThis as any).__TEST_META__ = {
+      interface: 'select',
+      uiSchema: {
+        'x-component': 'Select',
+        enum: [{ label: 'Published', value: 'published' }],
+        'x-filter-operators': [
+          {
+            value: '$eq',
+            label: 'is',
+            selected: true,
+            schema: { 'x-component': 'Select' },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    const view = render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$eq');
+    });
+
+    expect(getRenderedSelectTexts(view.container).filter((text) => text === '')).toHaveLength(0);
+  });
+
+  it('does not render an empty selected tag for constant multi select', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const { model } = createModel();
+
+    (globalThis as any).__TEST_META__ = {
+      interface: 'select',
+      uiSchema: {
+        'x-component': 'Select',
+        enum: [{ label: 'Published', value: 'published' }],
+        'x-filter-operators': [
+          {
+            value: '$in',
+            label: 'is any of',
+            selected: true,
+            schema: { 'x-component': 'Select', 'x-component-props': { mode: 'tags' } },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    const view = render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$in');
+    });
+
+    expect(getRenderedSelectTexts(view.container).filter((text) => text === '')).toHaveLength(0);
   });
 
   it('passes enum options to single select multi-value operators', async () => {

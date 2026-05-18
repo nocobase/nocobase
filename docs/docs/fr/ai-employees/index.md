@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/index).
-:::
-
 # Aperçu
 
 ![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
@@ -45,7 +41,7 @@ Consultez d'abord le [Démarrage rapide](/ai-employees/quick-start) et suivez l'
 
 ### C. Capacités avancées (Extensions)
 
-- [Employés IA intégrés](/ai-employees/features/built-in-employee) : découvrez le positionnement et les scénarios d'application des employés prédéfinis.
+- [Employés IA intégrés](/ai-employees/built-in/) : découvrez le positionnement et les scénarios d'application des employés prédéfinis.
 - [Contrôle des permissions](/ai-employees/permission) : contrôlez l'accès aux employés, aux compétences et aux données selon le modèle de permissions de l'organisation.
 - [Base de connaissances IA](/ai-employees/knowledge-base/index) : introduisez les connaissances de l'entreprise pour améliorer la stabilité et la traçabilité des réponses.
 - [Nœud LLM de flux de travail](/ai-employees/workflow/nodes/llm/chat) : orchestrez les capacités de l'IA dans des processus automatisés.
