@@ -3006,10 +3006,8 @@ export class FlowContext {
 }
 
 class BaseFlowEngineContext extends FlowContext {
-  declare t: (key: any, options?: any) => string;
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
-  declare isDarkTheme: boolean;
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => Promise<JSRunner>;
@@ -3374,15 +3372,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         hasChildren: false,
       }),
     });
-    this.defineProperty('locale', {
-      get: () => this.api?.auth?.locale,
-      cache: false,
-      meta: Object.assign(() => ({ type: 'string', title: this.t('Current language'), sort: 975 }), {
-        title: escapeT('Current language'),
-        sort: 975,
-        hasChildren: false,
-      }),
-    });
     // URL 查询参数（等价于 1.0 的 `$nURLSearchParams`）
     this.defineProperty('urlSearchParams', {
       // 不缓存，确保随 URL 变化实时生效
@@ -3433,40 +3422,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineProperty('auth', {
       get: () => ({
-        roleName: this.api?.auth?.role,
-        locale: this.api?.auth?.locale,
-        token: this.api?.auth?.token,
+        roleName: this.api.auth.role,
+        locale: this.api.auth.locale,
+        token: this.api.auth.token,
         user: this.user,
       }),
-      cache: false,
-      meta: Object.assign(
-        () => ({
-          type: 'object',
-          title: this.t('Authentication'),
-          sort: 960,
-          properties: {
-            roleName: { type: 'string', title: this.t('Current role') },
-            locale: { type: 'string', title: this.t('Current language') },
-            token: { type: 'string', title: this.t('API Token') },
-            user: {
-              type: 'object',
-              title: this.t('Current user'),
-              properties: {
-                id: { type: 'number', title: 'ID', interface: 'id' },
-                nickname: { type: 'string', title: this.t('Nickname') },
-                username: { type: 'string', title: this.t('Username') },
-                email: { type: 'string', title: this.t('Email') },
-                roles: { type: 'array', title: this.t('Roles') },
-              },
-            },
-          },
-        }),
-        {
-          title: escapeT('Authentication'),
-          sort: 960,
-          hasChildren: true,
-        },
-      ),
     });
     this.defineProperty('date', {
       get: () => {
