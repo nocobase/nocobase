@@ -350,7 +350,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
       await rootAgent.resource('flowSurfaces').listTemplates({
         values: {
           type: 'popup',
-          search: name,
+          filter: {
+            name,
+          },
         },
       }),
     );
