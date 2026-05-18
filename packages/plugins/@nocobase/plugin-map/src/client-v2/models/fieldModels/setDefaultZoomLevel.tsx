@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../../locale';
+import { defineAction } from '@nocobase/flow-engine';
+import { tExpr } from '../../locale';
 export const setDefaultZoomLevel = defineAction({
   name: 'setDefaultZoomLevel',
-  title: escapeT('Set default zoom level', { ns: NAMESPACE }),
+  title: tExpr('Set default zoom level'),
   uiSchema: (ctx) => {
     const { displayStyle } = ctx.model.props;
     if (displayStyle === 'text') {
@@ -19,7 +19,7 @@ export const setDefaultZoomLevel = defineAction({
     }
     return {
       zoom: {
-        title: escapeT('Zoom', { ns: NAMESPACE }),
+        title: tExpr('Zoom'),
         'x-component': 'NumberPicker',
         'x-decorator': 'FormItem',
         'x-component-props': {

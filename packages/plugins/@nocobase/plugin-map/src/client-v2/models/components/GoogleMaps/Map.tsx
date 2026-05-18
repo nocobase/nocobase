@@ -9,15 +9,15 @@
 
 import { SyncOutlined } from '@ant-design/icons';
 import { Loader } from '@googlemaps/js-api-loader';
-import { useFlowEngine, useFlowContext } from '@nocobase/flow-engine';
-import { css, useAPIClient } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { defaultImage } from '../../../constants';
+import { defaultImage } from '../../../../shared/constants';
+import { mapActiveColor } from '../../../../shared/theme';
 import { useMapConfig } from '../../../hooks';
-import { useMapTranslation } from '../../../locale';
-import { MapEditorType } from '../../../types';
+import { useT } from '../../../locale';
+import { MapEditorType } from '../../../../shared/types';
 import { Search } from './Search';
 import { getCurrentPosition, getIcon } from './utils';
 
@@ -97,34 +97,33 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     type,
   } = props;
   const { accessKey } = useMapConfig(props.mapType) || {};
-  const { t } = useMapTranslation();
+  const t = useT();
   const ctx = useFlowContext();
   const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
   const map = useRef<google.maps.Map>();
   const overlayRef = useRef<google.maps.Marker | google.maps.Polygon | google.maps.Polyline | google.maps.Circle>();
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
-  const api = useAPIClient();
   const { modal } = App.useApp();
   useEffect(() => {
-    if (map.current) {
+    if (map.current && !block) {
       map.current?.setZoom(zoom);
     }
-  }, [zoom]);
+  }, [zoom, block]);
 
   const drawingMode = useRef(getDrawingMode(type) as google.maps.drawing.OverlayType);
 
   const [commonOptions] = useState<OverlayOptions>({
     strokeWeight: 5,
-    strokeColor: '#4e9bff',
-    fillColor: '#4e9bff',
+    strokeColor: mapActiveColor,
+    fillColor: mapActiveColor,
     strokeOpacity: 1,
     editable: !disabled,
     draggable: !disabled,
     ...overlayCommonOptions,
   });
 
-  const { navigate } = useFlowEngine().context.router;
+  const { navigate } = ctx.router;
   const mapContainerRef = useRef<HTMLDivElement>();
   const cleanupOverlayListenersRef = useRef<Set<() => void>>(new Set());
 
@@ -177,6 +176,14 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
   });
 
   const setFitView = useMemoizedFn((overlays: google.maps.MVCObject[]) => {
+    if (!overlays?.length) {
+      return;
+    }
+    if (overlays.length === 1 && overlays[0] instanceof google.maps.Marker) {
+      map.current?.setCenter?.((overlays[0] as google.maps.Marker).getPosition());
+      map.current?.setZoom?.(zoom || 13);
+      return;
+    }
     const bounds = new google.maps.LatLngBounds();
 
     overlays.forEach((overlay) => {
@@ -192,7 +199,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
       }
     });
 
-    map.current?.setCenter?.(bounds.getCenter());
+    map.current?.fitBounds?.(bounds);
   });
 
   const onFocusOverlay = () => {
@@ -306,7 +313,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
       loader = new Loader({
         apiKey: accessKey,
         version: 'weekly',
-        language: api.auth.getLocale(),
+        language: ctx.api.auth.getLocale(),
       });
     } catch (err) {
       setErrMessage(t('Load google maps failed, Please check the Api key and refresh the page'));
@@ -350,7 +357,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
       map.current = null;
       drawingManagerRef.current?.unbindAll();
     };
-  }, [accessKey, api.auth, type, zoom]);
+  }, [accessKey, ctx.api.auth, type, zoom]);
 
   useEffect(() => {
     if (!map.current || !type || disabled || drawingManagerRef.current) return;
@@ -392,7 +399,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
           <Button
             type="primary"
             onClick={() => {
-              ctx.view.close();
+              ctx.view?.close?.();
               navigate('/admin/settings/map' + '?tab=google');
             }}
           >
@@ -407,20 +414,20 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
 
   return (
     <div
-      className={css`
-        position: relative;
-        height: ${height || 500}px !important;
-      `}
+      style={{
+        position: 'relative',
+        height: height || 500,
+      }}
     >
       {!map.current && (
         <div
-          className={css`
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          `}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Spin />
         </div>
@@ -429,12 +436,12 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
         <>
           {map.current && <Search toCenter={toCenter} mapRef={map} />}
           <div
-            className={css`
-              position: absolute;
-              bottom: 80px;
-              right: 20px;
-              z-index: 10;
-            `}
+            style={{
+              position: 'absolute',
+              bottom: 80,
+              right: 20,
+              zIndex: 10,
+            }}
           >
             <Button
               onClick={onFocusOverlay}
@@ -447,13 +454,13 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
           </div>
           {type === 'lineString' || type === 'polygon' ? (
             <div
-              className={css`
-                position: absolute;
-                bottom: 20px;
-                left: 10px;
-                z-index: 2;
-                pointer-events: none;
-              `}
+              style={{
+                position: 'absolute',
+                bottom: 20,
+                left: 10,
+                zIndex: 2,
+                pointerEvents: 'none',
+              }}
             >
               <Alert
                 message={t('Click to select the starting point and double-click to end the drawing')}
@@ -462,12 +469,12 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
             </div>
           ) : null}
           <div
-            className={css`
-              position: absolute;
-              bottom: 20px;
-              right: 20px;
-              z-index: 2;
-            `}
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              right: 20,
+              zIndex: 2,
+            }}
           >
             <Button
               disabled={!value}
@@ -485,11 +492,11 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
       ) : null}
       <div
         ref={mapContainerRef}
-        className={css`
-          width: 100%;
-          height: 100%;
-        `}
-        style={props?.style}
+        style={{
+          width: '100%',
+          height: '100%',
+          ...props?.style,
+        }}
       ></div>
     </div>
   );

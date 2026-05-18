@@ -6,23 +6,15 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { tExpr, largeField } from '@nocobase/flow-engine';
-import { css, FieldModel } from '@nocobase/client';
+import { largeField } from '@nocobase/flow-engine';
+import { FieldModel } from '@nocobase/client-v2';
 import React from 'react';
 import { MapComponent } from '../MapComponent';
-import { NAMESPACE } from '../../locale';
-
-const className = css`
-  height: 100%;
-  border: 1px solid transparent;
-  .ant-formily-item-error & {
-    border: 1px solid #ff4d4f;
-  }
-`;
+import { tExpr } from '../../locale';
 
 const InternalMap = (props) => {
   return (
-    <div className={className}>
+    <div style={{ height: '100%' }}>
       <MapComponent {...props} />
     </div>
   );
@@ -40,7 +32,7 @@ export class MapFieldModel extends FieldModel {
 
 MapFieldModel.registerFlow({
   key: 'mapFieldSetting',
-  title: tExpr('Map field settings', { ns: NAMESPACE }),
+  title: tExpr('Map field settings'),
   sort: 500,
   steps: {
     zoom: {

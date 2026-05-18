@@ -7,4 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { getSource, normalizeErrorMessage, runIdleTask } from '../shared/utils';
+export const mapActiveColor = '#4e9bff';
+export const mapSelectedColor = '#F18b62';

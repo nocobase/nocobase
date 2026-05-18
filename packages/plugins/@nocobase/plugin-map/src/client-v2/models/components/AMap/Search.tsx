@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@nocobase/client';
 import { useDebounceFn } from 'ahooks';
 import { message, Select } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { useMapTranslation } from '../../../locale';
+import { useT } from '../../../locale';
 
 interface SearchProps {
   aMap: any;
@@ -20,7 +19,7 @@ interface SearchProps {
 
 export const Search = (props: SearchProps) => {
   const { aMap, toCenter } = props;
-  const { t } = useMapTranslation();
+  const t = useT();
   const placeSearch = useRef<any>();
   const [options, setOptions] = useState([]);
 
@@ -77,15 +76,7 @@ export const Search = (props: SearchProps) => {
   };
 
   return (
-    <div
-      className={css`
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 10;
-        width: calc(100% - 20px);
-      `}
-    >
+    <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, width: 'calc(100% - 20px)' }}>
       <Select
         showSearch
         allowClear

@@ -11,19 +11,18 @@ import {
   DndProvider,
   MultiRecordResource,
   FlowModelRenderer,
-  tExpr,
   DragHandler,
   AddSubModelButton,
   FlowSettingsButton,
   Droppable,
+  observer,
 } from '@nocobase/flow-engine';
-import { Space, InputNumber, Cascader } from 'antd';
+import { Space, InputNumber } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel, BlockSceneEnum, openViewFlow } from '@nocobase/client';
-import { useField, observer } from '@formily/react';
+import { CollectionBlockModel, BlockSceneEnum, openViewFlow } from '@nocobase/client-v2';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MapBlockComponent } from './MapBlockComponent';
-import { NAMESPACE } from '../locale';
+import { tExpr } from '../locale';
 
 const findNestedOption = (value: string[] | string, options = []) => {
   if (typeof value === 'string') {
@@ -35,11 +34,41 @@ const findNestedOption = (value: string[] | string, options = []) => {
   }, options);
 };
 
-const MapFieldCascader = observer((props: any) => {
-  const field: any = useField();
-  const options = props?.options ?? props?.dataSource ?? field?.dataSource ?? [];
-  return <Cascader {...props} options={options} />;
-});
+export const MAP_GEOMETRY_FIELD_TYPES = ['point', 'lineString', 'polygon', 'circle'];
+
+export const normalizeMapFieldPath = (mapField?: string[] | string) => {
+  if (!mapField) {
+    return [];
+  }
+  return (Array.isArray(mapField) ? mapField : [mapField]).filter((v) => v !== undefined && v !== null && v !== '');
+};
+
+export const applyMapBlockFieldParams = (model: { setProps: (key: string, value: any) => void }, params: any) => {
+  const mapField = normalizeMapFieldPath(params?.mapField);
+  if (!mapField.length) {
+    return;
+  }
+  model.setProps('mapField', mapField);
+  model.setProps('marker', params?.marker);
+};
+
+export const getMapBlockRuntimeProps = (model: MapBlockModel) => {
+  const mapField = normalizeMapFieldPath(model.props.mapField);
+  const marker = model.props.marker;
+  const mapFieldCollectionField =
+    mapField.length > 1 ? model.collection.getFieldByPath(mapField.join('.')) : model.collection.getField(mapField[0]);
+  const markerFieldCollectionField = marker ? model.collection.getField(marker) : undefined;
+  const associationCollectionField = mapField.length > 1 ? model.collection.getFieldByPath(mapField[0]) : undefined;
+
+  return {
+    mapField,
+    marker,
+    mapFieldCollectionField,
+    markerFieldCollectionField,
+    associationCollectionField,
+  };
+};
+
 export class MapBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.many;
   selectedRecordKeys = [];
@@ -260,12 +289,13 @@ const MapBlockContent = observer(
         <div className="nb-map-content" style={mapStyle}>
           <MapBlockComponent
             {...model.props}
+            {...getMapBlockRuntimeProps(model)}
             fields={model.collection.getFields()}
             name={model.collection.name}
             primaryKey={model.collection.filterTargetKey}
             setSelectedRecordKeys={model.setSelectedRecordKeys.bind(model)}
             dataSource={model.resource.getData()}
-            height={mapHeight ? mapHeight - 5 : null}
+            height={mapHeight ? mapHeight - 5 : undefined}
           />
         </div>
       </div>
@@ -416,10 +446,10 @@ const getCollectionFieldsOptions = (
 };
 MapBlockModel.registerFlow({
   key: 'createMapBlock',
-  title: tExpr('Map block settings', { ns: NAMESPACE }),
+  title: tExpr('Map block settings'),
   steps: {
     init: {
-      title: tExpr('Map Field & Marker field', { ns: NAMESPACE }),
+      title: tExpr('Map Field & Marker field'),
       preset: true,
       uiSchema: (ctx) => {
         const t = ctx.t;
@@ -430,9 +460,15 @@ MapBlockModel.registerFlow({
         let optionsLoaded = false;
         let optionsLoading = false;
         const getMapFieldOptions = () =>
-          getCollectionFieldsOptions(ctx.collection.name, collectionManager, ['point', 'lineString', 'polygon'], null, {
-            association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
-          }) || [];
+          getCollectionFieldsOptions(
+            ctx.collection.name,
+            collectionManager,
+            MAP_GEOMETRY_FIELD_TYPES,
+            MAP_GEOMETRY_FIELD_TYPES,
+            {
+              association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
+            },
+          ) || [];
         const getMarkerFieldOptions = () =>
           getCollectionFieldsOptions(ctx.collection.name, collectionManager, 'string', null, {
             dataSource: dataSourceKey,
@@ -491,10 +527,10 @@ MapBlockModel.registerFlow({
         };
         return {
           mapField: {
-            title: t('Map field', { ns: NAMESPACE }),
+            title: t('Map field'),
             required: true,
             enum: [],
-            'x-component': MapFieldCascader,
+            'x-component': 'Cascader',
             'x-component-props': {
               style: { width: '100%' },
             },
@@ -509,7 +545,7 @@ MapBlockModel.registerFlow({
             },
           },
           marker: {
-            title: t('Marker field', { ns: NAMESPACE }),
+            title: t('Marker field'),
             enum: [],
             'x-component': 'Select',
             'x-decorator': 'FormItem',
@@ -530,21 +566,7 @@ MapBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        if (params.mapField) {
-          let collectionField;
-          let associationCollectionField;
-          if (params.mapField.length > 1) {
-            collectionField = ctx.collection.getFieldByPath(params.mapField.join('.'));
-            associationCollectionField = ctx.collection.getFieldByPath(params.mapField[0]);
-          } else {
-            collectionField = ctx.collection.getField(params.mapField[0]);
-          }
-          ctx.model.setProps('mapField', params.mapField);
-          ctx.model.setProps('marker', params.marker);
-          ctx.model.setProps('mapFieldCollectionField', collectionField);
-          ctx.model.setProps('markerFieldCollectionField', ctx.collection.getField(params.marker));
-          ctx.model.setProps('associationCollectionField', associationCollectionField);
-        }
+        applyMapBlockFieldParams(ctx.model, params);
       },
     },
     addAppends: {
@@ -552,9 +574,9 @@ MapBlockModel.registerFlow({
         ctx.resource.setRequestParameters({
           paginate: false,
         });
-        const { associationCollectionField } = ctx.model.props;
-        if (associationCollectionField) {
-          ctx.resource.addAppends(associationCollectionField.name);
+        const mapField = normalizeMapFieldPath(ctx.model.props.mapField);
+        if (mapField.length > 1) {
+          ctx.resource.addAppends(mapField[0]);
         }
       },
     },
@@ -564,7 +586,7 @@ MapBlockModel.registerFlow({
     },
     lineSort: {
       use: 'sortingRule',
-      title: tExpr('Concatenation order field', { ns: NAMESPACE }),
+      title: tExpr('Concatenation order field'),
       async handler(ctx, params) {
         const sortArr = params.sort.map((item) => {
           return item.direction === 'desc' ? `-${item.field}` : item.field;
@@ -580,7 +602,7 @@ MapBlockModel.registerFlow({
       },
     },
     mapZoom: {
-      title: tExpr('The default zoom level of the map', { ns: NAMESPACE }),
+      title: tExpr('The default zoom level of the map'),
       uiSchema(ctx) {
         const t = ctx.t;
         return {
@@ -609,7 +631,7 @@ MapBlockModel.registerFlow({
 MapBlockModel.registerFlow(openViewFlow);
 
 MapBlockModel.define({
-  label: tExpr('Map', { ns: NAMESPACE }),
+  label: tExpr('Map'),
   group: tExpr('Content'),
   searchable: true,
   searchPlaceholder: tExpr('Search'),

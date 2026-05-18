@@ -7,8 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AMap';
-export * from './Configuration';
-export * from './GoogleMaps';
-export * from './Map';
-export * from './MapComponent';
+export type MapEditorType = 'point' | 'polygon' | 'lineString' | 'circle';

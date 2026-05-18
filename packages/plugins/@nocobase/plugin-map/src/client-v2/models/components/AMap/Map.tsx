@@ -10,15 +10,15 @@
 import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
-import { css, useApp } from '@nocobase/client';
-import { useFlowEngine, useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useMapConfig } from '../../../hooks';
-import { useMapTranslation } from '../../../locale';
-import { MapEditorType } from '../../../types';
-import { normalizeErrorMessage, runIdleTask } from '../../../utils';
+import { useT } from '../../../locale';
+import { MapEditorType } from '../../../../shared/types';
+import { normalizeErrorMessage, runIdleTask } from '../../../../shared/utils';
+import { mapActiveColor } from '../../../../shared/theme';
 import { Search } from './Search';
 export interface AMapComponentProps {
   value?: any;
@@ -103,7 +103,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     height,
     type,
   } = props;
-  const { t } = useMapTranslation();
+  const t = useT();
   const aMap = useRef<any>();
   const map = useRef<AMap.Map>();
   const mouseTool = useRef<any>();
@@ -114,24 +114,24 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
-  const { navigate } = useFlowEngine().context.router;
+  const { navigate } = ctx.router;
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
-    strokeColor: '#4e9bff',
-    fillColor: '#4e9bff',
+    strokeColor: mapActiveColor,
+    fillColor: mapActiveColor,
     strokeOpacity: 1,
     ...overlayCommonOptions,
   });
 
   useEffect(() => {
-    if (map.current) {
+    if (map.current && !block) {
       setTimeout(() => {
         map.current?.setZoom(zoom);
       }, 500);
     }
-  }, [zoom, map.current]);
+  }, [zoom, map.current, block]);
 
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
@@ -428,8 +428,6 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     errMessage,
   }));
 
-  const app = useApp();
-
   if (!accessKey || errMessage) {
     return (
       <Alert
@@ -437,8 +435,8 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
           <Button
             type="primary"
             onClick={() => {
-              ctx.view.close();
-              navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map');
+              ctx.view?.close?.();
+              navigate('/admin/settings/map');
             }}
           >
             {t('Go to the configuration page')}
@@ -452,22 +450,22 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
 
   return (
     <div
-      className={css`
-        position: relative;
-        height: ${height || 500}px !important;
-      `}
+      style={{
+        position: 'relative',
+        height: height || 500,
+        ...props?.style,
+      }}
       id={id.current}
-      style={props?.style}
     >
       {!aMap.current && (
         <div
-          className={css`
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          `}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Spin />
         </div>
@@ -476,12 +474,12 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         <>
           <Search toCenter={toCenter} aMap={aMap.current} />
           <div
-            className={css`
-              position: absolute;
-              bottom: 80px;
-              right: 20px;
-              z-index: 10;
-            `}
+            style={{
+              position: 'absolute',
+              bottom: 80,
+              right: 20,
+              zIndex: 10,
+            }}
           >
             <Button
               onClick={onFocusOverlay}
@@ -494,13 +492,13 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
           </div>
           {type !== 'point' ? (
             <div
-              className={css`
-                position: absolute;
-                bottom: 20px;
-                left: 10px;
-                z-index: 2;
-                pointer-events: none;
-              `}
+              style={{
+                position: 'absolute',
+                bottom: 20,
+                left: 10,
+                zIndex: 2,
+                pointerEvents: 'none',
+              }}
             >
               <Alert
                 message={t('Click to select the starting point and double-click to end the drawing')}
@@ -510,12 +508,12 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
           ) : null}
 
           <div
-            className={css`
-              position: absolute;
-              bottom: 20px;
-              right: 20px;
-              z-index: 2;
-            `}
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              right: 20,
+              zIndex: 2,
+            }}
           >
             <Button
               disabled={!value}
