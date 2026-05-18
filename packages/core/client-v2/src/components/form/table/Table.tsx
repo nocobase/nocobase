@@ -25,6 +25,21 @@ import { readRowKey, snapshotSourceRow, type RowKey, type RowSnapshot } from './
 type RowSelectionRenderCellResult<RecordType> = React.ReactNode | RenderedCell<RecordType>;
 
 /**
+ * Default initial page size for `Table`. Exposed so consumers can seed their
+ * controlled `pageSize` state with the same value the component would use if
+ * they relied purely on the built-in pagination defaults.
+ */
+export const DEFAULT_PAGE_SIZE = 50;
+
+/**
+ * Default `pageSizeOptions` injected into the pagination config. Matches the
+ * v1 settings-page table so users see the same choices across versions.
+ * Consumers can override by passing their own `pageSizeOptions` in
+ * `pagination`.
+ */
+export const PAGE_SIZE_OPTIONS: readonly number[] = [5, 10, 20, 50, 100, 200];
+
+/**
  * antd's `rowSelection.renderCell` can return either a `ReactNode` or a
  * `RenderedCell` (the `{ children, props }` shape used to drive colSpan /
  * rowSpan). `SelectionCell` only paints inside an existing selection cell —
@@ -105,8 +120,25 @@ export function Table<RecordType extends object = any>(props: TableProps<RecordT
     dataSource,
     rowSelection,
     className,
+    pagination,
     ...rest
   } = props;
+
+  // Apply opinionated pagination defaults (showSizeChanger + a v1-aligned set
+  // of pageSizeOptions). `pagination === false` is preserved verbatim so
+  // callers can still disable pagination outright; for any other value (object
+  // or undefined) we spread caller-provided keys last so explicit overrides
+  // win.
+  const mergedPagination = useMemo<AntdTableProps<RecordType>['pagination']>(() => {
+    if (pagination === false) {
+      return false;
+    }
+    return {
+      showSizeChanger: true,
+      pageSizeOptions: [...PAGE_SIZE_OPTIONS],
+      ...(pagination ?? {}),
+    };
+  }, [pagination]);
 
   const showHandleInSelection = isDraggable && showSortHandle && !!rowSelection;
   const showStandaloneHandleColumn = isDraggable && showSortHandle && !rowSelection;
@@ -214,6 +246,7 @@ export function Table<RecordType extends object = any>(props: TableProps<RecordT
       components={tableComponents}
       rowSelection={augmentedRowSelection}
       className={tableClassName}
+      pagination={mergedPagination}
     />
   );
 
