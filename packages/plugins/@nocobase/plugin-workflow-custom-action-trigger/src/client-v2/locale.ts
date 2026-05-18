@@ -9,14 +9,13 @@
 
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
 
-export const NAMESPACE = 'block-workbench';
+export const NAMESPACE = '@nocobase/plugin-workflow-custom-action-trigger';
 
-export function tExpr(key: string) {
-  return _tExpr(key, { ns: [NAMESPACE, 'client'] });
+export function tExpr(key: string, options?: Record<string, any>) {
+  return _tExpr(key, { ns: NAMESPACE, ...options });
 }
 
 export function useT() {
   const flowEngine = useFlowEngine();
-  return (key: string, options?: Record<string, any>) =>
-    flowEngine.context.t(key, { ns: [NAMESPACE, 'client'], ...options });
+  return (key: string, options?: Record<string, any>) => flowEngine.context.t(key, { ns: NAMESPACE, ...options });
 }

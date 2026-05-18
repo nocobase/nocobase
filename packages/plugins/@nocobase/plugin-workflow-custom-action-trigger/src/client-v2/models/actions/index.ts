@@ -7,10 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionPanelBlockModel } from './ActionPanelBlockModel';
-import * as actions from './actions';
-
-export default {
-  ActionPanelBlockModel,
-  ...actions,
-};
+export * from './TriggerWorkflowActionModels';

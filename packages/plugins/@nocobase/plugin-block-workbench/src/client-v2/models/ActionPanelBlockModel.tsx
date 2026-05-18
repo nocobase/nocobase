@@ -15,7 +15,6 @@ import {
   FlowModelRenderer,
   DndProvider,
 } from '@nocobase/flow-engine';
-import { LockOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Space, Avatar, Button, Tooltip, ConfigProvider } from 'antd';
 import { Grid, List } from 'antd-mobile';
@@ -71,6 +70,57 @@ export class ActionPanelBlockModel extends BlockModel {
 
     const token = this.context.themeToken;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const gridIconSize = token.controlHeightLG;
+    const buttonResetClass = css`
+      &.ant-btn {
+        height: auto;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        background: none;
+        color: ${token.colorText};
+      }
+      &.ant-btn > span {
+        display: block;
+        width: 100%;
+      }
+      .ant-btn-icon {
+        display: none;
+      }
+    `;
+    const gridContentClass = css`
+      width: ${token.controlHeightLG * 2}px;
+      text-align: center;
+    `;
+    const gridTitleClass = css`
+      margin-top: ${token.marginSM}px;
+      min-height: ${token.fontSize * token.lineHeight}px;
+    `;
+    const textEllipsisClass = css`
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    `;
+    const textWrapClass = css`
+      white-space: normal;
+      word-break: break-word;
+    `;
+    const hiddenClass = css`
+      opacity: ${token.opacityLoading};
+    `;
+    const listActionClass = css`
+      .ant-btn {
+        display: block;
+        width: 100%;
+        text-align: justify;
+      }
+      .adm-list-item-content-main {
+        overflow: hidden;
+      }
+    `;
+    const configActionsClass = css`
+      margin-top: ${token.marginXS}px;
+    `;
 
     return (
       <div id={`model-${this.uid}`} className="action-panel-block">
@@ -83,77 +133,43 @@ export class ActionPanelBlockModel extends BlockModel {
                     if (action.hidden && !isConfigMode) {
                       return;
                     }
-                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
-
-                    action.enableEditDanger = false;
-                    action.enableEditType = false;
-                    action.renderHiddenInConfig = () => {
-                      return (
-                        <Tooltip
-                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
-                        >
-                          <Button onClick={action.onClick.bind(action)}>
-                            <div style={{ width: '5em', opacity: '0.3' }}>
-                              <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
-                              <div
-                                style={
-                                  ellipsis
-                                    ? {
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                      }
-                                    : {
-                                        whiteSpace: 'normal',
-                                        wordBreak: 'break-word',
-                                      }
-                                }
-                              >
-                                {title}
-                              </div>
-                            </div>
-                          </Button>
-                        </Tooltip>
-                      );
-                    };
-                    action.props.children = (
-                      <div style={{ width: '5em' }}>
-                        <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
-                        <div
-                          style={
-                            ellipsis
-                              ? {
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }
-                              : {
-                                  whiteSpace: 'normal',
-                                  wordBreak: 'break-word',
-                                }
-                          }
-                        >
+                    const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
+                    const avatarClass = css`
+                      background-color: ${color};
+                    `;
+                    const renderActionContent = (compact = false) => (
+                      <div className={`${gridContentClass} ${compact ? hiddenClass : ''}`}>
+                        <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
+                        <div className={`${gridTitleClass} ${ellipsis ? textEllipsisClass : textWrapClass}`}>
                           {title}
                         </div>
                       </div>
                     );
 
+                    action.enableEditDanger = false;
+                    action.enableEditType = false;
+                    action.renderButton = () => {
+                      return (
+                        <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                          {renderActionContent()}
+                        </Button>
+                      );
+                    };
+                    action.renderHiddenInConfig = () => {
+                      return (
+                        <Tooltip
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                        >
+                          <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                            {renderActionContent(true)}
+                          </Button>
+                        </Tooltip>
+                      );
+                    };
+
                     return (
                       <Droppable model={action} key={action.uid}>
-                        <div
-                          className={css`
-                            padding: 10px 0px;
-                            margin-bottom: 15px;
-                            .ant-btn {
-                              background: none;
-                              border: none !important;
-                              box-shadow: none;
-                              .ant-btn-icon {
-                                display: none;
-                              }
-                            }
-                          `}
-                        >
+                        <div>
                           <FlowModelRenderer
                             model={action}
                             showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
@@ -183,87 +199,52 @@ export class ActionPanelBlockModel extends BlockModel {
                   }
                 >
                   {this.mapSubModels('actions', (action: ActionModel) => {
-                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
-                    action.enableEditDanger = false;
-                    action.enableEditType = false;
-                    action.renderHiddenInConfig = () => {
-                      return (
-                        <Tooltip
-                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
-                        >
-                          <Button style={{ opacity: '0.3' }} onClick={action.onClick.bind(action)}>
-                            <List.Item
-                              prefix={
-                                (
-                                  <Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />
-                                ) as any
-                              }
-                            >
-                              <div
-                                style={
-                                  ellipsis
-                                    ? {
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                      }
-                                    : {
-                                        whiteSpace: 'normal',
-                                        wordBreak: 'break-word',
-                                      }
-                                }
-                              >
-                                {title}
-                              </div>
-                            </List.Item>
-                          </Button>
-                        </Tooltip>
-                      );
-                    };
-                    action.props.children = (
+                    if (action.hidden && !isConfigMode) {
+                      return;
+                    }
+                    const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
+                    const avatarClass = css`
+                      background-color: ${color};
+                    `;
+                    const renderActionContent = (compact = false) => (
                       <List.Item
-                        prefix={
-                          (<Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />) as any
-                        }
+                        prefix={(<Avatar className={avatarClass} icon={<Icon type={icon as any} />} />) as any}
                       >
                         <div
-                          style={
-                            ellipsis
-                              ? {
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  minHeight: '21px',
-                                }
-                              : {
-                                  whiteSpace: 'normal',
-                                  wordBreak: 'break-word',
-                                  minHeight: '21px',
-                                }
-                          }
+                          className={`${compact ? hiddenClass : ''} ${ellipsis ? textEllipsisClass : textWrapClass}`}
                         >
                           {title}
                         </div>
                       </List.Item>
                     );
+
+                    action.enableEditDanger = false;
+                    action.enableEditType = false;
+                    action.renderButton = () => {
+                      return (
+                        <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                          {renderActionContent()}
+                        </Button>
+                      );
+                    };
+                    action.renderHiddenInConfig = () => {
+                      return (
+                        <Tooltip
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                        >
+                          <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                            {renderActionContent(true)}
+                          </Button>
+                        </Tooltip>
+                      );
+                    };
                     return (
                       <Droppable model={action} key={action.uid}>
                         <div
                           className={css`
-                            .ant-btn {
-                              box-shadow: none;
-                              border: none;
-                              background: none;
-                              display: block;
-                              width: 100%;
-                              text-align: justify;
-                              height: 100%;
-                              .ant-btn-icon {
-                                display: ${action.hidden ? 'block' : ' none'};
-                              }
-                            }
-                            .adm-list-item-content-main {
-                              overflow: hidden;
+                            ${listActionClass}
+                            .ant-btn-icon {
+                              display: ${action.hidden ? 'block' : ' none'};
                             }
                           `}
                         >
@@ -287,7 +268,7 @@ export class ActionPanelBlockModel extends BlockModel {
             </div>
           </DndProvider>
         </ConfigProvider>
-        {this.context.flowSettingsEnabled && <div style={{ marginTop: '10px' }}>{this.renderConfigureActions()}</div>}
+        {this.context.flowSettingsEnabled && <div className={configActionsClass}>{this.renderConfigureActions()}</div>}
       </div>
     );
   }
@@ -295,6 +276,8 @@ export class ActionPanelBlockModel extends BlockModel {
 
 ActionPanelBlockModel.define({
   label: tExpr('Action panel'),
+  children: false,
+  sort: 350,
   createModelOptions: {
     use: 'ActionPanelBlockModel',
   },
