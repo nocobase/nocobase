@@ -212,27 +212,33 @@ BulkUpdateActionModel.registerFlow({
           ctx.model.setProps({
             loading: true,
           });
-          await ctx.api
-            .resource(collection, null, {
-              'x-data-source': ctx.collection?.dataSourceKey,
-            })
-            .update({ filter, values: assignedValues });
-          ctx.model.setProps({
-            loading: false,
-          });
+          try {
+            await ctx.api
+              .resource(collection, null, {
+                'x-data-source': ctx.collection?.dataSourceKey,
+              })
+              .update({ filter, values: assignedValues });
+          } finally {
+            ctx.model.setProps({
+              loading: false,
+            });
+          }
         } else {
           // 整表（无筛选条件时需要 forceUpdate 通过校验）
           ctx.model.setProps({
             loading: true,
           });
-          await ctx.api
-            .resource(collection, null, {
-              'x-data-source': ctx.collection?.dataSourceKey,
-            })
-            .update({ values: assignedValues, forceUpdate: true });
-          ctx.model.setProps({
-            loading: false,
-          });
+          try {
+            await ctx.api
+              .resource(collection, null, {
+                'x-data-source': ctx.collection?.dataSourceKey,
+              })
+              .update({ values: assignedValues, forceUpdate: true });
+          } finally {
+            ctx.model.setProps({
+              loading: false,
+            });
+          }
         }
 
         ctx.blockModel?.resource?.refresh?.();
