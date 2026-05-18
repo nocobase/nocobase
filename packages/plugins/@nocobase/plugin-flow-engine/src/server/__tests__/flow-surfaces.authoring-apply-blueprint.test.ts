@@ -1895,6 +1895,71 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(persistedTable?.stepParams?.tableSettings?.dragSortBy?.dragSortBy).toBe('sort');
   });
 
+  it('should auto-complete the tree table title click popup with a default details block', async () => {
+    const unique = `${Date.now()}_${_.uniqueId()}`;
+    const collectionName = `authoring_tree_title_popup_${unique}`;
+    const applyCollectionRes = await rootAgent.resource('collections').apply({
+      values: {
+        name: collectionName,
+        title: 'Authoring tree title popup',
+        template: 'tree',
+        fields: [
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    expect(applyCollectionRes.status, readErrorMessage(applyCollectionRes)).toBe(200);
+    await waitForFixtureCollectionsReady(context.db, {
+      [collectionName]: ['title', 'code', 'parentId'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Authoring tree title popup ${unique}`,
+          },
+        },
+        page: {
+          title: 'Authoring tree title popup',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'treeTitlePopupTable',
+                type: 'table',
+                collection: collectionName,
+                fields: ['title'],
+                settings: {
+                  treeTable: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const titleField = collectDescendantNodes(
+      persistedTable,
+      (item) => item?.use === 'DisplayTextFieldModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'title',
+    )[0];
+    expect(titleField?.props?.clickToOpen).toBe(true);
+
+    const popupSurface = await readPopupSurfaceForHost(rootAgent, flowRepo, titleField);
+    const detailsBlock = collectDescendantNodes(popupSurface, (item) => item?.use === 'DetailsBlockModel')[0];
+    expect(detailsBlock?.uid).toBeTruthy();
+    expect(readDetailsFieldPaths(detailsBlock)).toEqual(expect.arrayContaining(['title']));
+  });
+
   it('should preserve explicit tree table field priority without injecting title or name', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -2687,6 +2752,61 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(nicknamePopupField?.popup?.template?.uid || persistedField?.popup?.template?.uid).toBeTruthy();
   });
 
+  it('should auto-complete default click popups for ordinary display fields', async () => {
+    const unique = `${Date.now()}_${_.uniqueId()}`;
+    const collection = `authoring_plain_field_popup_${unique}`;
+    await createAuthoringPopupReuseCollection(rootAgent, context.db, collection);
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Authoring plain field popup ${unique}`,
+          },
+        },
+        page: {
+          title: 'Authoring plain field popup',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'plainFieldDetails',
+                type: 'details',
+                collection,
+                fields: [
+                  {
+                    field: 'name',
+                    popup: {
+                      tryTemplate: true,
+                      defaultType: 'view',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const nameField = collectDescendantNodes(
+      data.surface.tree,
+      (item) => item?.use === 'DisplayTextFieldModel' && item?.stepParams?.fieldSettings?.init?.fieldPath === 'name',
+    )[0];
+    const persistedNameField = await flowRepo.findModelById(nameField.uid, { includeAsyncNode: true });
+    expect(persistedNameField?.props?.clickToOpen).toBe(true);
+
+    const popupSurface = await readPopupSurfaceForHost(rootAgent, flowRepo, persistedNameField);
+    const detailsBlock = collectDescendantNodes(popupSurface, (item) => item?.use === 'DetailsBlockModel')[0];
+    expect(detailsBlock?.uid).toBeTruthy();
+    expect(readDetailsFieldPaths(detailsBlock)).toEqual(expect.arrayContaining(['name']));
+  });
+
   it('should auto-generate fieldGroups for raw createForm blocks from live metadata', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -3152,6 +3272,23 @@ async function readPopupTemplateSurface(rootAgent: any, flowRepo: any, templateU
   );
   expect(template?.targetUid).toBeTruthy();
   return flowRepo.findModelById(template.targetUid, { includeAsyncNode: true });
+}
+
+async function readPopupSurfaceForHost(rootAgent: any, flowRepo: any, hostNode: any) {
+  const persistedHost = hostNode?.uid
+    ? await flowRepo.findModelById(hostNode.uid, { includeAsyncNode: true })
+    : hostNode;
+  const templateUid = readPopupTemplateUid(persistedHost) || readPopupTemplateUid(hostNode);
+  if (templateUid) {
+    return readPopupTemplateSurface(rootAgent, flowRepo, templateUid);
+  }
+  return persistedHost;
+}
+
+function readDetailsFieldPaths(detailsBlock: any) {
+  return _.castArray(detailsBlock?.subModels?.grid?.subModels?.items || [])
+    .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath)
+    .filter(Boolean);
 }
 
 async function createAuthoringPopupReuseCollection(rootAgent: any, db: any, name: string) {

@@ -2184,6 +2184,41 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       'switch-to-resource-api',
     );
 
+    const runjsResourceEndpointErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.runjs('resource:list', { resource: 'tasks' });",
+      path: '$.runjsResourceEndpoint.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(runjsResourceEndpointErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-api-required',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: 'ctx.runjs',
+            endpoint: 'resource:list',
+          }),
+        }),
+      ]),
+    );
+
+    const optionalRunjsCollectionEndpointErrors = inspectRunJsAuthoringCode({
+      code: 'ctx.render(null);\nawait ctx?.runjs?.(`${collectionName}:list`, { pageSize: 20 });',
+      path: '$.optionalRunjsCollectionEndpoint.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(optionalRunjsCollectionEndpointErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "ctx.render(null);\nawait ctx.runjs('return 1;');",
+        path: '$.ordinaryNestedRunjs.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
     const templateLiteralErrors = inspectRunJsAuthoringCode({
       code: 'ctx.render(`${ctx.openView({})}`);',
       path: '$.templateInterpolation.code',
@@ -2200,6 +2235,76 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         modelUse: 'JSBlockModel',
       }),
     ).toEqual([]);
+  });
+
+  it('should reject ctx.runjs resource endpoints on applyBlueprint and configure writes', async () => {
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid ctx.runjs resource page',
+        },
+      },
+      assets: {
+        scripts: {
+          kpiPanel: {
+            code: "ctx.render(null);\nawait ctx.runjs('resource:list', { resource: 'ai_products' });",
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpiPanel',
+              type: 'jsBlock',
+              script: 'kpiPanel',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-resource-api-required',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: 'ctx.runjs',
+            endpoint: 'resource:list',
+          }),
+        }),
+      ]),
+    );
+
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'js-block-target' },
+        changes: {
+          code: "ctx.render(null);\nawait ctx.runjs('collection:list', { collection: 'ai_products' });",
+          version: 'v2',
+        },
+      },
+      {
+        currentNode: { use: 'JSBlockModel' },
+      },
+    );
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.code',
+          ruleId: 'runjs-resource-api-required',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: 'ctx.runjs',
+            endpoint: 'collection:list',
+          }),
+        }),
+      ]),
+    );
   });
 
   it('should persist canonical localized jsBlock settings without falling back to default code', async () => {

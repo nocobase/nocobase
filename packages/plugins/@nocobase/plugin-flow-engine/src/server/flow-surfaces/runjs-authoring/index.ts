@@ -820,6 +820,27 @@ function collectResourceApiErrors(
   surface: string,
   errors: FlowSurfaceErrorItemInput[],
 ) {
+  scan.ctxRunjsCalls.forEach((entry) => {
+    const endpoint = getResourceLikeCtxRunjsEntrypoint(source, scan.masked, entry.index);
+    if (!endpoint) {
+      return;
+    }
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'switch-to-resource-api',
+        message: `flowSurfaces authoring ${path} must use resource APIs for collection access; ctx.runjs(...) executes JavaScript strings, not resource endpoints`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: 'ctx.runjs',
+          endpoint,
+        },
+      }),
+    );
+  });
   scan.ctxRequestCalls.forEach((entry) => {
     if (!isResourceLikeCtxRequest(source, scan.masked, entry.index)) {
       return;
@@ -1036,6 +1057,7 @@ function scanJavaScriptSource(source: string) {
   const topLevelReturns = findMatches(masked, /\breturn\b/g).filter(
     (entry) => !isInsideRanges(entry.index, functionRanges),
   );
+  const ctxRunjsCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*runjs\s*(?:\?\.)?\(/g);
   const ctxRequestCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*(?:api\s*(?:\?\.|\.)\s*)?request\s*(?:\?\.)?\(/g);
   const directDomWrites = collectDirectDomWrites(source, masked, sourceBindings);
   const directDomAliases = collectDirectDomAliases(masked, sourceBindings);
@@ -1052,6 +1074,7 @@ function scanJavaScriptSource(source: string) {
     ctxRenderCalls,
     topLevelCtxRenderCalls,
     topLevelReturns,
+    ctxRunjsCalls,
     ctxRequestCalls,
     directDomWrites,
     directDomAliases,
@@ -2501,6 +2524,57 @@ function isResourceLikeCtxRequest(source: string, masked: string, index: number)
     return false;
   }
   return /\b(?:resource|collectionName|collection)\s*:/i.test(args);
+}
+
+function getResourceLikeCtxRunjsEntrypoint(source: string, masked: string, index: number) {
+  const args = getCallArgumentSource(source, masked, index);
+  if (!args) {
+    return '';
+  }
+  const firstArg = readLeadingStringLiteral(args);
+  if (!firstArg) {
+    return '';
+  }
+  const endpoint = firstArg.value.trim();
+  return isResourceLikeRunjsEntrypoint(endpoint) ? endpoint : '';
+}
+
+function readLeadingStringLiteral(value: string) {
+  let index = 0;
+  while (index < value.length && /\s/.test(value[index])) {
+    index += 1;
+  }
+  const quote = value[index];
+  if (quote !== '"' && quote !== "'" && quote !== '`') {
+    return undefined;
+  }
+  let cursor = index + 1;
+  let output = '';
+  while (cursor < value.length) {
+    const char = value[cursor];
+    if (char === '\\') {
+      output += value.slice(cursor, Math.min(value.length, cursor + 2));
+      cursor += 2;
+      continue;
+    }
+    if (char === quote) {
+      return {
+        value: output,
+        end: cursor + 1,
+      };
+    }
+    output += char;
+    cursor += 1;
+  }
+  return undefined;
+}
+
+function isResourceLikeRunjsEntrypoint(value: string) {
+  const trimmed = value.trim();
+  return (
+    /^[A-Za-z_$][\w$.-]*:(?:list|get|create|update|destroy)(?:\b|[/?#])/i.test(trimmed) ||
+    /\$\{[^}]+\}\s*:(?:list|get|create|update|destroy)(?:\b|[/?#])/i.test(trimmed)
+  );
 }
 
 function getCallArgumentSource(source: string, masked: string, index: number) {

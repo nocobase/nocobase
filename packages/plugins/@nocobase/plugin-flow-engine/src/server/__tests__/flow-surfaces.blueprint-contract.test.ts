@@ -1315,6 +1315,60 @@ describe('flowSurfaces applyBlueprint contract', () => {
     }
   });
 
+  it('should accept legacy wrapped dataScope filters in applyBlueprint block settings', async () => {
+    const filterGroup = {
+      logic: '$and',
+      items: [
+        {
+          path: 'status',
+          operator: '$eq',
+          value: 'active',
+        },
+      ],
+    };
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Legacy dataScope blueprint',
+          },
+        },
+        page: {
+          title: 'Legacy dataScope blueprint',
+        },
+        tabs: [
+          {
+            title: 'Employees',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  pageSize: 20,
+                  dataScope: {
+                    filter: filterGroup,
+                  },
+                },
+                fields: ['nickname', 'status'],
+              },
+            ],
+            layout: {
+              rows: [[{ key: 'employeesTable', span: 24 }]],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = findDescendantNode(data.surface.tree, (item) => item?.use === 'TableBlockModel');
+    expect(tableBlock?.stepParams?.tableSettings?.dataScope?.filter).toEqual(filterGroup);
+  });
+
   it('should create flow-model tree blocks through applyBlueprint and reject unsupported tree containers', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

@@ -11628,10 +11628,10 @@ export class FlowSurfacesService {
       }
       let { fieldNode, wrapperNode } = await this.loadFieldHostNodes(fieldHostUid, options.transaction);
       this.assertInlinePopupSaveAsTemplateSource(actionName, popup);
-      if (popup.tryTemplate && !hasLocalPopupContent && !this.shouldAutoCompleteDefaultFieldPopup(fieldNode, popup)) {
+      const shouldAutoCompleteDefaultPopup = this.shouldAutoCompleteDefaultFieldPopup(fieldNode, popup, wrapperNode);
+      if (popup.tryTemplate && !hasLocalPopupContent && !shouldAutoCompleteDefaultPopup) {
         return;
       }
-      const shouldAutoCompleteDefaultPopup = this.shouldAutoCompleteDefaultFieldPopup(fieldNode, popup);
       Object.assign(result, await this.ensureLocalFieldPopupSurface(actionName, fieldHostUid, options, { popup }));
       if (shouldAutoCompleteDefaultPopup) {
         const reloaded = await this.loadFieldHostNodes(fieldHostUid, options.transaction);
@@ -11803,7 +11803,11 @@ export class FlowSurfacesService {
     return _.isPlainObject(popup) && Object.keys(popup).length === 0;
   }
 
-  private shouldAutoCompleteDefaultFieldPopup(fieldNode: any, popup: Record<string, any> | undefined) {
+  private shouldAutoCompleteDefaultFieldPopup(
+    fieldNode: any,
+    popup: Record<string, any> | undefined,
+    wrapperNode?: any,
+  ) {
     if (!_.isPlainObject(popup)) {
       return false;
     }
@@ -11817,8 +11821,8 @@ export class FlowSurfacesService {
     ) {
       return false;
     }
-    const fieldContext = this.resolveFieldOpenViewContext(fieldNode, null);
-    if (!String(fieldContext.associationName || '').trim()) {
+    const fieldContext = this.resolveFieldOpenViewContext(fieldNode, wrapperNode);
+    if (!String(fieldContext.collectionName || '').trim()) {
       return false;
     }
     return popup.tryTemplate === true || !_.isUndefined(popup.defaultType) || Object.keys(popup).length === 0;
@@ -13492,6 +13496,7 @@ export class FlowSurfacesService {
     const contract = getNodeContract(current.use);
     const nextPayload: Record<string, any> = { uid: current.uid };
     const shouldStripLegacyBlockHeader = _.has(normalizedValues, ['stepParams', 'cardSettings', 'titleDescription']);
+    this.normalizeLegacyDataScopeFilterWrapperForUpdateSettings(normalizedValues, contract);
 
     (['props', 'decoratorProps', 'stepParams', 'flowRegistry'] as FlowSurfaceNodeDomain[]).forEach((domain) => {
       if (typeof normalizedValues[domain] === 'undefined') {
@@ -13651,6 +13656,38 @@ export class FlowSurfacesService {
       uid: current.uid,
       updated: Object.keys(_.omit(nextPayload, ['uid'])),
     };
+  }
+
+  private normalizeLegacyDataScopeFilterWrapperForUpdateSettings(
+    normalizedValues: Record<string, any>,
+    contract: ReturnType<typeof getNodeContract>,
+  ) {
+    const stepParams = normalizedValues?.stepParams;
+    if (!_.isPlainObject(stepParams)) {
+      return;
+    }
+    const stepParamGroups = contract.domains.stepParams?.groups;
+    if (!stepParamGroups) {
+      return;
+    }
+    Object.entries(stepParamGroups).forEach(([groupKey, groupContract]) => {
+      if (!_.has(stepParams, [groupKey, 'dataScope', 'filter'])) {
+        return;
+      }
+      const schema = groupContract.pathSchemas?.['dataScope.filter'];
+      if (schema?.['x-flowSurfaceFormat'] !== 'filter-group') {
+        return;
+      }
+      const value = _.get(stepParams, [groupKey, 'dataScope', 'filter']);
+      if (!_.isPlainObject(value)) {
+        return;
+      }
+      const keys = Object.keys(value);
+      if (keys.length !== 1 || keys[0] !== 'filter') {
+        return;
+      }
+      _.set(stepParams, [groupKey, 'dataScope', 'filter'], _.cloneDeep(value.filter));
+    });
   }
 
   private syncCalendarPopupPropsForUpdateSettings(
@@ -19949,13 +19986,13 @@ export class FlowSurfacesService {
             defaultType: this.getRequestedPopupDefaultType(changes.openView) || 'view',
           });
       if (generatedPopup) {
-        const { fieldNode } = await this.loadFieldHostNodes(target.uid, options.transaction);
+        const { fieldNode, wrapperNode } = await this.loadFieldHostNodes(target.uid, options.transaction);
         const fieldOpenView = this.resolvePopupHostOpenView(fieldNode);
         if (
           !String(fieldOpenView?.popupTemplateUid || '').trim() &&
           !this.isExternalPopupOpenView(fieldOpenView, target.uid) &&
           !this.popupHostHasLocalContent(fieldNode) &&
-          this.shouldAutoCompleteDefaultFieldPopup(fieldNode, generatedPopup)
+          this.shouldAutoCompleteDefaultFieldPopup(fieldNode, generatedPopup, wrapperNode)
         ) {
           await this.applyInlineFieldPopup(options.openViewActionName || 'configure field', result, generatedPopup, {
             ...options,

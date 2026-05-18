@@ -10661,6 +10661,35 @@ describe('flowSurfaces resource', () => {
       items: [],
     });
 
+    const legacyConfigureFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'nickname',
+          operator: '$eq',
+          value: 'beta',
+        },
+      ],
+    };
+    const configureLegacyWrappedFilter = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: {
+            filter: legacyConfigureFilter,
+          },
+        },
+      },
+    });
+    expect(configureLegacyWrappedFilter.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual(legacyConfigureFilter);
+
     const directEmptyFilter = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -10684,6 +10713,39 @@ describe('flowSurfaces resource', () => {
       logic: '$and',
       items: [],
     });
+
+    const legacyUpdateSettingsFilter = {
+      logic: '$and',
+      items: [
+        {
+          path: 'nickname',
+          operator: '$eq',
+          value: 'gamma',
+        },
+      ],
+    };
+    const directLegacyWrappedFilter = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        stepParams: {
+          tableSettings: {
+            dataScope: {
+              filter: {
+                filter: legacyUpdateSettingsFilter,
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(directLegacyWrappedFilter.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual(legacyUpdateSettingsFilter);
 
     const applyEmptyFilter = await rootAgent.resource('flowSurfaces').apply({
       values: {

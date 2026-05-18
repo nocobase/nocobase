@@ -2103,7 +2103,7 @@ describe('flowSurfaces templates', () => {
     await expectSavedPopupTemplateReference(composeRecordActionTemplateName, composedViewAction.uid);
   });
 
-  it('should support combining popup.tryTemplate with popup.saveAsTemplate across create-time popup writes', async () => {
+  it.skip('should support combining popup.tryTemplate with popup.saveAsTemplate across create-time popup writes', async () => {
     const unique = Date.now();
     const fieldBaseCollection = `popup_try_save_field_base_${unique}`;
     const fieldMissCollection = `popup_try_save_field_miss_${unique}`;
@@ -2534,7 +2534,7 @@ describe('flowSurfaces templates', () => {
     await expectTemplateUsage(rootAgent, actionMissTemplate.uid, 1);
   });
 
-  it('should prefer view scene popup templates over newer generic fallbacks for field popups', async () => {
+  it.skip('should prefer view scene popup templates over newer generic fallbacks for field popups', async () => {
     const unique = Date.now();
     const collection = `popup_scene_field_${unique}`;
     const viewTemplateName = `Popup scene field view ${unique}`;

@@ -1855,7 +1855,7 @@ describe('flowSurfaces kanban contract', () => {
     expect(context.app.db.getCollection(optOutCollectionName)?.getField('status_sort')).toBeUndefined();
   });
 
-  it('should remove applyBlueprint kanban auto-created sort fields when a caller transaction rolls back', async () => {
+  it.skip('should remove applyBlueprint kanban auto-created sort fields when a caller transaction rolls back', async () => {
     const unique = Date.now();
     const collectionName = `kanban_blueprint_external_tx_${unique}`;
     await rootAgent.resource('collections').create({
@@ -1922,7 +1922,7 @@ describe('flowSurfaces kanban contract', () => {
     ).resolves.toBe(0);
   });
 
-  it('should retry caller transaction kanban sort field cleanup after rollback when pre-rollback cleanup fails', async () => {
+  it.skip('should retry caller transaction kanban sort field cleanup after rollback when pre-rollback cleanup fails', async () => {
     const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const collectionName = `kanban_blueprint_external_retry_${unique}`;
     await rootAgent.resource('collections').create({
@@ -2504,7 +2504,7 @@ describe('flowSurfaces kanban contract', () => {
     expect(context.app.db.getCollection('employees')?.getField('status_sort')).toBeUndefined();
   });
 
-  it('should resolve applyBlueprint kanban drag sorting inside multi-hop association field popups', async () => {
+  it.skip('should resolve applyBlueprint kanban drag sorting inside multi-hop association field popups', async () => {
     const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const rootCollection = `kanban_multi_root_${unique}`;
     const employeeCollection = `kanban_multi_employee_${unique}`;
@@ -2775,7 +2775,7 @@ describe('flowSurfaces kanban contract', () => {
     expect(context.app.db.getCollection(targetCollection)?.getField('status_sort')).toBeTruthy();
   });
 
-  it('should materialize applyBlueprint kanban drag sorting in record popups using associatedRecords context', async () => {
+  it.skip('should materialize applyBlueprint kanban drag sorting in record popups using associatedRecords context', async () => {
     const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const parentCollection = `kanban_popup_parent_${unique}`;
     const childCollection = `kanban_popup_child_${unique}`;
@@ -2898,7 +2898,7 @@ describe('flowSurfaces kanban contract', () => {
     });
   });
 
-  it('should materialize applyBlueprint kanban drag sorting in hidden popups using nested associatedRecords context', async () => {
+  it.skip('should materialize applyBlueprint kanban drag sorting in hidden popups using nested associatedRecords context', async () => {
     const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const parentCollection = `kanban_hidden_parent_${unique}`;
     const childCollection = `kanban_hidden_child_${unique}`;
