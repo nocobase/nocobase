@@ -16,7 +16,13 @@ export function useRedirect(next = '/admin') {
   const [searchParams] = useSearchParams();
 
   return useCallback(() => {
-    navigate(searchParams.get('redirect') || next, { replace: true });
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      // redirect 是根相对完整路径,与 v2 router basename 直接相加会重复前缀,因此整页跳转
+      window.location.replace(redirect);
+      return;
+    }
+    navigate(next, { replace: true });
   }, [navigate, next, searchParams]);
 }
 

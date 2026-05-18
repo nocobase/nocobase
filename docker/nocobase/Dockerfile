@@ -19,14 +19,30 @@ RUN chmod +x /usr/local/bin/cleanup-node-modules.sh \
 
 FROM node:22-bookworm-slim
 
+ARG NGINX_VERSION=1.30.1-1~bookworm
+
 ENV NOCOBASE_RUNNING_IN_DOCKER=true
 
 ENV NB_SKIP_STARTUP_UPDATE=1
 
 RUN set -eux; \
   apt-get update; \
-  apt-get install -y --no-install-recommends nginx libaio1; \
-  rm -rf /etc/nginx/sites-enabled/default /var/lib/apt/lists/*
+  apt-get install -y --no-install-recommends ca-certificates gnupg wget; \
+  wget -qO /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
+  gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
+  printf '%s\n' \
+    'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian bookworm nginx' \
+    > /etc/apt/sources.list.d/nginx.list; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends "nginx=${NGINX_VERSION}" libaio1; \
+  nginx -v; \
+  apt-get purge -y --auto-remove wget gnupg; \
+  rm -rf \
+    /etc/apt/sources.list.d/nginx.list \
+    /etc/nginx/sites-enabled/default \
+    /tmp/nginx_signing.key \
+    /usr/share/keyrings/nginx-archive-keyring.gpg \
+    /var/lib/apt/lists/*
 
 WORKDIR /app/nocobase
 

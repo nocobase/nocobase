@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { getV2EffectiveBasePath } from '../../../authRedirect';
 import type { BaseApplication } from '../../../BaseApplication';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 
@@ -106,7 +107,7 @@ function joinRootRelativePath(basePath: string, pathname: string) {
 }
 
 function getV2AdminPath(app: ResolveAdminRouteRuntimeTargetOptions['app'], schemaUid: string) {
-  return joinRootRelativePath(app.getPublicPath(), `/admin/${schemaUid}`);
+  return joinRootRelativePath(getV2EffectiveBasePath(app), `/admin/${schemaUid}`);
 }
 
 function appendLocationState(pathname: string, location?: LocationLike) {

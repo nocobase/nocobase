@@ -7,19 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  useFlowContext,
-  VariableHybridInput,
-  type MetaTreeNode,
-  type VariableHybridInputConverters,
-} from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
+import type { MetaTreeNode, VariableHybridInputConverters } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import React, { useMemo } from 'react';
+import { VariableInput } from './VariableInput';
 
 const ENV_EXPR_REGEXP = /\{\{\s*(\$env\.[^{}]+?)\s*\}\}/g;
 const ENV_SINGLE_EXPR_REGEXP = /^\{\{\s*(\$env\.[^{}]+?)\s*\}\}$/;
-const META_TREE_CACHE_KEY = '@nocobase/client-v2:EnvVariableInput:metaTree';
+const ENV_NAMESPACES = ['$env'];
 
 /**
  * Convert a stored value like `"{{ $env.foo.bar }}"` back into the
@@ -43,37 +38,6 @@ export function formatEnvPath(meta?: MetaTreeNode) {
   return `{{ ${paths.join('.')} }}`;
 }
 
-/**
- * Pull the `$env` sub-tree off the FlowContext meta registry and eagerly
- * resolve lazy `children` thunks so the picker can render labels on first
- * paint. Empty tree (no env-variables plugin or no defined vars) yields `[]`.
- */
-function useEnvMetaTree(): MetaTreeNode[] {
-  const ctx = useFlowContext();
-  const { data } = useRequest<MetaTreeNode[], []>(
-    async () => {
-      const tree = ctx.getPropertyMetaTree().filter((node) => node.name === '$env');
-      for (const node of tree) {
-        if (typeof node.children === 'function') {
-          try {
-            const resolved = await (node.children as () => Promise<MetaTreeNode[]>)();
-            node.children = Array.isArray(resolved) ? resolved : [];
-          } catch {
-            node.children = [];
-          }
-        }
-      }
-      return tree.filter((node) => Array.isArray(node.children) && node.children.length > 0);
-    },
-    {
-      cacheKey: META_TREE_CACHE_KEY,
-      refreshOnWindowFocus: true,
-    },
-  );
-
-  return data ?? [];
-}
-
 export interface EnvVariableInputProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -91,15 +55,16 @@ export interface EnvVariableInputProps {
 const isVariableExpr = (value?: string) => typeof value === 'string' && /\{\{\s*[^{}]+?\s*\}\}/.test(value);
 
 /**
- * Generic input component for fields that accept either a literal value or a
- * `{{ $env.X }}` reference. The `$env` namespace is wired through the
- * environment-variables plugin's `flowEngine.context.defineProperty('$env', ...)`
- * registration; this component is the single consumption point and degrades
- * gracefully to a plain text input when no env variables are defined.
+ * Convenience wrapper around `VariableInput` constrained to the `$env`
+ * namespace, with optional password-input masking for plain values. Use for
+ * fields that accept either a literal credential or a `{{ $env.X }}`
+ * reference (S3 access keys, OAuth secrets, etc.). The `$env` tree is
+ * provided by the environment-variables plugin's
+ * `flowEngine.context.defineProperty('$env', ...)`; this component degrades
+ * gracefully to an empty picker when no env variables are defined.
  */
 export function EnvVariableInput(props: EnvVariableInputProps) {
   const { password, ...rest } = props;
-  const metaTree = useEnvMetaTree();
 
   const converters = useMemo<VariableHybridInputConverters>(
     () => ({
@@ -122,5 +87,5 @@ export function EnvVariableInput(props: EnvVariableInputProps) {
     );
   }
 
-  return <VariableHybridInput {...rest} converters={converters} metaTree={metaTree} />;
+  return <VariableInput {...rest} namespaces={ENV_NAMESPACES} converters={converters} />;
 }

@@ -80,15 +80,16 @@ RUN set -eux; \
 
 FROM node:22-bookworm-slim AS runtime-base
 
+ARG NGINX_VERSION=1.30.1-1~bookworm
 ARG USE_ALIYUN_MIRROR=0
 ARG TARGETARCH
 ENV NB_SKIP_STARTUP_UPDATE=1 \
     NOCOBASE_RUNNING_IN_DOCKER=true
 
-COPY --from=assets /tmp/libreoffice.tar.gz /tmp/libreoffice.tar.gz
 COPY --from=assets /opt/instantclient_19_25 /opt/instantclient_19_25
 
-RUN --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-client-assets \
+RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.tar.gz,ro \
+  --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-client-assets,ro \
   set -eux; \
   rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
   if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
@@ -110,9 +111,14 @@ RUN --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-clie
   apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
   echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] ${PGDG_MIRROR} bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
   wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
+  wget --quiet -O /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
+  gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
+  printf '%s\n' \
+    'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian bookworm nginx' \
+    > /etc/apt/sources.list.d/nginx.list; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
-    nginx \
+    "nginx=${NGINX_VERSION}" \
     libaio1 \
     postgresql-client-16 \
     postgresql-client-17 \
@@ -128,27 +134,18 @@ RUN --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-clie
   else \
     echo "Unsupported TARGETARCH for MySQL client: $TARGETARCH" >&2; exit 1; \
   fi; \
+  nginx -v; \
   /usr/bin/mysql --version; \
   /usr/bin/mysqldump --version; \
   tar -zxf /tmp/libreoffice.tar.gz -C /tmp; \
-  libreoffice_debs=''; \
-  for pattern in \
-    'libobasis24.8-core_*.deb' \
-    'libobasis24.8-ooofonts_*.deb' \
-    'libobasis24.8-calc_*.deb' \
-    'libobasis24.8-writer_*.deb' \
-    'libobasis24.8-graphicfilter_*.deb' \
-    'libobasis24.8-images_*.deb' \
-    'libobasis24.8-ooolinguistic_*.deb' \
-    'libobasis24.8-en-us_*.deb' \
-    'libreoffice24.8_*.deb' \
-    'libreoffice24.8-ure_*.deb' \
-    'libreoffice24.8-en-us_*.deb'; do \
-    set -- /tmp/LibreOffice*_Linux_*_deb/DEBS/$pattern; \
-    [ -e "$1" ] || { echo "Missing LibreOffice package for pattern: $pattern" >&2; exit 1; }; \
-    libreoffice_debs="$libreoffice_debs $1"; \
-  done; \
-  dpkg -i $libreoffice_debs && \
+  libreoffice_dir="$(find /tmp -maxdepth 1 -type d -name 'LibreOffice*_Linux_*_deb' | head -n 1)"; \
+  [ -n "$libreoffice_dir" ] || { echo 'Missing extracted LibreOffice directory' >&2; exit 1; }; \
+  find "$libreoffice_dir/DEBS" -maxdepth 1 -type f -name '*.deb' -print >/tmp/libreoffice-debs.list; \
+  [ -s /tmp/libreoffice-debs.list ] || { echo 'No LibreOffice deb packages found' >&2; exit 1; }; \
+  if ! dpkg -i $(cat /tmp/libreoffice-debs.list); then \
+    apt-get -f install -y; \
+  fi; \
+  [ -x /opt/libreoffice24.8/program/oosplash ] || { echo 'LibreOffice installation is incomplete' >&2; exit 1; }; \
   apt-get purge -y --auto-remove \
   wget \
   gnupg \
@@ -162,18 +159,24 @@ RUN --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-clie
   gnupg-l10n \
   gnupg-utils && \
   rm -rf \
+  /etc/apt/sources.list.d/nginx.list \
   /etc/nginx/sites-enabled/default \
   /root/.npm \
-  /tmp/mysql-client \
-  /tmp/mysql-community-client-core.deb \
-  /tmp/libreoffice.tar.gz \
+  /tmp/nginx_signing.key \
+  /tmp/libreoffice-debs.list \
   /tmp/LibreOffice*_Linux_*_deb \
+  /usr/share/keyrings/nginx-archive-keyring.gpg \
   /var/lib/apt/lists/* && \
   printf '%s\n' \
   '#!/bin/sh' \
   'exec /opt/libreoffice24.8/program/oosplash "$@"' \
   > /usr/bin/libreoffice && \
+  printf '%s\n' \
+  '#!/bin/sh' \
+  'exec /opt/libreoffice24.8/program/oosplash "$@"' \
+  > /usr/bin/soffice && \
   chmod +x /usr/bin/libreoffice && \
+  chmod +x /usr/bin/soffice && \
   echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf && \
   ldconfig
 

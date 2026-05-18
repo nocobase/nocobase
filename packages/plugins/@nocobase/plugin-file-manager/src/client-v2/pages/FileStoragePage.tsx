@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DrawerFormLayout } from '@nocobase/client-v2';
+import { DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Card, Checkbox, Dropdown, Form, Input, Space, Spin, Table, theme } from 'antd';
+import { App, Button, Card, Dropdown, Form, Input, Space, Spin, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { cloneDeep } from 'lodash';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
@@ -142,6 +142,7 @@ function normalizeListResponse(response: any) {
 export default function FileStoragePage() {
   const t = useT();
   const ctx = useFlowContext();
+  const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const resource = useStorageResource();
   const fileManagerPlugin = ctx.app.pm.get(PluginFileManagerClientV2);
@@ -203,7 +204,9 @@ export default function FileStoragePage() {
       {
         title: t('Default storage'),
         dataIndex: 'default',
-        render: (value) => <Checkbox checked={!!value} disabled />,
+        // v1 renders a green check for "yes" and nothing for "no"; we mirror
+        // that here. `token.colorSuccess` keeps us on the design-token API.
+        render: (value) => (value ? <CheckOutlined style={{ color: token.colorSuccess }} /> : null),
       },
       {
         title: t('Actions'),
@@ -231,6 +234,10 @@ export default function FileStoragePage() {
         ),
       },
     ],
+    // `token` is a stable design-token snapshot from antd; we omit it from
+    // the deps because tracking individual token paths would force a rebuild
+    // on every theme micro-change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [fileManagerPlugin, handleDelete, message, openForm, t],
   );
 
@@ -263,7 +270,7 @@ export default function FileStoragePage() {
           </Button>
         </Dropdown>
       </div>
-      <Table
+      <Table<StorageRecord>
         rowKey="id"
         loading={loading}
         columns={columns}

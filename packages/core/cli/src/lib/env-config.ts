@@ -18,6 +18,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'npmRegistry',
   'appRootPath',
   'storagePath',
+  'envFile',
   'appPort',
   'appKey',
   'timezone',
