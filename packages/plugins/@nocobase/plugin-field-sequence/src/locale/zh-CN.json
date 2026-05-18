@@ -2,6 +2,7 @@
   "Add rule": "添加规则",
   "Autoincrement": "自增数字",
   "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "根据配置的规则自动生成编码，支持日期、数字、文本的组合。",
+  "At least one character set should be selected": "至少需要选择一个字符集",
   "Character sets": "字符集",
   "Customize": "自定义",
   "Daily": "每天",
