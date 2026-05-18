@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multi-keyword-filter",
-  "version": "2.1.0-beta.33",
+  "version": "2.1.0-beta.34",
   "main": "dist/server/index.js",
   "displayName": "Multi-keyword filter",
   "displayName.zh-CN": "多关键词筛选",
@@ -18,8 +18,8 @@
     "editionLevel": 0
   },
   "devDependencies": {
-    "xlsx": "^0.18.5",
-    "antd": "5.x"
+    "antd": "5.x",
+    "xlsx": "^0.18.5"
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
