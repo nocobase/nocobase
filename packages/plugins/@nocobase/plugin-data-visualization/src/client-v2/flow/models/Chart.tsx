@@ -9,7 +9,7 @@
 
 import React, { forwardRef, useState } from 'react';
 import ECharts from './ECharts';
-import { Empty, Result, Typography, Spin } from 'antd';
+import { Empty, Result, Typography, Spin, Flex, theme } from 'antd';
 import { EChartsOption, EChartsType } from 'echarts';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useT } from '../../locale';
@@ -21,18 +21,18 @@ export interface ChartOptions {
   dataSource: any;
   onRefReady?: (chart: EChartsType) => void;
   loading?: boolean;
+  heightMode?: string;
 }
 
 const ErrorFallback = ({ error }) => {
   const t = useT();
+  const { token } = theme.useToken();
 
   return (
-    <div style={{ backgroundColor: 'white' }}>
+    <div style={{ backgroundColor: token.colorBgContainer }}>
       <Result status="error" title={t('Render Failed')} subTitle={t('Please check the configuration.')}>
         <Paragraph copyable>
-          <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>
-            {error.message}
-          </Text>
+          <Text type="danger">{error.message}</Text>
         </Paragraph>
       </Result>
     </div>
@@ -40,15 +40,16 @@ const ErrorFallback = ({ error }) => {
 };
 
 export const Chart = forwardRef<EChartsType, ChartOptions>(
-  ({ option, Component, dataSource, onRefReady, loading }, ref) => {
+  ({ option, Component, dataSource, onRefReady, loading, heightMode }, ref) => {
     const [errorKey, setErrorKey] = useState(0);
     const t = useT();
+    const fillHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
 
     if (loading) {
       return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: 400 }}>
+        <Flex justify="center" align="center">
           <Spin />
-        </div>
+        </Flex>
       );
     }
 
@@ -68,7 +69,7 @@ export const Chart = forwardRef<EChartsType, ChartOptions>(
         {Component ? (
           <Component ref={ref} onRefReady={onRefReady} {...option} />
         ) : (
-          <ECharts key={errorKey} ref={ref} onRefReady={onRefReady} option={option} />
+          <ECharts key={errorKey} ref={ref} onRefReady={onRefReady} option={option} fillHeight={fillHeight} />
         )}
       </ErrorBoundary>
     );

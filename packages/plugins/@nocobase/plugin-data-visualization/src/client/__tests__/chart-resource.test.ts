@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChartResource } from '../flow/resources/ChartResource';
+import { ChartResource } from '../../client-v2/flow/resources/ChartResource';
 import { FlowContext } from '@nocobase/flow-engine';
 
 describe('ChartResource', () => {

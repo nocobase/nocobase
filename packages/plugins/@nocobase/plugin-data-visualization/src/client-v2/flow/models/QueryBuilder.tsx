@@ -22,7 +22,6 @@ import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } f
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import isEqual from 'lodash/isEqual';
 import { useT } from '../../locale';
-import { useForm as useFormilyForm } from '@formily/react';
 import {
   getFieldOptions,
   getCollectionOptions,
@@ -52,21 +51,7 @@ const createEmptyFilter = () => ({
 });
 
 const renderLabel = (label: string, lang?: string) => {
-  return (
-    <div
-      style={{
-        width: '100%',
-        whiteSpace: 'normal',
-        wordBreak: 'break-word',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        fontWeight: 500,
-      }}
-    >
-      <span>{appendColon(label, lang)}</span>
-    </div>
-  );
+  return appendColon(label, lang);
 };
 
 const QueryFilter: FC<{
@@ -111,16 +96,17 @@ function ensureQueryShape(query?: QueryValue): Required<QueryValue> {
 
 const QueryBuilderInner: FC<{
   forwardedRef: ForwardedRef<QueryBuilderRef>;
-}> = observer(({ forwardedRef }) => {
+  value?: QueryValue;
+  onChange?: (value: QueryValue) => void;
+}> = observer(({ forwardedRef, value, onChange }) => {
   const t = useT();
-  const stepForm = useFormilyForm();
   const [form] = Form.useForm();
   const ctx = useFlowSettingsContext<any>();
   const lang = ctx?.i18n?.language;
   const dm = ctx?.model?.context?.dataSourceManager;
   const compile = useCompile();
 
-  const rawQuery = stepForm.values?.query;
+  const rawQuery = value;
   const query = useMemo(() => ensureQueryShape(rawQuery), [rawQuery]);
   const collectionPath = query.collectionPath;
   const measuresValue = query.measures;
@@ -137,14 +123,14 @@ const QueryBuilderInner: FC<{
     forwardedRef,
     () => ({
       validate: async () => {
-        const candidate = { ...(stepForm.values?.query || {}), mode: 'builder' };
+        const candidate = { ...(value || {}), mode: 'builder' };
         const { success, message } = validateQuery(candidate);
         if (!success) {
           throw new Error(message);
         }
       },
     }),
-    [stepForm],
+    [value],
   );
 
   const collectionOptions = useMemo(() => getCollectionOptions(dm, compile), [dm, compile]);
@@ -156,19 +142,22 @@ const QueryBuilderInner: FC<{
 
   const setQueryValue = useCallback(
     (key: keyof QueryValue, value: any) => {
-      stepForm.setValuesIn?.(`query.${key}`, value);
+      onChange?.({
+        ...(rawQuery || {}),
+        [key]: value,
+      });
     },
-    [stepForm],
+    [onChange, rawQuery],
   );
 
   const syncQuery = useCallback(
     (patch: Partial<QueryValue>) => {
-      stepForm.setValuesIn?.('query', {
-        ...(stepForm.values?.query || {}),
+      onChange?.({
+        ...(rawQuery || {}),
         ...patch,
       });
     },
-    [stepForm],
+    [onChange, rawQuery],
   );
 
   const moveItem = useCallback(
@@ -187,7 +176,7 @@ const QueryBuilderInner: FC<{
   const handleCollectionChange = useCallback(
     (val: any) => {
       const nextQuery = {
-        ...(stepForm.values?.query || {}),
+        ...(rawQuery || {}),
         collectionPath: val,
         measures: [],
         dimensions: [],
@@ -195,9 +184,9 @@ const QueryBuilderInner: FC<{
         filter: createEmptyFilter(),
       };
       form.setFieldsValue(nextQuery);
-      stepForm.setValuesIn?.('query', nextQuery);
+      onChange?.(nextQuery);
     },
-    [form, stepForm],
+    [form, onChange, rawQuery],
   );
 
   const handleValuesChange = useCallback(
@@ -209,7 +198,7 @@ const QueryBuilderInner: FC<{
 
   return (
     <Form form={form} layout="vertical" colon component="div" initialValues={query} onValuesChange={handleValuesChange}>
-      <Form.Item label={renderLabel(t('Collection'), lang)} style={{ marginBottom: 16, paddingTop: 8 }}>
+      <Form.Item label={renderLabel(t('Collection'), lang)}>
         <Form.Item name="collectionPath" noStyle>
           <Cascader
             showSearch
@@ -217,30 +206,27 @@ const QueryBuilderInner: FC<{
             options={collectionOptions}
             value={collectionPath}
             onChange={handleCollectionChange}
-            style={{ width: 222 }}
           />
         </Form.Item>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Measures'), lang)} style={{ marginBottom: 16 }}>
+      <Form.Item label={renderLabel(t('Measures'), lang)}>
         <Form.List name="measures">
           {(fields, { add, remove }) => (
             <>
-              <div style={{ overflow: 'auto' }}>
+              <Space direction="vertical">
                 {fields.map((field, idx) => (
-                  <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
-                    <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
+                  <Space align="center" wrap key={field.key}>
+                    <Form.Item name={[field.name, 'field']}>
                       <Cascader
-                        style={{ minWidth: 114 }}
                         placeholder={t('Select Field')}
                         fieldNames={{ label: 'title', value: 'name', children: 'children' }}
                         options={fieldOptions}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'aggregation']} style={{ marginBottom: 0 }}>
+                    <Form.Item name={[field.name, 'aggregation']}>
                       <Select
                         allowClear
-                        style={{ minWidth: 75 }}
                         placeholder={t('Aggregation')}
                         options={[
                           { label: t('Sum'), value: 'sum' },
@@ -251,11 +237,11 @@ const QueryBuilderInner: FC<{
                         ]}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
-                      <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
+                    <Form.Item name={[field.name, 'alias']}>
+                      <Input placeholder={t('Alias')} />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'distinct']} valuePropName="checked" style={{ marginBottom: 0 }}>
-                      <Checkbox style={{ minWidth: 60 }}>{t('Distinct')}</Checkbox>
+                    <Form.Item name={[field.name, 'distinct']} valuePropName="checked">
+                      <Checkbox>{t('Distinct')}</Checkbox>
                     </Form.Item>
                     <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
                     {fields.length > 1 && (
@@ -278,8 +264,8 @@ const QueryBuilderInner: FC<{
                     )}
                   </Space>
                 ))}
-              </div>
-              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginTop: -8, padding: 0 }}>
+              </Space>
+              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})}>
                 {t('Add field')}
               </Button>
             </>
@@ -287,26 +273,25 @@ const QueryBuilderInner: FC<{
         </Form.List>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Dimensions'), lang)} style={{ marginBottom: 16 }}>
+      <Form.Item label={renderLabel(t('Dimensions'), lang)}>
         <Form.List name="dimensions">
           {(fields, { add, remove }) => (
             <>
-              <div style={{ overflow: 'auto' }}>
+              <Space direction="vertical">
                 {fields.map((field, idx) => {
                   const dimField = form.getFieldValue(['dimensions', field.name, 'field']);
                   const fmtOptions = getFormatterOptionsByField(dm, collectionPath, dimField);
                   return (
-                    <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
-                      <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
+                    <Space align="center" wrap key={field.key}>
+                      <Form.Item name={[field.name, 'field']}>
                         <Cascader
-                          style={{ minWidth: 114 }}
                           placeholder={t('Select Field')}
                           fieldNames={{ label: 'title', value: 'name', children: 'children' }}
                           options={fieldOptions}
                         />
                       </Form.Item>
                       {fmtOptions?.length ? (
-                        <Form.Item name={[field.name, 'format']} style={{ marginBottom: 0 }}>
+                        <Form.Item name={[field.name, 'format']}>
                           <Select
                             placeholder={t('Format')}
                             popupMatchSelectWidth={false}
@@ -314,8 +299,8 @@ const QueryBuilderInner: FC<{
                           />
                         </Form.Item>
                       ) : null}
-                      <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
-                        <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
+                      <Form.Item name={[field.name, 'alias']}>
+                        <Input placeholder={t('Alias')} />
                       </Form.Item>
                       <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
                       <Button
@@ -335,8 +320,8 @@ const QueryBuilderInner: FC<{
                     </Space>
                   );
                 })}
-              </div>
-              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginTop: -8, padding: 0 }}>
+              </Space>
+              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})}>
                 {t('Add field')}
               </Button>
             </>
@@ -344,7 +329,7 @@ const QueryBuilderInner: FC<{
         </Form.List>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Filter'), lang)} style={{ marginBottom: 16 }}>
+      <Form.Item label={renderLabel(t('Filter'), lang)}>
         <QueryFilter
           value={query.filter}
           onChange={(value) => setQueryValue('filter', value)}
@@ -352,33 +337,30 @@ const QueryBuilderInner: FC<{
         />
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Sort'), lang)} style={{ marginBottom: 16 }}>
+      <Form.Item label={renderLabel(t('Sort'), lang)}>
         <Form.List name="orders">
           {(fields, { add, remove }) => (
             <>
-              <div style={{ overflow: 'auto' }}>
+              <Space direction="vertical">
                 {fields.map((field, idx) => (
-                  <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }} key={field.key}>
-                    <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
+                  <Space wrap align="center" key={field.key}>
+                    <Form.Item name={[field.name, 'field']}>
                       <Cascader
                         placeholder={t('Select Field')}
                         fieldNames={{ label: 'title', value: 'name', children: 'children' }}
                         options={orderFieldOptions}
-                        style={{ minWidth: 114 }}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'order']} style={{ marginBottom: 0 }}>
+                    <Form.Item name={[field.name, 'order']}>
                       <Select
-                        style={{ minWidth: 100 }}
                         options={[
                           { label: 'ASC', value: 'ASC' },
                           { label: 'DESC', value: 'DESC' },
                         ]}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'nulls']} style={{ marginBottom: 0 }}>
+                    <Form.Item name={[field.name, 'nulls']}>
                       <Select
-                        style={{ minWidth: 110 }}
                         options={[
                           { label: t('Default'), value: 'default' },
                           { label: t('NULLS first'), value: 'first' },
@@ -403,8 +385,8 @@ const QueryBuilderInner: FC<{
                     />
                   </Space>
                 ))}
-              </div>
-              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginTop: -8, padding: 0 }}>
+              </Space>
+              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})}>
                 {t('Add field')}
               </Button>
             </>
@@ -412,21 +394,23 @@ const QueryBuilderInner: FC<{
         </Form.List>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Limit'), lang)} style={{ marginBottom: 16 }}>
+      <Form.Item label={renderLabel(t('Limit'), lang)}>
         <Form.Item name="limit" noStyle>
-          <InputNumber min={0} style={{ width: 120 }} />
+          <InputNumber min={0} />
         </Form.Item>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Offset'), lang)} style={{ marginBottom: 16 }}>
+      <Form.Item label={renderLabel(t('Offset'), lang)}>
         <Form.Item name="offset" noStyle>
-          <InputNumber min={0} style={{ width: 120 }} />
+          <InputNumber min={0} />
         </Form.Item>
       </Form.Item>
     </Form>
   );
 });
 
-export const QueryBuilder = forwardRef<QueryBuilderRef>((_props, ref) => {
-  return <QueryBuilderInner forwardedRef={ref} />;
-});
+export const QueryBuilder = forwardRef<QueryBuilderRef, { value?: QueryValue; onChange?: (value: QueryValue) => void }>(
+  (props, ref) => {
+    return <QueryBuilderInner forwardedRef={ref} value={props.value} onChange={props.onChange} />;
+  },
+);

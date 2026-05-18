@@ -19,6 +19,11 @@ export const ResultPanel: React.FC = () => {
   const t = useT();
   const ctx = useFlowSettingsContext();
   const uid = ctx.model.uid;
+  React.useSyncExternalStore(
+    configStore.subscribe,
+    () => configStore.version,
+    () => configStore.version,
+  );
   const data = configStore.results[uid]?.result;
   const error = configStore.results[uid]?.error;
 
@@ -29,13 +34,13 @@ export const ResultPanel: React.FC = () => {
       items={[
         {
           key: 'table',
-          label: <span style={{ fontSize: 12 }}>{t('Table')}</span>,
+          label: t('Table'),
           icon: <TableOutlined />,
           children: <TableResult data={data || []} />,
         },
         {
           key: 'json',
-          label: <span style={{ fontSize: 12 }}>{t('JSON')}</span>,
+          label: t('JSON'),
           icon: <CodeOutlined />,
           children: <JSONResult data={data || []} />,
         },

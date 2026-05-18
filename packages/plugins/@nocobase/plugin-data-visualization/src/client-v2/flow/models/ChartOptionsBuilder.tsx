@@ -23,21 +23,7 @@ type BuilderFieldOption = Partial<FieldOption> & {
 };
 
 const renderLabel = (label: string, lang?: string) => {
-  return (
-    <div
-      style={{
-        width: '100%',
-        whiteSpace: 'normal',
-        wordBreak: 'break-word',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        fontWeight: 500,
-      }}
-    >
-      <span>{appendColon(label, lang)}</span>
-    </div>
-  );
+  return appendColon(label, lang);
 };
 
 type FormItemSpec =
@@ -182,7 +168,7 @@ export const ChartOptionsBuilder: React.FC<{
   }, [registeredChartOptions, t]);
 
   return (
-    <div style={{ padding: 1 }}>
+    <>
       <Form
         form={form}
         layout="vertical"
@@ -192,7 +178,7 @@ export const ChartOptionsBuilder: React.FC<{
       >
         {/* 图表类型 */}
         <Form.Item label={renderLabel(t('Chart type'), lang)} name="type" required>
-          <Select style={{ width: 180 }} options={chartTypeOptions as any} />
+          <Select options={chartTypeOptions as any} />
         </Form.Item>
 
         {/* 图表属性 */}
@@ -200,10 +186,6 @@ export const ChartOptionsBuilder: React.FC<{
           ? renderRegisteredChartOptions(registeredChart, { renderText, fieldOptions, lang })
           : renderChartOptions(type, { t, fieldOptions, lang })}
 
-        {/* 公共属性 */}
-        {/* <Form.Item label={t('Height')} name="height">
-          <InputNumber min={100} style={{ width: 180 }} />
-        </Form.Item> */}
         {!registeredChart && (
           <>
             <Form.Item name="legend" valuePropName="checked" label={renderLabel(t('Legend'), lang)}>
@@ -218,7 +200,7 @@ export const ChartOptionsBuilder: React.FC<{
           </>
         )}
       </Form>
-    </div>
+    </>
   );
 };
 
@@ -236,7 +218,6 @@ function renderItem(
         required={spec.required}
       >
         <Select
-          style={{ width: 180 }}
           allowClear={!!spec.allowClear}
           placeholder={spec.placeholderKey ? t(spec.placeholderKey) : undefined}
           options={fieldOptions}
@@ -254,7 +235,7 @@ function renderItem(
   if (spec.kind === 'number') {
     return (
       <Form.Item key={spec.name} label={renderLabel(t(spec.labelKey), lang)} name={spec.name}>
-        <InputNumber min={spec.min} max={spec.max} style={{ width: 180 }} />
+        <InputNumber min={spec.min} max={spec.max} />
       </Form.Item>
     );
   }
@@ -263,14 +244,14 @@ function renderItem(
     const max = spec.max ?? 100;
     return (
       <Form.Item key={spec.name} label={renderLabel(t(spec.labelKey), lang)}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Form.Item name={spec.name} style={{ margin: 0, paddingLeft: 6 }}>
-            <Slider min={min} max={max} step={1} style={{ width: 180 }} />
+        <Space align="center">
+          <Form.Item name={spec.name}>
+            <Slider min={min} max={max} step={1} />
           </Form.Item>
           <Form.Item name={spec.name} noStyle>
-            <InputNumber min={min} max={max} step={1} style={{ width: 80 }} />
+            <InputNumber min={min} max={max} step={1} />
           </Form.Item>
-        </div>
+        </Space>
       </Form.Item>
     );
   }
@@ -278,7 +259,6 @@ function renderItem(
     return (
       <Form.Item key={spec.name} label={renderLabel(t(spec.labelKey), lang)} name={spec.name}>
         <Select
-          style={{ width: 180 }}
           options={(spec.options || []).map((o) => ({ label: t(o.labelKey || o.label || ''), value: o.value }))}
         />
       </Form.Item>
@@ -448,7 +428,7 @@ function renderSchemaItem(
         }));
     return (
       <Form.Item key={name} label={label} name={name} required={schema?.required}>
-        <Select style={{ width: 180 }} allowClear={!schema?.required} options={options} />
+        <Select allowClear={!schema?.required} options={options} />
       </Form.Item>
     );
   }
@@ -475,7 +455,7 @@ function renderSchemaItem(
     const componentProps = schema?.['x-component-props'] || {};
     return (
       <Form.Item key={name} label={label} name={name}>
-        <InputNumber min={componentProps.min} max={componentProps.max} style={{ width: 180 }} />
+        <InputNumber min={componentProps.min} max={componentProps.max} />
       </Form.Item>
     );
   }
@@ -486,10 +466,10 @@ function renderSchemaItem(
       <Form.Item key={name} label={label}>
         <Space>
           <Form.Item name={name} noStyle>
-            <Slider min={componentProps.min ?? 0} max={componentProps.max ?? 100} step={1} style={{ width: 180 }} />
+            <Slider min={componentProps.min ?? 0} max={componentProps.max ?? 100} step={1} />
           </Form.Item>
           <Form.Item name={name} noStyle>
-            <InputNumber min={componentProps.min ?? 0} max={componentProps.max ?? 100} step={1} style={{ width: 80 }} />
+            <InputNumber min={componentProps.min ?? 0} max={componentProps.max ?? 100} step={1} />
           </Form.Item>
         </Space>
       </Form.Item>
@@ -499,7 +479,7 @@ function renderSchemaItem(
   if (component === 'Input') {
     return (
       <Form.Item key={name} label={label} name={name}>
-        <Input style={{ width: 180 }} />
+        <Input />
       </Form.Item>
     );
   }
@@ -567,9 +547,8 @@ function renderInlineSchemaControl(
 
   if (component === 'Select') {
     return (
-      <Form.Item key={key} name={namePath} style={{ margin: 0 }} required={schema?.required}>
+      <Form.Item key={key} name={namePath} required={schema?.required}>
         <Select
-          style={{ width: 120 }}
           allowClear={componentProps.allowClear !== false}
           options={(schema?.enum || componentProps.options || []).map((option: any) => ({
             ...option,
@@ -582,12 +561,11 @@ function renderInlineSchemaControl(
 
   if (component === 'InputNumber') {
     return (
-      <Form.Item key={key} name={namePath} style={{ margin: 0 }} required={schema?.required}>
+      <Form.Item key={key} name={namePath} required={schema?.required}>
         <InputNumber
           placeholder={renderText(componentProps.placeholder)}
           min={componentProps.min}
           max={componentProps.max}
-          style={{ width: 90 }}
         />
       </Form.Item>
     );
@@ -595,15 +573,15 @@ function renderInlineSchemaControl(
 
   if (component === 'ColorPicker') {
     return (
-      <Form.Item key={key} name={namePath} style={{ margin: 0 }} getValueFromEvent={(_, hex) => hex}>
+      <Form.Item key={key} name={namePath} getValueFromEvent={(_, hex) => hex}>
         <ColorPicker showText />
       </Form.Item>
     );
   }
 
   return (
-    <Form.Item key={key} name={namePath} style={{ margin: 0 }} required={schema?.required}>
-      <Input placeholder={renderText(componentProps.placeholder)} style={{ width: 90 }} />
+    <Form.Item key={key} name={namePath} required={schema?.required}>
+      <Input placeholder={renderText(componentProps.placeholder)} />
     </Form.Item>
   );
 }
@@ -627,7 +605,7 @@ function renderArraySchemaItem(
     <Form.Item key={name} label={label}>
       <Form.List name={name}>
         {(fields, { add, remove }) => (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space direction="vertical">
             {fields.map((field) => (
               <Space key={field.key} wrap align="baseline">
                 {isPrimitiveColorArray
@@ -662,12 +640,11 @@ function renderArrayProperty(
 
   if (component === 'InputNumber') {
     return (
-      <Form.Item key={propertyName} name={name} style={{ margin: 0 }} required={schema?.required}>
+      <Form.Item key={propertyName} name={name} required={schema?.required}>
         <InputNumber
           placeholder={renderText(componentProps.placeholder)}
           min={componentProps.min}
           max={componentProps.max}
-          style={{ width: 110 }}
         />
       </Form.Item>
     );
@@ -678,8 +655,8 @@ function renderArrayProperty(
   }
 
   return (
-    <Form.Item key={propertyName} name={name} style={{ margin: 0 }} required={schema?.required}>
-      <Input placeholder={renderText(componentProps.placeholder)} style={{ width: 120 }} />
+    <Form.Item key={propertyName} name={name} required={schema?.required}>
+      <Input placeholder={renderText(componentProps.placeholder)} />
     </Form.Item>
   );
 }
@@ -687,7 +664,7 @@ function renderArrayProperty(
 function renderColorPicker(listIndex: number, propertyName?: string) {
   const name = propertyName ? [listIndex, propertyName] : listIndex;
   return (
-    <Form.Item key={propertyName || 'color'} name={name} style={{ margin: 0 }} getValueFromEvent={(_, hex) => hex}>
+    <Form.Item key={propertyName || 'color'} name={name} getValueFromEvent={(_, hex) => hex}>
       <ColorPicker showText />
     </Form.Item>
   );
