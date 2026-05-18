@@ -6,10 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { useApp } from '@nocobase/client-v2';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 function removeStringIfStartsWith(text: string, prefix: string): string {
   if (text.startsWith(prefix)) {
@@ -18,17 +16,14 @@ function removeStringIfStartsWith(text: string, prefix: string): string {
   return text;
 }
 
-export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess, app: appCtx, navigate }) {
-  const app = useApp();
-  const targetApp = appCtx || app;
-  const appRouter = targetApp.router;
+export function useScanner({ onScannerSizeChanged, elementId, onScanSuccess, app: appCtx, navigate, t }) {
+  const appRouter = appCtx?.router;
 
-  const rawBasename = appRouter.getBasename?.() || appRouter.basename || '';
+  const rawBasename = appRouter?.getBasename?.() || appRouter?.basename || '';
   const basename = rawBasename.replace(/\/+$/, '');
 
   const [scanner, setScanner] = useState<Html5Qrcode>();
 
-  const { t } = useTranslation('block-workbench');
   const viewPoint = useMemo(() => {
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);

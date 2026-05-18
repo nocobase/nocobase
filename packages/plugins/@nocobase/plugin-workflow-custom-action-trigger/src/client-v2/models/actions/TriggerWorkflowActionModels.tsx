@@ -7,24 +7,177 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel, ActionSceneEnum, CollectionActionModel, FormActionModel } from '@nocobase/client';
-import { tExpr, MultiRecordResource, useFlowContext, resolveExpressions } from '@nocobase/flow-engine';
-import { createTriggerWorkflowsSchema, TriggerWorkflowSelect } from '@nocobase/plugin-workflow/client';
-import { ButtonProps } from 'antd';
-import React, { useCallback } from 'react';
-import { CONTEXT_TYPE, EVENT_TYPE, NAMESPACE } from '../common/constants';
-import { ContextDataJsonInput } from './components';
+import React from 'react';
+import {
+  ActionModel,
+  ActionSceneEnum,
+  CollectionActionModel,
+  FormActionModel,
+  TextAreaWithContextSelector,
+} from '@nocobase/client-v2';
+import { MultiRecordResource, resolveExpressions, useFlowContext } from '@nocobase/flow-engine';
+import { Alert, Select } from 'antd';
+import type { ButtonProps } from 'antd/es/button';
+import { CONTEXT_TYPE, EVENT_TYPE } from '../../../common/constants';
+import { NAMESPACE, tExpr } from '../../locale';
 
-const customActionDescription = `{{t('Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".', { ns: "${NAMESPACE}" })}}`;
+const buildTriggerWorkflows = (group?: any[]) => {
+  return group?.length
+    ? group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+    : undefined;
+};
+
+function getRecordKey(record, collection) {
+  if (!record || !collection) {
+    return null;
+  }
+  const filterByTk = collection.filterTargetKey;
+  if (Array.isArray(filterByTk)) {
+    return filterByTk.reduce((acc, key) => {
+      acc[key] = record[key];
+      return acc;
+    }, {});
+  }
+  return record[filterByTk];
+}
+
+function WorkflowSelect(props) {
+  const ctx = useFlowContext();
+  const [options, setOptions] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const loadWorkflows = async () => {
+      setLoading(true);
+      try {
+        const res = await ctx.api.request({
+          url: 'workflows:list',
+          method: 'get',
+          params: {
+            paginate: false,
+            filter: {
+              type: EVENT_TYPE,
+              enabled: true,
+              ...props.filter,
+            },
+          },
+        });
+        if (!mounted) {
+          return;
+        }
+        const rows = res?.data?.data || [];
+        const filtered = typeof props.optionFilter === 'function' ? rows.filter(props.optionFilter) : rows;
+        setOptions(
+          filtered.map((item) => ({
+            label: item.title,
+            value: item.key,
+          })),
+        );
+      } catch (error) {
+        console.error('Error loading workflows:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+    loadWorkflows();
+    return () => {
+      mounted = false;
+    };
+  }, [ctx.api, props.filter, props.optionFilter]);
+
+  return <Select {...props} loading={loading} options={options} />;
+}
+
+function createTriggerWorkflowsSchema({
+  description,
+  optionFilter,
+  withContextData = false,
+}: {
+  description?: string;
+  optionFilter?: (item: any) => boolean;
+  withContextData?: boolean;
+}) {
+  return {
+    description: {
+      type: 'void',
+      'x-component': Alert,
+      'x-component-props': {
+        type: 'info',
+        showIcon: true,
+        message: description,
+      },
+    },
+    group: {
+      type: 'array',
+      'x-component': 'ArrayItems',
+      'x-decorator': 'FormItem',
+      items: {
+        type: 'object',
+        properties: {
+          sort: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.SortHandle',
+          },
+          workflowKey: {
+            type: 'string',
+            title: `{{t('Workflow', { ns: 'workflow' })}}`,
+            'x-decorator': 'FormItem',
+            'x-component': WorkflowSelect,
+            'x-component-props': {
+              optionFilter,
+            },
+            required: true,
+          },
+          remove: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.Remove',
+          },
+        },
+      },
+      properties: {
+        add: {
+          type: 'void',
+          title: `{{t('Add workflow', { ns: 'workflow' })}}`,
+          'x-component': 'ArrayItems.Addition',
+        },
+      },
+    },
+    ...(withContextData
+      ? {
+          contextData: {
+            type: 'string',
+            title: tExpr('Context data'),
+            description: tExpr(
+              'Input JSON as context data passed into the workflow. Frontend variables are supported.',
+            ),
+            'x-decorator': 'FormItem',
+            'x-component': TextAreaWithContextSelector,
+            'x-component-props': {
+              rows: 5,
+            },
+          },
+        }
+      : {}),
+  };
+}
+
+const customActionDescription = tExpr(
+  'Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".',
+);
 
 export class FormTriggerWorkflowActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
-    title: tExpr('Trigger workflow', { ns: NAMESPACE }),
+    title: tExpr('Trigger workflow'),
   };
 }
 
 FormTriggerWorkflowActionModel.define({
-  label: tExpr('Trigger workflow', { ns: NAMESPACE }),
+  label: tExpr('Trigger workflow'),
 });
 
 FormTriggerWorkflowActionModel.registerFlow({
@@ -38,12 +191,9 @@ FormTriggerWorkflowActionModel.registerFlow({
     triggerWorkflows: {
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
       uiSchema: createTriggerWorkflowsSchema({
-        filter: {
-          type: EVENT_TYPE,
-        },
         description: customActionDescription,
-        optionFilter({ config }) {
-          return config.type === CONTEXT_TYPE.SINGLE_RECORD;
+        optionFilter(item) {
+          return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
         },
       }),
       async handler(ctx, params) {
@@ -66,16 +216,12 @@ FormTriggerWorkflowActionModel.registerFlow({
             return await ctx.blockModel.resource.runAction('trigger', {
               params: {
                 ...(filterByTk != null ? { filterByTk } : {}),
-                triggerWorkflows: params.group?.length
-                  ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-                  : undefined,
+                triggerWorkflows: buildTriggerWorkflows(params.group),
               },
               data: values,
             });
           });
-          ctx.model.setProps('loading', false);
         } catch (error) {
-          ctx.model.setProps('loading', false);
           console.error('Error triggering workflows:', error);
           ctx.exit();
         } finally {
@@ -95,12 +241,12 @@ FormTriggerWorkflowActionModel.registerFlow({
 export class RecordTriggerWorkflowActionModel extends ActionModel {
   static scene = ActionSceneEnum.record;
   defaultProps: ButtonProps = {
-    title: tExpr('Trigger workflow', { ns: NAMESPACE }),
+    title: tExpr('Trigger workflow'),
   };
 }
 
 RecordTriggerWorkflowActionModel.define({
-  label: tExpr('Trigger workflow', { ns: NAMESPACE }),
+  label: tExpr('Trigger workflow'),
 });
 
 RecordTriggerWorkflowActionModel.registerFlow({
@@ -114,12 +260,9 @@ RecordTriggerWorkflowActionModel.registerFlow({
     triggerWorkflows: {
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
       uiSchema: createTriggerWorkflowsSchema({
-        filter: {
-          type: EVENT_TYPE,
-        },
         description: customActionDescription,
-        optionFilter({ config }) {
-          return config.type === CONTEXT_TYPE.SINGLE_RECORD;
+        optionFilter(item) {
+          return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
         },
       }),
       async handler(ctx, params) {
@@ -138,9 +281,7 @@ RecordTriggerWorkflowActionModel.registerFlow({
         try {
           await resource.runAction('trigger', {
             params: {
-              triggerWorkflows: params.group?.length
-                ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-                : undefined,
+              triggerWorkflows: buildTriggerWorkflows(params.group),
               filterByTk: getRecordKey(ctx.record, collection),
             },
           });
@@ -160,21 +301,6 @@ RecordTriggerWorkflowActionModel.registerFlow({
   },
 });
 
-function getRecordKey(record, collection) {
-  if (!record || !collection) {
-    return null;
-  }
-  const filterByTk = collection.filterTargetKey;
-  if (Array.isArray(filterByTk)) {
-    return filterByTk.reduce((acc, key) => {
-      acc[key] = record[key];
-      return acc;
-    }, {});
-  } else {
-    return record[filterByTk];
-  }
-}
-
 export class CollectionTriggerWorkflowActionModel extends CollectionActionModel {
   static scene = ActionSceneEnum.collection;
   defaultProps: ButtonProps = {
@@ -183,20 +309,8 @@ export class CollectionTriggerWorkflowActionModel extends CollectionActionModel 
 }
 
 CollectionTriggerWorkflowActionModel.define({
-  label: `{{t('Trigger workflow', { ns: '${NAMESPACE}' })}}`,
+  label: tExpr('Trigger workflow'),
 });
-
-function CollectionActionWorkflowSelectComponent({ ...props }) {
-  const { model } = useFlowContext();
-  const optionFilter = useCallback(
-    ({ config }) => {
-      const { type } = model.stepParams.customCollectionTriggerWorkflowsActionSettings.setContextType;
-      return (type && config.type === type) || !config.type;
-    },
-    [model.stepParams.customCollectionTriggerWorkflowsActionSettings.setContextType],
-  );
-  return <TriggerWorkflowSelect {...props} optionFilter={optionFilter} />;
-}
 
 CollectionTriggerWorkflowActionModel.registerFlow({
   key: 'customCollectionTriggerWorkflowsActionSettings',
@@ -205,18 +319,15 @@ CollectionTriggerWorkflowActionModel.registerFlow({
     setContextType: {
       hideInSettings: true,
       preset: true,
-      title: `{{t('Context type', { ns: '${NAMESPACE}' })}}`,
+      title: tExpr('Context type'),
       uiSchema: {
         type: {
           type: 'number',
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           enum: [
-            { label: `{{t('Custom context', { ns: '${NAMESPACE}' })}}`, value: CONTEXT_TYPE.GLOBAL },
-            {
-              label: `{{t('Multiple collection records', { ns: '${NAMESPACE}' })}}`,
-              value: CONTEXT_TYPE.MULTIPLE_RECORDS,
-            },
+            { label: tExpr('Custom context'), value: CONTEXT_TYPE.GLOBAL },
+            { label: tExpr('Multiple collection records'), value: CONTEXT_TYPE.MULTIPLE_RECORDS },
           ],
           required: true,
         },
@@ -236,28 +347,15 @@ CollectionTriggerWorkflowActionModel.registerFlow({
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
       uiSchema: (ctx) => {
         const { type } = ctx.model.stepParams.customCollectionTriggerWorkflowsActionSettings?.setContextType ?? {};
-        const baseSchema = createTriggerWorkflowsSchema({
-          WorkflowSelectComponent: CollectionActionWorkflowSelectComponent,
-          filter: {
-            type: EVENT_TYPE,
-          },
-          usingContext: false,
+        return createTriggerWorkflowsSchema({
+          withContextData: !type,
           description: type
-            ? `{{t('Only support custom action workflow with context type set to "Multiple records".', { ns: "${NAMESPACE}" })}}`
-            : `{{t('Only support custom action workflow with context type set to "Custom context".', { ns: "${NAMESPACE}" })}}`,
-        })(ctx);
-        if (!type) {
-          return {
-            ...baseSchema,
-            contextData: {
-              type: 'string',
-              title: `{{t('Context data', { ns: '${NAMESPACE}' })}}`,
-              'x-decorator': 'FormItem',
-              'x-component': ContextDataJsonInput,
-            },
-          };
-        }
-        return baseSchema;
+            ? tExpr('Only support custom action workflow with context type set to "Multiple records".')
+            : tExpr('Only support custom action workflow with context type set to "Custom context".'),
+          optionFilter(item) {
+            return type ? item.config?.type === CONTEXT_TYPE.MULTIPLE_RECORDS : !item.config?.type;
+          },
+        });
       },
     },
   },
@@ -297,9 +395,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           try {
             await resource.runAction('trigger', {
               params: {
-                triggerWorkflows: group?.length
-                  ? group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-                  : undefined,
+                triggerWorkflows: buildTriggerWorkflows(group),
                 filterByTk: ctx.blockModel.collection.getFilterByTK(resource.getSelectedRows()),
               },
             });
@@ -307,7 +403,6 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           } catch (error) {
             console.error('Error triggering workflows:', error);
             ctx.exit();
-            return;
           }
         } else if (!type) {
           let values;
@@ -323,16 +418,13 @@ CollectionTriggerWorkflowActionModel.registerFlow({
               url: 'workflows:trigger',
               method: 'post',
               params: {
-                triggerWorkflows: group?.length
-                  ? group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-                  : undefined,
+                triggerWorkflows: buildTriggerWorkflows(group),
               },
               data: { values },
             });
           } catch (error) {
             console.error('Error triggering workflows:', error);
             ctx.exit();
-            return;
           }
         } else {
           throw new Error('Invalid context type');
@@ -349,48 +441,25 @@ CollectionTriggerWorkflowActionModel.registerFlow({
   },
 });
 
-export class CollectionGlobalTriggerWorkflowActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
-  defaultProps: ButtonProps = {
-    title: tExpr('Trigger global workflow', { ns: NAMESPACE }),
-  };
-}
-
 export class WorkbenchTriggerWorkflowActionModel extends ActionModel {
   defaultProps: ButtonProps = {
-    title: tExpr('Trigger global workflow', { ns: NAMESPACE }),
+    title: tExpr('Trigger global workflow'),
     icon: 'ThunderboltOutlined',
   };
 }
 
-CollectionGlobalTriggerWorkflowActionModel.define({
-  label: tExpr('Trigger global workflow', { ns: NAMESPACE }),
-});
-
 WorkbenchTriggerWorkflowActionModel.define({
-  label: tExpr('Trigger global workflow', { ns: NAMESPACE }),
+  label: tExpr('Trigger global workflow'),
 });
 
-function globalTriggerWorkflowUiSchema(ctx) {
-  const baseSchema = createTriggerWorkflowsSchema({
-    filter: {
-      type: EVENT_TYPE,
+function globalTriggerWorkflowUiSchema() {
+  return createTriggerWorkflowsSchema({
+    withContextData: true,
+    description: tExpr('Only support custom action workflow with context type set to "Custom context".'),
+    optionFilter(item) {
+      return !item.config?.type;
     },
-    description: `{{t('Only support custom action workflow with context type set to "Custom context".', { ns: "${NAMESPACE}" })}}`,
-    optionFilter({ config }) {
-      return !config.type;
-    },
-    usingContext: false,
-  })(ctx);
-  return {
-    ...baseSchema,
-    contextData: {
-      type: 'string',
-      title: `{{t('Context data', { ns: '${NAMESPACE}' })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': ContextDataJsonInput,
-    },
-  };
+  });
 }
 
 async function globalTriggerWorkflowHandler(ctx, params) {
@@ -407,9 +476,7 @@ async function globalTriggerWorkflowHandler(ctx, params) {
       url: 'workflows:trigger',
       method: 'post',
       params: {
-        triggerWorkflows: params.group?.length
-          ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-          : undefined,
+        triggerWorkflows: buildTriggerWorkflows(params.group),
       },
       data: { values },
     });
@@ -418,29 +485,6 @@ async function globalTriggerWorkflowHandler(ctx, params) {
     console.error('Error triggering workflows:', error);
   }
 }
-
-CollectionGlobalTriggerWorkflowActionModel.registerFlow({
-  key: 'customCollectionGlobalTriggerWorkflowsActionSettings',
-  on: 'click',
-  title: `{{t('Workflow', { ns: 'workflow' })}}`,
-  steps: {
-    confirm: {
-      use: 'confirm',
-    },
-    triggerWorkflows: {
-      title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
-      uiSchema: globalTriggerWorkflowUiSchema,
-      handler: globalTriggerWorkflowHandler,
-    },
-    afterSuccess: {
-      use: 'afterSuccess',
-      defaultParams: {
-        successMessage: tExpr('Operation succeeded'),
-        actionAfterSuccess: 'previous',
-      },
-    },
-  },
-});
 
 WorkbenchTriggerWorkflowActionModel.registerFlow({
   key: 'workbenchTriggerWorkflowsActionSettings',
@@ -464,3 +508,19 @@ WorkbenchTriggerWorkflowActionModel.registerFlow({
     },
   },
 });
+
+export function registerTriggerWorkflowActionGroups(flowEngine: any) {
+  [
+    'CollectionActionGroupModel',
+    'RecordActionGroupModel',
+    'FormActionGroupModel',
+    'ActionPanelGroupActionModel',
+  ].forEach((modelName) => {
+    flowEngine.getModelClass(modelName)?.registerActionModels?.({
+      FormTriggerWorkflowActionModel,
+      RecordTriggerWorkflowActionModel,
+      CollectionTriggerWorkflowActionModel,
+      WorkbenchTriggerWorkflowActionModel,
+    });
+  });
+}

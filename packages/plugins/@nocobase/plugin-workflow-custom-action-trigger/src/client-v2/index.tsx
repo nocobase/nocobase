@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ActionPanelGroupAction';
-export * from './ActionPanelScanActionModel';
+export { default } from './plugin';
+export * from './models';
