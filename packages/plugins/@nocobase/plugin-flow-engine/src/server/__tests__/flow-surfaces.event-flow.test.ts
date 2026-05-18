@@ -335,6 +335,115 @@ describe('flowSurfaces event flow', () => {
     ).rejects.toThrow(`flowSurfaces addEventFlow only supports phase 'beforeAllFlows'`);
   });
 
+  it('should reject unsafe RunJS in event-flow registry write paths before persisting', async () => {
+    const { formUid } = await createEmployeeForm(rootAgent);
+
+    const setEventFlowsResponse = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        flowRegistry: {
+          unsafeRegistry: {
+            key: 'unsafeRegistry',
+            on: 'beforeRender',
+            steps: {
+              runUnsafe: {
+                use: 'runjs',
+                defaultParams: {
+                  code: 'await fetch("/blocked");',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(setEventFlowsResponse.status).toBe(400);
+    expect(setEventFlowsResponse.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.flowRegistry.unsafeRegistry.steps.runUnsafe.defaultParams.code',
+          ruleId: 'runjs-global-blocked',
+          details: expect.objectContaining({
+            global: 'fetch',
+          }),
+        }),
+      ]),
+    );
+
+    const addEventFlowResponse = await rootAgent.resource('flowSurfaces').addEventFlow({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        key: 'unsafeAdd',
+        eventName: 'submit',
+        steps: {
+          runUnsafe: {
+            use: 'runjs',
+            defaultParams: {
+              code: 'ctx.openView({});',
+            },
+          },
+        },
+      },
+    });
+    expect(addEventFlowResponse.status).toBe(400);
+    expect(addEventFlowResponse.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.flowRegistry.unsafeAdd.steps.runUnsafe.defaultParams.code',
+          ruleId: 'runjs-ctx-capability-blocked',
+          details: expect.objectContaining({
+            capability: 'ctx.openView',
+          }),
+        }),
+      ]),
+    );
+
+    const setEventFlowResponse = await rootAgent.resource('flowSurfaces').setEventFlow({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        key: 'unsafeSet',
+        flow: {
+          on: {
+            eventName: 'submit',
+            phase: 'beforeAllFlows',
+          },
+          steps: {
+            runUnsafe: {
+              use: 'runjs',
+              params: {
+                code: 'window["localStorage"].getItem("blocked");',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(setEventFlowResponse.status).toBe(400);
+    expect(setEventFlowResponse.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.flowRegistry.unsafeSet.steps.runUnsafe.params.code',
+          ruleId: 'runjs-window-property-blocked',
+          details: expect.objectContaining({
+            global: 'window',
+            member: 'localStorage',
+          }),
+        }),
+      ]),
+    );
+
+    const readback = await getSurface(rootAgent, {
+      uid: formUid,
+    });
+    expect(readback.tree.flowRegistry || {}).toEqual({});
+  });
+
   it('should compile flowRegistry diffs to fine-grained event-flow mutate ops', () => {
     const compiled = compileApplySpec(
       {

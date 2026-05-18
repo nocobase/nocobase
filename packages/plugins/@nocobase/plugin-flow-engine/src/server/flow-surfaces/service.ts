@@ -44,6 +44,7 @@ import {
   FlowSurfaceBadRequestError,
   isFlowSurfaceError,
   throwBadRequest,
+  throwAggregateBadRequest,
   throwConflict,
   throwForbidden,
   throwInternalError,
@@ -96,6 +97,7 @@ import type { FlowSurfacePlanSurfaceContext } from './planning/types';
 import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
 import { buildFlowSurfaceAutoFieldGridLayout, resolveFlowSurfaceFieldGridFieldInterface } from './field-grid-layout';
 import { assertFlowSurfaceAuthoringPayload } from './authoring-validation';
+import { collectFlowRegistryRunJsAuthoringErrors } from './runjs-authoring';
 import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 import { resolveRegisteredFieldBinding } from './field-binding-registry';
 import {
@@ -13582,6 +13584,7 @@ export class FlowSurfacesService {
       Object.keys(effectiveNode.flowRegistry).length
     ) {
       this.contractGuard.validateFlowRegistry(effectiveNode, effectiveNode.flowRegistry);
+      this.assertFlowRegistryRunJsAuthoringPayload(effectiveNode.flowRegistry);
     }
 
     if (Object.keys(nextPayload).length === 1) {
@@ -15038,6 +15041,7 @@ export class FlowSurfacesService {
   ) {
     this.assertNoTreeConnectFieldsFlowRegistry(current, flowRegistry, actionName);
     this.contractGuard.validateFlowRegistry(current, flowRegistry);
+    this.assertFlowRegistryRunJsAuthoringPayload(flowRegistry);
 
     if (target.kind === 'tab' && target.tabRoute) {
       await this.routeSync.persistTabSettings(
@@ -15069,6 +15073,13 @@ export class FlowSurfacesService {
       flowRegistry,
       fingerprint: this.buildEventFlowFingerprint(flowRegistry),
     };
+  }
+
+  private assertFlowRegistryRunJsAuthoringPayload(flowRegistry: Record<string, any>) {
+    const errors = collectFlowRegistryRunJsAuthoringErrors(flowRegistry);
+    if (errors.length) {
+      throwAggregateBadRequest(errors);
+    }
   }
 
   private buildEventFlowBindingMeta(contract: ReturnType<typeof getNodeContract>) {

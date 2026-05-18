@@ -7482,7 +7482,7 @@ describe('flowSurfaces resource', () => {
       settings: {
         title: 'Users hero draft',
         version: '1.0.0',
-        code: "return { type: 'div', children: ['Users hero draft'] };",
+        code: "ctx.render({ type: 'div', children: ['Users hero draft'] });",
       },
     });
     const composedJsBlockRes = getData(
@@ -7500,7 +7500,7 @@ describe('flowSurfaces resource', () => {
                 description: 'Composed through flowSurfaces',
                 className: 'composed-hero',
                 version: '1.0.0',
-                code: "return { type: 'div', children: ['Composed hero'] };",
+                code: "ctx.render({ type: 'div', children: ['Composed hero'] });",
               },
             },
           ],
@@ -7735,7 +7735,7 @@ describe('flowSurfaces resource', () => {
           description: 'JS block summary',
           className: 'users-hero',
           version: '1.0.1',
-          code: "return { type: 'div', children: ['Users hero'] };",
+          code: "ctx.render({ type: 'div', children: ['Users hero'] });",
         },
       },
     });
@@ -7749,7 +7749,7 @@ describe('flowSurfaces resource', () => {
         changes: {
           label: 'Nickname JS',
           version: '1.0.1',
-          code: "return record.nickname?.toUpperCase?.() || '';",
+          code: "ctx.render(record.nickname?.toUpperCase?.() || '');",
         },
       },
     });
@@ -7793,7 +7793,7 @@ describe('flowSurfaces resource', () => {
           width: 280,
           fixed: 'left',
           version: '1.0.1',
-          code: 'return record.nickname;',
+          code: 'ctx.render(record.nickname);',
         },
       },
     });
@@ -7809,7 +7809,7 @@ describe('flowSurfaces resource', () => {
           showLabel: true,
           labelWidth: 120,
           version: '1.0.1',
-          code: 'return record.nickname;',
+          code: 'ctx.render(record.nickname);',
         },
       },
     });
@@ -7837,11 +7837,11 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsBlockReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: "return { type: 'div', children: ['Users hero'] };",
+      code: "ctx.render({ type: 'div', children: ['Users hero'] });",
     });
     expect(jsFieldReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: "return record.nickname?.toUpperCase?.() || '';",
+      code: "ctx.render(record.nickname?.toUpperCase?.() || '');",
     });
     expect(jsActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
       version: '1.0.1',
@@ -7870,7 +7870,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsColumnReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: 'return record.nickname;',
+      code: 'ctx.render(record.nickname);',
     });
     expect(jsItemReadback.tree.props).toMatchObject({
       label: 'JS item',
@@ -7881,7 +7881,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsItemReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: 'return record.nickname;',
+      code: 'ctx.render(record.nickname);',
     });
   });
 
@@ -8159,7 +8159,7 @@ describe('flowSurfaces resource', () => {
                   jsSettings: {
                     runJs: {
                       version: '1.0.0',
-                      code: 'return record.nickname;',
+                      code: 'ctx.render(record.nickname);',
                     },
                   },
                 },
@@ -8192,7 +8192,7 @@ describe('flowSurfaces resource', () => {
                   jsSettings: {
                     runJs: {
                       version: '1.0.0',
-                      code: 'return record.nickname;',
+                      code: 'ctx.render(record.nickname);',
                     },
                   },
                 },
@@ -8223,7 +8223,7 @@ describe('flowSurfaces resource', () => {
                       jsSettings: {
                         runJs: {
                           version: '1.0.0',
-                          code: 'return record.nickname;',
+                          code: 'ctx.render(record.nickname);',
                         },
                       },
                     },

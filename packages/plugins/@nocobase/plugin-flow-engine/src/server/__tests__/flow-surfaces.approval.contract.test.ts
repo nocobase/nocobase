@@ -195,7 +195,7 @@ describe('flowSurfaces approval API contract', () => {
           type: 'jsBlock',
           settings: {
             title: 'Trigger script',
-            code: "return { type: 'div', children: ['Trigger script'] };",
+            code: "ctx.render({ type: 'div', children: ['Trigger script'] });",
           },
         },
       }),

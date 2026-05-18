@@ -61,6 +61,7 @@ import {
   normalizeFlowSurfaceApplyBlueprintDataSourceKey,
   resolveFlowSurfaceApplyBlueprintDefaultCollection,
 } from './blueprint/defaults';
+import { collectRunJsAuthoringErrors } from './runjs-authoring';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -330,6 +331,7 @@ export async function collectFlowSurfaceAuthoringErrors(
 
   if (actionName === 'configure') {
     await collectConfigureErrors(values, errors, validationContext);
+    errors.push(...collectRunJsAuthoringErrors(actionName, values, validationContext));
     if (!validationContext.skipGeneratedPopupDefaultFieldGroups) {
       collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, validationContext, errors);
     }
@@ -351,6 +353,7 @@ export async function collectFlowSurfaceAuthoringErrors(
   if (!validationContext.skipGeneratedPopupDefaultFieldGroups) {
     collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, validationContext, errors);
   }
+  errors.push(...collectRunJsAuthoringErrors(actionName, values, validationContext));
 
   return errors;
 }
