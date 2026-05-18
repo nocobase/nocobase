@@ -242,7 +242,6 @@ import {
   type FlowSurfaceTitleFieldErrorOptions,
   assertCollectionTitleFieldExists,
   assertFlowSurfaceTitleFieldIsNotId,
-  isTitleableCollectionField,
   normalizeFlowSurfaceTitleField,
   resolveAssociationSafeTitleField,
   resolveAssociationTitleFieldTargetCollection,
@@ -6660,6 +6659,7 @@ export class FlowSurfacesService {
             enabledPackages,
             skipDefaultBlockActions: true,
             skipAuthoringValidation: true,
+            explicitFields: spec.explicitFields === true,
           },
         );
         const generatedDefaultFilterInfo = await this.buildDefaultFilterFromDataBlockUid({
@@ -6758,6 +6758,7 @@ export class FlowSurfacesService {
           {
             blockUid: block.uid,
             popupDefaultsMetadata,
+            explicitFields: blockSpec?.explicitFields === true,
           },
           {
             ...runtimeOptions,
@@ -8085,6 +8086,7 @@ export class FlowSurfacesService {
       skipDefaultBlockActions?: boolean;
       preserveSingleScopeDataBlockTitle?: boolean;
       skipAuthoringValidation?: boolean;
+      explicitFields?: boolean;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
     } = {},
   ) {
@@ -8141,6 +8143,7 @@ export class FlowSurfacesService {
     const hasInlineFields =
       Object.prototype.hasOwnProperty.call(values || {}, 'fields') ||
       Object.prototype.hasOwnProperty.call(values || {}, 'fieldsLayout');
+    const hasExplicitFields = Object.prototype.hasOwnProperty.call(values || {}, 'fields');
     let resolvedTarget = await this.locator.resolve(target, options);
     let targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction, {
       ensureManagedPopupTemplateTargets: true,
@@ -8508,6 +8511,7 @@ export class FlowSurfacesService {
       {
         blockUid: created,
         popupDefaultsMetadata,
+        explicitFields: options.explicitFields === true || hasExplicitFields,
       },
       {
         ...options,
@@ -16102,17 +16106,29 @@ export class FlowSurfacesService {
     return item?.key === 'view' || item?.use === 'ViewActionModel';
   }
 
+  private isUnreadableTreeTableTitleFieldName(fieldName: any) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    const lowerName = normalizedFieldName.toLowerCase();
+    return (
+      !normalizedFieldName ||
+      normalizedFieldName.includes('.') ||
+      ['id', 'uid', 'uuid', 'parentid'].includes(lowerName) ||
+      /^parent[_-]?id$/i.test(normalizedFieldName) ||
+      /(?:^|[_-])(id|uid)$/i.test(normalizedFieldName) ||
+      /(?:Id|ID|Uid|UID)$/.test(normalizedFieldName)
+    );
+  }
+
   private isDirectTreeTableTitleFieldName(fieldName: any) {
     const normalizedFieldName = String(fieldName || '').trim();
-    return !!normalizedFieldName && normalizedFieldName !== 'id' && !normalizedFieldName.includes('.');
+    return !this.isUnreadableTreeTableTitleFieldName(normalizedFieldName);
   }
 
   private isUsableTreeTableTitleField(field?: any) {
     return (
       this.isDirectTreeTableTitleFieldName(getFieldName(field)) &&
       !!getFieldInterface(field) &&
-      !isAssociationField(field) &&
-      isTitleableCollectionField(field)
+      !isAssociationField(field)
     );
   }
 
@@ -16146,8 +16162,9 @@ export class FlowSurfacesService {
     if (configuredTitleFieldName && configuredTitleFieldName !== 'id') {
       this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, configuredTitleFieldName);
     }
-    this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, 'title');
     this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, 'name');
+    this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, 'code');
+    this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, 'title');
     if (configuredTitleFieldName === 'id') {
       this.pushTreeTableTitleFieldNameCandidate(candidateNames, collection, configuredTitleFieldName);
     }
@@ -16315,6 +16332,24 @@ export class FlowSurfacesService {
       await this.ensureTreeTableTitleFieldClickDefaults(titleColumn, popupDefaultsMetadata, options);
     }
     return titleColumn?.uid;
+  }
+
+  private getFirstUsableExistingTreeTableTitleColumn(table: any, collection?: any) {
+    for (const column of this.getTableColumns(table)) {
+      if (column?.use !== 'TableColumnModel' || !column?.uid) {
+        continue;
+      }
+      const init = column?.stepParams?.fieldSettings?.init || {};
+      const fieldPath = normalizeFieldPath(init.fieldPath, init.associationPathName);
+      if (!this.isDirectTreeTableTitleFieldName(fieldPath)) {
+        continue;
+      }
+      const field = this.resolveTreeTableDirectField(collection, fieldPath);
+      if (this.isUsableTreeTableTitleField(field)) {
+        return column;
+      }
+    }
+    return undefined;
   }
 
   private async removeTreeTableViewRecordActions(tableUid: string, transaction?: any) {
@@ -16486,6 +16521,7 @@ export class FlowSurfacesService {
     input: {
       blockUid: string;
       popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
+      explicitFields?: boolean;
     },
     options: {
       transaction?: any;
@@ -16503,22 +16539,35 @@ export class FlowSurfacesService {
     }
 
     let titleColumnUid: string | undefined;
-    for (const titleFieldName of this.resolveTreeTableTitleFieldNames(treeTableContext.collection)) {
-      try {
-        titleColumnUid = await this.ensureTreeTableTitleFieldColumn(
-          input.blockUid,
-          titleFieldName,
-          input.popupDefaultsMetadata,
-          options,
+    if (input.explicitFields) {
+      const titleColumn = this.getFirstUsableExistingTreeTableTitleColumn(table, treeTableContext.collection);
+      titleColumnUid = titleColumn?.uid;
+      if (titleColumn) {
+        await this.ensureTreeTableTitleFieldClickDefaults(titleColumn, input.popupDefaultsMetadata, options);
+      } else {
+        throwBadRequest(
+          'flowSurfaces tree table explicit fields must include at least one direct readable non-association field; do not rely on addBlock/compose to inject a title/name fallback',
         );
-      } catch (error) {
-        if (this.isRecoverableTreeTableTitleFieldError(error)) {
-          continue;
-        }
-        throw error;
       }
-      if (titleColumnUid) {
-        break;
+    }
+    if (!input.explicitFields) {
+      for (const titleFieldName of this.resolveTreeTableTitleFieldNames(treeTableContext.collection)) {
+        try {
+          titleColumnUid = await this.ensureTreeTableTitleFieldColumn(
+            input.blockUid,
+            titleFieldName,
+            input.popupDefaultsMetadata,
+            options,
+          );
+        } catch (error) {
+          if (this.isRecoverableTreeTableTitleFieldError(error)) {
+            continue;
+          }
+          throw error;
+        }
+        if (titleColumnUid) {
+          break;
+        }
       }
     }
     await this.removeTreeTableViewRecordActions(input.blockUid, options.transaction);
@@ -17329,6 +17378,7 @@ export class FlowSurfacesService {
       catalogItem: blockCatalogItem,
       resource,
       settings,
+      explicitFields: hasFields || hasFieldGroups,
       fields,
       ...(fieldsLayout ? { fieldsLayout } : {}),
       actions: actionsWithDefaultFilter,

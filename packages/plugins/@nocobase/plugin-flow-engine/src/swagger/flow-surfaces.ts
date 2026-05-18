@@ -156,7 +156,7 @@ const APPLY_BLUEPRINT_ADD_CHILD_NOTE =
 const TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE =
   'Ordinary table `recordActions` still complete partial or omitted lists to `view` / `edit` / `delete`. Tree collection tables with `treeTable` enabled do not complete `view` / `edit` / `delete`; they only receive one default `addChild` when supported, while explicit `edit` / `delete` remain allowed.';
 const APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE =
-  'For applyBlueprint tree tables, an explicit first `fields[0]` column must be a readable business display field; do not put `id`, `uid`, `uuid`, `parentId`, primary keys, foreign keys, `xxxId`, `xxxUID`, `_id`, or `_uid` first. Prefer `name`, `title`, `code`, or another direct readable field.';
+  'For applyBlueprint tree tables, explicit `fields[]` must be self-contained: the explicit first `fields[0]` column must be a readable business display field, or an existing later readable field is moved first. Missing `title` / `name` fields are not injected into explicit lists, and explicit lists with no readable direct field are rejected. Only omitted `fields[]` uses default priority `titleField`, `name`, `code`, `title`, or another direct readable field. Do not put `id`, `uid`, `uuid`, `parentId`, primary keys, foreign keys, `xxxId`, `xxxUID`, `_id`, or `_uid` first.';
 const REACTION_FINGERPRINT_DESCRIPTION =
   'Optional optimistic-concurrency fingerprint from `getReactionMeta.capabilities[].fingerprint`. When provided, the write fails with HTTP 409 if the current slot fingerprint no longer matches.';
 const REACTION_RULES_REPLACE_DESCRIPTION =

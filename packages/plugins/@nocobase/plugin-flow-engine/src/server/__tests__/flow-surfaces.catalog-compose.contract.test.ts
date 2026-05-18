@@ -6386,10 +6386,10 @@ describe('flowSurfaces catalog + compose contract', () => {
     });
   });
 
-  it('treeTitleComposeDefaults should compose tree tables with a clickable title column and no row View action', async () => {
+  it('treeTitleComposeExplicitFields should preserve a readable explicit first field as the clickable tree column', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Compose tree table clickable title page',
-      tabTitle: 'Compose tree table clickable title tab',
+      title: 'Compose tree table explicit title page',
+      tabTitle: 'Compose tree table explicit title tab',
     });
 
     const composeRes = await rootAgent.resource('flowSurfaces').compose({
@@ -6417,17 +6417,61 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
 
     const categoriesTable = getComposeBlock(getData(composeRes), 'categoriesTree');
-    expect(categoriesTable.fields.map((item: any) => item.fieldPath)).toEqual(['title', 'code']);
+    expect(categoriesTable.fields.map((item: any) => item.fieldPath)).toEqual(['code']);
     expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['edit', 'addChild']);
     expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
 
     const tableReadback = await getSurface(rootAgent, {
       uid: categoriesTable.uid,
     });
-    expectTreeTableTitleClickDefaults(tableReadback.tree);
+    expectTreeTableTitleClickDefaults(tableReadback.tree, 'code');
     expect(
       readTableColumns(tableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title', undefined, 'code']);
+    ).toEqual(['code', undefined]);
+    expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['EditActionModel', 'AddChildActionModel']);
+  });
+
+  it('treeTitleComposeDefaults should compose omitted-field tree tables with a clickable metadata default column', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose tree table clickable title page',
+      tabTitle: 'Compose tree table clickable title tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'categoriesTree',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'categories',
+            },
+            settings: {
+              treeTable: true,
+            },
+            recordActions: ['view', 'edit'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const categoriesTable = getComposeBlock(getData(composeRes), 'categoriesTree');
+    expect(categoriesTable.fields.map((item: any) => item.fieldPath)).toEqual(['code']);
+    expect(categoriesTable.recordActions.map((item: any) => item.type)).toEqual(['edit', 'addChild']);
+    expect(categoriesTable.recordActions.find((item: any) => item.type === 'view')).toBeUndefined();
+
+    const tableReadback = await getSurface(rootAgent, {
+      uid: categoriesTable.uid,
+    });
+    expectTreeTableTitleClickDefaults(tableReadback.tree, 'code');
+    expect(
+      readTableColumns(tableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['code', undefined]);
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['EditActionModel', 'AddChildActionModel']);
   });
 
@@ -6564,7 +6608,6 @@ describe('flowSurfaces catalog + compose contract', () => {
             settings: {
               treeTable: true,
             },
-            fields: ['code'],
             recordActions: ['view', 'edit'],
           },
         ],
@@ -6573,7 +6616,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
 
     const table = getComposeBlock(getData(composeRes), 'unsafeTitleTree');
-    expect(table.fields.map((item: any) => item.fieldPath)).toEqual(['name', 'code']);
+    expect(table.fields.map((item: any) => item.fieldPath)).toEqual(['name']);
     expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('parent');
     expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('parent.title');
     expect(table.fields.map((item: any) => item.fieldPath)).not.toContain('id');
@@ -6586,7 +6629,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expectTreeTableTitleClickDefaults(tableReadback.tree, 'name');
     expect(
       readTableColumns(tableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['name', undefined, 'code']);
+    ).toEqual(['name', undefined]);
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['EditActionModel', 'AddChildActionModel']);
   });
 

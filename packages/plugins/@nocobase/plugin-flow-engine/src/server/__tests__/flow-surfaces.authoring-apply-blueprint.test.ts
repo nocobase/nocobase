@@ -1895,6 +1895,193 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(persistedTable?.stepParams?.tableSettings?.dragSortBy?.dragSortBy).toBe('sort');
   });
 
+  it('should preserve explicit tree table field priority without injecting title or name', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring tree table explicit field priority',
+          },
+        },
+        page: {
+          title: 'Authoring tree table explicit field priority',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'categoriesTable',
+                type: 'table',
+                collection: 'categories',
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: 'title', operator: '$notEmpty' },
+                    { path: 'code', operator: '$notEmpty' },
+                    { path: 'status', operator: '$notEmpty' },
+                    { path: 'scope', operator: '$notEmpty' },
+                  ],
+                },
+                fields: ['parentId', 'title'],
+                settings: {
+                  treeTable: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const fieldPaths = readTableColumnFieldPaths(persistedTable);
+    expect(fieldPaths.slice(0, 2)).toEqual(['title', 'parentId']);
+    expect(fieldPaths).not.toContain('name');
+  });
+
+  it('should accept explicit tree table fields with a direct interface even when they are not titleable', async () => {
+    const collectionName = `authoring_tree_interface_${_.uniqueId()}`;
+    const applyCollectionRes = await rootAgent.resource('collections').apply({
+      values: {
+        name: collectionName,
+        title: 'Authoring tree interface fields',
+        template: 'tree',
+        fields: [{ name: 'active', type: 'boolean', interface: 'checkbox', titleable: false }],
+      },
+    });
+    expect(applyCollectionRes.status, readErrorMessage(applyCollectionRes)).toBe(200);
+    await waitForFixtureCollectionsReady(context.db, {
+      [collectionName]: ['active', 'parentId'],
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring tree table interface field priority',
+          },
+        },
+        page: {
+          title: 'Authoring tree table interface field priority',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'treeInterfaceTable',
+                type: 'table',
+                collection: collectionName,
+                fields: ['active'],
+                settings: {
+                  treeTable: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableColumnFieldPaths(persistedTable)).toEqual(['active']);
+  });
+
+  it('should reject explicit tree table fields with no readable first-column candidate', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring tree table unreadable explicit fields',
+          },
+        },
+        page: {
+          title: 'Authoring tree table unreadable explicit fields',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'categoriesTable',
+                type: 'table',
+                collection: 'categories',
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: 'title', operator: '$notEmpty' },
+                    { path: 'code', operator: '$notEmpty' },
+                    { path: 'status', operator: '$notEmpty' },
+                    { path: 'scope', operator: '$notEmpty' },
+                  ],
+                },
+                fields: ['parentId'],
+                settings: {
+                  treeTable: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(readErrorMessage(response)).toContain('explicit fields must include at least one direct readable');
+
+    const emptyResponse = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring tree table empty explicit fields',
+          },
+        },
+        page: {
+          title: 'Authoring tree table empty explicit fields',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'categoriesTable',
+                type: 'table',
+                collection: 'categories',
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: 'title', operator: '$notEmpty' },
+                    { path: 'code', operator: '$notEmpty' },
+                    { path: 'status', operator: '$notEmpty' },
+                    { path: 'scope', operator: '$notEmpty' },
+                  ],
+                },
+                fields: [],
+                settings: {
+                  treeTable: true,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(emptyResponse.status).toBe(400);
+    expect(readErrorMessage(emptyResponse)).toContain('explicit fields must include at least one direct readable');
+  });
+
   it('should normalize a unique navigation.group.title to the existing routeId before writing', async () => {
     const groupTitle = `Authoring unique group ${Date.now()}`;
     const existingGroup = await createMenu(rootAgent, {
@@ -2915,6 +3102,13 @@ function readTableRecordActionUses(node: any) {
     (column: any) => column?.use === 'TableActionsColumnModel',
   );
   return _.castArray(actionsColumn?.subModels?.actions || []).map((item: any) => item?.use);
+}
+
+function readTableColumnFieldPaths(node: any) {
+  return _.castArray(node?.subModels?.columns || [])
+    .filter((column: any) => column?.use === 'TableColumnModel')
+    .map((column: any) => column?.stepParams?.fieldSettings?.init?.fieldPath)
+    .filter(Boolean);
 }
 
 function readTableActionNodes(node: any) {

@@ -7022,7 +7022,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expectTreeTableTitleClickDefaults(tableReadback.tree);
   });
 
-  it('should reject unreadable explicit first columns on tree tables', async () => {
+  it('should reject unreadable explicit tree table fields with no readable candidate', async () => {
     for (const fieldName of ['id', 'parentId', 'parent', 'parent.title']) {
       const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
         values: {
@@ -7043,7 +7043,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   settings: {
                     treeTable: true,
                   },
-                  fields: [fieldName, 'title'],
+                  fields: [fieldName],
                 },
               ],
             },
@@ -7052,11 +7052,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
       });
 
       expect(executeRes.status).toBe(400);
-      expect(readErrorMessage(executeRes)).toContain('first column');
-      expect(readErrorMessage(executeRes)).toContain(fieldName);
-      expect(readErrorMessage(executeRes)).toContain('name');
-      expect(readErrorMessage(executeRes)).toContain('title');
-      expect(readErrorMessage(executeRes)).toContain('code');
+      expect(readErrorMessage(executeRes)).toContain('explicit fields must include at least one direct readable');
     }
   });
 

@@ -2864,6 +2864,7 @@ function collectBlockErrors(
   );
   collectSemanticBindingErrors(block, blockType, path, errors, context);
   collectChartDisplayTitleErrors(block, blockType, path, errors);
+  collectTreeTableExplicitFieldsErrors(block, blockType, path, errors, context);
   collectTreeConnectFieldsErrors(block.settings?.connectFields, `${path}.settings.connectFields`, errors);
   collectGridCardSettingsErrors(block, blockType, path, errors);
   const descendantContext = getBlockDescendantValidationContext(block, context);
@@ -5260,6 +5261,80 @@ function collectFieldListErrors(
     );
     collectActionListErrors(field.actions, `${path}[${index}].actions`, errors, block, context);
     collectReactionErrors(field.reaction, `${path}[${index}].reaction`, localKeys, errors);
+  });
+}
+
+function isAuthoringTreeCollection(collection?: any) {
+  return collection?.template === 'tree' || collection?.options?.template === 'tree' || collection?.tree === true;
+}
+
+function resolveAuthoringTreeChildrenFieldName(collection?: any) {
+  const field = getCollectionFields(collection).find(
+    (candidate) => candidate?.treeChildren === true || candidate?.options?.treeChildren === true,
+  );
+  return getFieldName(field);
+}
+
+function isAuthoringTreeTableBlock(block: any, blockType: string, context: FlowSurfaceAuthoringValidationContext) {
+  if (blockType !== 'table' || block?.settings?.treeTable !== true || hasFlowSurfaceTemplateDocument(block?.template)) {
+    return false;
+  }
+  const collection = getBlockCollection(block, context);
+  return isAuthoringTreeCollection(collection) && !!resolveAuthoringTreeChildrenFieldName(collection);
+}
+
+function isUnreadableTreeTableFirstColumnName(fieldName: any) {
+  const normalizedFieldName = String(fieldName || '').trim();
+  const lowerName = normalizedFieldName.toLowerCase();
+  return (
+    !normalizedFieldName ||
+    normalizedFieldName.includes('.') ||
+    ['id', 'uid', 'uuid', 'parentid'].includes(lowerName) ||
+    /^parent[_-]?id$/i.test(normalizedFieldName) ||
+    /(?:^|[_-])(id|uid)$/i.test(normalizedFieldName) ||
+    /(?:Id|ID|Uid|UID)$/.test(normalizedFieldName)
+  );
+}
+
+function isDirectTreeTableFirstColumnName(fieldName: any) {
+  return !isUnreadableTreeTableFirstColumnName(fieldName);
+}
+
+function isUsableTreeTableFirstColumnField(fieldPath: string, collection: any) {
+  const normalizedFieldPath = String(fieldPath || '').trim();
+  if (!isDirectTreeTableFirstColumnName(normalizedFieldPath)) {
+    return false;
+  }
+  const field = resolveFieldFromCollection(collection, normalizeFieldPath(normalizedFieldPath));
+  return !!field && !!getFieldInterface(field) && !isAssociationField(field);
+}
+
+function collectTreeTableExplicitFieldsErrors(
+  block: any,
+  blockType: string,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (
+    !Object.prototype.hasOwnProperty.call(block, 'fields') ||
+    !Array.isArray(block.fields) ||
+    !isAuthoringTreeTableBlock(block, blockType, context)
+  ) {
+    return;
+  }
+  const collection = getBlockCollection(block, context);
+  if (
+    block.fields.some((field: any) =>
+      isUsableTreeTableFirstColumnField(getAssociationAwareFieldPathInput(field), collection),
+    )
+  ) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path: `${path}.fields[0]`,
+    ruleId: 'tree-table-explicit-fields-readable-required',
+    message: `flowSurfaces authoring ${path}.fields[0] tree table explicit fields must include at least one direct readable non-association field; do not rely on addBlock/compose to inject a title/name fallback`,
   });
 }
 

@@ -1035,7 +1035,20 @@ function isUnreadableTreeTableFirstColumnField(field: any) {
   );
 }
 
-function assertApplyBlueprintTreeTableReadableFirstColumn(input: {
+function isReadableTreeTableFirstColumnField(fieldPath: string, collection: any) {
+  if (!fieldPath || fieldPath.includes('.')) {
+    return false;
+  }
+  const field = collection ? resolveFieldFromCollection(collection, fieldPath) : undefined;
+  return (
+    !!field &&
+    !!getFieldInterface(field) &&
+    !isUnreadableTreeTableFirstColumnName(fieldPath) &&
+    !isUnreadableTreeTableFirstColumnField(field)
+  );
+}
+
+function reorderApplyBlueprintTreeTableExplicitFields(input: {
   blockType?: string;
   settings: Record<string, any>;
   template: unknown;
@@ -1049,25 +1062,24 @@ function assertApplyBlueprintTreeTableReadableFirstColumn(input: {
     !Object.prototype.hasOwnProperty.call(input.block, 'fields') ||
     !isApplyBlueprintTreeTableBlock(input.blockType, input.settings, input.template, input.block, input.getCollection)
   ) {
-    return;
+    return input.fields;
   }
   const firstFieldPath = getTreeTableFirstFieldPath(input.fields);
-  if (!firstFieldPath) {
-    return;
+  if (firstFieldPath && isReadableTreeTableFirstColumnField(firstFieldPath, input.collection)) {
+    return input.fields;
   }
-  const rejectFirstField = () => {
-    throwBadRequest(
-      `${input.context}.fields[0] tree table first column '${firstFieldPath}' is not readable; choose name, title, code, or another direct business display field`,
-    );
-  };
-  if (firstFieldPath.includes('.')) {
-    rejectFirstField();
+  const readableIndex = input.fields.findIndex((field) =>
+    isReadableTreeTableFirstColumnField(getTreeTableFirstFieldPath([field]), input.collection),
+  );
+  if (readableIndex >= 0) {
+    const nextFields = input.fields.slice();
+    const [readableField] = nextFields.splice(readableIndex, 1);
+    nextFields.unshift(readableField);
+    return nextFields;
   }
-  const firstField = input.collection ? resolveFieldFromCollection(input.collection, firstFieldPath) : undefined;
-  if (!isUnreadableTreeTableFirstColumnName(firstFieldPath) && !isUnreadableTreeTableFirstColumnField(firstField)) {
-    return;
-  }
-  rejectFirstField();
+  throwBadRequest(
+    `${input.context}.fields[0] tree table explicit fields must include at least one direct readable non-association field; do not rely on applyBlueprint to inject a title/name fallback`,
+  );
 }
 
 function normalizeBlockResourceObject(
@@ -2410,7 +2422,21 @@ function compileBlocks(
         path: blockContext,
       });
     }
-    const fieldInputs = resolveBlockFieldInputs(block, blockContext, getCollection);
+    const rawFieldInputs = resolveBlockFieldInputs(block, blockContext, getCollection);
+    const fieldGridCollection =
+      getCollection && blockResourceContext.surfaceCollectionName
+        ? getCollection(blockResourceContext.dataSourceKey || 'main', blockResourceContext.surfaceCollectionName)
+        : null;
+    const fieldInputs = reorderApplyBlueprintTreeTableExplicitFields({
+      blockType,
+      settings,
+      template,
+      block,
+      fields: rawFieldInputs,
+      collection: fieldGridCollection,
+      getCollection,
+      context: blockContext,
+    });
     const fields = fieldInputs.map((field, fieldIndex) =>
       compileField(
         field,
@@ -2432,20 +2458,6 @@ function compileBlocks(
         },
       ),
     );
-    const fieldGridCollection =
-      getCollection && blockResourceContext.surfaceCollectionName
-        ? getCollection(blockResourceContext.dataSourceKey || 'main', blockResourceContext.surfaceCollectionName)
-        : null;
-    assertApplyBlueprintTreeTableReadableFirstColumn({
-      blockType,
-      settings,
-      template,
-      block,
-      fields: fieldInputs,
-      collection: fieldGridCollection,
-      getCollection,
-      context: blockContext,
-    });
     const fieldsLayout = Object.prototype.hasOwnProperty.call(block, 'fieldsLayout')
       ? compileScopedLayout(
           _.isUndefined(block.fieldsLayout)

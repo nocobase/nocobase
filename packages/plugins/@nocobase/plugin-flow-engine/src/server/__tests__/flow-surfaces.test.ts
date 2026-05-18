@@ -3146,7 +3146,10 @@ describe('flowSurfaces resource', () => {
     const addBlockReadback = await getSurface(rootAgent, {
       uid: addBlockTableUid,
     });
-    expectTreeTableTitleClickDefaults(addBlockReadback.tree);
+    expectTreeTableTitleClickDefaults(addBlockReadback.tree, 'code');
+    expect(
+      readTableColumns(addBlockReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['code', undefined]);
     expect(readTableRecordActionUses(addBlockReadback.tree)).toEqual(['AddChildActionModel']);
 
     const tabReadback = await getSurface(rootAgent, {
@@ -3172,6 +3175,18 @@ describe('flowSurfaces resource', () => {
             },
             fields: ['code'],
           },
+          {
+            key: 'categoriesTreeMoveExistingReadableField',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'categories',
+            },
+            settings: {
+              treeTable: true,
+            },
+            fields: ['parentId', 'title'],
+          },
         ],
       },
     });
@@ -3182,11 +3197,229 @@ describe('flowSurfaces resource', () => {
     const addBlocksReadback = await getSurface(rootAgent, {
       uid: addBlocksTableUid,
     });
-    expectTreeTableTitleClickDefaults(addBlocksReadback.tree);
+    expectTreeTableTitleClickDefaults(addBlocksReadback.tree, 'code');
     expect(
       readTableColumns(addBlocksReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
-    ).toEqual(['title', undefined, 'code']);
+    ).toEqual(['code', undefined]);
     expect(readTableRecordActionUses(addBlocksReadback.tree)).toEqual(['AddChildActionModel']);
+
+    const moveReadableTableUid = addBlocksData.blocks.find(
+      (item: any) => item.key === 'categoriesTreeMoveExistingReadableField',
+    )?.result?.uid;
+    const moveReadableReadback = await getSurface(rootAgent, {
+      uid: moveReadableTableUid,
+    });
+    expectTreeTableTitleClickDefaults(moveReadableReadback.tree);
+    expect(
+      readTableColumns(moveReadableReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title', undefined, 'parentId']);
+    expect(readTableRecordActionUses(moveReadableReadback.tree)).toEqual(['AddChildActionModel']);
+  });
+
+  it('treeTitleAddApisExplicitFields should reject unreadable-only direct tree table fields', async () => {
+    const unreadableFieldCases: Array<{ key: string; fields: any[] }> = [
+      { key: 'empty', fields: [] },
+      { key: 'parentId', fields: ['parentId'] },
+      { key: 'dotted', fields: ['parent.title'] },
+    ];
+    const expectExplicitFieldsError = (response: any, path: string) => {
+      expect(response.status, readErrorMessage(response)).toBe(400);
+      expectFlowSurfaceError(response, 'tree-table-explicit-fields-readable-required', path);
+      expect(readErrorMessage(response)).toContain('explicit fields must include at least one direct readable');
+    };
+
+    for (const testCase of unreadableFieldCases) {
+      const page = await createPage(rootAgent, {
+        title: `Tree table unreadable explicit ${testCase.key} page`,
+        tabTitle: `Tree table unreadable explicit ${testCase.key} tab`,
+      });
+
+      const addBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'categories',
+          },
+          settings: {
+            treeTable: true,
+          },
+          fields: testCase.fields,
+        },
+      });
+      expectExplicitFieldsError(addBlockRes, '$.fields[0]');
+
+      const tabReadback = await getSurface(rootAgent, {
+        uid: page.tabSchemaUid,
+      });
+      const tabGridUid = tabReadback.tree?.subModels?.grid?.uid;
+      expect(tabGridUid).toBeTruthy();
+      const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+        values: {
+          target: {
+            uid: tabGridUid,
+          },
+          blocks: [
+            {
+              key: `categoriesTreeUnreadable${testCase.key}`,
+              type: 'table',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'categories',
+              },
+              settings: {
+                treeTable: true,
+              },
+              fields: testCase.fields,
+            },
+          ],
+        },
+      });
+      expectExplicitFieldsError(addBlocksRes, '$.blocks[0].fields[0]');
+
+      const composeRes = await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: `categoriesTreeUnreadable${testCase.key}`,
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'categories',
+              },
+              settings: {
+                treeTable: true,
+              },
+              fields: testCase.fields,
+            },
+          ],
+        },
+      });
+      expectExplicitFieldsError(composeRes, '$.blocks[0].fields[0]');
+    }
+  });
+
+  it('treeTitleAddApisExplicitFields should accept direct interface fields that are not titleable', async () => {
+    const collectionName = `tree_explicit_interface_${_.uniqueId()}`;
+    const applyCollectionRes = await rootAgent.resource('collections').apply({
+      values: {
+        name: collectionName,
+        title: 'Tree explicit interface fields',
+        template: 'tree',
+        fields: [{ name: 'active', type: 'boolean', interface: 'checkbox', titleable: false }],
+      },
+    });
+    expect(applyCollectionRes.status, readErrorMessage(applyCollectionRes)).toBe(200);
+    await waitForFixtureCollectionsReady(db, {
+      [collectionName]: ['active', 'parentId'],
+    });
+
+    const page = await createPage(rootAgent, {
+      title: 'Tree table non titleable interface page',
+      tabTitle: 'Tree table non titleable interface tab',
+    });
+
+    const addBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName,
+        },
+        settings: {
+          treeTable: true,
+        },
+        fields: ['active'],
+      },
+    });
+    expect(addBlockRes.status, readErrorMessage(addBlockRes)).toBe(200);
+    const addBlockData = getData(addBlockRes);
+    const addBlockReadback = await getSurface(rootAgent, {
+      uid: addBlockData.uid,
+    });
+    expectTreeTableTitleClickDefaults(addBlockReadback.tree, 'active');
+    expect(
+      readTableColumns(addBlockReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['active', undefined]);
+
+    const tabReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    const tabGridUid = tabReadback.tree?.subModels?.grid?.uid;
+    expect(tabGridUid).toBeTruthy();
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: tabGridUid,
+        },
+        blocks: [
+          {
+            key: 'treeExplicitInterfaceAddBlocks',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName,
+            },
+            settings: {
+              treeTable: true,
+            },
+            fields: ['active'],
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status, readErrorMessage(addBlocksRes)).toBe(200);
+    const addBlocksTableUid = getData(addBlocksRes).blocks.find(
+      (item: any) => item.key === 'treeExplicitInterfaceAddBlocks',
+    )?.result?.uid;
+    const addBlocksReadback = await getSurface(rootAgent, {
+      uid: addBlocksTableUid,
+    });
+    expectTreeTableTitleClickDefaults(addBlocksReadback.tree, 'active');
+    expect(
+      readTableColumns(addBlocksReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['active', undefined]);
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'treeExplicitInterfaceCompose',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName,
+            },
+            settings: {
+              treeTable: true,
+            },
+            fields: ['active'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const composeTableUid = getData(composeRes).blocks.find((item: any) => item.key === 'treeExplicitInterfaceCompose')
+      ?.uid;
+    const composeReadback = await getSurface(rootAgent, {
+      uid: composeTableUid,
+    });
+    expectTreeTableTitleClickDefaults(composeReadback.tree, 'active');
+    expect(
+      readTableColumns(composeReadback.tree).map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['active', undefined]);
   });
 
   it('should reject invalid addBlock defaultActionSettings payloads only when a default filter action consumes them', async () => {
@@ -10702,10 +10935,10 @@ function readTableRecordActionUses(node: any) {
   return _.castArray(actionsColumn?.subModels?.actions || []).map((action: any) => action?.use);
 }
 
-function expectTreeTableTitleClickDefaults(node: any) {
+function expectTreeTableTitleClickDefaults(node: any, expectedFieldPath = 'title') {
   const columns = readTableColumns(node);
   expect(columns[0]?.use).toBe('TableColumnModel');
-  expect(columns[0]?.stepParams?.fieldSettings?.init?.fieldPath).toBe('title');
+  expect(columns[0]?.stepParams?.fieldSettings?.init?.fieldPath).toBe(expectedFieldPath);
   expect(columns[0]?.subModels?.field?.props?.clickToOpen).toBe(true);
   expect(columns[0]?.subModels?.field?.stepParams?.displayFieldSettings?.clickToOpen?.clickToOpen).toBe(true);
   expect(columns[0]?.subModels?.field?.stepParams?.popupSettings?.openView).toBeTruthy();

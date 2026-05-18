@@ -597,6 +597,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.description).toContain(
       'business display field',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.description).toContain(
+      'not injected into explicit lists',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.fields.description).toContain('`titleField`');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceApplyBlueprintActionSpec',
     );
@@ -691,6 +695,8 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.actions.description).toContain('not auto-promoted');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('Ordinary table `recordActions`');
     expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('explicit first `fields[0]` column');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('not injected into explicit lists');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('`titleField`');
     expect(schemas.FlowSurfaceApplyBlueprintBlockSpec.properties.associationPathName.description).toContain(
       'associatedRecords',
     );
@@ -832,6 +838,8 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintPath.description).toContain('do not complete `view` / `edit` / `delete`');
     expect(applyBlueprintPath.description).toContain('explicit first `fields[0]` column');
     expect(applyBlueprintPath.description).toContain('parentId');
+    expect(applyBlueprintPath.description).toContain('not injected into explicit lists');
+    expect(applyBlueprintPath.description).toContain('`titleField`');
     const applyApprovalBlueprintPath = swaggerDocument.paths['/flowSurfaces:applyApprovalBlueprint'].post;
     expect(applyApprovalBlueprintPath.summary).toContain('approval blueprint');
     expect(applyApprovalBlueprintPath.description).toContain('workflow.config.approvalUid');
