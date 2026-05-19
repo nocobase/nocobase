@@ -490,6 +490,17 @@ function generatePm2Home() {
 }
 
 exports.initEnv = function initEnv() {
+  const preserveSymlinksFlag = '--preserve-symlinks';
+  const currentNodeOptions = String(process.env.NODE_OPTIONS || '').trim();
+  const hasPreserveSymlinksFlag = currentNodeOptions
+    ? currentNodeOptions.split(/\s+/).includes(preserveSymlinksFlag)
+    : false;
+  if (!hasPreserveSymlinksFlag) {
+    process.env.NODE_OPTIONS = currentNodeOptions
+      ? `${currentNodeOptions} ${preserveSymlinksFlag}`
+      : preserveSymlinksFlag;
+  }
+
   const env = {
     APP_ENV: 'development',
     APP_KEY: 'test-jwt-secret',
