@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-beta.33",
+  "version": "2.1.0-beta.34",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
@@ -80,13 +80,13 @@
     }
   },
   "dependencies": {
-    "@nocobase/license-kit": "^0.3.8",
-    "@oclif/core": "^4.10.4",
-    "@inquirer/core": "^11.1.10",
-    "@inquirer/type": "^4.0.5",
     "@inquirer/ansi": "^2.0.5",
     "@inquirer/confirm": "^6.0.13",
+    "@inquirer/core": "^11.1.10",
     "@inquirer/select": "^5.1.5",
+    "@inquirer/type": "^4.0.5",
+    "@nocobase/license-kit": "^0.3.8",
+    "@oclif/core": "^4.10.4",
     "cross-spawn": "^7.0.6",
     "mysql2": "^3.14.0",
     "openapi-types": "^12.1.3",

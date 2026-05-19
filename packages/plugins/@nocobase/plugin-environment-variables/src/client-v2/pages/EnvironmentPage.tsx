@@ -16,11 +16,11 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { FilterContent } from '@nocobase/client-v2';
+import { FilterContent, Table } from '@nocobase/client-v2';
 import { useFlowContext, useFlowView } from '@nocobase/flow-engine';
 import { transformFilter } from '@nocobase/utils/client';
 import { useRequest } from 'ahooks';
-import { Alert, App, Button, Card, Dropdown, Flex, Form, Input, Popover, Radio, Space, Table, Tag, theme } from 'antd';
+import { Alert, App, Button, Card, Dropdown, Flex, Form, Input, Popover, Radio, Space, Tag, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { observable } from '@formily/reactive';
 import { observer } from '@formily/react';
@@ -291,7 +291,7 @@ const EnvironmentPage: React.FC = observer(() => {
             </Dropdown>
           </Space>
         </Flex>
-        <Table
+        <Table<EnvVariable>
           rowKey="name"
           loading={loading}
           dataSource={records}

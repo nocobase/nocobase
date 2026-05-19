@@ -7,70 +7,87 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Empty, Space, Tabs } from 'antd';
-import React, { createElement, useContext, useMemo } from 'react';
 import { usePlugin } from '@nocobase/client-v2';
-import { BasicSignInForm } from '../forms/BasicSignInForm';
-import PluginAuthClientV2, { type AuthOptions } from '../plugin';
-import { AuthenticatorsContext } from '../authenticator';
-import { useAuthTranslation } from '../locale';
+import { Empty, Space, Spin, Tabs } from 'antd';
+import React, { lazy, Suspense, useContext, useMemo } from 'react';
+import { AuthenticatorsContext, type Authenticator } from '../authenticator';
 import { useDocumentTitle } from '../hooks';
+import { useAuthTranslation } from '../locale';
+import PluginAuthClientV2, { type AuthOptions } from '../plugin';
 
-export function useSignInForms(): Record<string, AuthOptions['components']['SignInForm']> {
+type LoaderMap<L> = Record<string, L>;
+
+function useLoaderMap<K extends keyof AuthOptions>(field: K): LoaderMap<NonNullable<AuthOptions[K]>> {
   const plugin = usePlugin(PluginAuthClientV2);
-  const authTypes = plugin.authTypes.getEntities();
-  const forms: Record<string, AuthOptions['components']['SignInForm']> = {};
-
-  for (const [authType, options] of authTypes) {
-    if (options.components?.SignInForm) {
-      forms[authType] = options.components.SignInForm;
+  return useMemo(() => {
+    const result: LoaderMap<NonNullable<AuthOptions[K]>> = {};
+    for (const [authType, options] of plugin.authTypes.getEntities()) {
+      const loader = options[field];
+      if (loader) {
+        result[authType] = loader as NonNullable<AuthOptions[K]>;
+      }
     }
-  }
-
-  return forms;
+    return result;
+  }, [plugin, field]);
 }
 
-export function useSignInButtons(authenticators = []) {
-  const plugin = usePlugin(PluginAuthClientV2);
-  const authTypes = plugin.authTypes.getEntities();
-  const customButtons = {};
-
-  for (const [authType, options] of authTypes) {
-    if (options.components?.SignInButton) {
-      customButtons[authType] = options.components.SignInButton;
+function lazyByAuthType<P>(loaderMap: LoaderMap<() => Promise<{ default: React.ComponentType<P> }>>) {
+  const cache = new Map<string, React.LazyExoticComponent<React.ComponentType<P>>>();
+  return (authType: string) => {
+    if (!loaderMap[authType]) return undefined;
+    if (!cache.has(authType)) {
+      cache.set(authType, lazy(loaderMap[authType]));
     }
-  }
-
-  return authenticators
-    .filter((authenticator) => customButtons[authenticator.authType])
-    .map((authenticator, index) =>
-      createElement(customButtons[authenticator.authType], { key: `${authenticator.name}-${index}`, authenticator }),
-    );
+    return cache.get(authType);
+  };
 }
 
 export default function SignInPage() {
   const { t } = useAuthTranslation();
-  const signInForms = useSignInForms();
   const authenticators = useContext(AuthenticatorsContext);
-  const signInButtons = useSignInButtons(authenticators);
+  const signInFormLoaders = useLoaderMap('signInFormLoader');
+  const signInButtonLoaders = useLoaderMap('signInButtonLoader');
+
+  const resolveSignInForm = useMemo(() => lazyByAuthType(signInFormLoaders), [signInFormLoaders]);
+  const resolveSignInButton = useMemo(() => lazyByAuthType(signInButtonLoaders), [signInButtonLoaders]);
 
   useDocumentTitle(t('Signin'));
 
   const tabs = useMemo(() => {
     return authenticators
-      .map((authenticator) => {
-        const FormComponent = signInForms[authenticator.authType];
+      .map((authenticator: Authenticator) => {
+        const FormComponent = resolveSignInForm(authenticator.authType);
         if (!FormComponent) {
           return null;
         }
         return {
           key: authenticator.name,
           label: authenticator.title || `${t('Sign-in')} (${authenticator.authTypeTitle || authenticator.authType})`,
-          children: createElement(FormComponent, { authenticator }),
+          children: (
+            <Suspense fallback={<Spin />}>
+              <FormComponent authenticator={authenticator} />
+            </Suspense>
+          ),
         };
       })
       .filter(Boolean);
-  }, [authenticators, signInForms, t]);
+  }, [authenticators, resolveSignInForm, t]);
+
+  const buttons = useMemo(() => {
+    return authenticators
+      .map((authenticator: Authenticator, index: number) => {
+        const ButtonComponent = resolveSignInButton(authenticator.authType);
+        if (!ButtonComponent) {
+          return null;
+        }
+        return (
+          <Suspense key={`${authenticator.name}-${index}`} fallback={<Spin />}>
+            <ButtonComponent authenticator={authenticator} />
+          </Suspense>
+        );
+      })
+      .filter(Boolean);
+  }, [authenticators, resolveSignInButton]);
 
   if (!authenticators.length) {
     return <Empty description={t('No authentication methods available.')} />;
@@ -78,8 +95,12 @@ export default function SignInPage() {
 
   return (
     <Space direction="vertical" style={{ display: 'flex' }}>
-      {tabs.length > 1 ? <Tabs items={tabs} /> : tabs.length ? tabs[0].children : null}
-      {signInButtons.length ? <Space direction="vertical">{signInButtons}</Space> : null}
+      {tabs.length > 1 ? <Tabs items={tabs as any} /> : tabs.length ? (tabs[0] as any).children : null}
+      {buttons.length ? (
+        <Space direction="vertical" style={{ display: 'flex' }}>
+          {buttons}
+        </Space>
+      ) : null}
     </Space>
   );
 }

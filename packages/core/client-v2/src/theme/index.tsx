@@ -13,6 +13,7 @@ import React, { createContext, FC, useCallback, useMemo, useRef } from 'react';
 import compatOldTheme from './compatOldTheme';
 import { addCustomAlgorithmToTheme } from './customAlgorithm';
 import defaultTheme from './defaultTheme';
+import './globalStyles';
 import { ThemeConfig } from './type';
 
 interface ThemeItem {

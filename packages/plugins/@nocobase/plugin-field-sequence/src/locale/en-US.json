@@ -2,6 +2,7 @@
   "Add rule": "Add rule",
   "Autoincrement": "Autoincrement",
   "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.",
+  "At least one character set should be selected": "At least one character set should be selected",
   "Character sets": "Character sets",
   "Customize": "Customize",
   "Daily": "Daily",
