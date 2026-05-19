@@ -54,19 +54,16 @@ export function resolveCwd(cwd?: string): string {
 
 export function resolveProjectCwd(cwd?: string): string {
   const normalizedCwd = typeof cwd === 'string' && cwd.trim() === '' ? undefined : cwd;
-  const next = normalizedCwd ?? process.cwd();
-  const resolvedNext = resolveCwd(normalizedCwd);
-
-  if (!normalizedCwd || path.isAbsolute(next)) {
-    return resolvedNext;
-  }
-
-  const baseCwd = process.cwd();
-  let current = baseCwd;
-  const fallback = resolvedNext;
+  const fallback = resolveCwd(normalizedCwd);
+  const isAbsoluteInput = typeof normalizedCwd === 'string' && path.isAbsolute(normalizedCwd);
+  let current = isAbsoluteInput ? fallback : process.cwd();
 
   while (true) {
-    const candidate = path.resolve(current, next);
+    const candidate = isAbsoluteInput
+      ? current
+      : normalizedCwd
+        ? path.resolve(current, normalizedCwd)
+        : current;
     if (hasLocalNocoBaseBinary(candidate)) {
       return candidate;
     }
