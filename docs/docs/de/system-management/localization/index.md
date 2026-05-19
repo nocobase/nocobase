@@ -57,6 +57,8 @@ Wenn Texte im Code definiert werden, muss der ns (Namespace) manuell angegeben w
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
 
+Die Übersetzungsspalte unterstützt Schnellbearbeitung. Sie können direkt auf eine Übersetzungszelle in der Tabelle klicken, sie ändern, mit Enter oder beim Verlassen des Eingabefelds speichern und mit `Esc` die Änderung abbrechen. Wenn Sie Originaltext, Modul oder längere Übersetzungen ansehen möchten, können Sie weiterhin die Bearbeiten-Schaltfläche in den Zeilenaktionen verwenden, um den Drawer-Editor zu öffnen.
+
 ### KI-Übersetzung verwenden
 
 Die Lokalisierungsverwaltung unterstützt die Übersetzung von Einträgen über die AI-Mitarbeiterin Lina. Nachdem AI-Mitarbeiter aktiviert und ein Modelldienst konfiguriert wurde, können Sie auf der Lokalisierungsverwaltungsseite KI-Übersetzung verwenden, um Übersetzungen für die aktuelle Sprache stapelweise zu erzeugen.
@@ -65,9 +67,19 @@ Die Lokalisierungsverwaltung unterstützt die Übersetzung von Einträgen über 
 
 Unterstützte Übersetzungsbereiche:
 
-- **Vollständige Übersetzung**: übersetzt alle geeigneten Einträge der aktuellen Sprache.
-- **Inkrementelle Übersetzung**: übersetzt nur Einträge, die noch keine Übersetzung haben.
+- **Vollständige Übersetzung**: übersetzt alle Einträge der aktuellen Sprache und überschreibt vorhandene Übersetzungen.
+- **Inkrementelle Übersetzung**: übersetzt nur Einträge, die in der aktuellen Sprache noch keine Übersetzung haben. Bei integrierten Einträgen gilt auch eine bereits im System- oder Plugin-Sprachpaket der Zielsprache vorhandene Übersetzung als vorhanden.
 - **Ausgewählte Einträge übersetzen**: wählen Sie Einträge in der Tabelle aus und übersetzen Sie nur diese Inhalte.
+
+![](https://static-docs.nocobase.com/202605191341968.png)
+
+Beim Erstellen einer vollständigen oder inkrementellen Übersetzungsaufgabe können Sie im Bestätigungsdialog den Übersetzungsumfang wählen:
+
+- **Alle**: verarbeitet alle Einträge, die den aktuellen Aufgabenbedingungen entsprechen.
+- **Integrierte Einträge**: System- und Plugin-Einträge.
+- **Benutzerdefinierte Einträge**: Routennamen, Sammlungs- und Feldnamen sowie UI-Inhalte.
+
+Der Bestätigungsdialog unterstützt außerdem die Konfiguration von Referenzübersetzungssprachen. Vollständige und inkrementelle Übersetzung konfigurieren Standardsprache und Fallback-Sprache für integrierte und benutzerdefinierte Einträge separat. Die Übersetzung ausgewählter Einträge zeigt nur eine allgemeine Referenzsprachen-Konfiguration.
 
 Die KI-Übersetzung erstellt eine Hintergrundaufgabe. Während der Ausführung können Sie den Fortschritt verfolgen. Nach Abschluss werden die Übersetzungen in die entsprechende Sprache geschrieben und sollten weiterhin anhand des tatsächlichen Kontexts geprüft und korrigiert werden.
 

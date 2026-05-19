@@ -140,10 +140,18 @@ Vaya a `System Management -> Localization Management`.
 1. Cambie al idioma de destino.
 2. Haga clic en `Synchronize` para sincronizar entradas.
 3. Haga clic en el avatar de Lina.
-4. Elija traducción incremental, seleccionada o completa.
+4. Elija según sea necesario:
+   - `Incremental translation`: traduce entradas que aún no tienen traducción.
+   - `Selected translation`: traduce las entradas seleccionadas en la tabla.
+   - `Full translation`: traduce todas las entradas del idioma actual.
 5. Revise cantidad, proveedor y modelo en el diálogo de confirmación.
-6. Confirme para crear la tarea asíncrona.
-7. Al finalizar, revise y publique las traducciones.
+6. Si elige traducción incremental o completa, seleccione el alcance de traducción:
+   - `All`
+   - `Built-in entries`: entradas del sistema y plugins.
+   - `Custom entries`: nombres de rutas, nombres de colecciones y campos, y contenido de UI.
+7. Ajuste los idiomas de traducción de referencia si es necesario. La traducción incremental y completa configuran idiomas de referencia por separado para entradas integradas y personalizadas; la traducción seleccionada solo muestra una configuración general de idiomas de referencia.
+8. Confirme para crear la tarea asíncrona.
+9. Al finalizar, revise y publique las traducciones.
 
 Empiece con `Selected translation` para algunas entradas y compruebe estilo y velocidad.
 
@@ -151,9 +159,10 @@ Empiece con `Selected translation` para algunas entradas y compruebe estilo y ve
 
 Lina construye solicitudes a partir de entradas y traducciones de referencia. Para entradas cortas usa referencias existentes para mejorar la consistencia:
 
-- Las entradas integradas prefieren traducciones chinas como referencia.
-- Las entradas no integradas prefieren el idioma predeterminado del sistema.
-- Si existe una referencia inglesa, se usa como texto fuente.
+- Las entradas integradas usan traducciones chinas como referencia predeterminada y japonés como referencia alternativa.
+- Las entradas personalizadas usan el idioma predeterminado del sistema como referencia predeterminada y chino como referencia alternativa.
+- Los usuarios pueden ajustar el idioma predeterminado y el idioma alternativo en el diálogo de confirmación de la tarea.
+- El sistema usa primero la traducción de referencia en el idioma predeterminado. Si no existe, intenta usar el idioma alternativo.
 - Los resultados se escriben en el idioma de destino, pero no se publican automáticamente.
 
 La semántica del prompt es similar a:
