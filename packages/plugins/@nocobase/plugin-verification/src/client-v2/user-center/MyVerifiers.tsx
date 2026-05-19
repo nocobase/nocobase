@@ -10,7 +10,7 @@
 import { DialogFormLayout, useApp } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { Alert, App, Form, List, Spin, Tabs, Tag, theme } from 'antd';
+import { Alert, App, Form, List, Spin, Tabs, Tag } from 'antd';
 import React, { useState } from 'react';
 import { useT, useVerificationTranslation } from '../locale';
 import PluginVerificationClientV2 from '../plugin';
@@ -29,12 +29,17 @@ type UserVerifier = {
 
 function BindDialogContent(props: { verifier: UserVerifier; onSubmitted: () => void }) {
   const { t } = useVerificationTranslation();
+  const compileT = useT();
   const ctx = useFlowContext();
   const app = useApp();
   const plugin = app.pm.get(PluginVerificationClientV2);
   const BindForm = plugin?.verificationManager.getVerification(props.verifier.verificationType)?.components?.BindForm;
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  // Server returns titles as raw `{{ t("…", { ns: "…" }) }}` schema
+  // templates. Compile through FlowI18n so the dialog title shows the
+  // human-readable label instead of the literal expression.
+  const dialogTitle = compileT(props.verifier.title || '') || t('Bind');
 
   const handleSubmit = useMemoizedFn(async () => {
     const values = await form.validateFields();
@@ -59,7 +64,7 @@ function BindDialogContent(props: { verifier: UserVerifier; onSubmitted: () => v
   if (!BindForm) {
     return (
       <DialogFormLayout
-        title={props.verifier.title || t('Bind')}
+        title={dialogTitle}
         onSubmit={async () => undefined}
         submitText={t('Close')}
         cancelText={t('Cancel')}
@@ -78,7 +83,7 @@ function BindDialogContent(props: { verifier: UserVerifier; onSubmitted: () => v
 
   return (
     <DialogFormLayout
-      title={props.verifier.title || t('Bind')}
+      title={dialogTitle}
       onSubmit={handleSubmit}
       submitting={submitting}
       submitText={t('Bind')}
@@ -132,7 +137,8 @@ function UnbindDialogContent(props: {
       const VerificationForm = plugin?.verificationManager.getVerification(verifier.verificationType)?.components
         ?.VerificationForm;
       if (!VerificationForm) return null;
-      const tabTitle = verifier.title || compileT(verifier.verificationTypeTitle || verifier.verificationType);
+      const tabTitle =
+        compileT(verifier.title || '') || compileT(verifier.verificationTypeTitle || verifier.verificationType);
       return {
         key: verifier.name,
         label: tabTitle,
@@ -224,7 +230,6 @@ export function MyVerifiers() {
   const compileT = useT();
   const { t } = useVerificationTranslation();
   const ctx = useFlowContext();
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { data, loading, refresh } = useRequest(async () => {
     const response = await ctx.api.resource('verifiers').listByUser();
@@ -236,38 +241,33 @@ export function MyVerifiers() {
     message.success(t('Operation succeeded'));
   });
 
-  // `viewer.drawer` doesn't apply body padding by default (settings pages
-  // get it from their `<Card>` wrapper). Add token-derived padding here
-  // so the List doesn't sit flush against the drawer edge.
+  if (loading) {
+    return <Spin />;
+  }
+
   return (
-    <div style={{ padding: token.padding }}>
-      {loading ? (
-        <Spin />
-      ) : (
-        <List
-          bordered
-          dataSource={data || []}
-          renderItem={(item) => (
-            <List.Item actions={[<VerifierActions key="action" verifier={item} onChanged={onChanged} />]}>
-              <List.Item.Meta
-                title={
-                  <>
-                    {compileT(item.title || '')}{' '}
-                    {item.boundInfo?.bound ? (
-                      <Tag color="success">{t('Configured')}</Tag>
-                    ) : (
-                      <Tag color="warning">{t('Not configured')}</Tag>
-                    )}
-                  </>
-                }
-                description={compileT(item.description || '')}
-              />
-              <div>{item.boundInfo?.publicInfo}</div>
-            </List.Item>
-          )}
-        />
+    <List
+      bordered
+      dataSource={data || []}
+      renderItem={(item) => (
+        <List.Item actions={[<VerifierActions key="action" verifier={item} onChanged={onChanged} />]}>
+          <List.Item.Meta
+            title={
+              <>
+                {compileT(item.title || '')}{' '}
+                {item.boundInfo?.bound ? (
+                  <Tag color="success">{t('Configured')}</Tag>
+                ) : (
+                  <Tag color="warning">{t('Not configured')}</Tag>
+                )}
+              </>
+            }
+            description={compileT(item.description || '')}
+          />
+          <div>{item.boundInfo?.publicInfo}</div>
+        </List.Item>
       )}
-    </div>
+    />
   );
 }
 

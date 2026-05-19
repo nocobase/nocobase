@@ -56,7 +56,7 @@ export function VerificationCode(props: VerificationCodeProps) {
   const { value, onChange, actionType, verifier, phone, isLogged, disabled, placeholder } = props;
   const { t } = useVerificationTranslation();
   const ctx = useFlowContext();
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
 
   const [count, setCount] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -100,8 +100,15 @@ export function VerificationCode(props: VerificationCodeProps) {
       timerRef.current = setInterval(() => {
         setCount((c) => c - 1);
       }, 1000);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      // v1 surfaces SMS send failures through a top-right notification —
+      // the underlying provider (Aliyun / Tencent) commonly fails with a
+      // misconfigured sign / template / endpoint, and a silent console
+      // swallow leaves the user clicking "Send code" with no feedback.
+      const serverMessage = error?.response?.data?.errors?.[0]?.message || error?.message;
+      notification.error({
+        message: serverMessage || t('Verification send failed, please try later or contact to administrator'),
+      });
     }
   });
 
