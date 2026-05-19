@@ -675,10 +675,11 @@ export function LocalizationPageContent() {
 
 function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
   const { selectedRowKeys } = props;
-  const ctx = useFlowContext();
+  const ctx = useFlowContext<any>();
   const t = useT();
   const api = ctx.app.apiClient;
   const currentLocale = api.auth.getLocale?.() || api.auth.locale || 'en-US';
+  const systemDefaultLocale = ctx.systemSettings?.data?.data?.enabledLanguages?.[0];
   const [loadingTaskTitle, setLoadingTaskTitle] = useState<string | undefined>();
   const lina: AIEmployee = {
     username: 'lina',
@@ -699,11 +700,11 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
         fallback: 'ja-JP',
       },
       custom: {
-        primary: currentLocale,
+        primary: systemDefaultLocale || 'en-US',
         fallback: 'zh-CN',
       },
     }),
-    [currentLocale],
+    [systemDefaultLocale],
   );
 
   const createTask = async (task: LocalizationTask) => {
@@ -714,12 +715,21 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
     }
     setLoadingTaskTitle(task.title as string);
     try {
+      const systemSettings = await ctx.systemSettings?.load?.();
+      const systemDefaultLocale = systemSettings?.data?.enabledLanguages?.[0] || defaultReferenceLocales.custom.primary;
+      const referenceLocales = {
+        ...defaultReferenceLocales,
+        custom: {
+          ...defaultReferenceLocales.custom,
+          primary: systemDefaultLocale,
+        },
+      };
       const values = {
         mode,
         scope: 'all' as TranslationScope,
         locale: currentLocale,
         employeeUsername: 'lina',
-        referenceLocales: defaultReferenceLocales,
+        referenceLocales,
         textIds: mode === 'selected' ? selectedRowKeys : undefined,
       };
       const previewState = {
