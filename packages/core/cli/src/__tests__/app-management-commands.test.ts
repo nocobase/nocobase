@@ -405,15 +405,21 @@ test('start enables daemon by default for npm/git envs', async () => {
   await Start.prototype.run.call(command);
 
   expect(mocks.startTask.mock.calls).toEqual([
+    ['Running local postinstall for "local"...'],
     ['Starting NocoBase for "local" in the background...'],
   ]);
   expect(mocks.succeedTask.mock.calls).toEqual([
+    ['Local postinstall finished for "local".'],
     ['NocoBase is running for "local" at http://127.0.0.1:13000.'],
   ]);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(1);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(2);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[0]?.envName).toBe('local');
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--quickstart', '--port', '13000', '--daemon', '--instances', '2', '--launch-mode', 'pm2']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    stdio: 'ignore',
+  });
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--quickstart', '--port', '13000', '--daemon', '--instances', '2', '--launch-mode', 'pm2']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[2]).toEqual({
     stdio: 'ignore',
   });
 });
@@ -485,11 +491,19 @@ test('start supports --no-daemon for npm/git envs', async () => {
   expect(mocks.printInfo.mock.calls).toEqual([
     ['Starting NocoBase for "local" in the foreground at http://127.0.0.1:13000. Press Ctrl+C to stop.'],
   ]);
-  expect(mocks.startTask.mock.calls.length).toBe(0);
-  expect(mocks.succeedTask.mock.calls.length).toBe(0);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(1);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--port', '13000']);
+  expect(mocks.startTask.mock.calls).toEqual([
+    ['Running local postinstall for "local"...'],
+  ]);
+  expect(mocks.succeedTask.mock.calls).toEqual([
+    ['Local postinstall finished for "local".'],
+  ]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(2);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    stdio: 'ignore',
+  });
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[2]).toEqual({
     stdio: 'ignore',
   });
 });
@@ -622,7 +636,8 @@ test('start restores the built-in database before launching the app', async () =
     'nb-demo-local-postgres',
     { stdio: 'ignore' },
   ]);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
 });
 
 test('start restores the built-in database with docker.container-prefix instead of workspaceName', async () => {
@@ -667,7 +682,8 @@ test('start restores the built-in database with docker.container-prefix instead 
     'nb-team-app528-postgres',
     { stdio: 'ignore' },
   ]);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
 });
 
 test('start restores saved npm/git source files before launching when the app root is missing', async () => {
@@ -745,7 +761,9 @@ test('start shows product-style local failure guidance instead of raw command er
       envVars: { APP_PORT: '13000' },
     },
   });
-  mocks.runLocalNocoBaseCommand.mockRejectedValue(new Error('nocobase command exited with code 1'));
+  mocks.runLocalNocoBaseCommand
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(new Error('nocobase command exited with code 1'));
 
   const command = createCommandHarness({
     flags: {
@@ -755,11 +773,48 @@ test('start shows product-style local failure guidance instead of raw command er
 
   await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(/Couldn't start NocoBase for "local".*The CLI was not able to start the local npm app successfully\..*Expected app port: 13000\./s);
   expect(mocks.startTask.mock.calls).toEqual([
+    ['Running local postinstall for "local"...'],
     ['Starting NocoBase for "local" in the background...'],
+  ]);
+  expect(mocks.succeedTask.mock.calls).toEqual([
+    ['Local postinstall finished for "local".'],
   ]);
   expect(mocks.failTask.mock.calls).toEqual([
     ['Failed to start NocoBase for "local".'],
   ]);
+});
+
+test('start surfaces local postinstall failures before launching the app', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+    },
+  });
+  mocks.runLocalNocoBaseCommand.mockRejectedValueOnce(new Error('nocobase command exited with code 1'));
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+    },
+  });
+
+  await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(
+    /Couldn't prepare NocoBase for "local".*run `nocobase-v1 postinstall` before starting the local app\./s,
+  );
+  expect(mocks.startTask.mock.calls).toEqual([
+    ['Running local postinstall for "local"...'],
+  ]);
+  expect(mocks.failTask.mock.calls).toEqual([
+    ['Failed to run local postinstall for "local".'],
+  ]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toHaveLength(1);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
 });
 
 test('start accepts docker envs without treating the default daemon flag as explicit input', async () => {
@@ -3382,6 +3437,28 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
           },
         },
       },
+      ['postinstall'],
+      { stdio: 'ignore' },
+    ],
+    [
+      {
+        kind: 'local',
+        envName: 'local',
+        source: 'npm',
+        projectRoot: '/tmp/nocobase',
+        env: {
+          baseUrl: 'http://127.0.0.1:13000/api',
+          appPort: 13000,
+          envVars: { APP_PORT: '13000' },
+          config: {
+            downloadVersion: 'alpha',
+            appRootPath: '/tmp/nocobase',
+            npmRegistry: 'https://registry.npmmirror.com',
+            devDependencies: true,
+            build: false,
+          },
+        },
+      },
       ['start', '--quickstart', '--port', '13000', '--daemon'],
       { stdio: 'ignore' },
     ],
@@ -3495,7 +3572,8 @@ test('upgrade skips download for local app-path envs and still restarts with qui
   await Upgrade.prototype.run.call(command);
 
   expect(runCommand.mock.calls.length).toBe(0);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['postinstall']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[2]?.[1]).toEqual([
     'start',
     '--quickstart',
     '--port',
@@ -4015,11 +4093,24 @@ test('dev runs local npm/git source envs with saved env settings', async () => {
   expect(mocks.printInfo.mock.calls).toEqual([
     ['Starting NocoBase dev mode for "dev" from /tmp/nocobase. Press Ctrl+C to stop.'],
   ]);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[
-    runtime,
-    ['dev', '--rsbuild', '--db-sync', '--port', '13000', '--client', '--inspect', '9229'],
-    { stdio: 'inherit' },
-  ]]);
+  expect(mocks.startTask.mock.calls).toEqual([
+    ['Running local postinstall for "dev"...'],
+  ]);
+  expect(mocks.succeedTask.mock.calls).toEqual([
+    ['Local postinstall finished for "dev".'],
+  ]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
+    [
+      runtime,
+      ['postinstall'],
+      { stdio: 'inherit' },
+    ],
+    [
+      runtime,
+      ['dev', '--rsbuild', '--db-sync', '--port', '13000', '--client', '--inspect', '9229'],
+      { stdio: 'inherit' },
+    ],
+  ]);
 });
 
 test('dev uses an explicit port instead of the saved app port', async () => {
@@ -4045,7 +4136,8 @@ test('dev uses an explicit port instead of the saved app port', async () => {
 
   await Dev.prototype.run.call(command);
 
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual([
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
     'dev',
     '--rsbuild',
     '--port',

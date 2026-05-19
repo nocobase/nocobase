@@ -9,7 +9,7 @@
 
 import { mkdir, readdir } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
-import { dockerContainerExists, startDockerContainer } from './app-runtime.js';
+import { dockerContainerExists, runLocalNocoBaseCommand, startDockerContainer } from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
 import { resolveConfiguredEnvPath } from './cli-home.js';
 import { resolveDockerEnvFileArg } from './docker-env-file.ts';
@@ -74,6 +74,15 @@ function formatLocalSourceRestoreFailure(envName: string, source: 'npm' | 'git',
     `Couldn't restore NocoBase files for "${envName}".`,
     `The CLI was not able to download ${sourceLabel} before starting the app again.`,
     'Check the saved source settings for this env, then try again.',
+    `Details: ${message}`,
+  ].join('\n');
+}
+
+function formatLocalPostinstallFailure(envName: string, message: string): string {
+  return [
+    `Couldn't prepare NocoBase for "${envName}".`,
+    'The CLI was not able to run `nocobase-v1 postinstall` before starting the local app.',
+    'Check the local dependencies, storage path, and saved env settings, then try again.',
     `Details: ${message}`,
   ].join('\n');
 }
@@ -375,5 +384,26 @@ export async function ensureSavedLocalSource(
         error instanceof Error ? error.message : String(error),
       ),
     );
+  }
+}
+
+export async function ensureLocalPostinstall(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+  options?: {
+    verbose?: boolean;
+    onStartTask?: (message: string) => void;
+    onSucceedTask?: (message: string) => void;
+    onFailTask?: (message: string) => void;
+  },
+): Promise<void> {
+  options?.onStartTask?.(`Running local postinstall for "${runtime.envName}"...`);
+  try {
+    await runLocalNocoBaseCommand(runtime, ['postinstall'], {
+      stdio: commandStdio(options?.verbose),
+    });
+    options?.onSucceedTask?.(`Local postinstall finished for "${runtime.envName}".`);
+  } catch (error: unknown) {
+    options?.onFailTask?.(`Failed to run local postinstall for "${runtime.envName}".`);
+    throw new Error(formatLocalPostinstallFailure(runtime.envName, error instanceof Error ? error.message : String(error)));
   }
 }
