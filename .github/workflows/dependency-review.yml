@@ -11,7 +11,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   dependency-review:
@@ -28,4 +28,4 @@ jobs:
           license-check: false
           fail-on-severity: high
           fail-on-scopes: runtime, development, unknown
-          comment-summary-in-pr: never
+          comment-summary-in-pr: on-failure
