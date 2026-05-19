@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient, type APIClientOptions } from '@nocobase/sdk';
+import { type APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { createInstance, type i18n as i18next } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+import { APIClient } from './APIClient';
 import { BaseApplication, type BaseApplicationOptions } from './BaseApplication';
 import { CollectionFieldInterfaceManager } from './collection-field-interface/CollectionFieldInterfaceManager';
 import type { PluginType } from './PluginManager';
@@ -43,7 +44,10 @@ export class Application extends BaseApplication<
   public declare dataSourceManager: any;
 
   protected createApiClient(options: ApplicationOptions) {
-    return new APIClient(options.apiClient);
+    return new APIClient({
+      ...options.apiClient,
+      appName: options.name || getSubAppName(options.publicPath),
+    });
   }
 
   protected configureRuntimeAdapters() {

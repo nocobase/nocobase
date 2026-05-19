@@ -10,8 +10,8 @@
 import {
   getCurrentV2RedirectPath,
   Plugin,
-  redirectToLegacySignin,
-  resolveLegacySigninRedirect,
+  redirectToV2Signin,
+  resolveV2SigninRedirect,
   UserCenterActionItemModel,
   UserCenterTextItemModel,
 } from '@nocobase/client-v2';
@@ -41,14 +41,14 @@ class SignOutItemModel extends UserCenterActionItemModel {
 
   async onClick() {
     const response = await this.context.api.auth.signOut();
-    const redirect = resolveLegacySigninRedirect(response?.data?.data?.redirect, this.context.app);
+    const redirect = resolveV2SigninRedirect(response?.data?.data?.redirect, this.context.app);
 
     if (redirect) {
       window.location.replace(redirect);
       return;
     }
 
-    redirectToLegacySignin(this.context.app, getCurrentV2RedirectPath(this.context.app, window.location), {
+    redirectToV2Signin(this.context.app, getCurrentV2RedirectPath(this.context.app, window.location), {
       replace: true,
     });
   }

@@ -18,13 +18,13 @@ import { loadByWorker } from '@nocobase/ai';
 export class DocumentLoader {
   constructor(private readonly fileManager: PluginFileManagerServer) {}
 
-  async load(file: ParseableFile): Promise<Document[]> {
+  async load(file: ParseableFile, options?: any): Promise<Document[]> {
     const extname = resolveExtname(file);
     if (!SUPPORTED_DOCUMENT_EXTNAMES.includes(extname)) {
       return [];
     }
 
-    const { stream, contentType } = await this.fileManager.getFileStream(file as any);
+    const { stream, contentType } = await this.fileManager.getFileStream(file as any, options);
     const blob = await this.streamToBlob(stream, contentType ?? file.mimetype);
     return await loadByWorker(extname, blob);
   }

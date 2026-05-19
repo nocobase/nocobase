@@ -21,7 +21,7 @@ describe('plugin-auth client-v2', () => {
     vi.restoreAllMocks();
   });
 
-  it('should redirect runtime 401 to legacy signin with replace', async () => {
+  it('should redirect runtime 401 to v2 signin with replace', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -65,7 +65,7 @@ describe('plugin-auth client-v2', () => {
     app.apiClient.axios.interceptors.response.handlers[0].rejected(error);
 
     await vi.waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h%3Ftab%3Doverview%23panel');
+      expect(replace).toHaveBeenCalledWith('/v2/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h%3Ftab%3Doverview%23panel');
     });
   });
 

@@ -7,46 +7,37 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Empty } from 'antd';
-import { useSearchParams } from 'react-router-dom';
 import { usePlugin } from '@nocobase/client-v2';
-import PluginAuthClientV2, { type AuthOptions } from '../plugin';
+import { Empty, Spin } from 'antd';
+import React, { lazy, Suspense, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthenticator } from '../authenticator';
-import { useAuthTranslation } from '../locale';
 import { useDocumentTitle } from '../hooks';
-
-export function useSignUpForms(): Record<string, AuthOptions['components']['SignUpForm']> {
-  const plugin = usePlugin(PluginAuthClientV2);
-  const authTypes = plugin.authTypes.getEntities();
-  const forms: Record<string, AuthOptions['components']['SignUpForm']> = {};
-
-  for (const [authType, options] of authTypes) {
-    if (options.components?.SignUpForm) {
-      forms[authType] = options.components.SignUpForm;
-    }
-  }
-
-  return forms;
-}
+import { useAuthTranslation } from '../locale';
+import PluginAuthClientV2 from '../plugin';
 
 export default function SignUpPage() {
   const { t } = useAuthTranslation();
   const [searchParams] = useSearchParams();
   const name = searchParams.get('name');
   const authenticator = useAuthenticator(name);
-  const signUpForms = useSignUpForms();
+  const plugin = usePlugin(PluginAuthClientV2);
+
+  const FormComponent = useMemo(() => {
+    if (!authenticator) return null;
+    const loader = plugin.authTypes.get(authenticator.authType)?.signUpFormLoader;
+    return loader ? lazy(loader) : null;
+  }, [authenticator, plugin]);
 
   useDocumentTitle(t('Signup'));
 
-  if (!authenticator) {
+  if (!authenticator || !FormComponent) {
     return <Empty description={t('No authentication methods available.')} />;
   }
 
-  const FormComponent = signUpForms[authenticator.authType];
-  if (!FormComponent) {
-    return <Empty description={t('No authentication methods available.')} />;
-  }
-
-  return <FormComponent authenticatorName={authenticator.name} />;
+  return (
+    <Suspense fallback={<Spin />}>
+      <FormComponent authenticatorName={authenticator.name} />
+    </Suspense>
+  );
 }

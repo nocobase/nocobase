@@ -158,7 +158,7 @@ export class FlowExecutor {
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         combinedParams = { ...stepDefaultParams };
       } else {
-        flowContext.logger.error(
+        flowContext.logger.warn(
           `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,
         );
         continue;

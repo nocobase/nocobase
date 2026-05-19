@@ -249,4 +249,115 @@ describe('resolveAdminRouteRuntimeTarget', () => {
     expect(toRouterNavigationPath('/nocobase/v2/admin/page-1', '/nocobase/v2')).toBe('/admin/page-1');
     expect(toRouterNavigationPath('/admin/page-1', '/nocobase/v2')).toBe('/admin/page-1');
   });
+
+  describe('v2 sub-app context (router basename contains /apps/<id>/)', () => {
+    const subApp = {
+      getPublicPath: () => '/nocobase/v2/',
+      router: {
+        getBasename: () => '/nocobase/v2/apps/test-app/',
+      },
+    } as any;
+
+    it('should resolve flowPage runtime path under sub-app basename', () => {
+      expect(
+        resolveAdminRouteRuntimeTarget({
+          app: subApp,
+          route: {
+            type: NocoBaseDesktopRouteType.flowPage,
+            schemaUid: 'fp1',
+          },
+        }),
+      ).toEqual({
+        runtimePath: '/nocobase/v2/apps/test-app/admin/fp1',
+        navigationMode: 'spa',
+        isLegacy: false,
+        reason: 'ok',
+      });
+    });
+
+    it('should resolve group DFS to first flowPage under sub-app basename', () => {
+      const route: NocoBaseDesktopRoute = {
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            type: NocoBaseDesktopRouteType.tabs,
+            schemaUid: 'tabs-1',
+          },
+          {
+            type: NocoBaseDesktopRouteType.group,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.page,
+                schemaUid: 'legacy-2',
+              },
+              {
+                type: NocoBaseDesktopRouteType.flowPage,
+                schemaUid: 'nested-fp',
+              },
+            ],
+          },
+        ],
+      };
+
+      expect(resolveAdminRouteRuntimeTarget({ app: subApp, route })).toEqual({
+        runtimePath: '/nocobase/v2/apps/test-app/admin/nested-fp',
+        navigationMode: 'spa',
+        isLegacy: false,
+        reason: 'ok',
+      });
+    });
+
+    it('should strip sub-app basename when converting to router internal path', () => {
+      expect(toRouterNavigationPath('/nocobase/v2/apps/test-app/admin/page-1', '/nocobase/v2/apps/test-app')).toBe(
+        '/admin/page-1',
+      );
+      expect(toRouterNavigationPath('/nocobase/v2/apps/test-app/admin/page-1', '/nocobase/v2/apps/test-app/')).toBe(
+        '/admin/page-1',
+      );
+    });
+  });
+
+  describe('fallback when router basename is missing', () => {
+    it('should fall back to publicPath when router is undefined', () => {
+      const appNoRouter = {
+        getPublicPath: () => '/nocobase/v2/',
+        router: undefined,
+      } as any;
+
+      expect(
+        resolveAdminRouteRuntimeTarget({
+          app: appNoRouter,
+          route: {
+            type: NocoBaseDesktopRouteType.flowPage,
+            schemaUid: 'fp1',
+          },
+        }),
+      ).toMatchObject({
+        runtimePath: '/nocobase/v2/admin/fp1',
+        reason: 'ok',
+      });
+    });
+
+    it('should fall back to publicPath when getBasename returns undefined', () => {
+      const appNoBasename = {
+        getPublicPath: () => '/nocobase/v2/',
+        router: {
+          getBasename: () => undefined,
+        },
+      } as any;
+
+      expect(
+        resolveAdminRouteRuntimeTarget({
+          app: appNoBasename,
+          route: {
+            type: NocoBaseDesktopRouteType.flowPage,
+            schemaUid: 'fp1',
+          },
+        }),
+      ).toMatchObject({
+        runtimePath: '/nocobase/v2/admin/fp1',
+        reason: 'ok',
+      });
+    });
+  });
 });

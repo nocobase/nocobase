@@ -7,17 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { FileImageOutlined, LeftOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
+import { theme } from 'antd';
 import { Html5Qrcode } from 'html5-qrcode';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ScanBox } from './ScanBox';
 import { useScanner } from './useScanner';
 
 const qrcodeEleId = 'qrcode';
-export const QRCodeScannerInner = ({ setVisible, app, navigate, onClose }) => {
+type QRCodeScannerInnerProps = {
+  setVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  app?: any;
+  navigate: (path: string) => void;
+  onClose?: () => void;
+  t: (key: string, options?: Record<string, any>) => string;
+};
+
+export const QRCodeScannerInner = ({ setVisible, app, navigate, onClose, t }: QRCodeScannerInnerProps) => {
   const containerRef = useRef<HTMLDivElement>();
   const imgUploaderRef = useRef<HTMLInputElement>();
-  const { t } = useTranslation('block-workbench');
+  const { token } = theme.useToken();
   const [originVideoSize, setOriginVideoSize] = useState({ width: 0, height: 0 });
   const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
   const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
@@ -25,8 +34,9 @@ export const QRCodeScannerInner = ({ setVisible, app, navigate, onClose }) => {
   const onScanSuccess = useCallback(
     (text) => {
       setVisible(false);
+      onClose?.();
     },
-    [setVisible],
+    [onClose, setVisible],
   );
 
   const { startScanFile } = useScanner({
@@ -35,6 +45,7 @@ export const QRCodeScannerInner = ({ setVisible, app, navigate, onClose }) => {
     onScanSuccess,
     app,
     navigate,
+    t,
   });
 
   const getBoxStyle = (): React.CSSProperties => {
@@ -83,39 +94,51 @@ export const QRCodeScannerInner = ({ setVisible, app, navigate, onClose }) => {
   }, [originVideoSize]);
 
   const ToolBar = () => {
+    const toolbarClass = css`
+      position: absolute;
+      bottom: ${token.paddingLG}px;
+      left: ${token.paddingLG}px;
+      padding: ${token.paddingXS}px ${token.paddingXL}px;
+    `;
+    const toolbarItemClass = css`
+      color: ${token.colorTextLightSolid};
+      width: ${token.controlHeightLG}px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    `;
+    const hiddenInputClass = css`
+      visibility: hidden;
+    `;
+
     return (
-      <div style={{ position: 'absolute', bottom: '20px', left: '20px', padding: '10px 60px' }}>
-        <div
-          style={{
-            color: 'white',
-            width: '40px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <FileImageOutlined style={imageBtnStyle} onClick={onImgBtnClick} />
+      <div className={toolbarClass}>
+        <div className={toolbarItemClass}>
+          <FileImageOutlined className={imageBtnClass} onClick={onImgBtnClick} />
           {t('Album')}
           <input
             ref={imgUploaderRef}
             type="file"
             accept="image/*"
             onChange={onImgUploaded}
-            style={{ visibility: 'hidden' }}
+            className={hiddenInputClass}
           />
         </div>
       </div>
     );
   };
-  const imageBtnStyle: React.CSSProperties = {
-    zIndex: '1003',
-    fontSize: '1.8em',
-    fontWeight: 'bold',
-  };
+  const imageBtnClass = css`
+    z-index: ${token.zIndexPopupBase + 3};
+    font-size: ${token.fontSizeHeading2}px;
+    font-weight: ${token.fontWeightStrong};
+  `;
+  const qrcodeClass = css`
+    position: absolute;
+  `;
 
   return (
     <>
-      <div ref={containerRef} id={qrcodeEleId} style={{ position: 'absolute' }} />
+      <div ref={containerRef} id={qrcodeEleId} className={qrcodeClass} />
       <ScanBox style={{ ...getBoxStyle() }} />
       <ToolBar />
     </>

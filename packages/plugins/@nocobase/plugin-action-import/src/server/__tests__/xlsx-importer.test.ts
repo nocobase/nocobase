@@ -10,6 +10,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { TemplateCreator } from '../services/template-creator';
 import { XlsxImporter } from '../services/xlsx-importer';
+import { readImportWorkbook } from '../actions/import-xlsx';
 import * as XLSX from 'xlsx';
 import * as process from 'node:process';
 import * as path from 'node:path';
@@ -330,6 +331,98 @@ describe('basic importer', () => {
       await app.db.sync();
     });
 
+    async function runExcelDateImport(options: { serverTimeZone: string; requestTimeZone?: string }) {
+      const previousTz = process.env.TZ;
+      const name = `test-${options.serverTimeZone}-${options.requestTimeZone ?? 'none'}`;
+
+      try {
+        process.env.TZ = options.serverTimeZone;
+
+        const columns = [
+          {
+            dataIndex: ['name'],
+            defaultTitle: '姓名',
+          },
+          {
+            dataIndex: ['dateOnly'],
+            defaultTitle: '日期',
+          },
+          {
+            dataIndex: ['datetime'],
+            defaultTitle: '日期时间',
+          },
+          {
+            dataIndex: ['datetimeNoTz'],
+            defaultTitle: '日期时间（不含时区）',
+          },
+          {
+            dataIndex: ['unixTimestamp'],
+            defaultTitle: 'Unix时间戳秒',
+          },
+        ];
+
+        const templateCreator = new TemplateCreator({
+          collection: User,
+          columns,
+        });
+
+        const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+        const worksheet = template.Sheets[template.SheetNames[0]];
+
+        XLSX.utils.sheet_add_aoa(worksheet, [[name, 45789, 45789, 45789, 45789]], { origin: 'A2' });
+        worksheet['B2'].z = 'yyyy-mm-dd';
+        worksheet['C2'].z = 'yyyy-mm-dd';
+        worksheet['D2'].z = 'yyyy-mm-dd';
+        worksheet['E2'].z = 'yyyy-mm-dd';
+
+        const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+        const workbook = readImportWorkbook(buffer, 10);
+
+        const importer = new XlsxImporter({
+          collectionManager: app.mainDataSource.collectionManager,
+          collection: User,
+          columns,
+          workbook,
+        });
+
+        await importer.run(
+          options.requestTimeZone
+            ? {
+                context: {
+                  request: {
+                    get(key: string) {
+                      return key.toLowerCase() === 'x-timezone' ? options.requestTimeZone : undefined;
+                    },
+                    headers: {
+                      'x-timezone': options.requestTimeZone,
+                    },
+                  },
+                  req: {
+                    headers: {
+                      'x-timezone': options.requestTimeZone,
+                    },
+                  },
+                },
+              }
+            : {},
+        );
+
+        const user = await User.repository.findOne({
+          filter: {
+            name,
+          },
+        });
+
+        return user.toJSON();
+      } finally {
+        if (previousTz == null) {
+          delete process.env.TZ;
+        } else {
+          process.env.TZ = previousTz;
+        }
+      }
+    }
+
     it('should import with dateOnly', async () => {
       const columns = [
         {
@@ -374,6 +467,45 @@ describe('basic importer', () => {
       expect(users[0]['dateOnly']).toBe('2111-11-12');
       expect(users[1]['dateOnly']).toBe('2021-10-18');
       expect(users[2]['dateOnly']).toBe('2024-11-12');
+    });
+
+    it('should keep dateOnly value stable after xlsx round-trip in non-UTC timezone', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['dateOnly'],
+          defaultTitle: '日期',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 45789]], { origin: 'A2' });
+      worksheet['B2'].z = 'm/d/yy';
+
+      const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+      const workbook = readImportWorkbook(buffer, 10);
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook,
+      });
+
+      await importer.run();
+
+      const users = (await User.repository.find()).map((user) => user.toJSON());
+      expect(users[0]['dateOnly']).toBe('2025-05-12');
     });
 
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with datetimeNoTz', async () => {
@@ -502,6 +634,208 @@ describe('basic importer', () => {
 
       const users = (await User.repository.find()).map((user) => user.toJSON());
       expect(moment(users[0]['datetime']).toISOString()).toEqual('2111-11-12T00:00:00.000Z');
+    });
+
+    it('should honor request timezone for tz-aware excel date cells while keeping dateOnly stable', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['dateOnly'],
+          defaultTitle: '日期',
+        },
+        {
+          dataIndex: ['datetime'],
+          defaultTitle: '日期时间',
+        },
+        {
+          dataIndex: ['unixTimestamp'],
+          defaultTitle: 'Unix时间戳秒',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 45789, 45789, 45789]], { origin: 'A2' });
+      worksheet['B2'].z = 'yyyy-mm-dd';
+      worksheet['C2'].z = 'yyyy-mm-dd';
+      worksheet['D2'].z = 'yyyy-mm-dd';
+
+      const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+      const workbook = readImportWorkbook(buffer, 10);
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook,
+      });
+
+      await importer.run({
+        context: {
+          get(key: string) {
+            return key === 'X-Timezone' ? '+08:00' : undefined;
+          },
+        },
+      });
+
+      const users = (await User.repository.find()).map((user) => user.toJSON());
+      expect(users[0]['dateOnly']).toBe('2025-05-12');
+      expect(moment(users[0]['datetime']).toISOString()).toEqual('2025-05-11T16:00:00.000Z');
+      expect(moment(users[0]['unixTimestamp']).toISOString()).toEqual('2025-05-11T16:00:00.000Z');
+    });
+
+    it('should cover the sync import timezone matrix for excel date cells', async () => {
+      const cases = [
+        {
+          serverTimeZone: 'UTC',
+          requestTimeZone: undefined,
+          expectedDateTime: '2025-05-12T00:00:00.000Z',
+        },
+        {
+          serverTimeZone: 'UTC',
+          requestTimeZone: '+08:00',
+          expectedDateTime: '2025-05-11T16:00:00.000Z',
+        },
+        {
+          serverTimeZone: 'Asia/Shanghai',
+          requestTimeZone: undefined,
+          expectedDateTime: '2025-05-12T00:00:00.000Z',
+        },
+        {
+          serverTimeZone: 'Asia/Shanghai',
+          requestTimeZone: '+08:00',
+          expectedDateTime: '2025-05-11T16:00:00.000Z',
+        },
+      ];
+
+      for (const testCase of cases) {
+        const user = await runExcelDateImport(testCase);
+
+        expect(user['dateOnly']).toBe('2025-05-12');
+        expect(user['datetimeNoTz']).toBe('2025-05-12 00:00:00');
+        expect(moment(user['datetime']).toISOString()).toEqual(testCase.expectedDateTime);
+        expect(moment(user['unixTimestamp']).toISOString()).toEqual(testCase.expectedDateTime);
+      }
+    });
+
+    it('should honor request timezone when importing excel date cells through HTTP action', async () => {
+      const httpApp = await createMockServer({
+        name: `import-http-${Date.now()}`,
+        plugins: ['error-handler', 'action-import'],
+      });
+      let filePath: string;
+
+      try {
+        const HttpUser = httpApp.db.collection({
+          name: 'http_import_users',
+          fields: [
+            { type: 'string', name: 'name' },
+            {
+              type: 'datetime',
+              name: 'datetime',
+              interface: 'datetime',
+            },
+            {
+              type: 'datetimeNoTz',
+              name: 'datetimeNoTz',
+              interface: 'datetimeNoTz',
+              uiSchema: {
+                'x-component-props': {
+                  picker: 'date',
+                  dateFormat: 'YYYY-MM-DD',
+                  showTime: true,
+                  timeFormat: 'HH:mm:ss',
+                },
+              },
+            },
+            {
+              type: 'unixTimestamp',
+              name: 'unixTimestamp',
+              interface: 'unixTimestamp',
+              uiSchema: {
+                'x-component-props': {
+                  picker: 'date',
+                  dateFormat: 'YYYY-MM-DD',
+                  showTime: true,
+                  timeFormat: 'HH:mm:ss',
+                },
+              },
+            },
+          ],
+        });
+        await httpApp.db.sync();
+
+        const columns = [
+          {
+            dataIndex: ['name'],
+            defaultTitle: '姓名',
+          },
+          {
+            dataIndex: ['datetime'],
+            defaultTitle: '日期时间',
+          },
+          {
+            dataIndex: ['datetimeNoTz'],
+            defaultTitle: '日期时间（不含时区）',
+          },
+          {
+            dataIndex: ['unixTimestamp'],
+            defaultTitle: 'Unix时间戳秒',
+          },
+        ];
+
+        const templateCreator = new TemplateCreator({
+          collection: HttpUser,
+          columns,
+        });
+
+        const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+        const worksheet = template.Sheets[template.SheetNames[0]];
+        XLSX.utils.sheet_add_aoa(worksheet, [['http-test', 45789, 45789, 45789]], { origin: 'A2' });
+        worksheet['B2'].z = 'yyyy-mm-dd';
+        worksheet['C2'].z = 'yyyy-mm-dd';
+        worksheet['D2'].z = 'yyyy-mm-dd';
+
+        filePath = path.join(process.cwd(), `tmp-import-date-${Date.now()}.xlsx`);
+        fs.writeFileSync(filePath, XLSX.write(template, { type: 'buffer', bookType: 'xlsx' }));
+
+        const res = await httpApp
+          .agent()
+          .set('X-Timezone', '+08:00')
+          .resource('http_import_users')
+          .importXlsx({
+            file: filePath,
+            values: {
+              columns: JSON.stringify(columns),
+            },
+          });
+
+        expect(res.status).toBe(200);
+
+        const user = await HttpUser.repository.findOne({
+          filter: {
+            name: 'http-test',
+          },
+        });
+
+        expect(moment(user.get('datetime')).toISOString()).toEqual('2025-05-11T16:00:00.000Z');
+        expect(user.get('datetimeNoTz')).toBe('2025-05-12 00:00:00');
+        expect(moment(user.get('unixTimestamp')).toISOString()).toEqual('2025-05-11T16:00:00.000Z');
+      } finally {
+        await httpApp.destroy();
+        if (filePath) {
+          fs.rmSync(filePath, { force: true });
+        }
+      }
     });
   });
 
@@ -2286,6 +2620,7 @@ describe('basic importer', () => {
         {
           type: 'time',
           name: 'brithtime',
+          interface: 'time',
         },
       ],
     });
@@ -2306,9 +2641,11 @@ describe('basic importer', () => {
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
-    XLSX.utils.sheet_add_aoa(worksheet, [['12:12:12']], {
-      origin: 'A3',
-    });
+    XLSX.utils.sheet_add_aoa(worksheet, [[0.5084722222222222]], { origin: 'A3' });
+    worksheet['A3'].z = 'h:mm:ss';
+
+    const buffer = XLSX.write(template, { type: 'buffer', bookType: 'xlsx' });
+    const workbook = readImportWorkbook(buffer, 10);
 
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
@@ -2320,12 +2657,13 @@ describe('basic importer', () => {
           defaultTitle: '出生时间',
         },
       ],
-      workbook: template,
+      workbook,
     });
 
     await importer.run();
-    const count = await TimeCollection.repository.count();
-    expect(count).toBe(1);
+    const records = await TimeCollection.repository.find();
+    expect(records).toHaveLength(1);
+    expect(records[0].get('brithtime')).toBe('12:12:12');
   });
 
   it('should throw error when import textarea field, value is date', async () => {
