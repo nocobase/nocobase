@@ -882,10 +882,15 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       ]),
     );
     errors.forEach((error: any) => {
+      expect(error.message).toContain('Do not skip this JS/RunJS step.');
+      expect(error.message).toContain('Suggested fix:');
       expect(error.details).toEqual(
         expect.objectContaining({
           repairClass: expect.any(String),
           suggestedAction: expect.any(String),
+          skipForbidden: true,
+          mustRetry: true,
+          agentInstruction: expect.any(String),
           line: expect.any(Number),
           column: expect.any(Number),
         }),
@@ -897,6 +902,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect(error.details.surface).toBeUndefined();
       expect(error.details.surfaceStyle).toBeUndefined();
     });
+    expect(errors.find((error: any) => error.details?.repairClass === 'switch-to-resource-api')?.message).toContain(
+      'Fix the error and retry the same write.',
+    );
+    expect(errors.find((error: any) => error.details?.repairClass === 'ctx-root-mismatch-stop')?.message).toContain(
+      'Resolve the blocking context/problem first, then retry the same write.',
+    );
   });
 
   it('should allow legal RunJS render and action code on supported JS model surfaces', () => {
@@ -2192,11 +2203,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(runjsResourceEndpointErrors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            repairClass: 'switch-to-resource-api',
+            repairClass: 'nested-runjs-stop',
             capability: 'ctx.runjs',
-            endpoint: 'resource:list',
           }),
         }),
       ]),
@@ -2207,8 +2217,16 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       path: '$.optionalRunjsCollectionEndpoint.code',
       modelUse: 'JSBlockModel',
     });
-    expect(optionalRunjsCollectionEndpointErrors.map((error: any) => error.details?.repairClass)).toContain(
-      'switch-to-resource-api',
+    expect(optionalRunjsCollectionEndpointErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-nested-runjs-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'nested-runjs-stop',
+            capability: 'ctx.runjs',
+          }),
+        }),
+      ]),
     );
 
     const commentedRunjsResourceEndpointErrors = inspectRunJsAuthoringCode({
@@ -2219,9 +2237,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(commentedRunjsResourceEndpointErrors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            endpoint: 'resource:list',
+            repairClass: 'nested-runjs-stop',
+            capability: 'ctx.runjs',
           }),
         }),
       ]),
@@ -2232,17 +2251,14 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       path: '$.concatenatedRunjsEndpoint.code',
       modelUse: 'JSBlockModel',
     });
-    expect(concatenatedRunjsEndpointErrors.map((error: any) => error.details?.repairClass)).toContain(
-      'switch-to-resource-api',
-    );
+    expect(concatenatedRunjsEndpointErrors.map((error: any) => error.ruleId)).toContain('runjs-nested-runjs-forbidden');
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: "ctx.render(null);\nawait ctx.runjs('cache:get()', {});",
-        path: '$.ordinaryRunjsLabelCall.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const ordinaryRunjsLabelCallErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.runjs('cache:get()', {});",
+      path: '$.ordinaryRunjsLabelCall.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(ordinaryRunjsLabelCallErrors.map((error: any) => error.ruleId)).toContain('runjs-nested-runjs-forbidden');
 
     const invalidApiResourceErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.api.resource.list({ resource: 'tasks', pageSize: 1 });",
@@ -2276,7 +2292,13 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         path: '$.ordinaryNestedRunjs.code',
         modelUse: 'JSBlockModel',
       }),
-    ).toEqual([]);
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-nested-runjs-forbidden',
+        }),
+      ]),
+    );
 
     const templateLiteralErrors = inspectRunJsAuthoringCode({
       code: 'ctx.render(`${ctx.openView({})}`);',
@@ -2704,6 +2726,126 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     ).toEqual([]);
   });
 
+  it('should reject AST-detected RunJS syntax, nested runjs, resource arguments, and source limits', async () => {
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'ctx.render(<div>Broken</div>;',
+        path: '$.syntax.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-syntax-invalid',
+          details: expect.objectContaining({
+            repairClass: 'syntax-stop',
+          }),
+        }),
+      ]),
+    );
+
+    [
+      "ctx.render(null);\nconst run = ctx.runjs;\nawait run('return 1;');",
+      "ctx.render(null);\nconst { runjs } = ctx;\nawait runjs('return 1;');",
+      "ctx.render(null);\nconst { runjs: run } = ctx;\nawait run('return 1;');",
+      "ctx.render(null);\nawait ctx['runjs']('return 1;');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.nestedRunjs[${index}].code`,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-nested-runjs-forbidden',
+            details: expect.objectContaining({
+              repairClass: 'nested-runjs-stop',
+            }),
+          }),
+        ]),
+      );
+    });
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "ctx.render(null);\nctx.initResource('FlowResource');",
+        path: '$.initResourceFlowResource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-invalid',
+          details: expect.objectContaining({
+            capability: 'ctx.initResource',
+            resourceType: 'FlowResource',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'ctx.render(null);\nctx.makeResource(`MultiRecordResource`);',
+        path: '$.staticTemplateResource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'ctx.render(null);\nctx.makeResource(`Multi${kind}Resource`);',
+        path: '$.dynamicTemplateResource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: '`Multi${kind}Resource`',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: ['ctx.render(null);', 'const value = 1;'.repeat(5000)].join('\n'),
+        path: '$.largeSource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        ruleId: 'runjs-source-too-large',
+        details: expect.objectContaining({
+          repairClass: 'source-limit-stop',
+        }),
+      }),
+    ]);
+
+    const tooManyBlocks = Array.from({ length: 101 }, (_item, index) => ({
+      type: 'jsBlock',
+      settings: {
+        code: `ctx.render('block ${index}');`,
+        version: 'v2',
+      },
+    }));
+    const tooManyErrors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'grid' },
+      blocks: tooManyBlocks,
+    });
+    expect(tooManyErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-too-many-sources',
+        }),
+      ]),
+    );
+  });
+
   it('should reject ctx.runjs resource endpoints on applyBlueprint and configure writes', async () => {
     const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
       mode: 'create',
@@ -2736,11 +2878,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.tabs[0].blocks[0].script',
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            repairClass: 'switch-to-resource-api',
+            repairClass: 'nested-runjs-stop',
             capability: 'ctx.runjs',
-            endpoint: 'resource:list',
           }),
         }),
       ]),
@@ -2763,11 +2904,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.changes.code',
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            repairClass: 'switch-to-resource-api',
+            repairClass: 'nested-runjs-stop',
             capability: 'ctx.runjs',
-            endpoint: 'collection:list',
           }),
         }),
       ]),
@@ -2841,6 +2981,44 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       code: configureCode,
       version: 'v2',
     });
+  });
+
+  it('should return no-skip RunJS repair guidance from flowSurfaces write errors', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring RunJS repair guidance page',
+      tabTitle: 'Authoring RunJS repair guidance tab',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'jsBlock',
+        settings: {
+          title: 'Broken JSBlock',
+          code: "const label = 'Missing render';",
+          version: 'v2',
+        },
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const issue = response.body?.errors?.find((error: any) => error.ruleId === 'runjs-render-required');
+    expect(issue).toEqual(
+      expect.objectContaining({
+        type: 'bad_request',
+        code: 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
+        status: 400,
+        message: expect.stringContaining('Do not skip this JS/RunJS step.'),
+        details: expect.objectContaining({
+          repairClass: 'replace-innerhtml-with-render',
+          skipForbidden: true,
+          mustRetry: true,
+          agentInstruction: expect.stringContaining('Fix the error and retry the same write.'),
+          suggestedAction: expect.any(String),
+        }),
+      }),
+    );
+    expect(issue.message).toContain('Suggested fix:');
   });
 
   it('should reject ignored localized jsBlock code shapes without creating default JS blocks', async () => {

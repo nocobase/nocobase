@@ -253,6 +253,15 @@ const FLOW_RESOURCE_CLASS_NAMES = new Set([
 const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 const CANONICAL_CTX_LIB_MEMBERS = ['React', 'ReactDOM', 'antd', 'dayjs', 'antdIcons', 'lodash', 'formula', 'math'];
 const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((member) => [member.toLowerCase(), member]));
+const CONTEXT_FIRST_REPAIR_CLASSES = new Set<RunJsAuthoringRepairClass>([
+  'unknown-surface-stop',
+  'unknown-model-stop',
+  'ctx-root-mismatch-stop',
+  'blocked-capability-reroute',
+]);
+const RUNJS_FIX_AND_RETRY_INSTRUCTION = 'Do not skip this JS/RunJS step. Fix the error and retry the same write.';
+const RUNJS_CONTEXT_AND_RETRY_INSTRUCTION =
+  'Do not skip this JS/RunJS step. Resolve the blocking context/problem first, then retry the same write.';
 
 function asPlainRecord(value: unknown): PlainRecord | undefined {
   return _.isPlainObject(value) ? (value as PlainRecord) : undefined;
@@ -3252,18 +3261,34 @@ function buildRunJsAuthoringError(input: {
 }): FlowSurfaceErrorItemInput {
   const rule = getRunJsAuthoringRule(input.repairClass);
   const loc = getLineColumn(input.source, input.index);
+  const agentInstruction = getRunJsAuthoringAgentInstruction(input.repairClass);
   return {
     path: input.path,
     ruleId: input.ruleId || rule.defaultRuleId,
-    message: input.message,
+    message: buildRunJsAuthoringErrorMessage(input.message, agentInstruction, rule.suggestedAction),
     details: buildDefinedDetails({
       repairClass: input.repairClass,
       suggestedAction: rule.suggestedAction,
+      skipForbidden: true,
+      mustRetry: true,
+      agentInstruction,
       line: loc.line,
       column: loc.column,
       ...input.details,
     }),
   };
+}
+
+function getRunJsAuthoringAgentInstruction(repairClass: RunJsAuthoringRepairClass) {
+  return CONTEXT_FIRST_REPAIR_CLASSES.has(repairClass)
+    ? RUNJS_CONTEXT_AND_RETRY_INSTRUCTION
+    : RUNJS_FIX_AND_RETRY_INSTRUCTION;
+}
+
+function buildRunJsAuthoringErrorMessage(message: string, agentInstruction: string, suggestedAction: string) {
+  return [message, agentInstruction, suggestedAction ? `Suggested fix: ${suggestedAction}` : '']
+    .filter(Boolean)
+    .join(' ');
 }
 
 function buildDefinedDetails(details: Record<string, any>) {
