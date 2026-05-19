@@ -26,6 +26,6 @@ jobs:
         with:
           vulnerability-check: true
           license-check: false
-          fail-on-severity: high
+          fail-on-severity: moderate
           fail-on-scopes: runtime, development, unknown
           comment-summary-in-pr: on-failure
