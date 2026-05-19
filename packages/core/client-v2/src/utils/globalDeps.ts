@@ -33,7 +33,8 @@ import * as ReactRouter from 'react-router';
 import * as ReactRouterDom from 'react-router-dom';
 import jsxRuntime from 'react/jsx-runtime';
 import * as nocobaseClientV2 from '../index';
-
+import * as dndKitCore from '@dnd-kit/core';
+import * as dndKitSortable from '@dnd-kit/sortable';
 import type { RequireJS } from './requirejs';
 
 /**
@@ -74,6 +75,9 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('@nocobase/flow-engine', () => nocobaseFlowEngine);
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
   requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
+
+  requirejs.define('@dnd-kit/core', () => dndKitCore);
+  requirejs.define('@dnd-kit/sortable', () => dndKitSortable);
 
   // utils
   requirejs.define('ahooks', () => ahooks);

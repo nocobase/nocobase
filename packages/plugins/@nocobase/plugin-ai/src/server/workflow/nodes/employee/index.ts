@@ -76,13 +76,12 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
         let currentRoles = input?.result?.roleName;
         if (!currentRoles) {
-          const defaultRole = await this.workflow.db.getRepository('rolesUsers').findOne({
+          const roles = await this.workflow.db.getRepository('rolesUsers').find({
             filter: {
               userId: input?.result?.user?.id ?? userId,
-              default: true,
             },
           });
-          currentRoles = defaultRole?.roleName;
+          currentRoles = roles.map((x) => x.roleName);
         }
 
         const employee = await this.workflow.db.getRepository('aiEmployees').findOne({

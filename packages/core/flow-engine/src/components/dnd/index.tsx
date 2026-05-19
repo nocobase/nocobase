@@ -283,9 +283,22 @@ export const Droppable: FC<{ model: FlowModel<any>; children: React.ReactNode }>
   );
 };
 
+export interface DndProviderProps extends DndContextProps, PersistOptions {
+  /**
+   * Whether to render the built-in `DragOverlay` (the "Dragging" pill that
+   * follows the cursor). Defaults to `true` for backwards compatibility with
+   * existing flow-engine drag interactions. Set to `false` when the
+   * surrounding UI already gives clear visual feedback (e.g. a drag-sort
+   * table that highlights the drop position) and the floating pill would be
+   * redundant.
+   */
+  showDragOverlay?: boolean;
+}
+
 // 提供一个封装了 DragOverlay 的 DndProvider 组件，继承 DndContext 的所有 props
-export const DndProvider: FC<DndContextProps & PersistOptions> = ({
+export const DndProvider: FC<DndProviderProps> = ({
   persist = true,
+  showDragOverlay = true,
   children,
   onDragStart,
   onDragEnd,
@@ -355,7 +368,7 @@ export const DndProvider: FC<DndContextProps & PersistOptions> = ({
       {...restProps}
     >
       {children}
-      {typeof document !== 'undefined'
+      {showDragOverlay && typeof document !== 'undefined'
         ? createPortal(
             <DragOverlay
               dropAnimation={null}

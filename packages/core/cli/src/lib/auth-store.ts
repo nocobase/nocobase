@@ -67,6 +67,8 @@ export interface EnvConfigEntry {
   buildDts?: boolean;
   appRootPath?: string;
   storagePath?: string;
+  /** Optional Docker --env-file path. Defaults to <envName>/.env for Docker envs when present on disk. */
+  envFile?: string;
   /** Application HTTP port (APP_PORT). */
   appPort?: number | string;
   /** Application secret key (APP_KEY). */

@@ -22,6 +22,7 @@ import qs from 'qs';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
 import { Icon } from '../../../icon';
+import { shouldDisplayRouteBadge } from './badge';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import type { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
@@ -484,6 +485,7 @@ export function resolveAdminLayoutMenuDragMoveOptionsFromEvent(
 const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
   const { item } = props;
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
+  const showBadge = shouldDisplayRouteBadge(badgeCount, item._route.options?.badge?.showZero);
   const ariaLabel =
     typeof item.name === 'string' || typeof item.name === 'number'
       ? String(item.name)
@@ -496,7 +498,7 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
       <NocoBaseRouteContext.Provider value={item._route}>
         <div aria-label={ariaLabel} role="none" style={menuItemStyle}>
           {props.children}
-          {badgeCount != null && (
+          {showBadge && (
             <Badge
               {...item._route.options?.badge}
               count={badgeCount}
@@ -519,9 +521,13 @@ const WithTooltip: FC<{ title: React.ReactNode; hidden: boolean; badgeProps: any
 
   return (
     <Tooltip title={props.title} placement="right">
-      <Badge {...props.badgeProps} style={{ transform: 'none', maxWidth: '10em' }} dot={false}>
-        {props.children}
-      </Badge>
+      {props.badgeProps ? (
+        <Badge {...props.badgeProps} style={{ transform: 'none', maxWidth: '10em' }} dot={false}>
+          {props.children}
+        </Badge>
+      ) : (
+        props.children
+      )}
     </Tooltip>
   );
 };
@@ -534,6 +540,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
   const basenameOfCurrentRouter = useRouterBasename();
   const { closeMobileMenu } = useContext(MobileMenuControlContext);
   const path = item.redirect || item.path;
+  const showBadge = shouldDisplayRouteBadge(badgeCount, item._route.options?.badge?.showZero);
   const badgeProps = { ...item._route.options?.badge, count: badgeCount };
 
   const handleClickLink = useCallback(
@@ -590,7 +597,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
                 {props.children}
               </Link>
             </div>
-            {badgeCount != null && (
+            {showBadge && (
               <Badge
                 {...item._route.options?.badge}
                 count={badgeCount}
@@ -613,7 +620,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
             hidden={
               item._route.type === NocoBaseDesktopRouteType.group || (item._depth || 0) > 0 || !props.options?.collapsed
             }
-            badgeProps={badgeProps}
+            badgeProps={showBadge ? badgeProps : null}
           >
             <Link
               to={path}
@@ -623,7 +630,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
               {props.children}
             </Link>
           </WithTooltip>
-          {badgeCount != null && (
+          {showBadge && (
             <Badge
               {...badgeProps}
               style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}

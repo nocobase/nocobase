@@ -9,6 +9,7 @@
 
 import { SettingOutlined } from '@ant-design/icons';
 import { FormButtonGroup } from '@formily/antd-v5';
+import type { CollectionField, PropertyMeta, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   DndProvider,
@@ -22,6 +23,7 @@ import {
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
 import { Form } from 'antd';
+import { isEqual } from 'lodash';
 import React from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import {
@@ -31,6 +33,7 @@ import {
 import { BlockSceneEnum } from '../../base/BlockModel';
 import { FilterBlockModel } from '../../base/FilterBlockModel';
 import { FormComponent } from '../form/FormBlockModel';
+import { evaluateCondition } from '../form/value-runtime/conditions';
 import { isEmptyValue } from '../form/value-runtime/utils';
 import { FilterManager, type RefreshTargetsByFilterOptions } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
@@ -39,6 +42,177 @@ import { findFormItemModelByFieldPath } from '../../../internal/utils/modelUtils
 import { FormItemModel } from '../form/FormItemModel';
 import { getDefaultOperator } from '../filter-manager/utils';
 import { normalizeFilterValueByOperator } from './valueNormalization';
+
+const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'];
+const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'];
+
+function getFilterFormFieldMetaType(field: CollectionField) {
+  if (RELATION_FIELD_TYPES.includes(field.type)) {
+    return 'object';
+  }
+
+  if (NUMERIC_FIELD_TYPES.includes(field.type)) {
+    return 'number';
+  }
+
+  switch (field.type) {
+    case 'boolean':
+      return 'boolean';
+    case 'json':
+      return 'object';
+    case 'array':
+      return 'array';
+    default:
+      return 'string';
+  }
+}
+
+function shouldShowFilterFormFieldMeta(field: CollectionField) {
+  return Boolean(field?.interface);
+}
+
+function createFilterFormFieldMeta(field: CollectionField): PropertyMeta {
+  const baseMeta = {
+    title: field.title || field.name,
+    interface: field.interface,
+    options: field.options,
+    uiSchema: field.uiSchema || {},
+  };
+
+  if (!field.isAssociationField?.()) {
+    return {
+      type: getFilterFormFieldMetaType(field),
+      ...baseMeta,
+    };
+  }
+
+  const targetCollection = field.targetCollection;
+  if (!targetCollection) {
+    return {
+      type: 'object',
+      ...baseMeta,
+    };
+  }
+
+  return {
+    type: 'object',
+    ...baseMeta,
+    properties: async () => {
+      const properties: Record<string, PropertyMeta> = {};
+      targetCollection.fields.forEach((subField) => {
+        if (shouldShowFilterFormFieldMeta(subField)) {
+          properties[subField.name] = createFilterFormFieldMeta(subField);
+        }
+      });
+      return properties;
+    },
+  };
+}
+
+function getFilterFormItemFieldName(itemModel: any) {
+  const name = itemModel?.props?.name;
+  if (typeof name === 'string' && name) {
+    return name;
+  }
+
+  return itemModel?.fieldPath && itemModel?.uid ? `${itemModel.fieldPath}_${itemModel.uid}` : undefined;
+}
+
+function toFilterByTk(value: any, primaryKey: string | string[] | undefined) {
+  if (value == null) return undefined;
+  if (Array.isArray(primaryKey)) {
+    if (typeof value !== 'object') return undefined;
+    const filterByTk: Record<string, any> = {};
+    for (const key of primaryKey) {
+      const item = value?.[key];
+      if (item == null) return undefined;
+      filterByTk[key] = item;
+    }
+    return filterByTk;
+  }
+  if (typeof value !== 'object') return value;
+  const key = Array.isArray(primaryKey) ? primaryKey[0] : primaryKey;
+  return key ? value?.[key] : value?.id;
+}
+
+function setValueByPath(target: Record<string, any>, path: string, value: any) {
+  const segments = path.split('.').filter(Boolean);
+  if (!segments.length) return;
+
+  let cursor = target;
+  segments.forEach((segment, index) => {
+    if (index === segments.length - 1) {
+      cursor[segment] = value;
+      return;
+    }
+
+    if (!cursor[segment] || typeof cursor[segment] !== 'object' || Array.isArray(cursor[segment])) {
+      cursor[segment] = {};
+    }
+    cursor = cursor[segment];
+  });
+}
+
+function setMetaByPath(target: Record<string, PropertyMeta>, path: string, meta: PropertyMeta) {
+  const segments = path.split('.').filter(Boolean);
+  if (!segments.length) return;
+
+  let cursor = target;
+  segments.forEach((segment, index) => {
+    if (index === segments.length - 1) {
+      cursor[segment] = meta;
+      return;
+    }
+
+    const current = cursor[segment];
+    if (!current || typeof current !== 'object') {
+      cursor[segment] = {
+        type: 'object',
+        title: segment,
+        properties: {},
+      };
+    }
+    const properties = cursor[segment].properties;
+    if (!properties || typeof properties === 'function') {
+      cursor[segment].properties = {};
+    }
+    cursor = cursor[segment].properties as Record<string, PropertyMeta>;
+  });
+}
+
+function getFilterFormValues(form: any, items: any[]) {
+  const formValues = form?.getFieldsValue?.() || {};
+  const values = { ...formValues };
+
+  for (const itemModel of items) {
+    const fieldName = getFilterFormItemFieldName(itemModel);
+    if (!fieldName || !fieldName.includes('.') || !(fieldName in formValues)) {
+      continue;
+    }
+    setValueByPath(values, fieldName, formValues[fieldName]);
+  }
+
+  return values;
+}
+
+function isFilterFormFieldSubPath(fieldName: string, subPath: string) {
+  return subPath === fieldName || subPath.startsWith(`${fieldName}.`) || subPath.startsWith(`${fieldName}[`);
+}
+
+function isFilterFormFieldDeepSubPath(fieldName: string, subPath: string) {
+  return subPath.startsWith(`${fieldName}.`) || subPath.startsWith(`${fieldName}[`);
+}
+
+function findFilterFormItemByVariableSubPath(items: any[], subPath: string) {
+  if (!subPath) return null;
+
+  return (
+    items.find((itemModel) => {
+      const fieldName = getFilterFormItemFieldName(itemModel);
+      return fieldName && isFilterFormFieldSubPath(fieldName, subPath);
+    }) || null
+  );
+}
 
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
@@ -56,6 +230,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   private removeTargetBlockListener?: () => void;
   private initialDefaultsPromise?: Promise<void>;
   private initialRefreshHandledTargetIds = new Set<string>();
+  private lastDefaultValueByFieldName = new Map<string, any>();
+  private defaultValuesRefreshSeq = 0;
 
   get form() {
     return this.context.form;
@@ -65,10 +241,98 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     return 'Filter form';
   }
 
+  protected createFormValuesMetaFactory(): PropertyMetaFactory {
+    const factory: PropertyMetaFactory = async () => ({
+      type: 'object',
+      title: this.translate('Current form'),
+      properties: async () => {
+        const properties: Record<string, PropertyMeta> = {};
+        const items = this.subModels?.grid?.subModels?.items || [];
+
+        for (const itemModel of items) {
+          const fieldName = getFilterFormItemFieldName(itemModel);
+          const collectionField = itemModel?.subModels?.field?.context?.collectionField || itemModel?.collectionField;
+          if (!fieldName || !collectionField || !shouldShowFilterFormFieldMeta(collectionField)) {
+            continue;
+          }
+          setMetaByPath(properties, fieldName, createFilterFormFieldMeta(collectionField));
+        }
+
+        return properties;
+      },
+      buildVariablesParams: () => {
+        const formValues = this.form?.getFieldsValue?.() || {};
+        const items = this.subModels?.grid?.subModels?.items || [];
+        const params: Record<string, any> = {};
+
+        for (const itemModel of items) {
+          const fieldName = getFilterFormItemFieldName(itemModel);
+          const collectionField = itemModel?.subModels?.field?.context?.collectionField || itemModel?.collectionField;
+          if (!fieldName || !collectionField?.isAssociationField?.()) {
+            continue;
+          }
+
+          const targetCollection = collectionField.targetCollection;
+          const target = collectionField.target;
+          if (!targetCollection || !target) {
+            continue;
+          }
+
+          const fieldValue = formValues[fieldName];
+          const primaryKey = targetCollection.filterTargetKey;
+          if (Array.isArray(fieldValue)) {
+            const filterByTk = fieldValue.map((item) => toFilterByTk(item, primaryKey)).filter((item) => item != null);
+            if (filterByTk.length) {
+              setValueByPath(params, fieldName, {
+                collection: target,
+                dataSourceKey: targetCollection.dataSourceKey,
+                filterByTk,
+              });
+            }
+            continue;
+          }
+
+          const filterByTk = toFilterByTk(fieldValue, primaryKey);
+          if (filterByTk != null) {
+            setValueByPath(params, fieldName, {
+              collection: target,
+              dataSourceKey: targetCollection.dataSourceKey,
+              filterByTk,
+            });
+          }
+        }
+
+        return params;
+      },
+    });
+    factory.title = this.translate('Current form');
+    return factory;
+  }
+
   useHooksBeforeRender() {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form, cache: false });
+    this.context.defineProperty('formValues', {
+      get: () => getFilterFormValues(this.form, this.subModels?.grid?.subModels?.items || []),
+      cache: false,
+      meta: this.createFormValuesMetaFactory(),
+      resolveOnServer: (subPath: string) => {
+        const items = this.subModels?.grid?.subModels?.items || [];
+        const itemModel = findFilterFormItemByVariableSubPath(items, subPath);
+        if (!itemModel) return false;
+
+        const fieldName = getFilterFormItemFieldName(itemModel);
+        const collectionField = itemModel?.subModels?.field?.context?.collectionField || itemModel?.collectionField;
+        return Boolean(
+          fieldName &&
+            isFilterFormFieldDeepSubPath(fieldName, subPath) &&
+            collectionField?.isAssociationField?.() &&
+            collectionField?.targetCollection,
+        );
+      },
+      serverOnlyWhenContextParams: true,
+    });
   }
 
   async saveStepParams() {
@@ -165,14 +429,38 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     }
   }
 
-  async applyFormDefaultValues(options?: { force?: boolean }) {
+  private canApplyFormDefaultValue(name: string, current: any, force?: boolean) {
+    if (force) return true;
+    if (isEmptyValue(current)) return true;
+    if (!this.lastDefaultValueByFieldName.has(name)) return false;
+    return isEqual(current, this.lastDefaultValueByFieldName.get(name));
+  }
+
+  private async matchDefaultValueCondition(condition: any) {
+    if (!condition) return true;
+
+    let resolvedCondition = condition;
+    try {
+      const nextCondition = await (this.context as any).resolveJsonTemplate?.(condition);
+      if (typeof nextCondition !== 'undefined') {
+        resolvedCondition = nextCondition;
+      }
+    } catch {
+      resolvedCondition = condition;
+    }
+
+    return evaluateCondition(this.context, resolvedCondition);
+  }
+
+  async applyFormDefaultValues(options?: { force?: boolean; refreshSeq?: number }) {
+    const appliedValues: Record<string, any> = {};
     const form = this.form;
-    if (!form) return;
+    if (!form) return appliedValues;
 
     const force = options?.force === true;
     const params = this.getStepParams?.('formFilterBlockModelSettings', 'defaultValues');
     const rules = (params?.value || []) as any[];
-    if (!Array.isArray(rules) || rules.length === 0) return;
+    if (!Array.isArray(rules) || rules.length === 0) return appliedValues;
 
     const resolveValue = async (raw: any) => {
       // RunJS support
@@ -188,7 +476,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     for (const rule of rules) {
       if (!rule || typeof rule !== 'object') continue;
       if (rule.enable === false) continue;
-      if (rule.mode && String(rule.mode) !== 'default') continue;
+      if (!(await this.matchDefaultValueCondition(rule.condition))) continue;
+      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return appliedValues;
 
       const targetPath = rule.targetPath ? String(rule.targetPath).trim() : '';
       const fieldUid = rule.field ? String(rule.field).trim() : '';
@@ -203,20 +492,54 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       if (!name) continue;
 
       const current = (form as any).getFieldValue?.(name);
-      if (!force && !isEmptyValue(current)) continue;
 
       const resolved = await resolveValue(rule.value);
+      if (options?.refreshSeq && options.refreshSeq !== this.defaultValuesRefreshSeq) return appliedValues;
       if (typeof resolved === 'undefined') continue;
 
       const operator = getDefaultOperator(itemModel as any);
       const normalized = normalizeFilterValueByOperator(operator, resolved);
+      const mode = String(rule.mode || 'default') === 'assign' ? 'assign' : 'default';
+      if (mode === 'default' && !this.canApplyFormDefaultValue(String(name), current, force)) continue;
+      if (isEqual(current, normalized)) {
+        if (mode === 'default') {
+          this.lastDefaultValueByFieldName.set(String(name), normalized);
+        } else {
+          this.lastDefaultValueByFieldName.delete(String(name));
+        }
+        continue;
+      }
 
       if (typeof (form as any).setFieldValue === 'function') {
         (form as any).setFieldValue(name, normalized);
       } else {
         (form as any).setFieldsValue?.({ [String(name)]: normalized });
       }
+      if (mode === 'default') {
+        this.lastDefaultValueByFieldName.set(String(name), normalized);
+      } else {
+        this.lastDefaultValueByFieldName.delete(String(name));
+      }
+      appliedValues[String(name)] = normalized;
     }
+
+    return appliedValues;
+  }
+
+  private handleFilterFormValuesChange(changedValues: any, allValues: any) {
+    const refreshSeq = ++this.defaultValuesRefreshSeq;
+    void (async () => {
+      const appliedValues = await this.applyFormDefaultValues({ refreshSeq });
+      if (refreshSeq !== this.defaultValuesRefreshSeq) return;
+
+      const finalChangedValues = { ...(changedValues || {}), ...(appliedValues || {}) };
+      const finalAllValues = this.form?.getFieldsValue?.() || allValues;
+      const payload = { changedValues: finalChangedValues, allValues: finalAllValues };
+      this.dispatchEvent('formValuesChange', payload, { debounce: true });
+      this.emitter.emit('formValuesChange', payload);
+    })().catch((error) => {
+      console.error('Failed to refresh filter form default values:', error);
+    });
   }
 
   private async handleTargetBlockRemoved(targetUid: string) {
@@ -264,6 +587,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
         onFinish={() => {
           this.context.refreshTargets();
         }}
+        onValuesChange={(changedValues, allValues) => this.handleFilterFormValuesChange(changedValues, allValues)}
         layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
       >
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
