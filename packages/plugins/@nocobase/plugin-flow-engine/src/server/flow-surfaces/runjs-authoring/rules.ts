@@ -15,6 +15,7 @@ import { renderTopLevelFunctionWrapperRule } from './render-top-level-function-w
 import { renderUnreachableRenderCallRule } from './render-unreachable-render-call';
 import { replaceInnerHtmlWithRenderRule } from './replace-innerhtml-with-render';
 import { reactRuntimeContractStopRule } from './react-runtime-contract-stop';
+import { resourceRuntimeContractStopRule } from './resource-runtime-contract-stop';
 import { switchToResourceApiRule } from './switch-to-resource-api';
 import { unknownModelStopRule } from './unknown-model-stop';
 import { unknownSurfaceStopRule } from './unknown-surface-stop';
@@ -33,6 +34,7 @@ export const RUNJS_AUTHORING_RULES: RunJsAuthoringRuleDefinition[] = [
   blockedGlobalStopRule,
   blockedCapabilityRerouteRule,
   reactRuntimeContractStopRule,
+  resourceRuntimeContractStopRule,
   ctxRootMismatchStopRule,
 ];
 

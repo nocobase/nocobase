@@ -2456,6 +2456,118 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject invalid FlowResource runtime patterns in JSBlock authoring code', () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: [
+        'const now = new Date();',
+        'const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);',
+        "const resource = ctx.makeResource('ai_intelligence');",
+        'const { meta } = await resource.list({',
+        '  pageSize: 1,',
+        '  page: 0,',
+        '  filter: { createdAt: { $gte: weekAgo.toISOString() } }',
+        '});',
+        'const total = meta?.total || 0;',
+        'const element = ctx.render(ctx.libs.antd.Statistic, {',
+        "  title: '本周新增情报数',",
+        '  value: total,',
+        '  prefix: ctx.libs.antdIcons.RiseOutlined',
+        '});',
+        'return element;',
+      ].join('\n'),
+      path: '$.resourceRuntimeMisuse.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-invalid',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.makeResource',
+            resourceType: 'ai_intelligence',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-flow-resource-list-method-invalid',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'resource.list',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-render-component-signature-invalid',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            capability: 'ctx.libs.antd.Statistic',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-react-component-prop-node-required',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            capability: 'ctx.libs.antdIcons.RiseOutlined',
+            prop: 'prefix',
+          }),
+        }),
+      ]),
+    );
+
+    const aliasErrors = inspectRunJsAuthoringCode({
+      code: "const resourceType = 'ai_intelligence';\nctx.render(null);\nctx.makeResource(resourceType);",
+      path: '$.resourceTypeAliasMisuse.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(aliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-invalid',
+          details: expect.objectContaining({
+            resourceType: 'ai_intelligence',
+          }),
+        }),
+      ]),
+    );
+
+    const dynamicErrors = inspectRunJsAuthoringCode({
+      code: 'ctx.render(null);\nctx.makeResource(resourceTypeName);',
+      path: '$.dynamicResourceType.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(dynamicErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: 'resourceTypeName',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'const React = ctx.React;',
+          "const resourceType = 'MultiRecordResource';",
+          'const resource = ctx.makeResource(resourceType);',
+          "resource.setResourceName('ai_intelligence');",
+          'resource.setPageSize(1);',
+          "resource.setFilter({ createdAt: { $gte: '2026-05-12T00:00:00.000Z' } });",
+          'await resource.refresh();',
+          "const total = resource.getMeta('total') || resource.getMeta()?.total || 0;",
+          'ctx.render(React.createElement(ctx.libs.antd.Statistic, {',
+          "  title: '本周新增情报数',",
+          '  value: total,',
+          '  prefix: React.createElement(ctx.libs.antdIcons.RiseOutlined),',
+          '}));',
+        ].join('\n'),
+        path: '$.validResourceRuntime.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+  });
+
   it('should reject ctx.runjs resource endpoints on applyBlueprint and configure writes', async () => {
     const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
       mode: 'create',

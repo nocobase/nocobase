@@ -37,6 +37,24 @@ type SourceBinding = SourceRange & {
   name: string;
 };
 
+type StringLiteralBinding = SourceBinding & {
+  value: string;
+};
+
+type ReactComponentAlias = SourceRange & {
+  capability: string;
+  name: string;
+};
+
+type FlowResourceAlias = SourceRange & {
+  capability: string;
+  name: string;
+};
+
+type CallArgumentSource = SourceRange & {
+  source: string;
+};
+
 const HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE: Record<string, string[]> = {
   calendar: ['quickCreatePopup', 'eventPopup'],
   kanban: ['quickCreatePopup', 'cardPopup'],
@@ -216,6 +234,14 @@ const REACT_HOOK_NAMES = [
 
 const REACT_HOOK_PATTERN = REACT_HOOK_NAMES.map(escapeRegExp).join('|');
 const RUNJS_RESOURCE_ACTION_PATTERN = '(?:list|get|create|update|destroy)';
+const FLOW_RESOURCE_CLASS_NAMES = new Set([
+  'FlowResource',
+  'APIResource',
+  'SingleRecordResource',
+  'MultiRecordResource',
+  'SQLResource',
+]);
+const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 
 function asPlainRecord(value: unknown): PlainRecord | undefined {
   return _.isPlainObject(value) ? (value as PlainRecord) : undefined;
@@ -336,6 +362,7 @@ export function inspectRunJsAuthoringCode(input: RunJsAuthoringInspectionInput):
 
   const scan = scanJavaScriptSource(source);
   collectResourceApiErrors(input.path, source, scan, modelUse, surface, errors);
+  collectResourceRuntimeErrors(input.path, source, scan, modelUse, surface, errors);
   collectDirectDomErrors(input.path, source, scan, modelUse, surface, errors);
   collectGlobalErrors(input.path, source, scan, modelUse, surface, errors);
   collectReactRuntimeErrors(input.path, source, scan, modelUse, surface, errors);
@@ -910,6 +937,57 @@ function collectResourceApiErrors(
   });
 }
 
+function collectResourceRuntimeErrors(
+  path: string,
+  source: string,
+  scan: ReturnType<typeof scanJavaScriptSource>,
+  modelUse: string,
+  surface: string,
+  errors: FlowSurfaceErrorItemInput[],
+) {
+  scan.invalidResourceTypeCalls.forEach((entry) => {
+    const message =
+      entry.ruleId === 'runjs-make-resource-type-invalid'
+        ? `flowSurfaces authoring ${path} ${entry.capability}(...) expects a FlowResource class name, not collection '${entry.resourceType}'`
+        : `flowSurfaces authoring ${path} cannot validate dynamic ${entry.capability}(...) resource type '${entry.expression}'`;
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'resource-runtime-contract-stop',
+        ruleId: entry.ruleId,
+        message,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          expression: entry.expression,
+          resourceType: entry.resourceType,
+        },
+      }),
+    );
+  });
+  scan.invalidFlowResourceListCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'resource-runtime-contract-stop',
+        ruleId: 'runjs-flow-resource-list-method-invalid',
+        message: `flowSurfaces authoring ${path} cannot call ${entry.capability}; FlowResource instances fetch through refresh() and expose getData()/getMeta()`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          method: 'list',
+        },
+      }),
+    );
+  });
+}
+
 function collectReactRuntimeErrors(
   path: string,
   source: string,
@@ -967,6 +1045,43 @@ function collectReactRuntimeErrors(
         details: {
           capability: entry.capability,
           component: entry.component,
+        },
+      }),
+    );
+  });
+  scan.ctxRenderComponentSignatureCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'react-runtime-contract-stop',
+        ruleId: 'runjs-render-component-signature-invalid',
+        message: `flowSurfaces authoring ${path} cannot pass React component ${entry.component} directly to ctx.render(...)`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          component: entry.component,
+        },
+      }),
+    );
+  });
+  scan.reactComponentPropReferences.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'react-runtime-contract-stop',
+        ruleId: 'runjs-react-component-prop-node-required',
+        message: `flowSurfaces authoring ${path} cannot pass React component ${entry.component} as ${entry.prop}; create a React element first`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          component: entry.component,
+          prop: entry.prop,
         },
       }),
     );
@@ -1166,6 +1281,7 @@ function scanJavaScriptSource(source: string) {
   const functionRanges = findFunctionRanges(masked);
   const blockRanges = collectBraceRanges(masked);
   const sourceBindings = collectSourceBindings(masked, functionRanges, blockRanges);
+  const stringLiteralBindings = collectStringLiteralBindings(source, masked, sourceBindings);
   const ctxRenderCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g);
   const topLevelCtxRenderCalls = ctxRenderCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges));
   const topLevelReturns = findMatches(masked, /\breturn\b/g).filter(
@@ -1175,6 +1291,7 @@ function scanJavaScriptSource(source: string) {
   const ctxRequestCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*(?:api\s*(?:\?\.|\.)\s*)?request\s*(?:\?\.)?\(/g);
   const reactHookCalls = collectReactHookCalls(masked);
   const reactComponentAliases = collectReactComponentAliases(masked, sourceBindings);
+  const flowResourceAliases = collectFlowResourceAliases(masked, sourceBindings);
   const directDomWrites = collectDirectDomWrites(source, masked, sourceBindings);
   const directDomAliases = collectDirectDomAliases(masked, sourceBindings);
   const windowDocumentNavigatorUses = collectWindowDocumentNavigatorUses(source, masked, sourceBindings);
@@ -1193,9 +1310,13 @@ function scanJavaScriptSource(source: string) {
     ctxRunjsCalls,
     ctxRequestCalls,
     invalidApiResourceCalls: collectInvalidApiResourceCalls(masked),
+    invalidResourceTypeCalls: collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings),
+    invalidFlowResourceListCalls: collectInvalidFlowResourceListCalls(masked, flowResourceAliases),
     topLevelReactHookCalls: reactHookCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges)),
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
     reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases),
+    ctxRenderComponentSignatureCalls: collectCtxRenderComponentSignatureCalls(source, masked, reactComponentAliases),
+    reactComponentPropReferences: collectReactComponentPropReferences(source, masked, reactComponentAliases),
     directDomWrites,
     directDomAliases,
     windowDocumentNavigatorUses,
@@ -1785,6 +1906,28 @@ function collectSourceBindings(masked: string, functionRanges: SourceRange[], bl
   return bindings;
 }
 
+function collectStringLiteralBindings(source: string, masked: string, bindings: SourceBinding[]) {
+  const entries: StringLiteralBinding[] = [];
+  const commentMasked = maskJavaScriptComments(source);
+  for (const match of commentMasked.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(['"`])/g)) {
+    const declarationIndex = match.index || 0;
+    const literalStart = declarationIndex + match[0].lastIndexOf(match[2]);
+    const statementEnd = findSingleStatementEnd(masked, declarationIndex);
+    const literal = readCompleteStringLiteral(source.slice(literalStart, statementEnd));
+    if (!literal) {
+      continue;
+    }
+    const binding = bindings.find((entry) => entry.name === match[1] && entry.start === declarationIndex);
+    entries.push({
+      name: match[1],
+      value: literal.value,
+      start: binding?.start ?? declarationIndex,
+      end: binding?.end ?? masked.length,
+    });
+  }
+  return entries;
+}
+
 function isNamedFunctionOrClassExpression(masked: string, keywordIndex: number, kind: string) {
   let previous = getPreviousSignificantTokenInfo(masked, keywordIndex);
   if (kind === 'function' && previous?.token === 'async') {
@@ -2164,6 +2307,35 @@ function splitTopLevel(value: string, separator: string) {
   return parts;
 }
 
+function splitTopLevelWithRanges(value: string, separator: string) {
+  const parts: CallArgumentSource[] = [];
+  let start = 0;
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let braceDepth = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (char === '(') {
+      parenDepth += 1;
+    } else if (char === ')' && parenDepth > 0) {
+      parenDepth -= 1;
+    } else if (char === '[') {
+      bracketDepth += 1;
+    } else if (char === ']' && bracketDepth > 0) {
+      bracketDepth -= 1;
+    } else if (char === '{') {
+      braceDepth += 1;
+    } else if (char === '}' && braceDepth > 0) {
+      braceDepth -= 1;
+    } else if (char === separator && parenDepth === 0 && bracketDepth === 0 && braceDepth === 0) {
+      parts.push({ source: value.slice(start, index), start, end: index });
+      start = index + 1;
+    }
+  }
+  parts.push({ source: value.slice(start), start, end: value.length });
+  return parts;
+}
+
 function findTopLevelChar(value: string, target: string) {
   let parenDepth = 0;
   let bracketDepth = 0;
@@ -2227,6 +2399,138 @@ function collectInvalidApiResourceCalls(masked: string) {
   }));
 }
 
+function collectInvalidResourceTypeCalls(source: string, masked: string, stringBindings: StringLiteralBinding[]) {
+  const entries: Array<{
+    capability: string;
+    expression?: string;
+    index: number;
+    message?: string;
+    resourceType?: string;
+    ruleId: string;
+  }> = [];
+  for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*(makeResource|initResource)\s*(?:\?\.)?\(/g)) {
+    const index = match.index || 0;
+    const capability = `ctx.${match[1]}`;
+    const firstArg = getCallArgumentSources(source, masked, index)[0];
+    if (!firstArg) {
+      entries.push({
+        capability,
+        expression: '',
+        index,
+        ruleId: 'runjs-make-resource-type-unresolved',
+        message: `flowSurfaces authoring cannot validate ${capability}(...) without a resource type`,
+      });
+      continue;
+    }
+    const resolved = resolveResourceTypeExpression(firstArg, stringBindings);
+    if (resolved.status === 'unresolved') {
+      entries.push({
+        capability,
+        expression: resolved.expression,
+        index,
+        ruleId: 'runjs-make-resource-type-unresolved',
+        message: `flowSurfaces authoring cannot validate dynamic ${capability}(...) resource type '${resolved.expression}'`,
+      });
+      continue;
+    }
+    if (!FLOW_RESOURCE_CLASS_NAMES.has(resolved.value)) {
+      entries.push({
+        capability,
+        index,
+        resourceType: resolved.value,
+        ruleId: 'runjs-make-resource-type-invalid',
+        message: `flowSurfaces authoring ${capability}(...) expects a FlowResource class name, not collection '${resolved.value}'`,
+      });
+    }
+  }
+  return entries;
+}
+
+function resolveResourceTypeExpression(
+  arg: CallArgumentSource,
+  stringBindings: StringLiteralBinding[],
+): { status: 'resolved'; value: string } | { status: 'unresolved'; expression: string } {
+  const expression = arg.source.trim();
+  const leadingLength = arg.source.length - arg.source.trimStart().length;
+  const expressionIndex = arg.start + leadingLength;
+  const literal = readCompleteStringLiteral(arg.source);
+  if (literal) {
+    return { status: 'resolved', value: literal.value };
+  }
+  if (/^[A-Za-z_$][\w$]*$/.test(expression)) {
+    const binding = stringBindings.find(
+      (entry) => entry.name === expression && expressionIndex >= entry.start && expressionIndex < entry.end,
+    );
+    if (binding) {
+      return { status: 'resolved', value: binding.value };
+    }
+  }
+  return {
+    status: 'unresolved',
+    expression,
+  };
+}
+
+function collectFlowResourceAliases(masked: string, bindings: SourceBinding[]) {
+  const aliases: FlowResourceAlias[] = [];
+  const addAlias = (name: string, capability: string, declarationIndex: number) => {
+    const binding = bindings.find((entry) => entry.name === name && entry.start === declarationIndex);
+    aliases.push({
+      name,
+      capability,
+      start: binding?.start ?? declarationIndex,
+      end: binding?.end ?? masked.length,
+    });
+  };
+
+  for (const match of masked.matchAll(
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*ctx\s*(?:\?\.|\.)\s*(makeResource|initResource)\s*(?:\?\.)?\(/g,
+  )) {
+    addAlias(match[1], `ctx.${match[2]}`, match.index || 0);
+  }
+  for (const match of masked.matchAll(
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*ctx\s*(?:\?\.|\.)\s*resource\b/g,
+  )) {
+    addAlias(match[1], 'ctx.resource', match.index || 0);
+  }
+  return aliases;
+}
+
+function collectInvalidFlowResourceListCalls(masked: string, aliases: FlowResourceAlias[]) {
+  const entries: Array<{ capability: string; index: number }> = [];
+  for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*resource\s*(?:\?\.|\.)\s*list\s*(?:\?\.)?\(/g)) {
+    entries.push({
+      index: match.index || 0,
+      capability: 'ctx.resource.list',
+    });
+  }
+  for (const match of masked.matchAll(
+    /\bctx\s*(?:\?\.|\.)\s*(makeResource|initResource)\s*(?:\?\.)?\([^)]*\)\s*(?:\?\.|\.)\s*list\s*(?:\?\.)?\(/g,
+  )) {
+    entries.push({
+      index: match.index || 0,
+      capability: `ctx.${match[1]}(...).list`,
+    });
+  }
+  aliases.forEach((alias) => {
+    const pattern = new RegExp(
+      `(?<![.$\\w])${escapeRegExp(alias.name)}\\s*(?:\\?\\.|\\.)\\s*list\\s*(?:\\?\\.)?\\(`,
+      'g',
+    );
+    for (const match of masked.matchAll(pattern)) {
+      const index = match.index || 0;
+      if (index <= alias.start || index >= alias.end) {
+        continue;
+      }
+      entries.push({
+        index,
+        capability: `${alias.name}.list`,
+      });
+    }
+  });
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
 function collectReactHookCalls(masked: string) {
   const entries: Array<{ hook: string; index: number; match: string }> = [];
   const memberPattern = new RegExp(
@@ -2271,7 +2575,7 @@ function collectUnboundReactCreateElementCalls(masked: string, bindings: SourceB
 }
 
 function collectReactComponentAliases(masked: string, bindings: SourceBinding[]) {
-  const aliases: Array<{ name: string; capability: string; start: number; end: number }> = [];
+  const aliases: ReactComponentAlias[] = [];
   const addAlias = (name: string, capability: string, declarationIndex: number) => {
     if (!/^[A-Z][\w$]*$/.test(name)) {
       return;
@@ -2305,10 +2609,7 @@ function collectReactComponentAliases(masked: string, bindings: SourceBinding[])
   return aliases;
 }
 
-function collectReactComponentFunctionCalls(
-  masked: string,
-  aliases: Array<{ name: string; capability: string; start: number; end: number }>,
-) {
+function collectReactComponentFunctionCalls(masked: string, aliases: ReactComponentAlias[]) {
   const entries: Array<{ index: number; component: string; capability: string }> = [];
   for (const match of masked.matchAll(
     /\bctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\s*(?:\?\.|\.)\s*([A-Z][\w$]*)\s*(?:\?\.)?\(/g,
@@ -2341,6 +2642,125 @@ function collectReactComponentFunctionCalls(
   });
 
   return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function collectCtxRenderComponentSignatureCalls(source: string, masked: string, aliases: ReactComponentAlias[]) {
+  const entries: Array<{ index: number; component: string; capability: string }> = [];
+  for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g)) {
+    const index = match.index || 0;
+    const firstArg = getCallArgumentSources(source, masked, index)[0];
+    if (!firstArg) {
+      continue;
+    }
+    const reference = readReactComponentReference(firstArg.source, aliases, firstArg.start);
+    if (reference) {
+      entries.push({
+        index: firstArg.start,
+        ...reference,
+      });
+    }
+  }
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function collectReactComponentPropReferences(source: string, masked: string, aliases: ReactComponentAlias[]) {
+  const entries: Array<{ index: number; component: string; capability: string; prop: string }> = [];
+  const inspectPropsArg = (arg: CallArgumentSource | undefined) => {
+    if (!arg) {
+      return;
+    }
+    collectReactComponentPropReferencesFromObject(arg, aliases).forEach((entry) => entries.push(entry));
+  };
+
+  for (const match of masked.matchAll(
+    /\b(?:(?:ctx\s*(?:\?\.|\.)\s*(?:libs\s*(?:\?\.|\.)\s*)?React)|React)\s*(?:\?\.|\.)\s*createElement\s*(?:\?\.)?\(/g,
+  )) {
+    inspectPropsArg(getCallArgumentSources(source, masked, match.index || 0)[1]);
+  }
+
+  for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g)) {
+    const args = getCallArgumentSources(source, masked, match.index || 0);
+    if (!readReactComponentReference(args[0]?.source || '', aliases, args[0]?.start || 0)) {
+      continue;
+    }
+    inspectPropsArg(args[1]);
+  }
+
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function collectReactComponentPropReferencesFromObject(arg: CallArgumentSource, aliases: ReactComponentAlias[]) {
+  const entries: Array<{ index: number; component: string; capability: string; prop: string }> = [];
+  const localMasked = maskJavaScriptSource(arg.source);
+  const openOffset = arg.source.search(/\S/);
+  if (openOffset < 0 || arg.source[openOffset] !== '{') {
+    return entries;
+  }
+  const closeOffset = findMatchingDelimiter(localMasked, openOffset);
+  if (closeOffset <= openOffset) {
+    return entries;
+  }
+  const body = arg.source.slice(openOffset + 1, closeOffset);
+  const bodyStart = arg.start + openOffset + 1;
+  splitTopLevelWithRanges(body, ',').forEach((property) => {
+    const colon = findTopLevelChar(property.source, ':');
+    if (colon < 0) {
+      return;
+    }
+    const propName = normalizeObjectPropertyName(property.source.slice(0, colon));
+    if (!REACT_NODE_COMPONENT_PROP_NAMES.has(propName)) {
+      return;
+    }
+    const rawValue = property.source.slice(colon + 1);
+    const leading = rawValue.length - rawValue.trimStart().length;
+    const valueStart = bodyStart + property.start + colon + 1 + leading;
+    const reference = readReactComponentReference(rawValue, aliases, valueStart);
+    if (!reference) {
+      return;
+    }
+    entries.push({
+      index: valueStart,
+      prop: propName,
+      ...reference,
+    });
+  });
+  return entries;
+}
+
+function readReactComponentReference(
+  expression: string,
+  aliases: ReactComponentAlias[],
+  expressionIndex: number,
+): { component: string; capability: string } | undefined {
+  const normalized = maskJavaScriptComments(expression).trim();
+  const ctxMatch = normalized.match(
+    /^ctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\s*(?:\?\.|\.)\s*([A-Z][\w$]*)$/,
+  );
+  if (ctxMatch) {
+    const namespace = `ctx.${ctxMatch[1] ? 'libs.' : ''}${ctxMatch[2]}`;
+    return {
+      component: ctxMatch[3],
+      capability: `${namespace}.${ctxMatch[3]}`,
+    };
+  }
+
+  const aliasMatch = normalized.match(/^([A-Z][\w$]*)$/);
+  if (!aliasMatch) {
+    return undefined;
+  }
+  const alias = aliases.find(
+    (entry) => entry.name === aliasMatch[1] && expressionIndex >= entry.start && expressionIndex < entry.end,
+  );
+  return alias
+    ? {
+        component: alias.name,
+        capability: alias.capability,
+      }
+    : undefined;
+}
+
+function normalizeObjectPropertyName(value: string) {
+  return value.trim().replace(/^['"]([A-Za-z_$][\w$]*)['"]$/, '$1');
 }
 
 function dedupeIndexedEntries<T extends { index: number; match?: string; capability?: string; component?: string }>(
@@ -2829,6 +3249,28 @@ function readLeadingStringLiteral(value: string) {
   return undefined;
 }
 
+function readCompleteStringLiteral(value: string) {
+  const index = skipJavaScriptTrivia(value, 0);
+  const literal = readLeadingStringLiteral(value);
+  if (!literal) {
+    return undefined;
+  }
+  const rawLiteral = value.slice(index, literal.end);
+  if (rawLiteral.startsWith('`') && rawLiteral.includes('${')) {
+    return undefined;
+  }
+  const rest = value.slice(literal.end);
+  if (/^[ \t]*(?:\r\n|\r|\n)/.test(rest)) {
+    return literal;
+  }
+  const restIndex = skipJavaScriptTrivia(rest, 0);
+  const next = rest[restIndex];
+  if (!next || /[,;)\]}]/.test(next)) {
+    return literal;
+  }
+  return undefined;
+}
+
 function isResourceLikeRunjsEntrypoint(value: string) {
   const trimmed = value.trim();
   const action = RUNJS_RESOURCE_ACTION_PATTERN;
@@ -2871,13 +3313,19 @@ function skipJavaScriptTrivia(value: string, start: number) {
 }
 
 function getCallFirstArgumentSource(source: string, masked: string, index: number) {
+  return getCallArgumentSources(source, masked, index)[0]?.source || '';
+}
+
+function getCallArgumentSources(source: string, masked: string, index: number) {
+  const args: CallArgumentSource[] = [];
   const openParen = masked.indexOf('(', index);
   if (openParen < 0) {
-    return '';
+    return args;
   }
   let parenDepth = 1;
   let bracketDepth = 0;
   let braceDepth = 0;
+  let argStart = openParen + 1;
   for (let cursor = openParen + 1; cursor < masked.length; cursor += 1) {
     const char = masked[cursor];
     if (char === '(') {
@@ -2885,7 +3333,14 @@ function getCallFirstArgumentSource(source: string, masked: string, index: numbe
     } else if (char === ')' && parenDepth > 0) {
       parenDepth -= 1;
       if (parenDepth === 0) {
-        return source.slice(openParen + 1, cursor);
+        if (cursor > argStart || source.slice(argStart, cursor).trim()) {
+          args.push({
+            source: source.slice(argStart, cursor),
+            start: argStart,
+            end: cursor,
+          });
+        }
+        return args;
       }
     } else if (char === '[') {
       bracketDepth += 1;
@@ -2896,10 +3351,15 @@ function getCallFirstArgumentSource(source: string, masked: string, index: numbe
     } else if (char === '}' && braceDepth > 0) {
       braceDepth -= 1;
     } else if (char === ',' && parenDepth === 1 && bracketDepth === 0 && braceDepth === 0) {
-      return source.slice(openParen + 1, cursor);
+      args.push({
+        source: source.slice(argStart, cursor),
+        start: argStart,
+        end: cursor,
+      });
+      argStart = cursor + 1;
     }
   }
-  return '';
+  return args;
 }
 
 function getCallArgumentSource(source: string, masked: string, index: number) {

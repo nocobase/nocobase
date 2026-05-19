@@ -19,6 +19,7 @@ export type RunJsAuthoringRepairClass =
   | 'blocked-global-stop'
   | 'blocked-capability-reroute'
   | 'react-runtime-contract-stop'
+  | 'resource-runtime-contract-stop'
   | 'ctx-root-mismatch-stop';
 
 export type RunJsAuthoringSurfaceStyle = 'render' | 'value' | 'action';
