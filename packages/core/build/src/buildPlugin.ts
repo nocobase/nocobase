@@ -374,10 +374,12 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
     await ncc(dep, nccConfig).then(
       ({ code, assets }: { code: string; assets: Record<string, { source: string; permissions: number }> }) => {
         // emit dist file
+        fs.ensureDirSync(path.dirname(mainFile));
         fs.writeFileSync(mainFile, code, 'utf-8');
 
         // emit assets
         Object.entries(assets).forEach(([name, item]) => {
+          fs.ensureDirSync(path.dirname(path.join(outputDir, name)));
           fs.writeFileSync(path.join(outputDir, name), item.source, {
             encoding: 'utf-8',
             mode: item.permissions,
