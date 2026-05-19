@@ -941,7 +941,7 @@ export const flowSurfaceExamples = {
       title: 'Run diagnostics',
       type: 'primary',
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+      code: 'ctx.console.log("diagnostics");',
     },
   },
   configureJsItemAction: {
@@ -1454,7 +1454,7 @@ export const flowSurfaceExamples = {
       title: 'Run JS',
       type: 'primary',
       version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("hello")\');',
+      code: 'ctx.console.log("hello");',
     },
   },
   addJsItemAction: {

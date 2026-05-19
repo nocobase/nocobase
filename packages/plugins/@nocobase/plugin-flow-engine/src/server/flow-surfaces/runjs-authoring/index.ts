@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import * as acorn from 'acorn';
+import jsx from 'acorn-jsx';
+import * as acornWalk from 'acorn-walk';
 import * as _ from 'lodash';
 import type { FlowSurfaceErrorItemInput } from '../errors';
 import { getRunJsAuthoringRule } from './rules';
@@ -19,6 +22,7 @@ type RunJsAuthoringContext = {
   applyBlueprintScriptAssets?: Record<string, any>;
   currentNode?: any;
   hostBlockType?: string;
+  runJsSourceBudget?: RunJsSourceBudget;
 };
 
 type RunJsCodeSource = {
@@ -41,6 +45,8 @@ type StringLiteralBinding = SourceBinding & {
   value: string;
 };
 
+type StaticStringBinding = StringLiteralBinding;
+
 type ReactComponentAlias = SourceRange & {
   capability: string;
   name: string;
@@ -62,6 +68,89 @@ type CtxLibMemberCaseMismatch = {
 
 type CallArgumentSource = SourceRange & {
   source: string;
+};
+
+type RunJsSourceBudget = {
+  count: number;
+  countLimitReported?: boolean;
+  sourceLimitReported?: boolean;
+  totalLength: number;
+  totalLimitReported?: boolean;
+};
+
+type RunJsAstInspection = {
+  invalidResourceTypeCalls: Array<{
+    capability: string;
+    expression?: string;
+    index: number;
+    resourceType?: string;
+    ruleId: string;
+  }>;
+  nestedRunjsCalls: Array<{
+    capability: string;
+    index: number;
+  }>;
+};
+
+type CtxMethodAlias = SourceRange & {
+  capability: string;
+  method: string;
+  name: string;
+};
+
+const AcornParserWithJsx = acorn.Parser.extend(jsx());
+const ACORN_WALK_BASE = {
+  ...(acornWalk as any).base,
+  JSXElement(node: any, state: any, callback: any) {
+    callback(node.openingElement, state);
+    for (const child of node.children || []) {
+      callback(child, state);
+    }
+    if (node.closingElement) {
+      callback(node.closingElement, state);
+    }
+  },
+  JSXFragment(node: any, state: any, callback: any) {
+    callback(node.openingFragment, state);
+    for (const child of node.children || []) {
+      callback(child, state);
+    }
+    callback(node.closingFragment, state);
+  },
+  JSXOpeningElement(node: any, state: any, callback: any) {
+    callback(node.name, state);
+    for (const attribute of node.attributes || []) {
+      callback(attribute, state);
+    }
+  },
+  JSXClosingElement(node: any, state: any, callback: any) {
+    callback(node.name, state);
+  },
+  JSXAttribute(node: any, state: any, callback: any) {
+    callback(node.name, state);
+    if (node.value) {
+      callback(node.value, state);
+    }
+  },
+  JSXExpressionContainer(node: any, state: any, callback: any) {
+    callback(node.expression, state);
+  },
+  JSXSpreadAttribute(node: any, state: any, callback: any) {
+    callback(node.argument, state);
+  },
+  JSXMemberExpression(node: any, state: any, callback: any) {
+    callback(node.object, state);
+    callback(node.property, state);
+  },
+  JSXNamespacedName(node: any, state: any, callback: any) {
+    callback(node.namespace, state);
+    callback(node.name, state);
+  },
+  JSXIdentifier() {},
+  JSXText() {},
+  JSXEmptyExpression() {},
+  JSXOpeningFragment() {},
+  JSXClosingFragment() {},
 };
 
 const HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE: Record<string, string[]> = {
@@ -243,6 +332,10 @@ const REACT_HOOK_NAMES = [
 
 const REACT_HOOK_PATTERN = REACT_HOOK_NAMES.map(escapeRegExp).join('|');
 const RUNJS_RESOURCE_ACTION_PATTERN = '(?:list|get|create|update|destroy)';
+const MAX_RUNJS_SOURCE_LENGTH = 64 * 1024;
+const MAX_RUNJS_TOTAL_SOURCE_LENGTH = 256 * 1024;
+const MAX_RUNJS_SOURCES_PER_REQUEST = 100;
+const MAX_RUNJS_ERRORS_PER_SOURCE = 20;
 const FLOW_RESOURCE_CLASS_NAMES = new Set([
   'FlowResource',
   'APIResource',
@@ -250,6 +343,13 @@ const FLOW_RESOURCE_CLASS_NAMES = new Set([
   'MultiRecordResource',
   'SQLResource',
 ]);
+const INIT_RESOURCE_CLASS_NAMES = new Set([
+  'APIResource',
+  'SingleRecordResource',
+  'MultiRecordResource',
+  'SQLResource',
+]);
+const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource']);
 const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 const CANONICAL_CTX_LIB_MEMBERS = ['React', 'ReactDOM', 'antd', 'dayjs', 'antdIcons', 'lodash', 'formula', 'math'];
 const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((member) => [member.toLowerCase(), member]));
@@ -276,6 +376,7 @@ export function collectRunJsAuthoringErrors(
   const validationContext = {
     ...context,
     authoringActionName: actionName,
+    runJsSourceBudget: createRunJsSourceBudget(),
   };
   if (!_.isPlainObject(values)) {
     return errors;
@@ -283,19 +384,24 @@ export function collectRunJsAuthoringErrors(
 
   if (actionName === 'configure') {
     collectConfigureRunJsErrors(values, validationContext, errors);
-    collectReactionRunJsErrors(values.reaction, '$.reaction', errors);
-    collectReactionRunJsErrors(values.changes?.reaction, '$.changes.reaction', errors);
+    collectReactionRunJsErrors(values.reaction, '$.reaction', errors, validationContext.runJsSourceBudget);
+    collectReactionRunJsErrors(
+      values.changes?.reaction,
+      '$.changes.reaction',
+      errors,
+      validationContext.runJsSourceBudget,
+    );
     return dedupeErrors(errors);
   }
 
   if (actionName === 'applyBlueprint') {
-    collectChartAssetRunJsErrors(values.assets?.charts, '$.assets.charts', errors);
+    collectChartAssetRunJsErrors(values.assets?.charts, '$.assets.charts', errors, validationContext.runJsSourceBudget);
   }
 
   getAuthoringBlocks(actionName, values).forEach(({ block, path }) =>
     collectBlockRunJsErrors(block, path, validationContext, errors),
   );
-  collectReactionRunJsErrors(values.reaction, '$.reaction', errors);
+  collectReactionRunJsErrors(values.reaction, '$.reaction', errors, validationContext.runJsSourceBudget);
   return dedupeErrors(errors);
 }
 
@@ -308,12 +414,115 @@ export function collectFlowRegistryRunJsAuthoringErrors(
   return dedupeErrors(errors);
 }
 
+function createRunJsSourceBudget(): RunJsSourceBudget {
+  return {
+    count: 0,
+    totalLength: 0,
+  };
+}
+
+function inspectRunJsAuthoringCodeForWrite(
+  input: RunJsAuthoringInspectionInput,
+  budget?: RunJsSourceBudget,
+): FlowSurfaceErrorItemInput[] {
+  const limitResult = collectRunJsSourceLimitErrors(input, budget);
+  if (limitResult.skipInspection || limitResult.errors.length) {
+    return limitResult.errors;
+  }
+  return inspectRunJsAuthoringCode(input);
+}
+
+function collectRunJsSourceLimitErrors(
+  input: RunJsAuthoringInspectionInput,
+  budget?: RunJsSourceBudget,
+): { errors: FlowSurfaceErrorItemInput[]; skipInspection: boolean } {
+  const source = String(input.code || '');
+  const sourceLength = source.length;
+  const modelUse = normalizeText(input.modelUse);
+  const surface = normalizeText(input.surface);
+  const errors: FlowSurfaceErrorItemInput[] = [];
+
+  if (budget) {
+    budget.count += 1;
+    budget.totalLength += sourceLength;
+  }
+
+  const pushLimitError = (ruleId: string, message: string, details?: Record<string, any>) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path: input.path,
+        repairClass: 'source-limit-stop',
+        ruleId,
+        message,
+        modelUse,
+        surface,
+        index: 0,
+        source,
+        details,
+      }),
+    );
+  };
+
+  if (sourceLength > MAX_RUNJS_SOURCE_LENGTH) {
+    if (!budget || !budget.sourceLimitReported) {
+      if (budget) {
+        budget.sourceLimitReported = true;
+      }
+      pushLimitError(
+        'runjs-source-too-large',
+        `flowSurfaces authoring ${input.path} RunJS source is too large to validate safely`,
+        {
+          maxSourceLength: MAX_RUNJS_SOURCE_LENGTH,
+          sourceLength,
+        },
+      );
+    }
+    return { errors, skipInspection: true };
+  }
+
+  if (budget && budget.count > MAX_RUNJS_SOURCES_PER_REQUEST) {
+    if (!budget.countLimitReported) {
+      budget.countLimitReported = true;
+      pushLimitError(
+        'runjs-too-many-sources',
+        `flowSurfaces authoring request contains too many RunJS sources to validate safely`,
+        {
+          maxSources: MAX_RUNJS_SOURCES_PER_REQUEST,
+          sourceCount: budget.count,
+        },
+      );
+    }
+    return { errors, skipInspection: true };
+  }
+
+  if (budget && budget.totalLength > MAX_RUNJS_TOTAL_SOURCE_LENGTH) {
+    if (!budget.totalLimitReported) {
+      budget.totalLimitReported = true;
+      pushLimitError(
+        'runjs-total-source-too-large',
+        `flowSurfaces authoring request contains too much RunJS source to validate safely`,
+        {
+          maxTotalSourceLength: MAX_RUNJS_TOTAL_SOURCE_LENGTH,
+          totalSourceLength: budget.totalLength,
+        },
+      );
+    }
+    return { errors, skipInspection: true };
+  }
+
+  return { errors, skipInspection: false };
+}
+
 export function inspectRunJsAuthoringCode(input: RunJsAuthoringInspectionInput): FlowSurfaceErrorItemInput[] {
   const errors: FlowSurfaceErrorItemInput[] = [];
   const source = String(input.code || '');
   const modelUse = normalizeText(input.modelUse);
   const surface = normalizeText(input.surface);
   const surfaceStyle = resolveSurfaceStyle(input);
+  const sourceLimitResult = collectRunJsSourceLimitErrors(input);
+  if (sourceLimitResult.skipInspection || sourceLimitResult.errors.length) {
+    return sourceLimitResult.errors;
+  }
 
   if (surface && !SURFACE_STYLE_BY_ID[surface]) {
     errors.push(
@@ -380,7 +589,27 @@ export function inspectRunJsAuthoringCode(input: RunJsAuthoringInspectionInput):
     return errors;
   }
 
-  const scan = scanJavaScriptSource(source);
+  const parseResult = parseRunJsAuthoringAst(source);
+  if (parseResult.error) {
+    return [
+      buildRunJsAuthoringError({
+        path: input.path,
+        repairClass: 'syntax-stop',
+        ruleId: 'runjs-syntax-invalid',
+        message: `flowSurfaces authoring ${input.path} has invalid JavaScript syntax: ${parseResult.error.message}`,
+        modelUse,
+        surface,
+        index: parseResult.error.index,
+        source,
+        details: {
+          syntaxMessage: parseResult.error.message,
+        },
+      }),
+    ];
+  }
+
+  const scan = scanJavaScriptSource(source, parseResult.ast);
+  collectNestedRunJsErrors(input.path, source, scan, modelUse, surface, errors);
   collectResourceApiErrors(input.path, source, scan, modelUse, surface, errors);
   collectResourceRuntimeErrors(input.path, source, scan, modelUse, surface, errors);
   collectDirectDomErrors(input.path, source, scan, modelUse, surface, errors);
@@ -388,7 +617,7 @@ export function inspectRunJsAuthoringCode(input: RunJsAuthoringInspectionInput):
   collectReactRuntimeErrors(input.path, source, scan, modelUse, surface, errors);
   collectCtxContractErrors(input.path, source, scan, modelUse, surface, errors);
   collectSurfaceStyleErrors(input.path, source, scan, surfaceStyle, modelUse, surface, errors);
-  return dedupeErrors(errors);
+  return dedupeErrors(errors).slice(0, MAX_RUNJS_ERRORS_PER_SOURCE);
 }
 
 function collectConfigureRunJsErrors(values: any, context: RunJsAuthoringContext, errors: FlowSurfaceErrorItemInput[]) {
@@ -401,17 +630,20 @@ function collectConfigureRunJsErrors(values: any, context: RunJsAuthoringContext
   const hostBlockType = resolveConfigureBlockType(context);
   if (typeof changes.code === 'string' && changes.code.trim()) {
     errors.push(
-      ...inspectRunJsAuthoringCode({
-        code: changes.code,
-        path: '$.changes.code',
-        modelUse: modelUse || 'unknown',
-        surfaceStyle,
-      }),
+      ...inspectRunJsAuthoringCodeForWrite(
+        {
+          code: changes.code,
+          path: '$.changes.code',
+          modelUse: modelUse || 'unknown',
+          surfaceStyle,
+        },
+        context.runJsSourceBudget,
+      ),
     );
   }
   if (hostBlockType === 'chart') {
-    collectChartRawRunJsErrors(changes, '$.changes', errors);
-    collectChartLegacyConfigureRunJsErrors(changes.configure, '$.changes.configure', errors);
+    collectChartRawRunJsErrors(changes, '$.changes', errors, context.runJsSourceBudget);
+    collectChartLegacyConfigureRunJsErrors(changes.configure, '$.changes.configure', errors, context.runJsSourceBudget);
   }
 
   const recursiveChanges = {
@@ -426,7 +658,12 @@ function collectConfigureRunJsErrors(values: any, context: RunJsAuthoringContext
   collectBlockRunJsErrors(recursiveChanges, '$.changes', context, errors);
   HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE[hostBlockType]?.forEach((key) => {
     collectBlockListRunJsErrors(changes?.[key]?.blocks, `$.changes.${key}.blocks`, context, errors);
-    collectReactionRunJsErrors(changes?.[key]?.reaction, `$.changes.${key}.reaction`, errors);
+    collectReactionRunJsErrors(
+      changes?.[key]?.reaction,
+      `$.changes.${key}.reaction`,
+      errors,
+      context.runJsSourceBudget,
+    );
   });
 }
 
@@ -465,18 +702,26 @@ function collectBlockRunJsErrors(
   if (blockType === 'jsBlock') {
     collectRunJsSources(block, path, context).forEach((source) => {
       errors.push(
-        ...inspectRunJsAuthoringCode({
-          code: source.code,
-          path: source.path,
-          modelUse: 'JSBlockModel',
-          surfaceStyle: 'render',
-        }),
+        ...inspectRunJsAuthoringCodeForWrite(
+          {
+            code: source.code,
+            path: source.path,
+            modelUse: 'JSBlockModel',
+            surfaceStyle: 'render',
+          },
+          context.runJsSourceBudget,
+        ),
       );
     });
   }
   if (blockType === 'chart') {
-    collectChartRawRunJsErrors(block.settings, `${path}.settings`, errors);
-    collectChartLegacyConfigureRunJsErrors(block.settings?.configure, `${path}.settings.configure`, errors);
+    collectChartRawRunJsErrors(block.settings, `${path}.settings`, errors, context.runJsSourceBudget);
+    collectChartLegacyConfigureRunJsErrors(
+      block.settings?.configure,
+      `${path}.settings.configure`,
+      errors,
+      context.runJsSourceBudget,
+    );
   }
 
   collectFieldListRunJsErrors(block.fields, `${path}.fields`, blockType, context, errors);
@@ -492,15 +737,20 @@ function collectBlockRunJsErrors(
     context,
     errors,
   );
-  collectReactionRunJsErrors(block.reaction, `${path}.reaction`, errors);
-  collectFlowRegistryRunJsErrors(block.flowRegistry, `${path}.flowRegistry`, errors);
+  collectReactionRunJsErrors(block.reaction, `${path}.reaction`, errors, context.runJsSourceBudget);
+  collectFlowRegistryRunJsErrors(block.flowRegistry, `${path}.flowRegistry`, errors, context.runJsSourceBudget);
   collectBlockListRunJsErrors(block.blocks, `${path}.blocks`, context, errors);
   collectBlockListRunJsErrors(block.popup?.blocks, `${path}.popup.blocks`, context, errors);
-  collectReactionRunJsErrors(block.popup?.reaction, `${path}.popup.reaction`, errors);
+  collectReactionRunJsErrors(block.popup?.reaction, `${path}.popup.reaction`, errors, context.runJsSourceBudget);
 
   HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE[blockType]?.forEach((key) => {
     collectBlockListRunJsErrors(block.settings?.[key]?.blocks, `${path}.settings.${key}.blocks`, context, errors);
-    collectReactionRunJsErrors(block.settings?.[key]?.reaction, `${path}.settings.${key}.reaction`, errors);
+    collectReactionRunJsErrors(
+      block.settings?.[key]?.reaction,
+      `${path}.settings.${key}.reaction`,
+      errors,
+      context.runJsSourceBudget,
+    );
   });
 }
 
@@ -537,19 +787,22 @@ function collectFieldListRunJsErrors(
     if (modelUse) {
       collectRunJsSources(field, fieldPath, context).forEach((source) => {
         errors.push(
-          ...inspectRunJsAuthoringCode({
-            code: source.code,
-            path: source.path,
-            modelUse,
-            surfaceStyle: 'render',
-          }),
+          ...inspectRunJsAuthoringCodeForWrite(
+            {
+              code: source.code,
+              path: source.path,
+              modelUse,
+              surfaceStyle: 'render',
+            },
+            context.runJsSourceBudget,
+          ),
         );
       });
     }
-    collectReactionRunJsErrors(field.reaction, `${fieldPath}.reaction`, errors);
+    collectReactionRunJsErrors(field.reaction, `${fieldPath}.reaction`, errors, context.runJsSourceBudget);
     collectActionListRunJsErrors(field.actions, `${fieldPath}.actions`, blockType, 'actions', context, errors);
     collectBlockListRunJsErrors(field.popup?.blocks, `${fieldPath}.popup.blocks`, context, errors);
-    collectReactionRunJsErrors(field.popup?.reaction, `${fieldPath}.popup.reaction`, errors);
+    collectReactionRunJsErrors(field.popup?.reaction, `${fieldPath}.popup.reaction`, errors, context.runJsSourceBudget);
   });
 }
 
@@ -574,24 +827,42 @@ function collectActionListRunJsErrors(
     if (modelUse) {
       collectRunJsSources(action, actionPath, context).forEach((source) => {
         errors.push(
-          ...inspectRunJsAuthoringCode({
-            code: source.code,
-            path: source.path,
-            modelUse,
-            surfaceStyle: resolveModelSurfaceStyle(modelUse),
-          }),
+          ...inspectRunJsAuthoringCodeForWrite(
+            {
+              code: source.code,
+              path: source.path,
+              modelUse,
+              surfaceStyle: resolveModelSurfaceStyle(modelUse),
+            },
+            context.runJsSourceBudget,
+          ),
         );
       });
     }
-    collectReactionRunJsErrors(action.reaction, `${actionPath}.reaction`, errors);
+    collectReactionRunJsErrors(action.reaction, `${actionPath}.reaction`, errors, context.runJsSourceBudget);
     collectBlockListRunJsErrors(action.popup?.blocks, `${actionPath}.popup.blocks`, context, errors);
-    collectReactionRunJsErrors(action.popup?.reaction, `${actionPath}.popup.reaction`, errors);
+    collectReactionRunJsErrors(
+      action.popup?.reaction,
+      `${actionPath}.popup.reaction`,
+      errors,
+      context.runJsSourceBudget,
+    );
     collectBlockListRunJsErrors(action.openView?.blocks, `${actionPath}.openView.blocks`, context, errors);
-    collectReactionRunJsErrors(action.openView?.reaction, `${actionPath}.openView.reaction`, errors);
+    collectReactionRunJsErrors(
+      action.openView?.reaction,
+      `${actionPath}.openView.reaction`,
+      errors,
+      context.runJsSourceBudget,
+    );
   });
 }
 
-function collectChartAssetRunJsErrors(charts: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectChartAssetRunJsErrors(
+  charts: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   if (!_.isPlainObject(charts)) {
     return;
   }
@@ -599,60 +870,91 @@ function collectChartAssetRunJsErrors(charts: any, path: string, errors: FlowSur
     if (!_.isPlainObject(asset)) {
       return;
     }
-    collectChartRawRunJsErrors(asset, `${path}.${key}`, errors);
+    collectChartRawRunJsErrors(asset, `${path}.${key}`, errors, budget);
   });
 }
 
-function collectChartLegacyConfigureRunJsErrors(configure: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectChartLegacyConfigureRunJsErrors(
+  configure: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   if (!_.isPlainObject(configure)) {
     return;
   }
   const chart = _.isPlainObject(configure.chart) ? configure.chart : undefined;
   const option = _.isPlainObject(chart?.option) ? chart.option : undefined;
   const events = _.isPlainObject(chart?.events) ? chart.events : undefined;
-  collectChartOptionRunJsErrors(option?.raw, `${path}.chart.option.raw`, errors);
-  collectChartEventsRunJsErrors(events?.raw, `${path}.chart.events.raw`, errors);
+  collectChartOptionRunJsErrors(option?.raw, `${path}.chart.option.raw`, errors, budget);
+  collectChartEventsRunJsErrors(events?.raw, `${path}.chart.events.raw`, errors, budget);
 }
 
-function collectChartRawRunJsErrors(value: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectChartRawRunJsErrors(
+  value: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   if (!_.isPlainObject(value)) {
     return;
   }
   const visual = _.isPlainObject(value.visual) ? value.visual : undefined;
   const events = _.isPlainObject(value.events) ? value.events : undefined;
-  collectChartOptionRunJsErrors(visual?.raw, `${path}.visual.raw`, errors);
-  collectChartEventsRunJsErrors(events?.raw, `${path}.events.raw`, errors);
+  collectChartOptionRunJsErrors(visual?.raw, `${path}.visual.raw`, errors, budget);
+  collectChartEventsRunJsErrors(events?.raw, `${path}.events.raw`, errors, budget);
 }
 
-function collectChartOptionRunJsErrors(code: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectChartOptionRunJsErrors(
+  code: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   if (typeof code !== 'string' || !code.trim()) {
     return;
   }
   errors.push(
-    ...inspectRunJsAuthoringCode({
-      code,
-      path,
-      modelUse: 'ChartOptionModel',
-      surfaceStyle: 'value',
-    }),
+    ...inspectRunJsAuthoringCodeForWrite(
+      {
+        code,
+        path,
+        modelUse: 'ChartOptionModel',
+        surfaceStyle: 'value',
+      },
+      budget,
+    ),
   );
 }
 
-function collectChartEventsRunJsErrors(code: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectChartEventsRunJsErrors(
+  code: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   if (typeof code !== 'string' || !code.trim()) {
     return;
   }
   errors.push(
-    ...inspectRunJsAuthoringCode({
-      code,
-      path,
-      modelUse: 'ChartEventsModel',
-      surfaceStyle: 'action',
-    }),
+    ...inspectRunJsAuthoringCodeForWrite(
+      {
+        code,
+        path,
+        modelUse: 'ChartEventsModel',
+        surfaceStyle: 'action',
+      },
+      budget,
+    ),
   );
 }
 
-function collectReactionRunJsErrors(reaction: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectReactionRunJsErrors(
+  reaction: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   if (!reaction || (!_.isPlainObject(reaction) && !Array.isArray(reaction))) {
     return;
   }
@@ -666,12 +968,15 @@ function collectReactionRunJsErrors(reaction: any, path: string, errors: FlowSur
     }
     if (value.source === 'runjs' && typeof value.code === 'string' && value.code.trim()) {
       errors.push(
-        ...inspectRunJsAuthoringCode({
-          code: value.code,
-          path: `${valuePath}.code`,
-          surface: 'reaction.value-runjs',
-          surfaceStyle: 'value',
-        }),
+        ...inspectRunJsAuthoringCodeForWrite(
+          {
+            code: value.code,
+            path: `${valuePath}.code`,
+            surface: 'reaction.value-runjs',
+            surfaceStyle: 'value',
+          },
+          budget,
+        ),
       );
     }
     const actionType = normalizeText(value.type || value.name);
@@ -692,12 +997,15 @@ function collectReactionRunJsErrors(reaction: any, path: string, errors: FlowSur
               ? `${valuePath}.params.value.script`
               : `${valuePath}.params.code`;
         errors.push(
-          ...inspectRunJsAuthoringCode({
-            code,
-            path: codePath,
-            surface: 'linkage.execute-javascript',
-            surfaceStyle: 'action',
-          }),
+          ...inspectRunJsAuthoringCodeForWrite(
+            {
+              code,
+              path: codePath,
+              surface: 'linkage.execute-javascript',
+              surfaceStyle: 'action',
+            },
+            budget,
+          ),
         );
       }
     }
@@ -711,7 +1019,12 @@ function collectReactionRunJsErrors(reaction: any, path: string, errors: FlowSur
   visit(reaction, path);
 }
 
-function collectFlowRegistryRunJsErrors(flowRegistry: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectFlowRegistryRunJsErrors(
+  flowRegistry: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   const registry = asPlainRecord(flowRegistry);
   if (!registry) {
     return;
@@ -727,24 +1040,32 @@ function collectFlowRegistryRunJsErrors(flowRegistry: any, path: string, errors:
       if (!step || normalizeText(step.use || step.type || step.action || step.key) !== 'runjs') {
         return;
       }
-      collectEventFlowRunJsStepErrors(step, `${path}.${flowKey}.steps.${stepKey}`, errors);
+      collectEventFlowRunJsStepErrors(step, `${path}.${flowKey}.steps.${stepKey}`, errors, budget);
     });
   });
 }
 
-function collectEventFlowRunJsStepErrors(step: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
+function collectEventFlowRunJsStepErrors(
+  step: any,
+  path: string,
+  errors: FlowSurfaceErrorItemInput[],
+  budget?: RunJsSourceBudget,
+) {
   const addSource = (code: any, sourcePath: string) => {
     if (typeof code !== 'string' || !code.trim()) {
       return;
     }
     errors.push(
-      ...inspectRunJsAuthoringCode({
-        code,
-        path: sourcePath,
-        surface: 'event-flow.execute-javascript',
-        modelUse: 'JSActionModel',
-        surfaceStyle: 'action',
-      }),
+      ...inspectRunJsAuthoringCodeForWrite(
+        {
+          code,
+          path: sourcePath,
+          surface: 'event-flow.execute-javascript',
+          modelUse: 'JSActionModel',
+          surfaceStyle: 'action',
+        },
+        budget,
+      ),
     );
   };
 
@@ -782,6 +1103,55 @@ function collectRunJsSources(spec: any, path: string, context: RunJsAuthoringCon
   }
 
   return sources;
+}
+
+function parseRunJsAuthoringAst(source: string): { ast?: any; error?: { index: number; message: string } } {
+  try {
+    return {
+      ast: AcornParserWithJsx.parse(source, {
+        allowAwaitOutsideFunction: true,
+        allowReturnOutsideFunction: true,
+        ecmaVersion: 'latest',
+        locations: true,
+        sourceType: 'script',
+      }),
+    };
+  } catch (error) {
+    const acornError = error as Error & { pos?: number };
+    return {
+      error: {
+        index: typeof acornError.pos === 'number' ? acornError.pos : 0,
+        message: acornError.message || 'Invalid JavaScript syntax',
+      },
+    };
+  }
+}
+
+function collectNestedRunJsErrors(
+  path: string,
+  source: string,
+  scan: ReturnType<typeof scanJavaScriptSource>,
+  modelUse: string,
+  surface: string,
+  errors: FlowSurfaceErrorItemInput[],
+) {
+  scan.nestedRunjsCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'nested-runjs-stop',
+        ruleId: 'runjs-nested-runjs-forbidden',
+        message: `flowSurfaces authoring ${path} cannot call ${entry.capability}(...) from authored RunJS`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+        },
+      }),
+    );
+  });
 }
 
 function collectSurfaceStyleErrors(
@@ -900,27 +1270,29 @@ function collectResourceApiErrors(
   surface: string,
   errors: FlowSurfaceErrorItemInput[],
 ) {
-  scan.ctxRunjsCalls.forEach((entry) => {
-    const endpoint = getResourceLikeCtxRunjsEntrypoint(source, scan.masked, entry.index);
-    if (!endpoint) {
-      return;
-    }
-    errors.push(
-      buildRunJsAuthoringError({
-        path,
-        repairClass: 'switch-to-resource-api',
-        message: `flowSurfaces authoring ${path} must use resource APIs for collection access; ctx.runjs(...) executes JavaScript strings, not resource endpoints`,
-        modelUse,
-        surface,
-        index: entry.index,
-        source,
-        details: {
-          capability: 'ctx.runjs',
-          endpoint,
-        },
-      }),
-    );
-  });
+  if (!scan.nestedRunjsCalls.length) {
+    scan.ctxRunjsCalls.forEach((entry) => {
+      const endpoint = getResourceLikeCtxRunjsEntrypoint(source, scan.masked, entry.index);
+      if (!endpoint) {
+        return;
+      }
+      errors.push(
+        buildRunJsAuthoringError({
+          path,
+          repairClass: 'switch-to-resource-api',
+          message: `flowSurfaces authoring ${path} must use resource APIs for collection access; ctx.runjs(...) executes JavaScript strings, not resource endpoints`,
+          modelUse,
+          surface,
+          index: entry.index,
+          source,
+          details: {
+            capability: 'ctx.runjs',
+            endpoint,
+          },
+        }),
+      );
+    });
+  }
   scan.ctxRequestCalls.forEach((entry) => {
     if (!isResourceLikeCtxRequest(source, scan.masked, entry.index)) {
       return;
@@ -1317,12 +1689,13 @@ function isAllowedCtxRoot(member: string, modelUse: string) {
   );
 }
 
-function scanJavaScriptSource(source: string) {
+function scanJavaScriptSource(source: string, ast?: any) {
   const masked = maskJavaScriptSource(source);
   const functionRanges = findFunctionRanges(masked);
   const blockRanges = collectBraceRanges(masked);
   const sourceBindings = collectSourceBindings(masked, functionRanges, blockRanges);
   const stringLiteralBindings = collectStringLiteralBindings(source, masked, sourceBindings);
+  const astInspection = ast ? inspectRunJsAst(ast, source, stringLiteralBindings) : undefined;
   const ctxRenderCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g);
   const topLevelCtxRenderCalls = ctxRenderCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges));
   const topLevelReturns = findMatches(masked, /\breturn\b/g).filter(
@@ -1349,9 +1722,11 @@ function scanJavaScriptSource(source: string) {
     topLevelCtxRenderCalls,
     topLevelReturns,
     ctxRunjsCalls,
+    nestedRunjsCalls: astInspection?.nestedRunjsCalls || ctxRunjsCalls,
     ctxRequestCalls,
     invalidApiResourceCalls: collectInvalidApiResourceCalls(masked),
-    invalidResourceTypeCalls: collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings),
+    invalidResourceTypeCalls:
+      astInspection?.invalidResourceTypeCalls || collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings),
     invalidFlowResourceListCalls: collectInvalidFlowResourceListCalls(masked, flowResourceAliases),
     topLevelReactHookCalls: reactHookCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges)),
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
@@ -1369,6 +1744,332 @@ function scanJavaScriptSource(source: string) {
     dynamicCtxAccesses: findMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g),
     isTopLevelFunctionWrapper: isTopLevelFunctionWrapper(masked, functionRanges, topLevelCtxRenderCalls),
   };
+}
+
+function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteralBinding[]): RunJsAstInspection {
+  const aliases = collectCtxMethodAliasesFromAst(ast, source);
+  const staticStringBindings = [...stringBindings, ...collectStaticStringBindingsFromAst(ast, source)];
+  const nestedRunjsCalls: RunJsAstInspection['nestedRunjsCalls'] = [];
+  const invalidResourceTypeCalls: RunJsAstInspection['invalidResourceTypeCalls'] = [];
+
+  walkAstSimple(ast, {
+    CallExpression(node: any) {
+      const method = resolveCtxMethodCall(node, aliases);
+      if (!method) {
+        return;
+      }
+      if (method.method === 'runjs') {
+        nestedRunjsCalls.push({
+          capability: method.capability,
+          index: node.start || 0,
+        });
+        return;
+      }
+      if (method.method === 'makeResource' || method.method === 'initResource') {
+        invalidResourceTypeCalls.push(
+          ...collectAstInvalidResourceTypeCall(node, method.method, method.capability, source, staticStringBindings),
+        );
+      }
+    },
+  });
+
+  return {
+    invalidResourceTypeCalls: dedupeAstResourceEntries(invalidResourceTypeCalls),
+    nestedRunjsCalls: dedupeIndexedEntries(nestedRunjsCalls).sort((left, right) => left.index - right.index),
+  };
+}
+
+function collectCtxMethodAliasesFromAst(ast: any, source: string): CtxMethodAlias[] {
+  const aliases: CtxMethodAlias[] = [];
+  const addAlias = (name: string, method: string, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability: `ctx.${method}`,
+      method,
+      name,
+      start: typeof node.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (node.operator !== '=' || node.left?.type !== 'Identifier') {
+        return;
+      }
+      const method = getCtxMethodName(node.right);
+      if (method) {
+        addAlias(node.left.name, method, node, ancestors);
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const method = getCtxMethodName(node.init);
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      if (node.id?.type === 'Identifier' && method) {
+        addAlias(node.id.name, method, node, ancestors, isVar);
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern' && isCtxIdentifier(node.init)) {
+        collectAstObjectPatternAliases(node.id, (name, member) => {
+          if (AST_CTX_METHOD_NAMES.has(member)) {
+            addAlias(name, member, node, ancestors, isVar);
+          }
+        });
+      }
+    },
+  });
+
+  return aliases;
+}
+
+function collectStaticStringBindingsFromAst(ast: any, source: string): StaticStringBinding[] {
+  const bindings: StaticStringBinding[] = [];
+  walkAstAncestor(ast, {
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier') {
+        return;
+      }
+      const resolved = resolveAstStaticStringValue(node.init, source);
+      if (typeof resolved !== 'string') {
+        return;
+      }
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const scope = getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var');
+      bindings.push({
+        name: node.id.name,
+        value: resolved,
+        start: typeof node.start === 'number' ? node.start : scope.start,
+        end: scope.end,
+      });
+    },
+  });
+  return bindings;
+}
+
+function collectAstInvalidResourceTypeCall(
+  node: any,
+  method: string,
+  capability: string,
+  source: string,
+  stringBindings: StaticStringBinding[],
+): RunJsAstInspection['invalidResourceTypeCalls'] {
+  const firstArg = node.arguments?.[0];
+  if (!firstArg) {
+    return [
+      {
+        capability,
+        expression: '',
+        index: node.start || 0,
+        ruleId: 'runjs-make-resource-type-unresolved',
+      },
+    ];
+  }
+  const resolved = resolveAstResourceTypeExpression(firstArg, source, stringBindings);
+  if (resolved.status === 'unresolved') {
+    return [
+      {
+        capability,
+        expression: resolved.expression,
+        index: node.start || 0,
+        ruleId: 'runjs-make-resource-type-unresolved',
+      },
+    ];
+  }
+  const allowedResourceTypes = method === 'initResource' ? INIT_RESOURCE_CLASS_NAMES : FLOW_RESOURCE_CLASS_NAMES;
+  if (!allowedResourceTypes.has(resolved.value)) {
+    return [
+      {
+        capability,
+        expression: source.slice(firstArg.start || 0, firstArg.end || firstArg.start || 0).trim(),
+        index: node.start || 0,
+        resourceType: resolved.value,
+        ruleId: 'runjs-make-resource-type-invalid',
+      },
+    ];
+  }
+  return [];
+}
+
+function resolveCtxMethodCall(node: any, aliases: CtxMethodAlias[]) {
+  const callee = unwrapAstChainExpression(node.callee);
+  const directMethod = getCtxMethodName(callee);
+  if (directMethod) {
+    return {
+      capability: `ctx.${directMethod}`,
+      method: directMethod,
+    };
+  }
+  if (callee?.type === 'Identifier') {
+    const alias = aliases.find(
+      (entry) => entry.name === callee.name && node.start >= entry.start && node.start < entry.end,
+    );
+    if (alias) {
+      return alias;
+    }
+  }
+  return undefined;
+}
+
+function getCtxMethodName(node: any) {
+  const member = unwrapAstChainExpression(node);
+  if (!member || member.type !== 'MemberExpression' || !isCtxIdentifier(member.object)) {
+    return '';
+  }
+  const propertyName = getAstStaticPropertyName(member);
+  return AST_CTX_METHOD_NAMES.has(propertyName) ? propertyName : '';
+}
+
+function resolveAstResourceTypeExpression(
+  node: any,
+  source: string,
+  stringBindings: StaticStringBinding[],
+): { status: 'resolved'; value: string } | { status: 'unresolved'; expression: string } {
+  const resolved = resolveAstStaticStringValue(node, source);
+  if (typeof resolved === 'string') {
+    return { status: 'resolved', value: resolved };
+  }
+  if (node?.type === 'Identifier') {
+    const binding = stringBindings.find(
+      (entry) => entry.name === node.name && node.start >= entry.start && node.start < entry.end,
+    );
+    if (binding) {
+      return { status: 'resolved', value: binding.value };
+    }
+  }
+  return {
+    status: 'unresolved',
+    expression: source.slice(node?.start || 0, node?.end || node?.start || 0).trim(),
+  };
+}
+
+function resolveAstStaticStringValue(node: any, source: string): string | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'Literal' && typeof unwrapped.value === 'string') {
+    return unwrapped.value;
+  }
+  if (unwrapped.type === 'TemplateLiteral' && !unwrapped.expressions?.length) {
+    return unwrapped.quasis?.[0]?.value?.cooked ?? source.slice(unwrapped.start + 1, unwrapped.end - 1);
+  }
+  return undefined;
+}
+
+function collectAstObjectPatternAliases(pattern: any, addAlias: (alias: string, member: string) => void) {
+  for (const property of pattern.properties || []) {
+    if (!property || property.type !== 'Property') {
+      continue;
+    }
+    const member = getAstStaticPropertyName(property);
+    const alias = getAstBindingIdentifierName(property.value);
+    if (member && alias) {
+      addAlias(alias, member);
+    }
+  }
+}
+
+function getAstBindingIdentifierName(node: any): string {
+  if (node?.type === 'Identifier') {
+    return node.name;
+  }
+  if (node?.type === 'AssignmentPattern' && node.left?.type === 'Identifier') {
+    return node.left.name;
+  }
+  return '';
+}
+
+function getAstStaticPropertyName(node: any): string {
+  const property = node?.key || node?.property;
+  if (!property) {
+    return '';
+  }
+  if (!node.computed && property.type === 'Identifier') {
+    return property.name;
+  }
+  const value = resolveAstStaticStringValue(property, '');
+  return typeof value === 'string' ? value : '';
+}
+
+function isCtxIdentifier(node: any) {
+  const unwrapped = unwrapAstChainExpression(node);
+  return unwrapped?.type === 'Identifier' && unwrapped.name === 'ctx';
+}
+
+function unwrapAstChainExpression(node: any): any {
+  let current = node;
+  while (current?.type === 'ChainExpression') {
+    current = current.expression;
+  }
+  return current;
+}
+
+function findAstAncestor(ancestors: any[], type: string) {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    if (ancestors[index]?.type === type) {
+      return ancestors[index];
+    }
+  }
+  return undefined;
+}
+
+function getAstBindingScopeRange(ancestors: any[], sourceLength: number, functionScoped = false): SourceRange {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const node = ancestors[index];
+    if (!node || node.type === 'VariableDeclarator' || node.type === 'VariableDeclaration') {
+      continue;
+    }
+    if (functionScoped) {
+      if (node.type === 'Program' || isAstFunctionLike(node)) {
+        return {
+          start: typeof node.start === 'number' ? node.start : 0,
+          end: typeof node.end === 'number' ? node.end : sourceLength,
+        };
+      }
+      continue;
+    }
+    if (
+      node.type === 'Program' ||
+      node.type === 'BlockStatement' ||
+      node.type === 'ForStatement' ||
+      isAstFunctionLike(node)
+    ) {
+      return {
+        start: typeof node.start === 'number' ? node.start : 0,
+        end: typeof node.end === 'number' ? node.end : sourceLength,
+      };
+    }
+  }
+  return { start: 0, end: sourceLength };
+}
+
+function isAstFunctionLike(node: any) {
+  return (
+    node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression'
+  );
+}
+
+function walkAstSimple(ast: any, visitors: Record<string, (...args: any[]) => void>) {
+  (acornWalk as any).simple(ast, visitors, ACORN_WALK_BASE);
+}
+
+function walkAstAncestor(ast: any, visitors: Record<string, (...args: any[]) => void>) {
+  (acornWalk as any).ancestor(ast, visitors, ACORN_WALK_BASE);
+}
+
+function dedupeAstResourceEntries(entries: RunJsAstInspection['invalidResourceTypeCalls']) {
+  const seen = new Set<string>();
+  return entries
+    .filter((entry) => {
+      const key = `${entry.ruleId}:${entry.capability}:${entry.index}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => left.index - right.index);
 }
 
 function maskJavaScriptSource(source: string) {
@@ -2452,7 +3153,8 @@ function collectInvalidResourceTypeCalls(source: string, masked: string, stringB
   }> = [];
   for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*(makeResource|initResource)\s*(?:\?\.)?\(/g)) {
     const index = match.index || 0;
-    const capability = `ctx.${match[1]}`;
+    const method = match[1];
+    const capability = `ctx.${method}`;
     const firstArg = getCallArgumentSources(source, masked, index)[0];
     if (!firstArg) {
       entries.push({
@@ -2475,7 +3177,8 @@ function collectInvalidResourceTypeCalls(source: string, masked: string, stringB
       });
       continue;
     }
-    if (!FLOW_RESOURCE_CLASS_NAMES.has(resolved.value)) {
+    const allowedResourceTypes = method === 'initResource' ? INIT_RESOURCE_CLASS_NAMES : FLOW_RESOURCE_CLASS_NAMES;
+    if (!allowedResourceTypes.has(resolved.value)) {
       entries.push({
         capability,
         index,
