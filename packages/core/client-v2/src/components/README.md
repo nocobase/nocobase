@@ -183,6 +183,27 @@ Key props:
 - `defaultValue`: drives the initial unit when the field is empty (e.g. 20 MB starts in the "MB" unit)
 - `value` / `onChange`: controlled-input contract; the value type is `number` (bytes)
 
+#### PasswordInput
+
+`antd Input.Password` plus an optional strength meter, ported from v1's
+`Password` component. Use for any "set / change password" form when you want
+to give the user the same visual signal they had in v1.
+
+```tsx
+import { PasswordInput } from '@nocobase/client-v2';
+
+<Form.Item name="newPassword" label={t('New password')} rules={[{ required: true }]}>
+  <PasswordInput autoComplete="new-password" checkStrength />
+</Form.Item>
+```
+
+Key props:
+
+- `checkStrength`: render a strength bar beneath the input. Defaults to `false`. The score is bucketed `[20, 40, 60, 80, 100]` and shown via a clipped gradient (orange) inside a grey track, matching v1
+- All other antd `Input.Password` props are passed through unchanged: `value` / `onChange` / `disabled` / `placeholder` / `autoComplete` / etc.
+
+The strength meter is purely a UX hint, NOT validation. Submitting a weak password is still allowed unless the server (or a separately installed password-policy plugin) rejects it. Wire up real password rules through `Form.Item.rules` or — when the open-source ↔ commercial extension point lands — the project's shared password-validator hook.
+
 #### JsonTextArea
 
 JSON input. The stored value is a JS object (not a string) — parsing happens live while typing and is finalized on blur.

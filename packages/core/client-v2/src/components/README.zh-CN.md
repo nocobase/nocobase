@@ -183,6 +183,25 @@ import { FileSizeInput } from '@nocobase/client-v2';
 - `defaultValue`：用来决定初次显示的单位（比如默认 20 MB 就会以 MB 单位起始）
 - `value` / `onChange`：受控字段，值类型是 `number`（字节）
 
+#### PasswordInput
+
+antd `Input.Password` 加一个可选的强度提示条，从 v1 的 `Password` 组件移植过来。用于「设置 / 修改密码」类表单——v1 → v2 迁移过来后视觉信号保持一致。
+
+```tsx
+import { PasswordInput } from '@nocobase/client-v2';
+
+<Form.Item name="newPassword" label={t('新密码')} rules={[{ required: true }]}>
+  <PasswordInput autoComplete="new-password" checkStrength />
+</Form.Item>
+```
+
+主要属性：
+
+- `checkStrength`：在输入框下方渲染一条强度提示。默认 `false`。强度评分按 `[20, 40, 60, 80, 100]` 分桶，用裁剪的橙色渐变填充在灰色底条上，配色跟 v1 保持一致
+- 其他 antd `Input.Password` 属性原样透传：`value` / `onChange` / `disabled` / `placeholder` / `autoComplete` 等
+
+强度条只是 UX 提示，**不是表单校验**。弱密码仍然能提交，除非 server（或单独安装的 password-policy 商业插件）拒绝。真正的密码规则通过 `Form.Item.rules` 或——等开源 ↔ 商业的 extension point 落地之后——项目共享的 password validator hook 接入。
+
 #### JsonTextArea
 
 JSON 输入器。存的值是 JS 对象（不是字符串），编辑时实时解析、blur 时校验。
