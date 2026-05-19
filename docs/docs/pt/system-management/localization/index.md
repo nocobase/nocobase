@@ -55,6 +55,8 @@ Ao definir textos no código, você precisa especificar manualmente o ns (namesp
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
 
+A coluna de tradução oferece suporte à edição rápida. Você pode clicar diretamente em uma célula de tradução da tabela para alterá-la, pressionar Enter ou sair do campo para salvar, e pressionar `Esc` para cancelar a alteração. Para ver o texto original, o módulo ou traduções mais longas, ainda é possível usar o botão de edição nas ações da linha para abrir o editor em gaveta.
+
 ### Usar tradução com IA
 
 O Gerenciamento de Localização oferece suporte à tradução de entradas por meio da funcionária de IA Lina. Depois de habilitar os funcionários de IA e configurar um serviço de modelo, você pode usar a tradução com IA na página de Gerenciamento de Localização para gerar traduções em lote para o idioma atual.
@@ -63,9 +65,19 @@ O Gerenciamento de Localização oferece suporte à tradução de entradas por m
 
 Escopos de tradução suportados:
 
-- **Tradução completa**: traduz todas as entradas elegíveis no idioma atual.
-- **Tradução incremental**: traduz apenas entradas que ainda não têm tradução.
+- **Tradução completa**: traduz todas as entradas no idioma atual e sobrescreve traduções existentes.
+- **Tradução incremental**: traduz apenas entradas que ainda não têm tradução no idioma atual. Para entradas integradas, se já existir uma tradução no pacote de idioma do sistema ou do plugin para o idioma de destino, ela também será considerada existente.
 - **Tradução dos itens selecionados**: selecione entradas na tabela e traduza apenas o conteúdo selecionado.
+
+![](https://static-docs.nocobase.com/202605191341968.png)
+
+Ao criar uma tarefa de tradução completa ou incremental, você pode escolher o escopo de tradução no diálogo de confirmação:
+
+- **Todos**: processa todas as entradas que correspondem às condições da tarefa atual.
+- **Entradas integradas**: entradas do sistema e de plugins.
+- **Entradas personalizadas**: nomes de rotas, nomes de coleções e campos, e conteúdo de UI.
+
+O diálogo de confirmação também permite configurar idiomas de tradução de referência. A tradução completa e incremental configuram separadamente o idioma padrão e o idioma alternativo para entradas integradas e personalizadas. A tradução dos itens selecionados mostra apenas uma configuração geral de idiomas de referência.
 
 A tradução com IA cria uma tarefa em segundo plano. Você pode acompanhar o progresso enquanto a tarefa é executada. Após a conclusão, as traduções são gravadas no idioma correspondente e ainda devem ser revisadas e corrigidas de acordo com o contexto real.
 

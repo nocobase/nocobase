@@ -35,6 +35,31 @@ Schließen Sie vor der Verwendung folgende Einrichtung ab:
 Lina erstellt Übersetzungsaufgaben für die aktuelle Sprache.
 :::
 
+## Prompt-Konfiguration
+
+Öffnen Sie Linas Bearbeitungsdialog unter `Systemeinstellungen -> AI-Mitarbeiter -> AI employees` und passen Sie den Prompt unter `Role setting` an. Der Prompt dient in der Regel dazu, Informationen zur Geschäftsdomäne, Terminologieregeln und Ausgabevorgaben festzulegen. Er sollte nicht zu lang sein, da er sonst für spezialisierte Übersetzungsmodelle ungeeignet sein kann.
+
+![](https://static-docs.nocobase.com/202605191351816.png)
+
+Beispiel für den Standard-Prompt:
+
+```text
+# Role
+You are Lina, a professional localization translator for NocoBase.
+
+# Task
+Translate NocoBase localization text into the requested target language.
+
+# Translation requirements
+1. Keep the translation faithful, concise, and natural for product UI.
+2. Use consistent NocoBase and software terminology.
+3. Preserve placeholders, variables, HTML tags, ICU syntax, line breaks, and code-like tokens.
+4. Return only the translated text. Do not explain, quote, or use Markdown.
+5. If the text should not be translated, return it unchanged.
+```
+
+Referenzübersetzungen und der zu übersetzende Text müssen nicht in Linas Prompt geschrieben werden. Beim Erstellen einer Aufgabe fügt das System sie automatisch anhand des Eintragsinhalts, der Zielsprache und der Referenzsprachen-Konfiguration im Bestätigungsdialog hinzu.
+
 ## Verwendung
 
 Klicken Sie auf der Lokalisierungsverwaltungsseite auf Linas Avatar und wählen Sie den Umfang der AI-Übersetzungsaufgabe.
@@ -42,6 +67,8 @@ Klicken Sie auf der Lokalisierungsverwaltungsseite auf Linas Avatar und wählen 
 ### Inkrementelle Übersetzung
 
 Übersetzt nur Einträge ohne Übersetzung in der aktuellen Sprache.
+
+Bei integrierten Einträgen gilt: Wenn im System- oder Plugin-Sprachpaket der Zielsprache bereits eine Übersetzung vorhanden ist, wird der Eintrag als übersetzt betrachtet, auch wenn in der Lokalisierungsübersetzungstabelle noch kein entsprechender Datensatz vorhanden ist. Er wird dann nicht zur inkrementellen Übersetzung gezählt.
 
 ### Ausgewählte Übersetzung
 
@@ -61,28 +88,32 @@ Die vollständige Übersetzung kann vorhandene Übersetzungen überschreiben. Pr
 
 Vor dem Erstellen der Aufgabe zeigt das System einen Bestätigungsdialog mit:
 
+- Aufgabenbeschreibung.
 - Anzahl der zu übersetzenden Einträge.
 - Zu verwendender Provider.
 - Zu verwendendes Modell.
+- Konfiguration der Referenzübersetzungssprachen.
 
-Nach der Bestätigung erstellt das System eine Hintergrundaufgabe. Der Fortschritt ist in asynchronen Aufgaben sichtbar. Nach Abschluss werden die Übersetzungen in die entsprechende Sprache geschrieben.
+Bei vollständiger und inkrementeller Übersetzung kann im Bestätigungsdialog außerdem der Übersetzungsumfang gewählt werden:
 
-![](https://static-docs.nocobase.com/202605121233608.png)
+- **Alle**: verarbeitet alle Einträge, die den aktuellen Aufgabenbedingungen entsprechen.
+- **Integrierte Einträge**: System- und Plugin-Einträge.
+- **Benutzerdefinierte Einträge**: Routennamen, Sammlungs- und Feldnamen sowie UI-Inhalte.
 
-## Übersetzungsstrategie
+Die Übersetzung ausgewählter Einträge verarbeitet nur die bereits in der Tabelle markierten Datensätze. Deshalb wird kein Übersetzungsumfang angezeigt. Außerdem wird nur eine allgemeine Referenzsprachen-Konfiguration angezeigt, ohne zwischen integrierten und benutzerdefinierten Einträgen zu unterscheiden.
 
-Lina folgt beim Übersetzen diesen Regeln:
+Wenn die Anzahl der zu übersetzenden Einträge 0 ist, zeigt das System einen Hinweis an und erstellt keine Hintergrundaufgabe. Nach der Bestätigung erstellt das System eine Hintergrundaufgabe. Der Fortschritt ist in asynchronen Aufgaben sichtbar. Nach Abschluss werden die Übersetzungen in die entsprechende Sprache geschrieben.
 
-- Nur den übersetzten Text ohne Erklärung oder Zusatzinhalt zurückgeben.
-- Variablen, Platzhalter, HTML-Tags, ICU-Syntax und Formatierung beibehalten.
-- UI-Texte kurz und natürlich halten.
+![](https://static-docs.nocobase.com/202605191341968.png)
 
 ## Referenzübersetzungen
 
 Kurze Einträge wie Feldnamen, Buttons und Status nutzen vorhandene Referenzübersetzungen, um Konsistenz zu verbessern.
 
-- Integrierte Einträge verwenden bevorzugt chinesische Übersetzungen als Referenz.
-- Nicht integrierte Einträge verwenden bevorzugt die Standardsprache des Systems.
+- Integrierte Einträge verwenden standardmäßig chinesische Übersetzungen als Referenz und Japanisch als Fallback-Referenz.
+- Benutzerdefinierte Einträge verwenden standardmäßig die Systemsprache als Referenz und Chinesisch als Fallback-Referenz.
+- Benutzer können Standardsprache und Fallback-Sprache im Bestätigungsdialog der Aufgabe anpassen.
+- Das System verwendet zuerst die Referenzübersetzung in der Standardsprache. Wenn sie nicht vorhanden ist, versucht es die Fallback-Sprache.
 
 Wenn eine Referenz vorhanden ist, verwendet Lina sinngemäß folgenden Prompt:
 
@@ -99,7 +130,7 @@ Translate the following text into {target_language}. Output only the translated 
 
 Lokalisierungsübersetzungen verarbeiten oft viele Einträge. Wenn möglich, nutzen Sie zuerst ein lokal bereitgestelltes kleines Übersetzungsmodell, da Online-Modelle häufig Raten-, Parallelitäts- oder Token-Limits haben.
 
-Wenn keine lokale Bereitstellung möglich ist, wählen Sie ein spezialisiertes Übersetzungsmodell statt eines allgemeinen Chatmodells.
+Wenn keine lokale Bereitstellung möglich ist, wählen Sie ein spezialisiertes Übersetzungsmodell statt eines allgemeinen Chatmodells. Übersetzungsmodelle eignen sich in der Regel besser für kurze Einträge, UI-Texte und Stapelübersetzungen. Lina organisiert den Mitarbeiter-Prompt, Referenzübersetzungen und den zu übersetzenden Text zu einem Prompt, der an das Modell gesendet wird. Benutzer können Linas Prompt anpassen, um Übersetzungsstil und Regeln zu steuern.
 
 Die Parallelität kann je nach Modellfähigkeit angepasst werden, um Durchsatz, Antwortzeit und Kosten zu steuern.
 

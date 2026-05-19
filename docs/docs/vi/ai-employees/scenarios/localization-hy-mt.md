@@ -168,8 +168,13 @@ Vào `System Management -> Localization Management`.
    - `Selected translation`: dịch các mục được chọn trong bảng.
    - `Full translation`: dịch toàn bộ mục của ngôn ngữ hiện tại.
 5. Kiểm tra số lượng mục, provider và model trong hộp thoại xác nhận.
-6. Xác nhận để tạo tác vụ bất đồng bộ.
-7. Chờ hoàn tất, rà soát bản dịch và publish.
+6. Nếu chọn dịch tăng dần hoặc dịch toàn bộ, hãy chọn phạm vi dịch:
+   - `All`
+   - `Built-in entries`: mục hệ thống và plugin.
+   - `Custom entries`: tên route, tên collection và field, cùng nội dung UI.
+7. Điều chỉnh ngôn ngữ bản dịch tham chiếu nếu cần. Dịch tăng dần và dịch toàn bộ cấu hình riêng ngôn ngữ tham chiếu cho mục tích hợp và mục tùy chỉnh; dịch mục đã chọn chỉ hiển thị một cấu hình ngôn ngữ tham chiếu chung.
+8. Xác nhận để tạo tác vụ bất đồng bộ.
+9. Chờ hoàn tất, rà soát bản dịch và publish.
 
 Hãy bắt đầu bằng `Selected translation` với vài mục để kiểm tra phong cách đầu ra và tốc độ trước khi chạy dịch tăng dần hoặc toàn bộ.
 
@@ -177,9 +182,10 @@ Hãy bắt đầu bằng `Selected translation` với vài mục để kiểm tr
 
 Lina tạo request từ mục và bản dịch tham chiếu. Với các mục ngắn, tham chiếu hiện có giúp tăng tính nhất quán:
 
-- Mục tích hợp ưu tiên dùng bản dịch tiếng Trung làm tham chiếu.
-- Mục không tích hợp ưu tiên dùng ngôn ngữ mặc định của hệ thống làm tham chiếu.
-- Nếu có tham chiếu tiếng Anh, tiếng Anh được dùng làm văn bản nguồn.
+- Mục tích hợp dùng bản dịch tiếng Trung làm tham chiếu mặc định và tiếng Nhật làm tham chiếu dự phòng.
+- Mục tùy chỉnh dùng ngôn ngữ mặc định của hệ thống làm tham chiếu mặc định và tiếng Trung làm tham chiếu dự phòng.
+- Người dùng có thể điều chỉnh ngôn ngữ mặc định và ngôn ngữ dự phòng trong hộp thoại xác nhận tác vụ.
+- Hệ thống ưu tiên dùng bản dịch tham chiếu trong ngôn ngữ mặc định. Nếu không có, hệ thống sẽ thử ngôn ngữ dự phòng.
 - Kết quả được ghi vào ngôn ngữ đích nhưng không tự động publish.
 
 Ngữ nghĩa của prompt tương tự như sau:

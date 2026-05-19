@@ -63,6 +63,8 @@ Saat mendefinisikan teks dalam kode, perlu menentukan ns (namespace) secara manu
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
 
+Kolom terjemahan mendukung quick edit. Anda dapat langsung mengklik sel terjemahan di tabel untuk mengubahnya, menekan Enter atau keluar dari input untuk menyimpan, dan menekan `Esc` untuk membatalkan perubahan. Untuk melihat teks sumber, modul, atau terjemahan yang lebih panjang, Anda tetap dapat menggunakan tombol edit pada aksi baris untuk membuka editor drawer.
+
 ### Menggunakan Terjemahan AI
 
 Manajemen Lokalisasi mendukung penerjemahan entries melalui AI Employee Lina. Setelah AI Employees diaktifkan dan layanan model dikonfigurasi, Anda dapat menggunakan terjemahan AI di halaman Manajemen Lokalisasi untuk membuat terjemahan massal bagi bahasa saat ini.
@@ -71,9 +73,19 @@ Manajemen Lokalisasi mendukung penerjemahan entries melalui AI Employee Lina. Se
 
 Cakupan terjemahan yang didukung:
 
-- **Terjemahan penuh**: menerjemahkan semua entries yang memenuhi syarat pada bahasa saat ini.
-- **Terjemahan incremental**: hanya menerjemahkan entries yang belum memiliki terjemahan.
+- **Terjemahan penuh**: menerjemahkan semua entries pada bahasa saat ini dan menimpa terjemahan yang sudah ada.
+- **Terjemahan incremental**: hanya menerjemahkan entries yang belum memiliki terjemahan pada bahasa saat ini. Untuk entry bawaan, jika terjemahan sudah ada di paket bahasa sistem atau plugin untuk bahasa target, entry tersebut juga dianggap sudah memiliki terjemahan.
 - **Terjemahan item terpilih**: pilih records di tabel, lalu terjemahkan hanya konten yang dipilih.
+
+![](https://static-docs.nocobase.com/202605191341968.png)
+
+Saat membuat tugas terjemahan penuh atau incremental, Anda dapat memilih cakupan terjemahan di dialog konfirmasi:
+
+- **Semua**: memproses semua entry yang sesuai dengan kondisi tugas saat ini.
+- **Entry bawaan**: entry sistem dan plugin.
+- **Entry kustom**: nama route, nama collection dan field, serta konten UI.
+
+Dialog konfirmasi juga mendukung konfigurasi bahasa terjemahan referensi. Terjemahan penuh dan incremental mengatur bahasa default dan bahasa cadangan untuk entry bawaan dan entry kustom secara terpisah. Terjemahan item terpilih hanya menampilkan satu konfigurasi bahasa referensi umum.
 
 Terjemahan AI akan membuat background task. Anda dapat melihat progres saat task berjalan. Setelah selesai, terjemahan ditulis ke bahasa terkait dan tetap perlu diperiksa serta diperbaiki sesuai konteks sebenarnya.
 

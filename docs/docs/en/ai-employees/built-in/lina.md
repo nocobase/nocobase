@@ -37,6 +37,31 @@ Before using Lina, complete the following setup:
 Lina creates translation tasks for the current locale. For example, if the current UI locale is Thai, the task generates Thai translations.
 :::
 
+## Prompt Configuration
+
+Open Lina's edit dialog from `System Settings -> AI Employees -> AI employees`, and adjust the prompt in `Role setting`. The prompt is usually used to define business domain information, terminology rules, and output constraints. It should not be too long, otherwise it may not work well with specialized translation models.
+
+![](https://static-docs.nocobase.com/202605191351816.png)
+
+Default prompt example:
+
+```text
+# Role
+You are Lina, a professional localization translator for NocoBase.
+
+# Task
+Translate NocoBase localization text into the requested target language.
+
+# Translation requirements
+1. Keep the translation faithful, concise, and natural for product UI.
+2. Use consistent NocoBase and software terminology.
+3. Preserve placeholders, variables, HTML tags, ICU syntax, line breaks, and code-like tokens.
+4. Return only the translated text. Do not explain, quote, or use Markdown.
+5. If the text should not be translated, return it unchanged.
+```
+
+Reference translations and text to translate do not need to be written into Lina's prompt. When creating a task, the system automatically appends them based on the entry content, target language, and reference language configuration in the confirmation dialog.
+
 ## Usage
 
 On the Localization Management page, click Lina's avatar and choose one of the AI translation task scopes.
@@ -44,6 +69,8 @@ On the Localization Management page, click Lina's avatar and choose one of the A
 ### Incremental Translation
 
 Only translate entries that do not have a translation for the current language. This is suitable for daily maintenance after adding plugins, fields, or menus.
+
+For built-in entries, if a translation already exists in the target language's system or plugin language pack, it is treated as already translated even if no corresponding record has been written to the localization translation table, and is not counted in incremental translation.
 
 ### Selected Translation
 
@@ -63,31 +90,32 @@ Full translation may overwrite existing translations. Confirm the target languag
 
 Before creating the task, the system displays a confirmation dialog with:
 
+- Task description.
 - Number of entries to translate.
 - Provider to use.
 - Model to use.
+- Reference translation language configuration.
 
-After confirmation, the system creates a background task. You can view progress in async tasks. When the task completes, translations are written to the corresponding language.
+Full translation and incremental translation also allow choosing the translation scope in the confirmation dialog:
 
-![](https://static-docs.nocobase.com/202605121233608.png)
+- **All**: process all entries that match the current task conditions.
+- **Built-in entries**: system and plugin entries.
+- **Custom entries**: route names, collection and field names, and UI content.
 
-## Translation Strategy
+Selected translation only processes records already selected in the table, so it does not show translation scope. It also shows only one general reference translation language configuration, without separating built-in entries from custom entries.
 
-Lina follows these rules when translating localization entries:
+If the number of entries to translate is 0, the system prompts the user and does not create a background task. After confirmation, the system creates a background task. You can view progress in async tasks. When the task completes, translations are written to the corresponding language.
 
-- Return only the translated text without explanation, summary, Markdown, or extra content.
-- Preserve variables, placeholders, HTML tags, ICU syntax, code-like tokens, and formatting symbols.
-- Preserve meaningful line breaks.
-- Keep UI text concise and natural for buttons, fields, menus, and prompts.
-- Return text unchanged if it should not be translated.
+![](https://static-docs.nocobase.com/202605191341968.png)
 
 ## Reference Translations
 
 Some entries are short, such as field names, button labels, and statuses. Lina uses existing reference translations when possible to improve consistency.
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If the system default language is English, the English entry is used directly as the source.
+- Built-in entries use Chinese translations as the default reference and Japanese as the fallback reference.
+- Custom entries use the system default language as the default reference and Chinese as the fallback reference.
+- Users can adjust the default language and fallback language in the task confirmation dialog.
+- The system first uses the reference translation in the default language. If it does not exist, it then tries the fallback language.
 
 When a reference is available, Lina uses a prompt with semantics similar to:
 
@@ -104,7 +132,7 @@ Translate the following text into {target_language}. Output only the translated 
 
 Localization translation usually processes many entries in one task. If possible, use a locally deployed translation-specific small model first, because online models often have API rate limits, concurrency limits, or token-per-minute limits. When many entries are translated, rate limiting can make tasks much slower or cause some requests to wait or fail.
 
-If local deployment is not possible, use a translation-specific model rather than a general chat model. Translation models are usually better for short entries, UI text, and batch translation. If the model service supports dedicated translation parameters, the system passes source text, source language, target language, and terminology information according to the model rules.
+If local deployment is not possible, use a translation-specific model rather than a general chat model. Translation models are usually better for short entries, UI text, and batch translation. Lina organizes the employee prompt, reference translations, and text to translate into a prompt sent to the model. Users can adjust Lina's prompt to control translation style and rules.
 
 You can adjust request concurrency according to model capability to better control throughput, response time, and cost.
 
