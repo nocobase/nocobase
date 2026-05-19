@@ -9,10 +9,58 @@
 
 import type { Database } from '@nocobase/database';
 import { expect } from 'vitest';
+import { resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames } from '../flow-surfaces/public-data-surface-default-filter';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
+const FLOW_SURFACES_TEST_PUBLIC_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
+
+function normalizeText(value: any) {
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+function isPublicDataBlockType(type: any) {
+  return FLOW_SURFACES_TEST_PUBLIC_DATA_BLOCK_TYPES.has(normalizeText(type));
+}
+
+function fallbackDefaultFilterFieldPaths(collection: any) {
+  const fields = Array.isArray(collection?.fields)
+    ? collection.fields
+    : collection?.fields && typeof collection.fields.values === 'function'
+      ? Array.from(collection.fields.values())
+      : [];
+  const fieldNames = fields.map((field: any) => normalizeText(field?.name || field?.options?.name)).filter(Boolean);
+  return [fieldNames.find((fieldName) => fieldName !== 'id') || fieldNames[0] || 'id'];
+}
+
+function buildDefaultFilter(collectionName: string, collectionMeta: any[]) {
+  const normalizedCollectionName = normalizeText(collectionName);
+  const collection = Array.isArray(collectionMeta)
+    ? collectionMeta.find((item) => normalizeText(item?.name) === normalizedCollectionName)
+    : undefined;
+  const minimumCandidateFieldNames = collection
+    ? resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection)
+    : [];
+  const fieldPaths =
+    minimumCandidateFieldNames.length > 0 ? minimumCandidateFieldNames : fallbackDefaultFilterFieldPaths(collection);
+  const items = fieldPaths.length
+    ? fieldPaths.map((path) => ({
+        path,
+        operator: '$notEmpty',
+      }))
+    : [
+        {
+          path: 'id',
+          operator: '$notEmpty',
+        },
+      ];
+  return {
+    logic: '$and',
+    items,
+  };
+}
+
 export function getData(response: any) {
-  expect(response.status).toBe(200);
+  expect(response.status, readErrorMessage(response)).toBe(200);
   return response.body?.data?.data ?? response.body?.data;
 }
 
@@ -64,7 +112,7 @@ export async function createPage(rootAgent: any, values: Record<string, any>) {
 export async function addBlockData(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').addBlock({
-      values,
+      values: await withDefaultFilterForPublicDataBlock(rootAgent, values),
     }),
   );
 }
@@ -108,6 +156,30 @@ export function getPopupOpenView(tree: any) {
   return tree?.stepParams?.popupSettings?.openView || tree?.stepParams?.selectExitRecordSettings?.openView;
 }
 
+async function loadCollectionMeta(rootAgent: any) {
+  const response = await rootAgent.resource('collections').listMeta();
+  expect(response.status).toBe(200);
+  return Array.isArray(response.body?.data) ? response.body.data : [];
+}
+
+async function withDefaultFilterForPublicDataBlock(rootAgent: any, values: Record<string, any>) {
+  if (!values || !isPublicDataBlockType(values.type) || Object.prototype.hasOwnProperty.call(values, 'defaultFilter')) {
+    return values;
+  }
+  const collectionName =
+    normalizeText(values?.resourceInit?.collectionName) ||
+    normalizeText(values?.resource?.collectionName) ||
+    normalizeText(values?.collection);
+  if (!collectionName) {
+    return values;
+  }
+  const collectionMeta = await loadCollectionMeta(rootAgent);
+  return {
+    ...values,
+    defaultFilter: buildDefaultFilter(collectionName, collectionMeta),
+  };
+}
+
 export async function setupFixtureCollections(rootAgent: any, db: Database) {
   await rootAgent.resource('collections').create({
     values: {
@@ -116,6 +188,8 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'nickname', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'input' },
+        { name: 'email', type: 'string', interface: 'email' },
+        { name: 'phone', type: 'string', interface: 'phone' },
       ],
     },
   });
@@ -125,7 +199,12 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       title: 'Departments',
       titleField: 'title',
       filterTargetKey: 'title',
-      fields: [{ name: 'title', type: 'string', interface: 'input' }],
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'select' },
+        { name: 'scope', type: 'string', interface: 'input' },
+      ],
     },
   });
   await rootAgent.resource('collections.fields', 'employees').create({
@@ -148,7 +227,7 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
   });
 
   await waitForFixtureCollectionsReady(db, {
-    departments: ['title'],
-    employees: ['nickname', 'status', 'departmentId', 'secondaryDepartmentId'],
+    departments: ['title', 'code', 'status', 'scope'],
+    employees: ['nickname', 'status', 'email', 'phone', 'departmentId', 'secondaryDepartmentId'],
   });
 }

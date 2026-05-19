@@ -65,6 +65,7 @@ type FlowSurfaceChartContext = {
 
 export type FlowSurfaceContextSemantic = {
   collection?: CollectionLike | null;
+  userCollection?: CollectionLike | null;
   recordCollection?: CollectionLike | null;
   formValuesCollection?: CollectionLike | null;
   itemCollections?: Array<CollectionLike | null>;
@@ -85,6 +86,7 @@ type FlowSurfaceContextSpecNode = {
   disabledReason?: string;
   cycleKey?: string;
   properties?: () => Record<string, FlowSurfaceContextSpecNode>;
+  dynamicProperties?: FlowSurfaceContextSpecNode;
 };
 
 const RELATION_FIELD_TYPES = new Set(['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray']);
@@ -556,8 +558,89 @@ function createChartSpec(chart?: FlowSurfaceChartContext | null): FlowSurfaceCon
   };
 }
 
+const DEVICE_TYPE_ENUM_VALUES = ['computer', 'mobile', 'tablet', 'smarttv', 'console', 'wearable', 'embedded'];
+
+function createPrimitiveSpec(
+  title: string,
+  type: string,
+  options: Partial<FlowSurfaceContextSpecNode> = {},
+): FlowSurfaceContextSpecNode {
+  return {
+    title,
+    type,
+    ...options,
+  };
+}
+
+function createUserSpec(userCollection?: CollectionLike | null): FlowSurfaceContextSpecNode {
+  const fallbackProperties = (): Record<string, FlowSurfaceContextSpecNode> => ({
+    id: createPrimitiveSpec('ID', 'number', { interface: 'id' }),
+    nickname: createPrimitiveSpec('Nickname', 'string'),
+    username: createPrimitiveSpec('Username', 'string'),
+    email: createPrimitiveSpec('Email', 'string'),
+    roles: createPrimitiveSpec('Roles', 'array'),
+  });
+  return {
+    title: 'Current user',
+    type: 'object',
+    ...(userCollection ? { cycleKey: getCollectionCycleKey(userCollection) } : {}),
+    properties: () => ({
+      ...fallbackProperties(),
+      ...buildCollectionProperties(userCollection),
+    }),
+  };
+}
+
+function createAuthSpec(userCollection?: CollectionLike | null): FlowSurfaceContextSpecNode {
+  return {
+    title: 'Authentication',
+    type: 'object',
+    properties: () => ({
+      roleName: createPrimitiveSpec('Current role', 'string'),
+      locale: createPrimitiveSpec('Current language', 'string'),
+      token: createPrimitiveSpec('API Token', 'string'),
+      user: createUserSpec(userCollection),
+    }),
+  };
+}
+
+function createUrlSearchParamsSpec(): FlowSurfaceContextSpecNode {
+  return {
+    title: 'URL search params',
+    type: 'object',
+    disabledReason:
+      'The value of this variable is derived from the query string of the page URL. It is available when the page URL has query parameters.',
+    dynamicProperties: createPrimitiveSpec('URL search param', 'string'),
+  };
+}
+
+function createLocationSpec(): FlowSurfaceContextSpecNode {
+  return {
+    title: 'Current location',
+    type: 'object',
+    properties: () => ({
+      pathname: createPrimitiveSpec('Pathname', 'string'),
+      search: createPrimitiveSpec('Search', 'string'),
+      hash: createPrimitiveSpec('Hash', 'string'),
+    }),
+  };
+}
+
 function createSpecMap(input: FlowSurfaceContextSemantic) {
   const specs: Record<string, FlowSurfaceContextSpecNode> = {};
+
+  specs.user = createUserSpec(input.userCollection);
+  specs.role = createPrimitiveSpec('Current role', 'string');
+  specs.locale = createPrimitiveSpec('Current language', 'string');
+  specs.token = createPrimitiveSpec('API Token', 'string');
+  specs.auth = createAuthSpec(input.userCollection);
+  specs.urlSearchParams = createUrlSearchParamsSpec();
+  specs.location = createLocationSpec();
+  specs.deviceType = createPrimitiveSpec('Current device type', 'string', {
+    interface: 'select',
+    enumValues: DEVICE_TYPE_ENUM_VALUES,
+    description: 'Current device type (computer/mobile/tablet/...).',
+  });
 
   const collectionSpec = createCollectionSpec(input.collection, 'Current collection');
   if (collectionSpec) {
@@ -626,6 +709,9 @@ function materializeSpecNode(
   if (typeof node.disabledReason !== 'undefined') {
     output.disabledReason = node.disabledReason;
   }
+  if (node.dynamicProperties) {
+    output.dynamicProperties = materializeSpecNode(node.dynamicProperties, depth + 1, maxDepth, visited);
+  }
 
   if (depth >= maxDepth || typeof node.properties !== 'function') {
     return output;
@@ -672,13 +758,16 @@ function resolveSpecAtPath(
 
   for (let index = 1; index < segments.length; index += 1) {
     const properties = current.properties?.();
-    if (!properties) {
-      return undefined;
+    const next = properties?.[segments[index]];
+    if (next) {
+      current = next;
+      continue;
     }
-    current = properties[segments[index]];
-    if (!current) {
-      return undefined;
+    if (current.dynamicProperties) {
+      current = current.dynamicProperties;
+      continue;
     }
+    return undefined;
   }
 
   return current;

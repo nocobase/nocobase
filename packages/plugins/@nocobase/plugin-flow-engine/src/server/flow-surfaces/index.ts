@@ -36,10 +36,10 @@ const FLOW_SURFACE_LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = 
     'Popup for Edit': '编辑弹窗',
     'Popup for Details': '详情弹窗',
     'Auto generated': '自动生成',
-    'Automatically generated popup template for collection "{{collectionLabel}}" ({{popupLabel}}).':
-      '为数据表“{{collectionLabel}}”自动生成的弹窗模板（{{popupLabel}}）。',
-    'Automatically generated popup template for relation field "{{associationFieldLabel}}" in collection "{{sourceCollectionLabel}}", targeting "{{targetCollectionLabel}}" ({{popupLabel}}).':
-      '为数据表“{{sourceCollectionLabel}}”中的关系字段“{{associationFieldLabel}}”自动生成的弹窗模板，目标数据表为“{{targetCollectionLabel}}”（{{popupLabel}}）。',
+    'Automatically generated popup template for collection "{{collectionLabel}}" ({{popupLabel}}). Scene: {{scene}}; collection: "{{collectionLabel}}".':
+      '为数据表“{{collectionLabel}}”自动生成的弹窗模板（{{popupLabel}}）。场景：{{scene}}；数据表：{{collectionLabel}}。',
+    'Automatically generated popup template for relation field "{{associationFieldLabel}}" in collection "{{sourceCollectionLabel}}", targeting "{{targetCollectionLabel}}" ({{popupLabel}}). Scene: {{scene}}; source collection: "{{sourceCollectionLabel}}"; association field: "{{associationFieldLabel}}"; target collection: "{{targetCollectionLabel}}".':
+      '为数据表“{{sourceCollectionLabel}}”中的关系字段“{{associationFieldLabel}}”自动生成的弹窗模板，目标数据表为“{{targetCollectionLabel}}”（{{popupLabel}}）。场景：{{scene}}；源数据表：{{sourceCollectionLabel}}；关系字段：{{associationFieldLabel}}；目标数据表：{{targetCollectionLabel}}。',
   },
 };
 

@@ -92,6 +92,18 @@ export const FLOW_SURFACE_PLAN_ACTION_SPECS = defineFlowSurfacePlanActionSpecs({
     selectorMode: 'target',
     executionKind: 'mutate',
   },
+  addEventFlow: {
+    selectorMode: 'target',
+    executionKind: 'mutate',
+  },
+  setEventFlow: {
+    selectorMode: 'target',
+    executionKind: 'mutate',
+  },
+  removeEventFlow: {
+    selectorMode: 'target',
+    executionKind: 'mutate',
+  },
   setEventFlows: {
     selectorMode: 'target',
     executionKind: 'mutate',

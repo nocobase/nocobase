@@ -26,7 +26,7 @@ export const FLOW_SURFACE_REACTION_SLOT_REGISTRY = {
     block: {
       flowKey: 'cardSettings',
       stepKey: 'linkageRules',
-      valuePath: null,
+      valuePath: 'value',
     },
   },
   fieldLinkage: {
@@ -50,7 +50,7 @@ export const FLOW_SURFACE_REACTION_SLOT_REGISTRY = {
     action: {
       flowKey: 'buttonSettings',
       stepKey: 'linkageRules',
-      valuePath: null,
+      valuePath: 'value',
     },
   },
 } as const satisfies Record<

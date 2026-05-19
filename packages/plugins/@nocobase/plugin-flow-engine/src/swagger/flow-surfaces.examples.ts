@@ -23,6 +23,11 @@ const makePublicBlockDefaultFilter = (
       operator: '$eq',
       value: '',
     },
+    {
+      path: 'phone',
+      operator: '$includes',
+      value: '',
+    },
   ],
 ) => ({
   logic: '$and',
@@ -120,8 +125,18 @@ export const flowSurfaceExamples = {
                 value: '',
               },
               {
+                path: 'email',
+                operator: '$includes',
+                value: '',
+              },
+              {
                 path: 'status',
                 operator: '$eq',
+                value: '',
+              },
+              {
+                path: 'phone',
+                operator: '$includes',
                 value: '',
               },
             ]),
@@ -133,9 +148,24 @@ export const flowSurfaceExamples = {
                 settings: {
                   defaultFilter: makePublicBlockDefaultFilter([
                     {
+                      path: 'nickname',
+                      operator: '$includes',
+                      value: '',
+                    },
+                    {
+                      path: 'email',
+                      operator: '$includes',
+                      value: '',
+                    },
+                    {
                       path: 'status',
                       operator: '$eq',
                       value: 'active',
+                    },
+                    {
+                      path: 'phone',
+                      operator: '$includes',
+                      value: '',
                     },
                   ]),
                 },
@@ -308,6 +338,16 @@ export const flowSurfaceExamples = {
                 path: 'status',
                 operator: '$eq',
                 value: 'planned',
+              },
+              {
+                path: 'category',
+                operator: '$eq',
+                value: '',
+              },
+              {
+                path: 'scope',
+                operator: '$includes',
+                value: '',
               },
             ]),
             settings: {
@@ -553,9 +593,24 @@ export const flowSurfaceExamples = {
             settings: {
               defaultFilter: makePublicBlockDefaultFilter([
                 {
+                  path: 'username',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
+                  path: 'email',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
                   path: 'status',
                   operator: '$eq',
                   value: 'active',
+                },
+                {
+                  path: 'phone',
+                  operator: '$includes',
+                  value: '',
                 },
               ]),
             },
@@ -657,6 +712,21 @@ export const flowSurfaceExamples = {
             operator: '$includes',
             value: '',
           },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
+            operator: '$includes',
+            value: '',
+          },
         ]),
         fields: [
           'nickname',
@@ -709,6 +779,21 @@ export const flowSurfaceExamples = {
         defaultFilter: makePublicBlockDefaultFilter([
           {
             path: 'nickname',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
             operator: '$includes',
             value: '',
           },
@@ -828,6 +913,12 @@ export const flowSurfaceExamples = {
       assignValues: {
         status: 'active',
       },
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_status_changed',
+          context: 'department',
+        },
+      ],
     },
   },
   configureJsBlock: {
@@ -861,7 +952,7 @@ export const flowSurfaceExamples = {
       title: 'Run item diagnostics',
       type: 'default',
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
+      code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item diagnostics complete")}>Run item diagnostics</Button>;\n}\n\nctx.render(<JsItemAction />);',
     },
   },
   configureJsField: {
@@ -1103,6 +1194,21 @@ export const flowSurfaceExamples = {
         operator: '$includes',
         value: 'staff',
       },
+      {
+        path: 'email',
+        operator: '$includes',
+        value: '',
+      },
+      {
+        path: 'status',
+        operator: '$eq',
+        value: '',
+      },
+      {
+        path: 'phone',
+        operator: '$includes',
+        value: '',
+      },
     ]),
     resourceInit: {
       dataSourceKey: 'main',
@@ -1110,7 +1216,7 @@ export const flowSurfaceExamples = {
     },
     defaultActionSettings: {
       filter: {
-        filterableFieldNames: ['username', 'email', 'status'],
+        filterableFieldNames: ['username', 'email', 'status', 'phone'],
         defaultFilter: {
           logic: '$and',
           items: [
@@ -1127,6 +1233,11 @@ export const flowSurfaceExamples = {
             {
               path: 'status',
               operator: '$eq',
+              value: '',
+            },
+            {
+              path: 'phone',
+              operator: '$includes',
               value: '',
             },
           ],
@@ -1281,12 +1392,17 @@ export const flowSurfaceExamples = {
   },
   addAction: {
     target: {
-      uid: 'filter-form-block-uid',
+      uid: 'create-form-block-uid',
     },
     type: 'submit',
     settings: {
-      title: 'Apply filters',
+      title: 'Submit user',
       confirm: false,
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_created',
+        },
+      ],
     },
   },
   addLinkAction: {
@@ -1350,7 +1466,7 @@ export const flowSurfaceExamples = {
       title: 'Run item JS',
       type: 'default',
       version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("item")\');',
+      code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item JS complete")}>Run item JS</Button>;\n}\n\nctx.render(<JsItemAction />);',
     },
   },
   addRecordAction: {
@@ -1377,6 +1493,24 @@ export const flowSurfaceExamples = {
             collectionName: 'users',
           },
           fields: ['username', 'nickname'],
+        },
+      ],
+    },
+  },
+  addRecordUpdateAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'updateRecord',
+    settings: {
+      title: 'Mark active',
+      assignValues: {
+        status: 'active',
+      },
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_status_changed',
+          context: 'department',
         },
       ],
     },
@@ -1452,6 +1586,21 @@ export const flowSurfaceExamples = {
             operator: '$includes',
             value: 'staff',
           },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
+            operator: '$includes',
+            value: '',
+          },
         ]),
         resourceInit: {
           dataSourceKey: 'main',
@@ -1463,7 +1612,7 @@ export const flowSurfaceExamples = {
         },
         defaultActionSettings: {
           filter: {
-            filterableFieldNames: ['username', 'email', 'status'],
+            filterableFieldNames: ['username', 'email', 'status', 'phone'],
             defaultFilter: {
               logic: '$and',
               items: [
@@ -1480,6 +1629,11 @@ export const flowSurfaceExamples = {
                 {
                   path: 'status',
                   operator: '$eq',
+                  value: '',
+                },
+                {
+                  path: 'phone',
+                  operator: '$includes',
                   value: '',
                 },
               ],
@@ -1654,6 +1808,57 @@ export const flowSurfaceExamples = {
         steps: {},
       },
     },
+  },
+  getEventFlowMeta: {
+    target: {
+      uid: 'submit-action-uid',
+    },
+  },
+  addEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
+    eventName: 'submit',
+    steps: {
+      runGuard: {
+        use: 'runjs',
+        defaultParams: {
+          code: 'ctx.message.info("Submitting");',
+        },
+      },
+    },
+    condition: {
+      logic: '$and',
+      items: [],
+    },
+  },
+  setEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
+    flow: {
+      key: 'submitGuard',
+      on: {
+        eventName: 'submit',
+        phase: 'beforeAllFlows',
+      },
+      steps: {
+        runGuard: {
+          use: 'runjs',
+          defaultParams: {
+            code: 'ctx.message.success("Updated");',
+          },
+        },
+      },
+    },
+  },
+  removeEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
   },
   setEventFlows: {
     target: {

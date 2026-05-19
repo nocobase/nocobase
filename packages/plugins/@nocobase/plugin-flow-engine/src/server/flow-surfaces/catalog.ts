@@ -69,6 +69,18 @@ const OPEN_VIEW_SCENE_SCHEMA = {
 const OBJECT_SCHEMA = { type: 'object' };
 const NUMBER_SCHEMA = { type: 'number' };
 const ARRAY_SCHEMA = { type: 'array' };
+const TRIGGER_WORKFLOWS_ARRAY_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      workflowKey: STRING_SCHEMA,
+      context: STRING_SCHEMA,
+    },
+    required: ['workflowKey'],
+    additionalProperties: false,
+  },
+};
 const BLOCK_HEIGHT_MODE_SCHEMA = {
   type: 'string',
   enum: ['defaultHeight', 'specifyValue', 'fullHeight'],
@@ -151,7 +163,8 @@ const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.tryTemplate': BOOLEAN_SCHEMA,
 };
 const CONFIRM_ALLOWED_PATHS = ['confirm.enable', 'confirm.title', 'confirm.content'];
-const TABLE_COLUMN_ALLOWED_PATHS = ['title.title', 'fieldNames.label'];
+const TABLE_COLUMN_BASE_ALLOWED_PATHS = ['title.title'];
+const TABLE_FIELD_COLUMN_ALLOWED_PATHS = [...TABLE_COLUMN_BASE_ALLOWED_PATHS, 'fieldNames.label'];
 const FILTER_FORM_ITEM_ALLOWED_PATHS = [
   'init.defaultTargetUid',
   'init.filterField.name',
@@ -178,7 +191,7 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.type',
     'general.danger',
     'general.color',
-    'linkageRules',
+    'linkageRules.value',
   ],
   mergeStrategy: 'deep' as const,
   eventBindingSteps: ['general', 'linkageRules'],
@@ -189,7 +202,28 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.type': STRING_SCHEMA,
     'general.danger': BOOLEAN_SCHEMA,
     'general.color': STRING_SCHEMA,
-    linkageRules: ARRAY_SCHEMA,
+    'linkageRules.value': ARRAY_SCHEMA,
+  },
+};
+const TRIGGER_WORKFLOWS_SETTINGS_GROUP = {
+  allowedPaths: ['setTriggerWorkflows.group'],
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['setTriggerWorkflows'],
+  pathSchemas: {
+    'setTriggerWorkflows.group': TRIGGER_WORKFLOWS_ARRAY_SCHEMA,
+  },
+  schema: {
+    type: 'object',
+    properties: {
+      setTriggerWorkflows: {
+        type: 'object',
+        properties: {
+          group: TRIGGER_WORKFLOWS_ARRAY_SCHEMA,
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
   },
 };
 const RUN_JS_SETTINGS_GROUP = {
@@ -301,7 +335,7 @@ const BLOCK_CARD_SETTINGS_GROUP = {
     'titleDescription.description',
     'blockHeight.heightMode',
     'blockHeight.height',
-    'linkageRules',
+    'linkageRules.value',
   ],
   clearable: true,
   mergeStrategy: 'deep' as const,
@@ -311,7 +345,7 @@ const BLOCK_CARD_SETTINGS_GROUP = {
     'titleDescription.description': STRING_SCHEMA,
     'blockHeight.heightMode': BLOCK_HEIGHT_MODE_SCHEMA,
     'blockHeight.height': NUMBER_SCHEMA,
-    linkageRules: ARRAY_SCHEMA,
+    'linkageRules.value': ARRAY_SCHEMA,
   },
 };
 const CALENDAR_SETTINGS_GROUP = {
@@ -327,11 +361,10 @@ const CALENDAR_SETTINGS_GROUP = {
     'quickCreatePopupSettings',
     'eventPopupSettings',
     'dataScope.filter',
-    'linkageRules.value',
   ],
   clearable: true,
   mergeStrategy: 'deep' as const,
-  eventBindingSteps: ['dataScope', 'linkageRules'],
+  eventBindingSteps: ['dataScope'],
   pathSchemas: {
     'titleField.titleField': STRING_SCHEMA,
     'colorField.colorFieldName': STRING_SCHEMA,
@@ -344,7 +377,6 @@ const CALENDAR_SETTINGS_GROUP = {
     quickCreatePopupSettings: OBJECT_SCHEMA,
     eventPopupSettings: OBJECT_SCHEMA,
     'dataScope.filter': FILTER_GROUP_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
   },
 };
 const TREE_BLOCK_PROP_SCHEMAS = {
@@ -1504,11 +1536,10 @@ const ACTION_COLUMN_CONTRACT = createContract({
 });
 ACTION_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
   tableColumnSettings: {
-    allowedPaths: TABLE_COLUMN_ALLOWED_PATHS,
+    allowedPaths: TABLE_COLUMN_BASE_ALLOWED_PATHS,
     mergeStrategy: 'deep',
     pathSchemas: {
       'title.title': STRING_SCHEMA,
-      'fieldNames.label': STRING_SCHEMA,
     },
   },
 });
@@ -1612,7 +1643,7 @@ const TABLE_COLUMN_CONTRACT = createContract({
 TABLE_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
   fieldSettings: FIELD_SETTINGS_INIT_GROUP,
   tableColumnSettings: {
-    allowedPaths: [...TABLE_COLUMN_ALLOWED_PATHS, 'model.use'],
+    allowedPaths: [...TABLE_FIELD_COLUMN_ALLOWED_PATHS, 'model.use'],
     mergeStrategy: 'deep',
     pathSchemas: {
       'title.title': STRING_SCHEMA,
@@ -1638,11 +1669,10 @@ const JS_COLUMN_CONTRACT = createContract({
 });
 JS_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
   tableColumnSettings: {
-    allowedPaths: TABLE_COLUMN_ALLOWED_PATHS,
+    allowedPaths: TABLE_COLUMN_BASE_ALLOWED_PATHS,
     mergeStrategy: 'deep',
     pathSchemas: {
       'title.title': STRING_SCHEMA,
-      'fieldNames.label': STRING_SCHEMA,
     },
   },
   jsSettings: RUN_JS_SETTINGS_GROUP,
@@ -1968,7 +1998,7 @@ const UPDATE_RECORD_ACTION_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ACTION_PROP_KEYS,
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['buttonSettings', 'assignSettings', 'apply'],
+  stepParams: ['buttonSettings', 'assignSettings', 'apply', 'recordTriggerWorkflowsActionSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -1983,6 +2013,9 @@ const UPDATE_RECORD_ACTION_CONTRACT = createContract({
     },
     apply: {
       stepKeys: ['apply'],
+    },
+    recordTriggerWorkflowsActionSettings: {
+      stepKeys: ['setTriggerWorkflows'],
     },
   },
 });
@@ -2015,13 +2048,14 @@ UPDATE_RECORD_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'apply.assignedValues': OBJECT_SCHEMA,
     },
   },
+  recordTriggerWorkflowsActionSettings: TRIGGER_WORKFLOWS_SETTINGS_GROUP,
 });
 
 const SUBMIT_ACTION_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ACTION_PROP_KEYS,
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['buttonSettings', 'submitSettings'],
+  stepParams: ['buttonSettings', 'submitSettings', 'formTriggerWorkflowsActionSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -2033,6 +2067,9 @@ const SUBMIT_ACTION_CONTRACT = createContract({
     },
     submitSettings: {
       stepKeys: ['confirm'],
+    },
+    formTriggerWorkflowsActionSettings: {
+      stepKeys: ['setTriggerWorkflows'],
     },
   },
 });
@@ -2078,6 +2115,7 @@ SUBMIT_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'confirm.content': STRING_SCHEMA,
     },
   },
+  formTriggerWorkflowsActionSettings: TRIGGER_WORKFLOWS_SETTINGS_GROUP,
 });
 
 const BULK_EDIT_ACTION_CONTRACT = createContract({
@@ -2204,12 +2242,12 @@ const CALENDAR_READONLY_ACTION_CONTRACT = createContract({
 });
 CALENDAR_READONLY_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: {
-    allowedPaths: ['linkageRules'],
+    allowedPaths: ['linkageRules.value'],
     clearable: true,
     mergeStrategy: 'deep',
     eventBindingSteps: ['linkageRules'],
     pathSchemas: {
-      linkageRules: ARRAY_SCHEMA,
+      'linkageRules.value': ARRAY_SCHEMA,
     },
   },
 });
@@ -2445,6 +2483,30 @@ JS_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   clickSettings: RUN_JS_SETTINGS_GROUP,
 });
 
+const JS_ITEM_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'jsSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    jsSettings: {
+      stepKeys: ['runJs'],
+    },
+  },
+});
+JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  jsSettings: RUN_JS_SETTINGS_GROUP,
+});
+
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['labelWidth', 'labelWrap'],
@@ -2676,7 +2738,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['JSRecordActionModel', JS_ACTION_CONTRACT],
   ['JSFormActionModel', JS_ACTION_CONTRACT],
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
-  ['JSItemActionModel', JS_ACTION_CONTRACT],
+  ['JSItemActionModel', JS_ITEM_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
   ['ApplyFormSubmitModel', APPROVAL_ACTION_CONTRACT],
   ['ApplyFormSaveDraftModel', APPROVAL_ACTION_CONTRACT],
@@ -3453,6 +3515,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     createSupported: true,
   },
   {
+    publicKey: 'jsItem',
+    label: 'JS item',
+    scope: 'block',
+    scene: 'collection',
+    use: 'JSItemActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
     publicKey: 'composeEmail',
     label: 'Compose email',
     scope: 'block',
@@ -3568,6 +3640,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scope: 'record',
     scene: 'record',
     use: 'JSRecordActionModel',
+    ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'jsItem',
+    label: 'JS item',
+    scope: 'record',
+    scene: 'record',
+    use: 'JSItemActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,

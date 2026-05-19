@@ -515,6 +515,7 @@ const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   associationPathName: stringOption('Association path', { example: 'department' }),
   initialValue: objectOption('Initial value'),
   required: booleanOption('Whether required', { example: false }),
+  rules: arrayOption('Validation rules'),
   disabled: booleanOption('Whether disabled', { example: false }),
   multiple: booleanOption('Whether multiple selection is enabled', { example: false }),
   allowMultiple: booleanOption('Whether multiple selection is allowed', { example: false }),
@@ -604,6 +605,12 @@ const ACTION_CONFIRM_OPTIONS: FlowSurfaceConfigureOptions = {
 const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
   assignValues: objectOption('Bulk or single-record assigned values', { example: { status: 'published' } }),
   updateMode: stringOption('Update mode', { example: 'overwrite' }),
+};
+
+const ACTION_TRIGGER_WORKFLOWS_OPTIONS: FlowSurfaceConfigureOptions = {
+  triggerWorkflows: arrayOption('Workflow bindings for submit/update actions', {
+    example: [{ workflowKey: 'workflow-key', context: 'department' }],
+  }),
 };
 
 const APPROVAL_ASSIGN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -757,8 +764,14 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'BulkDeleteActionModel':
       return merged(ACTION_CONFIRM_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'FormSubmitActionModel':
-      return merged(ACTION_CONFIRM_OPTIONS, ACTION_LINKAGE_OPTIONS);
+      return merged(ACTION_CONFIRM_OPTIONS, ACTION_TRIGGER_WORKFLOWS_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'UpdateRecordActionModel':
+      return merged(
+        ACTION_CONFIRM_OPTIONS,
+        ACTION_ASSIGN_OPTIONS,
+        ACTION_TRIGGER_WORKFLOWS_OPTIONS,
+        ACTION_LINKAGE_OPTIONS,
+      );
     case 'BulkUpdateActionModel':
       return merged(ACTION_CONFIRM_OPTIONS, ACTION_ASSIGN_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'BulkEditActionModel':

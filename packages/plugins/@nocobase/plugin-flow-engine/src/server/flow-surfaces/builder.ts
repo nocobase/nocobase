@@ -99,6 +99,19 @@ const JS_ITEM_DEFAULT_CODE = [
 ].join('\n');
 
 const JS_COLUMN_DEFAULT_CODE = `ctx.render('<span class="nb-js-column">JS column</span>');`;
+const JS_ITEM_ACTION_DEFAULT_CODE = [
+  'const { Button } = ctx.antd;',
+  '',
+  'function JsItemAction() {',
+  '  return (',
+  '    <Button onClick={() => ctx.message.success("Click from JS item")}>',
+  '      JS item',
+  '    </Button>',
+  '  );',
+  '}',
+  '',
+  'ctx.render(<JsItemAction />);',
+].join('\n');
 const CALENDAR_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
 const CALENDAR_EVENT_VIEW_ACTION_KEY = 'eventViewAction';
 const KANBAN_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
@@ -219,10 +232,6 @@ const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   ].join('\n'),
   JSFormActionModel: [
     'const values = ctx.form?.getFieldsValue?.() || {};',
-    "ctx.message.success('Current form values: ' + JSON.stringify(values));",
-  ].join('\n'),
-  JSItemActionModel: [
-    'const values = ctx.form?.getFieldsValue?.() || ctx.formValues || {};',
     "ctx.message.success('Current form values: ' + JSON.stringify(values));",
   ].join('\n'),
   FilterFormJSActionModel: '',
@@ -1005,6 +1014,9 @@ function buildActionDefaults(options: {
 
   if (JS_ACTION_DEFAULT_CODE_BY_USE[options.use] !== undefined) {
     stepParams.clickSettings = buildRunJsStepParams(JS_ACTION_DEFAULT_CODE_BY_USE[options.use]);
+  }
+  if (options.use === 'JSItemActionModel') {
+    stepParams.jsSettings = buildRunJsStepParams(JS_ITEM_ACTION_DEFAULT_CODE);
   }
 
   return {
