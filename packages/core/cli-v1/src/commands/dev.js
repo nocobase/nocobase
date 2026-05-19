@@ -24,6 +24,7 @@ const chokidar = require('chokidar');
 const { uid } = require('@formily/shared');
 const path = require('path');
 const fs = require('fs');
+const { resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
 
 function sleep(ms = 1000) {
   return new Promise((resolve) => {
@@ -198,7 +199,7 @@ module.exports = (cli) => {
       };
 
       if (shouldRunClient) {
-        const storagePluginPath = path.resolve(process.cwd(), 'storage/plugins');
+        const storagePluginPath = resolvePluginStoragePath();
         const watcher = chokidar.watch(`${storagePluginPath}/**/*`, {
           cwd: process.cwd(),
           ignored: /(^|[\/\\])\../, // 忽略隐藏文件
@@ -246,7 +247,7 @@ module.exports = (cli) => {
         const argv = [
           'watch',
           ...(inspect ? [`--inspect=${inspect === true ? 9229 : inspect}`] : []),
-          '--ignore=./storage/plugins/**',
+          `--ignore=${resolvePluginStoragePath()}/**`,
           '--tsconfig',
           SERVER_TSCONFIG_PATH,
           '-r',

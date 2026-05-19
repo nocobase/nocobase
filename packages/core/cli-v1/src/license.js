@@ -8,15 +8,15 @@
  */
 
 const chalk = require('chalk');
-const { resolve } = require('path');
 const fs = require('fs-extra');
 const { keyDecrypt, getEnvAsync } = require('@nocobase/license-kit');
 const { isEnvMatch } = require('@nocobase/plugin-license/utils/env');
 const { logger } = require('./logger');
+const { storagePathJoin } = require('./util');
 const { pick } = require('lodash');
 
 exports.getAccessKeyPair = async function () {
-  const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
+  const keyFile = storagePathJoin('.license', 'license-key');
   if (!fs.existsSync(keyFile)) {
     logger.info('License key not found');
     return {};

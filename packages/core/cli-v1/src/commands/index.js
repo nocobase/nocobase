@@ -21,6 +21,7 @@ module.exports = (cli) => {
   require('./locale')(cli);
   require('./build')(cli);
   require('./tar')(cli);
+  require('./app-dev')(cli);
   require('./dev')(cli);
   require('./start')(cli);
   require('./e2e')(cli);

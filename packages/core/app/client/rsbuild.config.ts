@@ -15,7 +15,7 @@ import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
-import { generatePlugins, getRsbuildAlias } from '@nocobase/devtools/rsbuildConfig';
+import { generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,6 +51,7 @@ function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
     return [
       `window['__nocobase_public_path__'] = ${JSON.stringify(appPublicPath)};`,
       `window['__nocobase_dev_public_path__'] = "/";`,
+      `window['__nocobase_app_dev__'] = ${JSON.stringify(process.env.NOCOBASE_APP_DEV === 'true')};`,
       `window['__esm_cdn_base_url__'] = ${JSON.stringify(process.env.ESM_CDN_BASE_URL || '')};`,
       `window['__esm_cdn_suffix__'] = ${JSON.stringify(process.env.ESM_CDN_SUFFIX || '')};`,
     ].join('\n');
@@ -65,6 +66,7 @@ function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
     `window['__nocobase_api_client_share_token__'] = {{env.API_CLIENT_SHARE_TOKEN}};`,
     `window['__nocobase_ws_url__'] = '{{env.WS_URL}}';`,
     `window['__nocobase_ws_path__'] = '{{env.WS_PATH}}';`,
+    `window['__nocobase_app_dev__'] = {{env.NOCOBASE_APP_DEV}};`,
     `window['__esm_cdn_base_url__'] = '{{env.ESM_CDN_BASE_URL}}';`,
     `window['__esm_cdn_suffix__'] = '{{env.ESM_CDN_SUFFIX}}';`,
   ].join('\n');
@@ -104,7 +106,7 @@ export default defineConfig(({ command }) => {
   const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${clientPort + 1}`;
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT, clientPort);
-  const workspaceAliases = getRsbuildAlias();
+  const workspaceAliases = getRsbuildBrowserAlias();
 
   return {
     plugins: [pluginReact(), pluginLess(), pluginNodePolyfill(), pluginSvgr()],
