@@ -8,6 +8,7 @@
  */
 
 import { Registry } from '@nocobase/utils';
+import { v4 as uuidv4 } from 'uuid';
 import { COLLECTION_NAME } from '../constant';
 import PluginNotificationManagerServer from './plugin';
 import type {
@@ -20,25 +21,32 @@ import type {
   WriteLogOptions,
 } from './types';
 import { compile } from './utils/compile';
-import { Transactionable } from '@nocobase/database';
 
 export class NotificationManager implements NotificationManager {
   private static readonly SLOW_SEND_THRESHOLD_MS = 500;
   private plugin: PluginNotificationManagerServer;
-  public channelTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
+  public channelTypes = new Registry<{ Channel: NotificationChannelConstructor; useQueue: boolean }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
 
-  registerType({ type, Channel }: RegisterServerTypeFnParams) {
-    this.channelTypes.register(type, { Channel });
+  registerType({ type, Channel, useQueue = true }: RegisterServerTypeFnParams) {
+    this.channelTypes.register(type, { Channel, useQueue });
   }
 
-  createSendingRecord = async (options: WriteLogOptions & Transactionable) => {
-    const logsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.logs);
-    const { transaction, ...values } = options;
-    return logsRepo.create({ values, transaction });
+  createSendingRecord = async (options: WriteLogOptions) => {
+    const LogsModel = this.plugin.app.db.getModel(COLLECTION_NAME.logs);
+    return LogsModel.create(
+      {
+        id: uuidv4(),
+        ...options,
+      },
+      {
+        hooks: false,
+        validate: false,
+      },
+    );
   };
 
   private toQueueMessage(params: SendOptions): NotificationQueueMessage {
@@ -56,8 +64,56 @@ export class NotificationManager implements NotificationManager {
     };
   }
 
+  private getDirectResult(
+    params: SendOptions,
+    result: {
+      status: 'success' | 'failure';
+      reason?: string;
+    },
+  ) {
+    return {
+      status: result.status,
+      reason: result.reason,
+      triggerFrom: params.triggerFrom,
+      channelName: params.channelName,
+      receivers: params.receivers,
+      queued: false,
+    };
+  }
+
+  private getDeferredResult(params: SendOptions) {
+    return {
+      status: 'success' as const,
+      triggerFrom: params.triggerFrom,
+      channelName: params.channelName,
+      receivers: params.receivers,
+    };
+  }
+
+  private async shouldUseQueue(channelName: string) {
+    const channel = await this.findChannel(channelName);
+
+    if (!channel) {
+      return true;
+    }
+
+    const channelType = this.channelTypes.get(channel.notificationType);
+    return channelType?.useQueue ?? true;
+  }
+
   private async enqueue(message: NotificationQueueMessage) {
     await this.plugin.app.eventQueue.publish(this.plugin.sendQueueChannel, message);
+  }
+
+  private async dispatchAfterCommit(message: NotificationQueueMessage) {
+    const useQueue = await this.shouldUseQueue(message.channelName);
+
+    if (useQueue) {
+      await this.enqueue(message);
+      return;
+    }
+
+    await this.sendNow(message);
   }
 
   async findChannel(name: string) {
@@ -87,15 +143,22 @@ export class NotificationManager implements NotificationManager {
 
     if (transaction?.afterCommit) {
       transaction.afterCommit(() => {
-        void this.enqueue(queueMessage).catch((error) => {
-          this.plugin.logger.error('notification queue publish failed after transaction committed', {
+        return this.dispatchAfterCommit(queueMessage).catch((error) => {
+          this.plugin.logger.error('notification dispatch failed after transaction committed', {
             channelName: params.channelName,
             triggerFrom: params.triggerFrom,
             reason: error instanceof Error ? `${error.name}: ${error.message}` : JSON.stringify(error),
           });
         });
       });
-      return this.getQueuedResult(params);
+      return this.getDeferredResult(params);
+    }
+
+    const useQueue = await this.shouldUseQueue(params.channelName);
+
+    if (!useQueue) {
+      const result = await this.sendNow(queueMessage);
+      return this.getDirectResult(params, result);
     }
 
     try {

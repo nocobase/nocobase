@@ -194,9 +194,18 @@ export abstract class LLMProvider {
     }
   }
 
-  protected async loadDocument(_ctx: Context, attachment: any): Promise<any> {
+  protected async loadDocument(ctx: Context, attachment: any): Promise<any> {
+    const referer = ctx.get('referer') || '';
+    const ua = ctx.get('user-agent') || '';
     const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
-    const parsed = await this.documentLoader.load(attachment);
+    const parsed = await this.documentLoader.load(attachment, {
+      requestOptions: {
+        headers: {
+          Referer: referer,
+          'User-Agent': ua,
+        },
+      },
+    });
     if (!parsed.supported) {
       return {
         placement: 'system',

@@ -11,6 +11,7 @@ import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { get as lodashGet, set as lodashSet } from 'lodash';
 import { JSEditableFieldModel } from '../JSEditableFieldModel';
 
 function createField(props?: Record<string, any>, code = '') {
@@ -73,6 +74,21 @@ const React = ctx.React;
 ctx.render(<span data-testid="js-readonly-state">{String(ctx.readOnly)}</span>);
 `;
 
+const SET_VALUE_AND_RENDER_NAME_PATH_CODE = `
+const React = ctx.React;
+ctx.setValue?.('44');
+ctx.render(<span data-testid="js-name-path">{JSON.stringify(ctx.namePath)}</span>);
+`;
+
+function createFormStub(initialValues: any = {}) {
+  const store = JSON.parse(JSON.stringify(initialValues));
+  return {
+    getFieldValue: (namePath: any) => lodashGet(store, namePath),
+    setFieldValue: (namePath: any, value: any) => lodashSet(store, namePath, value),
+    getFieldsValue: () => store,
+  };
+}
+
 class ParentModel extends FlowModel<any> {
   render() {
     return <FlowModelRenderer model={this.subModels.field} />;
@@ -83,6 +99,11 @@ function renderParentFieldWithFlowRenderer(
   fieldProps?: Record<string, any>,
   parentProps?: Record<string, any>,
   code = EDITABLE_CODE,
+  options?: {
+    fieldIndex?: string[];
+    fieldStepParams?: Record<string, any>;
+    form?: any;
+  },
 ) {
   const engine = new FlowEngine();
   engine.registerModels({ JSEditableFieldModel, ParentModel });
@@ -96,6 +117,7 @@ function renderParentFieldWithFlowRenderer(
         uid: 'js-field-with-parent',
         props: fieldProps,
         stepParams: {
+          ...(options?.fieldStepParams || {}),
           jsSettings: {
             runJs: {
               code,
@@ -105,6 +127,13 @@ function renderParentFieldWithFlowRenderer(
       },
     },
   });
+
+  if (options?.form) {
+    parent.context.defineProperty('form', { value: options.form });
+  }
+  if (options?.fieldIndex) {
+    parent.subModels.field.context.defineProperty('fieldIndex', { value: options.fieldIndex });
+  }
 
   render(
     <FlowEngineProvider engine={engine}>
@@ -206,5 +235,73 @@ describe('JSEditableFieldModel', () => {
     } finally {
       applyFlowSpy.mockRestore();
     }
+  });
+
+  it('writes top-level form values through the effective name path', async () => {
+    const form = createFormStub({});
+
+    renderParentFieldWithFlowRenderer({ name: 'staffname' }, undefined, SET_VALUE_AND_RENDER_NAME_PATH_CODE, {
+      form,
+      fieldStepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'staffname',
+          },
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(form.getFieldValue(['staffname'])).toBe('44');
+      expect(screen.getByTestId('js-name-path')).toHaveTextContent(JSON.stringify(['staffname']));
+    });
+  });
+
+  it('writes subform list values under the association path instead of the form root', async () => {
+    const form = createFormStub({ org_o2m: [{}] });
+
+    renderParentFieldWithFlowRenderer({ name: 'orgname' }, undefined, SET_VALUE_AND_RENDER_NAME_PATH_CODE, {
+      form,
+      fieldIndex: ['org_o2m:0'],
+      fieldStepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'orgname',
+            associationPathName: 'org_o2m',
+          },
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(form.getFieldValue(['org_o2m', 0, 'orgname'])).toBe('44');
+      expect(form.getFieldValue(['orgname'])).toBeUndefined();
+      expect(screen.getByTestId('js-name-path')).toHaveTextContent(JSON.stringify(['org_o2m', 0, 'orgname']));
+    });
+  });
+
+  it('writes nested subform list values with the full field index chain', async () => {
+    const form = createFormStub({ users: [{ roles: [{}, {}] }] });
+
+    renderParentFieldWithFlowRenderer({ name: 'roleName' }, undefined, SET_VALUE_AND_RENDER_NAME_PATH_CODE, {
+      form,
+      fieldIndex: ['users:0', 'roles:1'],
+      fieldStepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'roleName',
+            associationPathName: 'users.roles',
+          },
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(form.getFieldValue(['users', 0, 'roles', 1, 'roleName'])).toBe('44');
+      expect(form.getFieldValue(['roleName'])).toBeUndefined();
+      expect(screen.getByTestId('js-name-path')).toHaveTextContent(
+        JSON.stringify(['users', 0, 'roles', 1, 'roleName']),
+      );
+    });
   });
 });

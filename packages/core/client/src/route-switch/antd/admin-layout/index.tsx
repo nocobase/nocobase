@@ -56,6 +56,7 @@ import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { VariableScope } from '../../../variables/VariableScope';
+import { shouldDisplayRouteBadge } from './badge';
 import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
@@ -339,7 +340,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
         <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
-          {badgeCount != null && (
+          {shouldDisplayRouteBadge(badgeCount, item._route.options?.badge?.showZero) && (
             <Badge
               {...item._route.options.badge}
               count={badgeCount}
@@ -361,9 +362,13 @@ const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (pr
       {(context) =>
         context.collapsed && !props.hidden && !inHeader ? (
           <Tooltip title={props.title} placement="right">
-            <Badge {...props.badgeProps} style={{ transform: 'none', maxWidth: '10em' }} dot={false}>
-              {props.children}
-            </Badge>
+            {props.badgeProps ? (
+              <Badge {...props.badgeProps} style={{ transform: 'none', maxWidth: '10em' }} dot={false}>
+                {props.children}
+              </Badge>
+            ) : (
+              props.children
+            )}
           </Tooltip>
         ) : (
           props.children
@@ -384,7 +389,8 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { closeMobileMenu } = useContext(MobileMenuControlContext);
   // 如果点击的是一个 group，直接跳转到第一个子页面
   const path = item.redirect || item.path;
-  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
+  const showBadge = shouldDisplayRouteBadge(badgeCount, item._route.options?.badge?.showZero);
+  const badgeProps = showBadge ? { ...item._route.options?.badge, count: badgeCount } : null;
 
   useEffect(() => {
     if (divRef.current) {
@@ -487,7 +493,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
-            {badgeCount != null && (
+            {showBadge && (
               <Badge
                 {...item._route.options?.badge}
                 count={badgeCount}
@@ -515,7 +521,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
-          {badgeCount != null && (
+          {showBadge && (
             <Badge
               {...badgeProps}
               style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
