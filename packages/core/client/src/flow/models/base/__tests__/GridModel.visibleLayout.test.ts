@@ -228,7 +228,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     expect(sizes.row1).toEqual([10, 14]);
   });
 
-  it('ignores EMPTY_COLUMN uid in runtime mode without crashing', () => {
+  it('preserves EMPTY_COLUMN placeholder width in runtime mode', () => {
     engine.flowSettings.disable();
 
     const visible = engine.createModel({ use: 'FlowModel', uid: 'v' });
@@ -237,11 +237,18 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
       use: 'GridModel',
       uid: 'grid-8',
       props: {
-        rows: {
-          row1: [[EMPTY_COLUMN_UID, 'ghost', 'v'], ['ghost-2']],
-        },
-        sizes: {
-          row1: [8, 16],
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'row1',
+              cells: [
+                { id: 'cell1', items: ['v'] },
+                { id: 'cell2', items: [EMPTY_COLUMN_UID] },
+              ],
+              sizes: [8, 16],
+            },
+          ],
         },
       },
       structure: {} as any,
@@ -250,8 +257,38 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     (model as any).subModels = { items: [visible] };
 
     const { rows, sizes } = (model as any).getVisibleLayout();
-    // 新布局归一化会移除不在 subModels.items 中的 uid，EMPTY_COLUMN_UID 也不会在运行态显示
-    expect(rows.row1).toEqual([['v']]);
-    expect(sizes.row1).toEqual([24]);
+    // 空列是拖拽缩窄区块后的布局占位；运行态也要保留其宽度，避免剩余区块被拉满整行。
+    expect(rows.row1).toEqual([['v'], [EMPTY_COLUMN_UID]]);
+    expect(sizes.row1).toEqual([8, 16]);
+  });
+
+  it('removes rows that only contain EMPTY_COLUMN placeholders in runtime mode', () => {
+    engine.flowSettings.disable();
+
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-9',
+      props: {
+        layout: {
+          version: 2,
+          rows: [
+            {
+              id: 'row1',
+              cells: [{ id: 'cell1', items: [EMPTY_COLUMN_UID] }],
+              sizes: [24],
+            },
+          ],
+        },
+      },
+      structure: {} as any,
+    });
+
+    const hidden = engine.createModel({ use: 'FlowModel', uid: 'h' }) as any;
+    hidden.hidden = true;
+    (model as any).subModels = { items: [hidden] };
+
+    const { rows, sizes } = (model as any).getVisibleLayout();
+    expect(rows).toEqual({});
+    expect(sizes).toEqual({});
   });
 });

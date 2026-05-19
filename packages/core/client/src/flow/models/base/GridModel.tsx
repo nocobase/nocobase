@@ -835,6 +835,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
    * 运行态按可见 block 过滤行/列，避免“整行都是 hidden block”但依然保留行间距占位。
    * - 配置态（flowSettingsEnabled）保持原始 rows/sizes 以便拖拽和布局编辑。
    * - 运行态仅在判断为“整列/整行都不可见”时做过滤，不写回 props/stepParams，布局元数据保持不变。
+   * - 空列是拖拽缩窄后保存的布局占位，运行态需要保留其宽度，但 Grid 渲染层不会渲染其内容。
    */
   private getVisibleLayout() {
     const rawLayout = this.normalizeLayoutFromSource();
@@ -862,46 +863,52 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     }
 
     const modelByUid = new Map(items.map((m: FlowModel) => [m.uid, m]));
+    type VisibleCellEntry = {
+      cell: GridLayoutV2['rows'][number]['cells'][number];
+      size: number;
+      hasVisibleContent: boolean;
+    };
 
     const filterRows = (rows: GridLayoutV2['rows']): GridLayoutV2['rows'] => {
       return rows
         .map((row) => {
-          const cells: GridLayoutV2['rows'][number]['cells'] = [];
-          const keptSizes: number[] = [];
-
-          row.cells.forEach((cell, index) => {
-            const sourceSize = row.sizes?.[index];
-            const keepSize = Number.isFinite(sourceSize) && sourceSize > 0 ? sourceSize : 1;
-            if (cell.rows) {
-              const childRows = filterRows(cell.rows);
-              if (childRows.length) {
-                cells.push({ ...cell, rows: childRows });
-                keptSizes.push(keepSize);
+          const cellsWithSizes = row.cells
+            .map((cell, index) => {
+              const sourceSize = row.sizes?.[index];
+              const keepSize = Number.isFinite(sourceSize) && sourceSize > 0 ? sourceSize : 1;
+              if (cell.rows) {
+                const childRows = filterRows(cell.rows);
+                if (childRows.length) {
+                  return { cell: { ...cell, rows: childRows }, size: keepSize, hasVisibleContent: true };
+                }
+                return null;
               }
-              return;
-            }
 
-            const cellItems = (cell.items || []).filter((uid) => {
-              if (uid === EMPTY_COLUMN_UID) {
-                return false;
+              const cellItems = (cell.items || []).filter((uid) => {
+                if (uid === EMPTY_COLUMN_UID) {
+                  return true;
+                }
+                return modelByUid.get(uid)?.hidden !== true;
+              });
+              const hasVisibleContent = cellItems.some((uid) => {
+                if (uid === EMPTY_COLUMN_UID) return false;
+                const model = modelByUid.get(uid);
+                return !model || !model.hidden;
+              });
+              const hasEmptyPlaceholder = cellItems.includes(EMPTY_COLUMN_UID);
+              if (hasVisibleContent || hasEmptyPlaceholder) {
+                return { cell: { ...cell, items: cellItems }, size: keepSize, hasVisibleContent };
               }
-              return modelByUid.get(uid)?.hidden !== true;
-            });
-            const hasVisibleItem = cellItems.some((uid) => {
-              const model = modelByUid.get(uid);
-              return !model || !model.hidden;
-            });
-            if (hasVisibleItem) {
-              cells.push({ ...cell, items: cellItems });
-              keptSizes.push(keepSize);
-            }
-          });
+              return null;
+            })
+            .filter(Boolean) as VisibleCellEntry[];
+          const hasVisibleContent = cellsWithSizes.some((entry) => entry.hasVisibleContent);
 
-          return cells.length
+          return hasVisibleContent
             ? {
                 ...row,
-                cells,
-                sizes: keptSizes,
+                cells: cellsWithSizes.map((entry) => entry.cell),
+                sizes: cellsWithSizes.map((entry) => entry.size),
               }
             : null;
         })
