@@ -9,9 +9,8 @@
 
 const chalk = require('chalk');
 const { Command } = require('commander');
-const { run, isDev } = require('../util');
+const { run, isDev, storagePathJoin } = require('../util');
 const { getInstanceIdAsync } = require('@nocobase/license-kit');
-const path = require('path');
 const fs = require('fs');
 const { logger } = require('../logger');
 
@@ -26,8 +25,8 @@ module.exports = (cli) => {
     .option('--force', 'Force generate InstanceID')
     .action(async (options) => {
       logger.info('Generating InstanceID...');
-      const dir = path.resolve(process.cwd(), 'storage/.license');
-      const filePath = path.resolve(dir, 'instance-id');
+      const dir = storagePathJoin('.license');
+      const filePath = storagePathJoin('.license', 'instance-id');
       if (fs.existsSync(filePath) && !options.force) {
         logger.info('InstanceID already exists at ' + filePath);
         return;
