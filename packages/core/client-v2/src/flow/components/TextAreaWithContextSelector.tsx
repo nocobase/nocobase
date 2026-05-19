@@ -20,7 +20,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Input } from 'antd';
 import { css } from '@emotion/css';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
-import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
+import { FlowContextSelector, useFlowContext, type MetaTreeNode } from '@nocobase/flow-engine';
 
 export interface TextAreaWithContextSelectorProps {
   value?: string;
@@ -29,6 +29,20 @@ export interface TextAreaWithContextSelectorProps {
   rows?: number;
   maxRows?: number;
   style?: React.CSSProperties;
+  disabled?: boolean;
+  /**
+   * Custom meta tree for the variable picker. Accepts an array, a sync getter,
+   * or an async getter — same shape as `FlowContextSelector`'s `metaTree`. If
+   * omitted, the full `ctx.getPropertyMetaTree()` is used (legacy default).
+   */
+  metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  /**
+   * Format a picked meta node into the string inserted at the caret. When
+   * omitted, the FlowContextSelector default (`{{ ctx.X.Y }}`) is used.
+   * Override to match a different storage convention — e.g. NocoBase server
+   * templates use `{{$X.Y}}` without the `ctx.` prefix.
+   */
+  formatPathToValue?: (meta: MetaTreeNode) => string;
 }
 
 /**
@@ -41,6 +55,9 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
   rows = 3,
   maxRows = 24,
   style,
+  disabled,
+  metaTree,
+  formatPathToValue,
 }) => {
   const flowCtx = useFlowContext();
   const [innerValue, setInnerValue] = useState<string>(value || '');
@@ -76,10 +93,11 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
       const next = prev.slice(0, start) + toInsert + prev.slice(end);
       setInnerValue(next);
       onChange?.(next);
-      // 恢复光标位置并聚焦
+      // 插入后选中刚插入的变量文本，与 v1 RawTextArea 行为一致：
+      // 用户可立即按删除键移除整段变量，或继续输入直接替换。
       requestAnimationFrame(() => {
         const pos = start + (toInsert?.length || 0);
-        el.setSelectionRange(pos, pos);
+        el.setSelectionRange(start, pos);
         el.focus();
       });
     },
@@ -94,8 +112,8 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
     [insertAtCaret],
   );
 
-  // 使用函数形式提供变量树，保证与运行时上下文一致
-  const metaTree = useMemo(() => () => flowCtx.getPropertyMetaTree?.(), [flowCtx]);
+  // 使用函数形式提供变量树，保证与运行时上下文一致；当外部传入则尊重外部值。
+  const resolvedMetaTree = useMemo(() => metaTree ?? (() => flowCtx.getPropertyMetaTree?.()), [flowCtx, metaTree]);
 
   return (
     <div style={{ position: 'relative', width: '100%', ...style }}>
@@ -105,6 +123,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
         onChange={handleTextChange}
         autoSize={{ minRows: rows, maxRows }}
         placeholder={placeholder}
+        disabled={disabled}
         style={{ width: '100%' }}
       />
       <div
@@ -116,7 +135,12 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
           lineHeight: 0,
         }}
       >
-        <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)}>
+        <FlowContextSelector
+          metaTree={resolvedMetaTree}
+          disabled={disabled}
+          formatPathToValue={formatPathToValue}
+          onChange={(val) => handleVariableSelected(val)}
+        >
           <Button
             type="default"
             style={{ fontStyle: 'italic', fontFamily: 'New York, Times New Roman, Times, serif' }}

@@ -121,22 +121,35 @@ export class PluginBlockReferenceServer extends Plugin {
       }
     };
 
-    const removeUsagesByInstance = async (
-      instanceUid: string,
-      _options: any,
-      { transaction }: { transaction?: any } = {},
-    ) => {
+    const removeUsagesByInstances = async (instanceUids: string[], { transaction }: { transaction?: any } = {}) => {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
-      await usageRepo.destroy({ filter: { modelUid: instanceUid }, transaction });
+      const uids = _.uniq(instanceUids.map(String).filter(Boolean));
+      for (const chunk of _.chunk(uids, 500)) {
+        await usageRepo.destroy({
+          filter: {
+            modelUid: {
+              $in: chunk,
+            },
+          },
+          transaction,
+        });
+      }
     };
 
     // 区块删除时自动清理 usage 记录，避免垃圾数据
     this.db.on('flowModels.afterDestroy', async (instance: any, { transaction }: any = {}) => {
       const instanceUid = instance?.get?.('uid') || instance?.uid;
       if (!instanceUid) return;
-      const options = parseOptions(instance?.get?.('options') || instance?.options);
-      await removeUsagesByInstance(instanceUid, options, { transaction });
+      await removeUsagesByInstances([instanceUid], { transaction });
     });
+
+    this.db.on(
+      'flowModels.beforeRemoveTree',
+      async ({ uids }: { rootUid?: string; uids?: string[] } = {}, options: { transaction?: any } = {}) => {
+        if (!uids?.length) return;
+        await removeUsagesByInstances(uids, { transaction: options?.transaction });
+      },
+    );
 
     // 区块保存时维护 usage：
     // - referenceSettings.useTemplate.templateUid（且 mode!==copy）
@@ -201,11 +214,7 @@ export class PluginBlockReferenceServer extends Plugin {
         for (const node of nodes) {
           const instanceUid = node?.uid;
           if (!instanceUid) continue;
-          const options = parseOptions(node?.options || {});
-          if (node?.parent && !options?.parentId) {
-            options.parentId = node.parent;
-          }
-          await removeUsagesByInstance(instanceUid, options, { transaction: ctx.transaction });
+          await removeUsagesByInstances([instanceUid], { transaction: ctx.transaction });
         }
         return;
       }

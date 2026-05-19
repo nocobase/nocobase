@@ -22,12 +22,110 @@ function isNumeric(str: any) {
   return !isNaN(str as any) && !isNaN(parseFloat(str));
 }
 
-function resolveTimeZoneFromCtx(ctx) {
-  if (ctx?.get && ctx?.get('X-Timezone')) {
-    return ctx.get('X-Timezone');
+export function getTimeZoneOffsetMinutes(timezone: string | number | null | undefined) {
+  if (typeof timezone === 'number' && Number.isFinite(timezone)) {
+    return timezone;
   }
 
-  return 0;
+  if (typeof timezone !== 'string') {
+    return null;
+  }
+
+  const normalized = timezone.trim().toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized === 'Z' || normalized === 'UTC') {
+    return 0;
+  }
+
+  const match = normalized.match(/^([+-])(\d{2})(?::?(\d{2}))?$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, sign, hours, minutes = '00'] = match;
+  const totalMinutes = Number(hours) * 60 + Number(minutes);
+  return sign === '+' ? totalMinutes : -totalMinutes;
+}
+
+export function resolveTimeZoneFromCtx(ctx) {
+  let timezone;
+
+  if (typeof ctx?.get === 'function') {
+    timezone = ctx.get('X-Timezone') || ctx.get('x-timezone');
+  } else if (typeof ctx?.request?.get === 'function') {
+    timezone = ctx.request.get('X-Timezone') || ctx.request.get('x-timezone');
+  }
+
+  timezone =
+    timezone ||
+    ctx?.request?.headers?.['x-timezone'] ||
+    ctx?.request?.headers?.['X-Timezone'] ||
+    ctx?.request?.header?.['x-timezone'] ||
+    ctx?.request?.header?.['X-Timezone'] ||
+    ctx?.req?.headers?.['x-timezone'] ||
+    ctx?.req?.headers?.['X-Timezone'];
+
+  if (timezone !== undefined && timezone !== null && timezone !== '') {
+    return timezone;
+  }
+
+  return null;
+}
+
+function toISOWithTimezone(
+  dateInfo: {
+    year: string;
+    month: string;
+    day: string;
+    hour?: string;
+    minute?: string;
+    second?: string;
+  },
+  timezone: string | number | null,
+) {
+  const offsetMinutes = getTimeZoneOffsetMinutes(timezone);
+  if (offsetMinutes == null) {
+    return null;
+  }
+
+  const utcMillis =
+    Date.UTC(
+      Number(dateInfo.year),
+      Number(dateInfo.month) - 1,
+      Number(dateInfo.day),
+      Number(dateInfo.hour || '00'),
+      Number(dateInfo.minute || '00'),
+      Number(dateInfo.second || '00'),
+      0,
+    ) -
+    offsetMinutes * 60 * 1000;
+
+  return new Date(utcMillis).toISOString();
+}
+
+function excelSerialToISO(value: number | string, timezone: string | number | null) {
+  const wallClockUtcDate = getJsDateFromExcel(value);
+  const offsetMinutes = getTimeZoneOffsetMinutes(timezone);
+  if (offsetMinutes == null) {
+    return wallClockUtcDate.toISOString();
+  }
+
+  const utcMillis =
+    Date.UTC(
+      wallClockUtcDate.getUTCFullYear(),
+      wallClockUtcDate.getUTCMonth(),
+      wallClockUtcDate.getUTCDate(),
+      wallClockUtcDate.getUTCHours(),
+      wallClockUtcDate.getUTCMinutes(),
+      wallClockUtcDate.getUTCSeconds(),
+      wallClockUtcDate.getUTCMilliseconds(),
+    ) -
+    offsetMinutes * 60 * 1000;
+
+  return new Date(utcMillis).toISOString();
 }
 
 export class DatetimeInterface extends BaseInterface {
@@ -48,14 +146,23 @@ export class DatetimeInterface extends BaseInterface {
     return null;
   }
 
-  protected formatDateTimeToISO(dateInfo: {
-    year: string;
-    month: string;
-    day: string;
-    hour?: string;
-    minute?: string;
-    second?: string;
-  }) {
+  protected formatDateTimeToISO(
+    dateInfo: {
+      year: string;
+      month: string;
+      day: string;
+      hour?: string;
+      minute?: string;
+      second?: string;
+    },
+    ctx?: any,
+  ) {
+    const timezone = resolveTimeZoneFromCtx(ctx);
+    const timezoneAwareISO = toISOWithTimezone(dateInfo, timezone);
+    if (timezoneAwareISO) {
+      return timezoneAwareISO;
+    }
+
     const { year, month, day, hour = '00', minute = '00', second = '00' } = dateInfo;
     const m = dayjs(`${year}-${month}-${day} ${hour}:${minute}:${second}.000`);
     return m.toISOString();
@@ -77,7 +184,7 @@ export class DatetimeInterface extends BaseInterface {
     if (typeof value === 'string') {
       const dateInfo = this.parseDateString(value);
       if (dateInfo) {
-        return this.formatDateTimeToISO(dateInfo);
+        return this.formatDateTimeToISO(dateInfo, ctx);
       }
     }
 
@@ -86,7 +193,7 @@ export class DatetimeInterface extends BaseInterface {
     } else if (isDate(value)) {
       return value;
     } else if (isNumeric(value)) {
-      return getJsDateFromExcel(value).toISOString();
+      return excelSerialToISO(value, resolveTimeZoneFromCtx(ctx));
     } else if (typeof value === 'string') {
       return value;
     }
@@ -95,7 +202,7 @@ export class DatetimeInterface extends BaseInterface {
   }
 
   toString(value: any, ctx?: any) {
-    const utcOffset = resolveTimeZoneFromCtx(ctx);
+    const utcOffset = resolveTimeZoneFromCtx(ctx) ?? 0;
     const props = this.options?.uiSchema?.['x-component-props'] ?? {};
     const format = getDefaultFormat(props);
     const m = str2moment(value, { ...props, utcOffset });

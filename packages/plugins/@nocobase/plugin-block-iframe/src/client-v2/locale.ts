@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr as _tExpr } from '@nocobase/flow-engine';
-import { useTranslation as useT } from 'react-i18next';
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from './../../package.json';
 
-export const NAMESPACE = 'block-iframe';
+export const NAMESPACE = pkg.name;
 
 export function tExpr(key: string) {
-  return _tExpr(key, { ns: [NAMESPACE, 'client'] });
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
 }
 
-export function useTranslation() {
-  return useT([NAMESPACE, 'client'], {
-    nsMode: 'fallback',
-  });
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string, options?: any) => engine.context.t(str, { ns: [pkg.name, 'client'], ...options });
 }

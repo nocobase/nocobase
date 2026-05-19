@@ -8,6 +8,8 @@
  */
 
 import { spawn } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import { resolveCliHomeRoot } from '../lib/cli-home.js';
@@ -16,6 +18,7 @@ const originalNbLocale = process.env.NB_LOCALE;
 const TEST_CWD = '/tmp/app2';
 const TEST_STORAGE_PATH = path.join(TEST_CWD, 'storage', 'test');
 const TEST_POSTGRES_DATA_DIR = path.resolve(TEST_STORAGE_PATH, 'db', 'postgres');
+const TEST_CLI_ROOTS: string[] = [];
 
 const mocks = vi.hoisted(() => ({
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) =>
@@ -55,9 +58,7 @@ const mocks = vi.hoisted(() => ({
   printInfo: vi.fn(),
   announceTargetEnv: vi.fn((envName: string) => mocks.printInfo(`Target env: ${envName}`)),
   isInteractiveTerminal: vi.fn(),
-  promptConfirm: vi.fn(),
-  promptIsCancel: vi.fn((value: unknown) => value === Symbol.for('cancel')),
-  promptCancel: vi.fn(),
+  crossEnvConfirm: vi.fn(),
   renderTable: vi.fn((headers: string[], rows: string[][]) => [headers.join('|'), ...rows.map((row) => row.join('|'))].join('\n')),
   listEnvs: vi.fn(),
   getCurrentEnvName: vi.fn(),
@@ -149,10 +150,8 @@ vi.mock('../lib/ui.js', () => ({
   renderTable: mocks.renderTable,
 }));
 
-vi.mock('@clack/prompts', () => ({
-  confirm: mocks.promptConfirm,
-  isCancel: mocks.promptIsCancel,
-  cancel: mocks.promptCancel,
+vi.mock('../lib/inquirer.ts', () => ({
+  confirm: mocks.crossEnvConfirm,
 }));
 
 vi.mock('../lib/run-npm.js', () => ({
@@ -249,7 +248,7 @@ beforeEach(() => {
   mocks.fsRm.mockResolvedValue(undefined);
   mocks.fsMkdir.mockResolvedValue(undefined);
   mocks.fsReaddir.mockResolvedValue(['package.json']);
-  mocks.promptIsCancel.mockImplementation((value: unknown) => value === Symbol.for('cancel'));
+  mocks.crossEnvConfirm.mockResolvedValue(true);
   mocks.childSpawnCalls.length = 0;
   mocks.childOnceHandlers.length = 0;
   vi.mocked(spawn).mockImplementation(
@@ -308,7 +307,6 @@ beforeEach(() => {
   mocks.formatDbCheckAddress.mockImplementation((config: { host: string; port: number; database: string }) =>
     `${config.host}:${config.port}/${config.database}`,
   );
-  mocks.promptConfirm.mockResolvedValue(true);
   mocks.isInteractiveTerminal.mockReturnValue(true);
   mocks.removeEnv.mockResolvedValue({
     removed: 'local',
@@ -324,9 +322,23 @@ afterEach(() => {
   } else {
     process.env.NB_LOCALE = originalNbLocale;
   }
+  delete process.env.NB_CLI_ROOT;
   vi.resetAllMocks();
   vi.unstubAllGlobals();
 });
+
+afterEach(() => {
+  for (const dir of TEST_CLI_ROOTS.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+async function withTempCliRoot(run: (root: string) => Promise<void>) {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'nocobase-cli-app-mgmt-'));
+  TEST_CLI_ROOTS.push(root);
+  process.env.NB_CLI_ROOT = root;
+  await run(root);
+}
 
 function createCommandHarness(parseResult: { args?: Record<string, any>; flags?: Record<string, any> }, runCommand?: ReturnType<typeof vi.fn>) {
   return {
@@ -882,6 +894,62 @@ test('start recreates missing docker app containers through docker run', async (
   ]);
 });
 
+test('start recreates docker app containers when --recreate is provided', async () => {
+  const appManagedResources = await import('../lib/app-managed-resources.js');
+  const recreateSavedDockerApp = vi
+    .spyOn(appManagedResources, 'recreateSavedDockerApp')
+    .mockResolvedValue(undefined);
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      appPort: 13000,
+      config: {
+        envFile: './docker-local/.env',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      recreate: true,
+      verbose: true,
+    },
+  });
+
+  try {
+    await Start.prototype.run.call(command);
+
+    expect(mocks.startDockerContainer).not.toHaveBeenCalled();
+    expect(mocks.run).toHaveBeenCalledWith(
+      'docker',
+      ['rm', '-f', 'nb-demo-docker-local-app'],
+      { errorName: 'docker rm', stdio: 'inherit' },
+    );
+    expect(recreateSavedDockerApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'docker',
+        envName: 'docker-local',
+        containerName: 'nb-demo-docker-local-app',
+      }),
+      { verbose: true },
+    );
+    expect(mocks.waitForAppReady).toHaveBeenCalledWith({
+      envName: 'docker-local',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      containerName: 'nb-demo-docker-local-app',
+      logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
+    });
+  } finally {
+    recreateSavedDockerApp.mockRestore();
+  }
+});
+
 test('start rejects local-only flags for docker envs', async () => {
   const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -1037,6 +1105,16 @@ test('stop shows product-style local failure guidance', async () => {
 
 test('restart runs stop before start and forwards startup flags', async () => {
   const { default: Restart } = await import('../commands/app/restart.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+    },
+  });
   const runCommand = vi.fn(async () => undefined);
   const command = createCommandHarness({
     flags: {
@@ -1061,6 +1139,16 @@ test('restart runs stop before start and forwards startup flags', async () => {
 
 test('restart does not forward default daemon flag unless the user provides it', async () => {
   const { default: Restart } = await import('../commands/app/restart.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'docker-local',
+    source: 'local',
+    projectRoot: '/tmp/docker-local',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+    },
+  });
   const runCommand = vi.fn(async () => undefined);
   const command = createCommandHarness({
     flags: {
@@ -1075,6 +1163,127 @@ test('restart does not forward default daemon flag unless the user provides it',
     ['app:stop', ['--env', 'docker-local']],
     ['app:start', ['--env', 'docker-local']],
   ]);
+});
+
+test('restart recreates docker envs so envFile changes can take effect', async () => {
+  const appManagedResources = await import('../lib/app-managed-resources.js');
+  const recreateSavedDockerApp = vi
+    .spyOn(appManagedResources, 'recreateSavedDockerApp')
+    .mockResolvedValue(undefined);
+  const { default: Restart } = await import('../commands/app/restart.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      appPort: 13000,
+      config: {
+        envFile: './docker-local/.env',
+      },
+    },
+  });
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      verbose: true,
+    },
+  }, runCommand);
+
+  try {
+    await Restart.prototype.run.call(command);
+
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(mocks.stopDockerContainer).toHaveBeenCalledWith('nb-demo-docker-local-app', {
+      stdio: 'inherit',
+    });
+    expect(mocks.run).toHaveBeenCalledWith(
+      'docker',
+      ['rm', '-f', 'nb-demo-docker-local-app'],
+      { errorName: 'docker rm', stdio: 'inherit' },
+    );
+    expect(recreateSavedDockerApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'docker',
+        envName: 'docker-local',
+        containerName: 'nb-demo-docker-local-app',
+      }),
+      { verbose: true },
+    );
+    expect(mocks.waitForAppReady).toHaveBeenCalledWith({
+      envName: 'docker-local',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      containerName: 'nb-demo-docker-local-app',
+      logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
+    });
+  } finally {
+    recreateSavedDockerApp.mockRestore();
+  }
+});
+
+test('restart recreates docker envs by default', async () => {
+  const appManagedResources = await import('../lib/app-managed-resources.js');
+  const recreateSavedDockerApp = vi
+    .spyOn(appManagedResources, 'recreateSavedDockerApp')
+    .mockResolvedValue(undefined);
+  const { default: Restart } = await import('../commands/app/restart.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      appPort: 13000,
+      config: {
+        envFile: './docker-local/.env',
+      },
+    },
+  });
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      verbose: true,
+    },
+  }, runCommand);
+
+  try {
+    await Restart.prototype.run.call(command);
+
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(mocks.stopDockerContainer).toHaveBeenCalledWith('nb-demo-docker-local-app', {
+      stdio: 'inherit',
+    });
+    expect(mocks.run).toHaveBeenCalledWith(
+      'docker',
+      ['rm', '-f', 'nb-demo-docker-local-app'],
+      { errorName: 'docker rm', stdio: 'inherit' },
+    );
+    expect(recreateSavedDockerApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'docker',
+        envName: 'docker-local',
+        containerName: 'nb-demo-docker-local-app',
+      }),
+      { verbose: true },
+    );
+    expect(mocks.waitForAppReady).toHaveBeenCalledWith({
+      envName: 'docker-local',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      containerName: 'nb-demo-docker-local-app',
+      logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
+    });
+  } finally {
+    recreateSavedDockerApp.mockRestore();
+  }
 });
 
 test('start rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
@@ -2924,12 +3133,10 @@ test('down --all confirms before removing everything in interactive mode', async
 
   await Down.prototype.run.call(command);
 
-  expect(mocks.promptConfirm.mock.calls).toEqual([[
+  expect(mocks.crossEnvConfirm.mock.calls).toEqual([[
     {
       message: 'Delete everything for "docker-local"? This removes the app, managed containers, storage data, and the saved CLI env config.',
-      active: 'yes',
-      inactive: 'no',
-      initialValue: false,
+      default: false,
     },
   ]]);
   expect(mocks.fsRm.mock.calls.at(-1)).toEqual([
@@ -2954,7 +3161,7 @@ test('down --all stops when the confirmation is canceled', async () => {
       },
     },
   });
-  mocks.promptConfirm.mockResolvedValue(Symbol.for('cancel'));
+  mocks.crossEnvConfirm.mockRejectedValue(new Error('canceled'));
 
   const command = createCommandHarness({
     flags: {
@@ -2966,7 +3173,6 @@ test('down --all stops when the confirmation is canceled', async () => {
 
   await Down.prototype.run.call(command);
 
-  expect(mocks.promptCancel.mock.calls).toEqual([['Down cancelled.']]);
   expect(mocks.run.mock.calls.length).toBe(0);
   expect(mocks.fsRm.mock.calls.length).toBe(0);
   expect(mocks.removeEnv.mock.calls.length).toBe(0);
@@ -2998,12 +3204,10 @@ test('down --all confirmation calls out current env when --env is omitted', asyn
 
   await Down.prototype.run.call(command);
 
-  expect(mocks.promptConfirm.mock.calls).toEqual([[
+  expect(mocks.crossEnvConfirm.mock.calls).toEqual([[
     {
       message: 'Delete everything for current env "docker-local"? This removes the app, managed containers, storage data, and the saved CLI env config.',
-      active: 'yes',
-      inactive: 'no',
-      initialValue: false,
+      default: false,
     },
   ]]);
 });
@@ -3367,117 +3571,125 @@ test('upgrade rejects --skip-code-update together with --version', async () => {
 
 test('upgrade refreshes docker envs by pulling the image and recreating the container', async () => {
   const { default: Upgrade } = await import('../commands/app/upgrade.js');
-  mocks.resolveManagedAppRuntime.mockResolvedValue({
-    kind: 'docker',
-    envName: 'docker-local',
-    source: 'docker',
-    containerName: 'nb-demo-docker-local-app',
-    workspaceName: 'nb-demo',
-    dockerNetworkName: 'nb-demo',
-    dockerContainerPrefix: 'nb-demo',
-    env: {
-      baseUrl: 'http://127.0.0.1:13000/api',
-      appPort: 13000,
-      config: {
-        dockerRegistry: 'nocobase/nocobase',
-        dockerPlatform: 'linux/arm64',
-        downloadVersion: 'alpha',
-        storagePath: '/tmp/storage/local',
-        appKey: 'app-key',
-        timezone: 'Asia/Shanghai',
-        dbDialect: 'postgres',
-        dbHost: 'nb-demo-postgres',
-        dbPort: '5432',
-        dbDatabase: 'nocobase',
-        dbUser: 'nocobase',
-        dbPassword: 'nocobase',
+  await withTempCliRoot(async (cliRoot) => {
+    const envDir = path.join(cliRoot, 'docker-local');
+    mkdirSync(envDir, { recursive: true });
+    writeFileSync(path.join(envDir, '.env'), 'FOO=bar\n');
+
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'docker',
+      envName: 'docker-local',
+      source: 'docker',
+      containerName: 'nb-demo-docker-local-app',
+      workspaceName: 'nb-demo',
+      dockerNetworkName: 'nb-demo',
+      dockerContainerPrefix: 'nb-demo',
+      env: {
+        baseUrl: 'http://127.0.0.1:13000/api',
+        appPort: 13000,
+        config: {
+          dockerRegistry: 'nocobase/nocobase',
+          dockerPlatform: 'linux/arm64',
+          downloadVersion: 'alpha',
+          storagePath: '/tmp/storage/local',
+          appKey: 'app-key',
+          timezone: 'Asia/Shanghai',
+          dbDialect: 'postgres',
+          dbHost: 'nb-demo-postgres',
+          dbPort: '5432',
+          dbDatabase: 'nocobase',
+          dbUser: 'nocobase',
+          dbPassword: 'nocobase',
+        },
       },
-    },
-  });
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      text: async () => 'ok',
-    })),
-  );
-  const runCommand = vi.fn(async () => undefined);
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        text: async () => 'ok',
+      })),
+    );
+    const runCommand = vi.fn(async () => undefined);
 
-  const command = createCommandHarness({
-    flags: {
-      env: 'docker-local',
-    },
-  }, runCommand);
+    const command = createCommandHarness({
+      flags: {
+        env: 'docker-local',
+      },
+    }, runCommand);
 
-  await Upgrade.prototype.run.call(command);
+    await Upgrade.prototype.run.call(command);
 
-  expect(runCommand.mock.calls).toEqual([[
-    'source:download',
-    [
-      '-y',
-      '--no-intro',
-      '--source',
-      'docker',
-      '--replace',
-      '--docker-registry',
-      'nocobase/nocobase',
-      '--version',
-      'alpha',
-      '--docker-platform',
-      'linux/arm64',
-    ],
-  ]]);
-  expect(mocks.upsertEnv).not.toHaveBeenCalled();
-  expect(mocks.stopDockerContainer.mock.calls).toEqual([[
-    'nb-demo-docker-local-app',
-    { stdio: 'ignore' },
-  ]]);
-  expect(mocks.run.mock.calls).toEqual([
-    [
-      'docker',
-      ['rm', '-f', 'nb-demo-docker-local-app'],
-      { errorName: 'docker rm', stdio: 'ignore' },
-    ],
-    [
-      'docker',
+    expect(runCommand.mock.calls).toEqual([[
+      'source:download',
       [
-        'run',
-        '-d',
-        '--name',
-        'nb-demo-docker-local-app',
-        '--restart',
-        'always',
-        '--network',
-        'nb-demo',
-        '-p',
-        '13000:80',
-        '-e',
-        'APP_KEY=app-key',
-        '-e',
-        'DB_DIALECT=postgres',
-        '-e',
-        'DB_HOST=nb-demo-postgres',
-        '-e',
-        'DB_PORT=5432',
-        '-e',
-        'DB_DATABASE=nocobase',
-        '-e',
-        'DB_USER=nocobase',
-        '-e',
-        'DB_PASSWORD=nocobase',
-        '-e',
-        'TZ=Asia/Shanghai',
-        '-v',
-        '/tmp/storage/local:/app/nocobase/storage',
-        'nocobase/nocobase:alpha-full',
+        '-y',
+        '--no-intro',
+        '--source',
+        'docker',
+        '--replace',
+        '--docker-registry',
+        'nocobase/nocobase',
+        '--version',
+        'alpha',
+        '--docker-platform',
+        'linux/arm64',
       ],
-      { errorName: 'docker run', stdio: 'ignore' },
-    ],
-  ]);
-  expect(mocks.succeedTask.mock.calls.at(-1)).toEqual([
-    'NocoBase has been upgraded for "docker-local" at http://127.0.0.1:13000.',
-  ]);
+    ]]);
+    expect(mocks.upsertEnv).not.toHaveBeenCalled();
+    expect(mocks.stopDockerContainer.mock.calls).toEqual([[
+      'nb-demo-docker-local-app',
+      { stdio: 'ignore' },
+    ]]);
+    expect(mocks.run.mock.calls).toEqual([
+      [
+        'docker',
+        ['rm', '-f', 'nb-demo-docker-local-app'],
+        { errorName: 'docker rm', stdio: 'ignore' },
+      ],
+      [
+        'docker',
+        [
+          'run',
+          '-d',
+          '--name',
+          'nb-demo-docker-local-app',
+          '--restart',
+          'always',
+          '--network',
+          'nb-demo',
+          '-p',
+          '13000:80',
+          '--env-file',
+          path.resolve(cliRoot, 'docker-local/.env'),
+          '-e',
+          'APP_KEY=app-key',
+          '-e',
+          'DB_DIALECT=postgres',
+          '-e',
+          'DB_HOST=nb-demo-postgres',
+          '-e',
+          'DB_PORT=5432',
+          '-e',
+          'DB_DATABASE=nocobase',
+          '-e',
+          'DB_USER=nocobase',
+          '-e',
+          'DB_PASSWORD=nocobase',
+          '-e',
+          'TZ=Asia/Shanghai',
+          '-v',
+          '/tmp/storage/local:/app/nocobase/storage',
+          'nocobase/nocobase:alpha-full',
+        ],
+        { errorName: 'docker run', stdio: 'ignore' },
+      ],
+    ]);
+    expect(mocks.succeedTask.mock.calls.at(-1)).toEqual([
+      'NocoBase has been upgraded for "docker-local" at http://127.0.0.1:13000.',
+    ]);
+  });
 });
 
 test('upgrade uses --version for docker envs and saves it on success', async () => {

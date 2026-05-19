@@ -17,7 +17,7 @@ import {
   KanbanGroupOptionsTable,
   KanbanGroupingSelector,
   KanbanCreateSortFieldSelect,
-} from '../models';
+} from '../../client-v2/models';
 
 describe('plugin-kanban v2 registration', () => {
   test('load registers v2 models and grouping components', async () => {

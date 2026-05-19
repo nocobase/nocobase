@@ -14,6 +14,7 @@ import { render, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
 import { useCodeRunner } from '../hooks/useCodeRunner';
 import {
+  FlowContext,
   FlowEngine,
   FlowModel,
   FlowEngineProvider,
@@ -21,6 +22,7 @@ import {
   ElementProxy,
   createSafeWindow,
   createSafeDocument,
+  createViewScopedEngine,
 } from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
 
@@ -29,6 +31,20 @@ class DummyJsAutoModel extends FlowModel {
   render() {
     return <span data-testid={`dummy-${this.uid}`} ref={this.context.ref as any} />;
   }
+}
+
+function registerRunJsPreviewFlow(model: FlowModel) {
+  model.registerFlow('jsSettings', {
+    steps: {
+      runJs: {
+        useRawParams: true,
+        async handler(ctx) {
+          const code = ctx?.inputArgs?.preview?.code || '';
+          return ctx.runjs(code, undefined, { preprocessTemplates: true });
+        },
+      },
+    },
+  });
 }
 
 describe('useCodeRunner (beforeRender)', () => {
@@ -190,6 +206,71 @@ describe('useCodeRunner (beforeRender)', () => {
       const nodes = Array.from(document.querySelectorAll('[data-testid="dummy-m2"]')) as HTMLElement[];
       expect(nodes.some((el) => el.getAttribute('data-preview') === 'FORKED')).toBe(true);
     });
+  });
+
+  it('keeps popup context when a top scoped engine has another model with the same uid', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DummyJsAutoModel });
+    const model = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'same-popup-uid' });
+    model.context.defineProperty('popup', {
+      value: {
+        uid: 'popup-view',
+        record: { username: 'alice' },
+      },
+    });
+    registerRunJsPreviewFlow(model);
+
+    const scopedEngine = createViewScopedEngine(engine);
+    const topModel = scopedEngine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'same-popup-uid' });
+    registerRunJsPreviewFlow(topModel);
+
+    const { result } = renderHook(() => useCodeRunner(model.context, 'v1'));
+    let runResult: any;
+    await act(async () => {
+      runResult = await result.current.run(`
+const currentUsername = await ctx.getVar('ctx.popup.record.username');
+console.log(currentUsername);
+return currentUsername;
+`);
+    });
+
+    expect(runResult?.success).toBe(true);
+    expect(runResult?.value).toBe('alice');
+    expect(result.current.logs.some((l) => l.level === 'log' && l.msg.includes('alice'))).toBe(true);
+  });
+
+  it('runs direct event-flow previews against the popup-bound model context when the settings view has no popup', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DummyJsAutoModel });
+    const model = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'direct-popup-uid' });
+    model.context.defineProperty('popup', {
+      value: {
+        uid: 'popup-view',
+        record: { username: 'alice' },
+      },
+    });
+
+    const scopedEngine = createViewScopedEngine(engine);
+    scopedEngine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'direct-popup-uid' });
+
+    const settingsCtx = new FlowContext();
+    settingsCtx.defineProperty('engine', { value: scopedEngine });
+    settingsCtx.defineProperty('popup', { value: undefined });
+    settingsCtx.addDelegate(model.context);
+
+    const { result } = renderHook(() => useCodeRunner(settingsCtx as any, 'v1'));
+    let runResult: any;
+    await act(async () => {
+      runResult = await result.current.run(`
+const currentUsername = await ctx.getVar('ctx.popup.record.username');
+console.log(currentUsername);
+return currentUsername;
+`);
+    });
+
+    expect(runResult?.success).toBe(true);
+    expect(runResult?.value).toBe('alice');
+    expect(result.current.logs.some((l) => l.level === 'log' && l.msg.includes('alice'))).toBe(true);
   });
 
   it('compiles JSX in preview and renders antd Input without syntax error', async () => {

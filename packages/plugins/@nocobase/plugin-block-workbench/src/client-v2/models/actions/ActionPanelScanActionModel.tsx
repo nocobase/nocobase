@@ -10,54 +10,72 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { LeftOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
+import { css } from '@emotion/css';
+import { theme } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import { ActionModel } from '@nocobase/client-v2';
 import { QRCodeScannerInner } from './components/qrcode-scanner';
-import { tExpr } from '../../locale';
+import { NAMESPACE, tExpr } from '../../locale';
 
-const QRCodeScanner = (props) => {
+type QRCodeScannerProps = {
+  app?: any;
+  navigate: (path: string) => void;
+  onClose?: () => void;
+  t: (key: string, options?: Record<string, any>) => string;
+};
+
+const QRCodeScanner = (props: QRCodeScannerProps) => {
   const [visible, setVisible] = useState(true);
-  const { t } = useTranslation('block-workbench');
-
-  const style: React.CSSProperties = {
-    position: 'fixed',
-    width: '100%',
-    height: '100%',
-    background: 'black',
-    zIndex: 1001,
-    top: 0,
-    left: 0,
-    overflow: 'hidden',
-  };
-  const backIconStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: '22px',
-    left: '20px',
-    zIndex: 1003,
-    color: 'white',
-    fontSize: '1.8em',
-    fontWeight: 'bold',
+  const { token } = theme.useToken();
+  const close = () => {
+    setVisible(false);
+    props.onClose?.();
   };
 
-  const titleStyle: React.CSSProperties = {
-    position: 'absolute',
-    color: 'white',
-    fontSize: '1.5em',
-    left: 0,
-    right: 0,
-    top: '20px',
-    zIndex: 1002,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    textAlign: 'center',
-  };
+  const scannerClass = css`
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: ${token.colorBgMask};
+    z-index: ${token.zIndexPopupBase + 1};
+    top: 0;
+    left: 0;
+    overflow: hidden;
+  `;
+  const backIconClass = css`
+    position: absolute;
+    top: ${token.paddingLG}px;
+    left: ${token.paddingLG}px;
+    z-index: ${token.zIndexPopupBase + 3};
+    color: ${token.colorTextLightSolid};
+    font-size: ${token.fontSizeHeading2}px;
+    font-weight: ${token.fontWeightStrong};
+  `;
+
+  const titleClass = css`
+    position: absolute;
+    color: ${token.colorTextLightSolid};
+    font-size: ${token.fontSizeHeading4}px;
+    left: 0;
+    right: 0;
+    top: ${token.paddingLG}px;
+    z-index: ${token.zIndexPopupBase + 2};
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  `;
 
   return visible ? (
-    <div style={style}>
-      <QRCodeScannerInner setVisible={setVisible} app={props.app} navigate={props.navigate} onClose={props.onClose} />
-      <LeftOutlined style={backIconStyle} onClick={() => setVisible(false)} />
-      <div style={titleStyle}>{t('Scan QR code')}</div>
+    <div className={scannerClass}>
+      <QRCodeScannerInner
+        setVisible={setVisible}
+        app={props.app}
+        navigate={props.navigate}
+        onClose={close}
+        t={props.t}
+      />
+      <LeftOutlined className={backIconClass} onClick={close} />
+      <div className={titleClass}>{props.t('Scan QR code')}</div>
     </div>
   ) : null;
 };
@@ -104,7 +122,11 @@ ActionPanelScanActionModel.registerFlow({
           container.remove();
         };
 
-        root.render(<QRCodeScanner app={ctx.app} navigate={ctx.router.navigate} onClose={handleClose} />);
+        const t = (key: string, options?: Record<string, any>) => ctx.t(key, { ns: [NAMESPACE, 'client'], ...options });
+
+        root.render(
+          <QRCodeScanner app={ctx.app} navigate={(path) => ctx.router.navigate(path)} onClose={handleClose} t={t} />,
+        );
       },
     },
   },

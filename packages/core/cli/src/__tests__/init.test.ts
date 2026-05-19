@@ -9,6 +9,10 @@
 
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
+function stripAnsi(value: string) {
+  return value.replace(/\u001B\[[0-9;]*m/g, '');
+}
+
 const mocks = vi.hoisted(() => ({
   runPromptCatalogWebUI: vi.fn(),
   runPromptCatalog: vi.fn(),
@@ -18,13 +22,10 @@ const mocks = vi.hoisted(() => ({
   updateNocoBaseSkills: vi.fn(),
   getEnv: vi.fn(),
   upsertEnv: vi.fn(),
-  promptInfo: vi.fn(),
-  promptWarn: vi.fn(),
-  promptStep: vi.fn(),
-  promptError: vi.fn(),
-  promptIntro: vi.fn(),
-  promptOutro: vi.fn(),
-  promptCancel: vi.fn(),
+  log: vi.fn(),
+  error: vi.fn(),
+  printInfo: vi.fn(),
+  printWarning: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -34,6 +35,9 @@ beforeEach(() => {
   mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
   mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.updateNocoBaseSkills.mockResolvedValue({ action: 'updated', status: {} });
+  mocks.error.mockImplementation((message: string) => {
+    throw new Error(String(message));
+  });
 });
 
 const originalNbLocale = process.env.NB_LOCALE;
@@ -111,17 +115,14 @@ vi.mock('../lib/skills-manager.ts', async (importOriginal) => {
   };
 });
 
-vi.mock('@clack/prompts', () => ({
-  intro: mocks.promptIntro,
-  log: {
-    info: mocks.promptInfo,
-    warn: mocks.promptWarn,
-    step: mocks.promptStep,
-    error: mocks.promptError,
-  },
-  outro: mocks.promptOutro,
-  cancel: mocks.promptCancel,
-}));
+vi.mock('../lib/ui.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/ui.js')>();
+  return {
+    ...actual,
+    printInfo: mocks.printInfo,
+    printWarning: mocks.printWarning,
+  };
+});
 
 test('nb init continues from the browser UI result and runs env:add for an existing app', async () => {
   const { default: Init } = await import('../commands/init.js');
@@ -165,9 +166,8 @@ test('nb init continues from the browser UI result and runs env:add for an exist
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.promptIntro).toHaveBeenCalledWith('Set Up NocoBase for Coding Agents');
   expect(mocks.runPromptCatalogWebUI.mock.calls.length).toBe(1);
-  expect(mocks.promptInfo).toHaveBeenCalledWith(
+  expect(log).toHaveBeenCalledWith(
     'A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.',
   );
   const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls[0]?.[0];
@@ -177,8 +177,8 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     port: 60128,
     url: 'http://127.0.0.1:60128/',
   });
-  expect(mocks.promptStep).toHaveBeenCalledWith('Local setup form is ready.');
-  expect(mocks.promptInfo).toHaveBeenCalledWith(
+  expect(log).toHaveBeenCalledWith('Local setup form is ready.');
+  expect(log).toHaveBeenCalledWith(
     'If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.',
   );
   expect(log).toHaveBeenCalledWith('URL: http://127.0.0.1:60128/');
@@ -235,10 +235,8 @@ test('nb init shows a concise fallback message when the setup browser cannot be 
       },
     })),
     config: { runCommand: vi.fn(async () => undefined) },
-    log: vi.fn(),
-    error: vi.fn((message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    }),
+    log: mocks.log,
+      error: mocks.error,
     exit: vi.fn((code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     }),
@@ -249,10 +247,10 @@ test('nb init shows a concise fallback message when the setup browser cannot be 
   const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls[0]?.[0];
   expect(typeof webUiOptions?.onOpenBrowserError).toBe('function');
   webUiOptions?.onOpenBrowserError?.('http://127.0.0.1:60128/', new Error('open failed'));
-  expect(mocks.promptWarn).toHaveBeenCalledWith(
+  expect(mocks.printWarning).toHaveBeenCalledWith(
     'We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process.',
   );
-  expect(mocks.promptInfo).toHaveBeenCalledWith('Browser open error: open failed');
+  expect(mocks.log).toHaveBeenCalledWith('Browser open error: open failed');
 });
 
 test('nb init localizes the browser UI intro title', async () => {
@@ -280,10 +278,8 @@ test('nb init localizes the browser UI intro title', async () => {
       },
     })),
     config: { runCommand: vi.fn(async () => undefined) },
-    log: vi.fn(),
-    error: vi.fn((message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    }),
+    log: mocks.log,
+      error: mocks.error,
     exit: vi.fn((code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     }),
@@ -291,7 +287,7 @@ test('nb init localizes the browser UI intro title', async () => {
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.promptIntro).toHaveBeenCalledWith('配置供 Coding Agents 使用的 NocoBase');
+  expect(command.log).not.toHaveBeenCalledWith('Set up NocoBase');
 });
 
 test('nb init forwards download options to nb install for a new app flow', async () => {
@@ -386,6 +382,7 @@ test('nb init forwards download options to nb install for a new app flow', async
       [
         '-y',
         '--no-intro',
+        '--skip-save-env-log',
         '--env',
         'demoapp',
         '--lang',
@@ -481,20 +478,18 @@ test('nb init saves env config before install starts so failures still leave the
       },
     })),
     config: { runCommand },
-    log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(message);
-    },
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/install failed/);
 
   expect(mocks.upsertEnv.mock.calls.length).toBe(1);
   expect(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(true);
-  expect(String(mocks.promptOutro.mock.calls.at(-1)?.[0] ?? '')).toContain('install failed');
+  expect(String(mocks.error.mock.calls.at(-1)?.[0] ?? '')).toContain('install failed');
 });
 
 test('nb init install failures include a full resume command', async () => {
@@ -558,19 +553,17 @@ test('nb init install failures include a full resume command', async () => {
         },
       })),
       config: { runCommand },
-      log: vi.fn(),
-      error: (message: string) => {
-        throw new Error(message);
-      },
+      log: mocks.log,
+      error: mocks.error,
       exit: (code?: number) => {
         throw new Error(`exit: ${code ?? 'unknown'}`);
       },
     });
 
     await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(
-      /exit: 1/,
+      /Couldn't finish preparing the local NocoBase app\./,
     );
-    const rendered = String(mocks.promptOutro.mock.calls.at(-1)?.[0] ?? '');
+    const rendered = String(mocks.error.mock.calls.at(-1)?.[0] ?? '');
     const resumeCommand =
       "nb init --yes --env app12 --source git --version beta --git-url 'git@example.com:nocobase/nocobase fork.git' --resume --verbose";
     expect(rendered).toContain('Resume this setup with:');
@@ -649,14 +642,17 @@ test('nb init forwards api connection settings to nb install', async () => {
     },
   );
 
-  expect(argv).toEqual(expect.arrayContaining([
-    '--api-base-url',
-    'http://demo.example.com/api',
+  expect(argv).toEqual([
+    '-y',
+    '--no-intro',
+    '--skip-save-env-log',
+    '--env',
+    'demoapp',
     '--auth-type',
     'token',
     '--access-token',
     'secret-token',
-  ]));
+  ]);
 });
 
 test('nb init treats arbitrary CLI --version values as otherVersion prompt values', async () => {
@@ -695,10 +691,8 @@ test('nb init treats arbitrary CLI --version values as otherVersion prompt value
         },
       })),
       config: { runCommand },
-      log: vi.fn(),
-      error: (message: string) => {
-        throw new Error(`unexpected error: ${message}`);
-      },
+      log: mocks.log,
+      error: mocks.error,
       exit: (code?: number) => {
         throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
       },
@@ -735,10 +729,8 @@ test('nb init --resume delegates to nb install --resume for the selected env', a
       },
     })),
     config: { runCommand },
-    log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    },
+    log: mocks.log,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -750,12 +742,10 @@ test('nb init --resume delegates to nb install --resume for the selected env', a
   expect(runCommand.mock.calls).toEqual([
     [
       'install',
-      ['--no-intro', '--env', 'app1', '--resume'],
+      ['--no-intro', '--skip-save-env-log', '--env', 'app1', '--resume'],
     ],
   ]);
-  expect(mocks.promptStep.mock.calls).toEqual([
-    ['Installing NocoBase agent skills (nb skills install)'],
-  ]);
+  expect(mocks.printInfo).toHaveBeenCalledWith('Agent skills ready.');
 });
 
 test('nb init --resume --yes forwards setup-only defaults to nb install', async () => {
@@ -777,10 +767,8 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
         },
       })),
       config: { runCommand },
-      log: vi.fn(),
-      error: (message: string) => {
-        throw new Error(`unexpected error: ${message}`);
-      },
+      log: mocks.log,
+      error: mocks.error,
       exit: (code?: number) => {
         throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
       },
@@ -794,6 +782,7 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
         [
           '-y',
           '--no-intro',
+          '--skip-save-env-log',
           '--env',
           'app8',
           '--resume',
@@ -816,9 +805,7 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
         ],
       ],
     ]);
-    expect(mocks.promptStep.mock.calls).toEqual([
-      ['Installing NocoBase agent skills (nb skills install)'],
-    ]);
+    expect(mocks.printInfo).toHaveBeenCalledWith('Agent skills ready.');
   } finally {
     process.argv = originalArgv;
   }
@@ -845,10 +832,8 @@ test('nb init skips skills sync when --skip-skills is provided in flags mode', a
       },
     })),
     config: { runCommand },
-    log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    },
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -859,7 +844,7 @@ test('nb init skips skills sync when --skip-skills is provided in flags mode', a
   expect(mocks.inspectSkillsStatus).not.toHaveBeenCalled();
   expect(mocks.installNocoBaseSkills).not.toHaveBeenCalled();
   expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
-  expect(mocks.promptStep).toHaveBeenCalledWith('Skipped NocoBase agent skills sync.');
+  expect(mocks.log).not.toHaveBeenCalledWith('Skipped NocoBase agent skills sync.');
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
@@ -907,10 +892,8 @@ test('nb init installs skills automatically when they are missing', async () => 
       },
     })),
     config: { runCommand },
-    log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    },
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -961,7 +944,7 @@ test('nb init does not forward the default app port in --yes mode unless it was 
   }
 });
 
-test('nb init logs duplicate env validation errors with Clack in --yes mode', async () => {
+test('nb init logs duplicate env validation errors in --yes mode', async () => {
   const { default: Init } = await import('../commands/init.js');
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => {
     options.hooks?.onMissingNonInteractive?.(
@@ -982,15 +965,23 @@ test('nb init logs duplicate env validation errors with Clack in --yes mode', as
     config: {
       runCommand: vi.fn(async () => undefined),
     },
-    log: vi.fn(),
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
-  expect(mocks.promptError.mock.calls.length).toBe(1);
-  expect(String(mocks.promptError.mock.calls[0]?.[0] ?? '')).toMatch(/local3/);
+  let thrown = '';
+  try {
+    await Init.prototype.run.call(command);
+  } catch (error: unknown) {
+    thrown = stripAnsi(error instanceof Error ? error.message : String(error));
+  }
+
+  expect(thrown).toMatch(/Env "local3" already exists/);
+  expect(mocks.error.mock.calls.length).toBe(1);
+  expect(stripAnsi(String(mocks.error.mock.calls[0]?.[0] ?? ''))).toMatch(/local3/);
 });
 
 test('nb init explains that --env is required when --yes skips prompts', async () => {
@@ -1007,19 +998,20 @@ test('nb init explains that --env is required when --yes skips prompts', async (
     config: {
       runCommand,
     },
-    log: vi.fn(),
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env name is required when prompts are skipped\./);
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
-  expect(mocks.promptInfo.mock.calls.length).toBe(0);
-  expect(mocks.promptWarn.mock.calls.length).toBe(0);
+  expect(mocks.log.mock.calls.length).toBe(0);
+  expect(mocks.printWarning.mock.calls.length).toBe(0);
   expect(runCommand.mock.calls.length).toBe(0);
-  expect(mocks.promptError.mock.calls.length).toBe(1);
-  expect(String(mocks.promptError.mock.calls[0]?.[0] ?? '')).toMatch(/Env name is required when prompts are skipped\..*nb init --yes --env <envName>/s);
+  expect(mocks.error.mock.calls.length).toBe(1);
+  expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(/Env name is required when prompts are skipped\..*nb init --yes --env <envName>/s);
 });
 
 test('nb init --locale overrides the environment locale for prompt-side messages', async () => {
@@ -1038,15 +1030,16 @@ test('nb init --locale overrides the environment locale for prompt-side messages
     config: {
       runCommand,
     },
-    log: vi.fn(),
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/exit: 1/);
-  expect(mocks.promptError.mock.calls.length).toBe(1);
-  expect(String(mocks.promptError.mock.calls[0]?.[0] ?? '')).toMatch(
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env name is required when prompts are skipped\./);
+  expect(mocks.error.mock.calls.length).toBe(1);
+  expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(
     /Env name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
   );
 });
@@ -1085,10 +1078,8 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
       },
     })),
     config: { runCommand },
-    log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    },
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -1102,10 +1093,10 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
 
   expect(runCommand.mock.calls[0]).toEqual([
     'install',
-    ['-y', '--no-intro', '--env', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
+    ['-y', '--no-intro', '--skip-save-env-log', '--env', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
   ]);
-  expect(mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env'))).toBe(true);
-  expect(mocks.promptWarn.mock.calls.some((call) => String(call[0]).includes('local5'))).toBe(true);
+  expect(mocks.printWarning.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env'))).toBe(true);
+  expect(mocks.printWarning.mock.calls.some((call) => String(call[0]).includes('local5'))).toBe(true);
 });
 
 test('nb init forwards dynamically selected ports in --yes mode', async () => {
@@ -1362,10 +1353,8 @@ test('nb init --yes keeps explicit --db-host external after prompt defaults are 
         },
       })),
       config: { runCommand },
-      log: vi.fn(),
-      error: (message: string) => {
-        throw new Error(`unexpected error: ${message}`);
-      },
+      log: mocks.log,
+      error: mocks.error,
       exit: (code?: number) => {
         throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
       },
@@ -1624,10 +1613,8 @@ test('nb init updates skills automatically when they are already installed', asy
       },
     })),
     config: { runCommand },
-    log: vi.fn(),
-    error: (message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    },
+    log: mocks.log,
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -1676,11 +1663,9 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
       },
     })),
     config: { runCommand },
-    log: vi.fn(),
+    log: mocks.log,
     hasAgentsDirInCwd: () => false,
-    error: (message: string) => {
-      throw new Error(`unexpected error: ${message}`);
-    },
+      error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },

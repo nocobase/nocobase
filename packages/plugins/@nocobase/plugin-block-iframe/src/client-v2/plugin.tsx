@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client-v2';
+import { Application, Plugin } from '@nocobase/client-v2';
 
-export class PluginBlockIframeClient extends Plugin {
+export class PluginBlockIframeClient extends Plugin<any, Application> {
   async load() {
     this.flowEngine.registerModelLoaders({
       IframeBlockModel: {

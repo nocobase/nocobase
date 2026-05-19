@@ -19,6 +19,7 @@ import {
 } from '../../lib/app-runtime.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
 import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
+import { resolveDockerEnvFileArg } from '../../lib/docker-env-file.ts';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   DEFAULT_DOCKER_REGISTRY,
@@ -48,6 +49,7 @@ type DockerUpgradePlan = {
   imageRef: string;
   appPort?: string;
   storagePath: string;
+  envFile?: string;
   appKey: string;
   timeZone: string;
   dbDialect: string;
@@ -427,10 +429,10 @@ export default class AppUpgrade extends Command {
     return argv;
   }
 
-  private static buildDockerUpgradePlan(
+  private static async buildDockerUpgradePlan(
     runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
     downloadVersion: string,
-  ): DockerUpgradePlan {
+  ): Promise<DockerUpgradePlan> {
     const dockerRegistry = readEnvValue(runtime.env, 'dockerRegistry') || DEFAULT_DOCKER_REGISTRY;
 
     const appPort =
@@ -438,6 +440,7 @@ export default class AppUpgrade extends Command {
         ? ''
         : trimValue(runtime.env.appPort);
     const storagePath = readEnvValue(runtime.env, 'storagePath');
+    const envFile = await resolveDockerEnvFileArg(runtime.envName, runtime.env.config);
     const appKey = readEnvValue(runtime.env, 'appKey');
     const timeZone = readEnvValue(runtime.env, 'timezone');
     const builtinDbConnection = runtime.env.config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
@@ -506,6 +509,10 @@ export default class AppUpgrade extends Command {
       args.push('-p', `${appPort}:80`);
     }
 
+    if (envFile) {
+      args.push('--env-file', envFile);
+    }
+
     args.push(
       '-e',
       `APP_KEY=${appKey}`,
@@ -536,6 +543,7 @@ export default class AppUpgrade extends Command {
       imageRef,
       appPort: appPort || undefined,
       storagePath,
+      envFile,
       appKey,
       timeZone,
       dbDialect,
@@ -626,7 +634,7 @@ export default class AppUpgrade extends Command {
     const containerExists = await dockerContainerExists(runtime.containerName);
 
     if (!flags['skip-code-update']) {
-      const plan = AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
+      const plan = await AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
       startTask(`Refreshing the Docker image for "${runtime.envName}"...`);
       try {
         await runCommand('source:download', AppUpgrade.buildDockerDownloadArgv(runtime, plan));
@@ -677,7 +685,7 @@ export default class AppUpgrade extends Command {
         throw new Error(formatDockerStartFailure(runtime.envName, message));
       }
     } else {
-      const plan = AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
+      const plan = await AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
       const displayUrl = formatDisplayUrl(apiBaseUrl, plan.appPort);
       startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
       try {
@@ -744,7 +752,6 @@ export default class AppUpgrade extends Command {
         yes: parsed.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "2.1.0-beta.32",
+  "version": "2.1.0-beta.34",
   "displayName": "File manager",
   "displayName.ru-RU": "Менеджер файлов",
   "displayName.zh-CN": "文件管理器",
@@ -32,7 +32,6 @@
     "mime-types": "^3.0.1",
     "mkdirp": "~0.5.4",
     "multer": "^1.4.5-lts.2",
-    "multer-cos": "^1.0.3",
     "multer-s3": "^3.0.1",
     "multistream": "^4.1.0",
     "react": "^18.2.0",

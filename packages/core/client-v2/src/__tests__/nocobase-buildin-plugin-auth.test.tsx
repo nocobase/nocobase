@@ -39,7 +39,7 @@ describe('nocobase buildin plugin auth redirect', () => {
     vi.restoreAllMocks();
   });
 
-  it('should redirect unauthenticated admin access to legacy signin with replace', async () => {
+  it('should redirect unauthenticated admin access to v2 signin with replace', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -70,11 +70,11 @@ describe('nocobase buildin plugin auth redirect', () => {
     render(<Root />);
 
     await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
+      expect(replace).toHaveBeenCalledWith('/v2/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
     });
   });
 
-  it('should redirect unauthenticated v2 root access to legacy signin with default admin redirect', async () => {
+  it('should redirect unauthenticated v2 root access to v2 signin with default admin redirect', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -104,11 +104,11 @@ describe('nocobase buildin plugin auth redirect', () => {
     render(<Root />);
 
     await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin');
+      expect(replace).toHaveBeenCalledWith('/nocobase/v2/signin?redirect=%2Fnocobase%2Fv2%2Fadmin');
     });
   });
 
-  it('should render v2 admin root without redirecting to legacy default page', async () => {
+  it('should render v2 admin root without redirecting away', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
@@ -157,7 +157,7 @@ describe('nocobase buildin plugin auth redirect', () => {
   });
 
   it.each(['/v2/admin/legacy-page/tab/tab-1', '/v2/admin/legacy-page/view/detail'])(
-    'should show 404 for authenticated direct legacy v2 page access: %s',
+    'should show 404 for authenticated direct v1-style v2 page access: %s',
     async (pathname) => {
       const replace = vi.fn();
       Object.defineProperty(globalThis.window, 'location', {

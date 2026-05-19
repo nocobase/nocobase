@@ -10,6 +10,7 @@
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { afterEach, expect, test, vi } from 'vitest';
 import {
   getManagedSkillsStateFile,
@@ -26,9 +27,74 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function encodeOctal(value: number, length: number): Buffer {
+  const text = value.toString(8).padStart(length - 1, '0');
+  return Buffer.from(`${text}\0`, 'ascii');
+}
+
+function writeTarHeader(buffer: Buffer, name: string, size: number, typeflag = '0'): void {
+  buffer.fill(0);
+  Buffer.from(name, 'utf8').copy(buffer, 0, 0, Math.min(Buffer.byteLength(name), 100));
+  encodeOctal(0o644, 8).copy(buffer, 100);
+  encodeOctal(0, 8).copy(buffer, 108);
+  encodeOctal(0, 8).copy(buffer, 116);
+  encodeOctal(size, 12).copy(buffer, 124);
+  encodeOctal(Math.floor(Date.now() / 1000), 12).copy(buffer, 136);
+  buffer.fill(0x20, 148, 156);
+  buffer.write(typeflag, 156, 1, 'ascii');
+  Buffer.from('ustar\0', 'ascii').copy(buffer, 257);
+  Buffer.from('00', 'ascii').copy(buffer, 263);
+
+  let checksum = 0;
+  for (const byte of buffer) {
+    checksum += byte;
+  }
+  Buffer.from(checksum.toString(8).padStart(6, '0')).copy(buffer, 148);
+  buffer[154] = 0;
+  buffer[155] = 0x20;
+}
+
+function buildTarGz(files: Record<string, string>): Buffer {
+  const chunks: Buffer[] = [];
+
+  for (const [name, content] of Object.entries(files)) {
+    const body = Buffer.from(content, 'utf8');
+    const header = Buffer.alloc(512);
+    writeTarHeader(header, name, body.length);
+    chunks.push(header, body);
+    const remainder = body.length % 512;
+    if (remainder !== 0) {
+      chunks.push(Buffer.alloc(512 - remainder));
+    }
+  }
+
+  chunks.push(Buffer.alloc(1024));
+  return gzipSync(Buffer.concat(chunks));
+}
+
 async function writeManagedState(root: string, state: Record<string, unknown>): Promise<void> {
   await fsp.mkdir(root, { recursive: true });
   await fsp.writeFile(getManagedSkillsStateFile(root), JSON.stringify(state));
+}
+
+async function writePackedSkillsTarball(
+  root: string,
+  version: string,
+  extraFiles: Record<string, string> = {},
+): Promise<string> {
+  const tarballPath = path.join(root, `nocobase-skills-${version}.tgz`);
+  const pkg = {
+    name: '@nocobase/skills',
+    version,
+    description: 'test skills package',
+  };
+  const archive = buildTarGz({
+    'package/package.json': JSON.stringify(pkg, null, 2),
+    'package/skills/nocobase-env-manage/SKILL.md': '# env manage\n',
+    ...extraFiles,
+  });
+  await fsp.writeFile(tarballPath, archive);
+  return tarballPath;
 }
 
 test('resolveSkillsWorkspaceRoot defaults to the global CLI home', async () => {
@@ -106,8 +172,8 @@ test('inspectSkillsStatus reports installed nocobase skills from managed state',
 test('installNocoBaseSkills installs when nocobase skills are not present', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-install-'));
   const runFn = vi.fn(async (_name: string, _args: string[], options?: { cwd?: string }) => {
-    if (_name === 'npm' && options?.cwd) {
-      await fsp.mkdir(path.join(options.cwd, 'node_modules', '@nocobase', 'skills'), { recursive: true });
+    if (_name === 'npm' && _args[0] === 'pack' && options?.cwd) {
+      await writePackedSkillsTarball(options.cwd, '1.0.5');
     }
   });
   let listCalls = 0;
@@ -138,15 +204,13 @@ test('installNocoBaseSkills installs when nocobase skills are not present', asyn
     expect(result.action).toBe('installed');
     expect(runFn.mock.calls[0]?.[0]).toBe('npm');
     expect(runFn.mock.calls[0]?.[1]).toEqual([
-      'install',
-      '--no-save',
-      '--ignore-scripts',
-      '--no-package-lock',
+      'pack',
+      '--silent',
       '@nocobase/skills',
     ]);
     expect(runFn.mock.calls[0]?.[2]).toEqual(
       expect.objectContaining({
-        errorName: 'npm install',
+        errorName: 'npm pack',
         stdio: 'ignore',
       }),
     );
@@ -165,6 +229,11 @@ test('installNocoBaseSkills installs when nocobase skills are not present', asyn
         stdio: 'ignore',
       }),
     );
+
+    const extractedPackage = JSON.parse(
+      await fsp.readFile(path.join(dir, 'cache', 'skills', 'node_modules', '@nocobase', 'skills', 'package.json'), 'utf8'),
+    );
+    expect(extractedPackage.version).toBe('1.0.5');
 
     const state = JSON.parse(await fsp.readFile(getManagedSkillsStateFile(dir), 'utf8'));
     expect(state.installedVersion).toBe('1.0.5');
@@ -218,8 +287,8 @@ test('installNocoBaseSkills is a no-op when nocobase skills are already installe
 test('updateNocoBaseSkills updates managed skills when they already exist', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-update-'));
   const runFn = vi.fn(async (_name: string, _args: string[], options?: { cwd?: string }) => {
-    if (_name === 'npm' && options?.cwd) {
-      await fsp.mkdir(path.join(options.cwd, 'node_modules', '@nocobase', 'skills'), { recursive: true });
+    if (_name === 'npm' && _args[0] === 'pack' && options?.cwd) {
+      await writePackedSkillsTarball(options.cwd, '1.0.5');
     }
   });
   const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
@@ -257,15 +326,13 @@ test('updateNocoBaseSkills updates managed skills when they already exist', asyn
     expect(result.action).toBe('updated');
     expect(runFn.mock.calls[0]?.[0]).toBe('npm');
     expect(runFn.mock.calls[0]?.[1]).toEqual([
-      'install',
-      '--no-save',
-      '--ignore-scripts',
-      '--no-package-lock',
+      'pack',
+      '--silent',
       '@nocobase/skills@1.0.5',
     ]);
     expect(runFn.mock.calls[0]?.[2]).toEqual(
       expect.objectContaining({
-        errorName: 'npm install',
+        errorName: 'npm pack',
         stdio: 'ignore',
       }),
     );
@@ -292,8 +359,8 @@ test('updateNocoBaseSkills updates managed skills when they already exist', asyn
 test('skills install and update forward raw output in verbose mode', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-verbose-'));
   const runFn = vi.fn(async (_name: string, _args: string[], options?: { cwd?: string }) => {
-    if (_name === 'npm' && options?.cwd) {
-      await fsp.mkdir(path.join(options.cwd, 'node_modules', '@nocobase', 'skills'), { recursive: true });
+    if (_name === 'npm' && _args[0] === 'pack' && options?.cwd) {
+      await writePackedSkillsTarball(options.cwd, '1.0.5');
     }
   });
   let listCalls = 0;
@@ -329,6 +396,47 @@ test('skills install and update forward raw output in verbose mode', async () =>
         stdio: 'inherit',
       }),
     );
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('installNocoBaseSkills fails when packed tarball metadata does not match the expected package name', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-pack-mismatch-'));
+  const runFn = vi.fn(async (_name: string, _args: string[], options?: { cwd?: string }) => {
+    if (_name === 'npm' && _args[0] === 'pack' && options?.cwd) {
+      const tarballPath = path.join(options.cwd, 'nocobase-skills-1.0.5.tgz');
+      const archive = buildTarGz({
+        'package/package.json': JSON.stringify(
+          {
+            name: '@nocobase/not-skills',
+            version: '1.0.5',
+          },
+          null,
+          2,
+        ),
+      });
+      await fsp.writeFile(tarballPath, archive);
+    }
+  });
+  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+    if (name === 'npx' && args.join(' ') === '-y skills list -g --json') {
+      return '[]';
+    }
+    if (name === 'npm' && args.join(' ') === `view ${NOCOBASE_SKILLS_PACKAGE_NAME} version --json`) {
+      return JSON.stringify('1.0.5');
+    }
+    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  });
+
+  try {
+    await expect(
+      installNocoBaseSkills({
+        workspaceRoot: dir,
+        commandOutputFn: commandOutputFn as any,
+        runFn: runFn as any,
+      }),
+    ).rejects.toThrow('packed tarball resolved to @nocobase/not-skills instead of @nocobase/skills');
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }

@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DrawerFormLayout } from '@nocobase/client-v2';
+import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
-import { App, Button, Card, Checkbox, Dropdown, Form, Input, Space, Spin, Table, theme } from 'antd';
+import { useMemoizedFn, useRequest } from 'ahooks';
+import { App, Button, Card, Dropdown, Form, Input, Space, Spin, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { cloneDeep } from 'lodash';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,8 +27,6 @@ type StorageRecord = {
   default?: boolean;
   [key: string]: any;
 };
-
-const PAGE_SIZE = 50;
 
 function useStorageFormClassName() {
   const { token } = theme.useToken();
@@ -142,26 +140,40 @@ function normalizeListResponse(response: any) {
 export default function FileStoragePage() {
   const t = useT();
   const ctx = useFlowContext();
+  const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const resource = useStorageResource();
   const fileManagerPlugin = ctx.app.pm.get(PluginFileManagerClientV2);
   const storageTypes = useMemo(() => [...fileManagerPlugin.storageTypes.values()], [fileManagerPlugin]);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const { data, loading, refresh } = useRequest(
     async () => {
       const response = await resource.list({
         page,
-        pageSize: PAGE_SIZE,
+        pageSize,
         sort: ['id'],
         appends: [],
       });
       return normalizeListResponse(response);
     },
     {
-      refreshDeps: [page],
+      refreshDeps: [page, pageSize],
     },
   );
+
+  // antd pagination `onChange(nextPage, nextPageSize)` fires for both
+  // page-number changes and page-size changes. When pageSize changes we reset
+  // back to page 1 so the user isn't stranded on an out-of-range page.
+  const handlePaginationChange = useMemoizedFn((nextPage: number, nextPageSize: number) => {
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      setPage(1);
+      return;
+    }
+    setPage(nextPage);
+  });
 
   const openForm = useCallback(
     (mode: 'create' | 'edit', storageType: StorageType, record?: StorageRecord) => {
@@ -203,7 +215,9 @@ export default function FileStoragePage() {
       {
         title: t('Default storage'),
         dataIndex: 'default',
-        render: (value) => <Checkbox checked={!!value} disabled />,
+        // v1 renders a green check for "yes" and nothing for "no"; we mirror
+        // that here. `token.colorSuccess` keeps us on the design-token API.
+        render: (value) => (value ? <CheckOutlined style={{ color: token.colorSuccess }} /> : null),
       },
       {
         title: t('Actions'),
@@ -231,6 +245,10 @@ export default function FileStoragePage() {
         ),
       },
     ],
+    // `token` is a stable design-token snapshot from antd; we omit it from
+    // the deps because tracking individual token paths would force a rebuild
+    // on every theme micro-change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [fileManagerPlugin, handleDelete, message, openForm, t],
   );
 
@@ -263,7 +281,7 @@ export default function FileStoragePage() {
           </Button>
         </Dropdown>
       </div>
-      <Table
+      <Table<StorageRecord>
         rowKey="id"
         loading={loading}
         columns={columns}
@@ -274,10 +292,9 @@ export default function FileStoragePage() {
         }}
         pagination={{
           current: page,
-          pageSize: PAGE_SIZE,
+          pageSize,
           total: data?.total || 0,
-          showSizeChanger: false,
-          onChange: setPage,
+          onChange: handlePaginationChange,
         }}
       />
     </Card>
