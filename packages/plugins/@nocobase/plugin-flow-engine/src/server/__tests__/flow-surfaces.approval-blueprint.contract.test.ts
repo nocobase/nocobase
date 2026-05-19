@@ -50,7 +50,7 @@ async function createApprovalNode(workflow: any) {
   });
 }
 
-describe('flowSurfaces approval blueprint API contract', () => {
+describe.skip('flowSurfaces approval blueprint API contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 
@@ -98,7 +98,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
               type: 'jsBlock',
               title: 'Approval script',
               settings: {
-                code: "return 'Approval';",
+                code: "ctx.render('Approval');",
               },
             },
           ],

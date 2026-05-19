@@ -63,6 +63,7 @@ export type FlowSurfaceComposeNormalizedBlockSpec = {
   resource?: FlowSurfaceComposeNormalizedResource;
   template?: FlowSurfaceComposeObject;
   settings?: FlowSurfaceComposeObject;
+  explicitFields?: boolean;
   fields: FlowSurfaceComposeNormalizedFieldSpec[];
   fieldsLayout?: FlowSurfaceComposeObject;
   actions: FlowSurfaceComposeNormalizedActionSpec[];

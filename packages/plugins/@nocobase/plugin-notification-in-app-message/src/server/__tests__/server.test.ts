@@ -18,6 +18,21 @@ import defineMyInAppMessages from '../defineMyInAppMessages';
 import InAppNotificationChannel from '../InAppNotificationChannel';
 
 describe('inapp message channels', () => {
+  const createMockManagedTransaction = () => {
+    const afterCommitCallbacks: Array<() => void> = [];
+    return {
+      afterCommit: vi.fn((callback) => {
+        afterCommitCallbacks.push(callback);
+      }),
+      commit: vi.fn(async () => {
+        for (const callback of afterCommitCallbacks) {
+          callback();
+        }
+      }),
+      rollback: vi.fn().mockResolvedValue(undefined),
+    };
+  };
+
   let app: MockServer;
   let db: Database;
   let UserRepo;
@@ -336,6 +351,137 @@ describe('inapp message channels', () => {
         payload: messages[1],
       },
     });
+  });
+
+  test('send should split large receiver sets into bulk batches', async () => {
+    const bulkCreate = vi.fn().mockResolvedValue(undefined);
+    const emit = vi.fn();
+    const internalTransaction = createMockManagedTransaction();
+    const logger = {
+      error: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const channel = new InAppNotificationChannel({
+      db: {
+        getRepository: vi.fn().mockReturnValue({}),
+        getModel: vi.fn().mockReturnValue({ bulkCreate }),
+        sequelize: {
+          transaction: vi.fn().mockResolvedValue(internalTransaction),
+        },
+      },
+      emit,
+      logger,
+    } as any);
+
+    await channel.send({
+      channel: {
+        name: 'in-app',
+        notificationType: 'in-app-message',
+        options: {},
+      },
+      message: {
+        title: 'batched title',
+        content: 'batched content',
+        options: {
+          url: '/admin/batched',
+        },
+      } as any,
+      receivers: {
+        type: 'userId',
+        value: Array.from({ length: 250 }, (_, index) => index + 1),
+      },
+    });
+
+    expect(bulkCreate).toHaveBeenCalledTimes(3);
+    expect(bulkCreate.mock.calls[0][0]).toHaveLength(100);
+    expect(bulkCreate.mock.calls[1][0]).toHaveLength(100);
+    expect(bulkCreate.mock.calls[2][0]).toHaveLength(50);
+    for (const [, options] of bulkCreate.mock.calls) {
+      expect(options).toMatchObject({
+        hooks: false,
+        transaction: internalTransaction,
+        validate: false,
+        returning: false,
+      });
+    }
+    expect(internalTransaction.commit).toHaveBeenCalledTimes(1);
+    expect(internalTransaction.rollback).not.toHaveBeenCalled();
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(emit).toHaveBeenCalledTimes(250);
+    expect(emit).toHaveBeenNthCalledWith(1, 'ws:sendToUser', {
+      userId: 1,
+      message: {
+        type: 'in-app-message:created',
+        payload: expect.objectContaining({
+          title: 'batched title',
+          content: 'batched content',
+          channelName: 'in-app',
+          userId: 1,
+        }),
+      },
+    });
+    expect(emit).toHaveBeenNthCalledWith(250, 'ws:sendToUser', {
+      userId: 250,
+      message: {
+        type: 'in-app-message:created',
+        payload: expect.objectContaining({
+          title: 'batched title',
+          content: 'batched content',
+          channelName: 'in-app',
+          userId: 250,
+        }),
+      },
+    });
+  });
+
+  test('send should rollback internal transaction when a later batch insert fails', async () => {
+    const bulkCreate = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('batch failed'));
+    const emit = vi.fn();
+    const internalTransaction = createMockManagedTransaction();
+    const logger = {
+      error: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const channel = new InAppNotificationChannel({
+      db: {
+        getRepository: vi.fn().mockReturnValue({}),
+        getModel: vi.fn().mockReturnValue({ bulkCreate }),
+        sequelize: {
+          transaction: vi.fn().mockResolvedValue(internalTransaction),
+        },
+      },
+      emit,
+      logger,
+    } as any);
+
+    await expect(
+      channel.send({
+        channel: {
+          name: 'in-app',
+          notificationType: 'in-app-message',
+          options: {},
+        },
+        message: {
+          title: 'batched title',
+          content: 'batched content',
+        } as any,
+        receivers: {
+          type: 'userId',
+          value: Array.from({ length: 101 }, (_, index) => index + 1),
+        },
+      }),
+    ).rejects.toThrow('batch failed');
+
+    expect(internalTransaction.commit).not.toHaveBeenCalled();
+    expect(internalTransaction.rollback).toHaveBeenCalledTimes(1);
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(emit).not.toHaveBeenCalled();
   });
 
   test('model hooks should defer websocket events until transaction committed', async () => {

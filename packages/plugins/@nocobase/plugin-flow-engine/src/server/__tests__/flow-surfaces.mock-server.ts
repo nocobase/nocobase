@@ -23,6 +23,7 @@ type FlowSurfacesDatabaseIsolation = {
   database?: MockServerOptions['database'];
   shouldCleanDbOnDestroy?: boolean;
   cleanup?: () => Promise<void>;
+  selfManagedDatabase?: boolean;
 };
 
 const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
@@ -63,7 +64,7 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
   let lastError: any;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const isolation = await createFlowSurfacesDatabaseIsolation(database, attempt);
-    const app = mockServer({
+    const app = createFlowSurfacesIsolatedMockServer(isolation, {
       registerActions: true,
       acl: true,
       plugins,
@@ -278,6 +279,7 @@ async function createFlowSurfacesDatabaseIsolation(
       password: getFlowSurfacesMySqlAdminPassword(database),
     },
     shouldCleanDbOnDestroy: true,
+    selfManagedDatabase: true,
     cleanup: () => dropFlowSurfacesMySqlDatabase(database, databaseName, dialect),
   };
 }
@@ -300,8 +302,40 @@ function buildFlowSurfacesSchemaName(attempt: number) {
 }
 
 function buildFlowSurfacesMySqlDatabaseName(attempt: number) {
-  const prefix = process.env.DB_TEST_PREFIX || '';
-  return `${prefix}${buildFlowSurfacesSchemaName(attempt)}`.slice(0, 64);
+  return buildFlowSurfacesSchemaName(attempt).slice(0, 64);
+}
+
+function createFlowSurfacesIsolatedMockServer(isolation: FlowSurfacesDatabaseIsolation, options: MockServerOptions) {
+  if (!isolation.selfManagedDatabase) {
+    return mockServer(options);
+  }
+
+  // Flow-surfaces MySQL tests create and drop their own isolated database.
+  // The shared CI DB distributor owns DB_TEST_PREFIX databases and removes
+  // them after 3 minutes, so do not let mockDatabase acquire these databases.
+  return withoutFlowSurfacesTestDatabaseDistributor(() => mockServer(options));
+}
+
+function withoutFlowSurfacesTestDatabaseDistributor<T>(fn: () => T): T {
+  const originalPrefix = process.env.DB_TEST_PREFIX;
+  const originalDistributorPort = process.env.DB_TEST_DISTRIBUTOR_PORT;
+  delete process.env.DB_TEST_PREFIX;
+  delete process.env.DB_TEST_DISTRIBUTOR_PORT;
+
+  try {
+    return fn();
+  } finally {
+    restoreFlowSurfacesEnv('DB_TEST_PREFIX', originalPrefix);
+    restoreFlowSurfacesEnv('DB_TEST_DISTRIBUTOR_PORT', originalDistributorPort);
+  }
+}
+
+function restoreFlowSurfacesEnv(key: 'DB_TEST_PREFIX' | 'DB_TEST_DISTRIBUTOR_PORT', value: string | undefined) {
+  if (typeof value === 'undefined') {
+    delete process.env[key];
+    return;
+  }
+  process.env[key] = value;
 }
 
 async function createFlowSurfacesMySqlDatabase(

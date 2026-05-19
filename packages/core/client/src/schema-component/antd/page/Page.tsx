@@ -47,6 +47,7 @@ import {
   useKeepAlive,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
+import { shouldDisplayRouteBadge } from '../../../route-switch/antd/admin-layout/badge';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
 import { DndContext } from '../../common';
@@ -271,7 +272,7 @@ const PageContent = memo((props: PageContentProps) => {
 const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties }> = (props) => {
   const badgeCount = useEvaluatedExpression(props.tabRoute.options?.badge?.count);
 
-  if (badgeCount == null) return null;
+  if (!shouldDisplayRouteBadge(badgeCount, props.tabRoute.options?.badge?.showZero)) return null;
 
   return (
     <Badge
