@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Op } from '@nocobase/database';
+import { OFFICIAL_PLUGIN_PREFIX } from '@nocobase/server';
+
 export type TranslationScope = 'all' | 'builtIn' | 'custom';
 
 export type LocalizationTextRecord = {
@@ -36,14 +39,28 @@ export const normalizeTextRecord = (row: any): LocalizationTextRecord | undefine
 
 export const getModuleName = (row: LocalizationTextRecord) => row.module?.replace('resources.', '');
 
+export const normalizeModuleName = (module: string) => {
+  return module.startsWith(OFFICIAL_PLUGIN_PREFIX) ? module.replace(OFFICIAL_PLUGIN_PREFIX, '') : module;
+};
+
 export const isBuiltInText = (row: LocalizationTextRecord, resources: Record<string, Record<string, string>>) => {
   const moduleName = getModuleName(row);
-  return Boolean(moduleName && resources[moduleName]);
+  return Boolean(moduleName && resources[normalizeModuleName(moduleName)]);
 };
 
 const getBuiltInModules = async (app: any) => {
   const builtInResources = await app.localeManager.getBuiltInResources('en-US');
-  return Object.keys(builtInResources).map((module) => `resources.${module}`);
+  return Array.from(new Set(Object.keys(builtInResources).map((module) => `resources.${normalizeModuleName(module)}`)));
+};
+
+const addWhereCondition = (options: any, condition: any) => {
+  if (!options.where) {
+    options.where = condition;
+    return;
+  }
+  options.where = {
+    [Op.and]: [options.where, condition],
+  };
 };
 
 export const buildFindTextsOptions = async (options: BuildFindTextsOptions) => {
@@ -57,28 +74,27 @@ export const buildFindTextsOptions = async (options: BuildFindTextsOptions) => {
     findOptions.sort = sort;
   }
   if (mode === 'selected' || textIds) {
-    findOptions.filter = {
+    addWhereCondition(findOptions, {
       id: {
-        $in: textIds || [],
+        [Op.in]: textIds || [],
       },
-    };
+    });
   }
 
   if (scope !== 'all') {
     const builtInModules = await getBuiltInModules(app);
-    findOptions.filter = {
-      ...(findOptions.filter || {}),
+    addWhereCondition(findOptions, {
       module: {
-        [scope === 'builtIn' ? '$in' : '$notIn']: builtInModules,
+        [scope === 'builtIn' ? Op.in : Op.notIn]: builtInModules,
       },
-    };
+    });
   }
 
   if (mode === 'incremental') {
     findOptions.include = [{ association: 'translations', where: { locale }, required: false }];
-    findOptions.where = {
+    addWhereCondition(findOptions, {
       '$translations.id$': null,
-    };
+    });
   }
 
   return findOptions;

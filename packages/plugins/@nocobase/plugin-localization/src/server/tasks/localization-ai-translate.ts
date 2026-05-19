@@ -15,14 +15,12 @@ import { buildFindTextsOptions, isBuiltInText, normalizeTextRecord } from '../tr
 import type { LocalizationTextRecord, TranslationScope } from '../translation-scope';
 
 export const LOCALIZATION_AI_TRANSLATE_TASK_TYPE = 'localization:ai-translate';
-const TRANSLATION_BATCH_SIZE = 10;
 const DEFAULT_TRANSLATION_WORKER_COUNT = 10;
 const MIN_TRANSLATION_WORKER_COUNT = 1;
 const MAX_TRANSLATION_WORKER_COUNT = 20;
-const MAX_TRANSLATION_QUEUE_SIZE = TRANSLATION_BATCH_SIZE * 2;
+const TRANSLATION_CHUNK_SIZE = 200;
 
 const elapsed = (start: number) => Date.now() - start;
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const truncateForLog = (value: string, maxLength = 500) =>
   value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 const LEGACY_SYMBOL_TRANSLATIONS = new Set(['<', '=', '>']);
@@ -47,9 +45,11 @@ export type TranslationReferenceLocales = {
   custom?: ReferenceLocaleConfig;
 };
 
-type TranslationQueueItem = {
+type TranslationItem = {
   row: LocalizationTextRecord;
   chunkIndex: number;
+  referenceTranslation?: string;
+  referenceLocale?: string;
   isBuiltIn?: boolean;
 };
 
@@ -62,6 +62,11 @@ type TaskParams = {
   textIds?: Array<string | number>;
   scope?: TranslationScope;
   referenceLocales?: TranslationReferenceLocales;
+};
+
+type TranslationSourceItem = {
+  row: LocalizationTextRecord;
+  isBuiltIn: boolean;
 };
 
 class LocalizationAITranslationError extends Error {
@@ -104,6 +109,7 @@ export class LocalizationAITranslateTask extends TaskType {
       sort: ['id'],
     });
     const workerCount = getTranslationWorkerCount();
+    const chunkSize = TRANSLATION_CHUNK_SIZE;
     const countStart = Date.now();
     const total = await this.countTexts(findTextsOptions);
     this.logger?.debug('Localization AI translation task started', {
@@ -113,7 +119,7 @@ export class LocalizationAITranslateTask extends TaskType {
       total,
       countElapsedMs: elapsed(countStart),
       workerCount,
-      queueLimit: MAX_TRANSLATION_QUEUE_SIZE,
+      chunkSize,
       defaultReferenceLocale,
       referenceLocales,
       scope: params.scope || 'all',
@@ -123,86 +129,81 @@ export class LocalizationAITranslateTask extends TaskType {
     });
     let translated = 0;
     let chunkIndex = 0;
-    let producerDone = false;
-    let firstError: Error | undefined;
-    const queue: TranslationQueueItem[] = [];
 
     this.reportProgress({ total, current: 0 });
 
-    const workers = Array.from({ length: workerCount }, (_, workerIndex) =>
-      this.runTranslationWorker({
-        workerIndex: workerIndex + 1,
-        queue,
-        isDone: () => producerDone,
-        getError: () => firstError,
-        setError: (error) => {
-          firstError = firstError ?? error;
-        },
-        total,
-        getTranslated: () => translated,
-        incrementTranslated: () => {
-          translated += 1;
-          return translated;
-        },
-        locale,
-        employeeUsername,
-        employee,
-        provider,
-        service,
-        model,
-        referenceLocales,
-      }),
-    );
+    const repository = this.app.db.getRepository('localizationTexts');
+    const chunk =
+      params.mode === 'selected' ? repository.chunk.bind(repository) : repository.chunkWithCursor.bind(repository);
+    await chunk({
+      ...findTextsOptions,
+      chunkSize,
+      callback: async (rows) => {
+        chunkIndex += 1;
+        const chunkStart = Date.now();
+        const textRows = rows.map((row) => normalizeTextRecord(row)).filter(Boolean);
+        const rowsWithScope = textRows.map((row) => ({
+          row,
+          isBuiltIn: isBuiltInText(row, builtInMatchResources),
+        }));
 
-    try {
-      await this.app.db.getRepository('localizationTexts').chunkWithCursor({
-        ...findTextsOptions,
-        chunkSize: TRANSLATION_BATCH_SIZE,
-        beforeFind: async () => {
-          while (!firstError && queue.length >= MAX_TRANSLATION_QUEUE_SIZE) {
-            await sleep(100);
+        this.logger?.debug('Localization AI translation chunk loaded', {
+          taskId: this.record.id,
+          chunkIndex,
+          rows: textRows.length,
+          workerCount,
+          translated,
+          total,
+        });
+
+        for (let start = 0; start < rowsWithScope.length; start += workerCount) {
+          if (this.isCanceled) {
+            throw new CancelError();
           }
-          if (firstError) {
-            throw firstError;
-          }
-        },
-        callback: async (rows) => {
-          chunkIndex += 1;
-          const chunkStart = Date.now();
-          const textRows = rows.map((row) => normalizeTextRecord(row)).filter(Boolean);
-          const rowsWithScope = textRows.map((row) => ({
-            row,
-            isBuiltIn: isBuiltInText(row, builtInMatchResources),
-          }));
-          const queueItems = rowsWithScope.map(({ row, isBuiltIn }) => {
-            return {
-              row,
-              chunkIndex,
-              isBuiltIn,
-            };
-          });
-          queue.push(...queueItems);
-          this.logger?.debug('Localization AI translation chunk enqueued', {
+          const batchStart = Date.now();
+          const batch = rowsWithScope.slice(start, start + workerCount);
+          const items = await this.buildTranslationItems(batch, referenceLocales, chunkIndex);
+          await Promise.all(
+            items.map((item, index) =>
+              this.translateItem({
+                workerIndex: index + 1,
+                item,
+                total,
+                getTranslated: () => translated,
+                incrementTranslated: () => {
+                  translated += 1;
+                  return translated;
+                },
+                locale,
+                employeeUsername,
+                employee,
+                provider,
+                service,
+                model,
+              }),
+            ),
+          );
+          this.logger?.debug('Localization AI translation batch completed', {
             taskId: this.record.id,
             chunkIndex,
-            rows: textRows.length,
-            referenceLocales,
-            queueSize: queue.length,
-            elapsedMs: elapsed(chunkStart),
+            batchSize: items.length,
+            referenceTranslations: items.filter((item) => item.referenceTranslation).length,
+            elapsedMs: elapsed(batchStart),
             translated,
             total,
           });
-        },
-      });
-    } finally {
-      producerDone = true;
-    }
+        }
 
-    await Promise.all(workers);
-
-    if (firstError) {
-      throw firstError;
-    }
+        this.logger?.debug('Localization AI translation chunk completed', {
+          taskId: this.record.id,
+          chunkIndex,
+          rows: textRows.length,
+          elapsedMs: elapsed(chunkStart),
+          translated,
+          total,
+        });
+      },
+    });
 
     this.logger?.debug('Localization AI translation task completed', {
       taskId: this.record.id,
@@ -219,29 +220,46 @@ export class LocalizationAITranslateTask extends TaskType {
     return await this.app.db.getRepository('localizationTexts').count(options);
   }
 
-  private async getReferenceTranslation(row: LocalizationTextRecord, locales: ReferenceLocaleConfig) {
-    const localeList = [locales.primary, locales.fallback].filter(isString);
-    if (!localeList.length) {
-      return {};
+  private async getLocaleReferences(textIds: Array<string | number>, locale: string) {
+    const references = new Map<string, string>();
+    if (!textIds.length) {
+      return references;
     }
     const rows = await this.app.db.getRepository('localizationTranslations').find({
-      fields: ['locale', 'translation'],
+      fields: ['textId', 'translation'],
       filter: {
-        textId: row.id,
-        locale: {
-          $in: localeList,
+        textId: {
+          $in: textIds,
         },
+        locale,
       },
     });
-    const referenceMap = new Map<string, string>();
     for (const row of rows) {
       const record = typeof row.toJSON === 'function' ? row.toJSON() : row;
-      if (record?.locale && record.translation) {
-        referenceMap.set(record.locale, record.translation);
+      if (record?.textId != null && record.translation) {
+        references.set(String(record.textId), record.translation);
       }
     }
-    for (const locale of localeList) {
-      const translation = referenceMap.get(locale);
+    return references;
+  }
+
+  private async getReferenceMaps(textIds: Array<string | number>, locales: string[]) {
+    const result = new Map<string, Map<string, string>>();
+    await Promise.all(
+      locales.map(async (locale) => {
+        result.set(locale, await this.getLocaleReferences(textIds, locale));
+      }),
+    );
+    return result;
+  }
+
+  private pickDbReference(
+    row: LocalizationTextRecord,
+    references: Map<string, Map<string, string>>,
+    locales: ReferenceLocaleConfig,
+  ) {
+    for (const locale of [locales.primary, locales.fallback].filter(isString)) {
+      const translation = references.get(locale)?.get(String(row.id));
       if (translation) {
         return { locale, translation };
       }
@@ -271,12 +289,38 @@ export class LocalizationAITranslateTask extends TaskType {
     };
   }
 
-  private async runTranslationWorker(options: {
+  private async buildTranslationItems(
+    batch: TranslationSourceItem[],
+    referenceLocales: Required<TranslationReferenceLocales>,
+    chunkIndex: number,
+  ) {
+    const builtInTextIds = batch.filter((item) => item.isBuiltIn).map((item) => item.row.id);
+    const customTextIds = batch.filter((item) => !item.isBuiltIn).map((item) => item.row.id);
+    const builtInReferences = await this.getReferenceMaps(
+      builtInTextIds,
+      [referenceLocales.builtIn.primary, referenceLocales.builtIn.fallback].filter(isString),
+    );
+    const customReferences = await this.getReferenceMaps(
+      customTextIds,
+      [referenceLocales.custom.primary, referenceLocales.custom.fallback].filter(isString),
+    );
+
+    return batch.map(({ row, isBuiltIn }) => {
+      const references = isBuiltIn ? referenceLocales.builtIn : referenceLocales.custom;
+      const reference = this.pickDbReference(row, isBuiltIn ? builtInReferences : customReferences, references);
+      return {
+        row,
+        chunkIndex,
+        referenceTranslation: reference.translation,
+        referenceLocale: reference.locale,
+        isBuiltIn,
+      };
+    });
+  }
+
+  private async translateItem(options: {
     workerIndex: number;
-    queue: TranslationQueueItem[];
-    isDone: () => boolean;
-    getError: () => Error | undefined;
-    setError: (error: Error) => void;
+    item: TranslationItem;
     total: number;
     getTranslated: () => number;
     incrementTranslated: () => number;
@@ -286,14 +330,10 @@ export class LocalizationAITranslateTask extends TaskType {
     provider: any;
     service: any;
     model: string;
-    referenceLocales: Required<TranslationReferenceLocales>;
   }) {
     const {
       workerIndex,
-      queue,
-      isDone,
-      getError,
-      setError,
+      item,
       total,
       getTranslated,
       incrementTranslated,
@@ -303,113 +343,90 @@ export class LocalizationAITranslateTask extends TaskType {
       provider,
       service,
       model,
-      referenceLocales,
     } = options;
 
-    while (!isDone() || queue.length > 0) {
-      if (getError()) {
-        return;
-      }
-      if (this.isCanceled) {
-        throw new CancelError();
-      }
+    if (this.isCanceled) {
+      throw new CancelError();
+    }
 
-      const item = queue.shift();
-      if (!item) {
-        await sleep(50);
-        continue;
-      }
-
-      const { row, chunkIndex, isBuiltIn } = item;
-      try {
-        const textStart = Date.now();
-        const referenceStart = Date.now();
-        const references = isBuiltIn ? referenceLocales.builtIn : referenceLocales.custom;
-        const reference = await this.getReferenceTranslation(row, references);
-        const referenceTranslation = reference.translation;
-        const referenceLocale = reference.locale;
-        this.logger?.trace?.('Localization AI translation text started', {
+    const { row, chunkIndex, referenceTranslation, referenceLocale, isBuiltIn } = item;
+    try {
+      const textStart = Date.now();
+      this.logger?.trace?.('Localization AI translation text started', {
+        taskId: this.record.id,
+        workerIndex,
+        chunkIndex,
+        textId: row.id,
+        textLength: row.text?.length ?? 0,
+        hasReferenceTranslation: Boolean(referenceTranslation),
+        referenceLocale,
+        isBuiltIn,
+        translated: getTranslated(),
+        total,
+      });
+      const isLegacySymbolTranslation = LEGACY_SYMBOL_TRANSLATIONS.has(row.text);
+      if (isLegacySymbolTranslation) {
+        this.logger?.trace?.('Localization AI translation legacy symbol skipped', {
           taskId: this.record.id,
           workerIndex,
           chunkIndex,
           textId: row.id,
-          textLength: row.text?.length ?? 0,
-          hasReferenceTranslation: Boolean(referenceTranslation),
-          referenceLocale,
-          referenceElapsedMs: elapsed(referenceStart),
-          isBuiltIn,
-          queueSize: queue.length,
-          translated: getTranslated(),
-          total,
-        });
-        const isLegacySymbolTranslation = LEGACY_SYMBOL_TRANSLATIONS.has(row.text);
-        if (isLegacySymbolTranslation) {
-          this.logger?.trace?.('Localization AI translation legacy symbol skipped', {
-            taskId: this.record.id,
-            workerIndex,
-            chunkIndex,
-            textId: row.id,
-            text: row.text,
-          });
-        }
-        const translation = isLegacySymbolTranslation
-          ? row.text
-          : await this.translateText({
-              text: row.text,
-              module: row.module,
-              referenceTranslation,
-              referenceLocale,
-              isBuiltIn,
-              locale,
-              employeeUsername,
-              employee,
-              provider,
-              service,
-              model,
-            });
-        const aiElapsedMs = elapsed(textStart);
-        const writeStart = Date.now();
-        await this.app.db.getRepository('localizationTranslations').updateOrCreate({
-          filterKeys: ['textId', 'locale'],
-          values: {
-            textId: row.id,
-            locale,
-            translation,
-          },
-        });
-        const writeElapsedMs = elapsed(writeStart);
-        const translated = incrementTranslated();
-        this.reportProgress({ total, current: translated });
-        this.logger?.debug('Localization AI translation text completed', {
-          taskId: this.record.id,
-          workerIndex,
-          chunkIndex,
-          textId: row.id,
-          textLength: row.text?.length ?? 0,
-          translationLength: translation.length,
-          aiElapsedMs,
-          writeElapsedMs,
-          totalElapsedMs: elapsed(textStart),
-          translated,
-          total,
-          queueSize: queue.length,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        const details = {
-          id: row.id,
           text: row.text,
-          error: message,
-        };
-        this.logger?.error(`Failed to translate localization text ${row.id}: ${message}`, { error });
-        if (error instanceof CancelError) {
-          throw error;
-        }
-        setError(
-          new LocalizationAITranslationError(`Failed to translate localization text ${row.id}: ${message}`, details),
-        );
-        return;
+        });
       }
+      const translation = isLegacySymbolTranslation
+        ? row.text
+        : await this.translateText({
+            text: row.text,
+            module: row.module,
+            referenceTranslation,
+            referenceLocale,
+            isBuiltIn,
+            locale,
+            employeeUsername,
+            employee,
+            provider,
+            service,
+            model,
+          });
+      const aiElapsedMs = elapsed(textStart);
+      const writeStart = Date.now();
+      await this.app.db.getRepository('localizationTranslations').updateOrCreate({
+        filterKeys: ['textId', 'locale'],
+        values: {
+          textId: row.id,
+          locale,
+          translation,
+        },
+      });
+      const writeElapsedMs = elapsed(writeStart);
+      const translated = incrementTranslated();
+      this.reportProgress({ total, current: translated });
+      this.logger?.debug('Localization AI translation text completed', {
+        taskId: this.record.id,
+        workerIndex,
+        chunkIndex,
+        textId: row.id,
+        textLength: row.text?.length ?? 0,
+        translationLength: translation.length,
+        aiElapsedMs,
+        writeElapsedMs,
+        totalElapsedMs: elapsed(textStart),
+        translated,
+        total,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const details = {
+        id: row.id,
+        text: row.text,
+        error: message,
+      };
+      this.logger?.error(`Failed to translate localization text ${row.id}: ${message}`, { error });
+      if (error instanceof CancelError) {
+        throw error;
+      }
+      throw new LocalizationAITranslationError(`Failed to translate localization text ${row.id}: ${message}`, details);
     }
   }
 
