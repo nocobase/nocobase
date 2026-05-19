@@ -144,13 +144,11 @@ function TranslationTaskConfirmContent(props: {
   const fieldLabel = (label: string) => <span style={{ fontWeight: 400 }}>{label}</span>;
 
   useEffect(() => {
-    const nextValues = {
-      ...values,
+    onChange({
       scope,
       referenceLocales,
-    };
-    onChange(nextValues);
-  }, [onChange, referenceLocales, scope, values]);
+    });
+  }, [onChange, referenceLocales, scope]);
 
   useEffect(() => {
     let canceled = false;

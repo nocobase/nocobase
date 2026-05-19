@@ -459,7 +459,6 @@ export class LocalizationAITranslateTask extends TaskType {
 
     const setupStart = Date.now();
     const sourceText = text;
-    const sourceLang = referenceLocale ? this.getLanguageName(referenceLocale) : 'auto';
     const targetLang = this.getLanguageName(locale);
     const context = this.buildProviderContext({
       systemPrompt: this.getEmployeeSystemPrompt(employee),
@@ -473,7 +472,6 @@ export class LocalizationAITranslateTask extends TaskType {
       textLength: text?.length ?? 0,
       sourceTextLength: sourceText?.length ?? 0,
       locale,
-      sourceLang,
       targetLang,
       module,
       employeeUsername,
@@ -492,7 +490,6 @@ export class LocalizationAITranslateTask extends TaskType {
       textLength: text?.length ?? 0,
       sourceTextLength: sourceText?.length ?? 0,
       locale,
-      sourceLang,
       targetLang,
       module,
       employeeUsername,
@@ -517,7 +514,6 @@ export class LocalizationAITranslateTask extends TaskType {
       sourceTextLength: sourceText?.length ?? 0,
       translationLength: translation.length,
       locale,
-      sourceLang,
       targetLang,
       module,
       employeeUsername,
