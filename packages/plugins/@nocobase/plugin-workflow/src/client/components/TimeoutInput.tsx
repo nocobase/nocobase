@@ -19,36 +19,55 @@ const UNIT_OPTIONS = [
   { value: 86_400_000, label: 'Days' },
 ];
 
-function normalizeUnit(value?: number) {
+const DEFAULT_UNIT = 60_000;
+const MAX_TIMEOUT = 180 * 86_400_000;
+
+function clampTimeout(value: number, max = MAX_TIMEOUT) {
+  return Math.min(Math.max(value, 0), max);
+}
+
+function normalizeUnit(value?: number, fallback = DEFAULT_UNIT) {
   if (!value) {
-    return UNIT_OPTIONS[0].value;
+    return fallback;
   }
-  return UNIT_OPTIONS.findLast((item) => value % item.value === 0)?.value ?? UNIT_OPTIONS[0].value;
+  return UNIT_OPTIONS.findLast((item) => value % item.value === 0)?.value ?? fallback;
 }
 
 export const TimeoutInput = connect(
   (props: any) => {
-    const value = Number(props.value ?? 0);
-    const unit = normalizeUnit(value);
+    const value = clampTimeout(Number(props.value ?? 0));
+    const [unit, setUnit] = React.useState(() => normalizeUnit(value));
+
+    React.useEffect(() => {
+      if (value === 0) {
+        return;
+      }
+      setUnit((current) => normalizeUnit(value, current));
+    }, [value]);
+
     const displayValue = value === 0 ? 0 : value / unit;
+    const max = MAX_TIMEOUT / unit;
 
     return (
       <Space.Compact>
         <InputNumber
           min={0}
+          max={max}
           precision={0}
           value={displayValue}
-          onChange={(next) => props.onChange?.((Number(next) || 0) * unit)}
+          onChange={(next) => props.onChange?.(clampTimeout(Number(next) || 0, max) * unit)}
+          className="auto-width"
         />
         <Select
           value={unit}
           options={UNIT_OPTIONS.map((item) => ({ ...item, label: lang(item.label) }))}
           onChange={(nextUnit) => {
-            const base = Number(props.value ?? 0);
+            const base = clampTimeout(Number(props.value ?? 0));
             const current = base === 0 ? 0 : base / unit;
-            props.onChange?.(current * nextUnit);
+            setUnit(nextUnit);
+            props.onChange?.(clampTimeout(current * nextUnit));
           }}
-          className={'auto-width'}
+          className="auto-width"
         />
       </Space.Compact>
     );
