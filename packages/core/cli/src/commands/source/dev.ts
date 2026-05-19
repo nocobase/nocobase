@@ -187,6 +187,9 @@ export default class SourceDev extends Command {
 
     try {
       await runLocalNocoBaseCommand(runtime, npmArgs, {
+        env: {
+          NOCOBASE_DEV_LOCAL_PLUGINS_ONLY: 'true',
+        },
         stdio: 'inherit',
       });
     } catch (error: unknown) {
