@@ -19,7 +19,7 @@ import React, { useMemo, useState } from 'react';
 import { SortableRow, SortHandle } from './dnd/SortableRow';
 import { RowOverlayPreview } from './RowOverlayPreview';
 import { SelectionCell } from './SelectionCell';
-import { indexSwapClassName, selectionGutterClassName } from './styles';
+import { indexSwapClassName, selectionGutterClassName, tableScrollClassName } from './styles';
 import { readRowKey, snapshotSourceRow, type RowKey, type RowSnapshot } from './utils';
 
 type RowSelectionRenderCellResult<RecordType> = React.ReactNode | RenderedCell<RecordType>;
@@ -227,6 +227,7 @@ export function Table<RecordType extends object = any>(props: TableProps<RecordT
 
   const tableClassName = cx(
     className,
+    tableScrollClassName,
     showHandleInSelection && selectionGutterClassName,
     showIndex && rowSelection && indexSwapClassName,
   );
