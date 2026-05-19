@@ -8,6 +8,7 @@
  */
 
 import { ReloadOutlined, SyncOutlined, UploadOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { Schema } from '@formily/react';
 import { languageCodes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
@@ -35,7 +36,7 @@ import {
   message,
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   LOCALIZATION_RESOURCE,
   LOCALIZATION_TEXTS_RESOURCE,
@@ -44,6 +45,28 @@ import {
 import { useT } from '../locale';
 
 const { Text } = Typography;
+
+const editableRowClassName = css`
+  .editable-cell {
+    position: relative;
+  }
+
+  .editable-cell-value-wrap {
+    min-height: 32px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+
+  &:hover .editable-cell-value-wrap {
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    padding: 4px 11px;
+  }
+
+  [data-theme='dark'] &:hover .editable-cell-value-wrap {
+    border: 1px solid #434343;
+  }
+`;
 
 type LocalizationText = {
   id: number | string;
@@ -65,10 +88,203 @@ type SourceOption = {
 };
 
 type TranslationMode = 'full' | 'incremental' | 'selected';
+type TranslationScope = 'all' | 'builtIn' | 'custom';
 
 type LocalizationTask = Task & {
   mode: TranslationMode;
+  description?: string;
 };
+
+type ReferenceLocales = {
+  builtIn: {
+    primary: string;
+    fallback: string;
+  };
+  custom: {
+    primary: string;
+    fallback: string;
+  };
+};
+
+type TranslationTaskValues = {
+  mode: TranslationMode;
+  scope: TranslationScope;
+  locale: string;
+  employeeUsername: string;
+  referenceLocales: ReferenceLocales;
+  textIds?: React.Key[];
+};
+
+function TranslationTaskConfirmContent(props: {
+  api: any;
+  t: (key: string) => string;
+  task: LocalizationTask;
+  values: TranslationTaskValues;
+  languageOptions: { value: string; label: string }[];
+  onChange: (values: Partial<TranslationTaskValues>) => void;
+  onPreviewChange: (previewState: { count: number; loading: boolean }) => void;
+}) {
+  const { api, t, task, values, languageOptions, onChange, onPreviewChange } = props;
+  const [scope, setScope] = useState<TranslationScope>(values.scope || 'all');
+  const [referenceLocales, setReferenceLocales] = useState<ReferenceLocales>(values.referenceLocales);
+  const [preview, setPreview] = useState<any>();
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const isSelectedMode = task.mode === 'selected';
+  const scopeOptions = useMemo(
+    () => [
+      { label: t('All'), value: 'all' },
+      { label: t('Built-in entries'), value: 'builtIn' },
+      { label: t('Custom entries'), value: 'custom' },
+    ],
+    [t],
+  );
+  const showBuiltInReferences = !isSelectedMode && scope !== 'custom';
+  const showCustomReferences = !isSelectedMode && scope !== 'builtIn';
+  const fieldLabel = (label: string) => <span style={{ fontWeight: 400 }}>{label}</span>;
+
+  useEffect(() => {
+    let canceled = false;
+    const nextValues = {
+      ...values,
+      scope,
+      referenceLocales,
+    };
+    onChange(nextValues);
+    setPreviewLoading(true);
+    onPreviewChange({ count: 0, loading: true });
+    void api
+      .resource(LOCALIZATION_RESOURCE)
+      .aiTranslatePreview({ values: nextValues })
+      .then((response) => {
+        if (canceled) {
+          return;
+        }
+        const nextPreview = response?.data?.data || response?.data;
+        setPreview(nextPreview);
+        onPreviewChange({ count: nextPreview?.count ?? 0, loading: false });
+      })
+      .catch((error) => {
+        if (canceled) {
+          return;
+        }
+        message.error(error?.message || t('Failed to create async task'));
+      })
+      .finally(() => {
+        if (!canceled) {
+          setPreviewLoading(false);
+        }
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [api, onChange, onPreviewChange, referenceLocales, scope, t, values]);
+
+  const providerLabel = preview?.providerTitle ? Schema.compile(preview.providerTitle, { t }) : preview?.provider;
+  const modelLabel = preview?.model ? formatModelLabel(preview.model) : undefined;
+
+  return (
+    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      <Typography.Paragraph style={{ marginBottom: 0 }}>{task.description}</Typography.Paragraph>
+      {!isSelectedMode ? (
+        <div>
+          <Text strong>{t('Translation scope')}</Text>
+          <div style={{ marginTop: 8 }}>
+            <Radio.Group value={scope} options={scopeOptions} onChange={(event) => setScope(event.target.value)} />
+          </div>
+          <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+            {t(
+              'Built-in entries are system and plugin entries. Custom entries include route names, collection and field names, and UI content.',
+            )}
+          </Typography.Paragraph>
+        </div>
+      ) : null}
+      <div>
+        <Text strong>{t('Entries to translate')}</Text>: {previewLoading ? t('Loading...') : preview?.count ?? 0}
+      </div>
+      <div>
+        <Text strong>{t('Provider')}</Text>: {providerLabel || '-'}
+      </div>
+      <div>
+        <Text strong>{t('Model')}</Text>: {modelLabel || '-'}
+      </div>
+      <Form
+        layout="vertical"
+        initialValues={{
+          referenceLocales: {
+            ...referenceLocales,
+            common: referenceLocales.custom,
+          },
+        }}
+        onValuesChange={(_, allValues) => {
+          const nextReferenceLocales = allValues.referenceLocales;
+          if (isSelectedMode && nextReferenceLocales?.common) {
+            setReferenceLocales({
+              builtIn: nextReferenceLocales.common,
+              custom: nextReferenceLocales.common,
+            });
+          } else {
+            setReferenceLocales(nextReferenceLocales);
+          }
+        }}
+      >
+        {isSelectedMode ? (
+          <div>
+            <Text strong>{t('Reference translation')}</Text>
+            <Row gutter={12}>
+              <Col span={12}>
+                <Form.Item name={['referenceLocales', 'common', 'primary']} label={fieldLabel(t('Default language'))}>
+                  <Select showSearch optionFilterProp="label" options={languageOptions} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name={['referenceLocales', 'common', 'fallback']} label={fieldLabel(t('Fallback language'))}>
+                  <Select showSearch optionFilterProp="label" options={languageOptions} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+        ) : null}
+        {showBuiltInReferences ? (
+          <div>
+            <Text strong>{t('Built-in entries reference translation')}</Text>
+            <Row gutter={12}>
+              <Col span={12}>
+                <Form.Item name={['referenceLocales', 'builtIn', 'primary']} label={fieldLabel(t('Default language'))}>
+                  <Select showSearch optionFilterProp="label" options={languageOptions} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name={['referenceLocales', 'builtIn', 'fallback']}
+                  label={fieldLabel(t('Fallback language'))}
+                >
+                  <Select showSearch optionFilterProp="label" options={languageOptions} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+        ) : null}
+        {showCustomReferences ? (
+          <div>
+            <Text strong>{t('Custom entries reference translation')}</Text>
+            <Row gutter={12}>
+              <Col span={12}>
+                <Form.Item name={['referenceLocales', 'custom', 'primary']} label={fieldLabel(t('Default language'))}>
+                  <Select showSearch optionFilterProp="label" options={languageOptions} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name={['referenceLocales', 'custom', 'fallback']} label={fieldLabel(t('Fallback language'))}>
+                  <Select showSearch optionFilterProp="label" options={languageOptions} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+        ) : null}
+      </Form>
+    </Space>
+  );
+}
 
 type ListParams = {
   page: number;
@@ -94,11 +310,82 @@ function compileLabel(label: string, t: (key: string) => string) {
   return Schema.compile(label, { t });
 }
 
-const TranslationField: React.FC<{ value?: string }> = ({ value }) => {
-  if (value === undefined || value === null) {
-    return null;
+const TranslationField: React.FC<{
+  value?: string;
+  record: LocalizationText;
+  onSave: (record: LocalizationText, translation: string) => Promise<void>;
+}> = ({ value, record, onSave }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<any>(null);
+  const skipSaveRef = useRef(false);
+
+  useEffect(() => {
+    setDraft(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus?.();
+    }
+  }, [editing]);
+
+  const toggleEdit = () => {
+    skipSaveRef.current = false;
+    setDraft(value || '');
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    skipSaveRef.current = true;
+    setDraft(value || '');
+    setEditing(false);
+  };
+
+  const save = async () => {
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
+    }
+    if (draft === (value || '')) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(record, draft);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <Input
+        ref={inputRef}
+        value={draft}
+        disabled={saving}
+        onBlur={save}
+        onChange={(event) => setDraft(event.target.value)}
+        onPressEnter={(event) => event.currentTarget.blur()}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            cancel();
+          }
+        }}
+      />
+    );
   }
-  return <span>{value}</span>;
+
+  return (
+    <div className="editable-cell">
+      <div className="editable-cell-value-wrap" onClick={toggleEdit}>
+        {value}
+      </div>
+    </div>
+  );
 };
 
 export default function LocalizationPage() {
@@ -167,15 +454,19 @@ export function LocalizationPageContent() {
     if (!editingRecord) {
       return;
     }
+    await saveTranslation(editingRecord, values.translation);
+    setEditingRecord(null);
+  };
+
+  const saveTranslation = async (record: LocalizationText, translation: string) => {
     await api.resource(LOCALIZATION_TRANSLATIONS_RESOURCE).updateOrCreate({
       filterKeys: ['textId', 'locale'],
       values: {
-        textId: editingRecord.id,
+        textId: record.id,
         locale: currentLocale,
-        translation: values.translation,
+        translation,
       },
     });
-    setEditingRecord(null);
     refresh();
   };
 
@@ -219,7 +510,7 @@ export function LocalizationPageContent() {
       title: t('Translation'),
       dataIndex: 'translation',
       ellipsis: true,
-      render: (value) => <TranslationField value={value} />,
+      render: (value, record) => <TranslationField value={value} record={record} onSave={saveTranslation} />,
     },
     {
       title: t('Module'),
@@ -329,6 +620,7 @@ export function LocalizationPageContent() {
           columns={columns}
           dataSource={rows}
           pagination={pagination}
+          rowClassName={editableRowClassName}
           rowSelection={{
             selectedRowKeys,
             onChange: setSelectedRowKeys,
@@ -387,49 +679,85 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
   const t = useT();
   const api = ctx.app.apiClient;
   const currentLocale = api.auth.getLocale?.() || api.auth.locale || 'en-US';
-  const [loadingMode, setLoadingMode] = useState<TranslationMode | null>(null);
+  const [loadingTaskTitle, setLoadingTaskTitle] = useState<string | undefined>();
   const lina: AIEmployee = {
     username: 'lina',
   };
+  const languageOptions = useMemo(
+    () =>
+      Object.entries(languageCodes).map(([value, item]) => ({
+        value,
+        label: item.label || value,
+      })),
+    [],
+  );
 
-  const createTask = async (mode: TranslationMode) => {
+  const defaultReferenceLocales = useMemo(
+    () => ({
+      builtIn: {
+        primary: 'zh-CN',
+        fallback: 'ja-JP',
+      },
+      custom: {
+        primary: currentLocale,
+        fallback: 'zh-CN',
+      },
+    }),
+    [currentLocale],
+  );
+
+  const createTask = async (task: LocalizationTask) => {
+    const { mode } = task;
     if (mode === 'selected' && !selectedRowKeys.length) {
       message.error(t('Please select the records you want to translate'));
       return;
     }
-    setLoadingMode(mode);
+    setLoadingTaskTitle(task.title as string);
     try {
       const values = {
         mode,
+        scope: 'all' as TranslationScope,
         locale: currentLocale,
         employeeUsername: 'lina',
+        referenceLocales: defaultReferenceLocales,
         textIds: mode === 'selected' ? selectedRowKeys : undefined,
       };
-      const previewResponse = await api.resource(LOCALIZATION_RESOURCE).aiTranslatePreview({
-        values,
-      });
-      const preview = previewResponse?.data?.data || previewResponse?.data;
-      const providerLabel = preview?.providerTitle ? Schema.compile(preview.providerTitle, { t }) : preview?.provider;
-      const modelLabel = preview?.model ? formatModelLabel(preview.model) : undefined;
+      const previewState = {
+        count: 0,
+        loading: true,
+      };
       const confirmed = await new Promise<boolean>((resolve) => {
         Modal.confirm({
-          title: t('Confirm translation task'),
+          title: task.title,
+          width: 640,
           content: (
-            <Space direction="vertical" size={8}>
-              <div>
-                {t('Entries to translate')}: {preview?.count ?? 0}
-              </div>
-              <div>
-                {t('Provider')}: {providerLabel || '-'}
-              </div>
-              <div>
-                {t('Model')}: {modelLabel || '-'}
-              </div>
-            </Space>
+            <TranslationTaskConfirmContent
+              api={api}
+              t={t}
+              task={task}
+              values={values}
+              languageOptions={languageOptions}
+              onChange={(nextValues) => {
+                Object.assign(values, nextValues);
+              }}
+              onPreviewChange={(nextPreviewState) => {
+                Object.assign(previewState, nextPreviewState);
+              }}
+            />
           ),
           okText: t('Confirm'),
           cancelText: t('Cancel'),
-          onOk: () => resolve(true),
+          onOk: () => {
+            if (previewState.loading) {
+              message.warning(t('Please wait for the translation preview to load'));
+              return Promise.reject();
+            }
+            if (previewState.count <= 0) {
+              message.warning(t('No entries to translate'));
+              return Promise.reject();
+            }
+            resolve(true);
+          },
           onCancel: () => resolve(false),
         });
       });
@@ -443,14 +771,26 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
     } catch (error) {
       message.error(error?.message || t('Failed to create async task'));
     } finally {
-      setLoadingMode(null);
+      setLoadingTaskTitle(undefined);
     }
   };
 
   const tasks: LocalizationTask[] = [
-    { mode: 'incremental', title: t('Incremental translation') },
-    { mode: 'selected', title: t('Selected translation') },
-    { mode: 'full', title: t('Full translation') },
+    {
+      mode: 'incremental',
+      title: t('Incremental translation'),
+      description: t('Translate entries that do not yet have a translation in the current language.'),
+    },
+    {
+      mode: 'selected',
+      title: t('Selected translation'),
+      description: t('Translate only the selected entries in the table.'),
+    },
+    {
+      mode: 'full',
+      title: t('Full translation'),
+      description: t('Translate all entries in the current language, including existing translations.'),
+    },
   ];
 
   return (
@@ -459,8 +799,8 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
       tasks={tasks}
       size={32}
       mask={false}
-      onTaskClick={(task) => createTask((task as LocalizationTask).mode)}
-      loadingTaskTitle={tasks.find((task) => task.mode === loadingMode)?.title}
+      onTaskClick={(task) => createTask(task as LocalizationTask)}
+      loadingTaskTitle={loadingTaskTitle}
       taskLoadingTitle={t('Creating...')}
     />
   );

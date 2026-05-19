@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AIMessageChunk, HumanMessage } from '@langchain/core/messages';
+import { AIMessageChunk } from '@langchain/core/messages';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { EmbeddingProvider, LLMModelRequestBuilder, LLMProvider } from './provider';
+import { EmbeddingProvider, LLMProvider } from './provider';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { SupportedModel } from '../manager/ai-manager';
 import { Context } from '@nocobase/actions';
@@ -79,44 +79,6 @@ export class DashscopeProvider extends LLMProvider {
     } else {
       return toolDefinitions;
     }
-  }
-
-  protected getModelRequestBuilder(model?: string): LLMModelRequestBuilder | null {
-    if (!/^qwen-mt-/i.test(model || '')) {
-      return null;
-    }
-    return ({ context, options }) => {
-      const { sourceText, sourceLang, targetLang, terms } = options?.modelRequestParams || {};
-      if (!sourceText || !sourceLang || !targetLang) {
-        return {
-          context,
-          options,
-        };
-      }
-      this.app.logger?.debug('Dashscope Qwen-MT model request builder matched', {
-        model: this.modelOptions?.model,
-        sourceTextLength: sourceText?.length ?? 0,
-        sourceLang,
-        targetLang,
-        terms: Array.isArray(terms) ? terms.length : 0,
-      });
-      return {
-        context: {
-          messages: [new HumanMessage(sourceText)] as any,
-        },
-        options: {
-          ...options,
-          modelKwargs: {
-            ...(options?.modelKwargs || {}),
-            translation_options: {
-              source_lang: sourceLang,
-              target_lang: targetLang,
-              ...(Array.isArray(terms) && terms.length ? { terms } : {}),
-            },
-          },
-        },
-      };
-    };
   }
 
   parseResponseMessage(message: Model) {
