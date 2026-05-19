@@ -50,6 +50,7 @@ describe('Application', () => {
     expect(app.providers).toBeDefined();
     expect(app.router).toBeDefined();
     expect(app.scopes).toBeDefined();
+    expect(app.jsonLogic.apply({ $eq: [1, '1'] })).toBe(true);
     expect(app.providers.length).toBeGreaterThan(1);
     expect(Object.keys(app.components).length).toBeGreaterThan(1);
   });
