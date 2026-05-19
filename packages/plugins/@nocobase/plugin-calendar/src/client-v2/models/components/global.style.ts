@@ -22,6 +22,9 @@ const GlobalStyle = createGlobalStyle`
   .rbc-overlay > * + * {
     margin-top: ${({ theme }) => `${theme.lineWidth}px`};
   }
+  .rbc-overlay .rbc-event {
+    cursor: pointer;
+  }
   .rbc-overlay-header {
     font-weight: ${({ theme }) => theme.fontWeightStrong};
     font-size: ${({ theme }) => `${theme.fontSize}px`};
