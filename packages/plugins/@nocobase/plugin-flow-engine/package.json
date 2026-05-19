@@ -16,7 +16,7 @@
   "dependencies": {
     "acorn": "^8.14.0",
     "acorn-jsx": "^5.3.2",
-    "acorn-walk": "^8.3.4",
+    "acorn-walk": "8.3.4",
     "ses": "^1.14.0"
   },
   "peerDependencies": {

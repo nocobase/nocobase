@@ -38,6 +38,7 @@ type SourceRange = {
 };
 
 type SourceBinding = SourceRange & {
+  declarationStart?: number;
   name: string;
 };
 
@@ -49,11 +50,13 @@ type StaticStringBinding = StringLiteralBinding;
 
 type ReactComponentAlias = SourceRange & {
   capability: string;
+  declarationStart?: number;
   name: string;
 };
 
 type FlowResourceAlias = SourceRange & {
   capability: string;
+  declarationStart?: number;
   name: string;
 };
 
@@ -73,7 +76,6 @@ type CallArgumentSource = SourceRange & {
 type RunJsSourceBudget = {
   count: number;
   countLimitReported?: boolean;
-  sourceLimitReported?: boolean;
   totalLength: number;
   totalLimitReported?: boolean;
 };
@@ -95,6 +97,10 @@ type RunJsAstInspection = {
 type CtxMethodAlias = SourceRange & {
   capability: string;
   method: string;
+  name: string;
+};
+
+type AstIdentifierBinding = SourceRange & {
   name: string;
 };
 
@@ -410,7 +416,7 @@ export function collectFlowRegistryRunJsAuthoringErrors(
   path = '$.flowRegistry',
 ): FlowSurfaceErrorItemInput[] {
   const errors: FlowSurfaceErrorItemInput[] = [];
-  collectFlowRegistryRunJsErrors(flowRegistry, path, errors);
+  collectFlowRegistryRunJsErrors(flowRegistry, path, errors, createRunJsSourceBudget());
   return dedupeErrors(errors);
 }
 
@@ -463,24 +469,21 @@ function collectRunJsSourceLimitErrors(
     );
   };
 
-  if (sourceLength > MAX_RUNJS_SOURCE_LENGTH) {
-    if (!budget || !budget.sourceLimitReported) {
-      if (budget) {
-        budget.sourceLimitReported = true;
-      }
-      pushLimitError(
-        'runjs-source-too-large',
-        `flowSurfaces authoring ${input.path} RunJS source is too large to validate safely`,
-        {
-          maxSourceLength: MAX_RUNJS_SOURCE_LENGTH,
-          sourceLength,
-        },
-      );
-    }
-    return { errors, skipInspection: true };
+  const sourceTooLarge = sourceLength > MAX_RUNJS_SOURCE_LENGTH;
+  if (sourceTooLarge && (!budget || budget.count <= MAX_RUNJS_SOURCES_PER_REQUEST)) {
+    pushLimitError(
+      'runjs-source-too-large',
+      `flowSurfaces authoring ${input.path} RunJS source is too large to validate safely`,
+      {
+        maxSourceLength: MAX_RUNJS_SOURCE_LENGTH,
+        sourceLength,
+      },
+    );
   }
 
+  let requestLimitExceeded = false;
   if (budget && budget.count > MAX_RUNJS_SOURCES_PER_REQUEST) {
+    requestLimitExceeded = true;
     if (!budget.countLimitReported) {
       budget.countLimitReported = true;
       pushLimitError(
@@ -492,10 +495,10 @@ function collectRunJsSourceLimitErrors(
         },
       );
     }
-    return { errors, skipInspection: true };
   }
 
   if (budget && budget.totalLength > MAX_RUNJS_TOTAL_SOURCE_LENGTH) {
+    requestLimitExceeded = true;
     if (!budget.totalLimitReported) {
       budget.totalLimitReported = true;
       pushLimitError(
@@ -507,10 +510,9 @@ function collectRunJsSourceLimitErrors(
         },
       );
     }
-    return { errors, skipInspection: true };
   }
 
-  return { errors, skipInspection: false };
+  return { errors, skipInspection: sourceTooLarge || requestLimitExceeded };
 }
 
 export function inspectRunJsAuthoringCode(input: RunJsAuthoringInspectionInput): FlowSurfaceErrorItemInput[] {
@@ -1693,17 +1695,22 @@ function scanJavaScriptSource(source: string, ast?: any) {
   const masked = maskJavaScriptSource(source);
   const functionRanges = findFunctionRanges(masked);
   const blockRanges = collectBraceRanges(masked);
-  const sourceBindings = collectSourceBindings(masked, functionRanges, blockRanges);
+  const staticBlockRanges = collectStaticBlockRanges(masked);
+  const sourceBindings = collectSourceBindings(masked, functionRanges, blockRanges, staticBlockRanges);
   const stringLiteralBindings = collectStringLiteralBindings(source, masked, sourceBindings);
   const astInspection = ast ? inspectRunJsAst(ast, source, stringLiteralBindings) : undefined;
-  const ctxRenderCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g);
+  const ctxRenderCalls = findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g, sourceBindings);
   const topLevelCtxRenderCalls = ctxRenderCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges));
   const topLevelReturns = findMatches(masked, /\breturn\b/g).filter(
     (entry) => !isInsideRanges(entry.index, functionRanges),
   );
-  const ctxRunjsCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*runjs\s*(?:\?\.)?\(/g);
-  const ctxRequestCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*(?:api\s*(?:\?\.|\.)\s*)?request\s*(?:\?\.)?\(/g);
-  const reactHookCalls = collectReactHookCalls(masked);
+  const ctxRunjsCalls = findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.|\.)\s*runjs\s*(?:\?\.)?\(/g, sourceBindings);
+  const ctxRequestCalls = findUnboundCtxMatches(
+    masked,
+    /\bctx\s*(?:\?\.|\.)\s*(?:api\s*(?:\?\.|\.)\s*)?request\s*(?:\?\.)?\(/g,
+    sourceBindings,
+  );
+  const reactHookCalls = collectReactHookCalls(masked, sourceBindings);
   const reactComponentAliases = collectReactComponentAliases(masked, sourceBindings);
   const flowResourceAliases = collectFlowResourceAliases(masked, sourceBindings);
   const directDomWrites = collectDirectDomWrites(source, masked, sourceBindings);
@@ -1724,37 +1731,49 @@ function scanJavaScriptSource(source: string, ast?: any) {
     ctxRunjsCalls,
     nestedRunjsCalls: astInspection?.nestedRunjsCalls || ctxRunjsCalls,
     ctxRequestCalls,
-    invalidApiResourceCalls: collectInvalidApiResourceCalls(masked),
+    invalidApiResourceCalls: collectInvalidApiResourceCalls(masked, sourceBindings),
     invalidResourceTypeCalls:
-      astInspection?.invalidResourceTypeCalls || collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings),
-    invalidFlowResourceListCalls: collectInvalidFlowResourceListCalls(masked, flowResourceAliases),
+      astInspection?.invalidResourceTypeCalls ||
+      collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings, sourceBindings),
+    invalidFlowResourceListCalls: collectInvalidFlowResourceListCalls(masked, flowResourceAliases, sourceBindings),
     topLevelReactHookCalls: reactHookCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges)),
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
-    reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases),
-    ctxRenderComponentSignatureCalls: collectCtxRenderComponentSignatureCalls(source, masked, reactComponentAliases),
-    reactComponentPropReferences: collectReactComponentPropReferences(source, masked, reactComponentAliases),
+    reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases, sourceBindings),
+    ctxRenderComponentSignatureCalls: collectCtxRenderComponentSignatureCalls(
+      source,
+      masked,
+      reactComponentAliases,
+      sourceBindings,
+    ),
+    reactComponentPropReferences: collectReactComponentPropReferences(
+      source,
+      masked,
+      reactComponentAliases,
+      sourceBindings,
+    ),
     directDomWrites,
     directDomAliases,
     windowDocumentNavigatorUses,
     windowDocumentNavigatorAliases,
     ctxAliases,
-    ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked),
+    ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked, sourceBindings),
     forbiddenBareGlobals,
-    ctxMemberAccesses: collectCtxMemberAccesses(masked),
-    dynamicCtxAccesses: findMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g),
+    ctxMemberAccesses: collectCtxMemberAccesses(masked, sourceBindings),
+    dynamicCtxAccesses: findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g, sourceBindings),
     isTopLevelFunctionWrapper: isTopLevelFunctionWrapper(masked, functionRanges, topLevelCtxRenderCalls),
   };
 }
 
 function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteralBinding[]): RunJsAstInspection {
-  const aliases = collectCtxMethodAliasesFromAst(ast, source);
+  const identifierBindings = collectAstIdentifierBindingsFromAst(ast, source);
+  const aliases = collectCtxMethodAliasesFromAst(ast, source, identifierBindings);
   const staticStringBindings = [...stringBindings, ...collectStaticStringBindingsFromAst(ast, source)];
   const nestedRunjsCalls: RunJsAstInspection['nestedRunjsCalls'] = [];
   const invalidResourceTypeCalls: RunJsAstInspection['invalidResourceTypeCalls'] = [];
 
   walkAstSimple(ast, {
     CallExpression(node: any) {
-      const method = resolveCtxMethodCall(node, aliases);
+      const method = resolveCtxMethodCall(node, aliases, identifierBindings);
       if (!method) {
         return;
       }
@@ -1767,7 +1786,14 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
       }
       if (method.method === 'makeResource' || method.method === 'initResource') {
         invalidResourceTypeCalls.push(
-          ...collectAstInvalidResourceTypeCall(node, method.method, method.capability, source, staticStringBindings),
+          ...collectAstInvalidResourceTypeCall(
+            node,
+            method.method,
+            method.capability,
+            source,
+            staticStringBindings,
+            identifierBindings,
+          ),
         );
       }
     },
@@ -1779,7 +1805,11 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
   };
 }
 
-function collectCtxMethodAliasesFromAst(ast: any, source: string): CtxMethodAlias[] {
+function collectCtxMethodAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): CtxMethodAlias[] {
   const aliases: CtxMethodAlias[] = [];
   const addAlias = (name: string, method: string, node: any, ancestors: any[], isVar = false) => {
     const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
@@ -1797,23 +1827,23 @@ function collectCtxMethodAliasesFromAst(ast: any, source: string): CtxMethodAlia
       if (node.operator !== '=' || node.left?.type !== 'Identifier') {
         return;
       }
-      const method = getCtxMethodName(node.right);
+      const method = getCtxMethodName(node.right, identifierBindings);
       if (method) {
         addAlias(node.left.name, method, node, ancestors);
       }
     },
     VariableDeclarator(node: any, ancestors: any[]) {
-      const method = getCtxMethodName(node.init);
+      const method = getCtxMethodName(node.init, identifierBindings);
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
       const isVar = declaration?.kind === 'var';
       if (node.id?.type === 'Identifier' && method) {
         addAlias(node.id.name, method, node, ancestors, isVar);
         return;
       }
-      if (node.id?.type === 'ObjectPattern' && isCtxIdentifier(node.init)) {
-        collectAstObjectPatternAliases(node.id, (name, member) => {
+      if (node.id?.type === 'ObjectPattern' && isUnshadowedCtxIdentifier(node.init, identifierBindings)) {
+        collectAstObjectPatternAliases(node.id, (name, member, aliasNode) => {
           if (AST_CTX_METHOD_NAMES.has(member)) {
-            addAlias(name, member, node, ancestors, isVar);
+            addAlias(name, member, aliasNode || node, ancestors, isVar);
           }
         });
       }
@@ -1821,6 +1851,72 @@ function collectCtxMethodAliasesFromAst(ast: any, source: string): CtxMethodAlia
   });
 
   return aliases;
+}
+
+function collectAstIdentifierBindingsFromAst(ast: any, source: string): AstIdentifierBinding[] {
+  const bindings: AstIdentifierBinding[] = [];
+  const addBinding = (name: string, node: any, scope: SourceRange) => {
+    if (!name) {
+      return;
+    }
+    bindings.push({
+      name,
+      start: scope.start,
+      end: scope.end,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const scope = getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var');
+      collectAstPatternBindingIdentifiers(node.id, (name, bindingNode) => addBinding(name, bindingNode, scope));
+    },
+    FunctionDeclaration(node: any, ancestors: any[]) {
+      const parentScope = getAstBindingScopeRange(ancestors.slice(0, -1), source.length);
+      if (node.id?.type === 'Identifier') {
+        addBinding(node.id.name, node.id, parentScope);
+      }
+      addAstFunctionParamBindings(bindings, node, source.length);
+    },
+    FunctionExpression(node: any) {
+      if (node.id?.type === 'Identifier') {
+        bindings.push({
+          name: node.id.name,
+          start: typeof node.id.start === 'number' ? node.id.start : typeof node.start === 'number' ? node.start : 0,
+          end: typeof node.end === 'number' ? node.end : source.length,
+        });
+      }
+      addAstFunctionParamBindings(bindings, node, source.length);
+    },
+    ArrowFunctionExpression(node: any) {
+      addAstFunctionParamBindings(bindings, node, source.length);
+    },
+    ClassDeclaration(node: any, ancestors: any[]) {
+      const parentScope = getAstBindingScopeRange(ancestors.slice(0, -1), source.length);
+      if (node.id?.type === 'Identifier') {
+        addBinding(node.id.name, node.id, parentScope);
+      }
+    },
+    ClassExpression(node: any) {
+      if (node.id?.type === 'Identifier') {
+        bindings.push({
+          name: node.id.name,
+          start: typeof node.id.start === 'number' ? node.id.start : typeof node.start === 'number' ? node.start : 0,
+          end: typeof node.end === 'number' ? node.end : source.length,
+        });
+      }
+    },
+    CatchClause(node: any) {
+      const scope = {
+        start: typeof node.start === 'number' ? node.start : 0,
+        end: typeof node.end === 'number' ? node.end : source.length,
+      };
+      collectAstPatternBindingIdentifiers(node.param, (name, bindingNode) => addBinding(name, bindingNode, scope));
+    },
+  });
+
+  return bindings;
 }
 
 function collectStaticStringBindingsFromAst(ast: any, source: string): StaticStringBinding[] {
@@ -1853,6 +1949,7 @@ function collectAstInvalidResourceTypeCall(
   capability: string,
   source: string,
   stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
 ): RunJsAstInspection['invalidResourceTypeCalls'] {
   const firstArg = node.arguments?.[0];
   if (!firstArg) {
@@ -1865,7 +1962,7 @@ function collectAstInvalidResourceTypeCall(
       },
     ];
   }
-  const resolved = resolveAstResourceTypeExpression(firstArg, source, stringBindings);
+  const resolved = resolveAstResourceTypeExpression(firstArg, source, stringBindings, identifierBindings);
   if (resolved.status === 'unresolved') {
     return [
       {
@@ -1891,9 +1988,9 @@ function collectAstInvalidResourceTypeCall(
   return [];
 }
 
-function resolveCtxMethodCall(node: any, aliases: CtxMethodAlias[]) {
+function resolveCtxMethodCall(node: any, aliases: CtxMethodAlias[], identifierBindings: AstIdentifierBinding[]) {
   const callee = unwrapAstChainExpression(node.callee);
-  const directMethod = getCtxMethodName(callee);
+  const directMethod = getCtxMethodName(callee, identifierBindings);
   if (directMethod) {
     return {
       capability: `ctx.${directMethod}`,
@@ -1901,9 +1998,7 @@ function resolveCtxMethodCall(node: any, aliases: CtxMethodAlias[]) {
     };
   }
   if (callee?.type === 'Identifier') {
-    const alias = aliases.find(
-      (entry) => entry.name === callee.name && node.start >= entry.start && node.start < entry.end,
-    );
+    const alias = resolveAstAliasBinding(callee.name, node.start || 0, aliases, identifierBindings);
     if (alias) {
       return alias;
     }
@@ -1911,9 +2006,9 @@ function resolveCtxMethodCall(node: any, aliases: CtxMethodAlias[]) {
   return undefined;
 }
 
-function getCtxMethodName(node: any) {
+function getCtxMethodName(node: any, identifierBindings: AstIdentifierBinding[]) {
   const member = unwrapAstChainExpression(node);
-  if (!member || member.type !== 'MemberExpression' || !isCtxIdentifier(member.object)) {
+  if (!member || member.type !== 'MemberExpression' || !isUnshadowedCtxIdentifier(member.object, identifierBindings)) {
     return '';
   }
   const propertyName = getAstStaticPropertyName(member);
@@ -1924,15 +2019,14 @@ function resolveAstResourceTypeExpression(
   node: any,
   source: string,
   stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
 ): { status: 'resolved'; value: string } | { status: 'unresolved'; expression: string } {
   const resolved = resolveAstStaticStringValue(node, source);
   if (typeof resolved === 'string') {
     return { status: 'resolved', value: resolved };
   }
   if (node?.type === 'Identifier') {
-    const binding = stringBindings.find(
-      (entry) => entry.name === node.name && node.start >= entry.start && node.start < entry.end,
-    );
+    const binding = resolveAstAliasBinding(node.name, node.start || 0, stringBindings, identifierBindings);
     if (binding) {
       return { status: 'resolved', value: binding.value };
     }
@@ -1957,17 +2051,105 @@ function resolveAstStaticStringValue(node: any, source: string): string | undefi
   return undefined;
 }
 
-function collectAstObjectPatternAliases(pattern: any, addAlias: (alias: string, member: string) => void) {
+function resolveAstAliasBinding<T extends SourceRange & { name: string }>(
+  name: string,
+  index: number,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+): T | undefined {
+  const candidates = aliases
+    .filter((entry) => entry.name === name && index >= entry.start && index < entry.end)
+    .sort((left, right) => right.start - left.start);
+  return candidates.find((entry) => !hasAstShadowBinding(name, index, entry, identifierBindings));
+}
+
+function hasAstShadowBinding(
+  name: string,
+  index: number,
+  alias: SourceRange,
+  identifierBindings: AstIdentifierBinding[],
+) {
+  return identifierBindings.some(
+    (binding) => binding.name === name && binding.start > alias.start && index >= binding.start && index < binding.end,
+  );
+}
+
+function addAstFunctionParamBindings(bindings: AstIdentifierBinding[], node: any, sourceLength: number) {
+  const scope = {
+    start: typeof node.start === 'number' ? node.start : 0,
+    end: typeof node.end === 'number' ? node.end : sourceLength,
+  };
+  for (const param of node.params || []) {
+    collectAstPatternBindingIdentifiers(param, (name, bindingNode) => {
+      bindings.push({
+        name,
+        start: typeof bindingNode?.start === 'number' ? bindingNode.start : scope.start,
+        end: scope.end,
+      });
+    });
+  }
+}
+
+function collectAstPatternBindingIdentifiers(node: any, addBinding: (name: string, node: any) => void) {
+  if (!node) {
+    return;
+  }
+  if (node.type === 'Identifier') {
+    addBinding(node.name, node);
+    return;
+  }
+  if (node.type === 'AssignmentPattern') {
+    collectAstPatternBindingIdentifiers(node.left, addBinding);
+    return;
+  }
+  if (node.type === 'RestElement') {
+    collectAstPatternBindingIdentifiers(node.argument, addBinding);
+    return;
+  }
+  if (node.type === 'ArrayPattern') {
+    for (const element of node.elements || []) {
+      collectAstPatternBindingIdentifiers(element, addBinding);
+    }
+    return;
+  }
+  if (node.type === 'ObjectPattern') {
+    for (const property of node.properties || []) {
+      if (!property) {
+        continue;
+      }
+      if (property.type === 'RestElement') {
+        collectAstPatternBindingIdentifiers(property.argument, addBinding);
+        continue;
+      }
+      if (property.type === 'Property') {
+        collectAstPatternBindingIdentifiers(property.value, addBinding);
+      }
+    }
+  }
+}
+
+function collectAstObjectPatternAliases(pattern: any, addAlias: (alias: string, member: string, node?: any) => void) {
   for (const property of pattern.properties || []) {
     if (!property || property.type !== 'Property') {
       continue;
     }
     const member = getAstStaticPropertyName(property);
     const alias = getAstBindingIdentifierName(property.value);
+    const aliasNode = getAstBindingIdentifierNode(property.value);
     if (member && alias) {
-      addAlias(alias, member);
+      addAlias(alias, member, aliasNode);
     }
   }
+}
+
+function getAstBindingIdentifierNode(node: any): any {
+  if (node?.type === 'Identifier') {
+    return node;
+  }
+  if (node?.type === 'AssignmentPattern' && node.left?.type === 'Identifier') {
+    return node.left;
+  }
+  return undefined;
 }
 
 function getAstBindingIdentifierName(node: any): string {
@@ -1997,6 +2179,19 @@ function isCtxIdentifier(node: any) {
   return unwrapped?.type === 'Identifier' && unwrapped.name === 'ctx';
 }
 
+function isUnshadowedCtxIdentifier(node: any, identifierBindings: AstIdentifierBinding[]) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!isCtxIdentifier(unwrapped)) {
+    return false;
+  }
+  const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
+  return !hasAstActiveBinding('ctx', index, identifierBindings);
+}
+
+function hasAstActiveBinding(name: string, index: number, identifierBindings: AstIdentifierBinding[]) {
+  return identifierBindings.some((binding) => binding.name === name && index >= binding.start && index < binding.end);
+}
+
 function unwrapAstChainExpression(node: any): any {
   let current = node;
   while (current?.type === 'ChainExpression') {
@@ -2021,7 +2216,7 @@ function getAstBindingScopeRange(ancestors: any[], sourceLength: number, functio
       continue;
     }
     if (functionScoped) {
-      if (node.type === 'Program' || isAstFunctionLike(node)) {
+      if (node.type === 'Program' || node.type === 'StaticBlock' || isAstFunctionLike(node)) {
         return {
           start: typeof node.start === 'number' ? node.start : 0,
           end: typeof node.end === 'number' ? node.end : sourceLength,
@@ -2033,6 +2228,10 @@ function getAstBindingScopeRange(ancestors: any[], sourceLength: number, functio
       node.type === 'Program' ||
       node.type === 'BlockStatement' ||
       node.type === 'ForStatement' ||
+      node.type === 'ForInStatement' ||
+      node.type === 'ForOfStatement' ||
+      node.type === 'SwitchStatement' ||
+      node.type === 'StaticBlock' ||
       isAstFunctionLike(node)
     ) {
       return {
@@ -2601,6 +2800,18 @@ function collectBraceRanges(masked: string) {
   return ranges;
 }
 
+function collectStaticBlockRanges(masked: string) {
+  const ranges: SourceRange[] = [];
+  for (const match of masked.matchAll(/\bstatic\s*\{/g)) {
+    const openBrace = masked.indexOf('{', match.index || 0);
+    const closeBrace = findMatchingDelimiter(masked, openBrace);
+    if (closeBrace > openBrace) {
+      ranges.push({ start: openBrace, end: closeBrace + 1 });
+    }
+  }
+  return mergeRanges(ranges);
+}
+
 function mergeRanges(ranges: SourceRange[]) {
   const sorted = ranges.slice().sort((left, right) => left.start - right.start);
   const merged: SourceRange[] = [];
@@ -2626,7 +2837,16 @@ function findMatches(masked: string, pattern: RegExp) {
   }));
 }
 
-function collectSourceBindings(masked: string, functionRanges: SourceRange[], blockRanges: SourceRange[]) {
+function findUnboundCtxMatches(masked: string, pattern: RegExp, bindings: SourceBinding[]) {
+  return findMatches(masked, pattern).filter((entry) => !isNameBoundAtIndex(bindings, 'ctx', entry.index));
+}
+
+function collectSourceBindings(
+  masked: string,
+  functionRanges: SourceRange[],
+  blockRanges: SourceRange[],
+  staticBlockRanges: SourceRange[],
+) {
   const bindings: SourceBinding[] = [];
   for (const match of masked.matchAll(/\b(const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/g)) {
     const kind = match[1];
@@ -2636,15 +2856,26 @@ function collectSourceBindings(masked: string, functionRanges: SourceRange[], bl
       if (expressionRange) {
         bindings.push({
           name: match[2],
+          declarationStart: matchIndex,
           start: expressionRange.start,
           end: expressionRange.end,
         });
       }
       continue;
     }
-    addSourceBinding(bindings, functionRanges, blockRanges, masked, match[2], matchIndex, masked.length, kind);
+    addSourceBinding(
+      bindings,
+      functionRanges,
+      blockRanges,
+      staticBlockRanges,
+      masked,
+      match[2],
+      matchIndex,
+      masked.length,
+      kind,
+    );
   }
-  collectDestructuredVariableBindingNames(masked, functionRanges, blockRanges, bindings);
+  collectDestructuredVariableBindingNames(masked, functionRanges, blockRanges, staticBlockRanges, bindings);
   collectParameterBindingNames(masked, bindings);
   return bindings;
 }
@@ -2660,11 +2891,12 @@ function collectStringLiteralBindings(source: string, masked: string, bindings: 
     if (!literal) {
       continue;
     }
-    const binding = bindings.find((entry) => entry.name === match[1] && entry.start === declarationIndex);
+    const binding = findSourceBindingByDeclaration(bindings, match[1], declarationIndex);
     entries.push({
       name: match[1],
       value: literal.value,
-      start: binding?.start ?? declarationIndex,
+      declarationStart: declarationIndex,
+      start: declarationIndex,
       end: binding?.end ?? masked.length,
     });
   }
@@ -2721,16 +2953,18 @@ function addSourceBinding(
   bindings: SourceBinding[],
   functionRanges: SourceRange[],
   blockRanges: SourceRange[],
+  staticBlockRanges: SourceRange[],
   masked: string,
   name: string,
   start: number,
   sourceEnd: number,
   kind: string,
 ) {
-  const scope = resolveBindingScope(masked, sourceEnd, start, kind, functionRanges, blockRanges);
+  const scope = resolveBindingScope(masked, sourceEnd, start, kind, functionRanges, blockRanges, staticBlockRanges);
   bindings.push({
     name,
-    start,
+    declarationStart: start,
+    start: scope.start,
     end: scope.end,
   });
 }
@@ -2742,6 +2976,7 @@ function resolveBindingScope(
   kind: string,
   functionRanges: SourceRange[],
   blockRanges: SourceRange[],
+  staticBlockRanges: SourceRange[],
 ): SourceRange {
   const forScope = ['const', 'let', 'class'].includes(kind)
     ? findForScopeForDeclaration(masked, start, blockRanges)
@@ -2752,7 +2987,15 @@ function resolveBindingScope(
   if (['const', 'let', 'class'].includes(kind)) {
     return findInnermostRange(start, blockRanges) || { start: 0, end: sourceEnd };
   }
-  return findInnermostRange(start, functionRanges) || { start: 0, end: sourceEnd };
+  const functionScope = findInnermostRange(start, functionRanges);
+  if (functionScope) {
+    return functionScope;
+  }
+  const staticBlockScope = findInnermostRange(start, staticBlockRanges);
+  if (staticBlockScope) {
+    return staticBlockScope;
+  }
+  return { start: 0, end: sourceEnd };
 }
 
 function findForScopeForDeclaration(masked: string, start: number, blockRanges: SourceRange[]) {
@@ -2834,6 +3077,7 @@ function collectDestructuredVariableBindingNames(
   masked: string,
   functionRanges: SourceRange[],
   blockRanges: SourceRange[],
+  staticBlockRanges: SourceRange[],
   bindings: SourceBinding[],
 ) {
   for (const match of masked.matchAll(/\b(const|let|var)\s*(\{|\[)/g)) {
@@ -2845,6 +3089,7 @@ function collectDestructuredVariableBindingNames(
           bindings,
           functionRanges,
           blockRanges,
+          staticBlockRanges,
           masked,
           name,
           match.index || 0,
@@ -2911,6 +3156,7 @@ function collectArrowParameterBindingNames(masked: string, bindings: SourceBindi
     if (bodyRange) {
       bindings.push({
         name: match[1],
+        declarationStart: match.index || 0,
         start: match.index || 0,
         end: bodyRange.end,
       });
@@ -2955,7 +3201,7 @@ function findArrowBodyRange(masked: string, afterArrowIndex: number): SourceRang
 function addParameterBindings(bindings: SourceBinding[], params: string, range: SourceRange) {
   splitTopLevel(params, ',').forEach((param) => {
     extractBindingPatternNames(param).forEach((name) => {
-      bindings.push({ name, ...range });
+      bindings.push({ name, declarationStart: range.start, ...range });
     });
   });
 }
@@ -3114,6 +3360,25 @@ function isNameBoundAtIndex(bindings: SourceBinding[], name: string, index: numb
   return bindings.some((binding) => binding.name === name && index >= binding.start && index < binding.end);
 }
 
+function findSourceBindingByDeclaration(bindings: SourceBinding[], name: string, declarationStart: number) {
+  return bindings.find((entry) => entry.name === name && (entry.declarationStart ?? entry.start) === declarationStart);
+}
+
+function isSourceAliasShadowedAtIndex(
+  alias: SourceRange & { declarationStart?: number; name: string },
+  bindings: SourceBinding[],
+  index: number,
+) {
+  const aliasDeclarationStart = alias.declarationStart ?? alias.start;
+  return bindings.some(
+    (binding) =>
+      binding.name === alias.name &&
+      index >= binding.start &&
+      index < binding.end &&
+      (binding.declarationStart ?? binding.start) !== aliasDeclarationStart,
+  );
+}
+
 function collectForbiddenBareGlobals(masked: string, bindings: SourceBinding[]) {
   const entries: Array<{ name: string; index: number }> = [];
   for (const name of FORBIDDEN_BARE_GLOBALS) {
@@ -3130,19 +3395,26 @@ function collectForbiddenBareGlobals(masked: string, bindings: SourceBinding[]) 
   return entries.sort((left, right) => left.index - right.index);
 }
 
-function collectInvalidApiResourceCalls(masked: string) {
+function collectInvalidApiResourceCalls(masked: string, bindings: SourceBinding[]) {
   return [
     ...masked.matchAll(
       /\bctx\s*(?:\?\.|\.)\s*api\s*(?:\?\.|\.)\s*resource\s*(?:\?\.|\.)\s*(list|get|create|update|destroy)\s*(?:\?\.)?\(/g,
     ),
-  ].map((match) => ({
-    index: match.index || 0,
-    match: match[0].replace(/\s*(?:\?\.)?\($/, ''),
-    method: match[1],
-  }));
+  ]
+    .filter((match) => !isNameBoundAtIndex(bindings, 'ctx', match.index || 0))
+    .map((match) => ({
+      index: match.index || 0,
+      match: match[0].replace(/\s*(?:\?\.)?\($/, ''),
+      method: match[1],
+    }));
 }
 
-function collectInvalidResourceTypeCalls(source: string, masked: string, stringBindings: StringLiteralBinding[]) {
+function collectInvalidResourceTypeCalls(
+  source: string,
+  masked: string,
+  stringBindings: StringLiteralBinding[],
+  bindings: SourceBinding[],
+) {
   const entries: Array<{
     capability: string;
     expression?: string;
@@ -3153,6 +3425,9 @@ function collectInvalidResourceTypeCalls(source: string, masked: string, stringB
   }> = [];
   for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*(makeResource|initResource)\s*(?:\?\.)?\(/g)) {
     const index = match.index || 0;
+    if (isNameBoundAtIndex(bindings, 'ctx', index)) {
+      continue;
+    }
     const method = match[1];
     const capability = `ctx.${method}`;
     const firstArg = getCallArgumentSources(source, masked, index)[0];
@@ -3219,11 +3494,12 @@ function resolveResourceTypeExpression(
 function collectFlowResourceAliases(masked: string, bindings: SourceBinding[]) {
   const aliases: FlowResourceAlias[] = [];
   const addAlias = (name: string, capability: string, declarationIndex: number) => {
-    const binding = bindings.find((entry) => entry.name === name && entry.start === declarationIndex);
+    const binding = findSourceBindingByDeclaration(bindings, name, declarationIndex);
     aliases.push({
       name,
       capability,
-      start: binding?.start ?? declarationIndex,
+      declarationStart: declarationIndex,
+      start: declarationIndex,
       end: binding?.end ?? masked.length,
     });
   };
@@ -3231,19 +3507,28 @@ function collectFlowResourceAliases(masked: string, bindings: SourceBinding[]) {
   for (const match of masked.matchAll(
     /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*ctx\s*(?:\?\.|\.)\s*(makeResource|initResource)\s*(?:\?\.)?\(/g,
   )) {
+    if (isNameBoundAtIndex(bindings, 'ctx', (match.index || 0) + match[0].lastIndexOf('ctx'))) {
+      continue;
+    }
     addAlias(match[1], `ctx.${match[2]}`, match.index || 0);
   }
   for (const match of masked.matchAll(
     /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*ctx\s*(?:\?\.|\.)\s*resource\b/g,
   )) {
+    if (isNameBoundAtIndex(bindings, 'ctx', (match.index || 0) + match[0].lastIndexOf('ctx'))) {
+      continue;
+    }
     addAlias(match[1], 'ctx.resource', match.index || 0);
   }
   return aliases;
 }
 
-function collectInvalidFlowResourceListCalls(masked: string, aliases: FlowResourceAlias[]) {
+function collectInvalidFlowResourceListCalls(masked: string, aliases: FlowResourceAlias[], bindings: SourceBinding[]) {
   const entries: Array<{ capability: string; index: number }> = [];
   for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*resource\s*(?:\?\.|\.)\s*list\s*(?:\?\.)?\(/g)) {
+    if (isNameBoundAtIndex(bindings, 'ctx', match.index || 0)) {
+      continue;
+    }
     entries.push({
       index: match.index || 0,
       capability: 'ctx.resource.list',
@@ -3252,6 +3537,9 @@ function collectInvalidFlowResourceListCalls(masked: string, aliases: FlowResour
   for (const match of masked.matchAll(
     /\bctx\s*(?:\?\.|\.)\s*(makeResource|initResource)\s*(?:\?\.)?\([^)]*\)\s*(?:\?\.|\.)\s*list\s*(?:\?\.)?\(/g,
   )) {
+    if (isNameBoundAtIndex(bindings, 'ctx', match.index || 0)) {
+      continue;
+    }
     entries.push({
       index: match.index || 0,
       capability: `ctx.${match[1]}(...).list`,
@@ -3267,6 +3555,9 @@ function collectInvalidFlowResourceListCalls(masked: string, aliases: FlowResour
       if (index <= alias.start || index >= alias.end) {
         continue;
       }
+      if (isSourceAliasShadowedAtIndex(alias, bindings, index)) {
+        continue;
+      }
       entries.push({
         index,
         capability: `${alias.name}.list`,
@@ -3276,7 +3567,11 @@ function collectInvalidFlowResourceListCalls(masked: string, aliases: FlowResour
   return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
 }
 
-function collectCtxLibMemberCaseMismatches(source: string, masked: string): CtxLibMemberCaseMismatch[] {
+function collectCtxLibMemberCaseMismatches(
+  source: string,
+  masked: string,
+  bindings: SourceBinding[],
+): CtxLibMemberCaseMismatch[] {
   const entries: CtxLibMemberCaseMismatch[] = [];
   const addEntry = (
     index: number,
@@ -3300,6 +3595,9 @@ function collectCtxLibMemberCaseMismatches(source: string, masked: string): CtxL
 
   for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*libs\s*(?:\?\.|\.)\s*([A-Za-z_$][\w$]*)/g)) {
     const index = match.index || 0;
+    if (isNameBoundAtIndex(bindings, 'ctx', index)) {
+      continue;
+    }
     const member = match[1];
     addEntry(index + match[0].lastIndexOf(member), member, 'member');
   }
@@ -3308,7 +3606,7 @@ function collectCtxLibMemberCaseMismatches(source: string, masked: string): CtxL
     /\bctx\s*(?:\?\.|\.)\s*libs\s*(?:\?\.)?\s*\[\s*(['"])([A-Za-z_$][\w$]*)\1\s*\]/g,
   )) {
     const index = match.index || 0;
-    if (masked.slice(index, index + 3) !== 'ctx') {
+    if (masked.slice(index, index + 3) !== 'ctx' || isNameBoundAtIndex(bindings, 'ctx', index)) {
       continue;
     }
     const quote = match[1];
@@ -3318,6 +3616,10 @@ function collectCtxLibMemberCaseMismatches(source: string, masked: string): CtxL
 
   for (const match of masked.matchAll(/\b(?:const|let|var)\s*\{([^}]*)\}\s*=\s*ctx\s*(?:\?\.|\.)\s*libs\b/g)) {
     const declarationIndex = match.index || 0;
+    const ctxIndex = declarationIndex + match[0].lastIndexOf('ctx');
+    if (isNameBoundAtIndex(bindings, 'ctx', ctxIndex)) {
+      continue;
+    }
     const bindingPattern = match[1];
     const patternStart = declarationIndex + match[0].indexOf(bindingPattern);
     splitTopLevelWithRanges(bindingPattern, ',').forEach((property) => {
@@ -3348,7 +3650,7 @@ function readObjectBindingPropertyName(element: string): { name: string; offset:
   return { name, offset };
 }
 
-function collectReactHookCalls(masked: string) {
+function collectReactHookCalls(masked: string, bindings: SourceBinding[]) {
   const entries: Array<{ hook: string; index: number; match: string }> = [];
   const memberPattern = new RegExp(
     `\\b(?:(?:ctx\\s*(?:\\?\\.|\\.)\\s*(?:libs\\s*(?:\\?\\.|\\.)\\s*)?React)|React)\\s*(?:\\?\\.|\\.)\\s*(${REACT_HOOK_PATTERN})\\s*(?:\\?\\.)?\\(`,
@@ -3356,6 +3658,9 @@ function collectReactHookCalls(masked: string) {
   );
   for (const match of masked.matchAll(memberPattern)) {
     const index = match.index || 0;
+    if (masked.slice(index, index + 3) === 'ctx' && isNameBoundAtIndex(bindings, 'ctx', index)) {
+      continue;
+    }
     entries.push({
       hook: match[1],
       index,
@@ -3397,11 +3702,12 @@ function collectReactComponentAliases(masked: string, bindings: SourceBinding[])
     if (!/^[A-Z][\w$]*$/.test(name)) {
       return;
     }
-    const binding = bindings.find((entry) => entry.name === name && entry.start === declarationIndex);
+    const binding = findSourceBindingByDeclaration(bindings, name, declarationIndex);
     aliases.push({
       name,
       capability,
-      start: binding?.start ?? declarationIndex,
+      declarationStart: declarationIndex,
+      start: declarationIndex,
       end: binding?.end ?? masked.length,
     });
   };
@@ -3410,6 +3716,10 @@ function collectReactComponentAliases(masked: string, bindings: SourceBinding[])
     /\b(?:const|let|var)\s*\{([^}]*)\}\s*=\s*ctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\b/g,
   )) {
     const declarationIndex = match.index || 0;
+    const ctxIndex = declarationIndex + match[0].lastIndexOf('ctx');
+    if (isNameBoundAtIndex(bindings, 'ctx', ctxIndex)) {
+      continue;
+    }
     const namespace = `ctx.${match[2] ? 'libs.' : ''}${match[3]}`;
     collectObjectBindingAliases(match[1]).forEach((alias) =>
       addAlias(alias, `${namespace}.${alias}`, declarationIndex),
@@ -3419,6 +3729,10 @@ function collectReactComponentAliases(masked: string, bindings: SourceBinding[])
   for (const match of masked.matchAll(
     /\b(?:const|let|var)\s+([A-Z][\w$]*)\s*=\s*ctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\s*(?:\?\.|\.)\s*([A-Z][\w$]*)\b/g,
   )) {
+    const ctxIndex = (match.index || 0) + match[0].lastIndexOf('ctx');
+    if (isNameBoundAtIndex(bindings, 'ctx', ctxIndex)) {
+      continue;
+    }
     const namespace = `ctx.${match[2] ? 'libs.' : ''}${match[3]}`;
     addAlias(match[1], `${namespace}.${match[4]}`, match.index || 0);
   }
@@ -3426,11 +3740,14 @@ function collectReactComponentAliases(masked: string, bindings: SourceBinding[])
   return aliases;
 }
 
-function collectReactComponentFunctionCalls(masked: string, aliases: ReactComponentAlias[]) {
+function collectReactComponentFunctionCalls(masked: string, aliases: ReactComponentAlias[], bindings: SourceBinding[]) {
   const entries: Array<{ index: number; component: string; capability: string }> = [];
   for (const match of masked.matchAll(
     /\bctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\s*(?:\?\.|\.)\s*([A-Z][\w$]*)\s*(?:\?\.)?\(/g,
   )) {
+    if (isNameBoundAtIndex(bindings, 'ctx', match.index || 0)) {
+      continue;
+    }
     const namespace = `ctx.${match[1] ? 'libs.' : ''}${match[2]}`;
     entries.push({
       index: match.index || 0,
@@ -3444,6 +3761,9 @@ function collectReactComponentFunctionCalls(masked: string, aliases: ReactCompon
     for (const match of masked.matchAll(pattern)) {
       const index = match.index || 0;
       if (index <= alias.start || index >= alias.end) {
+        continue;
+      }
+      if (isSourceAliasShadowedAtIndex(alias, bindings, index)) {
         continue;
       }
       const previous = getPreviousSignificantToken(masked, index);
@@ -3461,15 +3781,23 @@ function collectReactComponentFunctionCalls(masked: string, aliases: ReactCompon
   return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
 }
 
-function collectCtxRenderComponentSignatureCalls(source: string, masked: string, aliases: ReactComponentAlias[]) {
+function collectCtxRenderComponentSignatureCalls(
+  source: string,
+  masked: string,
+  aliases: ReactComponentAlias[],
+  bindings: SourceBinding[],
+) {
   const entries: Array<{ index: number; component: string; capability: string }> = [];
   for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g)) {
     const index = match.index || 0;
+    if (isNameBoundAtIndex(bindings, 'ctx', index)) {
+      continue;
+    }
     const firstArg = getCallArgumentSources(source, masked, index)[0];
     if (!firstArg) {
       continue;
     }
-    const reference = readReactComponentReference(firstArg.source, aliases, firstArg.start);
+    const reference = readReactComponentReference(firstArg.source, aliases, firstArg.start, bindings);
     if (reference) {
       entries.push({
         index: firstArg.start,
@@ -3480,24 +3808,38 @@ function collectCtxRenderComponentSignatureCalls(source: string, masked: string,
   return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
 }
 
-function collectReactComponentPropReferences(source: string, masked: string, aliases: ReactComponentAlias[]) {
+function collectReactComponentPropReferences(
+  source: string,
+  masked: string,
+  aliases: ReactComponentAlias[],
+  bindings: SourceBinding[],
+) {
   const entries: Array<{ index: number; component: string; capability: string; prop: string }> = [];
   const inspectPropsArg = (arg: CallArgumentSource | undefined) => {
     if (!arg) {
       return;
     }
-    collectReactComponentPropReferencesFromObject(arg, aliases).forEach((entry) => entries.push(entry));
+    collectReactComponentPropReferencesFromObject(arg, aliases, bindings).forEach((entry) => entries.push(entry));
   };
 
   for (const match of masked.matchAll(
     /\b(?:(?:ctx\s*(?:\?\.|\.)\s*(?:libs\s*(?:\?\.|\.)\s*)?React)|React)\s*(?:\?\.|\.)\s*createElement\s*(?:\?\.)?\(/g,
   )) {
+    if (
+      masked.slice(match.index || 0, (match.index || 0) + 3) === 'ctx' &&
+      isNameBoundAtIndex(bindings, 'ctx', match.index || 0)
+    ) {
+      continue;
+    }
     inspectPropsArg(getCallArgumentSources(source, masked, match.index || 0)[1]);
   }
 
   for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g)) {
+    if (isNameBoundAtIndex(bindings, 'ctx', match.index || 0)) {
+      continue;
+    }
     const args = getCallArgumentSources(source, masked, match.index || 0);
-    if (!readReactComponentReference(args[0]?.source || '', aliases, args[0]?.start || 0)) {
+    if (!readReactComponentReference(args[0]?.source || '', aliases, args[0]?.start || 0, bindings)) {
       continue;
     }
     inspectPropsArg(args[1]);
@@ -3506,7 +3848,11 @@ function collectReactComponentPropReferences(source: string, masked: string, ali
   return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
 }
 
-function collectReactComponentPropReferencesFromObject(arg: CallArgumentSource, aliases: ReactComponentAlias[]) {
+function collectReactComponentPropReferencesFromObject(
+  arg: CallArgumentSource,
+  aliases: ReactComponentAlias[],
+  bindings: SourceBinding[],
+) {
   const entries: Array<{ index: number; component: string; capability: string; prop: string }> = [];
   const localMasked = maskJavaScriptSource(arg.source);
   const openOffset = arg.source.search(/\S/);
@@ -3531,7 +3877,7 @@ function collectReactComponentPropReferencesFromObject(arg: CallArgumentSource, 
     const rawValue = property.source.slice(colon + 1);
     const leading = rawValue.length - rawValue.trimStart().length;
     const valueStart = bodyStart + property.start + colon + 1 + leading;
-    const reference = readReactComponentReference(rawValue, aliases, valueStart);
+    const reference = readReactComponentReference(rawValue, aliases, valueStart, bindings);
     if (!reference) {
       return;
     }
@@ -3548,12 +3894,16 @@ function readReactComponentReference(
   expression: string,
   aliases: ReactComponentAlias[],
   expressionIndex: number,
+  bindings: SourceBinding[],
 ): { component: string; capability: string } | undefined {
   const normalized = maskJavaScriptComments(expression).trim();
   const ctxMatch = normalized.match(
     /^ctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\s*(?:\?\.|\.)\s*([A-Z][\w$]*)$/,
   );
   if (ctxMatch) {
+    if (isNameBoundAtIndex(bindings, 'ctx', expressionIndex)) {
+      return undefined;
+    }
     const namespace = `ctx.${ctxMatch[1] ? 'libs.' : ''}${ctxMatch[2]}`;
     return {
       component: ctxMatch[3],
@@ -3566,7 +3916,11 @@ function readReactComponentReference(
     return undefined;
   }
   const alias = aliases.find(
-    (entry) => entry.name === aliasMatch[1] && expressionIndex >= entry.start && expressionIndex < entry.end,
+    (entry) =>
+      entry.name === aliasMatch[1] &&
+      expressionIndex >= entry.start &&
+      expressionIndex < entry.end &&
+      !isSourceAliasShadowedAtIndex(entry, bindings, expressionIndex),
   );
   return alias
     ? {
@@ -3619,6 +3973,7 @@ function collectDirectDomWrites(source: string, masked: string, bindings: Source
     const boundRoot = match[3] || match[5];
     const bareFunction = match[7];
     if (
+      (match[1] === 'ctx' && isNameBoundAtIndex(bindings, 'ctx', index)) ||
       (boundRoot && isNameBoundAtIndex(bindings, boundRoot, index)) ||
       (bareFunction && isNameBoundAtIndex(bindings, bareFunction, index))
     ) {
@@ -3632,7 +3987,11 @@ function collectDirectDomWrites(source: string, masked: string, bindings: Source
     const index = match.index || 0;
     const member = match[3] || '';
     const dynamicMember = Boolean(match[4]);
-    if (isCodeTokenAt(masked, index, 'ctx') && (dynamicMember || isDirectDomMember(member))) {
+    if (
+      isCodeTokenAt(masked, index, 'ctx') &&
+      !isNameBoundAtIndex(bindings, 'ctx', index) &&
+      (dynamicMember || isDirectDomMember(member))
+    ) {
       entries.push({ index, match: match[0] });
     }
   }
@@ -3842,11 +4201,13 @@ function isCodeTokenAt(masked: string, index: number, token: string) {
   return masked.slice(index, index + token.length) === token;
 }
 
-function collectCtxMemberAccesses(masked: string) {
-  return [...masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*([A-Za-z_$][\w$]*)/g)].map((match) => ({
-    member: match[1],
-    index: match.index || 0,
-  }));
+function collectCtxMemberAccesses(masked: string, bindings: SourceBinding[]) {
+  return [...masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*([A-Za-z_$][\w$]*)/g)]
+    .filter((match) => !isNameBoundAtIndex(bindings, 'ctx', match.index || 0))
+    .map((match) => ({
+      member: match[1],
+      index: match.index || 0,
+    }));
 }
 
 function isTopLevelFunctionWrapper(masked: string, functionRanges: SourceRange[], topLevelCtxRenderCalls: any[]) {

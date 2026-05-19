@@ -2770,6 +2770,29 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
 
     expect(
       inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'const run = ctx.runjs;',
+          "function invoke(run) { return run('ordinary callback value'); }",
+        ].join('\n'),
+        path: '$.shadowedRunjsAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "function invoke(ctx) { return ctx.runjs('ordinary callback value'); }",
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.shadowedCtxRunjs.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
         code: "ctx.render(null);\nctx.initResource('FlowResource');",
         path: '$.initResourceFlowResource.code',
         modelUse: 'JSBlockModel',
@@ -2785,6 +2808,236 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         }),
       ]),
     );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          "const resourceType = 'MultiRecordResource';",
+          'function build(resourceType) { return ctx.makeResource(resourceType); }',
+        ].join('\n'),
+        path: '$.shadowedResourceType.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: 'resourceType',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'function build(ctx, resourceType) { return ctx.makeResource(resourceType); }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.shadowedCtxResource.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    [
+      "function invoke(ctx) { return ctx.runjs('resource:list', {}); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.request('users:list'); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.api.resource.list('users'); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.openView(); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.notARealRoot.doThing(); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.libs.react; }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.element.innerHTML = '<span />'; }\nctx.message.success('Done');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.shadowedCtxLegacyValidators[${index}].code`,
+          modelUse: 'JSActionModel',
+        }),
+      ).toEqual([]);
+    });
+
+    [
+      "ctx.runjs('resource:list', {});\nfunction ctx() {}",
+      "function invoke() { return ctx.runjs('resource:list', {}); function ctx() {} }\nctx.message.success('Done');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.laterDeclaredCtxShadow[${index}].code`,
+          modelUse: 'JSActionModel',
+        }),
+      ).toEqual([]);
+    });
+
+    [
+      "ctx.runjs('resource:list', {});\nfor (let ctx of items) { ctx.message.success('local'); }\nctx.message.success('Done');",
+      "ctx.runjs('resource:list', {});\nfor (let ctx in items) { ctx.message.success('local'); }\nctx.message.success('Done');",
+      "ctx.runjs('resource:list', {});\nswitch (kind) { case 1: let ctx = local; ctx.message.success('local'); break; }\nctx.message.success('Done');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.blockScopedCtxDoesNotShadowPreviousRuntimeCtx[${index}].code`,
+          modelUse: 'JSActionModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-nested-runjs-forbidden',
+          }),
+        ]),
+      );
+    });
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "class Local { static { var ctx = local; } }\nctx.runjs('resource:list', {});",
+        path: '$.staticBlockVarCtxDoesNotShadowOuterRuntimeCtx.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-nested-runjs-forbidden',
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "class Local { static { var run = ctx.runjs; } }\nawait run('return 1;');",
+        path: '$.staticBlockVarRunjsAliasDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static {',
+          '  function wrap() { var ctx = local; }',
+          "  ctx.element.innerHTML = '<span />';",
+          '} }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.staticBlockNestedFunctionVarCtxDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-direct-dom-render-forbidden',
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          "const resourceType = 'MultiRecordResource';",
+          'function build() { return ctx.makeResource(resourceType); const resourceType = dynamicType; }',
+        ].join('\n'),
+        path: '$.laterDeclaredResourceTypeShadow.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: 'resourceType',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "class Local { static { var resourceType = 'MultiRecordResource'; } }",
+          'ctx.makeResource(resourceType);',
+        ].join('\n'),
+        path: '$.staticBlockVarResourceTypeDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: 'resourceType',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static {',
+          "  function wrap() { var resource = ctx.makeResource('MultiRecordResource'); }",
+          '  resource.list();',
+          '} }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.staticBlockNestedFunctionVarResourceAliasDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          'function use(resource) { return resource.list(); }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.shadowedFlowResourceAlias.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static {',
+          '  function wrap() { var Card = ctx.libs.antd.Card; }',
+          '  Card({ bordered: false });',
+          '} }',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.staticBlockNestedFunctionVarReactAliasDoesNotLeak.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static { var Card = ctx.libs.antd.Card; } }',
+          'Card({ bordered: false });',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.staticBlockVarReactAliasDoesNotLeak.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'const Card = ctx.libs.antd.Card;',
+          'function use(Card) { return Card({ bordered: false }); }',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.shadowedReactComponentAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
 
     expect(
       inspectRunJsAuthoringCode({
@@ -2826,6 +3079,39 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       }),
     ]);
 
+    const oversizedSource = 'x'.repeat(64 * 1024 + 1);
+    const multiLargeErrors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'grid' },
+      blocks: [
+        {
+          type: 'jsBlock',
+          settings: {
+            code: oversizedSource,
+            version: 'v2',
+          },
+        },
+        {
+          type: 'jsBlock',
+          settings: {
+            code: oversizedSource,
+            version: 'v2',
+          },
+        },
+      ],
+    });
+    expect(multiLargeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.code',
+          ruleId: 'runjs-source-too-large',
+        }),
+        expect.objectContaining({
+          path: '$.blocks[1].settings.code',
+          ruleId: 'runjs-source-too-large',
+        }),
+      ]),
+    );
+
     const tooManyBlocks = Array.from({ length: 101 }, (_item, index) => ({
       type: 'jsBlock',
       settings: {
@@ -2838,6 +3124,62 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       blocks: tooManyBlocks,
     });
     expect(tooManyErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-too-many-sources',
+        }),
+      ]),
+    );
+
+    const oversizedFlowRegistry = Object.fromEntries(
+      Array.from({ length: 101 }, (_item, index) => [
+        `flow${index}`,
+        {
+          on: 'submit',
+          steps: {
+            run: {
+              use: 'runjs',
+              params: {
+                code: oversizedSource,
+              },
+            },
+          },
+        },
+      ]),
+    );
+    const oversizedFlowRegistryErrors = collectFlowRegistryRunJsAuthoringErrors(oversizedFlowRegistry);
+    expect(oversizedFlowRegistryErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.flowRegistry.flow0.steps.run.params.code',
+          ruleId: 'runjs-source-too-large',
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-total-source-too-large',
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-too-many-sources',
+        }),
+      ]),
+    );
+
+    const tooManyFlowRegistry = Object.fromEntries(
+      Array.from({ length: 101 }, (_item, index) => [
+        `flow${index}`,
+        {
+          on: 'submit',
+          steps: {
+            run: {
+              use: 'runjs',
+              params: {
+                code: `ctx.console.log('flow ${index}');`,
+              },
+            },
+          },
+        },
+      ]),
+    );
+    expect(collectFlowRegistryRunJsAuthoringErrors(tooManyFlowRegistry)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           ruleId: 'runjs-too-many-sources',
