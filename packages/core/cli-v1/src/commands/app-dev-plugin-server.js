@@ -12,7 +12,12 @@ const { createRsbuild } = require('@rsbuild/core');
 const { pluginLess } = require('@rsbuild/plugin-less');
 const { pluginReact } = require('@rsbuild/plugin-react');
 const { pluginSvgr } = require('@rsbuild/plugin-svgr');
-const { discoverLocalPluginEntries, writePluginDevEntryFiles } = require('./app-dev-utils');
+const {
+  createPluginClientExternals,
+  discoverLocalPluginEntries,
+  getPluginClientModuleIds,
+  writePluginDevEntryFiles,
+} = require('./app-dev-utils');
 
 const appDevExternalDeps = [
   'react',
@@ -62,16 +67,6 @@ function createExternals() {
   }, {});
 }
 
-function createLocalPluginExternals(entries) {
-  return entries.reduce((memo, entry) => {
-    const moduleId = `${entry.packageName}/${entry.lane}`;
-    memo[moduleId] = `window.__nocobase_app_dev_plugins__ && window.__nocobase_app_dev_plugins__[${JSON.stringify(
-      moduleId,
-    )}]`;
-    return memo;
-  }, {});
-}
-
 async function main() {
   const cwd = process.cwd();
   const port = Number(process.env.NOCOBASE_APP_DEV_PLUGIN_PORT || 14100);
@@ -80,7 +75,7 @@ async function main() {
   const entries = discoverLocalPluginEntries({ cwd, port });
   const externals = {
     ...createExternals(),
-    ...createLocalPluginExternals(entries),
+    ...createPluginClientExternals(getPluginClientModuleIds({ cwd })),
   };
 
   if (!entries.length) {
