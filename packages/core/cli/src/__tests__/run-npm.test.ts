@@ -71,9 +71,11 @@ test('resolveProjectCwd walks up parent directories to find a NocoBase project r
       cwd: vi.fn(() => nestedCwd),
     });
 
+    expect(resolveProjectCwd()).toBe(projectRoot);
     expect(resolveProjectCwd('./app2/source')).toBe(projectRoot);
-    expect(resolveProjectCwd('')).toBe(nestedCwd);
-    expect(resolveProjectCwd('   ')).toBe(nestedCwd);
+    expect(resolveProjectCwd(nestedCwd)).toBe(projectRoot);
+    expect(resolveProjectCwd('')).toBe(projectRoot);
+    expect(resolveProjectCwd('   ')).toBe(projectRoot);
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }
