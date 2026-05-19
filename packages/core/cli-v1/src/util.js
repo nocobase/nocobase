@@ -261,7 +261,7 @@ function normalizeAppDevFiles(appDevDir) {
 
 exports.generateAppDir = function generateAppDir() {
   const appPkgPath = dirname(dirname(require.resolve('@nocobase/app/src/index.ts')));
-  const appDevDir = resolve(process.cwd(), './storage/.app-dev');
+  const appDevDir = storagePathJoin('.app-dev');
   if (exports.isDev() && !exports.hasCorePackages() && appPkgPath.includes('node_modules')) {
     if (!existsSync(appDevDir)) {
       mkdirSync(appDevDir, { force: true, recursive: true });
@@ -460,6 +460,7 @@ function storagePathJoin(...segments) {
 
 exports.resolveStorageRoot = resolveStorageRoot;
 exports.storagePathJoin = storagePathJoin;
+exports.resolvePluginStoragePath = resolvePluginStoragePath;
 /** @deprecated Use resolveStorageRoot — kept for backward compatibility */
 exports.generateStoragePath = resolveStorageRoot;
 

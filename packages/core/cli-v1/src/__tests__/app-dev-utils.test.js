@@ -74,7 +74,7 @@ describe('cli-v1 app-dev utils', () => {
       }),
     ).toEqual([
       'watch',
-      '--ignore=./storage/plugins/**',
+      `--ignore=${path.resolve(process.cwd(), 'storage/plugins')}/**`,
       '--tsconfig',
       './tsconfig.server.json',
       '-r',

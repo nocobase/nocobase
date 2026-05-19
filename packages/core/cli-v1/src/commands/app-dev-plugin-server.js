@@ -13,6 +13,7 @@ const { pluginLess } = require('@rsbuild/plugin-less');
 const { pluginReact } = require('@rsbuild/plugin-react');
 const { pluginSvgr } = require('@rsbuild/plugin-svgr');
 const { discoverLocalPluginEntries, writePluginDevEntryFiles } = require('./app-dev-utils');
+const { storagePathJoin } = require('../util');
 
 const appDevExternalDeps = [
   'react',
@@ -75,8 +76,8 @@ function createLocalPluginExternals(entries) {
 async function main() {
   const cwd = process.cwd();
   const port = Number(process.env.NOCOBASE_APP_DEV_PLUGIN_PORT || 14100);
-  const entryDir = path.resolve(cwd, 'storage/.app-dev/plugin-dev/entries');
-  const outDir = path.resolve(cwd, 'storage/.app-dev/plugin-dev/dist');
+  const entryDir = storagePathJoin('.app-dev', 'plugin-dev', 'entries');
+  const outDir = storagePathJoin('.app-dev', 'plugin-dev', 'dist');
   const entries = discoverLocalPluginEntries({ cwd, port });
   const externals = {
     ...createExternals(),

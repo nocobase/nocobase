@@ -10,6 +10,7 @@
 const fs = require('fs-extra');
 const fg = require('fast-glob');
 const path = require('path');
+const { resolvePluginStoragePath } = require('../util');
 
 const pluginClientLanes = {
   client: {
@@ -96,7 +97,7 @@ function buildAppDevServerArgs({
   argv = process.argv,
   serverTsconfigPath = process.env.SERVER_TSCONFIG_PATH,
 } = {}) {
-  const args = ['watch', '--ignore=./storage/plugins/**'];
+  const args = ['watch', `--ignore=${resolvePluginStoragePath()}/**`];
 
   if (serverTsconfigPath) {
     args.push('--tsconfig', serverTsconfigPath);
