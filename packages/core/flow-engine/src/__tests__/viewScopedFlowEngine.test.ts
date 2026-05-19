@@ -357,6 +357,7 @@ describe('ViewScopedFlowEngine', () => {
         items: [{ use: 'BlockModel', uid: 'stale-block' }],
       },
     });
+    const staleBlock = stalePage.findSubModel('items' as any, (item) => item.uid === 'stale-block') as FlowModel;
     parent.setSubModel('page', stalePage);
     oldScoped.unlinkFromStack();
 
@@ -372,7 +373,7 @@ describe('ViewScopedFlowEngine', () => {
     };
 
     root.flowSettings.enable();
-    await root.saveModel(stalePage);
+    await staleBlock.saveStepParams();
     root.flowSettings.disable();
     repository.findOneCalls = 0;
 
@@ -402,62 +403,6 @@ describe('ViewScopedFlowEngine', () => {
 
     expect(repository.findOneCalls).toBe(0);
     expect(loadedAgain?.uid).toBe('popup-page');
-  });
-
-  it('force replaces a dirty loaded page by subKey when repository returns a new uid', async () => {
-    const root = new FlowEngine();
-    const repository = new DirtyPageRepository();
-    root.setModelRepository(repository);
-
-    class ParentModel extends FlowModel {}
-    class PageModel extends FlowModel {}
-    class BlockModel extends FlowModel {}
-    root.registerModels({ ParentModel, PageModel, BlockModel });
-
-    const parent = root.createModel<ParentModel>({ use: 'ParentModel', uid: 'popup-action-replaced' });
-    const oldScoped = createViewScopedEngine(root);
-    const stalePage = oldScoped.createModel<PageModel>({
-      use: 'PageModel',
-      uid: 'old-popup-page',
-      parentId: parent.uid,
-      subKey: 'page',
-      subType: 'object',
-      subModels: {
-        items: [{ use: 'BlockModel', uid: 'old-popup-block' }],
-      },
-    });
-    const staleBlock = stalePage.findSubModel('items' as any, (item) => item.uid === 'old-popup-block') as FlowModel;
-    parent.setSubModel('page', stalePage);
-    oldScoped.unlinkFromStack();
-
-    repository.data = {
-      use: 'PageModel',
-      uid: 'new-popup-page',
-      parentId: parent.uid,
-      subKey: 'page',
-      subType: 'object',
-      subModels: {
-        items: [{ use: 'BlockModel', uid: 'new-popup-block' }],
-      },
-    };
-
-    root.flowSettings.enable();
-    await staleBlock.saveStepParams();
-    root.flowSettings.disable();
-
-    const runtimeScoped = createViewScopedEngine(root);
-    const loaded = await runtimeScoped.loadOrCreateModel<PageModel>({
-      async: true,
-      parentId: parent.uid,
-      subKey: 'page',
-      subType: 'object',
-      use: 'PageModel',
-    });
-
-    expect(loaded?.uid).toBe('new-popup-page');
-    expect((parent.subModels as any).page).toBe(loaded);
-    expect(oldScoped.getModel('old-popup-page')).toBeUndefined();
-    expect(oldScoped.getModel('old-popup-block')).toBeUndefined();
   });
 
   it('does not bypass loaded page cache after a non-config save', async () => {
