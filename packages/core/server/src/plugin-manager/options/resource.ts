@@ -48,7 +48,12 @@ function getAppDevPluginDependencies(packageJson: any, lane: PluginClientLane): 
     ...packageJson.peerDependencies,
     ...packageJson.devDependencies,
   };
-  return Object.keys(deps).filter((packageName) => appDevPluginUrls[packageName]?.[lane]);
+  return Object.keys(deps).filter(
+    (packageName) =>
+      appDevPluginUrls[packageName]?.[lane] ||
+      packageName.startsWith('@nocobase/plugin-') ||
+      packageName.startsWith('@nocobase/preset-'),
+  );
 }
 
 export class PackageUrls {

@@ -31,12 +31,65 @@ function getEntryName(packageName, lane) {
   return `${packageName.replace(/[^a-zA-Z0-9_]/g, '_')}__${lane.replace(/[^a-zA-Z0-9_]/g, '_')}`;
 }
 
+function readPackageName(packageJsonPath) {
+  try {
+    return fs.readJsonSync(packageJsonPath).name;
+  } catch (error) {
+    return '';
+  }
+}
+
 function findLocalPluginPackageJsons(cwd = process.cwd()) {
   return fg.sync(['packages/plugins/*/package.json', 'packages/plugins/@*/*/package.json'], {
     cwd,
     absolute: true,
     onlyFiles: true,
   });
+}
+
+function findPluginClientPackageJsons(cwd = process.cwd()) {
+  return fg.sync(
+    [
+      'packages/plugins/*/package.json',
+      'packages/plugins/@*/*/package.json',
+      'node_modules/@nocobase/plugin-*/package.json',
+      'node_modules/@nocobase/preset-*/package.json',
+    ],
+    {
+      cwd,
+      absolute: true,
+      onlyFiles: true,
+    },
+  );
+}
+
+function getPluginClientModuleIds({ cwd = process.cwd(), packageJsonPaths = findPluginClientPackageJsons(cwd) } = {}) {
+  const moduleIds = new Set();
+
+  for (const packageJsonPath of packageJsonPaths) {
+    const pluginDir = path.dirname(packageJsonPath);
+    const packageName = readPackageName(packageJsonPath);
+    if (!packageName) {
+      continue;
+    }
+
+    for (const [lane, config] of Object.entries(pluginClientLanes)) {
+      if (fs.existsSync(path.join(pluginDir, config.rootEntryFile))) {
+        moduleIds.add(`${packageName}/${lane}`);
+      }
+    }
+  }
+
+  return [...moduleIds];
+}
+
+function createPluginClientExternals(moduleIds) {
+  return moduleIds.reduce((memo, moduleId) => {
+    memo[moduleId] = `window.__nocobase_app_dev_plugins__ && window.__nocobase_app_dev_plugins__[${JSON.stringify(
+      moduleId,
+    )}]`;
+    return memo;
+  }, {});
 }
 
 function discoverLocalPluginEntries({ cwd = process.cwd(), port } = {}) {
@@ -129,7 +182,9 @@ async function writePluginDevEntryFiles(entries, entryDir) {
 module.exports = {
   buildAppDevServerArgs,
   buildPluginDevUrlMap,
+  createPluginClientExternals,
   discoverLocalPluginEntries,
+  getPluginClientModuleIds,
   shouldUseAppDevServerSource,
   toPosixPath,
   writePluginDevEntryFiles,

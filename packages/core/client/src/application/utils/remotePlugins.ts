@@ -19,20 +19,29 @@ function getPluginClass(pluginModule: RemotePluginModule): PluginClass<any> {
   return defaultPlugin || (pluginModule as PluginClass<any>);
 }
 
+function getClientModuleId(packageName: string) {
+  return `${packageName}/client`;
+}
+
+function defineAppDevPluginModule(moduleId: string, pluginModule: RemotePluginModule) {
+  window.__nocobase_app_dev_plugins__ = window.__nocobase_app_dev_plugins__ || {};
+  window.__nocobase_app_dev_plugins__[moduleId] = pluginModule;
+}
+
 /**
  * @internal
  */
 export function defineDevPlugins(plugins: Record<string, PluginClass<any>>) {
   Object.entries(plugins).forEach(([packageName, plugin]) => {
-    window.define(`${packageName}/client`, () => plugin);
+    window.define(getClientModuleId(packageName), () => plugin);
   });
 }
 
 function defineDevPluginModules(plugins: Record<string, RemotePluginModule>) {
-  window.__nocobase_app_dev_plugins__ = window.__nocobase_app_dev_plugins__ || {};
   Object.entries(plugins).forEach(([packageName, pluginModule]) => {
-    window.define(`${packageName}/client`, () => pluginModule);
-    window.__nocobase_app_dev_plugins__[`${packageName}/client`] = pluginModule;
+    const moduleId = getClientModuleId(packageName);
+    window.define(moduleId, () => pluginModule);
+    defineAppDevPluginModule(moduleId, pluginModule);
   });
 }
 
@@ -40,7 +49,8 @@ function defineDevPluginModules(plugins: Record<string, RemotePluginModule>) {
  * @internal
  */
 export function definePluginClient(packageName: string) {
-  window.define(`${packageName}/client`, ['exports', packageName], function (_exports: any, _pluginExports: any) {
+  const moduleId = getClientModuleId(packageName);
+  window.define(moduleId, ['exports', packageName], function (_exports: any, _pluginExports: any) {
     Object.defineProperty(_exports, '__esModule', {
       value: true,
     });
@@ -54,6 +64,7 @@ export function definePluginClient(packageName: string) {
         },
       });
     });
+    defineAppDevPluginModule(moduleId, _exports);
   });
 }
 
@@ -82,6 +93,12 @@ export function processRemotePlugins(
   resolve: (plugins: [string, PluginClass<any>][]) => void,
 ) {
   return (...pluginModules: (PluginClass<any> & { default?: PluginClass<any> })[]) => {
+    pluginModules.forEach((item, index) => {
+      if (item) {
+        defineAppDevPluginModule(getClientModuleId(pluginData[index].packageName), item);
+      }
+    });
+
     const res: [string, PluginClass<any>][] = pluginModules
       .map<[string, PluginClass<any>]>((item, index) => [pluginData[index].name, item?.default || item])
       .filter((item) => item[1]);
@@ -122,7 +139,7 @@ export function getRemotePlugins(
 
 async function getEsmDevPlugins(pluginData: PluginData[] = []): Promise<Array<[string, PluginClass<any>]>> {
   const plugins: Array<[string, PluginClass<any>]> = [];
-  for (const plugin of sortEsmDevPlugins(pluginData)) {
+  for (const plugin of sortPluginsByAppDevDependencies(pluginData)) {
     const pluginModule: RemotePluginModule = await import(/* webpackIgnore: true */ plugin.url);
     const pluginClass = getPluginClass(pluginModule);
     if (pluginClass) {
@@ -133,7 +150,7 @@ async function getEsmDevPlugins(pluginData: PluginData[] = []): Promise<Array<[s
   return plugins;
 }
 
-function sortEsmDevPlugins(pluginData: PluginData[] = []) {
+function sortPluginsByAppDevDependencies(pluginData: PluginData[] = []) {
   const pluginMap = new Map(pluginData.map((plugin) => [plugin.packageName, plugin]));
   const sorted: PluginData[] = [];
   const visiting = new Set<string>();
@@ -160,6 +177,35 @@ function sortEsmDevPlugins(pluginData: PluginData[] = []) {
 
   pluginData.forEach(visit);
   return sorted;
+}
+
+async function getMixedRemotePluginsInOrder(
+  requirejs: RequireJS,
+  pluginData: PluginData[] = [],
+): Promise<Array<[string, PluginClass<any>]>> {
+  const plugins: Array<[string, PluginClass<any>]> = [];
+  let requirejsPlugins: PluginData[] = [];
+  const flushRequirejsPlugins = async () => {
+    if (requirejsPlugins.length === 0) {
+      return;
+    }
+    const remotePluginList = await getRemotePlugins(requirejs, requirejsPlugins);
+    plugins.push(...remotePluginList);
+    requirejsPlugins = [];
+  };
+
+  for (const plugin of sortPluginsByAppDevDependencies(pluginData)) {
+    if (plugin.devMode === 'esm') {
+      await flushRequirejsPlugins();
+      const esmPluginList = await getEsmDevPlugins([plugin]);
+      plugins.push(...esmPluginList);
+      continue;
+    }
+    requirejsPlugins.push(plugin);
+  }
+
+  await flushRequirejsPlugins();
+  return plugins;
 }
 
 interface GetPluginsOption {
@@ -193,17 +239,16 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<[stri
   const esmDevPlugins = remotePlugins.filter((item) => item.devMode === 'esm');
   const requirejsPlugins = remotePlugins.filter((item) => item.devMode !== 'esm');
 
-  if (esmDevPlugins.length) {
-    const esmPluginList = await getEsmDevPlugins(esmDevPlugins);
-    res.push(...esmPluginList);
-  }
-
-  if (requirejsPlugins.length === 0) {
+  if (esmDevPlugins.length === 0) {
+    if (requirejsPlugins.length === 0) {
+      return res;
+    }
+    const remotePluginList = await getRemotePlugins(requirejs, requirejsPlugins);
+    res.push(...remotePluginList);
     return res;
   }
 
-  const remotePluginList = await getRemotePlugins(requirejs, requirejsPlugins);
-  res.push(...remotePluginList);
-
+  const mixedPluginList = await getMixedRemotePluginsInOrder(requirejs, remotePlugins);
+  res.push(...mixedPluginList);
   return res;
 }

@@ -9,8 +9,16 @@
 
 /* eslint-env jest */
 
+const fs = require('fs-extra');
+const os = require('os');
 const path = require('path');
-const { buildAppDevServerArgs, shouldUseAppDevServerSource, toPosixPath } = require('../commands/app-dev-utils');
+const {
+  buildAppDevServerArgs,
+  createPluginClientExternals,
+  getPluginClientModuleIds,
+  shouldUseAppDevServerSource,
+  toPosixPath,
+} = require('../commands/app-dev-utils');
 
 describe('cli-v1 app-dev utils', () => {
   test('toPosixPath normalizes Windows paths for generated browser imports', () => {
@@ -84,5 +92,30 @@ describe('cli-v1 app-dev utils', () => {
       '--launch-mode',
       'direct',
     ]);
+  });
+
+  test('getPluginClientModuleIds discovers plugin client marker files', () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-app-dev-modules-'));
+    const localPluginDir = path.join(cwd, 'packages/plugins/@nocobase/plugin-local');
+    const remotePluginDir = path.join(cwd, 'node_modules/@nocobase/plugin-remote');
+    fs.ensureDirSync(localPluginDir);
+    fs.ensureDirSync(remotePluginDir);
+    fs.writeJsonSync(path.join(localPluginDir, 'package.json'), { name: '@nocobase/plugin-local' });
+    fs.writeFileSync(path.join(localPluginDir, 'client.js'), '');
+    fs.writeJsonSync(path.join(remotePluginDir, 'package.json'), { name: '@nocobase/plugin-remote' });
+    fs.writeFileSync(path.join(remotePluginDir, 'client-v2.js'), '');
+
+    expect(getPluginClientModuleIds({ cwd }).sort()).toEqual([
+      '@nocobase/plugin-local/client',
+      '@nocobase/plugin-remote/client-v2',
+    ]);
+    fs.removeSync(cwd);
+  });
+
+  test('createPluginClientExternals maps plugin client imports to app-dev modules', () => {
+    expect(createPluginClientExternals(['@nocobase/plugin-demo/client'])).toEqual({
+      '@nocobase/plugin-demo/client':
+        'window.__nocobase_app_dev_plugins__ && window.__nocobase_app_dev_plugins__["@nocobase/plugin-demo/client"]',
+    });
   });
 });

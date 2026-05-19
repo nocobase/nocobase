@@ -23,6 +23,11 @@ function getPluginClass(pluginModule: RemotePluginModule): PluginClass {
   return defaultPlugin || (pluginModule as PluginClass);
 }
 
+function defineAppDevPluginModule(moduleId: string, pluginModule: RemotePluginModule) {
+  window.__nocobase_app_dev_plugins__ = window.__nocobase_app_dev_plugins__ || {};
+  window.__nocobase_app_dev_plugins__[moduleId] = pluginModule;
+}
+
 /**
  * @internal
  */
@@ -33,10 +38,10 @@ export function defineDevPlugins(plugins: Record<string, PluginClass>) {
 }
 
 function defineDevPluginModules(plugins: Record<string, RemotePluginModule>) {
-  window.__nocobase_app_dev_plugins__ = window.__nocobase_app_dev_plugins__ || {};
   Object.entries(plugins).forEach(([packageName, pluginModule]) => {
-    window.define(getClientV2ModuleId(packageName), () => pluginModule);
-    window.__nocobase_app_dev_plugins__[getClientV2ModuleId(packageName)] = pluginModule;
+    const moduleId = getClientV2ModuleId(packageName);
+    window.define(moduleId, () => pluginModule);
+    defineAppDevPluginModule(moduleId, pluginModule);
   });
 }
 
@@ -58,6 +63,12 @@ export function configRequirejs(requirejs: any, pluginData: PluginData[]) {
  */
 export function processRemotePlugins(pluginData: PluginData[], resolve: (plugins: [string, PluginClass][]) => void) {
   return (...pluginModules: (PluginClass & { default?: PluginClass })[]) => {
+    pluginModules.forEach((item, index) => {
+      if (item) {
+        defineAppDevPluginModule(getClientV2ModuleId(pluginData[index].packageName), item);
+      }
+    });
+
     const res: [string, PluginClass][] = pluginModules
       .map<[string, PluginClass]>((item, index) => [pluginData[index].name, item?.default || item])
       .filter((item) => item[1]);
@@ -92,7 +103,7 @@ export function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []):
 
 async function getEsmDevPlugins(pluginData: PluginData[] = []): Promise<Array<[string, PluginClass]>> {
   const plugins: Array<[string, PluginClass]> = [];
-  for (const plugin of sortEsmDevPlugins(pluginData)) {
+  for (const plugin of sortPluginsByAppDevDependencies(pluginData)) {
     const pluginModule: RemotePluginModule = await import(/* webpackIgnore: true */ plugin.url);
     const pluginClass = getPluginClass(pluginModule);
     if (pluginClass) {
@@ -103,7 +114,7 @@ async function getEsmDevPlugins(pluginData: PluginData[] = []): Promise<Array<[s
   return plugins;
 }
 
-function sortEsmDevPlugins(pluginData: PluginData[] = []) {
+function sortPluginsByAppDevDependencies(pluginData: PluginData[] = []) {
   const pluginMap = new Map(pluginData.map((plugin) => [plugin.packageName, plugin]));
   const sorted: PluginData[] = [];
   const visiting = new Set<string>();
@@ -130,6 +141,35 @@ function sortEsmDevPlugins(pluginData: PluginData[] = []) {
 
   pluginData.forEach(visit);
   return sorted;
+}
+
+async function getMixedRemotePluginsInOrder(
+  requirejs: RequireJS,
+  pluginData: PluginData[] = [],
+): Promise<Array<[string, PluginClass]>> {
+  const plugins: Array<[string, PluginClass]> = [];
+  let requirejsPlugins: PluginData[] = [];
+  const flushRequirejsPlugins = async () => {
+    if (requirejsPlugins.length === 0) {
+      return;
+    }
+    const remotePluginList = await getRemotePlugins(requirejs, requirejsPlugins);
+    plugins.push(...remotePluginList);
+    requirejsPlugins = [];
+  };
+
+  for (const plugin of sortPluginsByAppDevDependencies(pluginData)) {
+    if (plugin.devMode === 'esm') {
+      await flushRequirejsPlugins();
+      const esmPluginList = await getEsmDevPlugins([plugin]);
+      plugins.push(...esmPluginList);
+      continue;
+    }
+    requirejsPlugins.push(plugin);
+  }
+
+  await flushRequirejsPlugins();
+  return plugins;
 }
 
 interface GetPluginsOption {
@@ -163,17 +203,16 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<[stri
   const esmDevPlugins = remotePlugins.filter((item) => item.devMode === 'esm');
   const requirejsPlugins = remotePlugins.filter((item) => item.devMode !== 'esm');
 
-  if (esmDevPlugins.length) {
-    const esmPluginList = await getEsmDevPlugins(esmDevPlugins);
-    res.push(...esmPluginList);
-  }
-
-  if (requirejsPlugins.length === 0) {
+  if (esmDevPlugins.length === 0) {
+    if (requirejsPlugins.length === 0) {
+      return res;
+    }
+    const remotePluginList = await getRemotePlugins(requirejs, requirejsPlugins);
+    res.push(...remotePluginList);
     return res;
   }
 
-  const remotePluginList = await getRemotePlugins(requirejs, requirejsPlugins);
-  res.push(...remotePluginList);
-
+  const mixedPluginList = await getMixedRemotePluginsInOrder(requirejs, remotePlugins);
+  res.push(...mixedPluginList);
   return res;
 }
