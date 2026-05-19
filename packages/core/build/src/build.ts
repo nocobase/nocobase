@@ -144,11 +144,20 @@ export async function build(pkgs: string[]) {
     // core/app
     const appClient = packages.find((item) => item.location === CORE_APP);
     if (appClient) {
-      await runProfiledStage(profile, 'app shell', async () => {
+      await runProfiledStage(profile, 'app client shell', async () => {
         await runScript(['rsbuild', 'build', '--config', path.join(CORE_APP, 'client', 'rsbuild.config.ts')], ROOT_PATH, {
           APP_ROOT: path.join(CORE_APP, 'client'),
           ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
         });
+      });
+      await runProfiledStage(profile, 'app client-v2 shell', async () => {
+        await runScript(
+          ['rsbuild', 'build', '--config', path.join(CORE_APP, 'client-v2', 'rsbuild.config.ts')],
+          ROOT_PATH,
+          {
+            ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
+          },
+        );
       });
     }
     writeToCache(BUILD_ERROR, {});

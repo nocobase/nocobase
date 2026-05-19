@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { normalizeSessionEnv, resolveNormalizedSessionId } from '../../bin/session-env.js';
+import { normalizeNodeOptions, normalizeSessionEnv, resolveNormalizedSessionId } from '../../bin/session-env.js';
 
 describe('normalizeSessionEnv', () => {
   test('uses CODEX_THREAD_ID as the effective NB session id', () => {
@@ -111,5 +111,38 @@ describe('resolveNormalizedSessionId', () => {
       COPILOT_AGENT_SESSION_ID: 'copilot-789',
       CLAUDE_CODE_SESSION_ID: 'claude-999',
     })).toBe('copilot-789');
+  });
+});
+
+describe('normalizeNodeOptions', () => {
+  test('adds --preserve-symlinks when NODE_OPTIONS is empty', () => {
+    const env: Record<string, string> = {};
+
+    const normalized = normalizeNodeOptions(env);
+
+    expect(normalized).toBe('--preserve-symlinks');
+    expect(env.NODE_OPTIONS).toBe('--preserve-symlinks');
+  });
+
+  test('appends --preserve-symlinks without removing existing flags', () => {
+    const env = {
+      NODE_OPTIONS: '--max-old-space-size=4096',
+    };
+
+    const normalized = normalizeNodeOptions(env);
+
+    expect(normalized).toBe('--max-old-space-size=4096 --preserve-symlinks');
+    expect(env.NODE_OPTIONS).toBe('--max-old-space-size=4096 --preserve-symlinks');
+  });
+
+  test('does not append --preserve-symlinks twice', () => {
+    const env = {
+      NODE_OPTIONS: '--max-old-space-size=4096 --preserve-symlinks',
+    };
+
+    const normalized = normalizeNodeOptions(env);
+
+    expect(normalized).toBe('--max-old-space-size=4096 --preserve-symlinks');
+    expect(env.NODE_OPTIONS).toBe('--max-old-space-size=4096 --preserve-symlinks');
   });
 });

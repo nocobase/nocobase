@@ -48,6 +48,14 @@ describe('app', () => {
       expect(app.getHref('/test')).toBe('/test');
     });
 
+    it('should initialize shared jsonLogic operators', () => {
+      const app = new Application({ router });
+
+      expect(app.jsonLogic.apply({ $eq: [1, '1'] })).toBe(true);
+      app.jsonLogic.addOperation('$testAlwaysTrue', () => true);
+      expect(app.jsonLogic.apply({ $testAlwaysTrue: [] })).toBe(true);
+    });
+
     it('should apply the provided favicon immediately', () => {
       const app = new Application({ router });
 

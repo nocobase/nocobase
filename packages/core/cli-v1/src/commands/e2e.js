@@ -8,7 +8,7 @@
  */
 
 const { Command } = require('commander');
-const { run, isPortReachable, checkDBDialect } = require('../util');
+const { run, isPortReachable, checkDBDialect, storagePathJoin } = require('../util');
 const { execSync } = require('node:child_process');
 const axios = require('axios');
 const { pTest } = require('./p-test');
@@ -119,17 +119,15 @@ const commonConfig = {
 };
 
 const runCodegenSync = () => {
+  const authFile = storagePathJoin('playwright', '.auth', 'codegen.auth.json');
   try {
     execSync(
-      `npx playwright codegen --load-storage=storage/playwright/.auth/codegen.auth.json ${process.env.APP_BASE_URL} --save-storage=storage/playwright/.auth/codegen.auth.json`,
+      `npx playwright codegen --load-storage=${authFile} ${process.env.APP_BASE_URL} --save-storage=${authFile}`,
       commonConfig,
     );
   } catch (err) {
     if (err.message.includes('auth.json')) {
-      execSync(
-        `npx playwright codegen ${process.env.APP_BASE_URL} --save-storage=storage/playwright/.auth/codegen.auth.json`,
-        commonConfig,
-      );
+      execSync(`npx playwright codegen ${process.env.APP_BASE_URL} --save-storage=${authFile}`, commonConfig);
     } else {
       console.error(err);
     }

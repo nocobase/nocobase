@@ -4,6 +4,7 @@ const SESSION_ENV_SOURCES = [
   'COPILOT_AGENT_SESSION_ID',
   'CLAUDE_CODE_SESSION_ID',
 ];
+const PRESERVE_SYMLINKS_FLAG = '--preserve-symlinks';
 
 export function resolveNormalizedSessionId(env = process.env) {
   for (const key of SESSION_ENV_SOURCES) {
@@ -24,4 +25,15 @@ export function normalizeSessionEnv(env = process.env) {
 
   env.NB_SESSION_ID = sessionId;
   return sessionId;
+}
+
+export function normalizeNodeOptions(env = process.env) {
+  const currentNodeOptions = String(env.NODE_OPTIONS ?? '').trim();
+  const flags = currentNodeOptions ? currentNodeOptions.split(/\s+/) : [];
+
+  if (!flags.includes(PRESERVE_SYMLINKS_FLAG)) {
+    env.NODE_OPTIONS = [...flags, PRESERVE_SYMLINKS_FLAG].join(' ');
+  }
+
+  return env.NODE_OPTIONS;
 }

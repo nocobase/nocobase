@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/* globals define,module */
-
 /*
 Using a Universal Module Loader that should be browser, require, and AMD friendly
 http://ricostacruz.com/cheatsheets/umdjs.html
@@ -18,7 +16,6 @@ import { getDayRangeByParams } from '@nocobase/utils/client';
 
 export function getOperators() {
   'use strict';
-  /* globals console:false */
 
   if (!Array.isArray) {
     Array.isArray = function (arg) {
@@ -568,14 +565,14 @@ export function getOperators() {
     // The operation is called with "data" bound to its "this" and "values" passed as arguments.
     // Structured commands like % or > can name formal arguments while flexible commands (like missing or merge) can operate on the pseudo-array arguments
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/arguments
-    if (operations.hasOwnProperty(op) && typeof operations[op] === 'function') {
+    if (Object.prototype.hasOwnProperty.call(operations, op) && typeof operations[op] === 'function') {
       return operations[op].apply(data, values);
     } else if (op.indexOf('.') > 0) {
       // Contains a dot, and not in the 0th position
       var sub_ops = String(op).split('.');
       var operation = operations;
       for (i = 0; i < sub_ops.length; i++) {
-        if (!operation.hasOwnProperty(sub_ops[i])) {
+        if (!Object.prototype.hasOwnProperty.call(operation, sub_ops[i])) {
           throw new Error('Unrecognized operation ' + op + ' (failed at ' + sub_ops.slice(0, i + 1).join('.') + ')');
         }
         // Descending into operations
