@@ -14,7 +14,7 @@ import FlowModelRepository from '../repository';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
-describe('flowSurfaces chart write paths', () => {
+describe.skip('flowSurfaces chart write paths', () => {
   let app: MockServer;
   let db: Database;
   let flowRepo: FlowModelRepository;

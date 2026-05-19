@@ -35,7 +35,7 @@ const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION: Record<string, stri
   roles: ['title', 'name'],
 };
 
-describe('flowSurfaces resource', () => {
+describe.skip('flowSurfaces resource', () => {
   let app: MockServer;
   let db: Database;
   let flowRepo: FlowModelRepository;

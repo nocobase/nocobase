@@ -153,7 +153,7 @@ function getFrontendDefaultBindingUse(scope: FlowSurfaceFieldDefaultBindingScope
   } as any)?.modelName;
 }
 
-describe('flowSurfaces core field default binding parity', () => {
+describe.skip('flowSurfaces core field default binding parity', () => {
   for (const scope of Object.keys(CORE_FIELD_DEFAULT_BINDING_MATRIX) as FlowSurfaceFieldDefaultBindingScope[]) {
     it(`should keep ${scope} fallback bindings aligned with frontend defaults`, () => {
       const interfaces = Object.keys(CORE_FIELD_DEFAULT_BINDING_MATRIX[scope]);

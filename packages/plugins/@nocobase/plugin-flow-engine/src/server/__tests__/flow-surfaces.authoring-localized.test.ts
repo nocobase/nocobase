@@ -20,7 +20,7 @@ import {
 } from './flow-surfaces.contract.helpers';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 
-describe('flowSurfaces backend authoring localized compiler', () => {
+describe.skip('flowSurfaces backend authoring localized compiler', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 

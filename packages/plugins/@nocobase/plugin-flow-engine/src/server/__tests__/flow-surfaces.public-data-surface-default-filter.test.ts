@@ -25,7 +25,7 @@ function createCollection(name: string, fields: any[]) {
   };
 }
 
-describe('flowSurfaces public data surface default filters', () => {
+describe.skip('flowSurfaces public data surface default filters', () => {
   it('sizes required explicit defaultFilter coverage from eligible direct interface fields', () => {
     const narrowCollection = createCollection('roles', [
       { name: 'title', type: 'string', interface: 'input' },

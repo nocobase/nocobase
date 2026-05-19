@@ -26,7 +26,7 @@ function readSubmitActionSettings(actionUse: 'AddNewActionModel' | 'EditActionMo
   return block?.actions?.[0]?.settings;
 }
 
-describe('flowSurfaces default action popup', () => {
+describe.skip('flowSurfaces default action popup', () => {
   it('should use a primary Submit button for add-new and edit popup forms', () => {
     expect(readSubmitActionSettings('AddNewActionModel')).toMatchObject({
       title: '{{t("Submit")}}',

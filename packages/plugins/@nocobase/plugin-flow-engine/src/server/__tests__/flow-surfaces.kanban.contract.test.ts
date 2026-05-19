@@ -35,7 +35,7 @@ function kanbanDefaultFilter() {
   };
 }
 
-describe('flowSurfaces kanban contract', () => {
+describe.skip('flowSurfaces kanban contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];

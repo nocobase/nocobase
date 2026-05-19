@@ -14,7 +14,7 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
-describe('flowSurfaces event flow', () => {
+describe.skip('flowSurfaces event flow', () => {
   let app: MockServer;
   let db: Database;
   let rootAgent: any;

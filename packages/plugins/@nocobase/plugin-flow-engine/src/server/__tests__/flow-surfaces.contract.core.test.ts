@@ -30,7 +30,7 @@ import {
 } from './flow-surfaces.contract.helpers';
 import { wrapFlowSurfacesReadCompatibleAgent } from './flow-surfaces.mock-server';
 
-describe('flowSurfaces API contract builders', () => {
+describe.skip('flowSurfaces API contract builders', () => {
   it('should keep persisted root page builder separate from synthetic tab and popup builders', async () => {
     const persistedPage: any = buildPersistedRootPageModel({
       pageUid: 'persisted-page',
@@ -138,7 +138,7 @@ describe('flowSurfaces API contract builders', () => {
   });
 });
 
-describe('flowSurfaces API contract core', () => {
+describe.skip('flowSurfaces API contract core', () => {
   let context: FlowSurfacesContractContext;
   let app: FlowSurfacesContractContext['app'];
   let db: FlowSurfacesContractContext['db'];

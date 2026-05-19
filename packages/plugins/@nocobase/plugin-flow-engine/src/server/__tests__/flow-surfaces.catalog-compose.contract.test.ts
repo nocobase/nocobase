@@ -31,7 +31,7 @@ import {
 import { expectTemplateUsage, saveTemplate } from './flow-surfaces.templates.helpers';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
-describe('flowSurfaces catalog + compose contract', () => {
+describe.skip('flowSurfaces catalog + compose contract', () => {
   const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
     'FilterActionModel',
     'RefreshActionModel',

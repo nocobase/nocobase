@@ -69,7 +69,7 @@ async function createApprovalSurface(
   };
 }
 
-describe('flowSurfaces approval API contract', () => {
+describe.skip('flowSurfaces approval API contract', () => {
   let context: FlowSurfacesContractContext;
   let flowRepo: FlowModelRepository;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];

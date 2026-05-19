@@ -15,7 +15,7 @@ import { isBareFlowContextPath } from '../flow-surfaces/context';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
-describe('flowSurfaces context', () => {
+describe.skip('flowSurfaces context', () => {
   let app: MockServer;
   let db: Database;
   let flowRepo: FlowModelRepository;

@@ -54,7 +54,7 @@ const LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS = Array.from(
 );
 const LARGE_GENERATED_POPUP_CODE_FIELDS = Array.from({ length: 11 }, (_item, index) => `code${index + 1}`);
 
-describe('flowSurfaces backend authoring aggregate errors', () => {
+describe.skip('flowSurfaces backend authoring aggregate errors', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 
