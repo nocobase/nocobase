@@ -164,12 +164,17 @@ Acesse `System Management -> Localization Management`.
 2. Clique em `Synchronize` para garantir que as entradas estejam sincronizadas.
 3. Clique no avatar da Lina.
 4. Escolha um escopo de tarefa:
-   - `Incremental translation`: traduz entradas sem tradução.
+   - `Incremental translation`: traduz entradas que ainda não têm tradução.
    - `Selected translation`: traduz entradas selecionadas na tabela.
    - `Full translation`: traduz todas as entradas no idioma atual.
 5. Verifique a quantidade de entradas, o provedor e o modelo na caixa de confirmação.
-6. Confirme para criar a tarefa assíncrona.
-7. Aguarde a conclusão, revise as traduções e publique.
+6. Se escolher tradução incremental ou completa, selecione o escopo de tradução:
+   - `All`
+   - `Built-in entries`: entradas do sistema e de plugins.
+   - `Custom entries`: nomes de rotas, nomes de coleções e campos, e conteúdo de UI.
+7. Ajuste os idiomas de tradução de referência se necessário. A tradução incremental e completa configuram idiomas de referência separadamente para entradas integradas e personalizadas; a tradução selecionada mostra apenas uma configuração geral de idiomas de referência.
+8. Confirme para criar a tarefa assíncrona.
+9. Aguarde a conclusão, revise as traduções e publique.
 
 Comece com `Selected translation` em algumas entradas para verificar o estilo e a velocidade antes de executar tradução incremental ou completa.
 
@@ -177,9 +182,10 @@ Comece com `Selected translation` em algumas entradas para verificar o estilo e 
 
 Lina constrói solicitações a partir das entradas e traduções de referência. Para entradas curtas, referências existentes ajudam a melhorar a consistência:
 
-- Entradas integradas preferem traduções em chinês como referência.
-- Entradas não integradas preferem o idioma padrão do sistema como referência.
-- Se houver uma referência em inglês, o inglês é usado como texto de origem.
+- Entradas integradas usam traduções em chinês como referência padrão e japonês como referência alternativa.
+- Entradas personalizadas usam o idioma padrão do sistema como referência padrão e chinês como referência alternativa.
+- Usuários podem ajustar o idioma padrão e o idioma alternativo no diálogo de confirmação da tarefa.
+- O sistema primeiro usa a tradução de referência no idioma padrão. Se ela não existir, tenta o idioma alternativo.
 - Os resultados são gravados no idioma de destino, mas não são publicados automaticamente.
 
 A semântica do prompt é semelhante a:

@@ -58,6 +58,8 @@ When defining text in code, you need to manually specify the ns (namespace), for
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
 
+The translation column supports quick editing. You can click a translation cell in the table to edit it directly, press Enter or move focus out of the input to save, and press `Esc` to cancel the change. To view the source text, module, or longer translations, you can still use the edit button in the row actions to open the drawer editor.
+
 ### Using AI Translation
 
 Localization Management supports translating entries through the AI Employee Lina. After enabling AI Employees and configuring a model service, you can use AI translation on the Localization Management page to batch generate translations for the current language.
@@ -66,9 +68,19 @@ Localization Management supports translating entries through the AI Employee Lin
 
 Supported translation scopes:
 
-- **Full translation**: translate all eligible entries in the current language.
-- **Incremental translation**: only translate entries that do not have translations yet.
+- **Full translation**: translate all entries in the current language and overwrite existing translations.
+- **Incremental translation**: only translate entries that do not have translations yet in the current language. For built-in entries, if a translation already exists in the target language's system or plugin language pack, it is also treated as already translated.
 - **Selected translation**: select entries in the table and translate only the selected content.
+
+![](https://static-docs.nocobase.com/202605191341968.png)
+
+When creating a full or incremental translation task, you can choose the translation scope in the confirmation dialog:
+
+- **All**: process all entries that match the current task conditions.
+- **Built-in entries**: system and plugin entries.
+- **Custom entries**: route names, collection and field names, and UI content.
+
+The confirmation dialog also supports configuring reference translation languages. Full and incremental translation separately configure the default and fallback languages for built-in entries and custom entries. Selected translation only shows one general reference translation language configuration.
 
 AI translation creates a background task. You can view progress while the task runs. After completion, translations are written to the corresponding language and should still be reviewed and corrected according to the actual context.
 
