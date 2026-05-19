@@ -144,18 +144,25 @@ function TranslationTaskConfirmContent(props: {
   const fieldLabel = (label: string) => <span style={{ fontWeight: 400 }}>{label}</span>;
 
   useEffect(() => {
-    let canceled = false;
     const nextValues = {
       ...values,
       scope,
       referenceLocales,
     };
     onChange(nextValues);
+  }, [onChange, referenceLocales, scope, values]);
+
+  useEffect(() => {
+    let canceled = false;
+    const previewValues = {
+      ...values,
+      scope,
+    };
     setPreviewLoading(true);
     onPreviewChange({ count: 0, loading: true });
     void api
       .resource(LOCALIZATION_RESOURCE)
-      .aiTranslatePreview({ values: nextValues })
+      .aiTranslatePreview({ values: previewValues })
       .then((response) => {
         if (canceled) {
           return;
@@ -178,7 +185,7 @@ function TranslationTaskConfirmContent(props: {
     return () => {
       canceled = true;
     };
-  }, [api, onChange, onPreviewChange, referenceLocales, scope, t, values]);
+  }, [api, onPreviewChange, scope, t, values]);
 
   const providerLabel = preview?.providerTitle ? Schema.compile(preview.providerTitle, { t }) : preview?.provider;
   const modelLabel = preview?.model ? formatModelLabel(preview.model) : undefined;
@@ -460,15 +467,19 @@ export function LocalizationPageContent() {
   };
 
   const saveTranslation = async (record: LocalizationText, translation: string) => {
-    await api.resource(LOCALIZATION_TRANSLATIONS_RESOURCE).updateOrCreate({
-      filterKeys: ['textId', 'locale'],
-      values: {
-        textId: record.id,
-        locale: currentLocale,
-        translation,
-      },
-    });
-    refresh();
+    try {
+      await api.resource(LOCALIZATION_TRANSLATIONS_RESOURCE).updateOrCreate({
+        filterKeys: ['textId', 'locale'],
+        values: {
+          textId: record.id,
+          locale: currentLocale,
+          translation,
+        },
+      });
+      refresh();
+    } catch (error) {
+      message.error(error?.message || t('Failed to save translation'));
+    }
   };
 
   const destroyTranslation = async (record: LocalizationText) => {
