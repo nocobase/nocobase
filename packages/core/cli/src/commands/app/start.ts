@@ -24,6 +24,7 @@ import {
 } from '../../lib/app-health.js';
 import {
   ensureBuiltinDbReady,
+  ensureLocalPostinstall,
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
@@ -310,6 +311,17 @@ export default class AppStart extends Command {
         );
       }
       return;
+    }
+
+    try {
+      await ensureLocalPostinstall(runtime, {
+        verbose: flags.verbose,
+        onStartTask: startTask,
+        onSucceedTask: succeedTask,
+        onFailTask: failTask,
+      });
+    } catch (error: unknown) {
+      this.error(error instanceof Error ? error.message : String(error));
     }
 
     if (flags.daemon === false) {
