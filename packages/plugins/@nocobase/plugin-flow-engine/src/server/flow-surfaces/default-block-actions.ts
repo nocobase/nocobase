@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY } from './blueprint/defaults';
+import { hasFlowSurfaceTemplateDocument } from './template-reference';
 
 export const FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY = '__flowSurfaceAutoSaveDefaultPopupTemplate';
 
@@ -35,6 +36,25 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
         [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
       },
     },
+    {
+      type: 'view',
+      scope: 'recordActions',
+      popup: {
+        tryTemplate: true,
+        defaultType: 'view',
+        [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
+      },
+    },
+    {
+      type: 'edit',
+      scope: 'recordActions',
+      popup: {
+        tryTemplate: true,
+        defaultType: 'edit',
+        [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
+      },
+    },
+    { type: 'delete', scope: 'recordActions' },
   ],
   list: [
     { type: 'filter', scope: 'actions' },
@@ -114,7 +134,7 @@ function normalizeActionType(value: any) {
 
 function resolveDefaultBlockActions(blockType?: string, template?: unknown) {
   const normalizedBlockType = normalizeActionType(blockType);
-  if (!normalizedBlockType || !_.isUndefined(template)) {
+  if (!normalizedBlockType || hasFlowSurfaceTemplateDocument(template)) {
     return [];
   }
   return (FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS[normalizedBlockType] || []).map(cloneDefaultActionDescriptor);
@@ -123,6 +143,9 @@ function resolveDefaultBlockActions(blockType?: string, template?: unknown) {
 function shouldMergeDefaultPopup(popup: any) {
   if (!_.isPlainObject(popup)) {
     return true;
+  }
+  if (Object.prototype.hasOwnProperty.call(popup, 'tryTemplate')) {
+    return false;
   }
   const keys = Object.keys(popup);
   if (!keys.length) {
@@ -197,11 +220,15 @@ export function mergeFlowSurfaceDefaultBlockActions<T extends { type?: string; p
   template?: unknown;
   actions?: T[];
   recordActions?: T[];
+  mergeRecordActionDefaults?: boolean;
   createAction: (descriptor: FlowSurfaceDefaultBlockActionDescriptor) => T;
 }) {
   const descriptors = resolveDefaultBlockActions(input.blockType, input.template);
   const actionDescriptors = descriptors.filter((descriptor) => descriptor.scope === 'actions');
-  const recordActionDescriptors = descriptors.filter((descriptor) => descriptor.scope === 'recordActions');
+  const recordActionDescriptors =
+    input.mergeRecordActionDefaults === false
+      ? []
+      : descriptors.filter((descriptor) => descriptor.scope === 'recordActions');
 
   return {
     actions: mergeDefaultActionList(input.actions, actionDescriptors, input.createAction),

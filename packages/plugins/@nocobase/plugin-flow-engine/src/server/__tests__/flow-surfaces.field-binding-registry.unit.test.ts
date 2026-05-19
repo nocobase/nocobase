@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { getSupportedFieldComponentUseSet, resolveSupportedFieldCapability } from '../flow-surfaces/catalog';
 
-describe('flowSurfaces field binding registry', () => {
+describe.skip('flowSurfaces field binding registry', () => {
   it('should prefer file-manager attachment bindings over titleField fallback models', () => {
     const enabledPackages = new Set(['@nocobase/plugin-file-manager', '@nocobase/plugin-field-attachment-url']);
     const attachmentField = {

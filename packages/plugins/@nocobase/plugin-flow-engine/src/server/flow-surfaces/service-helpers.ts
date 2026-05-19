@@ -12,6 +12,26 @@ import { getSharedFieldDefaultBindingUse } from './core-field-default-bindings';
 
 const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE = 1;
 const FLOW_SURFACE_TEMPLATE_DEFAULT_PAGE_SIZE = 50;
+const ASSOCIATION_FIELD_TYPES = new Set([
+  'belongsto',
+  'hasone',
+  'hasmany',
+  'belongstomany',
+  'belongstoarray',
+  'onetoone',
+]);
+const ASSOCIATION_FIELD_INTERFACES = new Set([
+  'm2o',
+  'o2m',
+  'm2m',
+  'o2o',
+  'mbm',
+  'obo',
+  'oho',
+  'manytoone',
+  'onetomany',
+  'manytomany',
+]);
 
 export type FlowSurfaceFieldMenuCandidateDedupeShape = {
   fieldPath: string;
@@ -194,7 +214,16 @@ export function isAssociationField(field: any) {
   if (typeof field?.isAssociationField === 'function') {
     return field.isAssociationField();
   }
-  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'].includes(getFieldType(field));
+  if (getFieldTarget(field)) {
+    return true;
+  }
+  const fieldType = String(getFieldType(field) || '')
+    .trim()
+    .toLowerCase();
+  const fieldInterface = String(getFieldInterface(field) || '')
+    .trim()
+    .toLowerCase();
+  return ASSOCIATION_FIELD_TYPES.has(fieldType) || ASSOCIATION_FIELD_INTERFACES.has(fieldInterface);
 }
 
 export function resolveFieldFromCollection(collection: any, fieldPath: string) {

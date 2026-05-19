@@ -64,13 +64,13 @@ export async function waitForFixtureCollectionsReady(
         return envTimeoutMs;
       }
 
-      // MySQL can take noticeably longer to expose freshly synced tables when the
-      // full flow-surfaces suite is creating many temporary collections back-to-back.
+      // Fresh association columns can lag behind collection field writes while
+      // the full flow-surfaces suite creates many temporary collections back-to-back.
       if (db.inDialect('mysql')) {
         return process.env.CI ? 120000 : 60000;
       }
 
-      return process.env.CI ? 60000 : 30000;
+      return 60000;
     })();
   const deadline = Date.now() + resolvedTimeoutMs;
   const queryInterface = db.sequelize.getQueryInterface();
