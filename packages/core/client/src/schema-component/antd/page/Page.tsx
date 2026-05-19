@@ -45,6 +45,7 @@ import {
   useCurrentRoute,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
+import { shouldDisplayRouteBadge } from '../../../route-switch/antd/admin-layout/badge';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
@@ -270,7 +271,7 @@ const PageContent = memo((props: PageContentProps) => {
 const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties }> = (props) => {
   const badgeCount = useEvaluatedExpression(props.tabRoute.options?.badge?.count);
 
-  if (badgeCount == null) return null;
+  if (!shouldDisplayRouteBadge(badgeCount, props.tabRoute.options?.badge?.showZero)) return null;
 
   return (
     <Badge
