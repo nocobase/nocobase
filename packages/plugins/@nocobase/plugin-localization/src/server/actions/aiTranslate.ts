@@ -12,7 +12,7 @@ import { AsyncTasksManager } from '@nocobase/plugin-async-task-manager';
 import PluginAIServer from '@nocobase/plugin-ai';
 import { LOCALIZATION_AI_TRANSLATE_TASK_TYPE } from '../tasks/localization-ai-translate';
 import type { TranslationReferenceLocales } from '../tasks/localization-ai-translate';
-import { resolveTextIdsByScope } from '../translation-scope';
+import { buildFindTextsOptions } from '../translation-scope';
 import type { TranslationScope } from '../translation-scope';
 
 const validateParams = (ctx: Context) => {
@@ -45,28 +45,6 @@ const validateParams = (ctx: Context) => {
   };
 };
 
-const buildFindTextsOptions = (mode: string, locale: string, textIds?: Array<string | number>) => {
-  const options: any = {};
-
-  if (mode === 'selected' || textIds) {
-    options.filter = {
-      ...(options.filter || {}),
-      id: {
-        $in: textIds || [],
-      },
-    };
-  }
-
-  if (mode === 'incremental') {
-    options.include = [{ association: 'translations', where: { locale }, required: false }];
-    options.where = {
-      '$translations.id$': null,
-    };
-  }
-
-  return options;
-};
-
 const countTexts = async (
   ctx: Context,
   mode: string,
@@ -74,14 +52,14 @@ const countTexts = async (
   scope: TranslationScope,
   textIds?: Array<string | number>,
 ) => {
-  const effectiveTextIds = await resolveTextIdsByScope({
+  const options = await buildFindTextsOptions({
     app: ctx.app,
     mode,
     locale,
     scope,
     textIds,
   });
-  return await ctx.db.getRepository('localizationTexts').count(buildFindTextsOptions(mode, locale, effectiveTextIds));
+  return await ctx.db.getRepository('localizationTexts').count(options);
 };
 
 const getScopeTitle = (scope: TranslationScope) => {

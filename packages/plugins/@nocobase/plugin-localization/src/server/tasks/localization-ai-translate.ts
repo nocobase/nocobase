@@ -11,7 +11,7 @@ import { CancelError, TaskType } from '@nocobase/plugin-async-task-manager';
 import PluginAIServer from '@nocobase/plugin-ai';
 import type { ModelRef } from '@nocobase/plugin-ai';
 import { HumanMessage } from '@langchain/core/messages';
-import { getBuiltInReference, isBuiltInText, normalizeTextRecord, resolveTextIdsByScope } from '../translation-scope';
+import { buildFindTextsOptions, getBuiltInReference, isBuiltInText, normalizeTextRecord } from '../translation-scope';
 import type { LocalizationTextRecord, TranslationScope } from '../translation-scope';
 
 export const LOCALIZATION_AI_TRANSLATE_TASK_TYPE = 'localization:ai-translate';
@@ -96,16 +96,18 @@ export class LocalizationAITranslateTask extends TaskType {
     const defaultReferenceLocale = await this.getSystemDefaultLocale();
     const builtInMatchResources = await this.app.localeManager.getBuiltInResources('en-US');
     const referenceLocales = this.resolveReferenceLocales(params.referenceLocales, defaultReferenceLocale);
-    const effectiveTextIds = await resolveTextIdsByScope({
+    const findTextsOptions = await buildFindTextsOptions({
       app: this.app,
       mode: params.mode,
       locale,
-      scope: params.scope,
+      scope: params.scope || 'all',
       textIds: params.textIds,
+      fields: ['id', 'text', 'module'],
+      sort: ['id'],
     });
     const workerCount = getTranslationWorkerCount();
     const countStart = Date.now();
-    const total = await this.countTexts(params.mode, locale, effectiveTextIds);
+    const total = await this.countTexts(findTextsOptions);
     this.logger?.debug('Localization AI translation task started', {
       taskId: this.record.id,
       mode: params.mode,
@@ -117,7 +119,6 @@ export class LocalizationAITranslateTask extends TaskType {
       defaultReferenceLocale,
       referenceLocales,
       scope: params.scope || 'all',
-      scopedTextIds: effectiveTextIds?.length,
       provider: service?.provider,
       llmService: service?.name,
       model,
@@ -156,7 +157,7 @@ export class LocalizationAITranslateTask extends TaskType {
 
     try {
       await this.app.db.getRepository('localizationTexts').chunkWithCursor({
-        ...this.buildFindTextsOptions(params.mode, locale, effectiveTextIds),
+        ...findTextsOptions,
         chunkSize: TRANSLATION_BATCH_SIZE,
         beforeFind: async () => {
           while (!firstError && queue.length >= MAX_TRANSLATION_QUEUE_SIZE) {
@@ -235,35 +236,8 @@ export class LocalizationAITranslateTask extends TaskType {
     };
   }
 
-  private async countTexts(mode: TranslationMode, locale: string, textIds?: Array<string | number>): Promise<number> {
-    return await this.app.db
-      .getRepository('localizationTexts')
-      .count(this.buildFindTextsOptions(mode, locale, textIds));
-  }
-
-  private buildFindTextsOptions(mode: TranslationMode, locale: string, textIds?: Array<string | number>) {
-    const options: any = {
-      fields: ['id', 'text', 'module'],
-      sort: ['id'],
-    };
-
-    if (mode === 'selected' || textIds) {
-      options.filter = {
-        ...(options.filter || {}),
-        id: {
-          $in: textIds || [],
-        },
-      };
-    }
-
-    if (mode === 'incremental') {
-      options.include = [{ association: 'translations', where: { locale }, required: false }];
-      options.where = {
-        '$translations.id$': null,
-      };
-    }
-
-    return options;
+  private async countTexts(options: any): Promise<number> {
+    return await this.app.db.getRepository('localizationTexts').count(options);
   }
 
   private async getLocaleReferences(textIds: Array<string | number>, locale: string) {

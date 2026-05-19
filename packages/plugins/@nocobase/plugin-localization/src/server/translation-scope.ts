@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Op } from '@nocobase/database';
+
 export type TranslationScope = 'all' | 'builtIn' | 'custom';
 
 export type LocalizationTextRecord = {
@@ -17,12 +19,14 @@ export type LocalizationTextRecord = {
   translationId?: string | number;
 };
 
-type ResolveTextIdsOptions = {
+type BuildFindTextsOptions = {
   app: any;
   mode: string;
   locale: string;
-  scope?: TranslationScope;
+  scope: TranslationScope;
   textIds?: Array<string | number>;
+  fields?: string[];
+  sort?: string[];
 };
 
 export const normalizeTextRecord = (row: any): LocalizationTextRecord | undefined => {
@@ -36,7 +40,7 @@ export const getModuleName = (row: LocalizationTextRecord) => row.module?.replac
 
 export const isBuiltInText = (row: LocalizationTextRecord, resources: Record<string, Record<string, string>>) => {
   const moduleName = getModuleName(row);
-  return Boolean(moduleName && resources[moduleName]?.[row.text] !== undefined);
+  return Boolean(moduleName && resources[moduleName]);
 };
 
 export const hasBuiltInTranslation = (
@@ -65,45 +69,86 @@ export const getBuiltInReference = (row: LocalizationTextRecord, resources: Reco
   return moduleName ? resources[moduleName]?.[row.text] : undefined;
 };
 
-export const resolveTextIdsByScope = async (options: ResolveTextIdsOptions) => {
-  const { app, mode, locale, scope = 'all', textIds } = options;
-  if (scope === 'all' && mode !== 'incremental') {
-    return textIds;
-  }
-
+const getBuiltInModules = async (app: any) => {
   const builtInResources = await app.localeManager.getBuiltInResources('en-US');
-  const targetBuiltInResources =
-    mode === 'incremental' ? await app.localeManager.getBuiltInResources(locale) : undefined;
-  const resolvedTextIds: Array<string | number> = [];
-  const findOptions: any = {
-    fields: ['id', 'text', 'module'],
-    sort: ['id'],
-    chunkSize: 500,
-  };
+  return Object.keys(builtInResources).map((module) => `resources.${module}`);
+};
 
-  if (textIds) {
+const getTranslatedBuiltInResourceConditions = (resources: Record<string, Record<string, string>>) => {
+  return Object.entries(resources)
+    .map(([module, translations]) => {
+      const texts = Object.entries(translations)
+        .filter(([, translation]) => translation !== undefined && translation !== '')
+        .map(([text]) => text);
+
+      if (!texts.length) {
+        return;
+      }
+
+      return {
+        module: `resources.${module}`,
+        text: {
+          [Op.in]: texts,
+        },
+      };
+    })
+    .filter(Boolean);
+};
+
+const addWhereCondition = (options: any, condition: any) => {
+  if (!options.where) {
+    options.where = condition;
+    return;
+  }
+  options.where = {
+    [Op.and]: [options.where, condition],
+  };
+};
+
+export const buildFindTextsOptions = async (options: BuildFindTextsOptions) => {
+  const { app, mode, locale, scope = 'all', textIds, fields, sort } = options;
+  const findOptions: any = {};
+
+  if (fields) {
+    findOptions.fields = fields;
+  }
+  if (sort) {
+    findOptions.sort = sort;
+  }
+  if (mode === 'selected' || textIds) {
     findOptions.filter = {
       id: {
-        $in: textIds,
+        $in: textIds || [],
       },
     };
   }
 
-  await app.db.getRepository('localizationTexts').chunkWithCursor({
-    ...findOptions,
-    callback: async (rows) => {
-      for (const row of rows) {
-        const record = normalizeTextRecord(row);
-        if (
-          record &&
-          matchesScope(record, builtInResources, scope) &&
-          !(targetBuiltInResources && hasBuiltInTranslation(record, targetBuiltInResources))
-        ) {
-          resolvedTextIds.push(record.id);
-        }
-      }
-    },
-  });
+  if (scope !== 'all') {
+    const builtInModules = await getBuiltInModules(app);
+    findOptions.filter = {
+      ...(findOptions.filter || {}),
+      module: {
+        [scope === 'builtIn' ? '$in' : '$notIn']: builtInModules,
+      },
+    };
+  }
 
-  return resolvedTextIds;
+  if (mode === 'incremental') {
+    findOptions.include = [{ association: 'translations', where: { locale }, required: false }];
+    addWhereCondition(findOptions, {
+      '$translations.id$': null,
+    });
+
+    const targetBuiltInResources = await app.localeManager.getBuiltInResources(locale);
+    const translatedBuiltInConditions = getTranslatedBuiltInResourceConditions(targetBuiltInResources);
+    if (translatedBuiltInConditions.length) {
+      addWhereCondition(findOptions, {
+        [Op.not]: {
+          [Op.or]: translatedBuiltInConditions,
+        },
+      });
+    }
+  }
+
+  return findOptions;
 };

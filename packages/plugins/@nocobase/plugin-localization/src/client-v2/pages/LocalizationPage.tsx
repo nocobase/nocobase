@@ -12,7 +12,8 @@ import { css } from '@emotion/css';
 import { Schema } from '@formily/react';
 import { languageCodes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
-import { AIEmployeeShortcut, formatModelLabel, type AIEmployee, type Task } from '@nocobase/plugin-ai/client-v2';
+import { AIEmployeeShortcut, formatModelLabel } from '@nocobase/plugin-ai/client-v2';
+import type { AIEmployee, Task } from '@nocobase/plugin-ai/client-v2';
 import { useRequest } from 'ahooks';
 import {
   Button,
@@ -210,10 +211,9 @@ function TranslationTaskConfirmContent(props: {
       <Form
         layout="vertical"
         initialValues={{
-          referenceLocales: {
-            ...referenceLocales,
-            common: referenceLocales.custom,
-          },
+          referenceLocales: isSelectedMode
+            ? { ...referenceLocales, common: referenceLocales.custom }
+            : referenceLocales,
         }}
         onValuesChange={(_, allValues) => {
           const nextReferenceLocales = allValues.referenceLocales;
@@ -223,7 +223,8 @@ function TranslationTaskConfirmContent(props: {
               custom: nextReferenceLocales.common,
             });
           } else {
-            setReferenceLocales(nextReferenceLocales);
+            const { common, ...nextLocales } = nextReferenceLocales || {};
+            setReferenceLocales(nextLocales as ReferenceLocales);
           }
         }}
       >
