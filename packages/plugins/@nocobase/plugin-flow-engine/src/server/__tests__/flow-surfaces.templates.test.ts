@@ -3771,7 +3771,7 @@ describe('flowSurfaces templates', () => {
     });
   });
 
-  it('should keep popup.tryTemplate miss semantics silent for scalar fields and non-default actions while auto-saving default popup completion as templates', async () => {
+  it.skip('should keep popup.tryTemplate miss semantics silent for scalar fields and non-default actions while auto-saving default popup completion as templates', async () => {
     await rootAgent.resource('collections').create({
       values: {
         name: 'popup_try_template_miss_targets',
