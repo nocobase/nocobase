@@ -11,7 +11,9 @@ import { Context, Next } from '@nocobase/actions';
 import { AsyncTasksManager } from '@nocobase/plugin-async-task-manager';
 import PluginAIServer from '@nocobase/plugin-ai';
 import { LOCALIZATION_AI_TRANSLATE_TASK_TYPE } from '../tasks/localization-ai-translate';
-import type { TranslationReferenceLocales, TranslationScope } from '../tasks/localization-ai-translate';
+import type { TranslationReferenceLocales } from '../tasks/localization-ai-translate';
+import { resolveTextIdsByScope } from '../translation-scope';
+import type { TranslationScope } from '../translation-scope';
 
 const validateParams = (ctx: Context) => {
   const {
@@ -43,27 +45,6 @@ const validateParams = (ctx: Context) => {
   };
 };
 
-const getModuleName = (row: any) => row?.module?.replace('resources.', '');
-
-const isBuiltInText = (row: any, resources: Record<string, Record<string, string>>) => {
-  const moduleName = getModuleName(row);
-  return Boolean(moduleName && resources[moduleName]?.[row.text] !== undefined);
-};
-
-const hasBuiltInTranslation = (row: any, resources: Record<string, Record<string, string>>) => {
-  const moduleName = getModuleName(row);
-  const translation = moduleName ? resources[moduleName]?.[row.text] : undefined;
-  return translation !== undefined && translation !== '';
-};
-
-const matchesScope = (row: any, resources: Record<string, Record<string, string>>, scope: TranslationScope) => {
-  if (scope === 'all') {
-    return true;
-  }
-  const isBuiltIn = isBuiltInText(row, resources);
-  return scope === 'builtIn' ? isBuiltIn : !isBuiltIn;
-};
-
 const buildFindTextsOptions = (mode: string, locale: string, textIds?: Array<string | number>) => {
   const options: any = {};
 
@@ -86,49 +67,6 @@ const buildFindTextsOptions = (mode: string, locale: string, textIds?: Array<str
   return options;
 };
 
-const resolveTextIdsByScope = async (
-  ctx: Context,
-  mode: string,
-  locale: string,
-  scope: TranslationScope,
-  textIds?: Array<string | number>,
-) => {
-  if (scope === 'all' && mode !== 'incremental') {
-    return textIds;
-  }
-  const builtInResources = await ctx.app.localeManager.getBuiltInResources('en-US');
-  const targetBuiltInResources =
-    mode === 'incremental' ? await ctx.app.localeManager.getBuiltInResources(locale) : undefined;
-  const resolvedTextIds: Array<string | number> = [];
-  const options: any = {
-    fields: ['id', 'text', 'module'],
-    sort: ['id'],
-    chunkSize: 500,
-  };
-  if (textIds) {
-    options.filter = {
-      id: {
-        $in: textIds,
-      },
-    };
-  }
-  await ctx.db.getRepository('localizationTexts').chunkWithCursor({
-    ...options,
-    callback: async (rows) => {
-      for (const row of rows) {
-        const record = typeof row.toJSON === 'function' ? row.toJSON() : row;
-        if (
-          matchesScope(record, builtInResources, scope) &&
-          !(targetBuiltInResources && hasBuiltInTranslation(record, targetBuiltInResources))
-        ) {
-          resolvedTextIds.push(record.id);
-        }
-      }
-    },
-  });
-  return resolvedTextIds;
-};
-
 const countTexts = async (
   ctx: Context,
   mode: string,
@@ -136,7 +74,13 @@ const countTexts = async (
   scope: TranslationScope,
   textIds?: Array<string | number>,
 ) => {
-  const effectiveTextIds = await resolveTextIdsByScope(ctx, mode, locale, scope, textIds);
+  const effectiveTextIds = await resolveTextIdsByScope({
+    app: ctx.app,
+    mode,
+    locale,
+    scope,
+    textIds,
+  });
   return await ctx.db.getRepository('localizationTexts').count(buildFindTextsOptions(mode, locale, effectiveTextIds));
 };
 

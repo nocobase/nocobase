@@ -11,6 +11,8 @@ import { CancelError, TaskType } from '@nocobase/plugin-async-task-manager';
 import PluginAIServer from '@nocobase/plugin-ai';
 import type { ModelRef } from '@nocobase/plugin-ai';
 import { HumanMessage } from '@langchain/core/messages';
+import { getBuiltInReference, isBuiltInText, normalizeTextRecord, resolveTextIdsByScope } from '../translation-scope';
+import type { LocalizationTextRecord, TranslationScope } from '../translation-scope';
 
 export const LOCALIZATION_AI_TRANSLATE_TASK_TYPE = 'localization:ai-translate';
 const TRANSLATION_BATCH_SIZE = 10;
@@ -34,7 +36,6 @@ const getTranslationWorkerCount = () => {
 };
 
 type TranslationMode = 'full' | 'incremental' | 'selected';
-export type TranslationScope = 'all' | 'builtIn' | 'custom';
 
 type ReferenceLocaleConfig = {
   primary?: string;
@@ -44,14 +45,6 @@ type ReferenceLocaleConfig = {
 export type TranslationReferenceLocales = {
   builtIn?: ReferenceLocaleConfig;
   custom?: ReferenceLocaleConfig;
-};
-
-type LocalizationTextRecord = {
-  id: string | number;
-  text: string;
-  module?: string;
-  translation?: string;
-  translationId?: string | number;
 };
 
 type TranslationQueueItem = {
@@ -102,15 +95,14 @@ export class LocalizationAITranslateTask extends TaskType {
     const { provider, model, service } = await aiPlugin.aiManager.getLLMService(resolvedModel);
     const defaultReferenceLocale = await this.getSystemDefaultLocale();
     const builtInMatchResources = await this.app.localeManager.getBuiltInResources('en-US');
-    const targetBuiltInResources =
-      params.mode === 'incremental' ? await this.app.localeManager.getBuiltInResources(locale) : undefined;
     const referenceLocales = this.resolveReferenceLocales(params.referenceLocales, defaultReferenceLocale);
-    const effectiveTextIds = await this.resolveTextIdsByScope(
-      builtInMatchResources,
-      params.scope,
-      params.textIds,
-      targetBuiltInResources,
-    );
+    const effectiveTextIds = await resolveTextIdsByScope({
+      app: this.app,
+      mode: params.mode,
+      locale,
+      scope: params.scope,
+      textIds: params.textIds,
+    });
     const workerCount = getTranslationWorkerCount();
     const countStart = Date.now();
     const total = await this.countTexts(params.mode, locale, effectiveTextIds);
@@ -177,7 +169,7 @@ export class LocalizationAITranslateTask extends TaskType {
         callback: async (rows) => {
           chunkIndex += 1;
           const chunkStart = Date.now();
-          const textRows = rows.map((row) => this.normalizeTextRecord(row)).filter(Boolean);
+          const textRows = rows.map((row) => normalizeTextRecord(row)).filter(Boolean);
           const textIds = textRows.map((row) => row.id);
           const dbReferences = await this.getReferenceMaps(
             textIds,
@@ -194,7 +186,7 @@ export class LocalizationAITranslateTask extends TaskType {
             [referenceLocales.builtIn.primary, referenceLocales.builtIn.fallback].filter(isString),
           );
           const queueItems = textRows.map((row) => {
-            const isBuiltIn = this.isBuiltInText(row, builtInMatchResources);
+            const isBuiltIn = isBuiltInText(row, builtInMatchResources);
             const references = isBuiltIn ? referenceLocales.builtIn : referenceLocales.custom;
             const reference = isBuiltIn
               ? this.pickBuiltInReference(row, builtInReferences, references)
@@ -274,53 +266,6 @@ export class LocalizationAITranslateTask extends TaskType {
     return options;
   }
 
-  private normalizeTextRecord(row: any): LocalizationTextRecord | undefined {
-    if (!row) {
-      return undefined;
-    }
-    return typeof row.toJSON === 'function' ? row.toJSON() : row;
-  }
-
-  private async resolveTextIdsByScope(
-    builtInResources: Record<string, Record<string, string>>,
-    scope: TranslationScope = 'all',
-    textIds?: Array<string | number>,
-    targetBuiltInResources?: Record<string, Record<string, string>>,
-  ) {
-    if (scope === 'all' && !targetBuiltInResources) {
-      return textIds;
-    }
-    const resolvedTextIds: Array<string | number> = [];
-    const options: any = {
-      fields: ['id', 'text', 'module'],
-      sort: ['id'],
-      chunkSize: 500,
-    };
-    if (textIds) {
-      options.filter = {
-        id: {
-          $in: textIds,
-        },
-      };
-    }
-    await this.app.db.getRepository('localizationTexts').chunkWithCursor({
-      ...options,
-      callback: async (rows) => {
-        for (const row of rows) {
-          const record = this.normalizeTextRecord(row);
-          if (
-            record &&
-            this.matchesScope(record, builtInResources, scope) &&
-            !(targetBuiltInResources && this.hasBuiltInTranslation(record, targetBuiltInResources))
-          ) {
-            resolvedTextIds.push(record.id);
-          }
-        }
-      },
-    });
-    return resolvedTextIds;
-  }
-
   private async getLocaleReferences(textIds: Array<string | number>, locale: string) {
     const references = new Map<string, string>();
     if (!textIds.length) {
@@ -386,45 +331,13 @@ export class LocalizationAITranslateTask extends TaskType {
     };
   }
 
-  private getModuleName(row: LocalizationTextRecord) {
-    return row.module?.replace('resources.', '');
-  }
-
-  private isBuiltInText(row: LocalizationTextRecord, resources: Record<string, Record<string, string>>) {
-    const moduleName = this.getModuleName(row);
-    return Boolean(moduleName && resources[moduleName]?.[row.text] !== undefined);
-  }
-
-  private hasBuiltInTranslation(row: LocalizationTextRecord, resources: Record<string, Record<string, string>>) {
-    const moduleName = this.getModuleName(row);
-    const translation = moduleName ? resources[moduleName]?.[row.text] : undefined;
-    return translation !== undefined && translation !== '';
-  }
-
-  private matchesScope(
-    row: LocalizationTextRecord,
-    resources: Record<string, Record<string, string>>,
-    scope: TranslationScope = 'all',
-  ) {
-    if (scope === 'all') {
-      return true;
-    }
-    const isBuiltIn = this.isBuiltInText(row, resources);
-    return scope === 'builtIn' ? isBuiltIn : !isBuiltIn;
-  }
-
-  private getBuiltInReference(row: LocalizationTextRecord, resources: Record<string, Record<string, string>>) {
-    const moduleName = this.getModuleName(row);
-    return moduleName ? resources[moduleName]?.[row.text] : undefined;
-  }
-
   private pickBuiltInReference(
     row: LocalizationTextRecord,
     references: Map<string, Record<string, Record<string, string>>>,
     locales: ReferenceLocaleConfig,
   ) {
     for (const locale of [locales.primary, locales.fallback].filter(Boolean)) {
-      const translation = this.getBuiltInReference(row, references.get(locale) || {});
+      const translation = getBuiltInReference(row, references.get(locale) || {});
       if (translation) {
         return { locale, translation };
       }
