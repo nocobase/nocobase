@@ -50,8 +50,6 @@ export type TranslationReferenceLocales = {
 type TranslationQueueItem = {
   row: LocalizationTextRecord;
   chunkIndex: number;
-  referenceTranslation?: string;
-  referenceLocale?: string;
   isBuiltIn?: boolean;
 };
 
@@ -152,6 +150,7 @@ export class LocalizationAITranslateTask extends TaskType {
         provider,
         service,
         model,
+        referenceLocales,
       }),
     );
 
@@ -175,24 +174,10 @@ export class LocalizationAITranslateTask extends TaskType {
             row,
             isBuiltIn: isBuiltInText(row, builtInMatchResources),
           }));
-          const builtInTextIds = rowsWithScope.filter((item) => item.isBuiltIn).map((item) => item.row.id);
-          const customTextIds = rowsWithScope.filter((item) => !item.isBuiltIn).map((item) => item.row.id);
-          const builtInReferences = await this.getReferenceMaps(
-            builtInTextIds,
-            [referenceLocales.builtIn.primary, referenceLocales.builtIn.fallback].filter(isString),
-          );
-          const customReferences = await this.getReferenceMaps(
-            customTextIds,
-            [referenceLocales.custom.primary, referenceLocales.custom.fallback].filter(isString),
-          );
           const queueItems = rowsWithScope.map(({ row, isBuiltIn }) => {
-            const references = isBuiltIn ? referenceLocales.builtIn : referenceLocales.custom;
-            const reference = this.pickDbReference(row, isBuiltIn ? builtInReferences : customReferences, references);
             return {
               row,
               chunkIndex,
-              referenceTranslation: reference.translation,
-              referenceLocale: reference.locale,
               isBuiltIn,
             };
           });
@@ -202,7 +187,6 @@ export class LocalizationAITranslateTask extends TaskType {
             chunkIndex,
             rows: textRows.length,
             referenceLocales,
-            referenceTranslations: queueItems.filter((item) => item.referenceTranslation).length,
             queueSize: queue.length,
             elapsedMs: elapsed(chunkStart),
             translated,
@@ -235,37 +219,34 @@ export class LocalizationAITranslateTask extends TaskType {
     return await this.app.db.getRepository('localizationTexts').count(options);
   }
 
-  private async getLocaleReferences(textIds: Array<string | number>, locale: string) {
-    const references = new Map<string, string>();
-    if (!textIds.length) {
-      return references;
+  private async getReferenceTranslation(row: LocalizationTextRecord, locales: ReferenceLocaleConfig) {
+    const localeList = [locales.primary, locales.fallback].filter(isString);
+    if (!localeList.length) {
+      return {};
     }
     const rows = await this.app.db.getRepository('localizationTranslations').find({
-      fields: ['textId', 'translation'],
+      fields: ['locale', 'translation'],
       filter: {
-        locale,
-        textId: {
-          $in: textIds,
+        textId: row.id,
+        locale: {
+          $in: localeList,
         },
       },
     });
+    const referenceMap = new Map<string, string>();
     for (const row of rows) {
       const record = typeof row.toJSON === 'function' ? row.toJSON() : row;
-      if (record?.textId != null && record.translation) {
-        references.set(String(record.textId), record.translation);
+      if (record?.locale && record.translation) {
+        referenceMap.set(record.locale, record.translation);
       }
     }
-    return references;
-  }
-
-  private async getReferenceMaps(textIds: Array<string | number>, locales: string[]) {
-    const result = new Map<string, Map<string, string>>();
-    await Promise.all(
-      locales.map(async (locale) => {
-        result.set(locale, await this.getLocaleReferences(textIds, locale));
-      }),
-    );
-    return result;
+    for (const locale of localeList) {
+      const translation = referenceMap.get(locale);
+      if (translation) {
+        return { locale, translation };
+      }
+    }
+    return {};
   }
 
   private async getSystemDefaultLocale() {
@@ -290,20 +271,6 @@ export class LocalizationAITranslateTask extends TaskType {
     };
   }
 
-  private pickDbReference(
-    row: LocalizationTextRecord,
-    references: Map<string, Map<string, string>>,
-    locales: ReferenceLocaleConfig,
-  ) {
-    for (const locale of [locales.primary, locales.fallback].filter(Boolean)) {
-      const translation = references.get(locale)?.get(String(row.id));
-      if (translation) {
-        return { locale, translation };
-      }
-    }
-    return {};
-  }
-
   private async runTranslationWorker(options: {
     workerIndex: number;
     queue: TranslationQueueItem[];
@@ -319,6 +286,7 @@ export class LocalizationAITranslateTask extends TaskType {
     provider: any;
     service: any;
     model: string;
+    referenceLocales: Required<TranslationReferenceLocales>;
   }) {
     const {
       workerIndex,
@@ -335,6 +303,7 @@ export class LocalizationAITranslateTask extends TaskType {
       provider,
       service,
       model,
+      referenceLocales,
     } = options;
 
     while (!isDone() || queue.length > 0) {
@@ -351,9 +320,14 @@ export class LocalizationAITranslateTask extends TaskType {
         continue;
       }
 
-      const { row, chunkIndex, referenceTranslation, referenceLocale, isBuiltIn } = item;
+      const { row, chunkIndex, isBuiltIn } = item;
       try {
         const textStart = Date.now();
+        const referenceStart = Date.now();
+        const references = isBuiltIn ? referenceLocales.builtIn : referenceLocales.custom;
+        const reference = await this.getReferenceTranslation(row, references);
+        const referenceTranslation = reference.translation;
+        const referenceLocale = reference.locale;
         this.logger?.trace?.('Localization AI translation text started', {
           taskId: this.record.id,
           workerIndex,
@@ -362,6 +336,7 @@ export class LocalizationAITranslateTask extends TaskType {
           textLength: row.text?.length ?? 0,
           hasReferenceTranslation: Boolean(referenceTranslation),
           referenceLocale,
+          referenceElapsedMs: elapsed(referenceStart),
           isBuiltIn,
           queueSize: queue.length,
           translated: getTranslated(),
