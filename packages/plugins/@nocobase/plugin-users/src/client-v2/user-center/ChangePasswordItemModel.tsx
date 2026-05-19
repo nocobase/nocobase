@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DrawerFormLayout, UserCenterActionItemModel } from '@nocobase/client-v2';
+import { DrawerFormLayout, PasswordInput, UserCenterActionItemModel } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Alert, Form, Input } from 'antd';
+import { Alert, Form } from 'antd';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUsersTranslation } from '../locale';
@@ -65,14 +65,14 @@ function ChangePasswordDrawerContent() {
           label={t('Old password')}
           rules={[{ required: true, message: t('Please enter the old password') }]}
         >
-          <Input.Password autoComplete="current-password" />
+          <PasswordInput autoComplete="current-password" />
         </Form.Item>
         <Form.Item
           name="newPassword"
           label={t('New password')}
           rules={[{ required: true, message: t('Please enter the new password') }]}
         >
-          <Input.Password autoComplete="new-password" />
+          <PasswordInput autoComplete="new-password" checkStrength />
         </Form.Item>
         <Form.Item
           name="confirmPassword"
@@ -92,7 +92,7 @@ function ChangePasswordDrawerContent() {
             }),
           ]}
         >
-          <Input.Password autoComplete="new-password" />
+          <PasswordInput autoComplete="new-password" checkStrength />
         </Form.Item>
       </Form>
     </DrawerFormLayout>
