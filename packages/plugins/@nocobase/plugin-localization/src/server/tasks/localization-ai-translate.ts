@@ -11,7 +11,7 @@ import { CancelError, TaskType } from '@nocobase/plugin-async-task-manager';
 import PluginAIServer from '@nocobase/plugin-ai';
 import type { ModelRef } from '@nocobase/plugin-ai';
 import { HumanMessage } from '@langchain/core/messages';
-import { buildFindTextsOptions, getBuiltInReference, isBuiltInText, normalizeTextRecord } from '../translation-scope';
+import { buildFindTextsOptions, isBuiltInText, normalizeTextRecord } from '../translation-scope';
 import type { LocalizationTextRecord, TranslationScope } from '../translation-scope';
 
 export const LOCALIZATION_AI_TRANSLATE_TASK_TYPE = 'localization:ai-translate';
@@ -171,27 +171,23 @@ export class LocalizationAITranslateTask extends TaskType {
           chunkIndex += 1;
           const chunkStart = Date.now();
           const textRows = rows.map((row) => normalizeTextRecord(row)).filter(Boolean);
-          const textIds = textRows.map((row) => row.id);
-          const dbReferences = await this.getReferenceMaps(
-            textIds,
-            Array.from(
-              new Set([
-                referenceLocales.custom.primary,
-                referenceLocales.custom.fallback,
-                referenceLocales.builtIn.primary,
-                referenceLocales.builtIn.fallback,
-              ]),
-            ).filter(isString),
-          );
-          const builtInReferences = await this.getBuiltInReferenceMaps(
+          const rowsWithScope = textRows.map((row) => ({
+            row,
+            isBuiltIn: isBuiltInText(row, builtInMatchResources),
+          }));
+          const builtInTextIds = rowsWithScope.filter((item) => item.isBuiltIn).map((item) => item.row.id);
+          const customTextIds = rowsWithScope.filter((item) => !item.isBuiltIn).map((item) => item.row.id);
+          const builtInReferences = await this.getReferenceMaps(
+            builtInTextIds,
             [referenceLocales.builtIn.primary, referenceLocales.builtIn.fallback].filter(isString),
           );
-          const queueItems = textRows.map((row) => {
-            const isBuiltIn = isBuiltInText(row, builtInMatchResources);
+          const customReferences = await this.getReferenceMaps(
+            customTextIds,
+            [referenceLocales.custom.primary, referenceLocales.custom.fallback].filter(isString),
+          );
+          const queueItems = rowsWithScope.map(({ row, isBuiltIn }) => {
             const references = isBuiltIn ? referenceLocales.builtIn : referenceLocales.custom;
-            const reference = isBuiltIn
-              ? this.pickBuiltInReference(row, builtInReferences, references)
-              : this.pickDbReference(row, dbReferences, references);
+            const reference = this.pickDbReference(row, isBuiltIn ? builtInReferences : customReferences, references);
             return {
               row,
               chunkIndex,
@@ -207,7 +203,6 @@ export class LocalizationAITranslateTask extends TaskType {
             rows: textRows.length,
             referenceLocales,
             referenceTranslations: queueItems.filter((item) => item.referenceTranslation).length,
-            builtInReferences: queueItems.filter((item) => item.isBuiltIn && item.referenceTranslation).length,
             queueSize: queue.length,
             elapsedMs: elapsed(chunkStart),
             translated,
@@ -273,16 +268,6 @@ export class LocalizationAITranslateTask extends TaskType {
     return result;
   }
 
-  private async getBuiltInReferenceMaps(locales: string[]) {
-    const result = new Map<string, Record<string, Record<string, string>>>();
-    await Promise.all(
-      locales.map(async (locale) => {
-        result.set(locale, await this.app.localeManager.getBuiltInResources(locale));
-      }),
-    );
-    return result;
-  }
-
   private async getSystemDefaultLocale() {
     const systemSetting = await this.app.db.getRepository('systemSettings')?.findOne();
     const enabledLanguages: string[] = systemSetting?.get('enabledLanguages') || [];
@@ -303,20 +288,6 @@ export class LocalizationAITranslateTask extends TaskType {
         fallback: referenceLocales?.custom?.fallback || 'zh-CN',
       },
     };
-  }
-
-  private pickBuiltInReference(
-    row: LocalizationTextRecord,
-    references: Map<string, Record<string, Record<string, string>>>,
-    locales: ReferenceLocaleConfig,
-  ) {
-    for (const locale of [locales.primary, locales.fallback].filter(Boolean)) {
-      const translation = getBuiltInReference(row, references.get(locale) || {});
-      if (translation) {
-        return { locale, translation };
-      }
-    }
-    return {};
   }
 
   private pickDbReference(

@@ -41,11 +41,6 @@ export const isBuiltInText = (row: LocalizationTextRecord, resources: Record<str
   return Boolean(moduleName && resources[moduleName]);
 };
 
-export const getBuiltInReference = (row: LocalizationTextRecord, resources: Record<string, Record<string, string>>) => {
-  const moduleName = getModuleName(row);
-  return moduleName ? resources[moduleName]?.[row.text] : undefined;
-};
-
 const getBuiltInModules = async (app: any) => {
   const builtInResources = await app.localeManager.getBuiltInResources('en-US');
   return Object.keys(builtInResources).map((module) => `resources.${module}`);
