@@ -487,7 +487,10 @@ function generatePm2Home() {
 exports.initEnv = function initEnv() {
   const preserveSymlinksFlag = '--preserve-symlinks';
   const currentNodeOptions = String(process.env.NODE_OPTIONS || '').trim();
-  if (!currentNodeOptions.includes(preserveSymlinksFlag)) {
+  const hasPreserveSymlinksFlag = currentNodeOptions
+    ? currentNodeOptions.split(/\s+/).includes(preserveSymlinksFlag)
+    : false;
+  if (!hasPreserveSymlinksFlag) {
     process.env.NODE_OPTIONS = currentNodeOptions
       ? `${currentNodeOptions} ${preserveSymlinksFlag}`
       : preserveSymlinksFlag;
