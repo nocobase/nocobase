@@ -345,6 +345,58 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     return rowElement?.parentElement?.clientWidth || fallbackWidth;
   }
 
+  private prunePlaceholderOnlyRows(layout: GridLayoutV2): GridLayoutV2 {
+    type RowCellEntry = {
+      cell: GridCellV2;
+      size: number;
+      hasRealItem: boolean;
+    };
+
+    const pruneRows = (rows: GridRowV2[]): GridRowV2[] => {
+      return rows
+        .map((row) => {
+          const cellsWithSizes = row.cells
+            .map((cell, index) => {
+              const size = row.sizes?.[index] ?? 1;
+              if (cell.rows?.length) {
+                const childRows = pruneRows(cell.rows);
+                if (childRows.length) {
+                  return { cell: { ...cell, rows: childRows }, size, hasRealItem: true };
+                }
+                return null;
+              }
+
+              const items = cell.items || [];
+              const hasRealItem = items.some((uid) => uid !== EMPTY_COLUMN_UID);
+              const hasEmptyPlaceholder = items.includes(EMPTY_COLUMN_UID);
+              if (hasRealItem || hasEmptyPlaceholder) {
+                return { cell, size, hasRealItem };
+              }
+              return null;
+            })
+            .filter(Boolean) as RowCellEntry[];
+
+          if (!cellsWithSizes.some((entry) => entry.hasRealItem)) {
+            return null;
+          }
+
+          return {
+            ...row,
+            cells: cellsWithSizes.map((entry) => entry.cell),
+            sizes: cellsWithSizes.map((entry) => entry.size),
+          };
+        })
+        .filter(Boolean) as GridRowV2[];
+    };
+
+    return normalizeGridLayout({
+      layout: { ...layout, rows: pruneRows(layout.rows || []) },
+      itemUids: this.getItemUids(),
+      gridUid: this.uid,
+      logger: console,
+    });
+  }
+
   private resizeGridLayout({
     direction,
     resizeDistance,
@@ -414,7 +466,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.emitter.on('onSubModelDestroyed', (model: FlowModel) => {
       const modelUid = model.uid;
       this.resetRows(true);
-      this.setGridStepLayout(this.props.layout);
+      const layout = this.prunePlaceholderOnlyRows(this.props.layout);
+      this.setGridStepLayout(layout);
+      this.syncLayoutProps(layout);
 
       // 删除筛选配置
       this.context.filterManager?.removeFilterConfig({ targetId: modelUid });
@@ -858,10 +912,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     }
 
     const items = this.subModels?.items || [];
-    if (!items.length) {
-      return { layout: baseLayout, rows: baseProjection.rows, sizes: baseProjection.sizes };
-    }
-
     const modelByUid = new Map(items.map((m: FlowModel) => [m.uid, m]));
     type VisibleCellEntry = {
       cell: GridLayoutV2['rows'][number]['cells'][number];

@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { EMPTY_COLUMN_UID, FlowEngine } from '@nocobase/flow-engine';
-import { GridModel } from '../GridModel';
+import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../GridModel';
 
 describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
   let engine: FlowEngine;
@@ -262,7 +262,7 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
     expect(sizes.row1).toEqual([8, 16]);
   });
 
-  it('removes rows that only contain EMPTY_COLUMN placeholders in runtime mode', () => {
+  it('removes rows that only contain EMPTY_COLUMN placeholders in runtime mode when there are no items', () => {
     engine.flowSettings.disable();
 
     const model = engine.createModel<GridModel>({
@@ -283,12 +283,47 @@ describe('GridModel.getVisibleLayout (hidden items filtering)', () => {
       structure: {} as any,
     });
 
-    const hidden = engine.createModel({ use: 'FlowModel', uid: 'h' }) as any;
-    hidden.hidden = true;
-    (model as any).subModels = { items: [hidden] };
+    (model as any).subModels = { items: [] };
 
     const { rows, sizes } = (model as any).getVisibleLayout();
     expect(rows).toEqual({});
     expect(sizes).toEqual({});
+  });
+
+  it('removes the placeholder-only row after the last real item in the row is deleted', () => {
+    engine.flowSettings.disable();
+
+    const visible = engine.createModel({ use: 'FlowModel', uid: 'v' });
+    const layout = {
+      version: 2 as const,
+      rows: [
+        {
+          id: 'row1',
+          cells: [
+            { id: 'cell1', items: ['v'] },
+            { id: 'cell2', items: [EMPTY_COLUMN_UID] },
+          ],
+          sizes: [8, 16],
+        },
+      ],
+    };
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-10',
+      props: { layout },
+      structure: {} as any,
+    });
+    (model as any).subModels = { items: [visible] };
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, { layout });
+    model.syncLayoutProps(model.getGridLayout());
+    model.onMount();
+
+    (model as any).subModels = { items: [] };
+    model.emitter.emit('onSubModelDestroyed', visible);
+
+    expect(model.props.rows).toEqual({});
+    expect(model.props.sizes).toEqual({});
+    expect(model.props.layout.rows).toEqual([]);
+    expect(model.getStepParams(GRID_FLOW_KEY, GRID_STEP).layout.rows).toEqual([]);
   });
 });
