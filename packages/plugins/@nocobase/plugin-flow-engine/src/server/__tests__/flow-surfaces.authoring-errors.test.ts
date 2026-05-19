@@ -2456,6 +2456,142 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject case-mismatched ctx.libs members in RunJS authoring code', async () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: [
+        'const ReactA = ctx.libs.react;',
+        'const ReactDOMA = ctx?.libs?.reactDOM;',
+        "const Icons = ctx.libs['antdicons'];",
+        'const { react, antdicons: iconsAlias } = ctx.libs;',
+        'ctx.render(ctx.libs.React.createElement("div", null, Boolean(ReactA || ReactDOMA || Icons || react || iconsAlias)));',
+      ].join('\n'),
+      path: '$.ctxLibsCaseMismatch.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-libs-member-case-invalid',
+          details: expect.objectContaining({
+            accessKind: 'member',
+            member: 'react',
+            expectedMember: 'React',
+            capability: 'ctx.libs.react',
+            expectedCapability: 'ctx.libs.React',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-libs-member-case-invalid',
+          details: expect.objectContaining({
+            accessKind: 'member',
+            member: 'reactDOM',
+            expectedMember: 'ReactDOM',
+            capability: 'ctx.libs.reactDOM',
+            expectedCapability: 'ctx.libs.ReactDOM',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-libs-member-case-invalid',
+          details: expect.objectContaining({
+            accessKind: 'bracket',
+            member: 'antdicons',
+            expectedMember: 'antdIcons',
+            capability: "ctx.libs['antdicons']",
+            expectedCapability: 'ctx.libs.antdIcons',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-libs-member-case-invalid',
+          details: expect.objectContaining({
+            accessKind: 'destructure',
+            member: 'react',
+            expectedMember: 'React',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-libs-member-case-invalid',
+          details: expect.objectContaining({
+            accessKind: 'destructure',
+            member: 'antdicons',
+            expectedMember: 'antdIcons',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'const React = ctx.libs.React;',
+          'const { ReactDOM, antdIcons } = ctx.libs;',
+          'const custom = ctx.libs.customLib;',
+          'const dynamic = ctx.libs[libName];',
+          'ctx.render(React.createElement("div", null, Boolean(ReactDOM || antdIcons || custom || dynamic)));',
+        ].join('\n'),
+        path: '$.validCtxLibsMembers.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid ctx libs JSBlock page',
+        },
+      },
+      assets: {
+        scripts: {
+          reactKpi: {
+            code: 'const React = ctx.libs.react;\nctx.render(null);',
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'reactKpi',
+              type: 'jsBlock',
+              script: 'reactKpi',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-ctx-libs-member-case-invalid',
+        }),
+      ]),
+    );
+
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'js-block-target' },
+        changes: {
+          code: 'const { react } = ctx.libs;\nctx.render(null);',
+          version: 'v2',
+        },
+      },
+      {
+        currentNode: { use: 'JSBlockModel' },
+      },
+    );
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.code',
+          ruleId: 'runjs-ctx-libs-member-case-invalid',
+        }),
+      ]),
+    );
+  });
+
   it('should reject invalid FlowResource runtime patterns in JSBlock authoring code', () => {
     const errors = inspectRunJsAuthoringCode({
       code: [

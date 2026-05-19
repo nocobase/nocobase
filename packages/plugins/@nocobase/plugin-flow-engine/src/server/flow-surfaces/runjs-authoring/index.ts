@@ -51,6 +51,15 @@ type FlowResourceAlias = SourceRange & {
   name: string;
 };
 
+type CtxLibMemberCaseMismatch = {
+  accessKind: 'bracket' | 'destructure' | 'member';
+  capability: string;
+  expectedCapability: string;
+  expectedMember: string;
+  index: number;
+  member: string;
+};
+
 type CallArgumentSource = SourceRange & {
   source: string;
 };
@@ -242,6 +251,8 @@ const FLOW_RESOURCE_CLASS_NAMES = new Set([
   'SQLResource',
 ]);
 const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
+const CANONICAL_CTX_LIB_MEMBERS = ['React', 'ReactDOM', 'antd', 'dayjs', 'antdIcons', 'lodash', 'formula', 'math'];
+const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((member) => [member.toLowerCase(), member]));
 
 function asPlainRecord(value: unknown): PlainRecord | undefined {
   return _.isPlainObject(value) ? (value as PlainRecord) : undefined;
@@ -1219,6 +1230,27 @@ function collectCtxContractErrors(
       }),
     );
   });
+  scan.ctxLibMemberCaseMismatches.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'ctx-libs-member-mismatch-stop',
+        ruleId: 'runjs-ctx-libs-member-case-invalid',
+        message: `flowSurfaces authoring ${path} ${entry.capability} is not a valid RunJS library key; use ${entry.expectedCapability} because ctx.libs keys are case-sensitive`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          accessKind: entry.accessKind,
+          capability: entry.capability,
+          expectedCapability: entry.expectedCapability,
+          expectedMember: entry.expectedMember,
+          member: entry.member,
+        },
+      }),
+    );
+  });
   scan.dynamicCtxAccesses.forEach((entry) => {
     errors.push(
       buildRunJsAuthoringError({
@@ -1322,6 +1354,7 @@ function scanJavaScriptSource(source: string) {
     windowDocumentNavigatorUses,
     windowDocumentNavigatorAliases,
     ctxAliases,
+    ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked),
     forbiddenBareGlobals,
     ctxMemberAccesses: collectCtxMemberAccesses(masked),
     dynamicCtxAccesses: findMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g),
@@ -2529,6 +2562,78 @@ function collectInvalidFlowResourceListCalls(masked: string, aliases: FlowResour
     }
   });
   return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function collectCtxLibMemberCaseMismatches(source: string, masked: string): CtxLibMemberCaseMismatch[] {
+  const entries: CtxLibMemberCaseMismatch[] = [];
+  const addEntry = (
+    index: number,
+    member: string,
+    accessKind: CtxLibMemberCaseMismatch['accessKind'],
+    capability?: string,
+  ) => {
+    const expectedMember = CTX_LIB_MEMBER_BY_LOWERCASE.get(member.toLowerCase());
+    if (!expectedMember || expectedMember === member) {
+      return;
+    }
+    entries.push({
+      accessKind,
+      capability: capability || `ctx.libs.${member}`,
+      expectedCapability: `ctx.libs.${expectedMember}`,
+      expectedMember,
+      index,
+      member,
+    });
+  };
+
+  for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*libs\s*(?:\?\.|\.)\s*([A-Za-z_$][\w$]*)/g)) {
+    const index = match.index || 0;
+    const member = match[1];
+    addEntry(index + match[0].lastIndexOf(member), member, 'member');
+  }
+
+  for (const match of source.matchAll(
+    /\bctx\s*(?:\?\.|\.)\s*libs\s*(?:\?\.)?\s*\[\s*(['"])([A-Za-z_$][\w$]*)\1\s*\]/g,
+  )) {
+    const index = match.index || 0;
+    if (masked.slice(index, index + 3) !== 'ctx') {
+      continue;
+    }
+    const quote = match[1];
+    const member = match[2];
+    addEntry(index + match[0].indexOf(member), member, 'bracket', `ctx.libs[${quote}${member}${quote}]`);
+  }
+
+  for (const match of masked.matchAll(/\b(?:const|let|var)\s*\{([^}]*)\}\s*=\s*ctx\s*(?:\?\.|\.)\s*libs\b/g)) {
+    const declarationIndex = match.index || 0;
+    const bindingPattern = match[1];
+    const patternStart = declarationIndex + match[0].indexOf(bindingPattern);
+    splitTopLevelWithRanges(bindingPattern, ',').forEach((property) => {
+      const prop = readObjectBindingPropertyName(property.source);
+      if (!prop) {
+        return;
+      }
+      addEntry(patternStart + property.start + prop.offset, prop.name, 'destructure', `ctx.libs.${prop.name}`);
+    });
+  }
+
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function readObjectBindingPropertyName(element: string): { name: string; offset: number } | undefined {
+  const trimmed = element.trim();
+  if (!trimmed || trimmed.startsWith('...') || trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return undefined;
+  }
+  const normalized = trimBindingElement(trimmed);
+  const colon = findTopLevelChar(normalized, ':');
+  const rawProperty = (colon >= 0 ? normalized.slice(0, colon) : normalized).trim();
+  const name = normalizeObjectPropertyName(rawProperty);
+  if (!/^[A-Za-z_$][\w$]*$/.test(name)) {
+    return undefined;
+  }
+  const offset = Math.max(0, element.indexOf(name));
+  return { name, offset };
 }
 
 function collectReactHookCalls(masked: string) {

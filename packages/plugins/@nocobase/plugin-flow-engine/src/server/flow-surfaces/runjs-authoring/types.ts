@@ -20,6 +20,7 @@ export type RunJsAuthoringRepairClass =
   | 'blocked-capability-reroute'
   | 'react-runtime-contract-stop'
   | 'resource-runtime-contract-stop'
+  | 'ctx-libs-member-mismatch-stop'
   | 'ctx-root-mismatch-stop';
 
 export type RunJsAuthoringSurfaceStyle = 'render' | 'value' | 'action';

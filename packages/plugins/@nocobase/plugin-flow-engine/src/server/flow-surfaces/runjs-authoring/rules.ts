@@ -9,6 +9,7 @@
 
 import { blockedCapabilityRerouteRule } from './blocked-capability-reroute';
 import { blockedGlobalStopRule } from './blocked-global-stop';
+import { ctxLibsMemberMismatchStopRule } from './ctx-libs-member-mismatch-stop';
 import { ctxRootMismatchStopRule } from './ctx-root-mismatch-stop';
 import { missingTopLevelReturnRule } from './missing-top-level-return';
 import { renderTopLevelFunctionWrapperRule } from './render-top-level-function-wrapper';
@@ -35,6 +36,7 @@ export const RUNJS_AUTHORING_RULES: RunJsAuthoringRuleDefinition[] = [
   blockedCapabilityRerouteRule,
   reactRuntimeContractStopRule,
   resourceRuntimeContractStopRule,
+  ctxLibsMemberMismatchStopRule,
   ctxRootMismatchStopRule,
 ];
 
