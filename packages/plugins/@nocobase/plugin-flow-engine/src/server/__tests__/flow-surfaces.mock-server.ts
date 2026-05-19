@@ -11,6 +11,7 @@ import { PluginManager } from '@nocobase/server';
 import { mockServer, MockServer, type MockServerOptions } from '@nocobase/test';
 import mariadb from 'mariadb';
 import mysql from 'mysql2/promise';
+import pg from 'pg';
 import qs from 'qs';
 import { FLOW_SURFACES_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGIN_INSTALLS } from './flow-surfaces.test-plugins';
 
@@ -65,6 +66,7 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const isolation = await createFlowSurfacesDatabaseIsolation(database, attempt);
     const app = createFlowSurfacesIsolatedMockServer(isolation, {
+      skipSupervisor: true,
       registerActions: true,
       acl: true,
       plugins,
@@ -254,12 +256,15 @@ async function createFlowSurfacesDatabaseIsolation(
 ): Promise<FlowSurfacesDatabaseIsolation> {
   const dialect = getFlowSurfacesDatabaseDialect(database);
   if (shouldUseFlowSurfacesIsolatedSchema(database, dialect)) {
+    const schema = buildFlowSurfacesSchemaName(attempt);
     return {
       database: {
         ...(database || {}),
-        schema: buildFlowSurfacesSchemaName(attempt),
+        schema,
       },
       shouldCleanDbOnDestroy: true,
+      selfManagedDatabase: true,
+      cleanup: () => dropFlowSurfacesPostgresSchema(database, schema),
     };
   }
 
@@ -310,9 +315,9 @@ function createFlowSurfacesIsolatedMockServer(isolation: FlowSurfacesDatabaseIso
     return mockServer(options);
   }
 
-  // Flow-surfaces MySQL tests create and drop their own isolated database.
-  // The shared CI DB distributor owns DB_TEST_PREFIX databases and removes
-  // them after 3 minutes, so do not let mockDatabase acquire these databases.
+  // Flow-surfaces tests own their isolated schema/database. The shared CI DB
+  // distributor owns DB_TEST_PREFIX databases and removes them after 3 minutes,
+  // so do not let mockDatabase acquire these databases.
   return withoutFlowSurfacesTestDatabaseDistributor(() => mockServer(options));
 }
 
@@ -365,6 +370,23 @@ async function dropFlowSurfacesMySqlDatabase(
   });
 }
 
+async function dropFlowSurfacesPostgresSchema(database: MockServerOptions['database'] | undefined, schema: string) {
+  const client = new pg.Client({
+    host: String(database?.host || process.env.DB_HOST || '127.0.0.1'),
+    port: Number(database?.port || process.env.DB_PORT || 5432),
+    user: String(database?.username || process.env.DB_USER || process.env.DB_USERNAME || 'postgres'),
+    password: String(database?.password || process.env.DB_PASSWORD || ''),
+    database: String(database?.database || process.env.DB_DATABASE || 'postgres'),
+  });
+
+  await client.connect();
+  try {
+    await client.query(`DROP SCHEMA IF EXISTS "${assertFlowSurfacesPostgresIdentifier(schema)}" CASCADE`);
+  } finally {
+    await client.end();
+  }
+}
+
 async function withFlowSurfacesMySqlConnection(
   database: MockServerOptions['database'] | undefined,
   dialect: string,
@@ -399,6 +421,13 @@ function getFlowSurfacesMySqlAdminPassword(database: MockServerOptions['database
 function assertFlowSurfacesMySqlIdentifier(identifier: string) {
   if (!/^[a-zA-Z0-9_]+$/.test(identifier)) {
     throw new Error(`Invalid isolated MySQL database identifier: ${identifier}`);
+  }
+  return identifier;
+}
+
+function assertFlowSurfacesPostgresIdentifier(identifier: string) {
+  if (!/^[a-zA-Z0-9_]+$/.test(identifier)) {
+    throw new Error(`Invalid isolated Postgres schema identifier: ${identifier}`);
   }
   return identifier;
 }

@@ -14,7 +14,7 @@ import {
   FLOW_SURFACES_ACTION_NAMES,
 } from '../flow-surfaces/constants';
 
-describe.skip('flowSurfaces swagger', () => {
+describe('flowSurfaces swagger', () => {
   it('should keep exported swagger paths aligned with public flowSurfaces actions only', () => {
     const expectedPaths = FLOW_SURFACES_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`).sort();
     const actualPaths = Object.keys(swaggerDocument.paths).sort();

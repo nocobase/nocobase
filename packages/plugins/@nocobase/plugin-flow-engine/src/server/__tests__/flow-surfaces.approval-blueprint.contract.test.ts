@@ -50,7 +50,7 @@ async function createApprovalNode(workflow: any) {
   });
 }
 
-describe.skip('flowSurfaces approval blueprint API contract', () => {
+describe('flowSurfaces approval blueprint API contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 

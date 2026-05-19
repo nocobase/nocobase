@@ -16,7 +16,7 @@ import {
   buildStandaloneFieldNode,
 } from '../flow-surfaces/builder';
 
-describe.skip('flowSurfaces builder translation defaults', () => {
+describe('flowSurfaces builder translation defaults', () => {
   it('should persist translatable core default strings', () => {
     const deleteAction = buildActionTree({
       use: 'DeleteActionModel',
@@ -97,7 +97,7 @@ describe.skip('flowSurfaces builder translation defaults', () => {
   });
 });
 
-describe.skip('flowSurfaces builder action style defaults', () => {
+describe('flowSurfaces builder action style defaults', () => {
   it('should keep collection add new and refresh default titles visible', () => {
     const addNewAction = buildActionTree({ use: 'AddNewActionModel' });
     const refreshAction = buildActionTree({ use: 'RefreshActionModel' });
@@ -160,7 +160,7 @@ describe.skip('flowSurfaces builder action style defaults', () => {
   });
 });
 
-describe.skip('flowSurfaces builder relation field defaults', () => {
+describe('flowSurfaces builder relation field defaults', () => {
   it('should create PopupSubTableFieldModel with default actions column and edit/remove actions', () => {
     const fieldTree = buildFieldTree({
       wrapperUse: 'FormItemModel',

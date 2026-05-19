@@ -13,7 +13,7 @@ import { getConfigureOptionsForUse } from '../flow-surfaces/configure-options';
 import { getReactionKindsForUse } from '../flow-surfaces/reaction/registry';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 
-describe.skip('flowSurfaces block header contracts', () => {
+describe('flowSurfaces block header contracts', () => {
   it('should expose canonical titleDescription paths and reject legacy raw block title props', () => {
     const contractCases = [
       'TableBlockModel',
