@@ -4018,12 +4018,7 @@ test('dev runs local npm/git source envs with saved env settings', async () => {
   expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[
     runtime,
     ['dev', '--rsbuild', '--db-sync', '--port', '13000', '--client', '--inspect', '9229'],
-    {
-      env: {
-        NOCOBASE_DEV_LOCAL_PLUGINS_ONLY: 'true',
-      },
-      stdio: 'inherit',
-    },
+    { stdio: 'inherit' },
   ]]);
 });
 

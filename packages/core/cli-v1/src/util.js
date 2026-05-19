@@ -526,6 +526,7 @@ exports.initEnv = function initEnv() {
     CACHE_DEFAULT_STORE: 'memory',
     CACHE_MEMORY_MAX: 2000,
     BROWSERSLIST_IGNORE_OLD_DATA: true,
+    NOCOBASE_DEV_LOCAL_PLUGINS_ONLY: 'true',
     PLUGIN_STATICS_PATH: '/static/plugins/',
     APP_SERVER_BASE_URL: '',
     APP_BASE_URL: '',

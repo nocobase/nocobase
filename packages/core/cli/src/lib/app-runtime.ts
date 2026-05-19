@@ -185,15 +185,12 @@ export function formatMissingManagedAppEnvMessage(envName?: string): string {
 export async function runLocalNocoBaseCommand(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; env?: Record<string, string> },
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
 ): Promise<void> {
   const envVars = await buildRuntimeEnvVars(runtime);
   await runNocoBaseCommand(args, {
     cwd: runtime.projectRoot,
-    env: {
-      ...envVars,
-      ...options?.env,
-    },
+    env: envVars,
     stdio: options?.stdio,
   });
 }
