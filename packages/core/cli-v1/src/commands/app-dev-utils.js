@@ -83,6 +83,29 @@ function buildPluginDevUrlMap(entries) {
   }, {});
 }
 
+function shouldUseAppDevServerSource({ env = process.env, cwd = process.cwd(), existsSync = fs.existsSync } = {}) {
+  if (env.NOCOBASE_APP_DEV !== 'true' || env.APP_ENV === 'production' || !env.APP_PACKAGE_ROOT) {
+    return false;
+  }
+
+  return existsSync(path.resolve(cwd, env.APP_PACKAGE_ROOT, 'src/index.ts'));
+}
+
+function buildAppDevServerArgs({
+  appPackageRoot = process.env.APP_PACKAGE_ROOT,
+  argv = process.argv,
+  serverTsconfigPath = process.env.SERVER_TSCONFIG_PATH,
+} = {}) {
+  const args = ['watch', '--ignore=./storage/plugins/**'];
+
+  if (serverTsconfigPath) {
+    args.push('--tsconfig', serverTsconfigPath);
+  }
+
+  args.push('-r', 'tsconfig-paths/register', path.join(appPackageRoot, 'src/index.ts'), ...argv.slice(2));
+  return args;
+}
+
 async function writePluginDevEntryFiles(entries, entryDir) {
   await fs.ensureDir(entryDir);
   await fs.emptyDir(entryDir);
@@ -103,8 +126,10 @@ async function writePluginDevEntryFiles(entries, entryDir) {
 }
 
 module.exports = {
+  buildAppDevServerArgs,
   buildPluginDevUrlMap,
   discoverLocalPluginEntries,
+  shouldUseAppDevServerSource,
   toPosixPath,
   writePluginDevEntryFiles,
 };
