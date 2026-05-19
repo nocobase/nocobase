@@ -26,6 +26,8 @@ type RunJsCodeSource = {
   path: string;
 };
 
+type PlainRecord = Record<string, any>;
+
 type SourceRange = {
   start: number;
   end: number;
@@ -192,6 +194,33 @@ const ACTION_TYPE_ALIASES = new Map([
   ['js-item', 'jsItem'],
 ]);
 
+const REACT_HOOK_NAMES = [
+  'useActionState',
+  'useCallback',
+  'useContext',
+  'useDebugValue',
+  'useDeferredValue',
+  'useEffect',
+  'useId',
+  'useImperativeHandle',
+  'useInsertionEffect',
+  'useLayoutEffect',
+  'useMemo',
+  'useOptimistic',
+  'useReducer',
+  'useRef',
+  'useState',
+  'useSyncExternalStore',
+  'useTransition',
+];
+
+const REACT_HOOK_PATTERN = REACT_HOOK_NAMES.map(escapeRegExp).join('|');
+const RUNJS_RESOURCE_ACTION_PATTERN = '(?:list|get|create|update|destroy)';
+
+function asPlainRecord(value: unknown): PlainRecord | undefined {
+  return _.isPlainObject(value) ? (value as PlainRecord) : undefined;
+}
+
 export function collectRunJsAuthoringErrors(
   actionName: FlowSurfaceAuthoringWriteAction,
   values: any,
@@ -309,6 +338,7 @@ export function inspectRunJsAuthoringCode(input: RunJsAuthoringInspectionInput):
   collectResourceApiErrors(input.path, source, scan, modelUse, surface, errors);
   collectDirectDomErrors(input.path, source, scan, modelUse, surface, errors);
   collectGlobalErrors(input.path, source, scan, modelUse, surface, errors);
+  collectReactRuntimeErrors(input.path, source, scan, modelUse, surface, errors);
   collectCtxContractErrors(input.path, source, scan, modelUse, surface, errors);
   collectSurfaceStyleErrors(input.path, source, scan, surfaceStyle, modelUse, surface, errors);
   return dedupeErrors(errors);
@@ -635,16 +665,19 @@ function collectReactionRunJsErrors(reaction: any, path: string, errors: FlowSur
 }
 
 function collectFlowRegistryRunJsErrors(flowRegistry: any, path: string, errors: FlowSurfaceErrorItemInput[]) {
-  if (!_.isPlainObject(flowRegistry)) {
+  const registry = asPlainRecord(flowRegistry);
+  if (!registry) {
     return;
   }
-  Object.entries(flowRegistry).forEach(([flowKey, flow]) => {
-    if (!_.isPlainObject(flow)) {
+  Object.entries(registry).forEach(([flowKey, flowValue]) => {
+    const flow = asPlainRecord(flowValue);
+    if (!flow) {
       return;
     }
-    const steps = _.isPlainObject(flow.steps) ? flow.steps : {};
-    Object.entries(steps).forEach(([stepKey, step]) => {
-      if (!_.isPlainObject(step) || normalizeText(step.use || step.type || step.action || step.key) !== 'runjs') {
+    const steps = asPlainRecord(flow.steps) || {};
+    Object.entries(steps).forEach(([stepKey, stepValue]) => {
+      const step = asPlainRecord(stepValue);
+      if (!step || normalizeText(step.use || step.type || step.action || step.key) !== 'runjs') {
         return;
       }
       collectEventFlowRunJsStepErrors(step, `${path}.${flowKey}.steps.${stepKey}`, errors);
@@ -857,6 +890,87 @@ function collectResourceApiErrors(
       }),
     );
   });
+  scan.invalidApiResourceCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'switch-to-resource-api',
+        ruleId: 'runjs-api-resource-call-invalid',
+        message: `flowSurfaces authoring ${path} cannot call ctx.api.resource.${entry.method}(...); use resource APIs or ctx.request(...) for collection access`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.match,
+          method: entry.method,
+        },
+      }),
+    );
+  });
+}
+
+function collectReactRuntimeErrors(
+  path: string,
+  source: string,
+  scan: ReturnType<typeof scanJavaScriptSource>,
+  modelUse: string,
+  surface: string,
+  errors: FlowSurfaceErrorItemInput[],
+) {
+  scan.topLevelReactHookCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'react-runtime-contract-stop',
+        ruleId: 'runjs-react-hook-top-level-forbidden',
+        message: `flowSurfaces authoring ${path} cannot call React Hook ${entry.hook}(...) from top-level RunJS code`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          hook: entry.hook,
+          capability: entry.match,
+        },
+      }),
+    );
+  });
+  scan.unboundReactCreateElementCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'react-runtime-contract-stop',
+        ruleId: 'runjs-react-global-unbound',
+        message: `flowSurfaces authoring ${path} cannot use bare React.createElement(...) without binding React from ctx.React`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: 'React.createElement',
+        },
+      }),
+    );
+  });
+  scan.reactComponentFunctionCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'react-runtime-contract-stop',
+        ruleId: 'runjs-react-component-call-forbidden',
+        message: `flowSurfaces authoring ${path} cannot call React component ${entry.component} as a plain function`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          component: entry.component,
+        },
+      }),
+    );
+  });
 }
 
 function collectDirectDomErrors(
@@ -1059,6 +1173,8 @@ function scanJavaScriptSource(source: string) {
   );
   const ctxRunjsCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*runjs\s*(?:\?\.)?\(/g);
   const ctxRequestCalls = findMatches(masked, /\bctx\s*(?:\?\.|\.)\s*(?:api\s*(?:\?\.|\.)\s*)?request\s*(?:\?\.)?\(/g);
+  const reactHookCalls = collectReactHookCalls(masked);
+  const reactComponentAliases = collectReactComponentAliases(masked, sourceBindings);
   const directDomWrites = collectDirectDomWrites(source, masked, sourceBindings);
   const directDomAliases = collectDirectDomAliases(masked, sourceBindings);
   const windowDocumentNavigatorUses = collectWindowDocumentNavigatorUses(source, masked, sourceBindings);
@@ -1076,6 +1192,10 @@ function scanJavaScriptSource(source: string) {
     topLevelReturns,
     ctxRunjsCalls,
     ctxRequestCalls,
+    invalidApiResourceCalls: collectInvalidApiResourceCalls(masked),
+    topLevelReactHookCalls: reactHookCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges)),
+    unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
+    reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases),
     directDomWrites,
     directDomAliases,
     windowDocumentNavigatorUses,
@@ -2095,6 +2215,148 @@ function collectForbiddenBareGlobals(masked: string, bindings: SourceBinding[]) 
   return entries.sort((left, right) => left.index - right.index);
 }
 
+function collectInvalidApiResourceCalls(masked: string) {
+  return [
+    ...masked.matchAll(
+      /\bctx\s*(?:\?\.|\.)\s*api\s*(?:\?\.|\.)\s*resource\s*(?:\?\.|\.)\s*(list|get|create|update|destroy)\s*(?:\?\.)?\(/g,
+    ),
+  ].map((match) => ({
+    index: match.index || 0,
+    match: match[0].replace(/\s*(?:\?\.)?\($/, ''),
+    method: match[1],
+  }));
+}
+
+function collectReactHookCalls(masked: string) {
+  const entries: Array<{ hook: string; index: number; match: string }> = [];
+  const memberPattern = new RegExp(
+    `\\b(?:(?:ctx\\s*(?:\\?\\.|\\.)\\s*(?:libs\\s*(?:\\?\\.|\\.)\\s*)?React)|React)\\s*(?:\\?\\.|\\.)\\s*(${REACT_HOOK_PATTERN})\\s*(?:\\?\\.)?\\(`,
+    'g',
+  );
+  for (const match of masked.matchAll(memberPattern)) {
+    const index = match.index || 0;
+    entries.push({
+      hook: match[1],
+      index,
+      match: match[0].replace(/\s*(?:\?\.)?\($/, ''),
+    });
+  }
+
+  const barePattern = new RegExp(`(?<![.$\\w])(${REACT_HOOK_PATTERN})\\s*(?:\\?\\.)?\\(`, 'g');
+  for (const match of masked.matchAll(barePattern)) {
+    const index = match.index || 0;
+    const hook = match[1];
+    if (getPreviousSignificantToken(masked, index) === 'function' || isObjectPropertyKey(masked, index, hook)) {
+      continue;
+    }
+    entries.push({
+      hook,
+      index,
+      match: match[0].replace(/\s*(?:\?\.)?\($/, ''),
+    });
+  }
+
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function collectUnboundReactCreateElementCalls(masked: string, bindings: SourceBinding[]) {
+  const entries: Array<{ index: number }> = [];
+  for (const match of masked.matchAll(/(?<![.$\w])React\s*(?:\?\.|\.)\s*createElement\s*(?:\?\.)?\(/g)) {
+    const index = match.index || 0;
+    if (!isNameBoundAtIndex(bindings, 'React', index)) {
+      entries.push({ index });
+    }
+  }
+  return entries;
+}
+
+function collectReactComponentAliases(masked: string, bindings: SourceBinding[]) {
+  const aliases: Array<{ name: string; capability: string; start: number; end: number }> = [];
+  const addAlias = (name: string, capability: string, declarationIndex: number) => {
+    if (!/^[A-Z][\w$]*$/.test(name)) {
+      return;
+    }
+    const binding = bindings.find((entry) => entry.name === name && entry.start === declarationIndex);
+    aliases.push({
+      name,
+      capability,
+      start: binding?.start ?? declarationIndex,
+      end: binding?.end ?? masked.length,
+    });
+  };
+
+  for (const match of masked.matchAll(
+    /\b(?:const|let|var)\s*\{([^}]*)\}\s*=\s*ctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\b/g,
+  )) {
+    const declarationIndex = match.index || 0;
+    const namespace = `ctx.${match[2] ? 'libs.' : ''}${match[3]}`;
+    collectObjectBindingAliases(match[1]).forEach((alias) =>
+      addAlias(alias, `${namespace}.${alias}`, declarationIndex),
+    );
+  }
+
+  for (const match of masked.matchAll(
+    /\b(?:const|let|var)\s+([A-Z][\w$]*)\s*=\s*ctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\s*(?:\?\.|\.)\s*([A-Z][\w$]*)\b/g,
+  )) {
+    const namespace = `ctx.${match[2] ? 'libs.' : ''}${match[3]}`;
+    addAlias(match[1], `${namespace}.${match[4]}`, match.index || 0);
+  }
+
+  return aliases;
+}
+
+function collectReactComponentFunctionCalls(
+  masked: string,
+  aliases: Array<{ name: string; capability: string; start: number; end: number }>,
+) {
+  const entries: Array<{ index: number; component: string; capability: string }> = [];
+  for (const match of masked.matchAll(
+    /\bctx\s*(?:\?\.|\.)\s*(?:(libs)\s*(?:\?\.|\.)\s*)?(antdIcons|antd)\s*(?:\?\.|\.)\s*([A-Z][\w$]*)\s*(?:\?\.)?\(/g,
+  )) {
+    const namespace = `ctx.${match[1] ? 'libs.' : ''}${match[2]}`;
+    entries.push({
+      index: match.index || 0,
+      component: match[3],
+      capability: `${namespace}.${match[3]}`,
+    });
+  }
+
+  aliases.forEach((alias) => {
+    const pattern = new RegExp(`(?<![.$\\w])${escapeRegExp(alias.name)}\\s*(?:\\?\\.)?\\(`, 'g');
+    for (const match of masked.matchAll(pattern)) {
+      const index = match.index || 0;
+      if (index <= alias.start || index >= alias.end) {
+        continue;
+      }
+      const previous = getPreviousSignificantToken(masked, index);
+      if (previous === 'function' || isObjectPropertyKey(masked, index, alias.name)) {
+        continue;
+      }
+      entries.push({
+        index,
+        component: alias.name,
+        capability: alias.capability,
+      });
+    }
+  });
+
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function dedupeIndexedEntries<T extends { index: number; match?: string; capability?: string; component?: string }>(
+  entries: T[],
+) {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const key = `${entry.index}:${entry.match || ''}:${entry.capability || ''}:${entry.component || ''}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
 function isObjectPropertyKey(masked: string, index: number, name: string) {
   let cursor = index + name.length;
   while (cursor < masked.length && /\s/.test(masked[cursor])) {
@@ -2527,23 +2789,21 @@ function isResourceLikeCtxRequest(source: string, masked: string, index: number)
 }
 
 function getResourceLikeCtxRunjsEntrypoint(source: string, masked: string, index: number) {
-  const args = getCallArgumentSource(source, masked, index);
-  if (!args) {
-    return '';
-  }
-  const firstArg = readLeadingStringLiteral(args);
+  const firstArg = getCallFirstArgumentSource(source, masked, index);
   if (!firstArg) {
     return '';
   }
-  const endpoint = firstArg.value.trim();
-  return isResourceLikeRunjsEntrypoint(endpoint) ? endpoint : '';
+  const literal = readLeadingStringLiteral(firstArg);
+  if (literal) {
+    const endpoint = literal.value.trim();
+    return isResourceLikeRunjsEntrypoint(endpoint) ? endpoint : '';
+  }
+  const expression = firstArg.trim();
+  return isResourceLikeRunjsEntrypointExpression(expression) ? expression : '';
 }
 
 function readLeadingStringLiteral(value: string) {
-  let index = 0;
-  while (index < value.length && /\s/.test(value[index])) {
-    index += 1;
-  }
+  const index = skipJavaScriptTrivia(value, 0);
   const quote = value[index];
   if (quote !== '"' && quote !== "'" && quote !== '`') {
     return undefined;
@@ -2571,10 +2831,75 @@ function readLeadingStringLiteral(value: string) {
 
 function isResourceLikeRunjsEntrypoint(value: string) {
   const trimmed = value.trim();
+  const action = RUNJS_RESOURCE_ACTION_PATTERN;
   return (
-    /^[A-Za-z_$][\w$.-]*:(?:list|get|create|update|destroy)(?:\b|[/?#])/i.test(trimmed) ||
-    /\$\{[^}]+\}\s*:(?:list|get|create|update|destroy)(?:\b|[/?#])/i.test(trimmed)
+    new RegExp(`^(?:resource|collection):${action}(?:$|[/?#])`, 'i').test(trimmed) ||
+    new RegExp(`^[A-Za-z_$][\\w$.-]*:${action}(?:$|[/?#])`, 'i').test(trimmed) ||
+    new RegExp(`\\$\\{[^}]+\\}\\s*:${action}(?:$|[/?#])`, 'i').test(trimmed)
   );
+}
+
+function isResourceLikeRunjsEntrypointExpression(value: string) {
+  const withoutComments = maskJavaScriptComments(value);
+  return new RegExp(`(['"\`])\\s*:${RUNJS_RESOURCE_ACTION_PATTERN}\\1`).test(withoutComments);
+}
+
+function skipJavaScriptTrivia(value: string, start: number) {
+  let index = start;
+  while (index < value.length) {
+    while (index < value.length && /\s/.test(value[index])) {
+      index += 1;
+    }
+    if (value[index] === '/' && value[index + 1] === '/') {
+      index += 2;
+      while (index < value.length && value[index] !== '\n' && value[index] !== '\r') {
+        index += 1;
+      }
+      continue;
+    }
+    if (value[index] === '/' && value[index + 1] === '*') {
+      index += 2;
+      while (index < value.length && !(value[index] === '*' && value[index + 1] === '/')) {
+        index += 1;
+      }
+      index = Math.min(value.length, index + 2);
+      continue;
+    }
+    return index;
+  }
+  return index;
+}
+
+function getCallFirstArgumentSource(source: string, masked: string, index: number) {
+  const openParen = masked.indexOf('(', index);
+  if (openParen < 0) {
+    return '';
+  }
+  let parenDepth = 1;
+  let bracketDepth = 0;
+  let braceDepth = 0;
+  for (let cursor = openParen + 1; cursor < masked.length; cursor += 1) {
+    const char = masked[cursor];
+    if (char === '(') {
+      parenDepth += 1;
+    } else if (char === ')' && parenDepth > 0) {
+      parenDepth -= 1;
+      if (parenDepth === 0) {
+        return source.slice(openParen + 1, cursor);
+      }
+    } else if (char === '[') {
+      bracketDepth += 1;
+    } else if (char === ']' && bracketDepth > 0) {
+      bracketDepth -= 1;
+    } else if (char === '{') {
+      braceDepth += 1;
+    } else if (char === '}' && braceDepth > 0) {
+      braceDepth -= 1;
+    } else if (char === ',' && parenDepth === 1 && bracketDepth === 0 && braceDepth === 0) {
+      return source.slice(openParen + 1, cursor);
+    }
+  }
+  return '';
 }
 
 function getCallArgumentSource(source: string, masked: string, index: number) {

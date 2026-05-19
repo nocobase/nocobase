@@ -2211,6 +2211,65 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       'switch-to-resource-api',
     );
 
+    const commentedRunjsResourceEndpointErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.runjs(/* endpoint */ 'resource:list', { resource: 'tasks' });",
+      path: '$.commentedRunjsResourceEndpoint.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(commentedRunjsResourceEndpointErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-api-required',
+          details: expect.objectContaining({
+            endpoint: 'resource:list',
+          }),
+        }),
+      ]),
+    );
+
+    const concatenatedRunjsEndpointErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.runjs(collectionName + ':list', { pageSize: 20 });",
+      path: '$.concatenatedRunjsEndpoint.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(concatenatedRunjsEndpointErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "ctx.render(null);\nawait ctx.runjs('cache:get()', {});",
+        path: '$.ordinaryRunjsLabelCall.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    const invalidApiResourceErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.api.resource.list({ resource: 'tasks', pageSize: 1 });",
+      path: '$.invalidApiResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(invalidApiResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: 'ctx.api.resource.list',
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "ctx.render(null);\nawait ctx.api.resource('tasks').list({ pageSize: 1 });",
+        path: '$.apiResourceFactory.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
     expect(
       inspectRunJsAuthoringCode({
         code: "ctx.render(null);\nawait ctx.runjs('return 1;');",
@@ -2235,6 +2294,166 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         modelUse: 'JSBlockModel',
       }),
     ).toEqual([]);
+  });
+
+  it('should reject invalid React runtime patterns in JSBlock authoring code', async () => {
+    const hookErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const { Card, Statistic, Spin } = ctx.antd;',
+        'const { useEffect, useState } = ctx.React;',
+        'const [count, setCount] = useState(null);',
+        "useEffect(() => { ctx.api.resource.list({ resource: 'ai_products', pageSize: 1 }).then((res) => setCount(res.meta?.total || 0)); }, []);",
+        "const el = count === null ? React.createElement(Spin, null) : React.createElement(Statistic, { title: '追踪产品数', value: count });",
+        'ctx.render(React.createElement(Card, { bordered: false }, el));',
+      ].join('\n'),
+      path: '$.hookMisuse.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(hookErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-hook-top-level-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            hook: 'useState',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-react-global-unbound',
+        }),
+      ]),
+    );
+
+    const componentCallErrors = inspectRunJsAuthoringCode({
+      code: [
+        'function MetricCard(props) {',
+        '  return ctx.libs.antd.Card({ style: { borderRadius: 8 } },',
+        '    ctx.libs.antd.Statistic({',
+        "      title: React.createElement('span', null, props.title),",
+        '      value: props.value,',
+        '    })',
+        '  );',
+        '}',
+        'ctx.render(ctx.React.createElement(MetricCard, { title: "Active", value: 1 }));',
+      ].join('\n'),
+      path: '$.componentCallMisuse.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(componentCallErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-component-call-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.libs.antd.Card',
+            component: 'Card',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-react-component-call-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.libs.antd.Statistic',
+            component: 'Statistic',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-react-global-unbound',
+        }),
+      ]),
+    );
+
+    const aliasComponentCallErrors = inspectRunJsAuthoringCode({
+      code: 'const { Card } = ctx.libs.antd;\nctx.render(Card({ bordered: false }));',
+      path: '$.aliasComponentCallMisuse.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(aliasComponentCallErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-component-call-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.libs.antd.Card',
+            component: 'Card',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'const React = ctx.React;',
+          'const { Card, Statistic } = ctx.libs.antd;',
+          'function App() {',
+          '  const [count] = React.useState(0);',
+          "  return React.createElement(Card, { bordered: false }, React.createElement(Statistic, { title: 'Total', value: count }));",
+          '}',
+          'ctx.render(React.createElement(App));',
+        ].join('\n'),
+        path: '$.validReactComponent.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid React JSBlock page',
+        },
+      },
+      assets: {
+        scripts: {
+          reactKpi: {
+            code: "ctx.render(React.createElement('div', null, 'bad'));",
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'reactKpi',
+              type: 'jsBlock',
+              script: 'reactKpi',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-react-global-unbound',
+        }),
+      ]),
+    );
+
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'js-block-target' },
+        changes: {
+          code: 'const { Card } = ctx.libs.antd;\nctx.render(Card({ bordered: false }));',
+          version: 'v2',
+        },
+      },
+      {
+        currentNode: { use: 'JSBlockModel' },
+      },
+    );
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.code',
+          ruleId: 'runjs-react-component-call-forbidden',
+        }),
+      ]),
+    );
   });
 
   it('should reject ctx.runjs resource endpoints on applyBlueprint and configure writes', async () => {
