@@ -7,32 +7,44 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useState, useEffect } from 'react';
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { useFlowContext } from '@nocobase/flow-engine';
+import { useEffect, useMemo, useState } from 'react';
 import { getSSKey, MapConfigurationResourceKey } from '../../shared/configuration';
 
 export { getSSKey, MapConfigurationResourceKey };
-export const useMapConfig = (type: string, caching = true) => {
-  const flowEngine = useFlowEngine();
 
-  // 初始化缓存读取：只在首次渲染时读取 sessionStorage
+const getCachedConfig = (type: string) => {
+  const cached = sessionStorage.getItem(getSSKey(type));
+  try {
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const useMapConfig = (type: string, caching = true) => {
+  const { api } = useFlowContext();
+  const storageKey = useMemo(() => getSSKey(type), [type]);
+
   const [config, setConfig] = useState<any>(() => {
     if (!caching) return null;
-    const cached = sessionStorage.getItem(getSSKey(type));
-    try {
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
+    return getCachedConfig(type);
   });
 
   useEffect(() => {
-    // 如果开启缓存且已有数据，则直接跳过请求
-    if (caching && config) return;
+    if (!caching) {
+      setConfig(null);
+      return;
+    }
+
+    setConfig(getCachedConfig(type));
+  }, [type, caching]);
+
+  useEffect(() => {
+    if (caching && getCachedConfig(type)) return;
 
     let canceled = false;
-    // eslint-disable-next-line promise/catch-or-return
-    flowEngine.context.api
+    api
       .resource(MapConfigurationResourceKey)
       .get({
         isRaw: !caching,
@@ -42,19 +54,21 @@ export const useMapConfig = (type: string, caching = true) => {
         if (canceled) return;
         const data = res.data?.data;
         if (caching) {
-          // 避免重复写入相同数据
-          const prev = sessionStorage.getItem(getSSKey(type));
+          const prev = sessionStorage.getItem(storageKey);
           if (!prev || prev !== JSON.stringify(data)) {
-            sessionStorage.setItem(getSSKey(type), JSON.stringify(data));
+            sessionStorage.setItem(storageKey, JSON.stringify(data));
           }
         }
         setConfig(data);
+      })
+      .catch(() => {
+        // Ignore configuration fetch failures and keep the existing config state.
       });
 
     return () => {
       canceled = true;
     };
-  }, [type, caching, flowEngine, config]);
+  }, [api, type, caching, storageKey]);
 
   return config;
 };

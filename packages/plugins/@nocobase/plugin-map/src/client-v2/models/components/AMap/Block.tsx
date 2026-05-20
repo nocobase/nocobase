@@ -8,13 +8,13 @@
  */
 
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import { css, getLabelFormatValue, useCompile, useFilterAPI } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { defaultImage, selectedImage } from '../../../constants';
-import { useMapTranslation } from '../../../locale';
-import { getSource } from '../../../utils';
+import { defaultImage, selectedImage } from '../../../../shared/constants';
+import { mapActiveColor, mapSelectedColor } from '../../../../shared/theme';
+import { compileTemplate, getLabelFormatValue, getSource } from '../../../../shared/utils';
+import { useT } from '../../../locale';
 import { AMapCom, AMapForwardedRefProps } from './Map';
 
 export const AMapBlock = (props) => {
@@ -37,13 +37,15 @@ export const AMapBlock = (props) => {
   const mapRef = useRef<AMapForwardedRefProps>();
   const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
   const [selectingMode, setSelecting] = useState('');
-  const { t } = useMapTranslation();
-  const compile = useCompile();
-  const { isConnected, doFilter } = useFilterAPI();
+  const t = useT();
+  const compile = (value: any) => compileTemplate(value, t);
+  const isConnected = false;
+  const doFilter = (..._args: any[]) => {};
   const selectingModeRef = useRef(selectingMode);
   selectingModeRef.current = selectingMode;
 
   const labelUiSchema = fields.find((v) => v.name === marker)?.uiSchema;
+  const geometryType = collectionField.interface || collectionField.type;
   const setOverlayOptions = (overlay: AMap.Polygon | AMap.Marker, state?: boolean) => {
     const extData = overlay.getExtData();
     const selected = typeof state === 'undefined' ? extData.selected : !state;
@@ -59,8 +61,8 @@ export const AMapBlock = (props) => {
     (overlay as AMap.Polygon).setOptions({
       extData,
       ...(selected
-        ? { strokeColor: '#4e9bff', fillColor: '#4e9bff' }
-        : { strokeColor: '#F18b62', fillColor: '#F18b62' }),
+        ? { strokeColor: mapActiveColor, fillColor: mapActiveColor }
+        : { strokeColor: mapSelectedColor, fillColor: mapSelectedColor }),
     });
   };
 
@@ -126,9 +128,9 @@ export const AMapBlock = (props) => {
         const title = getLabelFormatValue(labelUiSchema, item[marker]);
         if (!data?.length) return [];
         return data.map((mapItem) => {
-          const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
-            strokeColor: '#4e9bff',
-            fillColor: '#4e9bff',
+          const overlay = mapRef.current?.setOverlay(geometryType, mapItem, {
+            strokeColor: mapActiveColor,
+            fillColor: mapActiveColor,
             cursor: 'pointer',
             label: {
               direction: 'bottom',
@@ -145,8 +147,12 @@ export const AMapBlock = (props) => {
       .flat()
       .filter(Boolean);
 
-    mapRef.current?.map?.setFitView(overlays);
-    mapRef.current?.map?.setZoom(zoom);
+    if (overlays.length === 1 && geometryType === 'point') {
+      mapRef.current?.map?.setFitView(overlays);
+      mapRef.current?.map?.setZoom(zoom || 13);
+    } else {
+      mapRef.current?.map?.setFitView(overlays);
+    }
 
     const events = overlays.map((o: AMap.Marker) => {
       const onClick = (e) => {
@@ -197,7 +203,7 @@ export const AMapBlock = (props) => {
       return () => o.off('click', onClick);
     });
 
-    if (collectionField.type === 'point' && lineSort?.length && overlays?.length > 1) {
+    if (geometryType === 'point' && lineSort?.length && overlays?.length > 1) {
       const positions = overlays.map((o: AMap.Marker) => o.getPosition());
 
       (overlays[0] as AMap.Marker).setzIndex(13);
@@ -219,8 +225,8 @@ export const AMapBlock = (props) => {
       overlays.push(
         ...[
           mapRef.current?.setOverlay('lineString', positions, {
-            strokeColor: '#4e9bff',
-            fillColor: '#4e9bff',
+            strokeColor: mapActiveColor,
+            fillColor: mapActiveColor,
             strokeWeight: 2,
             cursor: 'pointer',
           }),
@@ -236,17 +242,7 @@ export const AMapBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [
-    dataSource,
-    isMapInitialization,
-    mapField,
-    marker,
-    name,
-    primaryKey,
-    collectionField.type,
-    isConnected,
-    lineSort,
-  ]);
+  }, [dataSource, isMapInitialization, mapField, marker, name, primaryKey, geometryType, isConnected, lineSort]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -259,26 +255,23 @@ export const AMapBlock = (props) => {
     setIsMapInitialization(!!instance?.map && !instance.errMessage);
   };
 
+  const mapStyle = fixedBlock ? { height: '100%' } : undefined;
+
   return (
-    <div
-      className={css`
-        position: relative;
-        height: 100%;
-      `}
-    >
+    <div style={{ position: 'relative', height: '100%' }}>
       <div
-        className={css`
-          position: absolute;
-          left: 10px;
-          top: 10px;
-          z-index: 999;
-        `}
+        style={{
+          position: 'absolute',
+          left: 10,
+          top: 10,
+          zIndex: 999,
+        }}
       >
         {isMapInitialization && !mapRef.current?.errMessage ? (
           <Space direction="vertical">
             <Button
               style={{
-                color: !selectingMode ? '#F18b62' : undefined,
+                color: !selectingMode ? mapSelectedColor : undefined,
                 borderColor: 'currentcolor',
               }}
               onClick={(e) => {
@@ -289,7 +282,7 @@ export const AMapBlock = (props) => {
             ></Button>
             <Button
               style={{
-                color: selectingMode === 'selection' ? '#F18b62' : undefined,
+                color: selectingMode === 'selection' ? mapSelectedColor : undefined,
                 borderColor: 'currentcolor',
               }}
               onClick={(e) => {
@@ -315,13 +308,14 @@ export const AMapBlock = (props) => {
       <AMapCom
         {...props}
         ref={mapRefCallback}
-        style={{ height: fixedBlock ? '100%' : null }}
+        style={mapStyle}
         zoom={zoom}
+        type={geometryType}
         disabled
         block
         overlayCommonOptions={{
-          strokeColor: '#F18b62',
-          fillColor: '#F18b62',
+          strokeColor: mapSelectedColor,
+          fillColor: mapSelectedColor,
         }}
       ></AMapCom>
     </div>
@@ -335,8 +329,8 @@ function clearSelected(marker: AMap.Marker | AMap.Polygon | AMap.Polyline | AMap
     // AMap.Polygon | AMap.Polyline | AMap.Circle 都有 setOptions 方法
   } else if ((marker as AMap.Polygon).setOptions) {
     (marker as AMap.Polygon).setOptions({
-      strokeColor: '#4e9bff',
-      fillColor: '#4e9bff',
+      strokeColor: mapActiveColor,
+      fillColor: mapActiveColor,
     });
   }
 }
@@ -348,8 +342,8 @@ function selectMarker(marker: AMap.Marker | AMap.Polygon | AMap.Polyline | AMap.
     // AMap.Polygon | AMap.Polyline | AMap.Circle 都有 setOptions 方法
   } else if ((marker as AMap.Polygon).setOptions) {
     (marker as AMap.Polygon).setOptions({
-      strokeColor: '#F18b62',
-      fillColor: '#F18b62',
+      strokeColor: mapSelectedColor,
+      fillColor: mapSelectedColor,
     });
   }
 }

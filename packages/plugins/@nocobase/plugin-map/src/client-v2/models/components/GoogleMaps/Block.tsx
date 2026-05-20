@@ -8,32 +8,21 @@
  */
 
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import { css, getLabelFormatValue, useCompile, useFilterAPI } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { defaultImage, selectedImage } from '../../../constants';
-import { useMapTranslation } from '../../../locale';
-import { getSource } from '../../../utils';
+import { defaultImage, selectedImage } from '../../../../shared/constants';
+import { mapActiveColor, mapSelectedColor } from '../../../../shared/theme';
+import { compileTemplate, getLabelFormatValue, getSource } from '../../../../shared/utils';
+import { useT } from '../../../locale';
 import { GoogleMapForwardedRefProps, GoogleMapsCom, OverlayOptions } from './Map';
 import { getIcon } from './utils';
 
 const OVERLAY_KEY = 'google-maps-overlay-id';
 const OVERLAY_SELECtED = 'google-maps-overlay-selected';
 
-const labelClass = css`
-  margin-top: 6px;
-  padding: 2px 4px;
-  background: #fff;
-  border: 1px solid #0000f5;
-`;
-
-const pointClass = css`
-  margin-top: -64px;
-  padding: 2px 4px;
-  background: #fff;
-  border: 1px solid #0000f5;
-`;
+const labelClass = 'nb-map-google-label';
+const pointClass = 'nb-map-google-point-label';
 
 export const GoogleMapsBlock = (props) => {
   const {
@@ -54,15 +43,17 @@ export const GoogleMapsBlock = (props) => {
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<GoogleMapForwardedRefProps>();
   const [selectingMode, setSelecting] = useState('');
-  const { t } = useMapTranslation();
-  const compile = useCompile();
-  const { isConnected, doFilter } = useFilterAPI();
+  const t = useT();
+  const compile = (value: any) => compileTemplate(value, t);
+  const isConnected = false;
+  const doFilter = (..._args: any[]) => {};
   const [, setPrevSelected] = useState<any>(null);
   const selectingModeRef = useRef(selectingMode);
   const selectionOverlayRef = useRef<google.maps.Polygon | null>(null);
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
   selectingModeRef.current = selectingMode;
   const labelUiSchema = fields.find((v) => v.name === marker)?.uiSchema;
+  const geometryType = collectionField.interface || collectionField.type;
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
     const selected = typeof state !== 'undefined' ? !state : overlay.get(OVERLAY_SELECtED);
     overlay.set(OVERLAY_SELECtED, !selected);
@@ -70,13 +61,13 @@ export const GoogleMapsBlock = (props) => {
       ...(selected
         ? {
             icon: getIcon(defaultImage),
-            strokeColor: '#4e9bff',
-            fillColor: '#4e9bff',
+            strokeColor: mapActiveColor,
+            fillColor: mapActiveColor,
           }
         : {
             icon: getIcon(selectedImage),
-            strokeColor: '#F18b62',
-            fillColor: '#F18b62',
+            strokeColor: mapSelectedColor,
+            fillColor: mapSelectedColor,
           }),
     } as OverlayOptions);
   };
@@ -166,9 +157,9 @@ export const GoogleMapsBlock = (props) => {
         if (!data?.length) return [];
         return data?.filter(Boolean).map((mapItem) => {
           if (!data) return;
-          const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
-            strokeColor: '#4e9bff',
-            fillColor: '#4e9bff',
+          const overlay = mapRef.current?.setOverlay(geometryType, mapItem, {
+            strokeColor: mapActiveColor,
+            fillColor: mapActiveColor,
             cursor: 'pointer',
             label: {
               className: labelClass,
@@ -225,7 +216,7 @@ export const GoogleMapsBlock = (props) => {
       return () => o.unbindAll();
     });
 
-    if (collectionField.type === 'point' && lineSort?.length && overlays?.length > 1) {
+    if (geometryType === 'point' && lineSort?.length && overlays?.length > 1) {
       const positions = overlays.map((o: google.maps.Marker) => o.getPosition());
 
       (overlays[0] as google.maps.Marker).setZIndex(138);
@@ -255,8 +246,8 @@ export const GoogleMapsBlock = (props) => {
             'lineString',
             positions.map((p) => [p.lng(), p.lat()]),
             {
-              strokeColor: '#4e9bff',
-              fillColor: '#4e9bff',
+              strokeColor: mapActiveColor,
+              fillColor: mapActiveColor,
               strokeWeight: 2,
               cursor: 'pointer',
             },
@@ -276,7 +267,7 @@ export const GoogleMapsBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, marker, collectionField.type, isConnected]);
+  }, [dataSource, isMapInitialization, marker, geometryType, isConnected]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -289,27 +280,24 @@ export const GoogleMapsBlock = (props) => {
     setIsMapInitialization(!!instance?.map && !instance.errMessage);
   };
 
+  const mapStyle = fixedBlock ? { height: '100%' } : undefined;
+
   return (
-    <div
-      className={css`
-        position: relative;
-        height: 100%;
-      `}
-    >
+    <div style={{ position: 'relative', height: '100%' }}>
       {isMapInitialization && (
         <>
           <div
-            className={css`
-              position: absolute;
-              left: 10px;
-              top: 10px;
-              z-index: 999;
-            `}
+            style={{
+              position: 'absolute',
+              left: 10,
+              top: 10,
+              zIndex: 999,
+            }}
           >
             <Space direction="vertical">
               <Button
                 style={{
-                  color: !selectingMode ? '#F18b62' : undefined,
+                  color: !selectingMode ? mapSelectedColor : undefined,
                   borderColor: 'currentcolor',
                 }}
                 onClick={(e) => {
@@ -320,7 +308,7 @@ export const GoogleMapsBlock = (props) => {
               ></Button>
               <Button
                 style={{
-                  color: selectingMode === 'selection' ? '#F18b62' : undefined,
+                  color: selectingMode === 'selection' ? mapSelectedColor : undefined,
                   borderColor: 'currentcolor',
                 }}
                 onClick={(e) => {
@@ -347,13 +335,14 @@ export const GoogleMapsBlock = (props) => {
       <GoogleMapsCom
         {...props}
         ref={mapRefCallback}
-        style={{ height: fixedBlock ? '100%' : null }}
+        style={mapStyle}
         zoom={zoom}
+        type={geometryType}
         disabled
         block
         overlayCommonOptions={{
-          strokeColor: '#F18b62',
-          fillColor: '#F18b62',
+          strokeColor: mapSelectedColor,
+          fillColor: mapSelectedColor,
         }}
       ></GoogleMapsCom>
     </div>
@@ -365,8 +354,8 @@ function clearSelected(target: google.maps.Polygon) {
     return target.setIcon(getIcon(defaultImage));
   }
   target.setOptions({
-    strokeColor: '#4e9bff',
-    fillColor: '#4e9bff',
+    strokeColor: mapActiveColor,
+    fillColor: mapActiveColor,
   });
 }
 
@@ -375,7 +364,7 @@ function selectMarker(target: google.maps.Polygon) {
     return target.setIcon(getIcon(selectedImage));
   }
   target.setOptions({
-    strokeColor: '#F18b62',
-    fillColor: '#F18b62',
+    strokeColor: mapSelectedColor,
+    fillColor: mapSelectedColor,
   });
 }
