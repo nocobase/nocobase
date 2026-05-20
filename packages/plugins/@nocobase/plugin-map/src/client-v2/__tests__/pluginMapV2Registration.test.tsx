@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/client-v2';
+import { ActionModel, ActionSceneEnum, Application, CollectionActionGroupModel } from '@nocobase/client-v2';
+import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
-import { ALLOWED_MAP_ACTION_MODELS } from '../models/MapActionGroupModel';
+import { ALLOWED_MAP_ACTION_MODELS, MapActionGroupModel } from '../models/MapActionGroupModel';
 import { getMapFieldComponentProps, getMapFieldMapType } from '../models/MapBlockComponent';
 import { MAP_GEOMETRY_FIELD_TYPES, applyMapBlockFieldParams, getMapBlockRuntimeProps } from '../models/MapBlockModel';
 import { formatMapDisplayValue } from '../models/fieldModels/DisplayMapFieldModel';
@@ -121,6 +122,32 @@ describe('PluginMapClient v2 registration', () => {
       'JSItemActionModel',
       'JSCollectionActionModel',
     ]);
+  });
+
+  it('uses optional collection action registrations without importing the owning plugin', async () => {
+    class AIEmployeeActionModel extends ActionModel {
+      static scene = ActionSceneEnum.all;
+    }
+
+    AIEmployeeActionModel.define({
+      label: 'AI employees',
+    });
+
+    const previousModel = CollectionActionGroupModel.currentModels.get('AIEmployeeActionModel');
+    CollectionActionGroupModel.registerActionModels({ AIEmployeeActionModel });
+
+    try {
+      const engine = new FlowEngine();
+      const items = await MapActionGroupModel.defineChildren({ engine } as any);
+
+      expect(items.some((item: any) => item.useModel === 'AIEmployeeActionModel')).toBe(true);
+    } finally {
+      if (previousModel) {
+        CollectionActionGroupModel.registerActionModels({ AIEmployeeActionModel: previousModel });
+      } else {
+        CollectionActionGroupModel.currentModels.delete('AIEmployeeActionModel');
+      }
+    }
   });
 
   it('formats map display values consistently with v1 read pretty text', () => {

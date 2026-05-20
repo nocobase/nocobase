@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionGroupModel, ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
-import { AIEmployeeActionModel } from '@nocobase/plugin-ai/client';
+import { ActionGroupModel, ActionModel, ActionSceneEnum, CollectionActionGroupModel } from '@nocobase/client-v2';
 import { buildSubModelItem, type FlowModelContext } from '@nocobase/flow-engine';
 import { tExpr } from '../locale';
 
@@ -24,14 +23,17 @@ export const ALLOWED_MAP_ACTION_MODELS = [
   'JSCollectionActionModel',
 ];
 
+const getMapActionModelClass = (modelName: string, ctx: FlowModelContext) =>
+  (ctx.engine.getModelClass(modelName) || CollectionActionGroupModel.models.get(modelName)) as
+    | typeof ActionModel
+    | undefined;
+
 export class MapActionGroupModel extends ActionGroupModel {
   static async defineChildren(ctx: FlowModelContext) {
     const items = [];
 
     for (const modelName of ALLOWED_MAP_ACTION_MODELS) {
-      const ModelClass = (
-        modelName === 'AIEmployeeActionModel' ? AIEmployeeActionModel : ctx.engine.getModelClass(modelName)
-      ) as typeof ActionModel | undefined;
+      const ModelClass = getMapActionModelClass(modelName, ctx);
       if (!ModelClass) {
         continue;
       }
