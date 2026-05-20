@@ -102,25 +102,32 @@ function useExecuteConfirmAction() {
   const navigate = useNavigateNoUpdate();
   const { message: messageApi } = App.useApp();
   const executed = useWorkflowExecuted();
+  const [loading, setLoading] = useState(false);
   return {
+    loading,
     async run() {
-      const { autoRevision, ...values } = form.values;
-      // Not executed, could choose to create new version (by default)
-      // Executed, stay in current version, and refresh
-      await form.submit();
-      const {
-        data: { data },
-      } = await resource.execute({
-        filterByTk: workflow.id,
-        values,
-        ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
-      });
-      form.reset();
-      ctx.setFormValueChanged(false);
-      ctx.setVisible(false);
-      messageApi?.open(getExecutedStatusMessage(data.execution));
-      if (data.newVersionId) {
-        navigate(getWorkflowDetailPath(data.newVersionId));
+      setLoading(true);
+      try {
+        const { autoRevision, ...values } = form.values;
+        // Not executed, could choose to create new version (by default)
+        // Executed, stay in current version, and refresh
+        await form.submit();
+        const {
+          data: { data },
+        } = await resource.execute({
+          filterByTk: workflow.id,
+          values,
+          ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
+        });
+        form.reset();
+        ctx.setFormValueChanged(false);
+        ctx.setVisible(false);
+        messageApi?.open(getExecutedStatusMessage(data.execution));
+        if (data.newVersionId) {
+          navigate(getWorkflowDetailPath(data.newVersionId));
+        }
+      } finally {
+        setLoading(false);
       }
     },
   };
