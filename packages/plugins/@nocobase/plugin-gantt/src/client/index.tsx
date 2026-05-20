@@ -18,6 +18,13 @@ import { Event } from './components/gantt/Event';
 import { Gantt } from './components/gantt/gantt';
 import { ViewMode } from './types/public-types';
 import { useCreateAssociationGanttBlock, useCreateGanttBlock } from './GanttBlockInitializer';
+import {
+  GanttBlockModel,
+  GanttCollectionActionGroupModel,
+  GanttEventViewActionModel,
+  GanttExpandCollapseActionModel,
+} from '../client-v2/models';
+import { ganttLocaleResources, LEGACY_NAMESPACE, NAMESPACE } from '../client-v2/locale';
 
 Gantt.ActionBar = ActionBar;
 Gantt.ViewMode = ViewMode;
@@ -44,6 +51,16 @@ export class PluginGanttClient extends Plugin {
     this.app.schemaSettingsManager.add(ganttSettings);
     this.app.schemaInitializerManager.add(GanttActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(ganttActionInitializers);
+    Object.entries(ganttLocaleResources).forEach(([lang, resource]) => {
+      this.app.i18n.addResources(lang, this.options?.packageName || NAMESPACE, resource);
+      this.app.i18n.addResources(lang, LEGACY_NAMESPACE, resource);
+    });
+    this.flowEngine.registerModels({
+      GanttBlockModel,
+      GanttCollectionActionGroupModel,
+      GanttExpandCollapseActionModel,
+      GanttEventViewActionModel,
+    });
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.gantt', {
       title: "{{t('Gantt')}}",

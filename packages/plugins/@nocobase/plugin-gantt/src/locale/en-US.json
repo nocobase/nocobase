@@ -1,8 +1,25 @@
 {
+  "Actions": "Actions",
+  "Collapse all": "Collapse all",
+  "Day": "Day",
   "Enable drag to reschedule": "Enable drag to reschedule",
   "End date field": "End date field",
+  "Details": "Details",
+  "Event popup settings": "Event popup settings",
+  "Expand all": "Expand all",
+  "Expand/Collapse": "Expand/Collapse",
+  "Gantt": "Gantt",
+  "Gantt action": "Gantt action",
+  "Gantt fields": "Gantt fields",
+  "Half of day": "Half of day",
+  "Hour": "Hour",
+  "Month": "Month",
   "Progress field": "Progress field",
+  "Quarter of day": "Quarter of day",
+  "QuarterYear": "QuarterYear",
   "Start date field": "Start date field",
   "Time scale": "Time scale",
-  "Title field": "Title field"
+  "Title field": "Title field",
+  "Week": "Week",
+  "Year": "Year"
 }
