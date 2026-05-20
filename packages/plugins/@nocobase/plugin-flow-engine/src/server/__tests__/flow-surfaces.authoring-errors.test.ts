@@ -1034,6 +1034,104 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     ).toEqual([]);
   });
 
+  it('should validate FlowResource instance method calls on RunJS resource aliases', () => {
+    const invalidCases = [
+      {
+        code: "const r = ctx.makeResource('MultiRecordResource');\nr.setFilters({ status: 'open' });",
+        path: '$.runjs.multiResourceAlias.code',
+      },
+      {
+        code: [
+          'collections.map(() => {',
+          "  const r = ctx.makeResource('MultiRecordResource');",
+          '  r.setFilters({ status: "open" });',
+          '  return r;',
+          '});',
+        ].join('\n'),
+        path: '$.runjs.callbackResourceAlias.code',
+      },
+      {
+        code: 'ctx.resource.setFilters({ status: "open" });',
+        path: '$.runjs.ctxResource.code',
+      },
+      {
+        code: 'const r = ctx.resource;\nr.setFilters({ status: "open" });',
+        path: '$.runjs.ctxResourceAlias.code',
+      },
+      {
+        code: "ctx.makeResource('MultiRecordResource').setFilters({ status: 'open' });",
+        path: '$.runjs.directFactoryResource.code',
+      },
+      {
+        code: "const r = ctx.makeResource('MultiRecordResource');\nr?.setFilters?.({ status: 'open' });",
+        path: '$.runjs.optionalResourceAlias.code',
+      },
+      {
+        code: "const r = ctx.makeResource('MultiRecordResource');\nr['setFilters']({ status: 'open' });",
+        path: '$.runjs.bracketResourceAlias.code',
+      },
+    ];
+
+    invalidCases.forEach(({ code, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code,
+        path,
+        modelUse: 'JSActionModel',
+      });
+
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path,
+            ruleId: 'runjs-flow-resource-method-invalid',
+            details: expect.objectContaining({
+              method: 'setFilters',
+              repairClass: 'resource-runtime-contract-stop',
+              suggestedMethod: 'setFilter',
+            }),
+          }),
+        ]),
+      );
+    });
+  });
+
+  it('should allow valid FlowResource methods and ignore non-resource or shadowed bindings', () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: [
+        "const multi = ctx.makeResource('MultiRecordResource');",
+        "multi.setResourceName('tasks');",
+        'multi.setFilter({ status: "open" });',
+        'multi.setPageSize(20);',
+        'multi.refresh();',
+        'multi.getData();',
+        'multi.getMeta();',
+        "const single = ctx.makeResource('SingleRecordResource');",
+        'single.save({ title: "Done" });',
+        'single.destroy();',
+        "const sql = ctx.initResource('SQLResource');",
+        "sql.setSQL('select 1');",
+        'sql.setBind({ id: 1 });',
+        "sql.setSQLType('selectRows');",
+        'await sql.run();',
+        'await sql.runById();',
+        'ctx.resource.getData();',
+        'ctx.resource.setFilter({ status: "open" });',
+        'ctx.resource.setPageSize(10);',
+        'const plain = { setFilters() {} };',
+        'plain.setFilters({ status: "open" });',
+        "const outer = ctx.makeResource('MultiRecordResource');",
+        'function local(outer) { outer.setFilters({ status: "open" }); }',
+        "const method = 'setFilters';",
+        "const dynamic = ctx.makeResource('MultiRecordResource');",
+        'dynamic[method]({ status: "open" });',
+      ].join('\n'),
+      path: '$.runjs.validResourceMethods.code',
+      modelUse: 'JSActionModel',
+    });
+
+    expect(errors).toEqual([]);
+  });
+
   it('should not treat method-local code or out-of-scope shadow bindings as top-level RunJS', () => {
     const objectMethodRenderErrors = inspectRunJsAuthoringCode({
       code: 'const panel = { draw() { ctx.render(null); } };',

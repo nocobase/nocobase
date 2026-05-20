@@ -79,6 +79,28 @@ type FlowResourceAlias = SourceRange & {
   name: string;
 };
 
+type FlowResourceInstanceType =
+  | 'unknown'
+  | 'FlowResource'
+  | 'APIResource'
+  | 'SingleRecordResource'
+  | 'MultiRecordResource'
+  | 'SQLResource';
+
+type AstFlowResourceAlias = SourceRange & {
+  capability: string;
+  declarationStart?: number;
+  executionScope: SourceRange;
+  name: string;
+  resourceType: FlowResourceInstanceType;
+};
+
+type AstFlowResourceSource = {
+  capability: string;
+  index: number;
+  resourceType: FlowResourceInstanceType;
+};
+
 type CtxLibMemberCaseMismatch = {
   accessKind: 'bracket' | 'destructure' | 'member';
   capability: string;
@@ -120,6 +142,17 @@ type RunJsAstInspection = {
     index: number;
     resourceType?: string;
     ruleId: string;
+  }>;
+  invalidFlowResourceListCalls: Array<{
+    capability: string;
+    index: number;
+  }>;
+  invalidFlowResourceMethodCalls: Array<{
+    capability: string;
+    index: number;
+    method: string;
+    resourceType?: FlowResourceInstanceType;
+    suggestedMethod?: string;
   }>;
   nestedRunjsCalls: Array<{
     capability: string;
@@ -430,6 +463,143 @@ const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((membe
 const RUNJS_CTX_API_ALLOWED_MEMBERS = new Set(['auth', 'request', 'resource']);
 const RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS = new Set(['authenticator', 'locale', 'role', 'token']);
 const RUNJS_RESOURCE_METHODS = new Set(['list', 'get', 'create', 'update', 'destroy']);
+const FLOW_RESOURCE_BASE_METHODS = new Set([
+  'getData',
+  'hasData',
+  'setData',
+  'getMeta',
+  'setMeta',
+  'getError',
+  'setError',
+  'clearError',
+  'refresh',
+  'on',
+  'once',
+  'off',
+  'emit',
+]);
+const API_RESOURCE_METHODS = unionMethodSets([
+  FLOW_RESOURCE_BASE_METHODS,
+  new Set([
+    'setAPIClient',
+    'getURL',
+    'setURL',
+    'clearRequestParameters',
+    'setRequestParameters',
+    'setRequestMethod',
+    'addRequestHeader',
+    'removeRequestHeader',
+    'addRequestParameter',
+    'getRequestParameter',
+    'removeRequestParameter',
+    'setRequestBody',
+    'setRequestOptions',
+    'getRequestOptions',
+    'refresh',
+  ]),
+]);
+const RECORD_RESOURCE_METHODS = unionMethodSets([
+  API_RESOURCE_METHODS,
+  new Set([
+    'setRefreshAction',
+    'mergeRequestConfig',
+    'setRunActionOptions',
+    'runAction',
+    'setResourceName',
+    'getResourceName',
+    'setSourceId',
+    'getSourceId',
+    'setDataSourceKey',
+    'getDataSourceKey',
+    'setFilter',
+    'getFilter',
+    'resetFilter',
+    'addFilterGroup',
+    'removeFilterGroup',
+    'setAppends',
+    'getAppends',
+    'addAppends',
+    'removeAppends',
+    'getUpdateAssociationValues',
+    'addUpdateAssociationValues',
+    'jsonStringify',
+    'setFilterByTk',
+    'getFilterByTk',
+    'setFields',
+    'getFields',
+    'setSort',
+    'getSort',
+    'setExcept',
+    'getExcept',
+    'setWhitelist',
+    'getWhitelist',
+    'setBlacklist',
+    'getBlacklist',
+  ]),
+]);
+const MULTI_RECORD_RESOURCE_METHODS = unionMethodSets([
+  RECORD_RESOURCE_METHODS,
+  new Set([
+    'setCreateActionOptions',
+    'setUpdateActionOptions',
+    'setSelectedRows',
+    'getSelectedRows',
+    'getCount',
+    'setPage',
+    'getPage',
+    'setPageSize',
+    'getPageSize',
+    'getTotalPage',
+    'getCell',
+    'next',
+    'previous',
+    'goto',
+    'create',
+    'get',
+    'update',
+    'destroySelectedRows',
+    'destroy',
+    'setItem',
+    'refresh',
+  ]),
+]);
+const SINGLE_RECORD_RESOURCE_METHODS = unionMethodSets([
+  RECORD_RESOURCE_METHODS,
+  new Set(['setSaveActionOptions', 'save', 'destroy', 'refresh']),
+]);
+const SQL_RESOURCE_METHODS = unionMethodSets([
+  RECORD_RESOURCE_METHODS,
+  new Set([
+    'setDebug',
+    'setPage',
+    'getPage',
+    'setPageSize',
+    'getPageSize',
+    'next',
+    'previous',
+    'goto',
+    'setDataSourceKey',
+    'setSQLType',
+    'setSQL',
+    'setFilterByTk',
+    'setFilter',
+    'setBind',
+    'setLiquidContext',
+    'run',
+    'runBySQL',
+    'runById',
+    'refresh',
+  ]),
+]);
+const FLOW_RESOURCE_METHODS_BY_TYPE: Record<Exclude<FlowResourceInstanceType, 'unknown'>, Set<string>> = {
+  FlowResource: FLOW_RESOURCE_BASE_METHODS,
+  APIResource: API_RESOURCE_METHODS,
+  SingleRecordResource: SINGLE_RECORD_RESOURCE_METHODS,
+  MultiRecordResource: MULTI_RECORD_RESOURCE_METHODS,
+  SQLResource: SQL_RESOURCE_METHODS,
+};
+const UNKNOWN_FLOW_RESOURCE_METHODS = unionMethodSets(Object.values(FLOW_RESOURCE_METHODS_BY_TYPE));
+const FLOW_RESOURCE_METHOD_SUGGESTIONS = new Map([['setFilters', 'setFilter']]);
 const CONTEXT_FIRST_REPAIR_CLASSES = new Set<RunJsAuthoringRepairClass>([
   'unknown-surface-stop',
   'unknown-model-stop',
@@ -439,6 +609,14 @@ const CONTEXT_FIRST_REPAIR_CLASSES = new Set<RunJsAuthoringRepairClass>([
 const RUNJS_FIX_AND_RETRY_INSTRUCTION = 'Do not skip this JS/RunJS step. Fix the error and retry the same write.';
 const RUNJS_CONTEXT_AND_RETRY_INSTRUCTION =
   'Do not skip this JS/RunJS step. Resolve the blocking context/problem first, then retry the same write.';
+
+function unionMethodSets(methodSets: Array<Set<string>>) {
+  const union = new Set<string>();
+  methodSets.forEach((methodSet) => {
+    methodSet.forEach((method) => union.add(method));
+  });
+  return union;
+}
 
 function asPlainRecord(value: unknown): PlainRecord | undefined {
   return _.isPlainObject(value) ? (value as PlainRecord) : undefined;
@@ -1433,6 +1611,27 @@ function collectResourceRuntimeErrors(
       }),
     );
   });
+  scan.invalidFlowResourceMethodCalls.forEach((entry) => {
+    const suggestedMethod = entry.suggestedMethod ? `; use ${entry.suggestedMethod}(...) instead` : '';
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'resource-runtime-contract-stop',
+        ruleId: 'runjs-flow-resource-method-invalid',
+        message: `flowSurfaces authoring ${path} cannot call ${entry.capability}(...); FlowResource method '${entry.method}' is not supported${suggestedMethod}`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          method: entry.method,
+          resourceType: entry.resourceType,
+          suggestedMethod: entry.suggestedMethod,
+        },
+      }),
+    );
+  });
   scan.invalidFlowResourceListCalls.forEach((entry) => {
     errors.push(
       buildRunJsAuthoringError({
@@ -1853,7 +2052,11 @@ function scanJavaScriptSource(source: string, ast?: any) {
     invalidResourceTypeCalls:
       astInspection?.invalidResourceTypeCalls ||
       collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings, sourceBindings),
-    invalidFlowResourceListCalls: collectInvalidFlowResourceListCalls(masked, flowResourceAliases, sourceBindings),
+    invalidFlowResourceListCalls: dedupeIndexedEntries([
+      ...collectInvalidFlowResourceListCalls(masked, flowResourceAliases, sourceBindings),
+      ...(astInspection?.invalidFlowResourceListCalls || []),
+    ]).sort((left, right) => left.index - right.index),
+    invalidFlowResourceMethodCalls: astInspection?.invalidFlowResourceMethodCalls || [],
     topLevelReactHookCalls: reactHookCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges)),
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
     reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases, sourceBindings),
@@ -1898,12 +2101,21 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
   );
   const asyncComponentBindings = collectReactAsyncComponentBindingsFromAst(ast, source, identifierBindings);
   const staticStringBindings = [...stringBindings, ...collectStaticStringBindingsFromAst(ast, source)];
+  const flowResourceAliases = collectAstFlowResourceAliasesFromAst(
+    ast,
+    source,
+    aliases,
+    staticStringBindings,
+    identifierBindings,
+  );
   const nestedRunjsCalls: RunJsAstInspection['nestedRunjsCalls'] = [];
   const invalidCtxApiMemberAccesses: RunJsAstInspection['invalidCtxApiMemberAccesses'] = [
     ...collectAstInvalidCtxApiPatternAccesses(ast, ctxApiAliases, identifierBindings),
   ];
   const invalidApiResourceCalls: RunJsAstInspection['invalidApiResourceCalls'] = [];
   const invalidResourceTypeCalls: RunJsAstInspection['invalidResourceTypeCalls'] = [];
+  const invalidFlowResourceListCalls: RunJsAstInspection['invalidFlowResourceListCalls'] = [];
+  const invalidFlowResourceMethodCalls: RunJsAstInspection['invalidFlowResourceMethodCalls'] = [];
   const reactAsyncComponentReferences: RunJsAstInspection['reactAsyncComponentReferences'] = [];
 
   walkAstSimple(ast, {
@@ -1930,6 +2142,16 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
           );
         }
       }
+      const flowResourceMethodCall = collectAstInvalidFlowResourceMethodCall(
+        node,
+        flowResourceAliases,
+        source,
+        identifierBindings,
+        aliases,
+        staticStringBindings,
+      );
+      flowResourceMethodCall.invalidListCalls.forEach((entry) => invalidFlowResourceListCalls.push(entry));
+      flowResourceMethodCall.invalidMethodCalls.forEach((entry) => invalidFlowResourceMethodCalls.push(entry));
       collectAstInvalidApiResourceCall(node, ctxApiAliases, ctxApiResourceAliases, source, identifierBindings).forEach(
         (entry) => invalidApiResourceCalls.push(entry),
       );
@@ -1987,6 +2209,12 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
       dedupedInvalidApiResourceCalls,
     ).sort((left, right) => left.index - right.index),
     invalidResourceTypeCalls: dedupeAstResourceEntries(invalidResourceTypeCalls),
+    invalidFlowResourceListCalls: dedupeIndexedEntries(invalidFlowResourceListCalls).sort(
+      (left, right) => left.index - right.index,
+    ),
+    invalidFlowResourceMethodCalls: dedupeIndexedEntries(invalidFlowResourceMethodCalls).sort(
+      (left, right) => left.index - right.index,
+    ),
     nestedRunjsCalls: dedupeIndexedEntries(nestedRunjsCalls).sort((left, right) => left.index - right.index),
     reactAsyncComponentReferences: dedupeIndexedEntries(reactAsyncComponentReferences).sort(
       (left, right) => left.index - right.index,
@@ -3433,6 +3661,382 @@ function collectAstInvalidResourceTypeCall(
     ];
   }
   return [];
+}
+
+function collectAstFlowResourceAliasesFromAst(
+  ast: any,
+  source: string,
+  ctxMethodAliases: CtxMethodAlias[],
+  stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
+): AstFlowResourceAlias[] {
+  const aliases: AstFlowResourceAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+  const addAlias = (name: string, resource: AstFlowResourceSource, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability: resource.capability,
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      name,
+      resourceType: resource.resourceType,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const collectCtxResourcePatternAliases = (pattern: any, ctxNode: any, ancestors: any[], isVar = false) => {
+    if (!isUnshadowedCtxIdentifier(ctxNode, identifierBindings)) {
+      return;
+    }
+    collectAstObjectPatternAliases(pattern, (name, member, aliasNode) => {
+      if (member === 'resource') {
+        addAlias(
+          name,
+          {
+            capability: 'ctx.resource',
+            index: typeof ctxNode?.start === 'number' ? ctxNode.start : 0,
+            resourceType: 'unknown',
+          },
+          aliasNode || pattern,
+          ancestors,
+          isVar,
+        );
+      }
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (isAstCtxApiAliasAssignmentOperator(node.operator) && node.left?.type === 'Identifier') {
+        const resource = getMaybeAstFlowResourceSourceFromAst(
+          node.right,
+          getActiveAliases(),
+          source,
+          identifierBindings,
+          ctxMethodAliases,
+          stringBindings,
+        );
+        if (resource) {
+          addAlias(node.left.name, resource, node, ancestors);
+        }
+        return;
+      }
+      if (node.operator === '=' && node.left?.type === 'ObjectPattern') {
+        collectCtxResourcePatternAliases(node.left, node.right, ancestors);
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      if (node.id?.type === 'Identifier') {
+        const resource = getMaybeAstFlowResourceSourceFromAst(
+          node.init,
+          getActiveAliases(),
+          source,
+          identifierBindings,
+          ctxMethodAliases,
+          stringBindings,
+        );
+        if (resource) {
+          addAlias(node.id.name, resource, node, ancestors, isVar);
+        }
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern') {
+        collectCtxResourcePatternAliases(node.id, node.init, ancestors, isVar);
+      }
+    },
+  });
+
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+function collectAstInvalidFlowResourceMethodCall(
+  node: any,
+  aliases: AstFlowResourceAlias[],
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  ctxMethodAliases: CtxMethodAlias[],
+  stringBindings: StaticStringBinding[],
+): {
+  invalidListCalls: RunJsAstInspection['invalidFlowResourceListCalls'];
+  invalidMethodCalls: RunJsAstInspection['invalidFlowResourceMethodCalls'];
+} {
+  const callee = unwrapAstChainExpression(node.callee);
+  if (!callee || callee.type !== 'MemberExpression') {
+    return { invalidListCalls: [], invalidMethodCalls: [] };
+  }
+  const method = getAstStaticPropertyName(callee);
+  if (!method) {
+    return { invalidListCalls: [], invalidMethodCalls: [] };
+  }
+  const resource = getMaybeAstFlowResourceSourceFromAst(
+    callee.object,
+    aliases,
+    source,
+    identifierBindings,
+    ctxMethodAliases,
+    stringBindings,
+  );
+  if (!resource) {
+    return { invalidListCalls: [], invalidMethodCalls: [] };
+  }
+  const capability = getAstSource(callee, source);
+  if (method === 'list') {
+    return {
+      invalidListCalls: [
+        {
+          capability,
+          index: typeof callee.start === 'number' ? callee.start : node.start || 0,
+        },
+      ],
+      invalidMethodCalls: [],
+    };
+  }
+  if (getFlowResourceAllowedMethods(resource.resourceType).has(method)) {
+    return { invalidListCalls: [], invalidMethodCalls: [] };
+  }
+  return {
+    invalidListCalls: [],
+    invalidMethodCalls: [
+      {
+        capability,
+        index:
+          typeof callee.property?.start === 'number'
+            ? callee.property.start
+            : typeof callee.start === 'number'
+              ? callee.start
+              : node.start || 0,
+        method,
+        resourceType: resource.resourceType,
+        suggestedMethod: getSuggestedFlowResourceMethod(method),
+      },
+    ],
+  };
+}
+
+function getMaybeAstFlowResourceSourceFromAst(
+  node: any,
+  aliases: AstFlowResourceAlias[],
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  ctxMethodAliases: CtxMethodAlias[],
+  stringBindings: StaticStringBinding[],
+): AstFlowResourceSource | undefined {
+  return selectAstFlowResourceSource(
+    collectPossibleAstFlowResourceSourcesFromAst(
+      node,
+      aliases,
+      source,
+      identifierBindings,
+      ctxMethodAliases,
+      stringBindings,
+    ),
+  );
+}
+
+function collectPossibleAstFlowResourceSourcesFromAst(
+  node: any,
+  aliases: AstFlowResourceAlias[],
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  ctxMethodAliases: CtxMethodAlias[],
+  stringBindings: StaticStringBinding[],
+): AstFlowResourceSource[] {
+  const direct = getDirectAstFlowResourceSourceFromAst(
+    node,
+    aliases,
+    source,
+    identifierBindings,
+    ctxMethodAliases,
+    stringBindings,
+  );
+  if (direct) {
+    return [direct];
+  }
+
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return [];
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return [
+      ...collectPossibleAstFlowResourceSourcesFromAst(
+        unwrapped.consequent,
+        aliases,
+        source,
+        identifierBindings,
+        ctxMethodAliases,
+        stringBindings,
+      ),
+      ...collectPossibleAstFlowResourceSourcesFromAst(
+        unwrapped.alternate,
+        aliases,
+        source,
+        identifierBindings,
+        ctxMethodAliases,
+        stringBindings,
+      ),
+    ];
+  }
+  if (unwrapped.type === 'LogicalExpression') {
+    return [
+      ...collectPossibleAstFlowResourceSourcesFromAst(
+        unwrapped.left,
+        aliases,
+        source,
+        identifierBindings,
+        ctxMethodAliases,
+        stringBindings,
+      ),
+      ...collectPossibleAstFlowResourceSourcesFromAst(
+        unwrapped.right,
+        aliases,
+        source,
+        identifierBindings,
+        ctxMethodAliases,
+        stringBindings,
+      ),
+    ];
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return collectPossibleAstFlowResourceSourcesFromAst(
+      expressions[expressions.length - 1],
+      aliases,
+      source,
+      identifierBindings,
+      ctxMethodAliases,
+      stringBindings,
+    );
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return collectPossibleAstFlowResourceSourcesFromAst(
+      unwrapped.right,
+      aliases,
+      source,
+      identifierBindings,
+      ctxMethodAliases,
+      stringBindings,
+    );
+  }
+  return [];
+}
+
+function getDirectAstFlowResourceSourceFromAst(
+  node: any,
+  aliases: AstFlowResourceAlias[],
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  ctxMethodAliases: CtxMethodAlias[],
+  stringBindings: StaticStringBinding[],
+): AstFlowResourceSource | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'Identifier') {
+    const alias = resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, aliases, identifierBindings);
+    return alias
+      ? {
+          capability: alias.capability,
+          index: typeof unwrapped.start === 'number' ? unwrapped.start : alias.start,
+          resourceType: alias.resourceType,
+        }
+      : undefined;
+  }
+  if (isAstCtxResourceMember(unwrapped, identifierBindings)) {
+    return {
+      capability: 'ctx.resource',
+      index: typeof unwrapped.start === 'number' ? unwrapped.start : 0,
+      resourceType: 'unknown',
+    };
+  }
+  return getAstFlowResourceFactoryCallFromAst(unwrapped, ctxMethodAliases, source, stringBindings, identifierBindings);
+}
+
+function getAstFlowResourceFactoryCallFromAst(
+  node: any,
+  ctxMethodAliases: CtxMethodAlias[],
+  source: string,
+  stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
+): AstFlowResourceSource | undefined {
+  const call = unwrapAstChainExpression(node);
+  if (!call || call.type !== 'CallExpression') {
+    return undefined;
+  }
+  const method = resolveCtxMethodCall(call, ctxMethodAliases, identifierBindings);
+  if (!method || (method.method !== 'makeResource' && method.method !== 'initResource')) {
+    return undefined;
+  }
+  const firstArg = call.arguments?.[0];
+  if (!firstArg) {
+    return undefined;
+  }
+  const resolved = resolveAstResourceTypeExpression(firstArg, source, stringBindings, identifierBindings);
+  if (resolved.status !== 'resolved') {
+    return undefined;
+  }
+  const allowedResourceTypes = method.method === 'initResource' ? INIT_RESOURCE_CLASS_NAMES : FLOW_RESOURCE_CLASS_NAMES;
+  if (!allowedResourceTypes.has(resolved.value) || !isKnownFlowResourceInstanceType(resolved.value)) {
+    return undefined;
+  }
+  return {
+    capability: method.capability,
+    index: typeof call.start === 'number' ? call.start : 0,
+    resourceType: resolved.value,
+  };
+}
+
+function isAstCtxResourceMember(node: any, identifierBindings: AstIdentifierBinding[]) {
+  const member = unwrapAstChainExpression(node);
+  return (
+    member?.type === 'MemberExpression' &&
+    getAstStaticPropertyName(member) === 'resource' &&
+    isUnshadowedCtxIdentifier(member.object, identifierBindings)
+  );
+}
+
+function selectAstFlowResourceSource(sources: AstFlowResourceSource[]): AstFlowResourceSource | undefined {
+  if (!sources.length) {
+    return undefined;
+  }
+  const resourceTypes = [...new Set(sources.map((entry) => entry.resourceType))];
+  if (resourceTypes.length === 1) {
+    return sources[0];
+  }
+  return {
+    capability: sources.map((entry) => entry.capability).join('|'),
+    index: Math.min(...sources.map((entry) => entry.index)),
+    resourceType: 'unknown',
+  };
+}
+
+function getFlowResourceAllowedMethods(resourceType: FlowResourceInstanceType | undefined) {
+  if (!resourceType || resourceType === 'unknown') {
+    return UNKNOWN_FLOW_RESOURCE_METHODS;
+  }
+  return FLOW_RESOURCE_METHODS_BY_TYPE[resourceType] || UNKNOWN_FLOW_RESOURCE_METHODS;
+}
+
+function getSuggestedFlowResourceMethod(method: string) {
+  const exactSuggestion = FLOW_RESOURCE_METHOD_SUGGESTIONS.get(method);
+  if (exactSuggestion) {
+    return exactSuggestion;
+  }
+  if (method.endsWith('s')) {
+    const singular = method.slice(0, -1);
+    if (UNKNOWN_FLOW_RESOURCE_METHODS.has(singular)) {
+      return singular;
+    }
+  }
+  return undefined;
+}
+
+function isKnownFlowResourceInstanceType(value: string): value is Exclude<FlowResourceInstanceType, 'unknown'> {
+  return value in FLOW_RESOURCE_METHODS_BY_TYPE;
 }
 
 function collectAstInvalidCtxApiPatternAccesses(
