@@ -11,7 +11,13 @@ import { CancelError, TaskType } from '@nocobase/plugin-async-task-manager';
 import PluginAIServer from '@nocobase/plugin-ai';
 import type { ModelRef } from '@nocobase/plugin-ai';
 import { HumanMessage } from '@langchain/core/messages';
-import { buildFindTextsOptions, isBuiltInText, normalizeTextRecord } from '../translation-scope';
+import {
+  buildFindTextsOptions,
+  getModuleName,
+  isBuiltInText,
+  normalizeModuleName,
+  normalizeTextRecord,
+} from '../translation-scope';
 import type { LocalizationTextRecord, TranslationScope } from '../translation-scope';
 
 export const LOCALIZATION_AI_TRANSLATE_TASK_TYPE = 'localization:ai-translate';
@@ -31,6 +37,20 @@ const getTranslationWorkerCount = () => {
     return value;
   }
   return DEFAULT_TRANSLATION_WORKER_COUNT;
+};
+
+export const pickBuiltInResourceReference = (
+  row: LocalizationTextRecord,
+  references: Map<string, Map<string, string>>,
+  locales: ReferenceLocaleConfig,
+) => {
+  for (const locale of [locales.primary, locales.fallback].filter(isString)) {
+    const translation = references.get(locale)?.get(String(row.id));
+    if (translation) {
+      return { locale, translation };
+    }
+  }
+  return {};
 };
 
 type TranslationMode = 'full' | 'incremental' | 'selected';
@@ -246,8 +266,37 @@ export class LocalizationAITranslateTask extends TaskType {
   private async getReferenceMaps(textIds: Array<string | number>, locales: string[]) {
     const result = new Map<string, Map<string, string>>();
     await Promise.all(
-      locales.map(async (locale) => {
+      Array.from(new Set(locales)).map(async (locale) => {
         result.set(locale, await this.getLocaleReferences(textIds, locale));
+      }),
+    );
+    return result;
+  }
+
+  private async getBuiltInReferenceMaps(rows: LocalizationTextRecord[], locales: string[]) {
+    const result = new Map<string, Map<string, string>>();
+    if (!rows.length) {
+      return result;
+    }
+    await Promise.all(
+      Array.from(new Set(locales)).map(async (locale) => {
+        const resources = await this.app.localeManager.getCacheResources(locale);
+        const references = new Map<string, string>();
+        for (const row of rows) {
+          const moduleName = getModuleName(row);
+          if (!moduleName) {
+            continue;
+          }
+          const modules = Array.from(new Set([normalizeModuleName(moduleName), moduleName]));
+          for (const module of modules) {
+            const translation = resources?.[module]?.[row.text];
+            if (translation) {
+              references.set(String(row.id), translation);
+              break;
+            }
+          }
+        }
+        result.set(locale, references);
       }),
     );
     return result;
@@ -294,10 +343,10 @@ export class LocalizationAITranslateTask extends TaskType {
     referenceLocales: Required<TranslationReferenceLocales>,
     chunkIndex: number,
   ) {
-    const builtInTextIds = batch.filter((item) => item.isBuiltIn).map((item) => item.row.id);
+    const builtInRows = batch.filter((item) => item.isBuiltIn).map((item) => item.row);
     const customTextIds = batch.filter((item) => !item.isBuiltIn).map((item) => item.row.id);
-    const builtInReferences = await this.getReferenceMaps(
-      builtInTextIds,
+    const builtInReferences = await this.getBuiltInReferenceMaps(
+      builtInRows,
       [referenceLocales.builtIn.primary, referenceLocales.builtIn.fallback].filter(isString),
     );
     const customReferences = await this.getReferenceMaps(
@@ -307,7 +356,9 @@ export class LocalizationAITranslateTask extends TaskType {
 
     return batch.map(({ row, isBuiltIn }) => {
       const references = isBuiltIn ? referenceLocales.builtIn : referenceLocales.custom;
-      const reference = this.pickDbReference(row, isBuiltIn ? builtInReferences : customReferences, references);
+      const reference = isBuiltIn
+        ? pickBuiltInResourceReference(row, builtInReferences, references)
+        : this.pickDbReference(row, customReferences, references);
       return {
         row,
         chunkIndex,
