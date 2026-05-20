@@ -841,7 +841,7 @@ export class CollectionField {
       {
         ..._.omit(this.options.uiSchema?.['x-component-props'] || {}, 'fieldNames'),
         options: this.enum.length ? this.enum : undefined,
-        mode: this.type === 'array' ? 'multiple' : undefined,
+        mode: this.interface === 'multipleSelect' ? 'multiple' : undefined,
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
         target: target,
