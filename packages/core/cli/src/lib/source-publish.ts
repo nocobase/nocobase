@@ -8,7 +8,7 @@
  */
 
 import path from 'node:path';
-import { commandOutput, resolveProjectCwd, run } from './run-npm.js';
+import { commandOutput, resolveProjectCwd, run, runNocoBaseCommand } from './run-npm.js';
 import { DEFAULT_SOURCE_REGISTRY_PORT, parseSourceRegistryUrl, resolveSourceRegistryInfo } from './source-registry.js';
 
 export type SourcePublishResult = {
@@ -133,6 +133,22 @@ async function commitSourceSnapshotVersion(params: {
   });
 }
 
+async function buildSourceSnapshot(params: {
+  cwd: string;
+  buildDts: boolean;
+  stdio: 'inherit' | 'ignore';
+}): Promise<void> {
+  const args = ['build'];
+  if (!params.buildDts) {
+    args.push('--no-dts');
+  }
+
+  await runNocoBaseCommand(args, {
+    cwd: params.cwd,
+    stdio: params.stdio,
+  });
+}
+
 async function createSourcePublishStash(params: {
   cwd: string;
   label: string;
@@ -205,6 +221,8 @@ function buildSourcePublishRecoveryError(params: {
 export async function publishSourceSnapshot(params: {
   cwd?: string;
   npmRegistry?: string;
+  build?: boolean;
+  buildDts?: boolean;
   verbose?: boolean;
   now?: Date;
 }): Promise<SourcePublishResult> {
@@ -216,6 +234,8 @@ export async function publishSourceSnapshot(params: {
   const version = buildSnapshotVersion(baseVersion, gitSha, params.now);
   const temporaryBranch = buildSourcePublishBranchName(gitSha, params.now);
   const stdio = params.verbose ? 'inherit' : 'ignore';
+  const shouldBuild = params.build !== false;
+  const shouldBuildDts = params.buildDts !== false;
   let stash: SourcePublishStash | undefined;
   let onTemporaryBranch = false;
   let branchCreated = false;
@@ -243,6 +263,13 @@ export async function publishSourceSnapshot(params: {
         cwd: projectRoot,
         stdio,
         errorName: 'git stash apply',
+      });
+    }
+    if (shouldBuild) {
+      await buildSourceSnapshot({
+        cwd: projectRoot,
+        buildDts: shouldBuildDts,
+        stdio,
       });
     }
     await run('yarn', ['lerna', 'version', version, '--force-publish=*', '--no-git-tag-version', '-y'], {

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   commandOutput: vi.fn(),
   resolveProjectCwd: vi.fn((cwd?: string) => cwd ?? '/repo'),
   run: vi.fn(),
+  runNocoBaseCommand: vi.fn(),
   resolveRegistryInfo: vi.fn(),
   readFile: vi.fn(),
 }));
@@ -21,6 +22,7 @@ vi.mock('../lib/run-npm.js', () => ({
   commandOutput: mocks.commandOutput,
   resolveProjectCwd: mocks.resolveProjectCwd,
   run: mocks.run,
+  runNocoBaseCommand: mocks.runNocoBaseCommand,
 }));
 
 vi.mock('../lib/source-registry.js', async (importOriginal) => {
@@ -72,6 +74,7 @@ beforeEach(() => {
   });
   mocks.readFile.mockResolvedValue(JSON.stringify({ version: '2.1.0-beta.34' }));
   mocks.run.mockResolvedValue(undefined);
+  mocks.runNocoBaseCommand.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -180,6 +183,10 @@ test('publishSourceSnapshot versions and publishes from a temporary git branch',
       { cwd: '/repo', errorName: 'git branch -D', env: undefined, stdio: 'ignore' },
     ],
   ]);
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build'], {
+    cwd: '/repo',
+    stdio: 'ignore',
+  });
 });
 
 test('publishSourceSnapshot skips stash steps when the worktree is already clean', async () => {
@@ -256,4 +263,59 @@ test('publishSourceSnapshot skips stash steps when the worktree is already clean
       { cwd: '/repo', errorName: 'git branch -D', env: undefined, stdio: 'ignore' },
     ],
   ]);
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build'], {
+    cwd: '/repo',
+    stdio: 'ignore',
+  });
+});
+
+test('publishSourceSnapshot skips build when --no-build is requested', async () => {
+  const { publishSourceSnapshot } = await import('../lib/source-publish.js');
+  mocks.commandOutput.mockImplementation(async (_command: string, args: string[]) => {
+    if (args[0] === 'branch' && args[1] === '--show-current') {
+      return 'main';
+    }
+    if (args[0] === 'rev-parse' && args[1] === '--short') {
+      return 'abc12345';
+    }
+    if (args[0] === 'status') {
+      return '';
+    }
+    return 'abc12345';
+  });
+
+  await publishSourceSnapshot({
+    npmRegistry: 'http://127.0.0.1:4873',
+    build: false,
+    now: new Date('2026-05-19T08:00:00'),
+  });
+
+  expect(mocks.runNocoBaseCommand).not.toHaveBeenCalled();
+});
+
+test('publishSourceSnapshot forwards --no-build-dts to the source build', async () => {
+  const { publishSourceSnapshot } = await import('../lib/source-publish.js');
+  mocks.commandOutput.mockImplementation(async (_command: string, args: string[]) => {
+    if (args[0] === 'branch' && args[1] === '--show-current') {
+      return 'main';
+    }
+    if (args[0] === 'rev-parse' && args[1] === '--short') {
+      return 'abc12345';
+    }
+    if (args[0] === 'status') {
+      return '';
+    }
+    return 'abc12345';
+  });
+
+  await publishSourceSnapshot({
+    npmRegistry: 'http://127.0.0.1:4873',
+    buildDts: false,
+    now: new Date('2026-05-19T08:00:00'),
+  });
+
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '--no-dts'], {
+    cwd: '/repo',
+    stdio: 'ignore',
+  });
 });

@@ -25,6 +25,8 @@ export default class SourcePublish extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --snapshot',
+    '<%= config.bin %> <%= command.id %> --snapshot --no-build',
+    '<%= config.bin %> <%= command.id %> --snapshot --no-build-dts',
     '<%= config.bin %> <%= command.id %> --snapshot --cwd /path/to/nocobase/source',
     '<%= config.bin %> <%= command.id %> --snapshot --npm-registry=http://127.0.0.1:4873',
     '<%= config.bin %> <%= command.id %> --snapshot --json',
@@ -43,6 +45,16 @@ export default class SourcePublish extends Command {
     cwd: Flags.string({
       description: 'Source repository path. Defaults to the nearest detected NocoBase source root from the current working directory',
       required: false,
+    }),
+    build: Flags.boolean({
+      allowNo: true,
+      description: 'Build the source repo before snapshot versioning and publish',
+      default: true,
+    }),
+    'build-dts': Flags.boolean({
+      allowNo: true,
+      description: 'Generate TypeScript declaration files during the source build',
+      default: true,
     }),
     json: Flags.boolean({
       description: 'Print the publish result as JSON',
@@ -68,6 +80,8 @@ export default class SourcePublish extends Command {
       const result = await publishSourceSnapshot({
         cwd: flags.cwd,
         npmRegistry: flags['npm-registry'],
+        build: flags.build,
+        buildDts: flags['build-dts'],
         verbose: flags.verbose,
       });
 
