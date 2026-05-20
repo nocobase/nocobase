@@ -54,6 +54,25 @@ type ReactComponentAlias = SourceRange & {
   name: string;
 };
 
+type ReactAsyncComponentBinding = SourceRange & {
+  capability: string;
+  component: string;
+  declarationStart?: number;
+  name: string;
+};
+
+type ReactCreateElementAlias = SourceRange & {
+  capability: string;
+  declarationStart?: number;
+  name: string;
+};
+
+type ReactNamespaceAlias = SourceRange & {
+  capability: string;
+  declarationStart?: number;
+  name: string;
+};
+
 type FlowResourceAlias = SourceRange & {
   capability: string;
   declarationStart?: number;
@@ -90,6 +109,11 @@ type RunJsAstInspection = {
   }>;
   nestedRunjsCalls: Array<{
     capability: string;
+    index: number;
+  }>;
+  reactAsyncComponentReferences: Array<{
+    capability: string;
+    component: string;
     index: number;
   }>;
 };
@@ -302,6 +326,7 @@ const FORBIDDEN_BARE_GLOBALS = new Set([
   'Function',
   'eval',
   'globalThis',
+  'Intl',
   'process',
   'require',
   'module',
@@ -1317,7 +1342,7 @@ function collectResourceApiErrors(
         path,
         repairClass: 'switch-to-resource-api',
         ruleId: 'runjs-api-resource-call-invalid',
-        message: `flowSurfaces authoring ${path} cannot call ctx.api.resource.${entry.method}(...); use resource APIs or ctx.request(...) for collection access`,
+        message: `flowSurfaces authoring ${path} cannot call ${entry.match}(...); use resource APIs or ctx.request(...) for collection access`,
         modelUse,
         surface,
         index: entry.index,
@@ -1432,6 +1457,24 @@ function collectReactRuntimeErrors(
         repairClass: 'react-runtime-contract-stop',
         ruleId: 'runjs-react-component-call-forbidden',
         message: `flowSurfaces authoring ${path} cannot call React component ${entry.component} as a plain function`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          component: entry.component,
+        },
+      }),
+    );
+  });
+  scan.reactAsyncComponentReferences.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'react-runtime-contract-stop',
+        ruleId: 'runjs-react-async-component-forbidden',
+        message: `flowSurfaces authoring ${path} cannot render async function ${entry.component} as a React component because React receives a Promise`,
         modelUse,
         surface,
         index: entry.index,
@@ -1731,7 +1774,7 @@ function scanJavaScriptSource(source: string, ast?: any) {
     ctxRunjsCalls,
     nestedRunjsCalls: astInspection?.nestedRunjsCalls || ctxRunjsCalls,
     ctxRequestCalls,
-    invalidApiResourceCalls: collectInvalidApiResourceCalls(masked, sourceBindings),
+    invalidApiResourceCalls: collectInvalidApiResourceCalls(source, masked, sourceBindings),
     invalidResourceTypeCalls:
       astInspection?.invalidResourceTypeCalls ||
       collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings, sourceBindings),
@@ -1739,6 +1782,7 @@ function scanJavaScriptSource(source: string, ast?: any) {
     topLevelReactHookCalls: reactHookCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges)),
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
     reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases, sourceBindings),
+    reactAsyncComponentReferences: astInspection?.reactAsyncComponentReferences || [],
     ctxRenderComponentSignatureCalls: collectCtxRenderComponentSignatureCalls(
       source,
       masked,
@@ -1767,41 +1811,58 @@ function scanJavaScriptSource(source: string, ast?: any) {
 function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteralBinding[]): RunJsAstInspection {
   const identifierBindings = collectAstIdentifierBindingsFromAst(ast, source);
   const aliases = collectCtxMethodAliasesFromAst(ast, source, identifierBindings);
+  const reactNamespaceAliases = collectReactNamespaceAliasesFromAst(ast, source, identifierBindings);
+  const reactCreateElementAliases = collectReactCreateElementAliasesFromAst(
+    ast,
+    source,
+    identifierBindings,
+    reactNamespaceAliases,
+  );
+  const asyncComponentBindings = collectReactAsyncComponentBindingsFromAst(ast, source, identifierBindings);
   const staticStringBindings = [...stringBindings, ...collectStaticStringBindingsFromAst(ast, source)];
   const nestedRunjsCalls: RunJsAstInspection['nestedRunjsCalls'] = [];
   const invalidResourceTypeCalls: RunJsAstInspection['invalidResourceTypeCalls'] = [];
+  const reactAsyncComponentReferences: RunJsAstInspection['reactAsyncComponentReferences'] = [];
 
   walkAstSimple(ast, {
     CallExpression(node: any) {
       const method = resolveCtxMethodCall(node, aliases, identifierBindings);
-      if (!method) {
-        return;
+      if (method) {
+        if (method.method === 'runjs') {
+          nestedRunjsCalls.push({
+            capability: method.capability,
+            index: node.start || 0,
+          });
+          return;
+        }
+        if (method.method === 'makeResource' || method.method === 'initResource') {
+          invalidResourceTypeCalls.push(
+            ...collectAstInvalidResourceTypeCall(
+              node,
+              method.method,
+              method.capability,
+              source,
+              staticStringBindings,
+              identifierBindings,
+            ),
+          );
+        }
       }
-      if (method.method === 'runjs') {
-        nestedRunjsCalls.push({
-          capability: method.capability,
-          index: node.start || 0,
-        });
-        return;
-      }
-      if (method.method === 'makeResource' || method.method === 'initResource') {
-        invalidResourceTypeCalls.push(
-          ...collectAstInvalidResourceTypeCall(
-            node,
-            method.method,
-            method.capability,
-            source,
-            staticStringBindings,
-            identifierBindings,
-          ),
-        );
-      }
+      collectAstReactAsyncComponentReferences(
+        node,
+        asyncComponentBindings,
+        reactCreateElementAliases,
+        identifierBindings,
+      ).forEach((entry) => reactAsyncComponentReferences.push(entry));
     },
   });
 
   return {
     invalidResourceTypeCalls: dedupeAstResourceEntries(invalidResourceTypeCalls),
     nestedRunjsCalls: dedupeIndexedEntries(nestedRunjsCalls).sort((left, right) => left.index - right.index),
+    reactAsyncComponentReferences: dedupeIndexedEntries(reactAsyncComponentReferences).sort(
+      (left, right) => left.index - right.index,
+    ),
   };
 }
 
@@ -1851,6 +1912,278 @@ function collectCtxMethodAliasesFromAst(
   });
 
   return aliases;
+}
+
+function collectReactCreateElementAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  namespaceAliases: ReactNamespaceAlias[],
+): ReactCreateElementAlias[] {
+  const aliases: ReactCreateElementAlias[] = [];
+  const addAlias = (name: string, capability: string, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability,
+      name,
+      declarationStart: typeof node.start === 'number' ? node.start : scope.start,
+      start: typeof node.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (node.operator !== '=' || node.left?.type !== 'Identifier') {
+        return;
+      }
+      const capability = getReactCreateElementCapabilityFromAst(node.right, identifierBindings, namespaceAliases);
+      if (capability) {
+        addAlias(node.left.name, capability, node, ancestors);
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      if (node.id?.type === 'Identifier') {
+        const capability = getReactCreateElementCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
+        if (capability) {
+          addAlias(node.id.name, capability, node, ancestors, isVar);
+        }
+        return;
+      }
+      if (
+        node.id?.type === 'ObjectPattern' &&
+        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases)
+      ) {
+        const namespace = getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
+        collectAstObjectPatternAliases(node.id, (name, member, aliasNode) => {
+          if (member === 'createElement') {
+            addAlias(name, `${namespace}.createElement`, aliasNode || node, ancestors, isVar);
+          }
+        });
+      }
+    },
+  });
+
+  return aliases;
+}
+
+function collectReactNamespaceAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): ReactNamespaceAlias[] {
+  const aliases: ReactNamespaceAlias[] = [];
+  const addAlias = (name: string, capability: string, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability,
+      name,
+      declarationStart: typeof node.start === 'number' ? node.start : scope.start,
+      start: typeof node.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (node.operator !== '=' || node.left?.type !== 'Identifier') {
+        return;
+      }
+      const capability = getDirectReactNamespaceCapabilityFromAst(node.right, identifierBindings);
+      if (capability) {
+        addAlias(node.left.name, capability, node, ancestors);
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier') {
+        return;
+      }
+      const capability = getDirectReactNamespaceCapabilityFromAst(node.init, identifierBindings);
+      if (!capability) {
+        return;
+      }
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      addAlias(node.id.name, capability, node, ancestors, declaration?.kind === 'var');
+    },
+  });
+
+  return aliases;
+}
+
+function collectReactAsyncComponentBindingsFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): ReactAsyncComponentBinding[] {
+  const bindings: ReactAsyncComponentBinding[] = [];
+  const addBinding = (name: string, componentNode: any, scope: SourceRange, declarationNode?: any) => {
+    if (!/^[A-Z][\w$]*$/.test(name)) {
+      return;
+    }
+    const declarationStart =
+      typeof declarationNode?.start === 'number'
+        ? declarationNode.start
+        : typeof componentNode?.start === 'number'
+          ? componentNode.start
+          : scope.start;
+    bindings.push({
+      capability: name,
+      component: name,
+      declarationStart,
+      name,
+      start: scope.start,
+      end: scope.end,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    FunctionDeclaration(node: any, ancestors: any[]) {
+      if (!node.async || node.id?.type !== 'Identifier') {
+        return;
+      }
+      const scope = getAstBindingScopeRange(ancestors.slice(0, -1), source.length);
+      addBinding(node.id.name, node.id, scope, node);
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier' || !isAstAsyncFunctionLike(node.init)) {
+        return;
+      }
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const scope = getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var');
+      addBinding(node.id.name, node.id, scope, node);
+    },
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (node.operator !== '=' || node.left?.type !== 'Identifier' || !isAstAsyncFunctionLike(node.right)) {
+        return;
+      }
+      const scope = getAstBindingScopeRange(ancestors, source.length);
+      addBinding(node.left.name, node.left, scope, node);
+    },
+  });
+
+  return bindings;
+}
+
+function collectAstReactAsyncComponentReferences(
+  node: any,
+  asyncComponentBindings: ReactAsyncComponentBinding[],
+  reactCreateElementAliases: ReactCreateElementAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): Array<{ capability: string; component: string; index: number }> {
+  const capability = getReactCreateElementCallCapabilityFromAst(node, reactCreateElementAliases, identifierBindings);
+  if (!capability) {
+    return [];
+  }
+  const component = resolveAstAsyncComponentBinding(node.arguments?.[0], asyncComponentBindings, identifierBindings);
+  return component
+    ? [
+        {
+          capability,
+          component: component.component,
+          index: typeof node.arguments?.[0]?.start === 'number' ? node.arguments[0].start : node.start || 0,
+        },
+      ]
+    : [];
+}
+
+function resolveAstAsyncComponentBinding(
+  node: any,
+  bindings: ReactAsyncComponentBinding[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped || unwrapped.type !== 'Identifier') {
+    return undefined;
+  }
+  return resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, bindings, identifierBindings);
+}
+
+function getReactCreateElementCallCapabilityFromAst(
+  node: any,
+  aliases: ReactCreateElementAlias[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const callee = unwrapAstChainExpression(node.callee);
+  if (callee?.type === 'Identifier') {
+    const alias = resolveAstAliasBinding(callee.name, node.start || 0, aliases, identifierBindings);
+    return alias?.capability || '';
+  }
+  return getReactCreateElementCapabilityFromAst(callee, identifierBindings, []);
+}
+
+function getReactCreateElementCapabilityFromAst(
+  node: any,
+  identifierBindings: AstIdentifierBinding[],
+  namespaceAliases: ReactNamespaceAlias[],
+) {
+  const member = unwrapAstChainExpression(node);
+  if (!member || member.type !== 'MemberExpression') {
+    return '';
+  }
+  const propertyName = getAstStaticPropertyName(member);
+  if (propertyName !== 'createElement') {
+    return '';
+  }
+  const namespace = getReactNamespaceCapabilityFromAst(member.object, identifierBindings, namespaceAliases);
+  return namespace ? `${namespace}.createElement` : '';
+}
+
+function getReactNamespaceCapabilityFromAst(
+  node: any,
+  identifierBindings: AstIdentifierBinding[],
+  aliases: ReactNamespaceAlias[],
+) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return '';
+  }
+  if (unwrapped.type === 'Identifier') {
+    const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
+    const alias = resolveAstAliasBinding(unwrapped.name, index, aliases, identifierBindings);
+    if (alias) {
+      return alias.capability;
+    }
+  }
+  return getDirectReactNamespaceCapabilityFromAst(unwrapped, identifierBindings);
+}
+
+function getDirectReactNamespaceCapabilityFromAst(node: any, identifierBindings: AstIdentifierBinding[]) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return '';
+  }
+  if (unwrapped.type === 'Identifier' && unwrapped.name === 'React') {
+    const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
+    return hasAstActiveBinding('React', index, identifierBindings) ? '' : 'React';
+  }
+  if (unwrapped.type !== 'MemberExpression') {
+    return '';
+  }
+  const propertyName = getAstStaticPropertyName(unwrapped);
+  if (propertyName !== 'React') {
+    return '';
+  }
+  if (isUnshadowedCtxIdentifier(unwrapped.object, identifierBindings)) {
+    return 'ctx.React';
+  }
+  const object = unwrapAstChainExpression(unwrapped.object);
+  if (
+    object?.type === 'MemberExpression' &&
+    getAstStaticPropertyName(object) === 'libs' &&
+    isUnshadowedCtxIdentifier(object.object, identifierBindings)
+  ) {
+    return 'ctx.libs.React';
+  }
+  return '';
+}
+
+function isAstAsyncFunctionLike(node: any) {
+  const unwrapped = unwrapAstChainExpression(node);
+  return (
+    !!unwrapped?.async && (unwrapped.type === 'FunctionExpression' || unwrapped.type === 'ArrowFunctionExpression')
+  );
 }
 
 function collectAstIdentifierBindingsFromAst(ast: any, source: string): AstIdentifierBinding[] {
@@ -3395,8 +3728,9 @@ function collectForbiddenBareGlobals(masked: string, bindings: SourceBinding[]) 
   return entries.sort((left, right) => left.index - right.index);
 }
 
-function collectInvalidApiResourceCalls(masked: string, bindings: SourceBinding[]) {
-  return [
+function collectInvalidApiResourceCalls(source: string, masked: string, bindings: SourceBinding[]) {
+  const resourceMethods = new Set(['list', 'get', 'create', 'update', 'destroy']);
+  const entries = [
     ...masked.matchAll(
       /\bctx\s*(?:\?\.|\.)\s*api\s*(?:\?\.|\.)\s*resource\s*(?:\?\.|\.)\s*(list|get|create|update|destroy)\s*(?:\?\.)?\(/g,
     ),
@@ -3407,6 +3741,55 @@ function collectInvalidApiResourceCalls(masked: string, bindings: SourceBinding[
       match: match[0].replace(/\s*(?:\?\.)?\($/, ''),
       method: match[1],
     }));
+
+  for (const match of masked.matchAll(/\bctx\s*(?:\?\.|\.)\s*api\s*(?:\?\.|\.)\s*resource\s*(?:\?\.)?\(/g)) {
+    const index = match.index || 0;
+    if (isNameBoundAtIndex(bindings, 'ctx', index)) {
+      continue;
+    }
+    const openParen = masked.indexOf('(', index);
+    const closeParen = openParen >= 0 ? findMatchingDelimiter(masked, openParen) : -1;
+    const args = getCallArgumentSources(source, masked, index);
+    if (args.length >= 2) {
+      const method = readCompleteStringLiteral(args[0]?.source || '')?.value;
+      if (method && resourceMethods.has(method)) {
+        entries.push({
+          index,
+          match: `ctx.api.resource('${method}')`,
+          method,
+        });
+      }
+      const resourceName = readCompleteStringLiteral(args[0]?.source || '')?.value;
+      const action = readCompleteStringLiteral(args[1]?.source || '')?.value;
+      if (action && resourceMethods.has(action)) {
+        entries.push({
+          index,
+          match: resourceName
+            ? `ctx.api.resource('${resourceName}', '${action}')`
+            : `ctx.api.resource(..., '${action}')`,
+          method: action,
+        });
+      }
+    }
+    if (closeParen < 0) {
+      continue;
+    }
+    const chainedMethod = masked
+      .slice(closeParen + 1, closeParen + 96)
+      .match(/^\s*(?:\?\.|\.)\s*(list|get|create|update|destroy)\s*(?:\?\.)?\(/);
+    if (!chainedMethod) {
+      continue;
+    }
+    const method = chainedMethod[1];
+    const resourceName = readCompleteStringLiteral(args[0]?.source || '')?.value;
+    entries.push({
+      index,
+      match: resourceName ? `ctx.api.resource('${resourceName}').${method}` : `ctx.api.resource(...).${method}`,
+      method,
+    });
+  }
+
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
 }
 
 function collectInvalidResourceTypeCalls(

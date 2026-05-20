@@ -1178,6 +1178,177 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject unsupported Intl global usage in JS blocks before persisting', async () => {
+    const directErrors = inspectRunJsAuthoringCode({
+      code: [
+        'function fmt(n) {',
+        '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
+        '}',
+        'ctx.render(fmt(123));',
+      ].join('\n'),
+      path: '$.jsBlock.intlNumberFormat.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(directErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-blocked',
+          details: expect.objectContaining({
+            repairClass: 'blocked-global-stop',
+            global: 'Intl',
+          }),
+        }),
+      ]),
+    );
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid Intl dashboard',
+        },
+      },
+      assets: {
+        scripts: {
+          kpis: {
+            code: [
+              'var { Statistic } = ctx.libs.antd;',
+              'function fmt(n) {',
+              '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
+              '}',
+              'ctx.render(ctx.React.createElement(Statistic, { title: "Claims Paid Total", value: 123, formatter: fmt }));',
+            ].join('\n'),
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpis',
+              type: 'jsBlock',
+              script: 'kpis',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-global-blocked',
+          details: expect.objectContaining({
+            repairClass: 'blocked-global-stop',
+            global: 'Intl',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject async functions rendered as React components before persisting', async () => {
+    const code = [
+      'async function DashboardMetrics() {',
+      '  const cards = [',
+      "    { title: 'Active Employer Groups', value: 4 },",
+      "    { title: 'Active Policies', value: 5 },",
+      "    { title: 'Claims Paid Total', value: '$0.00' },",
+      '  ];',
+      '  return ctx.React.createElement(',
+      "    'div',",
+      '    null,',
+      '    cards.map(function(card) {',
+      "      return ctx.React.createElement('div', { key: card.title }, card.title, String(card.value));",
+      '    })',
+      '  );',
+      '}',
+      '',
+      'ctx.render(ctx.React.createElement(DashboardMetrics));',
+    ].join('\n');
+
+    const directErrors = inspectRunJsAuthoringCode({
+      code,
+      path: '$.jsBlock.asyncComponent.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(directErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-async-component-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            component: 'DashboardMetrics',
+          }),
+        }),
+      ]),
+    );
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid async component dashboard',
+        },
+      },
+      assets: {
+        scripts: {
+          kpis: {
+            code,
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpis',
+              type: 'jsBlock',
+              script: 'kpis',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-react-async-component-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            component: 'DashboardMetrics',
+          }),
+        }),
+      ]),
+    );
+
+    const reactAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'const h = React.createElement;',
+        'const DashboardMetrics = async () => React.createElement("div", null, "Metrics");',
+        'ctx.render(h(DashboardMetrics));',
+      ].join('\n'),
+      path: '$.jsBlock.asyncComponentAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(reactAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-async-component-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            capability: 'ctx.React.createElement',
+            component: 'DashboardMetrics',
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should not leak named function or class expression bindings into later authoring RunJS code', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('compose', {
       target: { uid: 'missing-target-never-resolved' },
@@ -2278,13 +2449,167 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       ]),
     );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: "ctx.render(null);\nawait ctx.api.resource('tasks').list({ pageSize: 1 });",
-        path: '$.apiResourceFactory.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const opencodeActionResourceErrors = inspectRunJsAuthoringCode({
+      code: `
+const { Card, Row, Col, Statistic } = ctx.libs.antd;
+
+async function fetchCount(collection, filter) {
+  const res = await ctx.api.resource('list', {
+    resource: collection,
+    params: { filter: filter || {}, pageSize: 1 }
+  });
+  return res.data?.total || 0;
+}
+
+const activeGroups = await fetchCount('employer_groups', { group_status: 'Active' });
+
+ctx.render(
+  <Row gutter={[16, 16]}>
+    <Col span={4}>
+      <Card>
+        <Statistic title="Active Employer Groups" value={activeGroups} />
+      </Card>
+    </Col>
+  </Row>
+);
+`,
+      path: '$.opencodeActionResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(opencodeActionResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('list')",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
+
+    const apiResourceFactoryErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.api.resource('tasks').list({ pageSize: 1 });",
+      path: '$.apiResourceFactory.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(apiResourceFactoryErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('tasks').list",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
+
+    const opencodeActionArgumentResourceErrors = inspectRunJsAuthoringCode({
+      code: `
+var antd = ctx.libs.antd;
+var h = ctx.React.createElement;
+
+var Card = antd.Card;
+var Row = antd.Row;
+var Col = antd.Col;
+var Statistic = antd.Statistic;
+
+function card(title, value) {
+  return h(Card, null, h(Statistic, { title: title, value: value }));
+}
+
+(async function() {
+  var results = await Promise.all([
+    ctx.api.resource('employer_groups', 'list', { filter: { group_status: 'Active' } }),
+    ctx.api.resource('policies', 'list', { filter: { policy_status: 'Active' } }),
+    ctx.api.resource('claims', 'list', {}),
+    ctx.api.resource('reimbursement_requests', 'list', {
+      filter: { request_status: { $in: ['Draft', 'Submitted', 'Under Review'] } }
+    })
+  ]);
+  ctx.render(h(Row, { gutter: [16, 16] },
+    h(Col, { span: 4 }, card('Active Employer Groups', results[0].data.length)),
+    h(Col, { span: 4 }, card('Active Policies', results[1].data.length))
+  ));
+})();
+ctx.render('Loading');
+`,
+      path: '$.opencodeActionArgumentResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(opencodeActionArgumentResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('employer_groups', 'list')",
+            method: 'list',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('claims', 'list')",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
+
+    const opencodeCollectionResourceErrors = inspectRunJsAuthoringCode({
+      code: `
+const React = ctx.React;
+
+function DashboardKPIs() {
+  React.useEffect(function() {
+    async function fetchData() {
+      try {
+        var results = await Promise.all([
+          ctx.api.resource('employer_groups').list({ pageSize: 1, filters: JSON.stringify({ $and: [{ group_status: 'Active' }] }) }),
+          ctx.api.resource('policies').list({ pageSize: 1, filters: JSON.stringify({ $and: [{ policy_status: 'Active' }] }) }),
+          ctx.api.resource('claims').list({ pageSize: 1000 }),
+          ctx.api.resource('reimbursement_requests').list({ pageSize: 1000 }),
+        ]);
+        return results;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchData();
+  }, []);
+  return null;
+}
+
+ctx.render(React.createElement(DashboardKPIs));
+`,
+      path: '$.opencodeCollectionResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(opencodeCollectionResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('employer_groups').list",
+            method: 'list',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('claims').list",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
 
     expect(
       inspectRunJsAuthoringCode({

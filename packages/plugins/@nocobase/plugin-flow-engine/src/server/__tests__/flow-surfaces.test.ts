@@ -7996,7 +7996,7 @@ describe('flowSurfaces resource', () => {
         changes: {
           title: 'Run diagnostics',
           version: '1.0.1',
-          code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+          code: "ctx.message.info('Diagnostics ready');",
         },
       },
     });
@@ -8078,7 +8078,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+      code: "ctx.message.info('Diagnostics ready');",
     });
     expect(jsItemActionReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
