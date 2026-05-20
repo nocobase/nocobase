@@ -368,11 +368,11 @@ export abstract class BaseApplication<
     });
   }
 
-  updateFavicon(favicon?: string) {
+  updateFavicon(favicon?: string | null) {
     let faviconLinkElement = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
 
-    if (favicon) {
-      this.favicon = favicon;
+    if (arguments.length > 0) {
+      this.favicon = favicon || '';
     }
 
     const iconHref = this.favicon || '/favicon/favicon.ico';
