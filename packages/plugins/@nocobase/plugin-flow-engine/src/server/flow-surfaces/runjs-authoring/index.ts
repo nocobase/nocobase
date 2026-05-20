@@ -6467,15 +6467,20 @@ function isResourceLikeCtxRequest(source: string, masked: string, index: number)
   const urlMatch = args.match(/\burl\s*:\s*(['"`])([^'"`]+)\1/i) || args.match(/^\s*(['"`])([^'"`]+)\1\s*$/);
   if (urlMatch) {
     const url = urlMatch[2].trim();
-    if (/^(?:https?:)?\/\//i.test(url) || url.startsWith('/')) {
+    if (/^(?:https?:)?\/\//i.test(url)) {
       return false;
     }
-    if (/^[A-Za-z_$][\w$.-]*:(?:list|get)(?:\b|[/?#])/i.test(url)) {
+    const resourceUrl = url.replace(/^\/api\//i, '').replace(/^\//, '');
+    if (isResourceLikeRequestUrl(resourceUrl)) {
       return true;
     }
     return false;
   }
   return /\b(?:resource|collectionName|collection)\s*:/i.test(args);
+}
+
+function isResourceLikeRequestUrl(url: string) {
+  return /^(?:[A-Za-z_$][\w$.-]*|\$\{[^}]+\}):(?:list|get)(?:\b|[/?#])/i.test(url);
 }
 
 function getResourceLikeCtxRunjsEntrypoint(source: string, masked: string, index: number) {

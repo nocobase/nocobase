@@ -338,7 +338,7 @@ export async function collectFlowSurfaceAuthoringErrors(
   collectDefaultsShapeErrors(values?.defaults, '$.defaults', errors);
   collectDefaultCollectionFieldGroupSemanticErrors(values?.defaults, validationContext, errors);
   collectDefaultFormBehaviorCompletenessErrors(actionName, values, validationContext, errors);
-  collectApplyBlueprintChartAssetErrors(actionName, values, errors);
+  collectApplyBlueprintChartAssetErrors(actionName, values, validationContext, errors);
 
   if (actionName === 'configure') {
     await collectConfigureErrors(values, errors, validationContext);
@@ -498,13 +498,14 @@ function getAuthoringBlocks(actionName: FlowSurfaceAuthoringWriteAction, values:
 function collectApplyBlueprintChartAssetErrors(
   actionName: FlowSurfaceAuthoringWriteAction,
   values: any,
+  context: FlowSurfaceAuthoringValidationContext,
   errors: AuthoringErrorInput[],
 ) {
   if (actionName !== 'applyBlueprint') {
     return;
   }
   const chartAssets = _.isPlainObject(values?.assets?.charts) ? values.assets.charts : {};
-  collectChartAssetRegistryErrors(chartAssets, '$.assets.charts', errors);
+  collectChartAssetRegistryErrors(chartAssets, '$.assets.charts', context, errors);
   _.castArray(values?.tabs || []).forEach((tab, tabIndex) => {
     collectChartAssetBlockListErrors(tab?.blocks, `$.tabs[${tabIndex}].blocks`, chartAssets, errors);
   });
@@ -610,7 +611,12 @@ function collectChartBlockAssetReferenceErrors(
   }
 }
 
-function collectChartAssetRegistryErrors(charts: any, path: string, errors: AuthoringErrorInput[]) {
+function collectChartAssetRegistryErrors(
+  charts: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
   if (!_.isPlainObject(charts)) {
     return;
   }
@@ -624,12 +630,17 @@ function collectChartAssetRegistryErrors(charts: any, path: string, errors: Auth
       });
       return;
     }
-    collectChartAssetQueryErrors(asset, assetPath, errors);
+    collectChartAssetQueryErrors(asset, assetPath, context, errors);
     collectChartAssetVisualErrors(asset, assetPath, errors);
   });
 }
 
-function collectChartAssetQueryErrors(asset: any, path: string, errors: AuthoringErrorInput[]) {
+function collectChartAssetQueryErrors(
+  asset: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
   const query = asset.query;
   if (!_.isPlainObject(query)) {
     pushAuthoringError(errors, {
@@ -655,10 +666,15 @@ function collectChartAssetQueryErrors(asset: any, path: string, errors: Authorin
     collectSqlChartAssetQueryErrors(query, path, errors);
     return;
   }
-  collectBuilderChartAssetQueryErrors(query, path, errors);
+  collectBuilderChartAssetQueryErrors(query, path, context, errors);
 }
 
-function collectBuilderChartAssetQueryErrors(query: any, path: string, errors: AuthoringErrorInput[]) {
+function collectBuilderChartAssetQueryErrors(
+  query: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
   const resource = _.isPlainObject(query.resource) ? query.resource : null;
   if (!String(resource?.collectionName || '').trim()) {
     pushAuthoringError(errors, {
@@ -681,6 +697,113 @@ function collectBuilderChartAssetQueryErrors(query: any, path: string, errors: A
     'chart-builder-query-forbidden-keys',
     errors,
   );
+  collectBuilderChartAssetFieldErrors(query, path, context, errors);
+}
+
+function normalizeChartAssetFieldPath(input: any) {
+  if (Array.isArray(input)) {
+    return input
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .join('.');
+  }
+  return String(input || '').trim();
+}
+
+function collectBuilderChartAssetFieldErrors(
+  query: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  const resource = _.isPlainObject(query.resource) ? query.resource : null;
+  const collectionName = String(resource?.collectionName || '').trim();
+  if (!collectionName || typeof context.getCollection !== 'function') {
+    return;
+  }
+  const dataSourceKey = String(resource?.dataSourceKey || 'main').trim() || 'main';
+  const collection = context.getCollection(dataSourceKey, collectionName);
+  if (!collection) {
+    return;
+  }
+
+  const selections = [
+    ..._.castArray(query.measures || []).map((selection, index) => ({
+      selection,
+      fieldPath: `${path}.query.measures[${index}].field`,
+    })),
+    ..._.castArray(query.dimensions || []).map((selection, index) => ({
+      selection,
+      fieldPath: `${path}.query.dimensions[${index}].field`,
+    })),
+  ];
+
+  for (const item of selections) {
+    if (!_.isPlainObject(item.selection)) {
+      continue;
+    }
+    const fieldPath = normalizeChartAssetFieldPath(item.selection.field);
+    if (!fieldPath) {
+      continue;
+    }
+    const field = resolveFieldFromCollection(collection, fieldPath);
+    if (!field) {
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-field-unknown',
+        message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
+        details: {
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+        },
+      });
+      continue;
+    }
+    if (!fieldPath.includes('.') && isAssociationField(field)) {
+      const suggestion = resolveChartBuilderAssociationSubfieldSuggestion(
+        fieldPath,
+        field,
+        dataSourceKey,
+        context.getCollection,
+      );
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-association-field-requires-subfield',
+        message: `flowSurfaces authoring ${item.fieldPath} references association field '${fieldPath}' directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
+        details: {
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+          ...suggestion,
+        },
+      });
+    }
+  }
+}
+
+function resolveChartBuilderAssociationSubfieldSuggestion(
+  fieldPath: string,
+  field: any,
+  dataSourceKey: string,
+  getCollection: (dataSourceKey: string, collectionName: string) => any,
+) {
+  try {
+    const resolved = resolveAssociationSafeTitleField(field, dataSourceKey, getCollection, { fieldPath });
+    const titleField = resolved?.fieldName ? String(resolved.fieldName).trim() : '';
+    if (titleField) {
+      return {
+        suggestedFieldPath: `${fieldPath}.${titleField}`,
+        suggestedTitleField: titleField,
+        targetCollectionName: getCollectionName(resolved?.targetCollection) || undefined,
+      };
+    }
+  } catch {
+    // Fall back to generic guidance; the title-field validator reports exact title-field problems elsewhere.
+  }
+  return {
+    suggestedFieldPath: `${fieldPath}.<field>`,
+  };
 }
 
 function collectSqlChartAssetQueryErrors(query: any, path: string, errors: AuthoringErrorInput[]) {

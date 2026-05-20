@@ -14588,6 +14588,8 @@ export class FlowSurfacesService {
       return;
     }
 
+    this.validateBuilderChartFieldsForRuntime('updateSettings', configure);
+
     const state = deriveChartSemanticState(configure);
     if (state.query?.mode !== 'sql') {
       return;
@@ -14615,6 +14617,87 @@ export class FlowSurfacesService {
         );
       }
     }
+  }
+
+  private normalizeChartSelectionFieldPath(input: any) {
+    if (Array.isArray(input)) {
+      return input
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .join('.');
+    }
+    return String(input || '').trim();
+  }
+
+  private validateBuilderChartFieldsForRuntime(actionName: string, configure: any) {
+    const resourceInit = getChartBuilderResourceInit(configure);
+    if (!resourceInit?.collectionName) {
+      return;
+    }
+    const dataSourceKey = resourceInit.dataSourceKey || 'main';
+    const collectionName = resourceInit.collectionName;
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    if (!collection) {
+      return;
+    }
+
+    const state = deriveChartSemanticState(configure);
+    if (state.query?.mode !== 'builder') {
+      return;
+    }
+
+    const selections = [
+      ..._.castArray(state.query.measures || []).map((selection, index) => ({
+        selection,
+        path: `chart query.measures[${index}].field`,
+      })),
+      ..._.castArray(state.query.dimensions || []).map((selection, index) => ({
+        selection,
+        path: `chart query.dimensions[${index}].field`,
+      })),
+    ];
+
+    for (const item of selections) {
+      const fieldPath = this.normalizeChartSelectionFieldPath(item.selection?.field);
+      if (!fieldPath) {
+        continue;
+      }
+      const parsed = this.parseFieldPath(collection, fieldPath, undefined, dataSourceKey, collectionName);
+      const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+      if (!field) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
+        );
+      }
+      if (!fieldPath.includes('.') && isAssociationField(field)) {
+        const suggestion = this.resolveBuilderChartAssociationSubfieldSuggestion(fieldPath, field, dataSourceKey);
+        throwBadRequest(
+          `flowSurfaces ${actionName} ${item.path} '${fieldPath}' references an association field directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
+        );
+      }
+    }
+  }
+
+  private resolveBuilderChartAssociationSubfieldSuggestion(fieldPath: string, field: any, dataSourceKey: string) {
+    try {
+      const resolved = resolveAssociationSafeTitleField(
+        field,
+        dataSourceKey,
+        (targetDataSourceKey, targetCollectionName) => this.getCollection(targetDataSourceKey, targetCollectionName),
+        { fieldPath },
+      );
+      const titleField = String(resolved?.fieldName || '').trim();
+      if (titleField) {
+        return {
+          suggestedFieldPath: `${fieldPath}.${titleField}`,
+        };
+      }
+    } catch {
+      // Fall through to generic guidance; title-field validation reports exact metadata problems elsewhere.
+    }
+    return {
+      suggestedFieldPath: `${fieldPath}.<field>`,
+    };
   }
 
   private stripChartSqlForInspection(sql: string) {

@@ -145,6 +145,57 @@ describe('flowSurfaces chart write paths', () => {
     expect(readErrorMessage(invalidRes)).toContain('must reference the same collection');
   });
 
+  it('should reject direct association fields in builder chart updateSettings writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart association field update page',
+      tabTitle: 'Chart association field update tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(readErrorMessage(updateRes)).toContain("chart query.dimensions[0].field 'department'");
+    expect(readErrorMessage(updateRes)).toContain('references an association field directly');
+    expect(readErrorMessage(updateRes)).toContain("'department.title'");
+  });
+
   it('should allow configure to clear stale builder sorting with an explicit empty array', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart clear sorting page',

@@ -2271,6 +2271,122 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject builder chart assets that use association fields directly', async () => {
+    const employerGroupsCollection = {
+      dataSourceKey: 'main',
+      name: 'employer_groups',
+      getFields: () => [
+        {
+          name: 'title',
+          type: 'string',
+          interface: 'input',
+        },
+      ],
+      getField: (name: string) =>
+        name === 'title'
+          ? {
+              name: 'title',
+              type: 'string',
+              interface: 'input',
+            }
+          : null,
+    };
+    const claimsCollection = {
+      dataSourceKey: 'main',
+      name: 'claims',
+      getField: (name: string) => {
+        if (name === 'id') {
+          return {
+            name: 'id',
+            type: 'bigInt',
+            interface: 'id',
+          };
+        }
+        if (name === 'employer_group') {
+          return {
+            name: 'employer_group',
+            type: 'belongsTo',
+            interface: 'm2o',
+            target: 'employer_groups',
+            targetCollection: employerGroupsCollection,
+            isAssociationField: () => true,
+          };
+        }
+        return null;
+      },
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid association chart',
+          },
+        },
+        assets: {
+          charts: {
+            employerGroupChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'claims',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'claimCount' }],
+                dimensions: [{ field: 'employer_group' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'employer_group',
+                  y: 'claimCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employerGroupChart',
+                type: 'chart',
+                chart: 'employerGroupChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'claims'
+            ? claimsCollection
+            : collectionName === 'employer_groups'
+              ? employerGroupsCollection
+              : null,
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.employerGroupChart.query.dimensions[0].field',
+          ruleId: 'chart-builder-query-association-field-requires-subfield',
+          message: expect.stringContaining("'employer_group.title'"),
+          details: expect.objectContaining({
+            suggestedFieldPath: 'employer_group.title',
+            suggestedTitleField: 'title',
+            targetCollectionName: 'employer_groups',
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should validate configure popup and hidden popup RunJS recursively', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors(
       'configure',
@@ -2363,6 +2479,30 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       modelUse: 'JSBlockModel',
     });
     expect(apiCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+    const absoluteApiCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.request({ url: '/api/tasks:list?pageSize=1', skipNotify: true });",
+      path: '$.absoluteApiCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(absoluteApiCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+    const dynamicCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.request({ url: `${collectionName}:list`, method: 'get' });",
+      path: '$.dynamicCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(dynamicCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+    const dynamicAbsoluteApiCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.request({ url: `/api/${collectionName}:list?pageSize=1`, skipNotify: true });",
+      path: '$.dynamicAbsoluteApiCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(dynamicAbsoluteApiCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
       'switch-to-resource-api',
     );
 
