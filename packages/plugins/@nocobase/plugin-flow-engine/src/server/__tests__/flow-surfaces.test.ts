@@ -416,7 +416,7 @@ describe('flowSurfaces resource', () => {
     );
     expect(tabCatalog.blocks.find((item: any) => item.use === 'FormBlockModel')).toBeUndefined();
     expect(tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.createSupported).toBe(false);
-    expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(false);
+    expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(true);
     expect(tabCatalog.node.configureOptions).toMatchObject({
       title: {
         type: 'string',

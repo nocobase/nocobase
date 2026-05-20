@@ -39,6 +39,7 @@ const FILTER_TARGET_BLOCK_USES = new Set([
   'ChartBlockModel',
   'MapBlockModel',
   'CommentsBlockModel',
+  'RecordHistoryBlockModel',
 ]);
 const DETAILS_CARD_BLOCK_USES = new Set(['ListBlockModel', 'GridCardBlockModel', 'KanbanBlockModel']);
 const DETAILS_CARD_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel', 'KanbanCardItemModel']);

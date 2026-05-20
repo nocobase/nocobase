@@ -1525,6 +1525,40 @@ COMMENTS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   },
 });
 
+const RECORD_HISTORY_BLOCK_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: [],
+  stepParams: ['resourceSettings', 'recordHistorySettings', 'cardSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['click'],
+  },
+});
+RECORD_HISTORY_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  resourceSettings: {
+    allowedPaths: ['init.dataSourceKey', 'init.collectionName'],
+    eventBindingSteps: [],
+    pathSchemas: {
+      'init.dataSourceKey': STRING_SCHEMA,
+      'init.collectionName': STRING_SCHEMA,
+    },
+  },
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
+  recordHistorySettings: {
+    allowedPaths: ['sortOrder.order', 'dataScope.filter', 'expand.expand', 'template.apply', 'recordId.recordId'],
+    clearable: true,
+    eventBindingSteps: [],
+    pathSchemas: {
+      'sortOrder.order': STRING_SCHEMA,
+      'dataScope.filter': FILTER_GROUP_SCHEMA,
+      'expand.expand': BOOLEAN_SCHEMA,
+      'template.apply': STRING_SCHEMA,
+      'recordId.recordId': STRING_SCHEMA,
+    },
+  },
+});
+
 const ACTION_COLUMN_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'tooltip', 'width', 'fixed'],
@@ -2678,6 +2712,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ActionPanelBlockModel', ACTION_PANEL_BLOCK_CONTRACT],
   ['MapBlockModel', MAP_BLOCK_CONTRACT],
   ['CommentsBlockModel', COMMENTS_BLOCK_CONTRACT],
+  ['RecordHistoryBlockModel', RECORD_HISTORY_BLOCK_CONTRACT],
   ['TableActionsColumnModel', ACTION_COLUMN_CONTRACT],
   ['FormItemModel', FORM_ITEM_CONTRACT],
   ['FormAssociationItemModel', DETAILS_ITEM_CONTRACT],
@@ -3253,6 +3288,7 @@ const COLLECTION_RESOURCE_REQUIRED = new Set([
   'GridCardBlockModel',
   'MapBlockModel',
   'CommentsBlockModel',
+  'RecordHistoryBlockModel',
   ...APPROVAL_FORM_BLOCK_USES,
   ...APPROVAL_DETAILS_BLOCK_USES,
 ]);

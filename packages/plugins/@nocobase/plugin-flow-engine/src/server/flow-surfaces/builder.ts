@@ -577,6 +577,15 @@ export function buildBlockTree(options: {
         popupSettings: eventPopupSettings,
       }),
     };
+  } else if (use === 'CommentsBlockModel') {
+    model.subModels = {
+      items: [
+        {
+          uid: uid(),
+          use: 'CommentItemModel',
+        },
+      ],
+    };
   }
 
   return assignClientKeysToUids(model, {});

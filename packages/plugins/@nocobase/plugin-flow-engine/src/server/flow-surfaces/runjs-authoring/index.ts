@@ -302,6 +302,7 @@ const PUBLIC_BLOCK_TYPE_BY_MODEL_USE: Record<string, string> = {
   ChartBlockModel: 'chart',
   MapBlockModel: 'map',
   CommentsBlockModel: 'comments',
+  RecordHistoryBlockModel: 'recordHistory',
   JSBlockModel: 'jsBlock',
   MarkdownBlockModel: 'markdown',
   IframeBlockModel: 'iframe',

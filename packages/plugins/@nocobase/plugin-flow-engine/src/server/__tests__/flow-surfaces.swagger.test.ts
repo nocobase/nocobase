@@ -643,6 +643,8 @@ describe('flowSurfaces swagger', () => {
       'markdown',
       'iframe',
       'chart',
+      'comments',
+      'recordHistory',
       'actionPanel',
       'jsBlock',
       'tree',
@@ -1426,7 +1428,15 @@ describe('flowSurfaces swagger', () => {
       collectionName: 'departments',
     });
     expect(schemas.FlowSurfaceAddBlockRequest.properties.type.enum).toEqual(
-      expect.arrayContaining(['markdown', 'actionPanel', 'jsBlock', 'approvalInitiator', 'approvalInformation']),
+      expect.arrayContaining([
+        'markdown',
+        'comments',
+        'recordHistory',
+        'actionPanel',
+        'jsBlock',
+        'approvalInitiator',
+        'approvalInformation',
+      ]),
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',

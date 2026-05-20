@@ -428,8 +428,19 @@ const MAP_OPTIONS: FlowSurfaceConfigureOptions = {
 const COMMENTS_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_HEADER_OPTIONS,
   resource: COMMON_RESOURCE,
-  pageSize: numberOption('Page size', { example: 20 }),
+  pageSize: numberOption('Page size', { enum: [5, 10, 20, 50, 100, 200], example: 20 }),
   dataScope: FILTER_GROUP,
+};
+
+const RECORD_HISTORY_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  resource: COMMON_RESOURCE,
+  sortOrder: objectOption('History sort order', { example: { order: 'desc' } }),
+  dataScope: FILTER_GROUP,
+  expand: objectOption('Expansion state', { example: { expand: true } }),
+  template: objectOption('Record-history template binding. Only { apply: "current" } is public.', {
+    example: { apply: 'current' },
+  }),
 };
 
 const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -910,6 +921,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       break;
     case 'CommentsBlockModel':
       options = cloneOptions(COMMENTS_OPTIONS);
+      break;
+    case 'RecordHistoryBlockModel':
+      options = cloneOptions(RECORD_HISTORY_OPTIONS);
       break;
     case 'JSBlockModel':
       options = cloneOptions(JS_BLOCK_OPTIONS);

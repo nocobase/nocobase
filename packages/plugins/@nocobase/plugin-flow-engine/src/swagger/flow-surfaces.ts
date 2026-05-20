@@ -121,6 +121,8 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'markdown',
   'iframe',
   'chart',
+  'comments',
+  'recordHistory',
   'actionPanel',
   'jsBlock',
   'tree',
