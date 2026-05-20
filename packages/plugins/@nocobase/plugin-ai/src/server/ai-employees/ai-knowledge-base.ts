@@ -67,7 +67,7 @@ export class KnowledgeBaseManager {
           [
             {
               key: 'vectorStoreConfigKey',
-              value: vectorStoreConfig.vectorStoreConfigKey,
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
             },
           ],
         );
@@ -81,23 +81,20 @@ export class KnowledgeBaseManager {
         });
         queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'READONLY') {
-        for (const knowledgeBase of knowledgeBaseList) {
-          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-            vectorStoreConfig.vectorStoreProvider,
-            [
-              ...knowledgeBase.vectorStoreProps,
-              {
-                key: 'vectorStoreConfigKey',
-                value: vectorStoreConfig.vectorStoreConfigKey,
-              },
-            ],
-          );
-          const result = await vectorStoreService.search(query, {
-            topK,
-            score,
-          });
-          queryResult = [...queryResult, ...result];
-        }
+        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+          vectorStoreConfig.vectorStoreProvider,
+          [
+            {
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
+            },
+          ],
+        );
+        const result = await vectorStoreService.search(query, {
+          topK,
+          score,
+        });
+        queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'EXTERNAL') {
         for (const knowledgeBase of knowledgeBaseList) {
           const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
