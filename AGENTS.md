@@ -10,6 +10,7 @@ If a file `AGENTS.local.md` exists in this repository root, read it once at the 
 
 - New plugins live under `packages/plugins/@nocobase/plugin-<name>/`. Reuse the existing plugin scaffold; do not invent a new layout.
 - This repo has two client runtimes: legacy v1 (`src/client/`, `@nocobase/client`, `SchemaComponent`) and v2 (`src/client-v2/`, `@nocobase/client-v2`, `FlowEngine` / `FlowModel`). Confirm which runtime the file under edit belongs to before writing code. Import direction is one-way: v1 client may import from v2 (`@nocobase/client-v2`), but v2 client must never import from v1 (`@nocobase/client`).
+- Pro (not open source) plugins live in individual repositories under `packages/plugins` or `packages/pro-plugins` (for example, `@nocobase/plugin-workflow-approval`), but used not as submodules. When working on a pro plugin, clone its repo separately under `packages/plugins/` or `packages/pro-plugins/` and treat it as a standalone project with git.
 
 ## Code Style Rules
 
@@ -23,6 +24,16 @@ If a file `AGENTS.local.md` exists in this repository root, read it once at the 
 ## Database & Migrations
 
 - Any change to database tables, columns, or indexes must ship with a migration under the plugin's `src/server/migrations/`. Import column types from `DataTypes`; do not reuse type names from neighboring migrations without verifying they still apply.
+- New collections (tables), columns, indexes will be automatically synced to database when running the command `yarn nocobase upgrade` (will also run in docker container when start). So no need to create migration files in these cases.
+
+## Testing Rules
+
+- Run single test file: `yarn test <path-to-test-file>`
+  - Client example: `yarn test packages/core/flow-engine/src/__tests__/flow-engine.test.ts --run --reporter=verbose`
+  - Server example: `yarn test packages/core/server/src/__tests__/Application.test.ts`
+- Always run related test files after modifying source code to ensure no regressions.
+- Co-locate unit and integration tests in `__tests__` directories, naming files `*.test.ts` or `*.spec.ts`.
+- Do NOT run server tests parallelly; they may interfere with each other. Use `yarn test` to run them sequentially.
 
 ## Internationalization (i18n)
 
@@ -35,9 +46,3 @@ If a file `AGENTS.local.md` exists in this repository root, read it once at the 
 ## Commit Conventions
 
 - Commit messages follow Conventional Commits, prefixed with the affected scope: `fix(plugin-workflow): ...`, `feat(client): ...`, `chore: ...`, `docs: ...`.
-
-## Testing Rules
-
-- Run single test file: `yarn test <path-to-test-file> --run --reporter=verbose`
-  - Example: `yarn test packages/core/flow-engine/src/__tests__/flow-engine.test.ts --run --reporter=verbose`
-- Always run related test files after modifying source code to ensure no regressions.
