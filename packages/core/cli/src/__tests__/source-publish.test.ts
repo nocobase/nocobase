@@ -49,9 +49,9 @@ beforeEach(() => {
     host: '127.0.0.1',
     port: 4873,
     url: 'http://127.0.0.1:4873',
-    rootDir: '/tmp/nb-home/verdaccio',
-    configPath: '/tmp/nb-home/verdaccio/config.yaml',
-    storageDir: '/tmp/nb-home/verdaccio/storage',
+    rootDir: '/tmp/nb-home/.nocobase/verdaccio',
+    configPath: '/tmp/nb-home/.nocobase/verdaccio/config.yaml',
+    storageDir: '/tmp/nb-home/.nocobase/verdaccio/storage',
     status: 'running',
   });
   mocks.commandOutput.mockImplementation(async (_command: string, args: string[]) => {

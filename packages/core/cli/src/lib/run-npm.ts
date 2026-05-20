@@ -70,17 +70,11 @@ export function resolveProjectCwd(cwd?: string): string {
   if (hasExplicitInput && !isDirectory(fallback)) {
     throw new Error(`The specified --cwd is not a directory: ${fallback}`);
   }
-  const isAbsoluteInput = typeof normalizedCwd === 'string' && path.isAbsolute(normalizedCwd);
-  let current = isAbsoluteInput ? fallback : process.cwd();
+  let current = hasExplicitInput ? fallback : process.cwd();
 
   while (true) {
-    const candidate = isAbsoluteInput
-      ? current
-      : normalizedCwd
-        ? path.resolve(current, normalizedCwd)
-        : current;
-    if (hasLocalNocoBaseBinary(candidate)) {
-      return candidate;
+    if (hasLocalNocoBaseBinary(current)) {
+      return current;
     }
 
     const parent = path.dirname(current);

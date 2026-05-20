@@ -40,6 +40,12 @@ beforeEach(() => {
   });
 });
 
+test('source publish defaults build-dts to false', async () => {
+  const { default: SourcePublish } = await import('../commands/source/publish.js');
+
+  expect(SourcePublish.flags['build-dts'].default).toBe(false);
+});
+
 test('source publish maps build flags to publish options', async () => {
   const { default: SourcePublish } = await import('../commands/source/publish.js');
 

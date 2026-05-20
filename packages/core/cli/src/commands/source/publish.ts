@@ -60,7 +60,7 @@ export default class SourcePublish extends Command {
     }),
     'build-dts': Flags.boolean({
       description: 'Generate TypeScript declaration files during the source build',
-      default: true,
+      default: false,
     }),
     json: Flags.boolean({
       description: 'Print the publish result as JSON',
