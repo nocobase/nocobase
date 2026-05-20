@@ -8,15 +8,13 @@
  */
 
 import { CaretRightOutlined, EditOutlined, ExpandOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import type { ThemeConfig } from '@nocobase/client';
-import { StablePopover } from '@nocobase/client';
 import { Button, Checkbox, Collapse, ConfigProvider, InputNumber, Switch, Tooltip, Typography, Input } from 'antd';
 import seed from 'antd/es/theme/themes/seed';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDebouncyFn } from 'use-debouncy';
-import { MutableTheme } from '../../../types';
+import { MutableTheme, ThemeConfig } from '../interface';
 import ColorPanel from '../ColorPanel';
 import IconSwitch from '../IconSwitch';
 import type { ThemeCode } from '../hooks/useControlledTheme';
@@ -25,6 +23,7 @@ import { CompactTheme, DarkTheme, Light, Pick } from '../icons';
 import type { SelectedToken } from '../interface';
 import { useLocale } from '../locale';
 import type { TokenCategory, TokenGroup } from '../meta/interface';
+import { StablePopover } from '../StablePopover';
 import getDesignToken from '../utils/getDesignToken';
 import makeStyle from '../utils/makeStyle';
 import InputNumberPlus from './InputNumberPlus';
