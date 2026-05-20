@@ -85,7 +85,7 @@ export const executionSchema = {
           params: {
             pageSize: 20,
             sort: ['-id'],
-            except: ['context', 'output', 'stack'],
+            except: ['context', 'output', 'stack', 'runtime'],
             filter: {},
           },
         },

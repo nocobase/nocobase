@@ -81,6 +81,10 @@ export default {
       name: 'context',
     },
     {
+      type: 'json',
+      name: 'runtime',
+    },
+    {
       type: 'integer',
       name: 'status',
       interface: 'select',

@@ -17,6 +17,7 @@ export default class ExecutionModel extends Model {
   declare id: number;
   declare title: string;
   declare context: any;
+  declare runtime: any;
   declare status: number;
   declare dispatched: boolean;
 
