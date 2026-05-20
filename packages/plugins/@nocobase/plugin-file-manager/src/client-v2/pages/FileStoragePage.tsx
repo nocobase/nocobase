@@ -175,6 +175,7 @@ export default function FileStoragePage() {
     (mode: 'create' | 'edit', storageType: StorageType, record?: StorageRecord) => {
       ctx.viewer.drawer({
         width: '50%',
+        closable: true,
         content: () => (
           <StorageFormView mode={mode} storageType={storageType} record={record} onSubmitted={() => refresh()} />
         ),

@@ -251,6 +251,7 @@ export default function AuthenticatorsPage() {
   const openForm = useMemoizedFn((mode: 'create' | 'edit', authType: string, record?: AuthenticatorRecord) => {
     ctx.viewer.drawer({
       width: '50%',
+      closable: true,
       content: () => (
         <AuthenticatorFormView
           mode={mode}

@@ -125,6 +125,7 @@ export class ChangePasswordItemModel extends UserCenterActionItemModel {
   async onClick() {
     this.context.viewer.drawer({
       width: '50%',
+      closable: true,
       content: () => <ChangePasswordDrawerContent />,
     });
   }

@@ -225,6 +225,7 @@ export default function VerifiersPage() {
   const openForm = useMemoizedFn((mode: 'create' | 'edit', verificationType: string, record?: VerifierRecord) => {
     ctx.viewer.drawer({
       width: '50%',
+      closable: true,
       content: () => (
         <VerifierFormView
           mode={mode}
