@@ -658,7 +658,7 @@ If information is missing, clearly state it in the summary.</Important>`;
           [
             {
               key: 'vectorStoreConfigKey',
-              value: vectorStoreConfig.vectorStoreConfigKey,
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
             },
           ],
         );
@@ -672,23 +672,20 @@ If information is missing, clearly state it in the summary.</Important>`;
         });
         queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'READONLY') {
-        for (const knowledgeBase of knowledgeBaseList) {
-          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-            vectorStoreConfig.vectorStoreProvider,
-            [
-              ...knowledgeBase.vectorStoreProps,
-              {
-                key: 'vectorStoreConfigKey',
-                value: vectorStoreConfig.vectorStoreConfigKey,
-              },
-            ],
-          );
-          const result = await vectorStoreService.search(queryString, {
-            topK,
-            score,
-          });
-          queryResult = [...queryResult, ...result];
-        }
+        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+          vectorStoreConfig.vectorStoreProvider,
+          [
+            {
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
+            },
+          ],
+        );
+        const result = await vectorStoreService.search(queryString, {
+          topK,
+          score,
+        });
+        queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'EXTERNAL') {
         for (const knowledgeBase of knowledgeBaseList) {
           const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
