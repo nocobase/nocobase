@@ -80,8 +80,9 @@ const ThemeEditorPanel = (props: ThemeEditorPanelProps) => {
 
   const restoreTheme = useCallback(() => {
     setGlobalTheme(settingThemeRef.current || defaultTheme);
+    setCurrentSettingTheme(null);
     setCurrentEditingTheme(null as any);
-  }, [setCurrentEditingTheme, setGlobalTheme]);
+  }, [setCurrentEditingTheme, setCurrentSettingTheme, setGlobalTheme]);
 
   const closeEditor = useCallback(async () => {
     restoreTheme();
