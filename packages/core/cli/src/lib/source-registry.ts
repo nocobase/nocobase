@@ -10,7 +10,7 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { commandOutput, commandSucceeds, resolveCwd, resolveProjectCwd, run } from './run-npm.js';
-import { resolveCliHomeRoot } from './cli-home.js';
+import { resolveCliHomeDir } from './cli-home.js';
 
 export const DEFAULT_SOURCE_REGISTRY_HOST = '127.0.0.1';
 export const DEFAULT_SOURCE_REGISTRY_PORT = 4873;
@@ -51,7 +51,7 @@ function asPosixPathForDockerMount(value: string): string {
 }
 
 export function resolveSourceRegistryRootDir(): string {
-  return path.join(resolveCliHomeRoot(), 'verdaccio');
+  return path.join(resolveCliHomeDir(), 'verdaccio');
 }
 
 export function resolveSourceRegistryConfigPath(): string {

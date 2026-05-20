@@ -60,6 +60,7 @@ test('resolveProjectCwd walks up parent directories to find a NocoBase project r
   const projectRoot = path.join(dir, 'app2', 'source');
   const nestedCwd = path.join(projectRoot, 'packages', 'core', 'cli');
   const marker = path.join(projectRoot, 'node_modules', '.bin', 'nocobase-v1');
+  const relativeProjectPath = path.relative(nestedCwd, projectRoot);
 
   try {
     await fsp.mkdir(path.dirname(marker), { recursive: true });
@@ -72,11 +73,42 @@ test('resolveProjectCwd walks up parent directories to find a NocoBase project r
     });
 
     expect(resolveProjectCwd()).toBe(projectRoot);
-    expect(resolveProjectCwd('./app2/source')).toBe(projectRoot);
+    expect(resolveProjectCwd(relativeProjectPath)).toBe(projectRoot);
     expect(resolveProjectCwd(nestedCwd)).toBe(projectRoot);
     expect(resolveProjectCwd('')).toBe(projectRoot);
     expect(resolveProjectCwd('   ')).toBe(projectRoot);
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }
+});
+
+test('resolveProjectCwd keeps an explicit relative cwd anchored to its resolved path', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-project-relative-'));
+  const outsideCwd = path.join(dir, 'workspace');
+  const projectRoot = path.join(dir, 'app2', 'source');
+  const nestedCwd = path.join(projectRoot, 'packages', 'core', 'cli');
+  const marker = path.join(projectRoot, 'node_modules', '.bin', 'nocobase-v1');
+  const relativeNestedPath = path.relative(outsideCwd, nestedCwd);
+
+  try {
+    await fsp.mkdir(path.dirname(marker), { recursive: true });
+    await fsp.mkdir(outsideCwd, { recursive: true });
+    await fsp.mkdir(nestedCwd, { recursive: true });
+    await fsp.writeFile(marker, '');
+
+    vi.stubGlobal('process', {
+      ...process,
+      cwd: vi.fn(() => outsideCwd),
+    });
+
+    expect(resolveProjectCwd(relativeNestedPath)).toBe(projectRoot);
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('resolveProjectCwd explains when an explicit cwd does not exist', () => {
+  expect(() => resolveProjectCwd('/tmp/nocobase-cli-missing-project-root')).toThrow(
+    'The specified --cwd does not exist: /tmp/nocobase-cli-missing-project-root',
+  );
 });
