@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import {
+  BACKUP_CREATE_TIMEOUT_MS,
   BACKUP_POLL_INTERVAL_MS,
   BACKUP_RUNTIME_COMMANDS,
   buildBackupEnvArgv,
@@ -43,6 +44,13 @@ type BackupCreateResult = {
   name: string;
   output: string;
 };
+
+function formatBackupCreateTimeoutError(envName: string, name: string) {
+  return [
+    `Backup "${name}" did not finish in time for "${envName}".`,
+    `Waited ${Math.floor(BACKUP_CREATE_TIMEOUT_MS / 1000)}s but it still reports \`inProgress: true\`.`,
+  ].join(' ');
+}
 
 function readBackupCreateResult(response: BackupCreateResponse) {
   const name = String(response.data?.name ?? '').trim();
@@ -152,7 +160,13 @@ export default class BackupCreate extends Command {
       let pending = inProgress;
 
       while (pending) {
-        const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+        const now = Date.now();
+        const elapsedMs = now - startedAt;
+        if (elapsedMs >= BACKUP_CREATE_TIMEOUT_MS) {
+          throw new Error(formatBackupCreateTimeoutError(envName, name));
+        }
+
+        const elapsedSeconds = Math.max(1, Math.floor(elapsedMs / 1000));
         if (!jsonOutput) {
           updateTask(`Waiting for backup "${name}" to finish for "${envName}"... (${elapsedSeconds}s elapsed)`);
         }

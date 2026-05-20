@@ -338,6 +338,10 @@ test('backup create supports --json-output and suppresses progress text', async 
 
     await BackupCreate.prototype.run.call(command);
 
+    expect(mocks.updateEnvRuntime).toHaveBeenCalledWith(expect.objectContaining({
+      envName: 'e2e',
+      quiet: true,
+    }));
     expect(mocks.announceTargetEnv).not.toHaveBeenCalled();
     expect(mocks.startTask).not.toHaveBeenCalled();
     expect(mocks.updateTask).not.toHaveBeenCalled();
@@ -350,6 +354,42 @@ test('backup create supports --json-output and suppresses progress text', async 
       output: path.join(cwd, 'json-backup.nbdata'),
     });
   } finally {
+    cwdSpy.mockRestore();
+    restoreTty();
+  }
+});
+
+test('backup create times out when the remote backup never finishes', async () => {
+  const restoreTty = setTerminalInteractivity(true);
+  const cwd = createTempDir('nocobase-cli-backup-timeout-');
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+  const dateNowSpy = vi.spyOn(Date, 'now');
+
+  try {
+    const { BACKUP_CREATE_TIMEOUT_MS } = await import('../lib/backup.js');
+    const { default: BackupCreate } = await import('../commands/backup/create.js');
+
+    mocks.commandOutput.mockResolvedValueOnce(JSON.stringify({
+      data: {
+        name: 'stuck.nbdata',
+        inProgress: true,
+      },
+    }));
+
+    dateNowSpy.mockReturnValueOnce(0);
+    dateNowSpy.mockReturnValueOnce(BACKUP_CREATE_TIMEOUT_MS + 1);
+
+    const command = createCommandHarness({
+      flags: {},
+    });
+
+    await expect(BackupCreate.prototype.run.call(command)).rejects.toThrow(
+      /Backup "stuck\.nbdata" did not finish in time for "local"\. Waited 600s but it still reports `inProgress: true`\./,
+    );
+    expect(mocks.commandOutput).toHaveBeenCalledTimes(1);
+    expect(mocks.failTask).toHaveBeenCalledWith('Failed to create backup for "local".');
+  } finally {
+    dateNowSpy.mockRestore();
     cwdSpy.mockRestore();
     restoreTty();
   }

@@ -25,6 +25,7 @@ const CLI_CONFIG_FILE = path.join(CLI_PACKAGE_ROOT, 'nocobase-ctl.config.json');
 const CLI_ENTRY_FILE = path.join(CLI_PACKAGE_ROOT, 'bin', 'run.js');
 
 export const BACKUP_POLL_INTERVAL_MS = 2_000;
+export const BACKUP_CREATE_TIMEOUT_MS = 600_000;
 
 export const BACKUP_RUNTIME_COMMANDS = {
   create: 'backup create',
@@ -116,6 +117,7 @@ export async function ensureBackupRuntimeCommands(params: {
       envName: params.envName,
       scope,
       configFile: CLI_CONFIG_FILE,
+      quiet: params.quiet,
     });
 
     if (!hasRequiredBackupCommands(runtime, params.commandIds)) {
