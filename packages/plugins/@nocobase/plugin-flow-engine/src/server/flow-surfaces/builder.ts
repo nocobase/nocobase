@@ -136,6 +136,11 @@ const CALENDAR_READONLY_ACTION_MODEL_USES = new Set([
   'CalendarTitleActionModel',
   'CalendarViewSelectActionModel',
 ]);
+const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
+const AI_EMPLOYEE_DEFAULT_STYLE = {
+  size: 40,
+  mask: false,
+};
 
 function resolveModelStepParamsOrLegacyObject(
   model: FlowSurfaceNodeSpec,
@@ -914,6 +919,15 @@ function buildActionDefaults(options: {
   containerUse?: string;
   resourceInit?: Record<string, any>;
 }): FlowSurfaceNodeDefaults {
+  if (options.use === AI_EMPLOYEE_ACTION_USE) {
+    return {
+      props: {
+        style: _.cloneDeep(AI_EMPLOYEE_DEFAULT_STYLE),
+      },
+      stepParams: {},
+    };
+  }
+
   const approvalDefaults = buildApprovalActionDefaults(options.use);
   const readonlyCalendarAction = CALENDAR_READONLY_ACTION_MODEL_USES.has(options.use);
   const props = _.merge(

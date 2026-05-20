@@ -120,6 +120,8 @@ const DEFAULT_DIRECT_EVENTS = ['beforeRender'];
 const ACTION_DIRECT_EVENTS = ['click', 'beforeRender'];
 const ACTION_OBJECT_EVENTS = ['click'];
 const GRID_LAYOUT_CAPABILITIES: FlowSurfaceLayoutCapabilities = { supported: true };
+const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
+const AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN = '@nocobase/plugin-ai';
 const RUN_JS_ALLOWED_PATHS = ['runJs.code', 'runJs.version'];
 const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.mode',
@@ -2541,6 +2543,18 @@ JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   jsSettings: RUN_JS_SETTINGS_GROUP,
 });
 
+const AI_EMPLOYEE_ACTION_CONTRACT = createContract({
+  editableDomains: ['props'],
+  props: ['aiEmployee', 'context', 'auto', 'tasks', 'style'],
+});
+AI_EMPLOYEE_ACTION_CONTRACT.domains.props = keyedDomain(['aiEmployee', 'context', 'auto', 'tasks', 'style'], 'deep', {
+  aiEmployee: OBJECT_SCHEMA,
+  context: OBJECT_SCHEMA,
+  auto: BOOLEAN_SCHEMA,
+  tasks: ARRAY_SCHEMA,
+  style: OBJECT_SCHEMA,
+});
+
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['labelWidth', 'labelWrap'],
@@ -2775,6 +2789,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
   ['JSItemActionModel', JS_ITEM_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
+  [AI_EMPLOYEE_ACTION_USE, AI_EMPLOYEE_ACTION_CONTRACT],
   ['ApplyFormSubmitModel', APPROVAL_ACTION_CONTRACT],
   ['ApplyFormSaveDraftModel', APPROVAL_ACTION_CONTRACT],
   ['ApplyFormWithdrawModel', APPROVAL_ACTION_CONTRACT],
@@ -3591,6 +3606,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     createSupported: true,
   },
   {
+    publicKey: 'aiEmployee',
+    label: 'AI employee',
+    scope: 'block',
+    scene: 'collection',
+    use: AI_EMPLOYEE_ACTION_USE,
+    ownerPlugin: AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
     publicKey: 'duplicate',
     label: 'Duplicate',
     scope: 'record',
@@ -3711,6 +3736,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     createSupported: true,
   },
   {
+    publicKey: 'aiEmployee',
+    label: 'AI employee',
+    scope: 'record',
+    scene: 'record',
+    use: AI_EMPLOYEE_ACTION_USE,
+    ownerPlugin: AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
     publicKey: 'submit',
     label: 'Submit',
     scope: 'form',
@@ -3747,6 +3782,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'form',
     use: 'FormTriggerWorkflowActionModel',
     ownerPlugin: '@nocobase/plugin-workflow-custom-action-trigger',
+    allowedContainerUses: FORM_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'aiEmployee',
+    label: 'AI employee',
+    scope: 'form',
+    scene: 'form',
+    use: AI_EMPLOYEE_ACTION_USE,
+    ownerPlugin: AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },

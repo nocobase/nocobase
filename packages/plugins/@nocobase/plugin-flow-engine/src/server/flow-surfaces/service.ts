@@ -467,7 +467,16 @@ type FlowSurfacePopupSaveAsTemplate = {
 
 type FlowSurfacePopupTemplateAliasSession = Map<string, string>;
 type FlowSurfaceDefaultActionSettings = Record<string, any>;
+type FlowSurfaceRequestRoles = readonly string[] | string;
 type FlowSurfaceModelPatchOptions = { transaction?: any };
+type FlowSurfaceRuntimeOptions = {
+  transaction?: any;
+  currentRoles?: FlowSurfaceRequestRoles;
+  enabledPackages?: ReadonlySet<string>;
+  popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+  popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+  skipGeneratedLayoutSingleColumnErrors?: boolean;
+};
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
@@ -924,6 +933,20 @@ type FlowSurfacePopupTemplateTreeInfo = {
 };
 
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
+const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
+const AI_EMPLOYEE_OWNER_PLUGIN = '@nocobase/plugin-ai';
+const AI_EMPLOYEE_PUBLIC_SETTING_KEYS = ['username', 'auto', 'workContext', 'tasks', 'style'];
+const AI_EMPLOYEE_INTERNAL_PROP_KEYS = ['aiEmployee', 'context', 'auto', 'tasks', 'style'];
+const AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS = ['type', 'uid', 'target'];
+const AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS = ['title', 'message', 'autoSend', 'skillSettings', 'model', 'webSearch'];
+const AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS = ['system', 'user', 'workContext'];
+const AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS = ['llmService', 'model'];
+const AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS = ['skills', 'tools', 'skillsVersion', 'toolsVersion'];
+const AI_EMPLOYEE_STYLE_PUBLIC_KEYS = ['size', 'mask'];
+const AI_EMPLOYEE_DEFAULT_STYLE = {
+  size: 40,
+  mask: false,
+};
 
 function normalizeCalendarFieldCapabilityValues(source: any, defaults: readonly string[]) {
   const rawValues = Array.isArray(source)
@@ -3793,13 +3816,7 @@ export class FlowSurfacesService {
     }
   }
 
-  private buildPlanningRuntimeDeps(
-    options: {
-      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
-      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
-      skipGeneratedLayoutSingleColumnErrors?: boolean;
-    } = {},
-  ) {
+  private buildPlanningRuntimeDeps(options: FlowSurfaceRuntimeOptions = {}) {
     return {
       normalizeGetTarget: (value: any) => this.normalizeGetTarget(value),
       resolveLocator: (target: FlowSurfaceReadLocator, resolveOptions?: { transaction?: any }) =>
@@ -3847,6 +3864,7 @@ export class FlowSurfacesService {
     payload: Record<string, any>,
     transaction?: any,
     options: {
+      currentRoles?: FlowSurfaceRequestRoles;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipGeneratedLayoutSingleColumnErrors?: boolean;
@@ -3854,6 +3872,7 @@ export class FlowSurfacesService {
   ) {
     const actionOptions = {
       transaction,
+      currentRoles: options.currentRoles,
       popupTemplateAliasSession: options.popupTemplateAliasSession,
       popupTemplateTreeCache: options.popupTemplateTreeCache,
       skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
@@ -4502,7 +4521,10 @@ export class FlowSurfacesService {
     });
   }
 
-  async applyBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
+  async applyBlueprint(
+    values: Record<string, any>,
+    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
+  ) {
     if (options.transaction) {
       const createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
       const cleanupCreatedKanbanSortFields = async (transaction?: any) => {
@@ -4539,7 +4561,7 @@ export class FlowSurfacesService {
 
   private async applyBlueprintWithTransaction(
     values: Record<string, any>,
-    options: { transaction?: any } = {},
+    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
     createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
@@ -4562,6 +4584,7 @@ export class FlowSurfacesService {
         },
       },
       this.buildPlanningRuntimeDeps({
+        currentRoles: options.currentRoles,
         popupTemplateAliasSession,
         popupTemplateTreeCache,
         skipGeneratedLayoutSingleColumnErrors: true,
@@ -6581,6 +6604,7 @@ export class FlowSurfacesService {
     values: FlowSurfaceComposeValues,
     options: {
       transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
       enabledPackages?: ReadonlySet<string>;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
@@ -6717,6 +6741,8 @@ export class FlowSurfacesService {
         await this.applyInlineNodeSettings(actionName, targetUid, settings, runtimeOptions);
       },
       resolveBlockSettings: (settings, state, block) => this.resolveComposeBlockSettings(settings, state.keyMap, block),
+      resolveActionSettings: (settings, state, block, action, actionName) =>
+        this.resolveComposeActionSettings(settings, state.keyMap, block, action, actionName),
       createField: async (payload) =>
         this.addField(payload, {
           ...runtimeOptions,
@@ -6811,6 +6837,7 @@ export class FlowSurfacesService {
     values: FlowSurfaceConfigureValues,
     options: {
       transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipConfigureGeneratedDefaultPopup?: boolean;
     } = {},
@@ -9029,6 +9056,7 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: {
       transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
       enabledPackages?: ReadonlySet<string>;
       autoCompleteDefaultPopup?: boolean;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
@@ -9094,11 +9122,20 @@ export class FlowSurfacesService {
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
       : null;
+    const aiEmployeeProps = this.isAIEmployeeActionUse(actionCatalogItem.use)
+      ? await this.normalizeAIEmployeeActionPublicSettings('addAction', inlineSettings || {}, {
+          transaction: options.transaction,
+          enabledPackages,
+          requireUsername: true,
+          currentRoles: options.currentRoles,
+          selfUid: container.ownerUid,
+        })
+      : undefined;
     const action = buildActionTree({
       use: actionCatalogItem.use,
       containerUse: container.ownerUse,
       resourceInit: values.resourceInit || resourceContext?.resourceInit,
-      props: values.props,
+      props: aiEmployeeProps || values.props,
       decoratorProps: values.decoratorProps,
       stepParams: values.stepParams,
       flowRegistry: values.flowRegistry,
@@ -9113,7 +9150,9 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
-    await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
+    if (!this.isAIEmployeeActionUse(actionCatalogItem.use)) {
+      await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
+    }
     await this.applyInlineActionPopup('addAction', created, inlinePopup, {
       ...options,
       enabledPackages,
@@ -9138,6 +9177,7 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: {
       transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
       enabledPackages?: ReadonlySet<string>;
       autoCompleteDefaultPopup?: boolean;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
@@ -9181,11 +9221,20 @@ export class FlowSurfacesService {
     const resourceInit = this.isAddChildCatalogItem(actionCatalogItem)
       ? await this.resolveAddChildResourceInitForOwnerNode(container.ownerNode, options.transaction)
       : values.resourceInit || resourceContext?.resourceInit;
+    const aiEmployeeProps = this.isAIEmployeeActionUse(actionCatalogItem.use)
+      ? await this.normalizeAIEmployeeActionPublicSettings('addRecordAction', inlineSettings || {}, {
+          transaction: options.transaction,
+          enabledPackages,
+          requireUsername: true,
+          currentRoles: options.currentRoles,
+          selfUid: container.ownerUid,
+        })
+      : undefined;
     const action = buildActionTree({
       use: actionCatalogItem.use,
       containerUse: container.containerUse,
       resourceInit,
-      props: values.props,
+      props: aiEmployeeProps || values.props,
       decoratorProps: values.decoratorProps,
       stepParams: values.stepParams,
       flowRegistry: values.flowRegistry,
@@ -9200,7 +9249,9 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
-    await this.applyInlineNodeSettings('addRecordAction', created, inlineSettings, options);
+    if (!this.isAIEmployeeActionUse(actionCatalogItem.use)) {
+      await this.applyInlineNodeSettings('addRecordAction', created, inlineSettings, options);
+    }
     await this.applyInlineActionPopup('addRecordAction', created, inlinePopup, {
       ...options,
       enabledPackages,
@@ -9276,22 +9327,24 @@ export class FlowSurfacesService {
     });
   }
 
-  async addActions(values: Record<string, any>) {
+  async addActions(values: Record<string, any>, options: { currentRoles?: FlowSurfaceRequestRoles } = {}) {
     return this.runBatchCreate({
       actionName: 'addActions',
       values,
       itemField: 'actions',
       resultField: 'actions',
+      currentRoles: options.currentRoles,
       invoke: (itemValues, options) => this.addAction(itemValues, options),
     });
   }
 
-  async addRecordActions(values: Record<string, any>) {
+  async addRecordActions(values: Record<string, any>, options: { currentRoles?: FlowSurfaceRequestRoles } = {}) {
     return this.runBatchCreate({
       actionName: 'addRecordActions',
       values,
       itemField: 'recordActions',
       resultField: 'recordActions',
+      currentRoles: options.currentRoles,
       invoke: (itemValues, options) => this.addRecordAction(itemValues, options),
     });
   }
@@ -11609,6 +11662,22 @@ export class FlowSurfacesService {
     return resolvedSettings;
   }
 
+  private resolveComposeActionSettings(
+    settings: FlowSurfaceComposeObject,
+    keyMap: Record<string, FlowSurfaceComposeTargetKey | undefined>,
+    block: FlowSurfaceComposeRuntimeBlockState,
+    action: { type?: string },
+    actionName: string,
+  ) {
+    if (action?.type !== 'aiEmployee') {
+      return settings;
+    }
+    return this.normalizeAIEmployeeActionSettingsReferences(actionName, settings as Record<string, any>, {
+      selfUid: block?.result?.uid,
+      keyMap,
+    });
+  }
+
   private async applyInlineFieldPopup(
     actionName: string,
     result: FlowSurfaceAddFieldResult,
@@ -13528,6 +13597,7 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: {
       transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
       replaceChartCardSettings?: boolean;
       replacePopupStepParamSubtrees?: boolean;
       openViewActionName?: string;
@@ -13535,6 +13605,8 @@ export class FlowSurfacesService {
       popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipHiddenPopupHostEnsure?: boolean;
+      enabledPackages?: ReadonlySet<string>;
+      allowAIEmployeeInternalProps?: boolean;
       replaceRecordHistorySettings?: boolean;
     } = {},
   ) {
@@ -13543,6 +13615,27 @@ export class FlowSurfacesService {
     const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const normalizedValues = _.cloneDeep(values || {});
+    if (this.isAIEmployeeActionUse(current?.use) && !options.allowAIEmployeeInternalProps) {
+      this.assertNoAIEmployeeInternalPropSettings('updateSettings', normalizedValues);
+    }
+    if (this.isAIEmployeeActionUse(current?.use) && this.hasAIEmployeePublicSettings(normalizedValues)) {
+      const enabledPackages = await this.resolveEnabledPluginPackages(options);
+      const aiEmployeeProps = await this.normalizeAIEmployeeActionPublicSettings(
+        'updateSettings',
+        _.pick(normalizedValues, AI_EMPLOYEE_PUBLIC_SETTING_KEYS),
+        {
+          transaction: options.transaction,
+          enabledPackages,
+          current,
+          currentRoles: options.currentRoles,
+          selfUid: await this.resolveAIEmployeeActionSelfUid(current, options.transaction),
+        },
+      );
+      AI_EMPLOYEE_PUBLIC_SETTING_KEYS.forEach((key) => {
+        delete normalizedValues[key];
+      });
+      normalizedValues.props = _.merge({}, normalizedValues.props || {}, aiEmployeeProps);
+    }
     assertNoFlowSurfaceIdTitleFieldSettings(normalizedValues, {
       action: 'updateSettings',
       titleFieldErrorOptions: this.resolveRelationTitleFieldErrorOptionsForNode(current),
@@ -15521,13 +15614,11 @@ export class FlowSurfacesService {
     op: FlowSurfaceMutateOp,
     resolvedValues: Record<string, any>,
     ctx: FlowSurfaceExecutorContext,
-    runtimeOptions: {
-      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
-      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
-    } = {},
+    runtimeOptions: FlowSurfaceRuntimeOptions = {},
   ) {
     const options = {
       transaction: ctx.transaction,
+      currentRoles: runtimeOptions.currentRoles,
       popupTemplateAliasSession: runtimeOptions.popupTemplateAliasSession,
       popupTemplateTreeCache: runtimeOptions.popupTemplateTreeCache,
     };
@@ -17022,9 +17113,10 @@ export class FlowSurfacesService {
     values: Record<string, any>;
     itemField: string;
     resultField: string;
+    currentRoles?: FlowSurfaceRequestRoles;
     invoke: (
       itemValues: Record<string, any>,
-      options: { transaction?: any; enabledPackages?: ReadonlySet<string> },
+      options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; enabledPackages?: ReadonlySet<string> },
     ) => Promise<any>;
   }) {
     const target = this.normalizeWriteTarget(options.actionName, options.values?.target, options.values);
@@ -17067,6 +17159,7 @@ export class FlowSurfacesService {
         result.result = await this.transaction((transaction) =>
           options.invoke(itemValues, {
             transaction,
+            currentRoles: options.currentRoles,
             enabledPackages,
           }),
         );
@@ -20593,12 +20686,584 @@ export class FlowSurfacesService {
     });
   }
 
+  private isAIEmployeeActionUse(use?: string) {
+    return String(use || '').trim() === AI_EMPLOYEE_ACTION_USE;
+  }
+
+  private hasAIEmployeePublicSettings(settings: any) {
+    return (
+      _.isPlainObject(settings) &&
+      AI_EMPLOYEE_PUBLIC_SETTING_KEYS.some((key) => Object.prototype.hasOwnProperty.call(settings, key))
+    );
+  }
+
+  private assertOnlyAIEmployeePublicSettings(actionName: string, settings: Record<string, any>) {
+    const unsupportedKeys = Object.keys(settings || {}).filter((key) => !AI_EMPLOYEE_PUBLIC_SETTING_KEYS.includes(key));
+    if (unsupportedKeys.length) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} AI employee settings do not support keys: ${unsupportedKeys.join(', ')}`,
+      );
+    }
+  }
+
+  private assertOnlyAIEmployeeNestedPublicSettings(
+    actionName: string,
+    path: string,
+    value: Record<string, any>,
+    allowedKeys: readonly string[],
+  ) {
+    const unsupportedKeys = Object.keys(value || {}).filter((key) => !allowedKeys.includes(key));
+    if (!unsupportedKeys.length) {
+      return;
+    }
+    throwBadRequest(`flowSurfaces ${actionName} ${path} does not support key '${unsupportedKeys[0]}'`);
+  }
+
+  private assertNoAIEmployeeInternalPropSettings(actionName: string, values: Record<string, any>) {
+    const props = values?.props;
+    if (!_.isPlainObject(props)) {
+      return;
+    }
+    const unsupportedKeys = AI_EMPLOYEE_INTERNAL_PROP_KEYS.filter((key) =>
+      Object.prototype.hasOwnProperty.call(props, key),
+    );
+    if (!unsupportedKeys.length) {
+      return;
+    }
+    throwBadRequest(
+      `flowSurfaces ${actionName} AI employee action does not accept raw props.${unsupportedKeys.join(
+        ', props.',
+      )}; use top-level username, auto, workContext, tasks or style instead`,
+    );
+  }
+
+  private assertAIEmployeePluginEnabled(actionName: string, enabledPackages: ReadonlySet<string>) {
+    if (!enabledPackages.has(AI_EMPLOYEE_OWNER_PLUGIN)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} action 'aiEmployee' is not available in the current app instance because plugin '${AI_EMPLOYEE_OWNER_PLUGIN}' is not enabled`,
+      );
+    }
+  }
+
+  private readRecordPlainObject(record: any) {
+    if (!record) {
+      return null;
+    }
+    if (typeof record.toJSON === 'function') {
+      return record.toJSON();
+    }
+    if (typeof record.get === 'function') {
+      try {
+        return record.get({ plain: true });
+      } catch (error) {
+        return record.get();
+      }
+    }
+    return record;
+  }
+
+  private readRecordField(record: any, field: string) {
+    return record?.get?.(field) ?? record?.[field];
+  }
+
+  private normalizeFlowSurfaceRequestRoles(currentRoles?: FlowSurfaceRequestRoles) {
+    return _.castArray(currentRoles || [])
+      .map((role) => String(role || '').trim())
+      .filter(Boolean);
+  }
+
+  private async assertRequestRolesCanUseAIEmployeeUsername(
+    actionName: string,
+    username: string,
+    options: {
+      currentRoles?: FlowSurfaceRequestRoles;
+      transaction?: any;
+    },
+  ) {
+    const currentRoles = this.normalizeFlowSurfaceRequestRoles(options.currentRoles);
+    if (!currentRoles.length || currentRoles.includes('root')) {
+      return;
+    }
+    if (!this.db.getCollection('rolesAiEmployees')) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} action 'aiEmployee' cannot validate role visibility because collection 'rolesAiEmployees' is unavailable; enable plugin '${AI_EMPLOYEE_OWNER_PLUGIN}' first`,
+      );
+    }
+    const grants = await this.db.getRepository('rolesAiEmployees').find({
+      filter: {
+        roleName: currentRoles,
+        aiEmployee: username,
+      },
+      transaction: options.transaction,
+    });
+    if (!_.castArray(grants).length) {
+      throwBadRequest(`flowSurfaces ${actionName} AI employee username '${username}' is not visible to current roles`);
+    }
+  }
+
+  private async assertVisibleAIEmployeeUsername(
+    actionName: string,
+    username: string,
+    options: {
+      currentRoles?: FlowSurfaceRequestRoles;
+      transaction?: any;
+    } = {},
+  ) {
+    if (!this.db.getCollection('aiEmployees')) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} action 'aiEmployee' cannot validate username because collection 'aiEmployees' is unavailable; enable plugin '${AI_EMPLOYEE_OWNER_PLUGIN}' first`,
+      );
+    }
+    const record = await this.db.getRepository('aiEmployees').findOne({
+      filter: {
+        username,
+      },
+      transaction: options.transaction,
+    });
+    if (!record) {
+      throwBadRequest(`flowSurfaces ${actionName} AI employee username '${username}' does not exist`);
+    }
+    const plain = this.readRecordPlainObject(record) || {};
+    const enabled = this.readRecordField(record, 'enabled') ?? plain.enabled;
+    const deprecated = this.readRecordField(record, 'deprecated') ?? plain.deprecated;
+    const category = this.readRecordField(record, 'category') ?? plain.category;
+    if (enabled === false || deprecated === true || category === 'developer') {
+      throwBadRequest(`flowSurfaces ${actionName} AI employee username '${username}' is not visible`);
+    }
+    await this.assertRequestRolesCanUseAIEmployeeUsername(actionName, username, options);
+  }
+
+  private normalizeAIEmployeeUsername(actionName: string, value: any) {
+    const username = typeof value === 'string' ? value.trim() : '';
+    if (!username) {
+      throwBadRequest(`flowSurfaces ${actionName} AI employee settings.username must be a non-empty string`);
+    }
+    return username;
+  }
+
+  private assertAIEmployeeWorkContextType(actionName: string, itemPath: string, item: Record<string, any>) {
+    if (String(item.type || '').trim() !== 'flow-model') {
+      throwBadRequest(`flowSurfaces ${actionName} ${itemPath}.type must be 'flow-model'`);
+    }
+  }
+
+  private normalizeAIEmployeeWorkContext(
+    actionName: string,
+    value: any,
+    options: {
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      path: string;
+    },
+  ) {
+    if (_.isUndefined(value) || value === null) {
+      return [];
+    }
+    if (!Array.isArray(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${options.path} must be an array`);
+    }
+    return value.map((item, index) => {
+      const itemPath = `${options.path}[${index}]`;
+      if (!_.isPlainObject(item)) {
+        throwBadRequest(`flowSurfaces ${actionName} ${itemPath} must be an object`);
+      }
+      this.assertOnlyAIEmployeeNestedPublicSettings(
+        actionName,
+        itemPath,
+        item as Record<string, any>,
+        AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS,
+      );
+      this.assertAIEmployeeWorkContextType(actionName, itemPath, item as Record<string, any>);
+      if (Object.prototype.hasOwnProperty.call(item, 'target') && typeof (item as any).target !== 'string') {
+        throwBadRequest(`flowSurfaces ${actionName} ${itemPath}.target must be 'self' or a string block key`);
+      }
+      const hasTarget = Object.prototype.hasOwnProperty.call(item, 'target');
+      const target = hasTarget ? (item as any).target.trim() : '';
+      if (hasTarget && !target) {
+        throwBadRequest(`flowSurfaces ${actionName} ${itemPath}.target must be 'self' or a string block key`);
+      }
+      const uidValue = typeof (item as any).uid === 'string' ? (item as any).uid.trim() : '';
+      if (!target) {
+        if (!uidValue) {
+          throwBadRequest(`flowSurfaces ${actionName} ${itemPath} requires uid or target`);
+        }
+        return {
+          type: 'flow-model',
+          uid: uidValue,
+        };
+      }
+      let uidValueFromTarget: string | undefined;
+      if (target === 'self') {
+        uidValueFromTarget = options.selfUid;
+      } else if (options.keyMap) {
+        uidValueFromTarget = resolveComposeTargetKey(target, options.keyMap, 'AI employee workContext');
+      } else {
+        throwBadRequest(
+          `flowSurfaces ${actionName} ${itemPath}.target only supports 'self' in localized writes; pass uid for existing Flow Model context`,
+        );
+      }
+      if (!uidValueFromTarget) {
+        throwBadRequest(`flowSurfaces ${actionName} ${itemPath}.target could not resolve a Flow Model uid`);
+      }
+      return {
+        type: 'flow-model',
+        uid: uidValueFromTarget,
+      };
+    });
+  }
+
+  private normalizeAIEmployeeTaskModel(actionName: string, path: string, value: any) {
+    if (_.isUndefined(value) || value === null) {
+      return value;
+    }
+    if (!_.isPlainObject(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path} must be an object or null`);
+    }
+    this.assertOnlyAIEmployeeNestedPublicSettings(
+      actionName,
+      path,
+      value as Record<string, any>,
+      AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS,
+    );
+    const llmService = typeof value.llmService === 'string' ? value.llmService.trim() : '';
+    const model = typeof value.model === 'string' ? value.model.trim() : '';
+    if (!llmService || !model) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path} requires non-empty llmService and model`);
+    }
+    return {
+      ..._.cloneDeep(value),
+      llmService,
+      model,
+    };
+  }
+
+  private normalizeAIEmployeeSkillSettings(actionName: string, path: string, value: any) {
+    if (_.isUndefined(value) || value === null) {
+      return value;
+    }
+    if (!_.isPlainObject(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path} must be an object or null`);
+    }
+    this.assertOnlyAIEmployeeNestedPublicSettings(
+      actionName,
+      path,
+      value as Record<string, any>,
+      AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS,
+    );
+    const next = _.cloneDeep(value);
+    if (Object.prototype.hasOwnProperty.call(next, 'skills') && !Array.isArray(next.skills)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.skills must be an array`);
+    }
+    if (Object.prototype.hasOwnProperty.call(next, 'tools') && !Array.isArray(next.tools)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.tools must be an array`);
+    }
+    if (Object.prototype.hasOwnProperty.call(next, 'skillsVersion') && typeof next.skillsVersion !== 'number') {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.skillsVersion must be a number`);
+    }
+    if (Object.prototype.hasOwnProperty.call(next, 'toolsVersion') && typeof next.toolsVersion !== 'number') {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.toolsVersion must be a number`);
+    }
+    return next;
+  }
+
+  private normalizeAIEmployeeTaskMessage(
+    actionName: string,
+    path: string,
+    value: any,
+    existing: any,
+    options: {
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+    },
+  ) {
+    if (!_.isPlainObject(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path} must be an object`);
+    }
+    this.assertOnlyAIEmployeeNestedPublicSettings(
+      actionName,
+      path,
+      value as Record<string, any>,
+      AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS,
+    );
+    const nextMessage = _.pick(
+      _.isPlainObject(existing) ? _.cloneDeep(existing) : {},
+      AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS,
+    );
+    if (Object.prototype.hasOwnProperty.call(value, 'system')) {
+      nextMessage.system = value.system;
+    }
+    if (Object.prototype.hasOwnProperty.call(value, 'user')) {
+      nextMessage.user = value.user;
+    }
+    if (Object.prototype.hasOwnProperty.call(nextMessage, 'system') && typeof nextMessage.system !== 'string') {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.system must be a string`);
+    }
+    if (Object.prototype.hasOwnProperty.call(nextMessage, 'user') && typeof nextMessage.user !== 'string') {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.user must be a string`);
+    }
+    if (Object.prototype.hasOwnProperty.call(value, 'workContext')) {
+      nextMessage.workContext = this.normalizeAIEmployeeWorkContext(actionName, value.workContext, {
+        selfUid: options.selfUid,
+        keyMap: options.keyMap,
+        path: `${path}.workContext`,
+      });
+    }
+    return nextMessage;
+  }
+
+  private normalizeAIEmployeeTaskPatch(
+    actionName: string,
+    patch: any,
+    existing: any,
+    options: {
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      path: string;
+    },
+  ) {
+    if (!_.isPlainObject(patch)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${options.path} must be an object`);
+    }
+    const next = _.pick(_.isPlainObject(existing) ? _.cloneDeep(existing) : {}, AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
+    Object.entries(patch).forEach(([key, value]) => {
+      if (!AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS.includes(key)) {
+        throwBadRequest(`flowSurfaces ${actionName} ${options.path} does not support key '${key}'`);
+      }
+      if (key === 'message') {
+        next.message = this.normalizeAIEmployeeTaskMessage(actionName, `${options.path}.message`, value, next.message, {
+          selfUid: options.selfUid,
+          keyMap: options.keyMap,
+        });
+        return;
+      }
+      if (key === 'title') {
+        if (typeof value !== 'string') {
+          throwBadRequest(`flowSurfaces ${actionName} ${options.path}.title must be a string`);
+        }
+        next.title = value;
+        return;
+      }
+      if (key === 'autoSend' || key === 'webSearch') {
+        if (typeof value !== 'boolean') {
+          throwBadRequest(`flowSurfaces ${actionName} ${options.path}.${key} must be a boolean`);
+        }
+        next[key] = value;
+        return;
+      }
+      if (key === 'model') {
+        next.model = this.normalizeAIEmployeeTaskModel(actionName, `${options.path}.model`, value);
+        return;
+      }
+      if (key === 'skillSettings') {
+        const normalizedSkillSettings = this.normalizeAIEmployeeSkillSettings(
+          actionName,
+          `${options.path}.skillSettings`,
+          value,
+        );
+        next.skillSettings =
+          normalizedSkillSettings && _.isPlainObject(normalizedSkillSettings)
+            ? {
+                ...(_.isPlainObject(next.skillSettings) ? _.cloneDeep(next.skillSettings) : {}),
+                ...normalizedSkillSettings,
+              }
+            : normalizedSkillSettings;
+        return;
+      }
+    });
+    if (!_.isPlainObject(next.message)) {
+      next.message = {};
+    }
+    return next;
+  }
+
+  private normalizeAIEmployeeTasks(
+    actionName: string,
+    value: any,
+    currentTasks: any,
+    options: {
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      path: string;
+    },
+  ) {
+    if (_.isUndefined(value) || value === null) {
+      return [];
+    }
+    if (!Array.isArray(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${options.path} must be an array`);
+    }
+    if (!value.length) {
+      return [];
+    }
+    const existingTasks = Array.isArray(currentTasks) ? _.cloneDeep(currentTasks) : [];
+    const nextTasks = [...existingTasks];
+    value.forEach((task, index) => {
+      nextTasks[index] = this.normalizeAIEmployeeTaskPatch(actionName, task, existingTasks[index], {
+        selfUid: options.selfUid,
+        keyMap: options.keyMap,
+        path: `${options.path}[${index}]`,
+      });
+    });
+    return nextTasks;
+  }
+
+  private normalizeAIEmployeeActionSettingsReferences(
+    actionName: string,
+    settings: Record<string, any>,
+    options: {
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      currentRoles?: FlowSurfaceRequestRoles;
+    },
+  ) {
+    if (!this.hasAIEmployeePublicSettings(settings)) {
+      return settings;
+    }
+    const nextSettings = _.cloneDeep(settings || {});
+    if (Object.prototype.hasOwnProperty.call(nextSettings, 'workContext')) {
+      nextSettings.workContext = this.normalizeAIEmployeeWorkContext(actionName, nextSettings.workContext, {
+        ...options,
+        path: 'settings.workContext',
+      });
+    }
+    if (Object.prototype.hasOwnProperty.call(nextSettings, 'tasks')) {
+      nextSettings.tasks = this.normalizeAIEmployeeTasks(actionName, nextSettings.tasks, [], {
+        ...options,
+        path: 'settings.tasks',
+      });
+    }
+    return nextSettings;
+  }
+
+  private async normalizeAIEmployeeActionPublicSettings(
+    actionName: string,
+    settings: Record<string, any>,
+    options: {
+      transaction?: any;
+      enabledPackages: ReadonlySet<string>;
+      current?: any;
+      requireUsername?: boolean;
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      currentRoles?: FlowSurfaceRequestRoles;
+    },
+  ) {
+    this.assertAIEmployeePluginEnabled(actionName, options.enabledPackages);
+    if (!_.isPlainObject(settings)) {
+      throwBadRequest(`flowSurfaces ${actionName} AI employee settings must be an object`);
+    }
+    this.assertOnlyAIEmployeePublicSettings(actionName, settings);
+    const currentProps = _.isPlainObject(options.current?.props) ? options.current.props : {};
+    const hasUsername = Object.prototype.hasOwnProperty.call(settings, 'username');
+    const effectiveUsername = hasUsername
+      ? this.normalizeAIEmployeeUsername(actionName, settings.username)
+      : String(currentProps?.aiEmployee?.username || '').trim();
+    if (!effectiveUsername && (options.requireUsername || this.hasAIEmployeePublicSettings(settings))) {
+      throwBadRequest(`flowSurfaces ${actionName} AI employee settings.username is required`);
+    }
+    if (effectiveUsername) {
+      await this.assertVisibleAIEmployeeUsername(actionName, effectiveUsername, {
+        currentRoles: options.currentRoles,
+        transaction: options.transaction,
+      });
+    }
+
+    const props: Record<string, any> = {};
+    if (effectiveUsername && (hasUsername || options.requireUsername)) {
+      props.aiEmployee = {
+        ...(_.isPlainObject(currentProps.aiEmployee) ? _.cloneDeep(currentProps.aiEmployee) : {}),
+        username: effectiveUsername,
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(settings, 'auto') || options.requireUsername) {
+      const auto = Object.prototype.hasOwnProperty.call(settings, 'auto')
+        ? settings.auto
+        : typeof currentProps.auto === 'boolean'
+          ? currentProps.auto
+          : false;
+      if (typeof auto !== 'boolean') {
+        throwBadRequest(`flowSurfaces ${actionName} AI employee settings.auto must be a boolean`);
+      }
+      props.auto = auto;
+    }
+    if (Object.prototype.hasOwnProperty.call(settings, 'workContext') || options.requireUsername) {
+      const rawWorkContext = Object.prototype.hasOwnProperty.call(settings, 'workContext')
+        ? settings.workContext
+        : [{ type: 'flow-model', target: 'self' }];
+      props.context = {
+        ...(_.isPlainObject(currentProps.context) ? _.cloneDeep(currentProps.context) : {}),
+        workContext: this.normalizeAIEmployeeWorkContext(actionName, rawWorkContext, {
+          selfUid: options.selfUid,
+          keyMap: options.keyMap,
+          path: 'settings.workContext',
+        }),
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(settings, 'tasks')) {
+      props.tasks = this.normalizeAIEmployeeTasks(actionName, settings.tasks, currentProps.tasks, {
+        selfUid: options.selfUid,
+        keyMap: options.keyMap,
+        path: 'settings.tasks',
+      });
+    }
+    if (Object.prototype.hasOwnProperty.call(settings, 'style') || options.requireUsername) {
+      const style = Object.prototype.hasOwnProperty.call(settings, 'style') ? settings.style : {};
+      if (!_.isUndefined(style) && style !== null && !_.isPlainObject(style)) {
+        throwBadRequest(`flowSurfaces ${actionName} AI employee settings.style must be an object`);
+      }
+      if (_.isPlainObject(style)) {
+        this.assertOnlyAIEmployeeNestedPublicSettings(
+          actionName,
+          'settings.style',
+          style as Record<string, any>,
+          AI_EMPLOYEE_STYLE_PUBLIC_KEYS,
+        );
+        if (Object.prototype.hasOwnProperty.call(style, 'size') && typeof style.size !== 'number') {
+          throwBadRequest(`flowSurfaces ${actionName} AI employee settings.style.size must be a number`);
+        }
+        if (Object.prototype.hasOwnProperty.call(style, 'mask') && typeof style.mask !== 'boolean') {
+          throwBadRequest(`flowSurfaces ${actionName} AI employee settings.style.mask must be a boolean`);
+        }
+      }
+      props.style = _.merge(
+        {},
+        _.cloneDeep(AI_EMPLOYEE_DEFAULT_STYLE),
+        _.isPlainObject(currentProps.style)
+          ? _.pick(_.cloneDeep(currentProps.style), AI_EMPLOYEE_STYLE_PUBLIC_KEYS)
+          : {},
+        _.isPlainObject(style) ? _.pick(_.cloneDeep(style), AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {},
+      );
+    }
+    return props;
+  }
+
+  private async resolveAIEmployeeActionSelfUid(actionNode: any, transaction?: any) {
+    const parentUid =
+      String(actionNode?.parentId || '').trim() ||
+      (actionNode?.uid ? await this.locator.findParentUid(actionNode.uid, transaction).catch(() => '') : '');
+    if (!parentUid) {
+      return actionNode?.uid;
+    }
+    const parentNode = await this.repository.findModelById(parentUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel'].includes(String(parentNode?.use || ''))) {
+      const ownerUid =
+        String(parentNode?.parentId || '').trim() ||
+        (parentNode?.uid ? await this.locator.findParentUid(parentNode.uid, transaction).catch(() => '') : '');
+      return ownerUid || parentUid;
+    }
+    return parentUid;
+  }
+
   private async configureActionNode(
     target: FlowSurfaceWriteTarget,
     use: string,
     changes: Record<string, any>,
     options: {
       transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
       openViewActionName?: string;
       current?: any;
       enabledPackages?: ReadonlySet<string>;
@@ -20617,6 +21282,27 @@ export class FlowSurfacesService {
     changes = await this.normalizeActionPanelActionChanges(changes, options);
     const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('action', changes, allowedKeys);
+    if (this.isAIEmployeeActionUse(use)) {
+      const props = await this.normalizeAIEmployeeActionPublicSettings('configure action', changes, {
+        transaction: options.transaction,
+        enabledPackages: options.enabledPackages || (await this.resolveEnabledPluginPackages(options)),
+        current: currentNode,
+        currentRoles: options.currentRoles,
+        selfUid: await this.resolveAIEmployeeActionSelfUid(currentNode, options.transaction),
+      });
+      return this.updateSettings(
+        {
+          target,
+          props,
+        },
+        {
+          ...options,
+          openViewActionName: options.openViewActionName || 'configure action',
+          popupTemplateHostUid: target.uid,
+          allowAIEmployeeInternalProps: true,
+        },
+      );
+    }
     const normalizedDefaultFilter = hasOwnDefined(changes, 'defaultFilter')
       ? this.normalizeFilterActionDefaultFilterValue(changes.defaultFilter)
       : undefined;

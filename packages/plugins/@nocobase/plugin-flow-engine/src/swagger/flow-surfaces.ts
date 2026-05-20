@@ -54,6 +54,7 @@ const BASE_ACTION_TYPE_ENUM = [
   'upload',
   'js',
   'jsItem',
+  'aiEmployee',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -86,6 +87,7 @@ const BASE_NON_RECORD_ACTION_TYPE_ENUM = [
   'upload',
   'js',
   'jsItem',
+  'aiEmployee',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -98,6 +100,7 @@ const RECORD_ACTION_TYPE_ENUM = [
   'popup',
   'js',
   'jsItem',
+  'aiEmployee',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -525,7 +528,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      `Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (\`create\` or \`replace\`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level \`reaction.items[]\` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. \`rules: []\` clears the targeted slot. Repeating the same \`(type, target)\` reaction slot in one blueprint is invalid. In \`replace\`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use \`getReactionMeta\` + \`set*Rules\` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: \`{ "requestBody": "{\\"version\\":\\"1\\"}" }\`. Internal planning details stay hidden. In \`create\`, \`navigation.group.routeId\` has the highest priority when targeting an existing menu group. If \`routeId\` is present, applyBlueprint ignores \`title\`, \`icon\`, \`tooltip\`, and \`hideInMenu\` on \`navigation.group\`; applyBlueprint create mode does not mutate existing group metadata, so callers should use \`updateMenu\` separately when that is required. When \`routeId\` is omitted and \`navigation.group.title\` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as \`icon\`, \`tooltip\`, and \`hideInMenu\` is used only when a new group is created and is ignored when an existing group is reused. \`replace\` uses \`target.pageSchemaUid\`, updates only the explicit page-level fields provided in \`page\`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. \`layout\` is only allowed on tabs and inline popup documents; blocks themselves do not accept a \`layout\` property. Public applyBlueprint blocks do not support generic \`form\`; use \`editForm\` or \`createForm\`. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`; put inline JS in \`settings.code\` and \`settings.version\`. Direct \`table\` / \`list\` / \`gridCard\` / \`calendar\` / \`kanban\` blocks may omit \`defaultFilter\`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default \`filter\` action \`settings.defaultFilter\`; explicit filter-action \`settings.defaultFilter\` still wins. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} Inline popup documents may set \`popup.tryTemplate=true\` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine \`popup.tryTemplate\` with \`popup.saveAsTemplate={ name, description, local? }\`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through \`popup.template={ local, mode }\`, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved and reused. Custom \`edit\` popups that provide \`popup.blocks\` must include exactly one \`editForm\` block; that \`editForm\` may omit \`resource\` and then inherits the opener's current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a \`replace\` run expands a page to multiple tabs while the current page still has \`enableTabs=false\`, callers must set \`page.enableTabs=true\` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.`,
+      `Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (\`create\` or \`replace\`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level \`reaction.items[]\` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. \`rules: []\` clears the targeted slot. Repeating the same \`(type, target)\` reaction slot in one blueprint is invalid. In \`replace\`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use \`getReactionMeta\` + \`set*Rules\` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: \`{ "requestBody": "{\\"version\\":\\"1\\"}" }\`. Internal planning details stay hidden. In \`create\`, \`navigation.group.routeId\` has the highest priority when targeting an existing menu group. If \`routeId\` is present, applyBlueprint ignores \`title\`, \`icon\`, \`tooltip\`, and \`hideInMenu\` on \`navigation.group\`; applyBlueprint create mode does not mutate existing group metadata, so callers should use \`updateMenu\` separately when that is required. When \`routeId\` is omitted and \`navigation.group.title\` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as \`icon\`, \`tooltip\`, and \`hideInMenu\` is used only when a new group is created and is ignored when an existing group is reused. \`replace\` uses \`target.pageSchemaUid\`, updates only the explicit page-level fields provided in \`page\`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. \`layout\` is only allowed on tabs and inline popup documents; blocks themselves do not accept a \`layout\` property. Public applyBlueprint blocks do not support generic \`form\`; use \`editForm\` or \`createForm\`. AI employee actions use \`type: "aiEmployee"\` plus public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`; work context may target \`self\` or a same-blueprint block key and is persisted as real Flow Model \`uid\` values. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`; put inline JS in \`settings.code\` and \`settings.version\`. Direct \`table\` / \`list\` / \`gridCard\` / \`calendar\` / \`kanban\` blocks may omit \`defaultFilter\`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default \`filter\` action \`settings.defaultFilter\`; explicit filter-action \`settings.defaultFilter\` still wins. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} Inline popup documents may set \`popup.tryTemplate=true\` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine \`popup.tryTemplate\` with \`popup.saveAsTemplate={ name, description, local? }\`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through \`popup.template={ local, mode }\`, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved and reused. Custom \`edit\` popups that provide \`popup.blocks\` must include exactly one \`editForm\` block; that \`editForm\` may omit \`resource\` and then inherits the opener's current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a \`replace\` run expands a page to multiple tabs while the current page still has \`enableTabs=false\`, callers must set \`page.enableTabs=true\` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.`,
     ),
     requestBody: {
       required: true,
@@ -919,7 +922,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Approval action keys are singleton within one approval form or process form, and flowSurfaces reconciles the related workflow/node runtime config after successful writes.',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, action-panel actions, and AI employee shortcuts. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`; AI employee actions use public `settings.username`, `workContext`, `tasks`, `auto`, and `style`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Approval action keys are singleton within one approval form or process form, and flowSurfaces reconciles the related workflow/node runtime config after successful writes.',
     ),
     requestBody: {
       required: true,
@@ -943,6 +946,10 @@ const actionDocs: Record<string, any> = {
               summary: 'Create a form JS item action under a create/edit/form action container',
               value: examples.addJsItemAction,
             },
+            aiEmployee: {
+              summary: 'Create an AI employee shortcut action with public task settings',
+              value: examples.addAIEmployeeAction,
+            },
             autoPopupTemplate: {
               summary: 'Create a popup-capable action and let the backend auto-select a compatible popup template',
               value: examples.addAutoPopupAction,
@@ -962,7 +969,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with \`popup.saveAsTemplate={ name, description }\`: a hit reuses the matched template directly, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved as a template reference. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored.`,
+      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`; AI employee record actions use public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with \`popup.saveAsTemplate={ name, description }\`: a hit reuses the matched template directly, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved as a template reference. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored.`,
     ),
     requestBody: {
       required: true,
@@ -985,6 +992,10 @@ const actionDocs: Record<string, any> = {
             js: {
               summary: 'Create a JS record action under a details block owner target',
               value: examples.addRecordJsAction,
+            },
+            aiEmployee: {
+              summary: 'Create an AI employee record shortcut with public task settings',
+              value: examples.addRecordAIEmployeeAction,
             },
             autoPopupTemplate: {
               summary:
@@ -1057,11 +1068,28 @@ const actionDocs: Record<string, any> = {
   },
   updateSettings: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Update controlled props, decoratorProps, stepParams or flowRegistry',
+    summary: 'Update controlled settings or AI employee public task fields',
     description: valuesCompatibilityNote(
-      'Updates the specified domain according to the path-level contract exposed by the catalog. Arbitrary raw tree-field patches are not accepted.',
+      'Updates the specified domain according to the path-level contract exposed by the catalog. For an existing `AIEmployeeButtonModel`, use top-level `username`, `auto`, `workContext`, `tasks`, or `style`; raw `props.aiEmployee`, `props.context`, `props.auto`, `props.tasks`, and `props.style` are internal and are not the public contract. Arbitrary raw tree-field patches are not accepted.',
     ),
-    requestBody: requestBody('FlowSurfaceUpdateSettingsRequest', examples.updateSettings),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceUpdateSettingsRequest'),
+          examples: {
+            settings: {
+              summary: 'Update controlled table settings by contract path',
+              value: examples.updateSettings,
+            },
+            aiEmployee: {
+              summary: 'Update an AI employee shortcut through public task/style fields',
+              value: examples.updateAIEmployeeSettings,
+            },
+          },
+        },
+      },
+    },
     responses: responses('FlowSurfaceUpdateSettingsResult'),
   },
   getEventFlowMeta: {
@@ -5401,6 +5429,154 @@ const schemas = {
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
       flowRegistry: ANY_OBJECT_SCHEMA,
+      username: {
+        type: 'string',
+        description:
+          'AIEmployeeButtonModel only. Public AI employee username update; validated against visible, enabled AI employees.',
+      },
+      auto: {
+        type: 'boolean',
+        description: 'AIEmployeeButtonModel only. Whether the AI employee task picker/chat should run automatically.',
+      },
+      workContext: {
+        type: 'array',
+        description:
+          'AIEmployeeButtonModel only. Public work context entries. Use `target: "self"` for the owning block/action context, or pass existing resolved Flow Model `uid` values in localized writes.',
+        items: {
+          type: 'object',
+          required: ['type'],
+          anyOf: [{ required: ['uid'] }, { required: ['target'] }],
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['flow-model'],
+              example: 'flow-model',
+            },
+            uid: {
+              type: 'string',
+              minLength: 1,
+              description: 'Existing Flow Model uid for localized writes.',
+            },
+            target: {
+              type: 'string',
+              minLength: 1,
+              description:
+                '`self` in localized updateSettings writes. Use `uid` for other existing Flow Model context targets.',
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+      tasks: {
+        type: 'array',
+        description:
+          'AIEmployeeButtonModel only. Public task patches by index. Partial task patches preserve existing task fields unless explicitly cleared.',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+            },
+            message: {
+              type: 'object',
+              properties: {
+                system: {
+                  type: 'string',
+                },
+                user: {
+                  type: 'string',
+                },
+                workContext: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['type'],
+                    anyOf: [{ required: ['uid'] }, { required: ['target'] }],
+                    properties: {
+                      type: {
+                        type: 'string',
+                        enum: ['flow-model'],
+                        example: 'flow-model',
+                      },
+                      uid: {
+                        type: 'string',
+                        minLength: 1,
+                      },
+                      target: {
+                        type: 'string',
+                        minLength: 1,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                },
+              },
+              additionalProperties: false,
+            },
+            autoSend: {
+              type: 'boolean',
+            },
+            skillSettings: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                skills: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                },
+                tools: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                },
+                skillsVersion: {
+                  type: 'number',
+                },
+                toolsVersion: {
+                  type: 'number',
+                },
+              },
+              additionalProperties: false,
+            },
+            model: {
+              type: 'object',
+              nullable: true,
+              required: ['llmService', 'model'],
+              description: 'Explicit model selection or null.',
+              properties: {
+                llmService: {
+                  type: 'string',
+                },
+                model: {
+                  type: 'string',
+                },
+              },
+              additionalProperties: false,
+            },
+            webSearch: {
+              type: 'boolean',
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+      style: {
+        type: 'object',
+        description:
+          'AIEmployeeButtonModel only. Public avatar style patch, for example `{ "size": 40, "mask": true }`.',
+        properties: {
+          size: {
+            type: 'number',
+          },
+          mask: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: false,
+      },
     },
     additionalProperties: false,
   },

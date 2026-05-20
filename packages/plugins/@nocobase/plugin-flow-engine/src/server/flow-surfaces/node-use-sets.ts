@@ -86,6 +86,7 @@ export const ACTION_BUTTON_USES = new Set([
   'JSItemActionModel',
   'FilterFormJSActionModel',
   'JSActionModel',
+  'AIEmployeeButtonModel',
   'CalendarTodayActionModel',
   'CalendarNavActionModel',
   'CalendarTitleActionModel',

@@ -174,6 +174,8 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceComposeRecordActionSpec',
       'FlowSurfaceConfigureRequest',
       'FlowSurfaceConfigureResult',
+      'FlowSurfaceUpdateSettingsRequest',
+      'FlowSurfaceUpdateSettingsResult',
       'FlowSurfaceMutateOpItem',
       'FlowSurfaceMutateKey',
       'FlowSurfaceMutationResponse',
@@ -670,11 +672,11 @@ describe('flowSurfaces swagger', () => {
       'settings.code',
     );
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[0].enum).toEqual(
-      expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),
+      expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete', 'aiEmployee']),
     );
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[0].enum).not.toEqual(expect.arrayContaining(['addChild']));
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.enum).toEqual(
-      expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']),
+      expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete', 'aiEmployee']),
     );
     expect(schemas.FlowSurfaceApplyBlueprintActionSpec.oneOf[1].properties.type.enum).not.toEqual(
       expect.arrayContaining(['addChild']),
@@ -690,10 +692,10 @@ describe('flowSurfaces swagger', () => {
       '#/components/schemas/FlowSurfaceApplyBlueprintPopup',
     );
     expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[0].enum).toEqual(
-      expect.arrayContaining(['addChild']),
+      expect.arrayContaining(['addChild', 'aiEmployee']),
     );
     expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.enum).toEqual(
-      expect.arrayContaining(['addChild']),
+      expect.arrayContaining(['addChild', 'aiEmployee']),
     );
     expect(schemas.FlowSurfaceApplyBlueprintRecordActionSpec.oneOf[1].properties.type.description).toContain(
       'catalog.recordActions',
@@ -853,6 +855,14 @@ describe('flowSurfaces swagger', () => {
     expect(applyBlueprintPath.description).toContain('parentId');
     expect(applyBlueprintPath.description).toContain('not injected into explicit lists');
     expect(applyBlueprintPath.description).toContain('`titleField`');
+    expect(applyBlueprintPath.description).toContain('AI employee actions');
+    expect(applyBlueprintPath.description).toContain('same-blueprint block key');
+    expect(applyBlueprintTableBlock?.actions?.[2]?.type).toBe('aiEmployee');
+    expect(applyBlueprintTableBlock?.actions?.[2]?.settings?.workContext?.[0]?.target).toBe('employeeForm');
+    expect(applyBlueprintTableBlock?.recordActions?.[0]?.type).toBe('aiEmployee');
+    expect(applyBlueprintRequest.examples?.createPage?.value?.tabs?.[0]?.blocks?.[0]?.actions?.[1]?.type).toBe(
+      'aiEmployee',
+    );
     const applyApprovalBlueprintPath = swaggerDocument.paths['/flowSurfaces:applyApprovalBlueprint'].post;
     expect(applyApprovalBlueprintPath.summary).toContain('approval blueprint');
     expect(applyApprovalBlueprintPath.description).toContain('workflow.config.approvalUid');
@@ -1180,6 +1190,7 @@ describe('flowSurfaces swagger', () => {
         'reset',
         'collapse',
         'js',
+        'aiEmployee',
         'approvalSubmit',
         'approvalApprove',
       ]),
@@ -1188,7 +1199,17 @@ describe('flowSurfaces swagger', () => {
       expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild']),
     );
     expect(schemas.FlowSurfaceComposeRecordActionSpec.oneOf[1].properties.type.enum).toEqual(
-      expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild', 'popup', 'js']),
+      expect.arrayContaining([
+        'view',
+        'edit',
+        'delete',
+        'updateRecord',
+        'duplicate',
+        'addChild',
+        'popup',
+        'js',
+        'aiEmployee',
+      ]),
     );
     expect(schemas.FlowSurfaceComposeBlockResult.properties.itemUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockResult.properties.itemGridUid.type).toBe('string');
@@ -1498,6 +1519,9 @@ describe('flowSurfaces swagger', () => {
     expect(addActionRequest.examples.js.value.settings.code).not.toContain('return await ctx.runjs');
     expect(addActionRequest.examples.jsItem.value.type).toBe('jsItem');
     expect(addActionRequest.examples.jsItem.value.settings.code).toContain('ctx.render');
+    expect(addActionRequest.examples.aiEmployee.value.type).toBe('aiEmployee');
+    expect(addActionRequest.examples.aiEmployee.value.settings.username).toBe('dex');
+    expect(addActionRequest.examples.aiEmployee.value.settings.workContext[0].target).toBe('self');
     expect(addActionRequest.examples.autoPopupTemplate.value.popup.tryTemplate).toBe(true);
     expect(addActionRequest.examples.savePopupTemplate.value.popup.saveAsTemplate.name).toBe('employee-popup-template');
     expect(schemas.FlowSurfaceAddActionRequest.properties.scope).toBeUndefined();
@@ -1531,6 +1555,7 @@ describe('flowSurfaces swagger', () => {
         'collapse',
         'js',
         'jsItem',
+        'aiEmployee',
         'approvalSubmit',
         'approvalDelegate',
       ]),
@@ -1553,6 +1578,10 @@ describe('flowSurfaces swagger', () => {
     });
     expect(addRecordActionRequest.examples.js.value.type).toBe('js');
     expect(addRecordActionRequest.examples.js.value.settings.code).toContain('currentRecord');
+    expect(addRecordActionRequest.examples.aiEmployee.value.type).toBe('aiEmployee');
+    expect(addRecordActionRequest.examples.aiEmployee.value.settings.tasks[0].message.workContext[0].target).toBe(
+      'self',
+    );
     expect(addRecordActionRequest.examples.autoPopupTemplate.value.popup.tryTemplate).toBe(true);
     expect(addRecordActionRequest.examples.savePopupTemplate.value.popup.saveAsTemplate.name).toBe(
       'employee-popup-template',
@@ -1581,11 +1610,52 @@ describe('flowSurfaces swagger', () => {
         'popup',
         'js',
         'jsItem',
+        'aiEmployee',
       ]),
     );
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.type.enum).not.toEqual(
       expect.arrayContaining(['submit', 'reset', 'filter', 'bulkDelete']),
     );
+
+    const updateSettingsRequest =
+      swaggerDocument.paths['/flowSurfaces:updateSettings'].post.requestBody.content['application/json'];
+    expect(swaggerDocument.paths['/flowSurfaces:updateSettings'].post.description).toContain('AIEmployeeButtonModel');
+    expect(swaggerDocument.paths['/flowSurfaces:updateSettings'].post.description).toContain('top-level `username`');
+    expect(updateSettingsRequest.examples.aiEmployee.value.target.uid).toBe('ai-employee-action-uid');
+    expect(updateSettingsRequest.examples.aiEmployee.value.props).toBeUndefined();
+    expect(updateSettingsRequest.examples.aiEmployee.value.tasks[0].title).toBe('Generate table insights');
+    expect(updateSettingsRequest.examples.aiEmployee.value.tasks[0].message.workContext[0].target).toBe('self');
+    expect(updateSettingsRequest.examples.aiEmployee.value.style.mask).toBe(true);
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.username.type).toBe('string');
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.auto.type).toBe('boolean');
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.type).toBe('array');
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.properties.type.enum).toEqual([
+      'flow-model',
+    ]);
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.anyOf).toEqual([
+      { required: ['uid'] },
+      { required: ['target'] },
+    ]);
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.properties.uid.minLength).toBe(1);
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.properties.target.minLength).toBe(1);
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.type).toBe('array');
+    expect(
+      schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.message.properties.workContext.items
+        .properties.type.enum,
+    ).toEqual(['flow-model']);
+    expect(
+      schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.message.properties.workContext.items
+        .anyOf,
+    ).toEqual([{ required: ['uid'] }, { required: ['target'] }]);
+    expect(
+      schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.message.properties.workContext.items
+        .properties.uid.minLength,
+    ).toBe(1);
+    expect(
+      schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.message.properties.workContext.items
+        .properties.target.minLength,
+    ).toBe(1);
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.style.type).toBe('object');
 
     const addBlocksRequest =
       swaggerDocument.paths['/flowSurfaces:addBlocks'].post.requestBody.content['application/json'];

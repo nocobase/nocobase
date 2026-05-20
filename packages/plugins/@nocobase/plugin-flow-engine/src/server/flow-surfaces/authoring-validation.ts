@@ -213,6 +213,7 @@ const SUPPORTED_DEFAULT_FILTER_OPERATORS = buildSupportedDefaultFilterOperators(
 const ACTION_TYPE_ALIASES = new Map([
   ['addchild', 'addChild'],
   ['addnew', 'addNew'],
+  ['aiemployee', 'aiEmployee'],
   ['bulkupdate', 'bulkUpdate'],
   ['jsitem', 'jsItem'],
   ['selectview', 'selectView'],
@@ -236,6 +237,7 @@ const CALENDAR_ACTION_TYPE_ALIASES = new Map([
 const KANBAN_ACTION_TYPE_ALIASES = new Map([
   ['filter', 'filter'],
   ['addnew', 'addNew'],
+  ['aiemployee', 'aiEmployee'],
   ['popup', 'popup'],
   ['refresh', 'refresh'],
   ['js', 'js'],

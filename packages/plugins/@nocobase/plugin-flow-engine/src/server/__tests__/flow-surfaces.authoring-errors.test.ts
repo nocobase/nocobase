@@ -8461,7 +8461,10 @@ ctx.render(React.createElement(DashboardKPIs));
             key: 'badCalendarActions',
             type: 'calendar',
             template: { uid: 'calendar-template-uid' },
-            actions: [{ key: 'badCalendarAction', type: 'updateRecord' }],
+            actions: [
+              { key: 'badCalendarAction', type: 'updateRecord' },
+              { key: 'badCalendarAIEmployee', type: 'aiEmployee' },
+            ],
           },
           {
             key: 'badKanbanActions',
@@ -8490,6 +8493,7 @@ ctx.render(React.createElement(DashboardKPIs));
         '$.blocks[0].actions[1]',
         '$.blocks[0].recordActions[0]',
         '$.blocks[1].actions[0]',
+        '$.blocks[1].actions[1]',
         '$.blocks[2].actions[0]',
       ]),
     );

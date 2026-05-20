@@ -30,6 +30,7 @@ export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
       style: {
         size: 40,
         mask: false,
+        ...this.props?.style,
       },
     };
   }
