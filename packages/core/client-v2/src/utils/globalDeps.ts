@@ -92,8 +92,8 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   defineGlobalDep(requirejs, '@nocobase/evaluators', nocobaseEvaluators);
   defineGlobalDep(requirejs, '@nocobase/evaluators/client', nocobaseEvaluators);
 
-  requirejs.define('@dnd-kit/core', () => dndKitCore);
-  requirejs.define('@dnd-kit/sortable', () => dndKitSortable);
+  defineGlobalDep(requirejs, '@dnd-kit/core', dndKitCore);
+  defineGlobalDep(requirejs, '@dnd-kit/sortable', dndKitSortable);
 
   // utils
   defineGlobalDep(requirejs, 'ahooks', ahooks);
