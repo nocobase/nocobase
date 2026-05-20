@@ -455,6 +455,9 @@ Prompt modes:
               'db-database'?: string;
               'db-user'?: string;
               'db-password'?: string;
+              'db-schema'?: string;
+              'db-table-prefix'?: string;
+              'db-underscored'?: boolean;
               'fetch-source'?: boolean;
               source?: string;
               version?: string;
@@ -502,6 +505,9 @@ Prompt modes:
         'db-database'?: string;
         'db-user'?: string;
         'db-password'?: string;
+        'db-schema'?: string;
+        'db-table-prefix'?: string;
+        'db-underscored'?: boolean;
         'fetch-source'?: boolean;
         source?: string;
         version?: string;
@@ -604,10 +610,14 @@ Prompt modes:
       },
       command: this,
     });
+    const normalizedResults: Record<string, string | number | boolean> = {
+      ...results,
+      ...pickKeys(presetValues, ['dbSchema', 'dbTablePrefix', 'dbUnderscored']),
+    };
 
-    const hasNocobase = results.hasNocobase === 'yes';
+    const hasNocobase = normalizedResults.hasNocobase === 'yes';
     const existingEnv = !hasNocobase
-      ? await getEnv(String(results.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
+      ? await getEnv(String(normalizedResults.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
       : undefined;
 
     if (existingEnv && Boolean(normalizedFlags.force)) {
@@ -627,14 +637,14 @@ Prompt modes:
       if (hasNocobase) {
         logInitStage('Connecting to the env');
         printVerbose('Running nb env add');
-        await this.config.runCommand('env:add', this.buildEnvAddArgv(results));
+        await this.config.runCommand('env:add', this.buildEnvAddArgv(normalizedResults));
       } else {
         logInitStage('Saving env config');
-        await this.persistManagedEnvConfig(results, normalizedFlags);
-        managedInstallResults = results;
-        printInfo(`Saved env config for "${String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME}".`);
+        await this.persistManagedEnvConfig(normalizedResults, normalizedFlags);
+        managedInstallResults = normalizedResults;
+        printInfo(`Saved env config for "${String(normalizedResults.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME}".`);
         printVerbose('Running nb init');
-        await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
+        await this.config.runCommand('install', this.buildInstallArgv(normalizedResults, normalizedFlags));
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -800,6 +810,9 @@ Prompt modes:
     'db-database'?: string;
     'db-user'?: string;
     'db-password'?: string;
+    'db-schema'?: string;
+    'db-table-prefix'?: string;
+    'db-underscored'?: boolean;
     'fetch-source'?: boolean;
     source?: string;
     version?: string;
@@ -882,6 +895,15 @@ Prompt modes:
     }
     if (flags['db-password'] !== undefined) {
       preset.dbPassword = String(flags['db-password'] ?? '');
+    }
+    if (flags['db-schema'] !== undefined && String(flags['db-schema']).trim() !== '') {
+      preset.dbSchema = String(flags['db-schema']).trim();
+    }
+    if (flags['db-table-prefix'] !== undefined && String(flags['db-table-prefix']).trim() !== '') {
+      preset.dbTablePrefix = String(flags['db-table-prefix']).trim();
+    }
+    if (argvHasToken(argv, ['--db-underscored', '--no-db-underscored'])) {
+      preset.dbUnderscored = Boolean(flags['db-underscored']);
     }
     if (argvHasToken(argv, ['--fetch-source'])) {
       preset.fetchSource = Boolean(flags['fetch-source']);
@@ -971,7 +993,12 @@ Prompt modes:
 
   private async persistManagedEnvConfig(
     results: Record<string, string | number | boolean>,
-    flags: { 'db-host'?: string } = {},
+    flags: {
+      'db-host'?: string;
+      'db-schema'?: string;
+      'db-table-prefix'?: string;
+      'db-underscored'?: boolean;
+    } = {},
   ): Promise<void> {
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const appPort = String(results.appPort ?? '').trim();
@@ -990,6 +1017,8 @@ Prompt modes:
     const dbDatabase = String(results.dbDatabase ?? '').trim();
     const dbUser = String(results.dbUser ?? '').trim();
     const dbPassword = String(results.dbPassword ?? '');
+    const dbSchema = String(results.dbSchema ?? '').trim();
+    const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim() || 'oauth';
     const accessToken = String(results.accessToken ?? '');
@@ -1032,6 +1061,9 @@ Prompt modes:
         ...(dbDatabase ? { dbDatabase } : {}),
         ...(dbUser ? { dbUser } : {}),
         ...(dbPassword ? { dbPassword } : {}),
+        ...(dbSchema ? { dbSchema } : {}),
+        ...(dbTablePrefix ? { dbTablePrefix } : {}),
+        ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
       },
       { scope: resolveDefaultConfigScope() },
     );
@@ -1052,7 +1084,16 @@ Prompt modes:
 
   private buildInstallArgv(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'db-host'?: string },
+    flags: {
+      yes?: boolean;
+      force?: boolean;
+      build?: boolean;
+      verbose?: boolean;
+      'db-host'?: string;
+      'db-schema'?: string;
+      'db-table-prefix'?: string;
+      'db-underscored'?: boolean;
+    },
     options?: {
       nonInteractive?: boolean;
       resume?: boolean;
@@ -1221,6 +1262,17 @@ Prompt modes:
     if (dbPassword) {
       argv.push('--db-password', dbPassword);
     }
+    const dbSchema = String(results.dbSchema ?? '').trim();
+    if (dbSchema) {
+      argv.push('--db-schema', dbSchema);
+    }
+    const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
+    if (dbTablePrefix) {
+      argv.push('--db-table-prefix', dbTablePrefix);
+    }
+    if (results.dbUnderscored !== undefined) {
+      argv.push(Boolean(results.dbUnderscored) ? '--db-underscored' : '--no-db-underscored');
+    }
 
     const rootUsername = String(results.rootUsername ?? '').trim();
     if (rootUsername) {
@@ -1345,6 +1397,9 @@ Prompt modes:
     'db-database'?: string;
     'db-user'?: string;
     'db-password'?: string;
+    'db-schema'?: string;
+    'db-table-prefix'?: string;
+    'db-underscored'?: boolean;
     'fetch-source'?: boolean;
     source?: string;
     version?: string;

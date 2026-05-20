@@ -119,3 +119,30 @@ test('resolveManagedAppRuntime falls back to legacy name for docker defaults', a
     expect(dockerRuntime?.kind === 'docker' ? dockerRuntime.containerName : '').toBe('nb-legacy-docker-env-app');
   });
 });
+
+test('resolveManagedAppRuntime exposes saved db schema env vars for local envs', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'local-env',
+        envs: {
+          'local-env': {
+            source: 'git',
+            appRootPath: './apps/local-env',
+            storagePath: './storage/local-env',
+            dbSchema: 'test',
+            dbTablePrefix: 'nb_',
+            dbUnderscored: true,
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const runtime = await resolveManagedAppRuntime('local-env');
+    expect(runtime?.kind).toBe('local');
+    expect(runtime?.env.envVars.DB_SCHEMA).toBe('test');
+    expect(runtime?.env.envVars.DB_TABLE_PREFIX).toBe('nb_');
+    expect(runtime?.env.envVars.DB_UNDERSCORED).toBe('true');
+  });
+});

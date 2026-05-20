@@ -67,6 +67,9 @@
       "self": {
         "description": "Inspect or update the NocoBase CLI itself."
       },
+      "backup": {
+        "description": "Create and restore NocoBase backups."
+      },
       "skills": {
         "description": "Inspect or synchronize NocoBase AI coding skills for the current workspace."
       },
