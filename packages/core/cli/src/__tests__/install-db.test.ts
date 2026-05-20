@@ -405,6 +405,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
   expect(envConfig).toEqual({
     kind: 'local',
     apiBaseUrl: 'http://127.0.0.1:13080/api',
+    authType: 'token',
     source: 'git',
     downloadVersion: 'alpha',
     gitUrl: 'https://github.com/nocobase/nocobase.git',
