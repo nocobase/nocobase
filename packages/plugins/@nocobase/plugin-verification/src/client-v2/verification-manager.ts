@@ -23,21 +23,26 @@ export type BindFormProps = {
   isLogged?: boolean;
 };
 
+type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
+
 export type VerificationTypeOptions = {
+  /**
+   * Async loaders for the type-specific forms. The manager stores loaders
+   * rather than direct component references so each verifier type
+   * contributes its own webpack chunk and is only fetched when a verifier
+   * of that type is actually shown.
+   *
+   * Consumers wrap each loader with `React.lazy` (cached via `useMemo` or
+   * a per-type cache to avoid re-creating the lazy wrapper) and render it
+   * under `<Suspense>`.
+   */
   components: {
-    AdminSettingsForm?: ComponentType;
-    VerificationForm: ComponentType<VerificationFormProps>;
-    BindForm?: ComponentType<BindFormProps>;
+    AdminSettingsFormLoader?: LoaderOf;
+    VerificationFormLoader?: LoaderOf<VerificationFormProps>;
+    BindFormLoader?: LoaderOf<BindFormProps>;
   };
 };
 
-/**
- * Plain registry: a type-name → option-bundle map. Used by SMS / TOTP /
- * 2FA / future verifiers to surface a type-specific Bind form, verify
- * form, and admin settings form. No React or Formily dependencies — the
- * v2 manager is byte-for-byte equivalent to v1's, only the import path
- * to `Registry` differs.
- */
 export class VerificationManager {
   verifications = new Registry<VerificationTypeOptions>();
 

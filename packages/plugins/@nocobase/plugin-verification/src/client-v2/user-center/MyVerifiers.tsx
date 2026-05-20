@@ -11,9 +11,26 @@ import { DialogFormLayout, useApp } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { Alert, App, Form, List, Spin, Tabs, Tag } from 'antd';
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { useT, useVerificationTranslation } from '../locale';
 import PluginVerificationClientV2 from '../plugin';
+import type { BindFormProps, VerificationFormProps } from '../verification-manager';
+
+/**
+ * `React.lazy` returns a brand-new component each call; calling it inside
+ * render would re-mount the Suspense boundary on every paint. Cache per
+ * verification type so the same lazy wrapper is reused across renders.
+ */
+function createLazyByType<P>() {
+  const cache = new Map<string, React.LazyExoticComponent<React.ComponentType<P>>>();
+  return (type: string, loader: () => Promise<{ default: React.ComponentType<P> }>) => {
+    const cached = cache.get(type);
+    if (cached) return cached;
+    const wrapped = lazy(loader);
+    cache.set(type, wrapped);
+    return wrapped;
+  };
+}
 
 type UserVerifier = {
   name: string;
@@ -27,13 +44,20 @@ type UserVerifier = {
   };
 };
 
+const lazyBindFormByType = createLazyByType<BindFormProps>();
+
 function BindDialogContent(props: { verifier: UserVerifier; onSubmitted: () => void }) {
   const { t } = useVerificationTranslation();
   const compileT = useT();
   const ctx = useFlowContext();
   const app = useApp();
   const plugin = app.pm.get(PluginVerificationClientV2);
-  const BindForm = plugin?.verificationManager.getVerification(props.verifier.verificationType)?.components?.BindForm;
+  const bindFormLoader = plugin?.verificationManager.getVerification(props.verifier.verificationType)?.components
+    ?.BindFormLoader;
+  const BindForm = useMemo(
+    () => (bindFormLoader ? lazyBindFormByType(props.verifier.verificationType, bindFormLoader) : null),
+    [bindFormLoader, props.verifier.verificationType],
+  );
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   // Server returns titles as raw `{{ t("…", { ns: "…" }) }}` schema
@@ -90,11 +114,15 @@ function BindDialogContent(props: { verifier: UserVerifier; onSubmitted: () => v
       cancelText={t('Cancel')}
     >
       <Form form={form} layout="vertical">
-        <BindForm verifier={props.verifier.name} actionType="verifiers:bind" isLogged />
+        <Suspense fallback={<Spin />}>
+          <BindForm verifier={props.verifier.name} actionType="verifiers:bind" isLogged />
+        </Suspense>
       </Form>
     </DialogFormLayout>
   );
 }
+
+const lazyVerificationFormByType = createLazyByType<VerificationFormProps>();
 
 function UnbindDialogContent(props: {
   targetVerifier: UserVerifier;
@@ -134,9 +162,10 @@ function UnbindDialogContent(props: {
 
   const tabItems = props.availableVerifiers
     .map((verifier) => {
-      const VerificationForm = plugin?.verificationManager.getVerification(verifier.verificationType)?.components
-        ?.VerificationForm;
-      if (!VerificationForm) return null;
+      const verificationFormLoader = plugin?.verificationManager.getVerification(verifier.verificationType)?.components
+        ?.VerificationFormLoader;
+      if (!verificationFormLoader) return null;
+      const VerificationForm = lazyVerificationFormByType(verifier.verificationType, verificationFormLoader);
       const tabTitle =
         compileT(verifier.title || '') || compileT(verifier.verificationTypeTitle || verifier.verificationType);
       return {
@@ -146,12 +175,14 @@ function UnbindDialogContent(props: {
           // The form instance is shared across tabs but values are reset
           // when the user switches tabs (see onChange below). Each tab
           // re-renders a fresh VerificationForm bound to its own verifier.
-          <VerificationForm
-            verifier={verifier.name}
-            actionType="verifiers:unbind"
-            boundInfo={verifier.boundInfo}
-            isLogged
-          />
+          <Suspense fallback={<Spin />}>
+            <VerificationForm
+              verifier={verifier.name}
+              actionType="verifiers:unbind"
+              boundInfo={verifier.boundInfo}
+              isLogged
+            />
+          </Suspense>
         ),
       };
     })

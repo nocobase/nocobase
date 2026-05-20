@@ -14,7 +14,7 @@ import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Card, Dropdown, Form, Input, Space, Tag, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { cloneDeep } from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useT, useVerificationTranslation } from '../locale';
 import PluginVerificationClientV2 from '../plugin';
 
@@ -98,10 +98,12 @@ function VerifierFormView(props: {
   }, [form, initialValues]);
 
   // Type-specific admin settings are pulled from the registry at render
-  // time. Third-party verification types contributed via
-  // `registerVerificationType()` are picked up automatically.
+  // time as an async loader, so third-party verification types contributed
+  // via `registerVerificationType()` come in as their own webpack chunk.
   const AdminSettingsForm = useMemo(() => {
-    return plugin?.verificationManager.getVerification(props.verificationType)?.components?.AdminSettingsForm ?? null;
+    const loader = plugin?.verificationManager.getVerification(props.verificationType)?.components
+      ?.AdminSettingsFormLoader;
+    return loader ? lazy(loader) : null;
   }, [plugin, props.verificationType]);
 
   const handleSubmit = useMemoizedFn(async () => {
@@ -165,7 +167,11 @@ function VerifierFormView(props: {
             <Tag>{compiledTypeOptions.find((option) => option.value === props.verificationType)?.label}</Tag>
           </Form.Item>
         ) : null}
-        {AdminSettingsForm ? <AdminSettingsForm /> : null}
+        {AdminSettingsForm ? (
+          <Suspense fallback={null}>
+            <AdminSettingsForm />
+          </Suspense>
+        ) : null}
       </Form>
     </DrawerFormLayout>
   );

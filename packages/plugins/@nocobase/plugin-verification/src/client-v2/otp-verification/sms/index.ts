@@ -7,28 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AdminSettingsForm } from './AdminSettingsForm';
-import { BindForm } from './BindForm';
-import { AliyunSettings } from './providers/AliyunSettings';
-import { TencentSettings } from './providers/TencentSettings';
-import { VerificationForm } from './VerificationForm';
-
 export const smsOTPVerificationOptions = {
   components: {
-    VerificationForm,
-    AdminSettingsForm,
-    BindForm,
+    VerificationFormLoader: () => import('./VerificationForm'),
+    AdminSettingsFormLoader: () => import('./AdminSettingsForm'),
+    BindFormLoader: () => import('./BindForm'),
   },
 };
 
 export const smsAliyunProviderOptions = {
   components: {
-    AdminSettingsForm: AliyunSettings,
+    AdminSettingsFormLoader: () => import('./providers/AliyunSettings'),
   },
 };
 
 export const smsTencentProviderOptions = {
   components: {
-    AdminSettingsForm: TencentSettings,
+    AdminSettingsFormLoader: () => import('./providers/TencentSettings'),
   },
 };

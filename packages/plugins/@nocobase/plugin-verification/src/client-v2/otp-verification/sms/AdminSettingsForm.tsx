@@ -10,7 +10,7 @@
 import { RemoteSelect, useApp } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { Form } from 'antd';
-import React, { useMemo } from 'react';
+import React, { lazy, Suspense, useMemo } from 'react';
 import { useT, useVerificationTranslation } from '../../locale';
 import PluginVerificationClientV2 from '../../plugin';
 
@@ -37,7 +37,8 @@ export function AdminSettingsForm() {
 
   const ProviderSettings = useMemo(() => {
     if (!providerType) return null;
-    return plugin?.smsOTPProviderManager.getProvider(providerType)?.components?.AdminSettingsForm ?? null;
+    const loader = plugin?.smsOTPProviderManager.getProvider(providerType)?.components?.AdminSettingsFormLoader;
+    return loader ? lazy(loader) : null;
   }, [plugin, providerType]);
 
   return (
@@ -60,7 +61,11 @@ export function AdminSettingsForm() {
           mapOptions={(item) => ({ label: compileT(item.title || item.name), value: item.name })}
         />
       </Form.Item>
-      {ProviderSettings ? <ProviderSettings /> : null}
+      {ProviderSettings ? (
+        <Suspense fallback={null}>
+          <ProviderSettings />
+        </Suspense>
+      ) : null}
     </>
   );
 }
