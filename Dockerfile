@@ -70,6 +70,7 @@ ARG COMMIT_HASH
 ARG INCLUDE_DOCS_ARCHIVE=1
 ARG INSTALL_POSTGRES_16_CLIENT=1
 ARG INSTALL_CJK_FONTS=1
+ARG NGINX_VERSION=1.30.1-1~bookworm
 ARG USE_ALIYUN_MIRROR=0
 ENV NB_SKIP_STARTUP_UPDATE=1 \
     NOCOBASE_RUNNING_IN_DOCKER=true
@@ -95,9 +96,14 @@ RUN set -eux; \
   apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
   echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] ${PGDG_MIRROR} bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
   wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
+  wget --quiet -O /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
+  gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
+  printf '%s\n' \
+    'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian bookworm nginx' \
+    > /etc/apt/sources.list.d/nginx.list; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
-    nginx \
+    "nginx=${NGINX_VERSION}" \
     libaio1 \
     postgresql-client-17 \
     libfreetype6 \
@@ -110,11 +116,18 @@ RUN set -eux; \
   if [ "$INSTALL_CJK_FONTS" = "1" ]; then \
     apt-get install -y --no-install-recommends fonts-noto-cjk; \
   fi; \
+  nginx -v; \
   apt-get purge -y --auto-remove wget gnupg dirmngr; \
-  rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/*
+  rm -rf \
+    /etc/apt/sources.list.d/nginx.list \
+    /tmp/nginx_signing.key \
+    /usr/share/keyrings/nginx-archive-keyring.gpg \
+    /var/lib/apt/lists/* \
+    /usr/share/doc/* \
+    /usr/share/man/*
 
-RUN rm -rf /etc/nginx/sites-enabled/default
-COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
+RUN rm -rf /etc/nginx/conf.d/default.conf
+COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/conf.d/nocobase-docs.conf
 ADD nocobase.tar.gz /app/nocobase/
 COPY --from=docs-archive /out/ /app/
 

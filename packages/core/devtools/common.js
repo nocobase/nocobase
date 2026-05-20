@@ -131,6 +131,10 @@ export default function devDynamicImport(packageName: string): Promise<any> {
       absolute: true,
     });
 
+    if (process.env.NOCOBASE_DEV_LOCAL_PLUGINS_ONLY === 'true') {
+      return this.getPluginContent(pluginFolders);
+    }
+
     const storagePluginFolders = glob.sync(['*/package.json', '*/*/package.json'], {
       cwd: resolvePluginStoragePath(),
       onlyFiles: true,
@@ -141,7 +145,13 @@ export default function devDynamicImport(packageName: string): Promise<any> {
       .sync(['plugin-*/package.json'], { cwd: this.nocobaseDir, onlyFiles: true, absolute: true })
       .map((item) => realpathSync(item));
 
-    return Array.from(new Set([...pluginFolders, ...storagePluginFolders, ...nocobasePluginFolders]))
+    return this.getPluginContent(
+      Array.from(new Set([...pluginFolders, ...storagePluginFolders, ...nocobasePluginFolders])),
+    );
+  }
+
+  getPluginContent(pluginPackageJsonPaths) {
+    return pluginPackageJsonPaths
       .filter((item) => {
         const pluginDir = dirname(item);
         const clientJs = join(pluginDir, this.options.clientRootFile);

@@ -9,8 +9,8 @@
 
 import { TinyColor } from '@ctrl/tinycolor';
 import { useEffect } from 'react';
-import { CustomToken, defaultTheme } from '@nocobase/client-v2';
 import { theme } from 'antd';
+import { type CustomToken, defaultTheme } from '../theme';
 
 interface Result extends ReturnType<typeof theme.useToken> {
   token: CustomToken;

@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import { upsertEnv, type Env } from '../../lib/auth-store.js';
+import { ensureLocalPostinstall } from '../../lib/app-managed-resources.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -596,6 +597,13 @@ export default class AppUpgrade extends Command {
         `Skipping code download for "${runtime.envName}" because this env is managed from an existing local app path.`,
       );
     }
+
+    await ensureLocalPostinstall(runtime, {
+      verbose: flags.verbose,
+      onStartTask: startTask,
+      onSucceedTask: succeedTask,
+      onFailTask: failTask,
+    });
 
     startTask(`Starting upgraded NocoBase for "${runtime.envName}"...`);
     try {
