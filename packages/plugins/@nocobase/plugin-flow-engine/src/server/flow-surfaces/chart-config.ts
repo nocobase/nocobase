@@ -552,6 +552,20 @@ function normalizeChartDimension(input: any, index: number) {
   });
 }
 
+function normalizeBuilderCountMeasureFieldForRuntime(measure: Record<string, any>, dimensions: any[] | undefined) {
+  if (measure.aggregation !== 'count' || measure.distinct || aliasOfFieldValue(measure.field) !== 'id') {
+    return measure;
+  }
+  const fallbackDimension = _.castArray(dimensions || []).find((dimension) => aliasOfFieldValue(dimension?.field));
+  if (!fallbackDimension) {
+    return measure;
+  }
+  return {
+    ...measure,
+    field: _.cloneDeep(fallbackDimension.field),
+  };
+}
+
 function normalizeChartSortingItem(input: any, index: number) {
   const label = `chart query.sorting[${index}]`;
   const normalized = ensurePlainObject(input, label);
@@ -941,14 +955,6 @@ function assertBuilderRuntimeCompatibleSorting(query: any, sorting: any[]) {
 
 function normalizeBuilderQuery(query: Record<string, any>) {
   const resource = normalizeMergedChartResource(query, { required: true });
-  const measures = Array.isArray(query.measures)
-    ? query.measures.map((item, index) => normalizeChartMeasure(item, index))
-    : (() => {
-        throw new FlowSurfaceBadRequestError('chart query.measures must be an array');
-      })();
-  if (!measures.length) {
-    throw new FlowSurfaceBadRequestError('chart query.measures cannot be empty');
-  }
   const dimensions = _.isUndefined(query.dimensions)
     ? undefined
     : Array.isArray(query.dimensions)
@@ -956,6 +962,16 @@ function normalizeBuilderQuery(query: Record<string, any>) {
       : (() => {
           throw new FlowSurfaceBadRequestError('chart query.dimensions must be an array');
         })();
+  const measures = Array.isArray(query.measures)
+    ? query.measures
+        .map((item, index) => normalizeChartMeasure(item, index))
+        .map((measure) => normalizeBuilderCountMeasureFieldForRuntime(measure, dimensions))
+    : (() => {
+        throw new FlowSurfaceBadRequestError('chart query.measures must be an array');
+      })();
+  if (!measures.length) {
+    throw new FlowSurfaceBadRequestError('chart query.measures cannot be empty');
+  }
   const rawSorting = hasOwn(query, 'sorting') ? query.sorting : query.orders;
   const sorting = _.isUndefined(rawSorting)
     ? undefined

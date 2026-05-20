@@ -99,7 +99,7 @@ describe('flowSurfaces chart write paths', () => {
     expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
       mode: 'builder',
       collectionPath: ['main', 'employees'],
-      measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+      measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
       dimensions: [{ field: 'department.title' }],
       orders: [{ field: 'department.title', order: 'DESC' }],
     });
@@ -544,7 +544,7 @@ chart.on('click', 'series', function(params) {
     expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
       mode: 'builder',
       collectionPath: ['main', 'employees'],
-      measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+      measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
       dimensions: [{ field: 'department.title' }],
     });
     expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option).toMatchObject({
