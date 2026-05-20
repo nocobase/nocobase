@@ -46,15 +46,13 @@ export default class SourcePublish extends Command {
       description: 'Source repository path. Defaults to the nearest detected NocoBase source root from the current working directory',
       required: false,
     }),
-    build: Flags.boolean({
-      allowNo: true,
-      description: 'Build the source repo before snapshot versioning and publish',
-      default: true,
+    'no-build': Flags.boolean({
+      description: 'Skip building the source repo before snapshot versioning and publish',
+      default: false,
     }),
-    'build-dts': Flags.boolean({
-      allowNo: true,
-      description: 'Generate TypeScript declaration files during the source build',
-      default: true,
+    'no-build-dts': Flags.boolean({
+      description: 'Skip generating TypeScript declaration files during the source build',
+      default: false,
     }),
     json: Flags.boolean({
       description: 'Print the publish result as JSON',
@@ -80,8 +78,8 @@ export default class SourcePublish extends Command {
       const result = await publishSourceSnapshot({
         cwd: flags.cwd,
         npmRegistry: flags['npm-registry'],
-        build: flags.build,
-        buildDts: flags['build-dts'],
+        build: !flags['no-build'],
+        buildDts: !flags['no-build-dts'],
         verbose: flags.verbose,
       });
 
