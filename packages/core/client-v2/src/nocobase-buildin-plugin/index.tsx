@@ -9,9 +9,9 @@
 
 import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { Application } from '../Application';
-import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToV2Signin } from '../authRedirect';
+import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
@@ -115,6 +115,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
 const CurrentUserProvider: FC = ({ children }) => {
   const app = useApp();
   const location = useLocation();
+  const navigate = useNavigate();
   const [state, setState] = useState<CurrentUserState>({ loading: true });
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
@@ -143,8 +144,23 @@ const CurrentUserProvider: FC = ({ children }) => {
         });
 
         const user = res?.data?.data;
+        // 服务端通过 `{ code: 302, redirect }` 通知客户端先去某个中间页(例如 2FA 验证页)。
+        // 这类响应没有 user.id,但也不能视为未登录——否则会和处理 302 的全局响应拦截器
+        // (例如 plugin-two-factor-authentication 注册的那一个)竞态,而 `window.location.replace`
+        // 会覆盖更早发出的 `window.location.href`,把用户错误地弹回登录页。让响应拦截器接管跳转。
+        if (user?.code === 302) {
+          if (mounted) {
+            setState({ loading: false });
+          }
+          return;
+        }
         if (user?.id == null) {
-          redirectToV2Signin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
+          // 用 react-router navigate (虚拟跳转)而不是 location.replace, 这样如果有其他响应拦截器
+          // 已经发起了 window.location.href 整页跳转(例如 2FA 插件接收到服务端 302 重定向),
+          // 真实跳转可以胜出 navigate, 不会被这里的 signin 重定向覆盖。
+          navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
+            replace: true,
+          });
           return;
         }
 
@@ -169,7 +185,9 @@ const CurrentUserProvider: FC = ({ children }) => {
       } catch (error: any) {
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (isAuthError) {
-          redirectToV2Signin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
+          navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
+            replace: true,
+          });
           return;
         }
         if (mounted) {
@@ -184,7 +202,7 @@ const CurrentUserProvider: FC = ({ children }) => {
     return () => {
       mounted = false;
     };
-  }, [app]);
+  }, [app, navigate]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
@@ -196,15 +214,12 @@ const CurrentUserProvider: FC = ({ children }) => {
 const RootRedirect: FC = () => {
   const app = useApp();
   const hasToken = !!app?.apiClient?.auth?.token;
-
-  useEffect(() => {
-    if (!hasToken) {
-      redirectToV2Signin(app, getDefaultV2AdminRedirectPath(app), { replace: true });
-    }
-  }, [app, hasToken]);
+  const targetPath = getDefaultV2AdminRedirectPath(app);
 
   if (!hasToken) {
-    return app.renderComponent('AppSpin');
+    // 用 react-router <Navigate /> 而非 location.replace, 避免覆盖同时段其它响应拦截器
+    // 触发的 window.location.href (例如 2FA 接收到服务端 302 时设置的整页跳转)。
+    return <Navigate replace to={`/signin?redirect=${encodeURIComponent(targetPath)}`} />;
   }
 
   return <Navigate replace to="/admin" />;
