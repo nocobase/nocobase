@@ -52,7 +52,6 @@ export default function PoweredByLite() {
     return (
       <div
         className="nb-brand"
-        style={{ color: token.colorTextDescription }}
         dangerouslySetInnerHTML={{
           __html: parseHTML(customBrand, { appVersion }),
         }}

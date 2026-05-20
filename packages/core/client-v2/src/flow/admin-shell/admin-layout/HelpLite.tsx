@@ -156,7 +156,7 @@ export const HelpLite = observer(
     );
 
     if (customBrandPlugin?.options?.options?.about) {
-      const appVersion = `<span class="nb-app-version">v${appInfo?.version}</span>`;
+      const appVersion = appInfo?.version ? `<span class="nb-app-version">v${appInfo.version}</span>` : '';
       const content = parseHTML(customBrandPlugin.options.options.about, { appVersion });
 
       return (
