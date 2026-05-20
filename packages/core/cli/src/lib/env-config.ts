@@ -29,6 +29,8 @@ const STRING_ENV_CONFIG_KEYS = [
   'dbDatabase',
   'dbUser',
   'dbPassword',
+  'dbSchema',
+  'dbTablePrefix',
   'rootUsername',
   'rootEmail',
   'rootPassword',
@@ -40,6 +42,7 @@ const BOOLEAN_ENV_CONFIG_KEYS = [
   'devDependencies',
   'build',
   'buildDts',
+  'dbUnderscored',
 ] as const;
 
 type StringEnvConfigKey = (typeof STRING_ENV_CONFIG_KEYS)[number];

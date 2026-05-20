@@ -71,6 +71,20 @@ function trimValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function pushOptionalEnvArg(args: string[], key: string, value: string | boolean | undefined) {
+  if (typeof value === 'string') {
+    if (!value) {
+      return;
+    }
+    args.push('-e', `${key}=${value}`);
+    return;
+  }
+
+  if (typeof value === 'boolean') {
+    args.push('-e', `${key}=${String(value)}`);
+  }
+}
+
 function formatAppUrl(port?: string): string | undefined {
   const value = trimValue(port);
   return value ? `http://127.0.0.1:${value}` : undefined;
@@ -451,6 +465,12 @@ export default class AppUpgrade extends Command {
     const dbDatabase = readEnvValue(runtime.env, 'dbDatabase');
     const dbUser = readEnvValue(runtime.env, 'dbUser');
     const dbPassword = readEnvValue(runtime.env, 'dbPassword');
+    const dbSchema = readEnvValue(runtime.env, 'dbSchema');
+    const dbTablePrefix = readEnvValue(runtime.env, 'dbTablePrefix');
+    const dbUnderscored =
+      typeof runtime.env.config.dbUnderscored === 'boolean'
+        ? runtime.env.config.dbUnderscored
+        : undefined;
     const networkName = trimValue(runtime.dockerNetworkName || runtime.workspaceName);
 
     const missing: string[] = [];
@@ -533,8 +553,11 @@ export default class AppUpgrade extends Command {
       `TZ=${timeZone}`,
       '-v',
       `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
-      imageRef,
     );
+    pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
+    pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
+    pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+    args.push(imageRef);
 
     return {
       containerName: runtime.containerName,

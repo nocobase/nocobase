@@ -351,6 +351,54 @@ async function commandOutput(
   });
 }
 
+function optionalEnvString(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text || undefined;
+}
+
+function optionalEnvBoolean(value: unknown): boolean | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return Boolean(value);
+}
+
+function pushOptionalEnvArg(
+  args: string[],
+  key: string,
+  value: string | boolean | undefined,
+): void {
+  if (typeof value === 'string') {
+    if (!value) {
+      return;
+    }
+    args.push('-e', `${key}=${value}`);
+    return;
+  }
+
+  if (typeof value === 'boolean') {
+    args.push('-e', `${key}=${String(value)}`);
+  }
+}
+
+function setOptionalEnvVar(
+  out: Record<string, string>,
+  key: string,
+  value: string | boolean | undefined,
+): void {
+  if (typeof value === 'string') {
+    if (!value) {
+      return;
+    }
+    out[key] = value;
+    return;
+  }
+
+  if (typeof value === 'boolean') {
+    out[key] = String(value);
+  }
+}
+
 /** Parsed `nb install` flags (oclif output shape). */
 type InstallParsedFlags = {
   yes: boolean;
@@ -381,6 +429,9 @@ type InstallParsedFlags = {
   'db-database'?: string;
   'db-user'?: string;
   'db-password'?: string;
+  'db-schema'?: string;
+  'db-table-prefix'?: string;
+  'db-underscored'?: boolean;
   'no-intro'?: boolean;
 };
 
@@ -596,6 +647,17 @@ export default class Install extends Command {
     }),
     'db-password': Flags.string({
       description: 'Database password for the app',
+    }),
+    'db-schema': Flags.string({
+      description: 'Database schema for the app',
+    }),
+    'db-table-prefix': Flags.string({
+      description: 'Database table prefix for the app',
+    }),
+    'db-underscored': Flags.boolean({
+      allowNo: true,
+      description: 'Use underscored database naming for the app',
+      default: false,
     }),
     'fetch-source': Flags.boolean({
       description:
@@ -956,6 +1018,21 @@ export default class Install extends Command {
     if (flags['db-password'] !== undefined) {
       preset.dbPassword = String(flags['db-password'] ?? '');
     }
+    if (flags['db-schema'] !== undefined) {
+      const v = String(flags['db-schema'] ?? '').trim();
+      if (v) {
+        preset.dbSchema = v;
+      }
+    }
+    if (flags['db-table-prefix'] !== undefined) {
+      const v = String(flags['db-table-prefix'] ?? '').trim();
+      if (v) {
+        preset.dbTablePrefix = v;
+      }
+    }
+    if (argvHasToken(argv, ['--db-underscored', '--no-db-underscored'])) {
+      preset.dbUnderscored = flags['db-underscored'];
+    }
 
     return preset;
   }
@@ -981,6 +1058,9 @@ export default class Install extends Command {
       'dbDatabase',
       'dbUser',
       'dbPassword',
+      'dbSchema',
+      'dbTablePrefix',
+      'dbUnderscored',
     ]);
   }
 
@@ -1249,6 +1329,10 @@ export default class Install extends Command {
     const dbDatabase = Install.toOptionalPromptString(config.dbDatabase);
     const dbUser = Install.toOptionalPromptString(config.dbUser);
     const dbPassword = Install.toOptionalPromptString(config.dbPassword);
+    const dbSchema = Install.toOptionalPromptString(config.dbSchema);
+    const dbTablePrefix = Install.toOptionalPromptString(config.dbTablePrefix);
+    const dbUnderscored =
+      typeof config.dbUnderscored === 'boolean' ? config.dbUnderscored : undefined;
     const builtinDbImage = Install.toOptionalPromptString(config.builtinDbImage);
     const rootUsername = Install.toOptionalPromptString(config.rootUsername);
     const rootEmail = Install.toOptionalPromptString(config.rootEmail);
@@ -1299,6 +1383,9 @@ export default class Install extends Command {
       ...(dbDatabase ? { dbDatabase } : {}),
       ...(dbUser ? { dbUser } : {}),
       ...(dbPassword ? { dbPassword } : {}),
+      ...(dbSchema ? { dbSchema } : {}),
+      ...(dbTablePrefix ? { dbTablePrefix } : {}),
+      ...(dbUnderscored !== undefined ? { dbUnderscored } : {}),
     };
 
     const rootPreset: PromptInitialValues = {
@@ -2145,6 +2232,9 @@ export default class Install extends Command {
       || DEFAULT_INSTALL_DB_DATABASE;
     const dbUser = String(params.dbResults.dbUser ?? DEFAULT_INSTALL_DB_USER).trim() || DEFAULT_INSTALL_DB_USER;
     const dbPassword = String(params.dbResults.dbPassword ?? DEFAULT_INSTALL_DB_PASSWORD) || DEFAULT_INSTALL_DB_PASSWORD;
+    const dbSchema = optionalEnvString(params.dbResults.dbSchema);
+    const dbTablePrefix = optionalEnvString(params.dbResults.dbTablePrefix);
+    const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
     const appKey = crypto.randomBytes(32).toString('hex');
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const containerName = Install.buildDockerAppContainerName(
@@ -2200,8 +2290,11 @@ export default class Install extends Command {
       `TZ=${timeZone}`,
       '-v',
       `${storagePath}:/app/nocobase/storage`,
-      imageRef,
     );
+    pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema);
+    pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix);
+    pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+    args.push(imageRef);
 
     return {
       source: 'docker',
@@ -2467,6 +2560,9 @@ export default class Install extends Command {
         rootResults: params.rootResults,
       }),
     };
+    setOptionalEnvVar(env, 'DB_SCHEMA', optionalEnvString(params.dbResults.dbSchema));
+    setOptionalEnvVar(env, 'DB_TABLE_PREFIX', optionalEnvString(params.dbResults.dbTablePrefix));
+    setOptionalEnvVar(env, 'DB_UNDERSCORED', optionalEnvBoolean(params.dbResults.dbUnderscored));
 
     return env;
   }
@@ -2737,6 +2833,9 @@ export default class Install extends Command {
       dbDatabase: params.dbResults.dbDatabase,
       dbUser: params.dbResults.dbUser,
       dbPassword: params.dbResults.dbPassword,
+      dbSchema: params.dbResults.dbSchema,
+      dbTablePrefix: params.dbResults.dbTablePrefix,
+      dbUnderscored: params.dbResults.dbUnderscored,
       rootUsername: params.rootResults.rootUsername,
       rootEmail: params.rootResults.rootEmail,
       rootPassword: params.rootResults.rootPassword,
@@ -2808,7 +2907,7 @@ export default class Install extends Command {
       ...(resumePreset?.dbPreset ?? {}),
       ...Install.buildDbPresetValuesFromFlags(parsed),
     };
-    const dbResults = await runPromptCatalog(Install.buildDbPromptsCatalog(envName, downloadResults, {
+    const promptedDbResults = await runPromptCatalog(Install.buildDbPromptsCatalog(envName, downloadResults, {
       resume: parsed.resume,
     }), {
       initialValues: {
@@ -2827,6 +2926,10 @@ export default class Install extends Command {
       values: dbPreset,
       yes,
     });
+    const dbResults = {
+      ...promptedDbResults,
+      ...pickPresetKeys(dbPreset, ['dbSchema', 'dbTablePrefix', 'dbUnderscored']),
+    };
 
     const rootPreset = Install.buildRootPresetValuesFromFlags(parsed);
     const rootResults = await runPromptCatalog(Install.rootUserPrompts, {

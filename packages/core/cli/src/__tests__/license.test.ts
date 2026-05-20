@@ -1333,6 +1333,11 @@ test('license activate supports interactive online activation', async () => {
     await LicenseActivate.prototype.run.call(command);
 
     expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
+    expect(mocks.activateSelect.mock.calls[0]?.[0]?.default).toBe('online');
+    expect(mocks.activateSelect.mock.calls[0]?.[0]?.choices?.[0]).toEqual({
+      value: 'online',
+      name: 'Request and activate a license online',
+    });
     expect(String(mocks.activateInput.mock.calls[0]?.[0]?.message)).toBe('Service account');
     expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toBe('Service password');
     expect(mocks.activatePassword.mock.calls[0]?.[0]?.mask).toBe('•');
@@ -1527,6 +1532,139 @@ test('license activate supports interactive cancellation', async () => {
   await LicenseActivate.prototype.run.call(command);
 
   expect(log).not.toHaveBeenCalled();
+});
+
+test('license activate prompts with online as the first default option', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+
+  mocks.isInteractiveTerminal.mockReturnValue(true);
+  mocks.activateSelect.mockResolvedValueOnce('cancel');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'dev',
+    source: 'npm',
+    projectRoot: '/tmp/dev',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {},
+      storagePath: '/tmp/storage',
+      envVars: {
+        STORAGE_PATH: '/tmp/storage',
+      },
+    },
+  });
+
+  const command = Object.assign(Object.create(LicenseActivate.prototype), {
+    argv: [],
+    parse: vi.fn(async () => ({
+      flags: {
+        env: undefined,
+        json: false,
+        yes: false,
+        key: undefined,
+        'key-file': undefined,
+        online: false,
+      },
+    })),
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await LicenseActivate.prototype.run.call(command);
+
+  expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toContain('How do you want to activate the license');
+  expect(mocks.activateSelect.mock.calls[0]?.[0]?.default).toBe('online');
+  expect(mocks.activateSelect.mock.calls[0]?.[0]?.choices?.[0]).toEqual({
+    value: 'online',
+    name: 'Request and activate a license online',
+  });
+});
+
+test('license activate defaults the interactive online app name to env name', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+
+  try {
+    mocks.isInteractiveTerminal.mockReturnValue(true);
+    mocks.activateSelect.mockResolvedValueOnce('online');
+    mocks.activateInput
+      .mockResolvedValueOnce('aa')
+      .mockResolvedValueOnce('dev');
+    mocks.activatePassword.mockReset();
+    mocks.activatePassword.mockResolvedValueOnce('bb');
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'dev',
+      source: 'npm',
+      projectRoot: '/tmp/dev',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {
+          apiBaseUrl: 'http://localhost:13000/api',
+        },
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          DB_DIALECT: 'postgres',
+          DB_HOST: '127.0.0.1',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'secret',
+        },
+      },
+    });
+    mocks.getInstanceIdAsync.mockResolvedValue('ins_12345');
+    mocks.keyDecrypt.mockReturnValue(JSON.stringify({
+      licenseKey: {
+        domain: 'localhost:13000',
+        licenseStatus: 'active',
+      },
+      instanceData: {
+        sys: 'darwin',
+        osVer: '24',
+        db: {
+          id: 'db-1',
+          type: 'postgres',
+          name: 'nocobase',
+        },
+      },
+    }));
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: [],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: undefined,
+          json: false,
+          key: undefined,
+          'key-file': undefined,
+          online: false,
+          account: undefined,
+          password: undefined,
+          desc: undefined,
+          'pkg-url': `${serviceUrl()}/`,
+          yes: false,
+        },
+      })),
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+      exit: vi.fn(),
+    });
+
+    await LicenseActivate.prototype.run.call(command);
+
+    expect(String(mocks.activateInput.mock.calls[1]?.[0]?.message)).toBe('Application name');
+    expect(mocks.activateInput.mock.calls[1]?.[0]?.default).toBe('dev');
+    expect(log.mock.calls[0]?.[0]).toContain('Activated the online license');
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
 });
 
 test('license plugins list shows licensed and unlicensed commercial plugins', async () => {

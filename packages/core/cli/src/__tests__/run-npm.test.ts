@@ -51,6 +51,38 @@ test('commandOutputViaFile captures long stdout without truncation', async () =>
   }
 });
 
+test('run forwards piped stdout and stderr to callbacks', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-pipe-'));
+  const script = path.join(dir, 'print-streams.cjs');
+  await fsp.writeFile(
+    script,
+    [
+      "process.stdout.write('hello stdout');",
+      "process.stderr.write('hello stderr');",
+    ].join('\n'),
+  );
+
+  let stdout = '';
+  let stderr = '';
+
+  try {
+    await run(process.execPath, [script], {
+      stdio: 'pipe',
+      onStdout: (chunk) => {
+        stdout += chunk;
+      },
+      onStderr: (chunk) => {
+        stderr += chunk;
+      },
+    });
+
+    expect(stdout).toBe('hello stdout');
+    expect(stderr).toBe('hello stderr');
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
