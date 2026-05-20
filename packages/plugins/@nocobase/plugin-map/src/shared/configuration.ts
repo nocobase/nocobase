@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { getSource, normalizeErrorMessage, runIdleTask } from '../shared/utils';
+export const MapConfigurationResourceKey = 'map-configuration';
+
+export const getSSKey = (type: string) => `NOCOBASE_PLUGIN_MAP_CONFIGURATION_${type}`;

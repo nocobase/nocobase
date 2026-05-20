@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { getSource, normalizeErrorMessage, runIdleTask } from '../shared/utils';
+export * from './useMapConfig';

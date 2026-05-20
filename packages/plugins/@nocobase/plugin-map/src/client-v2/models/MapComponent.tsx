@@ -8,9 +8,9 @@
  */
 
 import React, { useMemo } from 'react';
-import { useMapTranslation } from '../../locale';
-import { AMapCom } from './AMap';
-import { GoogleMapsCom } from './GoogleMaps';
+import { useT } from '../locale';
+import { AMapCom } from './components/AMap';
+import { GoogleMapsCom } from './components/GoogleMaps';
 
 const MapComponents = {
   amap: AMapCom,
@@ -18,7 +18,7 @@ const MapComponents = {
 };
 
 export const MapComponent = React.forwardRef<any, any>((props, ref) => {
-  const { t } = useMapTranslation();
+  const t = useT();
   const { mapType } = props;
   const Component = useMemo(() => {
     return MapComponents[mapType];

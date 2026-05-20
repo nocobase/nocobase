@@ -7,4 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { getSource, normalizeErrorMessage, runIdleTask } from '../shared/utils';
+import { tExpr } from './locale';
+
+export const MapTypes = [
+  { label: tExpr('AMap'), value: 'amap' },
+  { label: tExpr('Google Maps'), value: 'google' },
+];

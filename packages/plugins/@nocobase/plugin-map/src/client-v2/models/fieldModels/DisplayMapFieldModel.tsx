@@ -8,22 +8,29 @@
  */
 
 import React from 'react';
-import { DisplayTitleFieldModel, TableColumnModel } from '@nocobase/client';
-import { tExpr } from '@nocobase/flow-engine';
+import { DisplayTitleFieldModel, TableColumnModel } from '@nocobase/client-v2';
 import { MapComponent } from '../MapComponent';
-import { NAMESPACE } from '../../locale';
+import { tExpr } from '../../locale';
+
+export const formatMapDisplayValue = (value: any) => {
+  return value?.map?.((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',');
+};
 
 export const PointReadPretty = (props) => {
   const { displayStyle = 'text', value, collectionField, type } = props;
   const mapType = props.mapType || collectionField?.uiSchema['x-component-props']?.mapType;
   if (displayStyle === 'text') {
-    return value?.map?.((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',');
+    return formatMapDisplayValue(value);
   }
   return <MapComponent readonly disabled mapType={mapType} {...props} type={type}></MapComponent>;
 };
 export class DisplayMapFieldModel extends DisplayTitleFieldModel {
   getMapFieldType() {
     return null;
+  }
+
+  renderInDisplayStyle() {
+    return this.renderComponent(this.props.value);
   }
 
   public renderComponent(value) {
@@ -40,7 +47,7 @@ export class DisplayMapFieldModel extends DisplayTitleFieldModel {
 
 DisplayMapFieldModel.registerFlow({
   key: 'mapFieldSetting',
-  title: tExpr('Map field settings', { ns: NAMESPACE }),
+  title: tExpr('Map field settings'),
   steps: {
     displayStyle: {
       title: tExpr('Display mode'),
