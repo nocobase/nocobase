@@ -100,6 +100,20 @@ type RunJsSourceBudget = {
 };
 
 type RunJsAstInspection = {
+  invalidApiResourceCalls: Array<{
+    index: number;
+    match: string;
+    matchIndex?: number;
+    method: string;
+  }>;
+  invalidCtxApiMemberAccesses: Array<{
+    capability: string;
+    index: number;
+    match?: string;
+    matchIndex?: number;
+    member?: string;
+    ruleId: string;
+  }>;
   invalidResourceTypeCalls: Array<{
     capability: string;
     expression?: string;
@@ -122,6 +136,35 @@ type CtxMethodAlias = SourceRange & {
   capability: string;
   method: string;
   name: string;
+};
+
+type CtxApiCapability = 'ctx.api' | 'ctx.api.auth' | 'ctx.api.request' | 'ctx.api.resource' | `ctx.api.auth.${string}`;
+
+type CtxApiAlias = SourceRange & {
+  capability: CtxApiCapability;
+  declarationStart?: number;
+  executionScope: SourceRange;
+  name: string;
+};
+
+type CtxApiResourceHandleAlias = SourceRange & {
+  calleeSource: string;
+  declarationStart?: number;
+  executionScope: SourceRange;
+  name: string;
+  resourceName?: string;
+};
+
+type CtxApiResourceMethodAlias = SourceRange & {
+  declarationStart?: number;
+  executionScope: SourceRange;
+  method: string;
+  name: string;
+};
+
+type CtxApiResourceAliases = {
+  handles: CtxApiResourceHandleAlias[];
+  methods: CtxApiResourceMethodAlias[];
 };
 
 type AstIdentifierBinding = SourceRange & {
@@ -384,6 +427,9 @@ const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource']);
 const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 const CANONICAL_CTX_LIB_MEMBERS = ['React', 'ReactDOM', 'antd', 'dayjs', 'antdIcons', 'lodash', 'formula', 'math'];
 const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((member) => [member.toLowerCase(), member]));
+const RUNJS_CTX_API_ALLOWED_MEMBERS = new Set(['auth', 'request', 'resource']);
+const RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS = new Set(['authenticator', 'locale', 'role', 'token']);
+const RUNJS_RESOURCE_METHODS = new Set(['list', 'get', 'create', 'update', 'destroy']);
 const CONTEXT_FIRST_REPAIR_CLASSES = new Set<RunJsAuthoringRepairClass>([
   'unknown-surface-stop',
   'unknown-model-stop',
@@ -1677,6 +1723,32 @@ function collectCtxContractErrors(
       }),
     );
   });
+  scan.invalidCtxApiMemberAccesses.forEach((entry) => {
+    const message =
+      entry.ruleId === 'runjs-ctx-api-member-dynamic-unresolved'
+        ? `flowSurfaces authoring ${path} cannot validate dynamic ${entry.capability} access`
+        : entry.ruleId === 'runjs-ctx-api-auth-member-readonly'
+          ? `flowSurfaces authoring ${path} cannot write readonly RunJS ${entry.capability}; read ctx.api.auth.locale, role, token, or authenticator without mutating them`
+          : entry.ruleId === 'runjs-ctx-api-auth-member-unsupported'
+            ? `flowSurfaces authoring ${path} ${entry.capability} is not a supported RunJS ctx.api.auth member; read ctx.api.auth.locale, role, token, or authenticator instead`
+            : `flowSurfaces authoring ${path} ${entry.capability} is not a supported RunJS ctx.api member; use ctx.request(...), ctx.api.request(...), ctx.api.resource(...), or readonly ctx.api.auth fields`;
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'ctx-root-mismatch-stop',
+        ruleId: entry.ruleId,
+        message,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          member: entry.member,
+        },
+      }),
+    );
+  });
   scan.dynamicCtxAccesses.forEach((entry) => {
     errors.push(
       buildRunJsAuthoringError({
@@ -1774,7 +1846,10 @@ function scanJavaScriptSource(source: string, ast?: any) {
     ctxRunjsCalls,
     nestedRunjsCalls: astInspection?.nestedRunjsCalls || ctxRunjsCalls,
     ctxRequestCalls,
-    invalidApiResourceCalls: collectInvalidApiResourceCalls(source, masked, sourceBindings),
+    invalidApiResourceCalls: dedupeIndexedEntries([
+      ...collectInvalidApiResourceCalls(source, masked, sourceBindings),
+      ...(astInspection?.invalidApiResourceCalls || []),
+    ]).sort((left, right) => left.index - right.index),
     invalidResourceTypeCalls:
       astInspection?.invalidResourceTypeCalls ||
       collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings, sourceBindings),
@@ -1801,6 +1876,7 @@ function scanJavaScriptSource(source: string, ast?: any) {
     windowDocumentNavigatorAliases,
     ctxAliases,
     ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked, sourceBindings),
+    invalidCtxApiMemberAccesses: astInspection?.invalidCtxApiMemberAccesses || [],
     forbiddenBareGlobals,
     ctxMemberAccesses: collectCtxMemberAccesses(masked, sourceBindings),
     dynamicCtxAccesses: findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g, sourceBindings),
@@ -1811,6 +1887,8 @@ function scanJavaScriptSource(source: string, ast?: any) {
 function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteralBinding[]): RunJsAstInspection {
   const identifierBindings = collectAstIdentifierBindingsFromAst(ast, source);
   const aliases = collectCtxMethodAliasesFromAst(ast, source, identifierBindings);
+  const ctxApiAliases = collectCtxApiAliasesFromAst(ast, source, identifierBindings);
+  const ctxApiResourceAliases = collectCtxApiResourceAliasesFromAst(ast, source, ctxApiAliases, identifierBindings);
   const reactNamespaceAliases = collectReactNamespaceAliasesFromAst(ast, source, identifierBindings);
   const reactCreateElementAliases = collectReactCreateElementAliasesFromAst(
     ast,
@@ -1821,6 +1899,10 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
   const asyncComponentBindings = collectReactAsyncComponentBindingsFromAst(ast, source, identifierBindings);
   const staticStringBindings = [...stringBindings, ...collectStaticStringBindingsFromAst(ast, source)];
   const nestedRunjsCalls: RunJsAstInspection['nestedRunjsCalls'] = [];
+  const invalidCtxApiMemberAccesses: RunJsAstInspection['invalidCtxApiMemberAccesses'] = [
+    ...collectAstInvalidCtxApiPatternAccesses(ast, ctxApiAliases, identifierBindings),
+  ];
+  const invalidApiResourceCalls: RunJsAstInspection['invalidApiResourceCalls'] = [];
   const invalidResourceTypeCalls: RunJsAstInspection['invalidResourceTypeCalls'] = [];
   const reactAsyncComponentReferences: RunJsAstInspection['reactAsyncComponentReferences'] = [];
 
@@ -1848,6 +1930,9 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
           );
         }
       }
+      collectAstInvalidApiResourceCall(node, ctxApiAliases, ctxApiResourceAliases, source, identifierBindings).forEach(
+        (entry) => invalidApiResourceCalls.push(entry),
+      );
       collectAstReactAsyncComponentReferences(
         node,
         asyncComponentBindings,
@@ -1855,9 +1940,52 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
         identifierBindings,
       ).forEach((entry) => reactAsyncComponentReferences.push(entry));
     },
+    MemberExpression(node: any) {
+      const invalidCtxApiAccess = collectAstInvalidCtxApiMemberAccess(node, ctxApiAliases, identifierBindings, source);
+      if (invalidCtxApiAccess) {
+        invalidCtxApiMemberAccesses.push(invalidCtxApiAccess);
+      }
+    },
+    AssignmentExpression(node: any) {
+      collectAstInvalidCtxApiReadonlyWrites(node.left, ctxApiAliases, identifierBindings).forEach((entry) =>
+        invalidCtxApiMemberAccesses.push(entry),
+      );
+    },
+    UpdateExpression(node: any) {
+      collectAstInvalidCtxApiReadonlyWrites(node.argument, ctxApiAliases, identifierBindings).forEach((entry) =>
+        invalidCtxApiMemberAccesses.push(entry),
+      );
+    },
+    UnaryExpression(node: any) {
+      if (node.operator !== 'delete') {
+        return;
+      }
+      collectAstInvalidCtxApiReadonlyWrites(node.argument, ctxApiAliases, identifierBindings).forEach((entry) =>
+        invalidCtxApiMemberAccesses.push(entry),
+      );
+    },
+    ForInStatement(node: any) {
+      collectAstInvalidCtxApiReadonlyWrites(node.left, ctxApiAliases, identifierBindings).forEach((entry) =>
+        invalidCtxApiMemberAccesses.push(entry),
+      );
+    },
+    ForOfStatement(node: any) {
+      collectAstInvalidCtxApiReadonlyWrites(node.left, ctxApiAliases, identifierBindings).forEach((entry) =>
+        invalidCtxApiMemberAccesses.push(entry),
+      );
+    },
   });
 
+  const dedupedInvalidApiResourceCalls = dedupeIndexedEntries(invalidApiResourceCalls).sort(
+    (left, right) => left.index - right.index,
+  );
+
   return {
+    invalidApiResourceCalls: dedupedInvalidApiResourceCalls,
+    invalidCtxApiMemberAccesses: filterInvalidCtxApiMemberAccessesForResourceCalls(
+      dedupeIndexedEntries(invalidCtxApiMemberAccesses),
+      dedupedInvalidApiResourceCalls,
+    ).sort((left, right) => left.index - right.index),
     invalidResourceTypeCalls: dedupeAstResourceEntries(invalidResourceTypeCalls),
     nestedRunjsCalls: dedupeIndexedEntries(nestedRunjsCalls).sort((left, right) => left.index - right.index),
     reactAsyncComponentReferences: dedupeIndexedEntries(reactAsyncComponentReferences).sort(
@@ -1912,6 +2040,302 @@ function collectCtxMethodAliasesFromAst(
   });
 
   return aliases;
+}
+
+function collectCtxApiAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiAlias[] {
+  const aliases: CtxApiAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addAlias = (
+    name: string,
+    capability: CtxApiAlias['capability'],
+    node: any,
+    ancestors: any[],
+    isVar = false,
+  ) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability,
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      name,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const getActiveAliases = () => trimCtxApiAliasesAfterWrites(aliases, writes, identifierBindings);
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator)) {
+        return;
+      }
+      const activeAliases = getActiveAliases();
+      const capability =
+        getCtxApiCapabilityFromAst(node.right, activeAliases, identifierBindings) ||
+        getMaybeCtxApiCapabilityFromAst(node.right, activeAliases, identifierBindings);
+      if (node.left?.type === 'Identifier' && capability) {
+        addAlias(node.left.name, capability, node, ancestors);
+        return;
+      }
+      if (node.operator === '=' && node.left?.type === 'ObjectPattern') {
+        collectCtxApiObjectPatternAliases(node.left, capability, (name, aliasCapability, aliasNode) => {
+          addAlias(name, aliasCapability, aliasNode || node, ancestors);
+        });
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      const activeAliases = getActiveAliases();
+      const capability =
+        getCtxApiCapabilityFromAst(node.init, activeAliases, identifierBindings) ||
+        getMaybeCtxApiCapabilityFromAst(node.init, activeAliases, identifierBindings);
+      if (node.id?.type === 'Identifier' && capability) {
+        addAlias(node.id.name, capability, node, ancestors, isVar);
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern') {
+        collectCtxApiObjectPatternAliases(node.id, capability, (name, aliasCapability, aliasNode) => {
+          addAlias(name, aliasCapability, aliasNode || node, ancestors, isVar);
+        });
+      }
+    },
+  });
+
+  return trimCtxApiAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+function collectCtxApiObjectPatternAliases(
+  pattern: any,
+  capability: CtxApiCapability | '',
+  addAlias: (name: string, capability: CtxApiCapability, node?: any) => void,
+) {
+  if (capability === 'ctx.api') {
+    for (const property of pattern?.properties || []) {
+      if (!property || property.type !== 'Property') {
+        continue;
+      }
+      const member = getAstStaticPropertyName(property);
+      const alias = getAstBindingIdentifierName(property.value);
+      const aliasNode = getAstBindingIdentifierNode(property.value);
+      if (member && alias && RUNJS_CTX_API_ALLOWED_MEMBERS.has(member)) {
+        addAlias(alias, `ctx.api.${member}` as CtxApiCapability, aliasNode);
+      }
+      if (member === 'auth') {
+        const nestedPattern = getAstObjectPatternFromValue(property.value);
+        if (nestedPattern) {
+          collectCtxApiObjectPatternAliases(nestedPattern, 'ctx.api.auth', addAlias);
+        }
+      }
+    }
+    return;
+  }
+  if (capability === 'ctx.api.auth') {
+    collectAstObjectPatternAliases(pattern, (name, member, aliasNode) => {
+      if (RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS.has(member)) {
+        addAlias(name, `ctx.api.auth.${member}` as CtxApiCapability, aliasNode);
+      }
+    });
+  }
+}
+
+function trimCtxApiAliasesAfterWrites(
+  aliases: CtxApiAlias[],
+  writes: Array<{ alwaysRunsInExecutionScope: boolean; executionScope: SourceRange; index: number; name: string }>,
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiAlias[] {
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+function trimAstAliasesAfterWrites<
+  T extends SourceRange & { declarationStart?: number; executionScope: SourceRange; name: string },
+>(
+  aliases: T[],
+  writes: Array<{ alwaysRunsInExecutionScope: boolean; executionScope: SourceRange; index: number; name: string }>,
+  identifierBindings: AstIdentifierBinding[],
+): T[] {
+  return aliases.map((alias) => {
+    const aliasDeclarationStart = alias.declarationStart ?? alias.start;
+    const nextWrite = writes
+      .filter(
+        (write) =>
+          write.name === alias.name &&
+          write.index > aliasDeclarationStart &&
+          write.index >= alias.start &&
+          write.index < alias.end &&
+          write.alwaysRunsInExecutionScope &&
+          isSameAstRange(write.executionScope, alias.executionScope) &&
+          !hasAstShadowBinding(alias.name, write.index, alias, identifierBindings),
+      )
+      .sort((left, right) => left.index - right.index)[0];
+    return nextWrite ? { ...alias, end: nextWrite.index } : alias;
+  });
+}
+
+function collectAstIdentifierWritesFromAst(
+  ast: any,
+  source: string,
+): Array<{ alwaysRunsInExecutionScope: boolean; executionScope: SourceRange; index: number; name: string }> {
+  const writes: Array<{
+    alwaysRunsInExecutionScope: boolean;
+    executionScope: SourceRange;
+    index: number;
+    name: string;
+  }> = [];
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (!isAstDefiniteAssignmentOperator(node.operator)) {
+        return;
+      }
+      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+      const alwaysRunsInExecutionScope = isAstAlwaysExecutedInCurrentExecutionScope(ancestors);
+      collectAstPatternBindingIdentifiers(node.left, (name, bindingNode) => {
+        writes.push({
+          alwaysRunsInExecutionScope,
+          executionScope,
+          name,
+          index: typeof bindingNode?.start === 'number' ? bindingNode.start : node.start || 0,
+        });
+      });
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (!node.init) {
+        return;
+      }
+      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+      const alwaysRunsInExecutionScope = isAstAlwaysExecutedInCurrentExecutionScope(ancestors);
+      collectAstPatternBindingIdentifiers(node.id, (name, bindingNode) => {
+        writes.push({
+          alwaysRunsInExecutionScope,
+          executionScope,
+          name,
+          index: typeof bindingNode?.start === 'number' ? bindingNode.start : node.start || 0,
+        });
+      });
+    },
+    UpdateExpression(node: any, ancestors: any[]) {
+      if (node.argument?.type === 'Identifier') {
+        writes.push({
+          alwaysRunsInExecutionScope: isAstAlwaysExecutedInCurrentExecutionScope(ancestors),
+          executionScope: getAstExecutionScopeRange(ancestors, source.length),
+          name: node.argument.name,
+          index: typeof node.argument.start === 'number' ? node.argument.start : node.start || 0,
+        });
+      }
+    },
+    ForInStatement(node: any, ancestors: any[]) {
+      if (!isAstDefinitelyNonEmptyForInSource(node.right) || node.left?.type === 'VariableDeclaration') {
+        return;
+      }
+      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+      collectAstPatternBindingIdentifiers(node.left, (name, bindingNode) => {
+        writes.push({
+          alwaysRunsInExecutionScope: isAstAlwaysExecutedInCurrentExecutionScope(ancestors),
+          executionScope,
+          name,
+          index: typeof bindingNode?.start === 'number' ? bindingNode.start : node.left?.start || node.start || 0,
+        });
+      });
+    },
+    ForOfStatement(node: any, ancestors: any[]) {
+      if (!isAstDefinitelyNonEmptyForOfSource(node.right) || node.left?.type === 'VariableDeclaration') {
+        return;
+      }
+      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+      collectAstPatternBindingIdentifiers(node.left, (name, bindingNode) => {
+        writes.push({
+          alwaysRunsInExecutionScope: isAstAlwaysExecutedInCurrentExecutionScope(ancestors),
+          executionScope,
+          name,
+          index: typeof bindingNode?.start === 'number' ? bindingNode.start : node.left?.start || node.start || 0,
+        });
+      });
+    },
+  });
+  return writes;
+}
+
+function isAstDefinitelyNonEmptyForInSource(node: any) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return false;
+  }
+  if (unwrapped.type === 'ObjectExpression') {
+    return (unwrapped.properties || []).some(isAstDefinitelyEnumerableObjectProperty);
+  }
+  return false;
+}
+
+function isAstDefinitelyNonEmptyForOfSource(node: any) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return false;
+  }
+  if (unwrapped.type === 'ArrayExpression') {
+    return (unwrapped.elements || []).some(isAstDefinitelyNonEmptyArrayElement);
+  }
+  return false;
+}
+
+function isAstDefinitelyNonEmptyArrayElement(element: any): boolean {
+  if (!element) {
+    return true;
+  }
+  if (element.type === 'SpreadElement') {
+    return isAstDefinitelyNonEmptyForOfSource(element.argument);
+  }
+  return true;
+}
+
+function isAstDefinitelyEnumerableObjectProperty(property: any) {
+  if (!property || property.type === 'SpreadElement' || property.type !== 'Property') {
+    return false;
+  }
+  if (property.computed) {
+    return isAstDefinitelyEnumerableComputedObjectKey(property.key);
+  }
+  const key = property.key;
+  const isProtoSetter =
+    !property.method &&
+    !property.shorthand &&
+    (property.kind || 'init') === 'init' &&
+    ((key?.type === 'Identifier' && key.name === '__proto__') ||
+      (key?.type === 'Literal' && key.value === '__proto__'));
+  if (isProtoSetter) {
+    // Prototype-setter literals can affect inherited keys, but are not an own enumerable key themselves.
+    return false;
+  }
+  if (key?.type === 'Identifier') {
+    return true;
+  }
+  if (key?.type === 'Literal') {
+    return true;
+  }
+  return true;
+}
+
+function isAstDefinitelyEnumerableComputedObjectKey(key: any): boolean {
+  const unwrapped = unwrapAstChainExpression(key);
+  if (!unwrapped) {
+    return false;
+  }
+  if (unwrapped.type === 'Literal') {
+    return (
+      typeof unwrapped.value === 'string' ||
+      typeof unwrapped.value === 'number' ||
+      typeof unwrapped.value === 'boolean' ||
+      typeof unwrapped.value === 'bigint' ||
+      unwrapped.value === null
+    );
+  }
+  if (unwrapped.type === 'TemplateLiteral') {
+    return (unwrapped.expressions || []).length === 0;
+  }
+  return false;
 }
 
 function collectReactCreateElementAliasesFromAst(
@@ -2276,6 +2700,696 @@ function collectStaticStringBindingsFromAst(ast: any, source: string): StaticStr
   return bindings;
 }
 
+function collectCtxApiResourceAliasesFromAst(
+  ast: any,
+  source: string,
+  ctxApiAliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiResourceAliases {
+  type ResourceHandleSource = { args: any[]; calleeSource: string; index: number } | CtxApiResourceHandleAlias;
+
+  const handles: CtxApiResourceHandleAlias[] = [];
+  const methods: CtxApiResourceMethodAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addHandleAlias = (
+    name: string,
+    resourceFactoryCall: { args: any[]; calleeSource: string; index: number } | CtxApiResourceHandleAlias,
+    node: any,
+    ancestors: any[],
+    isVar = false,
+  ) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    handles.push({
+      calleeSource: resourceFactoryCall.calleeSource,
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      name,
+      resourceName:
+        'args' in resourceFactoryCall
+          ? resolveAstStaticStringValue(resourceFactoryCall.args?.[0], source)
+          : resourceFactoryCall.resourceName,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const addMethodAlias = (name: string, method: string, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    methods.push({
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      method,
+      name,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const getActiveHandles = () => trimAstAliasesAfterWrites(handles, writes, identifierBindings);
+  const getActiveMethods = () => trimAstAliasesAfterWrites(methods, writes, identifierBindings);
+  const collectMethodAliases = (pattern: any, sourceNode: any, ancestors: any[], isVar = false) => {
+    if (!sourceNode) {
+      return;
+    }
+    collectAstObjectPatternAliases(pattern, (name, method, aliasNode) => {
+      if (RUNJS_RESOURCE_METHODS.has(method)) {
+        addMethodAlias(name, method, aliasNode || pattern, ancestors, isVar);
+      }
+    });
+  };
+  const getDirectResourceHandleSource = (node: any): ResourceHandleSource | undefined =>
+    getCtxApiResourceCallFromAst(node, ctxApiAliases, source, identifierBindings) ||
+    getCtxApiResourceHandleAliasFromAst(node, getActiveHandles(), identifierBindings);
+  const getMaybeResourceHandleSource = (node: any): ResourceHandleSource | undefined =>
+    collectPossibleResourceHandleSources(node)[0];
+  const collectPossibleResourceHandleSources = (node: any): ResourceHandleSource[] => {
+    const directSource = getDirectResourceHandleSource(node);
+    if (directSource) {
+      return [directSource];
+    }
+    const unwrapped = unwrapAstChainExpression(node);
+    if (!unwrapped) {
+      return [];
+    }
+    if (unwrapped.type === 'ConditionalExpression') {
+      return [
+        ...collectPossibleResourceHandleSources(unwrapped.consequent),
+        ...collectPossibleResourceHandleSources(unwrapped.alternate),
+      ];
+    }
+    if (unwrapped.type === 'LogicalExpression') {
+      const leftSources = collectPossibleResourceHandleSources(unwrapped.left);
+      const rightSources = collectPossibleResourceHandleSources(unwrapped.right);
+      if (unwrapped.operator === '&&' && leftSources.length) {
+        return rightSources;
+      }
+      if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftSources.length) {
+        return leftSources;
+      }
+      return [...leftSources, ...rightSources];
+    }
+    if (unwrapped.type === 'SequenceExpression') {
+      const expressions = unwrapped.expressions || [];
+      return collectPossibleResourceHandleSources(expressions[expressions.length - 1]);
+    }
+    if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+      return collectPossibleResourceHandleSources(unwrapped.right);
+    }
+    return [];
+  };
+  const getDirectResourceMethodSource = (node: any): { method: string } | undefined => {
+    const methodAlias = getCtxApiResourceMethodAliasFromAst(node, getActiveMethods(), identifierBindings);
+    if (methodAlias) {
+      return { method: methodAlias.method };
+    }
+    const member = unwrapAstChainExpression(node);
+    if (!member || member.type !== 'MemberExpression') {
+      return undefined;
+    }
+    const method = getAstStaticPropertyName(member);
+    if (!RUNJS_RESOURCE_METHODS.has(method) || !getMaybeResourceHandleSource(member.object)) {
+      return undefined;
+    }
+    return { method };
+  };
+  const getMaybeResourceMethodSource = (node: any): { method: string } | undefined => {
+    const sources = collectPossibleResourceMethodSources(node);
+    return sources[0];
+  };
+  const collectPossibleResourceMethodSources = (node: any): Array<{ method: string }> => {
+    const directSource = getDirectResourceMethodSource(node);
+    if (directSource) {
+      return [directSource];
+    }
+    const unwrapped = unwrapAstChainExpression(node);
+    if (!unwrapped) {
+      return [];
+    }
+    if (unwrapped.type === 'ConditionalExpression') {
+      return [
+        ...collectPossibleResourceMethodSources(unwrapped.consequent),
+        ...collectPossibleResourceMethodSources(unwrapped.alternate),
+      ];
+    }
+    if (unwrapped.type === 'LogicalExpression') {
+      const leftSources = collectPossibleResourceMethodSources(unwrapped.left);
+      const rightSources = collectPossibleResourceMethodSources(unwrapped.right);
+      if (unwrapped.operator === '&&' && leftSources.length) {
+        return rightSources;
+      }
+      if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftSources.length) {
+        return leftSources;
+      }
+      return [...leftSources, ...rightSources];
+    }
+    if (unwrapped.type === 'SequenceExpression') {
+      const expressions = unwrapped.expressions || [];
+      return collectPossibleResourceMethodSources(expressions[expressions.length - 1]);
+    }
+    if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+      return collectPossibleResourceMethodSources(unwrapped.right);
+    }
+    return [];
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (isAstCtxApiAliasAssignmentOperator(node.operator) && node.left?.type === 'Identifier') {
+        const resourceMethodSource = getMaybeResourceMethodSource(node.right);
+        if (resourceMethodSource) {
+          addMethodAlias(node.left.name, resourceMethodSource.method, node, ancestors);
+          return;
+        }
+        const resourceHandleSource = getMaybeResourceHandleSource(node.right);
+        if (resourceHandleSource) {
+          addHandleAlias(node.left.name, resourceHandleSource, node, ancestors);
+          return;
+        }
+      }
+      if (node.operator === '=' && node.left?.type === 'ObjectPattern') {
+        collectMethodAliases(node.left, getMaybeResourceHandleSource(node.right), ancestors);
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      if (node.id?.type === 'Identifier') {
+        const resourceMethodSource = getMaybeResourceMethodSource(node.init);
+        if (resourceMethodSource) {
+          addMethodAlias(node.id.name, resourceMethodSource.method, node, ancestors, isVar);
+          return;
+        }
+        const resourceHandleSource = getMaybeResourceHandleSource(node.init);
+        if (resourceHandleSource) {
+          addHandleAlias(node.id.name, resourceHandleSource, node, ancestors, isVar);
+          return;
+        }
+      }
+      const resourceHandleSource = getMaybeResourceHandleSource(node.init);
+      if (node.id?.type === 'ObjectPattern') {
+        collectMethodAliases(node.id, resourceHandleSource, ancestors, isVar);
+      }
+    },
+  });
+
+  return {
+    handles: trimAstAliasesAfterWrites(handles, writes, identifierBindings),
+    methods: trimAstAliasesAfterWrites(methods, writes, identifierBindings),
+  };
+}
+
+function collectAstInvalidApiResourceCall(
+  node: any,
+  aliases: CtxApiAlias[],
+  resourceAliases: CtxApiResourceAliases,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): RunJsAstInspection['invalidApiResourceCalls'] {
+  const entries: RunJsAstInspection['invalidApiResourceCalls'] = [];
+  const callee = unwrapAstChainExpression(node.callee);
+  const chainedResourceMethod = getCtxApiResourceChainedMethodFromAst(
+    callee,
+    aliases,
+    resourceAliases,
+    source,
+    identifierBindings,
+  );
+  if (chainedResourceMethod) {
+    entries.push(chainedResourceMethod);
+  }
+
+  const resourceFactoryCall = getCtxApiResourceCallFromAst(node, aliases, source, identifierBindings);
+  if (!resourceFactoryCall) {
+    return entries;
+  }
+
+  const method = resolveAstStaticStringValue(node.arguments?.[0], source);
+  if (method && RUNJS_RESOURCE_METHODS.has(method)) {
+    entries.push({
+      index: resourceFactoryCall.index,
+      match: `${resourceFactoryCall.calleeSource}('${method}')`,
+      matchIndex: resourceFactoryCall.index,
+      method,
+    });
+  }
+
+  const resourceName = resolveAstStaticStringValue(node.arguments?.[0], source);
+  const action = resolveAstStaticStringValue(node.arguments?.[1], source);
+  if (action && RUNJS_RESOURCE_METHODS.has(action)) {
+    entries.push({
+      index: resourceFactoryCall.index,
+      match: resourceName
+        ? `${resourceFactoryCall.calleeSource}('${resourceName}', '${action}')`
+        : `${resourceFactoryCall.calleeSource}(..., '${action}')`,
+      matchIndex: resourceFactoryCall.index,
+      method: action,
+    });
+  }
+
+  return entries;
+}
+
+function getCtxApiResourceChainedMethodFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  resourceAliases: CtxApiResourceAliases,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): RunJsAstInspection['invalidApiResourceCalls'][number] | undefined {
+  const callee = unwrapAstChainExpression(node);
+  const wrappedMethod = getWrappedCtxApiResourceChainedMethodFromAst(
+    callee,
+    aliases,
+    resourceAliases,
+    source,
+    identifierBindings,
+  );
+  if (wrappedMethod) {
+    return wrappedMethod;
+  }
+  const methodAlias = getMaybeCtxApiResourceMethodAliasFromAst(callee, resourceAliases.methods, identifierBindings);
+  if (methodAlias) {
+    return {
+      index: typeof callee.start === 'number' ? callee.start : 0,
+      match: getAstSource(callee, source),
+      matchIndex: typeof callee.start === 'number' ? callee.start : 0,
+      method: methodAlias.method,
+    };
+  }
+  if (!callee || callee.type !== 'MemberExpression') {
+    return undefined;
+  }
+
+  const invocationMember = getAstStaticPropertyName(callee);
+  if (invocationMember === 'call' || invocationMember === 'apply' || invocationMember === 'bind') {
+    const targetMethod = getCtxApiResourceChainedMethodFromAst(
+      callee.object,
+      aliases,
+      resourceAliases,
+      source,
+      identifierBindings,
+    );
+    if (targetMethod) {
+      return {
+        ...targetMethod,
+        index: typeof callee.start === 'number' ? callee.start : targetMethod.index,
+        match: getAstSource(callee, source),
+        matchIndex: typeof callee.start === 'number' ? callee.start : targetMethod.matchIndex,
+      };
+    }
+  }
+
+  const method = getAstStaticPropertyName(callee);
+  if (!RUNJS_RESOURCE_METHODS.has(method)) {
+    return undefined;
+  }
+
+  const resourceHandleAlias = getMaybeCtxApiResourceHandleAliasFromAst(
+    callee.object,
+    resourceAliases.handles,
+    identifierBindings,
+  );
+  if (resourceHandleAlias) {
+    return {
+      index: typeof callee.start === 'number' ? callee.start : 0,
+      match: getAstSource(callee, source),
+      matchIndex: typeof callee.start === 'number' ? callee.start : 0,
+      method,
+    };
+  }
+
+  const objectPath = getCtxApiMemberPathFromAst(callee.object, aliases, identifierBindings);
+  if (isCtxApiResourcePath(objectPath)) {
+    return {
+      index: typeof callee.start === 'number' ? callee.start : 0,
+      match: getAstSource(callee, source),
+      matchIndex: typeof callee.start === 'number' ? callee.start : 0,
+      method,
+    };
+  }
+
+  const resourceFactoryCall = getMaybeCtxApiResourceCallFromAst(callee.object, aliases, source, identifierBindings);
+  if (!resourceFactoryCall) {
+    return undefined;
+  }
+  const resourceName = resolveAstStaticStringValue(resourceFactoryCall.args?.[0], source);
+  return {
+    index: resourceFactoryCall.index,
+    match: resourceName
+      ? `${resourceFactoryCall.calleeSource}('${resourceName}').${method}`
+      : `${resourceFactoryCall.calleeSource}(...).${method}`,
+    matchIndex: resourceFactoryCall.index,
+    method,
+  };
+}
+
+function getWrappedCtxApiResourceChainedMethodFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  resourceAliases: CtxApiResourceAliases,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): RunJsAstInspection['invalidApiResourceCalls'][number] | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+
+  const wrapEntry = (entry: RunJsAstInspection['invalidApiResourceCalls'][number] | undefined) => {
+    if (!entry) {
+      return undefined;
+    }
+    return {
+      ...entry,
+      index: typeof unwrapped.start === 'number' ? unwrapped.start : entry.index,
+      match: getAstSource(unwrapped, source),
+      matchIndex: typeof unwrapped.start === 'number' ? unwrapped.start : entry.matchIndex,
+    };
+  };
+
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      wrapEntry(
+        getCtxApiResourceChainedMethodFromAst(
+          unwrapped.consequent,
+          aliases,
+          resourceAliases,
+          source,
+          identifierBindings,
+        ),
+      ) ||
+      wrapEntry(
+        getCtxApiResourceChainedMethodFromAst(
+          unwrapped.alternate,
+          aliases,
+          resourceAliases,
+          source,
+          identifierBindings,
+        ),
+      )
+    );
+  }
+
+  if (unwrapped.type === 'LogicalExpression') {
+    const leftEntry = getCtxApiResourceChainedMethodFromAst(
+      unwrapped.left,
+      aliases,
+      resourceAliases,
+      source,
+      identifierBindings,
+    );
+    if (unwrapped.operator === '&&') {
+      return wrapEntry(
+        getCtxApiResourceChainedMethodFromAst(unwrapped.right, aliases, resourceAliases, source, identifierBindings),
+      );
+    }
+    if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftEntry) {
+      return wrapEntry(leftEntry);
+    }
+    return (
+      wrapEntry(leftEntry) ||
+      wrapEntry(
+        getCtxApiResourceChainedMethodFromAst(unwrapped.right, aliases, resourceAliases, source, identifierBindings),
+      )
+    );
+  }
+
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return wrapEntry(
+      getCtxApiResourceChainedMethodFromAst(
+        expressions[expressions.length - 1],
+        aliases,
+        resourceAliases,
+        source,
+        identifierBindings,
+      ),
+    );
+  }
+
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return wrapEntry(
+      getCtxApiResourceChainedMethodFromAst(unwrapped.right, aliases, resourceAliases, source, identifierBindings),
+    );
+  }
+
+  return undefined;
+}
+
+function getCtxApiResourceHandleAliasFromAst(
+  node: any,
+  aliases: CtxApiResourceHandleAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiResourceHandleAlias | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (unwrapped?.type !== 'Identifier') {
+    return undefined;
+  }
+  return resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, aliases, identifierBindings);
+}
+
+function getCtxApiResourceMethodAliasFromAst(
+  node: any,
+  aliases: CtxApiResourceMethodAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiResourceMethodAlias | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (unwrapped?.type !== 'Identifier') {
+    return undefined;
+  }
+  return resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, aliases, identifierBindings);
+}
+
+function getMaybeCtxApiResourceHandleAliasFromAst(
+  node: any,
+  aliases: CtxApiResourceHandleAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiResourceHandleAlias | undefined {
+  const directAlias = getCtxApiResourceHandleAliasFromAst(node, aliases, identifierBindings);
+  if (directAlias) {
+    return directAlias;
+  }
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      getMaybeCtxApiResourceHandleAliasFromAst(unwrapped.consequent, aliases, identifierBindings) ||
+      getMaybeCtxApiResourceHandleAliasFromAst(unwrapped.alternate, aliases, identifierBindings)
+    );
+  }
+  if (unwrapped.type === 'LogicalExpression') {
+    const leftAlias = getMaybeCtxApiResourceHandleAliasFromAst(unwrapped.left, aliases, identifierBindings);
+    if (unwrapped.operator === '&&') {
+      return getMaybeCtxApiResourceHandleAliasFromAst(unwrapped.right, aliases, identifierBindings);
+    }
+    if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftAlias) {
+      return leftAlias;
+    }
+    return leftAlias || getMaybeCtxApiResourceHandleAliasFromAst(unwrapped.right, aliases, identifierBindings);
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return getMaybeCtxApiResourceHandleAliasFromAst(expressions[expressions.length - 1], aliases, identifierBindings);
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return getMaybeCtxApiResourceHandleAliasFromAst(unwrapped.right, aliases, identifierBindings);
+  }
+  return undefined;
+}
+
+function getMaybeCtxApiResourceMethodAliasFromAst(
+  node: any,
+  aliases: CtxApiResourceMethodAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiResourceMethodAlias | undefined {
+  const directAlias = getCtxApiResourceMethodAliasFromAst(node, aliases, identifierBindings);
+  if (directAlias) {
+    return directAlias;
+  }
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      getMaybeCtxApiResourceMethodAliasFromAst(unwrapped.consequent, aliases, identifierBindings) ||
+      getMaybeCtxApiResourceMethodAliasFromAst(unwrapped.alternate, aliases, identifierBindings)
+    );
+  }
+  if (unwrapped.type === 'LogicalExpression') {
+    const leftAlias = getMaybeCtxApiResourceMethodAliasFromAst(unwrapped.left, aliases, identifierBindings);
+    if (unwrapped.operator === '&&') {
+      return getMaybeCtxApiResourceMethodAliasFromAst(unwrapped.right, aliases, identifierBindings);
+    }
+    if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftAlias) {
+      return leftAlias;
+    }
+    return leftAlias || getMaybeCtxApiResourceMethodAliasFromAst(unwrapped.right, aliases, identifierBindings);
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return getMaybeCtxApiResourceMethodAliasFromAst(expressions[expressions.length - 1], aliases, identifierBindings);
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return getMaybeCtxApiResourceMethodAliasFromAst(unwrapped.right, aliases, identifierBindings);
+  }
+  return undefined;
+}
+
+function getCtxApiResourceCallFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): { args: any[]; calleeSource: string; index: number } | undefined {
+  const call = unwrapAstChainExpression(node);
+  if (!call || call.type !== 'CallExpression') {
+    return undefined;
+  }
+  const callee = getCtxApiResourceCalleeFromAst(call.callee, aliases, source, identifierBindings);
+  if (!callee) {
+    return undefined;
+  }
+  return {
+    args: call.arguments || [],
+    calleeSource: callee.source,
+    index: typeof call.start === 'number' ? call.start : callee.index,
+  };
+}
+
+function getCtxApiResourceCalleeFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): { index: number; source: string } | undefined {
+  const callee = unwrapAstChainExpression(node);
+  if (!callee) {
+    return undefined;
+  }
+  const path = getCtxApiMemberPathFromAst(callee, aliases, identifierBindings);
+  if (isCtxApiResourcePath(path)) {
+    return {
+      index: typeof callee.start === 'number' ? callee.start : 0,
+      source: getAstSource(callee, source),
+    };
+  }
+
+  const wrapEntry = (entry: { index: number; source: string } | undefined) => {
+    if (!entry) {
+      return undefined;
+    }
+    return {
+      index: typeof callee.start === 'number' ? callee.start : entry.index,
+      source: getAstSource(callee, source),
+    };
+  };
+
+  if (callee.type === 'ConditionalExpression') {
+    return (
+      wrapEntry(getCtxApiResourceCalleeFromAst(callee.consequent, aliases, source, identifierBindings)) ||
+      wrapEntry(getCtxApiResourceCalleeFromAst(callee.alternate, aliases, source, identifierBindings))
+    );
+  }
+
+  if (callee.type === 'LogicalExpression') {
+    const leftEntry = getCtxApiResourceCalleeFromAst(callee.left, aliases, source, identifierBindings);
+    if (callee.operator === '&&') {
+      return wrapEntry(getCtxApiResourceCalleeFromAst(callee.right, aliases, source, identifierBindings));
+    }
+    if ((callee.operator === '||' || callee.operator === '??') && leftEntry) {
+      return wrapEntry(leftEntry);
+    }
+    return (
+      wrapEntry(leftEntry) ||
+      wrapEntry(getCtxApiResourceCalleeFromAst(callee.right, aliases, source, identifierBindings))
+    );
+  }
+
+  if (callee.type === 'SequenceExpression') {
+    const expressions = callee.expressions || [];
+    return wrapEntry(
+      getCtxApiResourceCalleeFromAst(expressions[expressions.length - 1], aliases, source, identifierBindings),
+    );
+  }
+
+  if (callee.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(callee.operator)) {
+    return wrapEntry(getCtxApiResourceCalleeFromAst(callee.right, aliases, source, identifierBindings));
+  }
+
+  return undefined;
+}
+
+function getMaybeCtxApiResourceCallFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): { args: any[]; calleeSource: string; index: number } | undefined {
+  const directCall = getCtxApiResourceCallFromAst(node, aliases, source, identifierBindings);
+  if (directCall) {
+    return directCall;
+  }
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      getMaybeCtxApiResourceCallFromAst(unwrapped.consequent, aliases, source, identifierBindings) ||
+      getMaybeCtxApiResourceCallFromAst(unwrapped.alternate, aliases, source, identifierBindings)
+    );
+  }
+  if (unwrapped.type === 'LogicalExpression') {
+    const leftCall = getMaybeCtxApiResourceCallFromAst(unwrapped.left, aliases, source, identifierBindings);
+    if (unwrapped.operator === '&&') {
+      return getMaybeCtxApiResourceCallFromAst(unwrapped.right, aliases, source, identifierBindings);
+    }
+    if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftCall) {
+      return leftCall;
+    }
+    return leftCall || getMaybeCtxApiResourceCallFromAst(unwrapped.right, aliases, source, identifierBindings);
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return getMaybeCtxApiResourceCallFromAst(expressions[expressions.length - 1], aliases, source, identifierBindings);
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return getMaybeCtxApiResourceCallFromAst(unwrapped.right, aliases, source, identifierBindings);
+  }
+  return undefined;
+}
+
+function filterInvalidCtxApiMemberAccessesForResourceCalls(
+  memberAccesses: RunJsAstInspection['invalidCtxApiMemberAccesses'],
+  resourceCalls: RunJsAstInspection['invalidApiResourceCalls'],
+): RunJsAstInspection['invalidCtxApiMemberAccesses'] {
+  const resourceCallMatches = new Set(resourceCalls.map((entry) => entry.match));
+  const resourceCallMatchRanges = new Set(
+    resourceCalls
+      .filter((entry) => typeof entry.matchIndex === 'number')
+      .map((entry) => `${entry.matchIndex}:${entry.match}`),
+  );
+  return memberAccesses.filter((entry) => {
+    if (entry.ruleId !== 'runjs-ctx-api-member-unknown') {
+      return true;
+    }
+    if (!entry.match || !entry.capability.startsWith('ctx.api.resource.')) {
+      return true;
+    }
+    if (typeof entry.matchIndex === 'number') {
+      return !resourceCallMatchRanges.has(`${entry.matchIndex}:${entry.match}`);
+    }
+    return !resourceCallMatches.has(entry.match);
+  });
+}
+
+function isCtxApiResourcePath(
+  path: ReturnType<typeof getCtxApiMemberPathFromAst>,
+): path is NonNullable<ReturnType<typeof getCtxApiMemberPathFromAst>> {
+  return !!path && !path.hasDynamicMember && path.members.length === 1 && path.members[0].name === 'resource';
+}
+
 function collectAstInvalidResourceTypeCall(
   node: any,
   method: string,
@@ -2319,6 +3433,517 @@ function collectAstInvalidResourceTypeCall(
     ];
   }
   return [];
+}
+
+function collectAstInvalidCtxApiPatternAccesses(
+  ast: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): RunJsAstInspection['invalidCtxApiMemberAccesses'] {
+  const entries: RunJsAstInspection['invalidCtxApiMemberAccesses'] = [];
+  const collectPattern = (pattern: any, capability: CtxApiAlias['capability']) => {
+    collectInvalidCtxApiObjectPatternAccesses(pattern, getCtxApiCapabilityMemberPrefix(capability)).forEach((entry) =>
+      entries.push(entry),
+    );
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any) {
+      if (node.operator !== '=' || node.left?.type !== 'ObjectPattern') {
+        return;
+      }
+      const capability =
+        getCtxApiCapabilityFromAst(node.right, aliases, identifierBindings) ||
+        getMaybeCtxApiCapabilityFromAst(node.right, aliases, identifierBindings);
+      if (capability) {
+        collectPattern(node.left, capability);
+      }
+    },
+    VariableDeclarator(node: any) {
+      if (node.id?.type !== 'ObjectPattern') {
+        return;
+      }
+      const capability =
+        getCtxApiCapabilityFromAst(node.init, aliases, identifierBindings) ||
+        getMaybeCtxApiCapabilityFromAst(node.init, aliases, identifierBindings);
+      if (capability) {
+        collectPattern(node.id, capability);
+      }
+    },
+  });
+
+  return dedupeIndexedEntries(entries);
+}
+
+function getCtxApiCapabilityMemberPrefix(capability: CtxApiAlias['capability']) {
+  if (capability === 'ctx.api.auth') {
+    return ['auth'];
+  }
+  if (capability.startsWith('ctx.api.auth.')) {
+    return ['auth', capability.slice('ctx.api.auth.'.length)];
+  }
+  if (capability === 'ctx.api.request') {
+    return ['request'];
+  }
+  if (capability === 'ctx.api.resource') {
+    return ['resource'];
+  }
+  return [];
+}
+
+function collectInvalidCtxApiObjectPatternAccesses(
+  pattern: any,
+  prefix: string[],
+): RunJsAstInspection['invalidCtxApiMemberAccesses'] {
+  const entries: RunJsAstInspection['invalidCtxApiMemberAccesses'] = [];
+  for (const property of pattern?.properties || []) {
+    if (!property) {
+      continue;
+    }
+    if (property.type === 'RestElement') {
+      const dynamicAccess = buildInvalidCtxApiMemberAccess([...prefix, '[...]'], property.start || 0, true);
+      if (dynamicAccess) {
+        entries.push(dynamicAccess);
+      }
+      continue;
+    }
+    if (property.type !== 'Property') {
+      continue;
+    }
+
+    const member = getAstStaticPropertyName(property);
+    if (!member) {
+      const dynamicAccess = buildInvalidCtxApiMemberAccess([...prefix, '[...]'], property.start || 0, true);
+      if (dynamicAccess) {
+        entries.push(dynamicAccess);
+      }
+      continue;
+    }
+
+    const memberPath = [...prefix, member];
+    const invalidAccess = buildInvalidCtxApiMemberAccess(
+      memberPath,
+      typeof property.key?.start === 'number' ? property.key.start : property.start || 0,
+    );
+    if (invalidAccess) {
+      entries.push(invalidAccess);
+      continue;
+    }
+
+    const nestedPattern = getAstObjectPatternFromValue(property.value);
+    if (nestedPattern) {
+      collectInvalidCtxApiObjectPatternAccesses(nestedPattern, memberPath).forEach((entry) => entries.push(entry));
+    }
+  }
+  return entries;
+}
+
+function collectAstInvalidCtxApiMemberAccess(
+  node: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  source: string,
+): RunJsAstInspection['invalidCtxApiMemberAccesses'][number] | undefined {
+  const access = getCtxApiMemberAccessFromAst(node, aliases, identifierBindings);
+  if (!access || !access.memberPath.length) {
+    return undefined;
+  }
+  const invalidAccess = buildInvalidCtxApiMemberAccess(
+    access.memberPath,
+    access.hasDynamicMember ? access.dynamicIndex : access.memberIndex,
+    access.hasDynamicMember,
+  );
+  return invalidAccess
+    ? { ...invalidAccess, match: getAstSource(node, source), matchIndex: node.start || 0 }
+    : undefined;
+}
+
+function buildInvalidCtxApiMemberAccess(
+  memberPath: string[],
+  index: number,
+  hasDynamicMember = false,
+): RunJsAstInspection['invalidCtxApiMemberAccesses'][number] | undefined {
+  const capability = `ctx.api.${memberPath.join('.')}`;
+  const topLevelMember = memberPath[0];
+
+  if (hasDynamicMember) {
+    return {
+      capability,
+      index,
+      ruleId: 'runjs-ctx-api-member-dynamic-unresolved',
+    };
+  }
+
+  if (!RUNJS_CTX_API_ALLOWED_MEMBERS.has(topLevelMember)) {
+    return {
+      capability,
+      index,
+      member: topLevelMember,
+      ruleId: 'runjs-ctx-api-member-unknown',
+    };
+  }
+
+  if (topLevelMember === 'request' && memberPath.length > 1) {
+    return {
+      capability,
+      index,
+      member: memberPath[1],
+      ruleId: 'runjs-ctx-api-member-unknown',
+    };
+  }
+
+  if (topLevelMember === 'resource' && memberPath.length > 1) {
+    return {
+      capability,
+      index,
+      member: memberPath[1],
+      ruleId: 'runjs-ctx-api-member-unknown',
+    };
+  }
+
+  if (topLevelMember === 'auth' && memberPath.length > 1) {
+    const authMember = memberPath[1];
+    if (!RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS.has(authMember)) {
+      return {
+        capability,
+        index,
+        member: authMember,
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+      };
+    }
+  }
+
+  return undefined;
+}
+
+function collectAstInvalidCtxApiReadonlyWrites(
+  node: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): RunJsAstInspection['invalidCtxApiMemberAccesses'] {
+  const entries: RunJsAstInspection['invalidCtxApiMemberAccesses'] = [];
+  collectAstWriteTargetNodes(node, (target) => {
+    const path = getCtxApiMemberPathFromAst(target, aliases, identifierBindings);
+    if (!path?.isCtxApi || path.hasDynamicMember) {
+      return;
+    }
+    const memberPath = path.members.map((member) => member.name);
+    if (memberPath[0] !== 'auth') {
+      return;
+    }
+    if (memberPath.length === 1 || RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS.has(memberPath[1])) {
+      entries.push({
+        capability: `ctx.api.${memberPath.join('.')}`,
+        index: path.memberIndex,
+        member: memberPath[1] || 'auth',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+      });
+    }
+  });
+  return entries;
+}
+
+function collectAstWriteTargetNodes(node: any, visit: (node: any) => void) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return;
+  }
+  if (unwrapped.type === 'MemberExpression') {
+    visit(unwrapped);
+    return;
+  }
+  if (unwrapped.type === 'AssignmentPattern') {
+    collectAstWriteTargetNodes(unwrapped.left, visit);
+    return;
+  }
+  if (unwrapped.type === 'RestElement') {
+    collectAstWriteTargetNodes(unwrapped.argument, visit);
+    return;
+  }
+  if (unwrapped.type === 'ArrayPattern') {
+    for (const element of unwrapped.elements || []) {
+      collectAstWriteTargetNodes(element, visit);
+    }
+    return;
+  }
+  if (unwrapped.type === 'ObjectPattern') {
+    for (const property of unwrapped.properties || []) {
+      if (!property) {
+        continue;
+      }
+      if (property.type === 'RestElement') {
+        collectAstWriteTargetNodes(property.argument, visit);
+        continue;
+      }
+      if (property.type === 'Property') {
+        collectAstWriteTargetNodes(property.value, visit);
+      }
+    }
+  }
+}
+
+function getAstObjectPatternFromValue(node: any): any | undefined {
+  if (node?.type === 'ObjectPattern') {
+    return node;
+  }
+  if (node?.type === 'AssignmentPattern' && node.left?.type === 'ObjectPattern') {
+    return node.left;
+  }
+  return undefined;
+}
+
+function getCtxApiMemberAccessFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): { dynamicIndex: number; hasDynamicMember: boolean; memberIndex: number; memberPath: string[] } | undefined {
+  const path = getCtxApiMemberPathFromAst(node, aliases, identifierBindings);
+  if (!path?.isCtxApi) {
+    return undefined;
+  }
+  const memberPath = path.members.map((member) => member.name);
+  if (path.hasDynamicMember) {
+    memberPath.push('[...]');
+  }
+  if (!memberPath.length) {
+    return undefined;
+  }
+  return {
+    dynamicIndex: path.dynamicIndex,
+    hasDynamicMember: path.hasDynamicMember,
+    memberIndex: path.memberIndex,
+    memberPath,
+  };
+}
+
+function getCtxApiMemberPathFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+):
+  | {
+      dynamicIndex: number;
+      hasDynamicMember: boolean;
+      isCtxApi: true;
+      memberIndex: number;
+      members: Array<{ index: number; name: string }>;
+    }
+  | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'Identifier') {
+    const alias = resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, aliases, identifierBindings);
+    if (!alias) {
+      return undefined;
+    }
+    return {
+      dynamicIndex: unwrapped.start || 0,
+      hasDynamicMember: false,
+      isCtxApi: true,
+      memberIndex: unwrapped.start || 0,
+      members: getCtxApiAliasMemberPath(alias, unwrapped.start || 0),
+    };
+  }
+  if (unwrapped.type !== 'MemberExpression') {
+    return undefined;
+  }
+
+  const objectPath = getCtxApiMemberPathFromAst(unwrapped.object, aliases, identifierBindings);
+  if (objectPath?.isCtxApi) {
+    const propertyName = getAstStaticPropertyName(unwrapped);
+    const propertyIndex =
+      typeof unwrapped.property?.start === 'number' ? unwrapped.property.start : unwrapped.start || 0;
+    return {
+      ...objectPath,
+      dynamicIndex: propertyName ? objectPath.dynamicIndex : propertyIndex,
+      hasDynamicMember: objectPath.hasDynamicMember || !propertyName,
+      memberIndex: objectPath.members.length ? objectPath.memberIndex : propertyIndex,
+      members: propertyName
+        ? [...objectPath.members, { index: propertyIndex, name: propertyName }]
+        : objectPath.members,
+    };
+  }
+
+  const objectCapability = getMaybeCtxApiCapabilityFromAst(unwrapped.object, aliases, identifierBindings);
+  if (objectCapability) {
+    const propertyName = getAstStaticPropertyName(unwrapped);
+    const propertyIndex =
+      typeof unwrapped.property?.start === 'number' ? unwrapped.property.start : unwrapped.start || 0;
+    const members = getCtxApiCapabilityMemberPath(objectCapability, unwrapped.object?.start || propertyIndex);
+    return {
+      dynamicIndex: propertyName ? propertyIndex : propertyIndex,
+      hasDynamicMember: !propertyName,
+      isCtxApi: true,
+      memberIndex: members.length ? members[0].index : propertyIndex,
+      members: propertyName ? [...members, { index: propertyIndex, name: propertyName }] : members,
+    };
+  }
+
+  if (!isUnshadowedCtxIdentifier(unwrapped.object, identifierBindings)) {
+    return undefined;
+  }
+  const propertyName = getAstStaticPropertyName(unwrapped);
+  if (propertyName !== 'api') {
+    return undefined;
+  }
+  const propertyIndex = typeof unwrapped.property?.start === 'number' ? unwrapped.property.start : unwrapped.start || 0;
+  return {
+    dynamicIndex: propertyIndex,
+    hasDynamicMember: false,
+    isCtxApi: true,
+    memberIndex: propertyIndex,
+    members: [],
+  };
+}
+
+function getCtxApiAliasMemberPath(alias: CtxApiAlias, index: number): Array<{ index: number; name: string }> {
+  return getCtxApiCapabilityMemberPath(alias.capability, index);
+}
+
+function getCtxApiCapabilityMemberPath(
+  capability: CtxApiAlias['capability'],
+  index: number,
+): Array<{ index: number; name: string }> {
+  if (capability === 'ctx.api.auth') {
+    return [{ index, name: 'auth' }];
+  }
+  if (capability.startsWith('ctx.api.auth.')) {
+    return [
+      { index, name: 'auth' },
+      { index, name: capability.slice('ctx.api.auth.'.length) },
+    ];
+  }
+  if (capability === 'ctx.api.request') {
+    return [{ index, name: 'request' }];
+  }
+  if (capability === 'ctx.api.resource') {
+    return [{ index, name: 'resource' }];
+  }
+  return [];
+}
+
+function getCtxApiCapabilityFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiAlias['capability'] | '' {
+  const path = getCtxApiMemberPathFromAst(node, aliases, identifierBindings);
+  if (!path?.isCtxApi || path.hasDynamicMember) {
+    return '';
+  }
+  if (!path.members.length) {
+    return 'ctx.api';
+  }
+  if (path.members.length === 1 && RUNJS_CTX_API_ALLOWED_MEMBERS.has(path.members[0].name)) {
+    return `ctx.api.${path.members[0].name}` as CtxApiAlias['capability'];
+  }
+  if (
+    path.members.length === 2 &&
+    path.members[0].name === 'auth' &&
+    RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS.has(path.members[1].name)
+  ) {
+    return `ctx.api.auth.${path.members[1].name}` as CtxApiAlias['capability'];
+  }
+  return '';
+}
+
+function getMaybeCtxApiCapabilityFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiAlias['capability'] | '' {
+  return selectCtxApiCapability(collectPossibleCtxApiCapabilitiesFromAst(node, aliases, identifierBindings));
+}
+
+function collectPossibleCtxApiCapabilitiesFromAst(
+  node: any,
+  aliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxApiAlias['capability'][] {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return [];
+  }
+
+  const directCapability = getCtxApiCapabilityFromAst(unwrapped, aliases, identifierBindings);
+  if (directCapability) {
+    return [directCapability];
+  }
+
+  if (unwrapped.type === 'ConditionalExpression') {
+    return uniqueCtxApiCapabilities([
+      ...collectPossibleCtxApiCapabilitiesFromAst(unwrapped.consequent, aliases, identifierBindings),
+      ...collectPossibleCtxApiCapabilitiesFromAst(unwrapped.alternate, aliases, identifierBindings),
+    ]);
+  }
+
+  if (unwrapped.type === 'LogicalExpression') {
+    const leftCapabilities = collectPossibleCtxApiCapabilitiesFromAst(unwrapped.left, aliases, identifierBindings);
+    const rightCapabilities = collectPossibleCtxApiCapabilitiesFromAst(unwrapped.right, aliases, identifierBindings);
+    if (unwrapped.operator === '&&' && leftCapabilities.length) {
+      return leftCapabilities.every(isCtxApiCapabilityDefinitelyTruthy)
+        ? uniqueCtxApiCapabilities(rightCapabilities)
+        : uniqueCtxApiCapabilities([...leftCapabilities, ...rightCapabilities]);
+    }
+    if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftCapabilities.length) {
+      return leftCapabilities.every(isCtxApiCapabilityDefinitelyTruthy)
+        ? uniqueCtxApiCapabilities(leftCapabilities)
+        : uniqueCtxApiCapabilities([...leftCapabilities, ...rightCapabilities]);
+    }
+    return uniqueCtxApiCapabilities([...leftCapabilities, ...rightCapabilities]);
+  }
+
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return collectPossibleCtxApiCapabilitiesFromAst(expressions[expressions.length - 1], aliases, identifierBindings);
+  }
+
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return collectPossibleCtxApiCapabilitiesFromAst(unwrapped.right, aliases, identifierBindings);
+  }
+
+  return [];
+}
+
+function selectCtxApiCapability(capabilities: CtxApiAlias['capability'][]): CtxApiAlias['capability'] | '' {
+  const uniqueCapabilities = uniqueCtxApiCapabilities(capabilities);
+  if (!uniqueCapabilities.length) {
+    return '';
+  }
+  if (uniqueCapabilities.length === 1) {
+    return uniqueCapabilities[0];
+  }
+  if (uniqueCapabilities.some((capability) => capability === 'ctx.api')) {
+    return 'ctx.api';
+  }
+  const topLevelMembers = new Set(uniqueCapabilities.map((capability) => capability.split('.')[2]));
+  if (topLevelMembers.size > 1) {
+    return 'ctx.api';
+  }
+  const topLevelMember = [...topLevelMembers][0];
+  if (topLevelMember === 'auth') {
+    return 'ctx.api.auth';
+  }
+  if (topLevelMember === 'request' || topLevelMember === 'resource') {
+    return `ctx.api.${topLevelMember}` as CtxApiAlias['capability'];
+  }
+  return 'ctx.api';
+}
+
+function uniqueCtxApiCapabilities(capabilities: Array<CtxApiAlias['capability'] | ''>): CtxApiAlias['capability'][] {
+  return [...new Set(capabilities.filter(Boolean) as CtxApiAlias['capability'][])];
+}
+
+function isCtxApiCapabilityDefinitelyTruthy(capability: CtxApiAlias['capability']) {
+  return (
+    capability === 'ctx.api' ||
+    capability === 'ctx.api.auth' ||
+    capability === 'ctx.api.request' ||
+    capability === 'ctx.api.resource' ||
+    capability === 'ctx.api.auth.authenticator'
+  );
 }
 
 function resolveCtxMethodCall(node: any, aliases: CtxMethodAlias[], identifierBindings: AstIdentifierBinding[]) {
@@ -2495,6 +4120,10 @@ function getAstBindingIdentifierName(node: any): string {
   return '';
 }
 
+function getAstSource(node: any, source: string) {
+  return source.slice(node?.start || 0, node?.end || node?.start || 0).trim();
+}
+
 function getAstStaticPropertyName(node: any): string {
   const property = node?.key || node?.property;
   if (!property) {
@@ -2542,6 +4171,66 @@ function findAstAncestor(ancestors: any[], type: string) {
   return undefined;
 }
 
+function getAstExecutionScopeRange(ancestors: any[], sourceLength: number): SourceRange {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const node = ancestors[index];
+    if (!node) {
+      continue;
+    }
+    if (node.type === 'Program' || node.type === 'StaticBlock' || isAstFunctionLike(node)) {
+      return {
+        start: typeof node.start === 'number' ? node.start : 0,
+        end: typeof node.end === 'number' ? node.end : sourceLength,
+      };
+    }
+  }
+  return { start: 0, end: sourceLength };
+}
+
+function isAstAlwaysExecutedInCurrentExecutionScope(ancestors: any[]) {
+  const conditionalAncestorTypes = new Set([
+    'CatchClause',
+    'ConditionalExpression',
+    'DoWhileStatement',
+    'ForStatement',
+    'IfStatement',
+    'LogicalExpression',
+    'SwitchCase',
+    'SwitchStatement',
+    'TryStatement',
+    'WhileStatement',
+    'WithStatement',
+  ]);
+  const currentNodeIndex = ancestors.length - 1;
+  for (let index = currentNodeIndex - 1; index >= 0; index -= 1) {
+    const node = ancestors[index];
+    if (!node) {
+      continue;
+    }
+    if (node.type === 'Program' || node.type === 'StaticBlock' || isAstFunctionLike(node)) {
+      return true;
+    }
+    if (node.type === 'ForInStatement' && !isAstDefinitelyNonEmptyForInSource(node.right)) {
+      return false;
+    }
+    if (node.type === 'ForOfStatement' && !isAstDefinitelyNonEmptyForOfSource(node.right)) {
+      return false;
+    }
+    if (conditionalAncestorTypes.has(node.type)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isAstCtxApiAliasAssignmentOperator(operator: string) {
+  return operator === '=' || operator === '||=' || operator === '&&=' || operator === '??=';
+}
+
+function isAstDefiniteAssignmentOperator(operator: string) {
+  return operator === '=' || operator === '&&=';
+}
+
 function getAstBindingScopeRange(ancestors: any[], sourceLength: number, functionScoped = false): SourceRange {
   for (let index = ancestors.length - 1; index >= 0; index -= 1) {
     const node = ancestors[index];
@@ -2574,6 +4263,10 @@ function getAstBindingScopeRange(ancestors: any[], sourceLength: number, functio
     }
   }
   return { start: 0, end: sourceLength };
+}
+
+function isSameAstRange(left: SourceRange, right: SourceRange) {
+  return left.start === right.start && left.end === right.end;
 }
 
 function isAstFunctionLike(node: any) {

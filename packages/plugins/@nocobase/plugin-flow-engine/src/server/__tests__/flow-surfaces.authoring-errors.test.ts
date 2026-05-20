@@ -2643,6 +2643,804 @@ ctx.render(React.createElement(DashboardKPIs));
     ).toEqual([]);
   });
 
+  it('should validate RunJS ctx.api members through direct access, aliases, destructuring, and dynamic access', () => {
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "var requestPromise = ctx.api.request({ url: 'https://example.com/status' });",
+          'var role = ctx.api.auth.role;',
+          'var token = ctx.api.auth.token;',
+          'var authenticator = ctx.api.auth.authenticator;',
+          'var locale = ctx.api.auth.locale;',
+          'var auth = ctx.api.auth;',
+          'var api = ctx.api;',
+          'var apiAuth = api.auth;',
+          'var request = ctx.api.request;',
+          'var { request: destructuredRequest, resource } = ctx.api;',
+          'var assignedRequest;',
+          '({ request: assignedRequest } = ctx.api);',
+          'var authRole = apiAuth.role;',
+          'var localeLowercase = ctx.api.auth.locale.toLowerCase();',
+          'var roleLength = auth.role.length;',
+          'var tokenPreview = apiAuth.token && apiAuth.token.slice(0, 8);',
+          "var requestPromiseByAlias = request({ url: 'https://example.com/status' });",
+          "var requestPromiseByDestructuredAlias = destructuredRequest({ url: 'https://example.com/status' });",
+          "var requestPromiseByAssignedAlias = assignedRequest({ url: 'https://example.com/status' });",
+          'var fields = { requestPromise: requestPromise, role: role, token: token, authenticator: authenticator, locale: locale, authRole: authRole, localeLowercase: localeLowercase, roleLength: roleLength, tokenPreview: tokenPreview };',
+          'ctx.render(auth.locale || fields.role);',
+        ].join('\n'),
+        path: '$.validCtxApiMembers.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    [
+      {
+        code: 'ctx.render(null);\nvar useRequest = ctx.api.useRequest;',
+        path: '$.directUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar requestDefaults = ctx.api.request.defaults;',
+        path: '$.nestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.defaults',
+      },
+      {
+        code: 'ctx.render(null);\nvar { defaults } = ctx.api.request;',
+        path: '$.destructuredNestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.defaults',
+      },
+      {
+        code: 'ctx.render(null);\nvar request = ctx.api.request;\nrequest.use(function() {});',
+        path: '$.aliasedNestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: 'ctx.render(null);\nvar request;\n({ request } = ctx.api);\nrequest.use(function() {});',
+        path: '$.assignedDestructuredNestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: 'ctx.render(null);\nvar list = ctx.api.resource.list;',
+        path: '$.nestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(ctx.api.resource?.list);',
+        path: '$.optionalNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(null);\nvar resource = ctx.api.resource;\nvar bind = resource.bind;',
+        path: '$.aliasedNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.bind',
+      },
+      {
+        code: "ctx.render(null);\nvar api = ctx.api;\nvar list = api.resource.list;\napi.resource.list({ resource: 'tasks' });",
+        path: '$.bareAndCalledAliasedNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(null);\nvar { list } = ctx.api.resource;',
+        path: '$.destructuredNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(null);\nvar list;\n({ list } = ctx.api.resource);',
+        path: '$.assignedDestructuredNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var request = ctx.api.request;',
+          'function rebindRequest() { request = { use: function() {} }; }',
+          'request.use(function() {});',
+        ].join('\n'),
+        path: '$.nestedFunctionReassignedCtxApiRequestAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let api = ctx.api;',
+          'if (Math.random()) api = { useRequest: function() {} };',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.conditionalReassignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var api = enabled ? ctx.api : {};',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.conditionalInitializedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var useRequest = (enabled ? ctx.api : {}).useRequest;',
+        ].join('\n'),
+        path: '$.conditionalCtxApiObjectMemberAccess.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var request = enabled && ctx.api.request;',
+          'request.use(function() {});',
+        ].join('\n'),
+        path: '$.logicalInitializedCtxApiRequestAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var use = (enabled && ctx.api.request).use;',
+        ].join('\n'),
+        path: '$.logicalCtxApiRequestObjectMemberAccess.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var { useRequest } = enabled ? ctx.api : {};',
+        ].join('\n'),
+        path: '$.conditionalDestructuredUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: ['ctx.render(null);', 'let api = null;', 'api ||= ctx.api;', 'api.useRequest({});'].join('\n'),
+        path: '$.logicalOrAssignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: ['ctx.render(null);', 'let api = {};', 'api &&= ctx.api;', 'api.useRequest({});'].join('\n'),
+        path: '$.logicalAndAssignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: ['ctx.render(null);', 'let api = null;', 'api ??= ctx.api;', 'api.useRequest({});'].join('\n'),
+        path: '$.nullishAssignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let api = ctx.api;',
+          'api ||= { useRequest: function() {} };',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.logicalOrMaybeReassignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let api = ctx.api;',
+          'api ??= { useRequest: function() {} };',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.nullishMaybeReassignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar api = ctx.api;\napi.useRequest({});',
+        path: '$.aliasedUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar useRequest;\n({ useRequest } = ctx.api);',
+        path: '$.assignedUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar { useRequest } = ctx.api;',
+        path: '$.destructuredUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nctx?.api?.useRequest?.({});',
+        path: '$.optionalUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar methodName = "useRequest";\nctx.api[methodName]({});',
+        path: '$.dynamicCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-dynamic-unresolved',
+        capability: 'ctx.api.[...]',
+      },
+      {
+        code: 'ctx.render(null);\nvar memberName = "useRequest";\nvar { [memberName]: value } = ctx.api;',
+        path: '$.dynamicDestructuredCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-dynamic-unresolved',
+        capability: 'ctx.api.[...]',
+      },
+      {
+        code: 'ctx.render(null);\nctx.api.auth.setToken("x");',
+        path: '$.unsupportedCtxApiAuthMember.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth;\n({ auth } = ctx.api);\nauth.setToken("x");',
+        path: '$.assignedDestructuredUnsupportedCtxApiAuthMember.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let auth = ctx.api.auth;',
+          'auth && (auth = { setToken: function() {} });',
+          'auth.setToken("x");',
+        ].join('\n'),
+        path: '$.logicalReassignedCtxApiAuthAlias.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+      {
+        code: 'ctx.render(null);\nctx.api.auth.token = "x";',
+        path: '$.readonlyCtxApiAuthTokenWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.token',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth = ctx.api.auth;\nauth.role = "admin";',
+        path: '$.aliasedReadonlyCtxApiAuthRoleWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.role',
+      },
+      {
+        code: 'ctx.render(null);\nvar api = ctx.api;\napi.auth.locale++;',
+        path: '$.aliasedReadonlyCtxApiAuthLocaleUpdate.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.locale',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth;\n({ auth } = ctx.api);\ndelete auth.authenticator;',
+        path: '$.assignedReadonlyCtxApiAuthAuthenticatorDelete.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator',
+      },
+      {
+        code: 'ctx.render(null);\nvar source = { token: "x" };\n({ token: ctx.api.auth.token } = source);',
+        path: '$.destructuringTargetReadonlyCtxApiAuthTokenWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.token',
+      },
+      {
+        code: 'ctx.render(null);\nvar authenticator = ctx.api.auth.authenticator;\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiAuthenticatorAliasPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar { authenticator } = ctx.api.auth;\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiAuthenticatorDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar authenticator;\n({ authenticator } = ctx.api.auth);\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiAuthenticatorAssignedDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar { auth: { authenticator } } = ctx.api;\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiNestedAuthenticatorDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar authenticator;\n({ auth: { authenticator } } = ctx.api);\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiNestedAuthenticatorAssignedDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nfor (ctx.api.auth.role in { admin: true }) {}',
+        path: '$.forInReadonlyCtxApiAuthRoleWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.role',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth = ctx.api.auth;\nfor (auth.token of ["x"]) {}',
+        path: '$.forOfAliasedReadonlyCtxApiAuthTokenWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.token',
+      },
+      {
+        code: 'ctx.render(null);\nasync function load(items) { var auth = ctx.api.auth; for await (auth.locale of items) {} }',
+        path: '$.forAwaitOfAliasedReadonlyCtxApiAuthLocaleWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.locale',
+      },
+      {
+        code: 'ctx.render(null);\nvar { setToken } = ctx.api.auth;',
+        path: '$.destructuredUnsupportedCtxApiAuthMember.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+    ].forEach(({ capability, code, path, ruleId }) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId,
+            details: expect.objectContaining({
+              repairClass: 'ctx-root-mismatch-stop',
+              capability,
+            }),
+          }),
+        ]),
+      );
+    });
+
+    [
+      {
+        code: "ctx.render(null);\nctx.api.resource.list({ resource: 'tasks', pageSize: 1 });",
+        path: '$.directInvalidApiResourceCall.code',
+        capability: 'ctx.api.resource.list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar api = ctx.api;\napi.resource.list({ resource: 'tasks', pageSize: 1 });",
+        path: '$.aliasedInvalidApiResourceCall.code',
+        capability: 'api.resource.list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar { resource } = ctx.api;\nresource('tasks').list({ pageSize: 1 });",
+        path: '$.destructuredInvalidApiResourceFactoryCall.code',
+        capability: "resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar resource;\n({ resource } = ctx.api);\nresource('tasks').list({ pageSize: 1 });",
+        path: '$.assignedDestructuredInvalidApiResourceFactoryCall.code',
+        capability: "resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar resource = ctx.api.resource;\nresource('tasks', 'get', { filterByTk: 1 });",
+        path: '$.aliasedInvalidApiResourceActionCall.code',
+        capability: "resource('tasks', 'get')",
+        method: 'get',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\ntasks.list({ pageSize: 1 });",
+        path: '$.resourceHandleAliasInvalidApiResourceCall.code',
+        capability: 'tasks.list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar { list } = ctx.api.resource('tasks');\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodDestructuredInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAliasFromFactoryInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list;\nlist = ctx.api.resource('tasks').list;\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAssignedAliasFromFactoryInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list;\n({ list } = ctx.api.resource('tasks'));\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAssignedDestructuredInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\nvar localTasks = tasks;\nlocalTasks.get({ filterByTk: 1 });",
+        path: '$.resourceHandleSecondLevelAliasInvalidApiResourceCall.code',
+        capability: 'localTasks.get',
+        method: 'get',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\nvar list = tasks.list;\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAliasFromHandleInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nvar localList = list;\nlocalList({ pageSize: 1 });",
+        path: '$.resourceHandleMethodSecondLevelAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nvar localList;\nlocalList = list;\nlocalList({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAssignedSecondLevelAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nvar localList = (0, list);\nlocalList({ pageSize: 1 });",
+        path: '$.resourceHandleMethodSequenceAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = ctx.api.resource('tasks').list;",
+          'var localList = enabled ? list : function() {};',
+          'localList({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.resourceHandleMethodConditionalAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = ctx.api.resource('tasks').list;",
+          'var localList = enabled && list;',
+          'localList({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.resourceHandleMethodLogicalAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nctx.api.resource('tasks').list.call(null, { pageSize: 1 });",
+        path: '$.resourceMethodCallInvokeInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').list.call",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nctx.api.resource('tasks').get.apply(null, [{ filterByTk: 1 }]);",
+        path: '$.resourceMethodApplyInvokeInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').get.apply",
+        method: 'get',
+      },
+      {
+        code: "ctx.render(null);\nctx.api.resource('tasks').create.bind(null, { values: {} });",
+        path: '$.resourceMethodBindInvokeInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').create.bind",
+        method: 'create',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nlist.call(null, { pageSize: 1 });",
+        path: '$.resourceMethodAliasCallInvokeInvalidApiResourceCall.code',
+        capability: 'list.call',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var tasks = enabled ? ctx.api.resource('tasks') : {};",
+          'tasks.list({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.conditionalResourceHandleAliasInvalidApiResourceCall.code',
+        capability: 'tasks.list',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "(enabled ? ctx.api.resource('tasks') : {}).list({ pageSize: 1 });",
+        ].join('\n'),
+        path: '$.conditionalDirectResourceHandleInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var tasks = ctx.api.resource('tasks');",
+          '(enabled ? tasks : {}).get({ filterByTk: 1 });',
+        ].join('\n'),
+        path: '$.conditionalDirectResourceHandleAliasInvalidApiResourceCall.code',
+        capability: '(enabled ? tasks : {}).get',
+        method: 'get',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = enabled ? ctx.api.resource('tasks').list : function() {};",
+          'list({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.conditionalResourceMethodAliasInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = ctx.api.resource('tasks').list;",
+          '(enabled ? list : function() {})({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.conditionalDirectResourceMethodAliasInvalidApiResourceCall.code',
+        capability: 'enabled ? list : function() {}',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = enabled && ctx.api.resource('tasks').list;",
+          'list({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.logicalResourceMethodAliasInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\n(0, ctx.api.resource('tasks').list)({ pageSize: 1 });",
+        path: '$.sequenceWrappedDirectResourceMethodInvalidApiResourceCall.code',
+        capability: "0, ctx.api.resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "(enabled ? ctx.api.resource('tasks').list : function(){})({ pageSize: 1 });",
+        ].join('\n'),
+        path: '$.conditionalWrappedDirectResourceMethodInvalidApiResourceCall.code',
+        capability: "enabled ? ctx.api.resource('tasks').list : function(){}",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\n(0, ctx.api.resource)('tasks', 'list', { pageSize: 1 });",
+        path: '$.sequenceWrappedDirectResourceFactoryInvalidApiResourceCall.code',
+        capability: "0, ctx.api.resource('tasks', 'list')",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\n(0, tasks.list)({ pageSize: 1 });",
+        path: '$.sequenceWrappedResourceHandleMethodAliasInvalidApiResourceCall.code',
+        capability: '0, tasks.list',
+        method: 'list',
+      },
+    ].forEach(({ capability, code, method, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code,
+        path,
+        modelUse: 'JSBlockModel',
+      });
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-api-resource-call-invalid',
+            details: expect.objectContaining({
+              repairClass: 'switch-to-resource-api',
+              capability,
+              method,
+            }),
+          }),
+        ]),
+      );
+      expect(errors.map((error: any) => error.ruleId)).not.toContain('runjs-ctx-api-member-unknown');
+    });
+
+    [
+      'ctx.render(null);\nlet api = ctx.api;\napi = { useRequest: function() {} };\napi.useRequest();',
+      'ctx.render(null);\nlet api = ctx.api;\napi &&= { useRequest: function() {} };\napi.useRequest();',
+      'ctx.render(null);\nlet auth = ctx.api.auth;\nauth = { setToken: function() {} };\nauth.setToken();',
+      'ctx.render(null);\nlet request = ctx.api.request;\nrequest &&= { use: function() {} };\nrequest.use();',
+      'ctx.render(null);\nvar api = ctx.api;\nvar api = { useRequest: function() {} };\napi.useRequest();',
+      'ctx.render(null);\nvar auth = ctx.api.auth;\nvar auth = { setToken: function() {} };\nauth.setToken();',
+      'ctx.render(null);\nvar request = ctx.api.request;\nvar request = { use: function() {} };\nrequest.use();',
+      'ctx.render(null);\nlet api = ctx.api;\napi = { useRequest: function() {} };\nlet localApi = api;\nlocalApi.useRequest();',
+      'ctx.render(null);\nlet request = ctx.api.request;\nrequest = { use: function() {} };\nlet localRequest = request;\nlocalRequest.use();',
+      'ctx.render(null);\nlet authenticator = ctx.api.auth.authenticator;\nauthenticator = {};\nauthenticator.options = {};',
+      'ctx.render(null);\nlet tasks = ctx.api.resource("tasks");\ntasks = { list: function() {} };\nlet localTasks = tasks;\nlocalTasks.list();',
+      'ctx.render(null);\nlet tasks = ctx.api.resource("tasks");\ntasks &&= { list: function() {} };\ntasks.list();',
+      'ctx.render(null);\nlet list = ctx.api.resource("tasks").list;\nlist &&= function() {};\nlist();',
+      'ctx.render(null);\nlet api = ctx.api;\nfor (api of [{}]) {}\napi.useRequest();',
+      'ctx.render(null);\nlet tasks = ctx.api.resource("tasks");\nfor (tasks of [{}]) {}\ntasks.list();',
+      'ctx.render(null);\nlet api = ctx.api;\nfor (api in { active: true }) {}\napi.useRequest();',
+      [
+        'ctx.render(null);',
+        'let outer = 0;',
+        'let api = ctx.api;',
+        'for (outer of [1]) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let key = "";',
+        'let api = ctx.api;',
+        'for (key in { active: true }) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let key = "";',
+        'let api = ctx.api;',
+        'for (key in { ["active"]: true }) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let key = "";',
+        'let api = ctx.api;',
+        'for (key in { __proto__() {} }) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let outer = 0;',
+        'let api = ctx.api;',
+        'for (outer of [,]) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'var resource = ctx.api.resource;',
+        'var resource = function() { return { list: function() {} }; };',
+        "resource('tasks').list();",
+      ].join('\n'),
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.reassignedCtxApiAlias[${index}].code`,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual([]);
+    });
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let items = [];',
+          'let outer = 0;',
+          'let api = ctx.api;',
+          'for (outer of items) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.dynamicNestedLoopKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let outer = 0;',
+          'let api = ctx.api;',
+          'for (outer of [...[]]) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.emptySpreadNestedForOfKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let key = "";',
+          'let api = ctx.api;',
+          'for (key in { [Symbol.iterator]: 1 }) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.symbolComputedNestedForInKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let key = "";',
+          'let api = ctx.api;',
+          'for (key in { __proto__: null }) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.protoOnlyNestedForInKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'function invoke(ctx) { return ctx.api.useRequest; }\nctx.render(null);',
+        path: '$.shadowedCtxApiMember.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+  });
+
   it('should reject invalid React runtime patterns in JSBlock authoring code', async () => {
     const hookErrors = inspectRunJsAuthoringCode({
       code: [
