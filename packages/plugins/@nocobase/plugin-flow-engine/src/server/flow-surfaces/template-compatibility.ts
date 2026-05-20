@@ -22,6 +22,15 @@ const FLOW_TEMPLATE_ROOT_USE_FAMILIES: Record<string, string> = {
   ProcessFormModel: 'approvalForm',
 };
 
+const FLOW_TEMPLATE_POPUP_USE_FAMILIES: Record<string, string> = {
+  DetailsBlockModel: 'popupDetails',
+  EditFormModel: 'popupForm',
+  CreateFormModel: 'popupForm',
+  TableBlockModel: 'popupTable',
+  ListBlockModel: 'popupTable',
+  GridCardBlockModel: 'popupTable',
+};
+
 export type FlowSurfaceTemplateCompatibilityRow = {
   uid?: string;
   useModel?: string;
@@ -38,6 +47,7 @@ export type FlowSurfaceTemplateResourceInfo = {
 
 export type FlowSurfaceTemplateAssociationMatchMode =
   | 'none'
+  | 'exact'
   | 'exactIfTemplateHasAssociationName'
   | 'associationResourceOnly';
 
@@ -55,6 +65,20 @@ export function areFlowTemplateRootUsesCompatible(hostUse: any, templateUse: any
   return getFlowTemplateRootUseFamily(normalizedHostUse) === getFlowTemplateRootUseFamily(normalizedTemplateUse);
 }
 
+export function getFlowTemplatePopupUseFamily(use: any) {
+  const normalizedUse = String(use || '').trim();
+  return FLOW_TEMPLATE_POPUP_USE_FAMILIES[normalizedUse] || normalizedUse;
+}
+
+export function areFlowTemplatePopupUsesCompatible(hostUse: any, templateUse: any) {
+  const normalizedHostUse = String(hostUse || '').trim();
+  const normalizedTemplateUse = String(templateUse || '').trim();
+  if (!normalizedHostUse || !normalizedTemplateUse) {
+    return true;
+  }
+  return getFlowTemplatePopupUseFamily(normalizedHostUse) === getFlowTemplatePopupUseFamily(normalizedTemplateUse);
+}
+
 export function buildTemplateMissingResourceReason() {
   return 'missing data source or collection information';
 }
@@ -67,8 +91,13 @@ export function buildTemplateCollectionMismatchReason(expectedCollectionName: st
   return `collection mismatch: expected '${expectedCollectionName}', got '${actualCollectionName}'`;
 }
 
-export function buildTemplateAssociationMismatchReason(expectedAssociationName?: string, actualAssociationName?: string) {
-  return `association mismatch: expected '${expectedAssociationName || '(none)'}', got '${actualAssociationName || '(none)'}'`;
+export function buildTemplateAssociationMismatchReason(
+  expectedAssociationName?: string,
+  actualAssociationName?: string,
+) {
+  return `association mismatch: expected '${expectedAssociationName || '(none)'}', got '${
+    actualAssociationName || '(none)'
+  }'`;
 }
 
 export function buildTemplateMissingContextReason(param: string) {
@@ -111,8 +140,7 @@ export function resolveAssociationTargetResourceInfo(
   );
 
   return {
-    dataSourceKey:
-      targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
+    dataSourceKey: targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
     collectionName:
       getCollectionName(targetCollection) || getFieldTarget(associationField) || collectionName || baseCollectionName,
     associationName,
@@ -159,6 +187,12 @@ export function getTemplateResourceCompatibilityDisabledReason(
   const getAssociationMismatchReason = () => {
     if (associationMatch === 'none') {
       return undefined;
+    }
+    if (associationMatch === 'exact') {
+      if (templateAssociationName === expectedAssociationName) {
+        return undefined;
+      }
+      return buildTemplateAssociationMismatchReason(expectedAssociationName, templateAssociationName);
     }
     if (associationMatch === 'exactIfTemplateHasAssociationName') {
       if (!templateAssociationName || templateAssociationName === expectedAssociationName) {

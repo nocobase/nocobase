@@ -57,6 +57,8 @@ Lors de la définition de textes dans le code, vous devez spécifier manuellemen
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
 
+La colonne de traduction prend en charge l’édition rapide. Vous pouvez cliquer directement sur une cellule de traduction du tableau pour la modifier, appuyer sur Entrée ou quitter le champ pour enregistrer, et appuyer sur `Esc` pour annuler la modification. Pour consulter le texte source, le module ou des traductions plus longues, vous pouvez toujours utiliser le bouton de modification dans les actions de ligne pour ouvrir l’éditeur en tiroir.
+
 ### Utiliser la traduction IA
 
 La gestion de la localisation permet de traduire les entrées avec l'employée IA Lina. Après avoir activé les employés IA et configuré un service de modèle, vous pouvez utiliser la traduction IA sur la page de gestion de la localisation afin de générer des traductions par lots pour la langue actuelle.
@@ -65,9 +67,19 @@ La gestion de la localisation permet de traduire les entrées avec l'employée I
 
 Périmètres de traduction pris en charge :
 
-- **Traduction complète** : traduit toutes les entrées éligibles de la langue actuelle.
-- **Traduction incrémentale** : traduit uniquement les entrées qui n'ont pas encore de traduction.
+- **Traduction complète** : traduit toutes les entrées de la langue actuelle et remplace les traductions existantes.
+- **Traduction incrémentale** : traduit uniquement les entrées qui n’ont pas encore de traduction dans la langue actuelle. Pour les entrées intégrées, si une traduction existe déjà dans le pack de langue système ou plugin de la langue cible, elle est aussi considérée comme existante.
 - **Traduction des éléments sélectionnés** : sélectionnez des entrées dans le tableau et traduisez uniquement le contenu sélectionné.
+
+![](https://static-docs.nocobase.com/202605191341968.png)
+
+Lors de la création d’une tâche de traduction complète ou incrémentale, vous pouvez choisir le périmètre de traduction dans la boîte de confirmation :
+
+- **Tout** : traite toutes les entrées correspondant aux conditions de la tâche actuelle.
+- **Entrées intégrées** : entrées système et plugin.
+- **Entrées personnalisées** : noms de routes, noms de collections et de champs, ainsi que contenu UI.
+
+La boîte de confirmation permet aussi de configurer les langues de traduction de référence. La traduction complète et incrémentale configurent séparément la langue par défaut et la langue de secours pour les entrées intégrées et personnalisées. La traduction des éléments sélectionnés n’affiche qu’une configuration générale des langues de référence.
 
 La traduction IA crée une tâche en arrière-plan. Vous pouvez suivre sa progression pendant l'exécution. Une fois terminée, les traductions sont écrites dans la langue correspondante et doivent encore être relues et corrigées selon le contexte réel.
 

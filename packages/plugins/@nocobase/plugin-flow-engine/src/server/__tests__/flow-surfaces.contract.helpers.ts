@@ -363,6 +363,8 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'nickname', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'input' },
+        { name: 'email', type: 'string', interface: 'email' },
+        { name: 'phone', type: 'string', interface: 'phone' },
       ],
     },
   });
@@ -372,7 +374,12 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       title: 'Departments',
       titleField: 'title',
       filterTargetKey: 'title',
-      fields: [{ name: 'title', type: 'string', interface: 'input' }],
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'select' },
+        { name: 'scope', type: 'string', interface: 'input' },
+      ],
     },
   });
   await rootAgent.resource('collections').create({
@@ -392,6 +399,8 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'title', type: 'string', interface: 'input' },
         { name: 'status', type: 'string', interface: 'select' },
+        { name: 'category', type: 'string', interface: 'select' },
+        { name: 'scope', type: 'string', interface: 'input' },
         { name: 'startsAt', type: 'date', interface: 'datetime' },
         { name: 'endsAt', type: 'date', interface: 'datetime' },
       ],
@@ -430,6 +439,8 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
             ],
           },
         },
+        { name: 'priority', type: 'string', interface: 'select' },
+        { name: 'scope', type: 'string', interface: 'input' },
       ],
     },
   });
@@ -438,7 +449,12 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
       name: 'categories',
       title: 'Categories',
       template: 'tree',
-      fields: [{ name: 'title', interface: 'input', title: 'Title' }],
+      fields: [
+        { name: 'title', interface: 'input', title: 'Title' },
+        { name: 'code', type: 'string', interface: 'input', title: 'Code' },
+        { name: 'status', type: 'string', interface: 'select', title: 'Status' },
+        { name: 'scope', type: 'string', interface: 'input', title: 'Scope' },
+      ],
     },
   });
 
@@ -574,11 +590,11 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
   });
 
   await waitForFixtureCollectionsReady(db, {
-    categories: ['title', 'parentId'],
-    calendar_events: ['title', 'status', 'startsAt', 'endsAt'],
-    kanban_tasks: ['title', 'status', 'status_sort', 'departmentId', 'department_sort'],
-    departments: ['title'],
-    employees: ['nickname', 'status', 'departmentId', 'profileId', 'managerId', 'opaqueTargetId'],
+    categories: ['title', 'code', 'status', 'scope', 'parentId'],
+    calendar_events: ['title', 'status', 'category', 'scope', 'startsAt', 'endsAt'],
+    kanban_tasks: ['title', 'status', 'priority', 'scope', 'status_sort', 'departmentId', 'department_sort'],
+    departments: ['title', 'code', 'status', 'scope'],
+    employees: ['nickname', 'status', 'email', 'phone', 'departmentId', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],
     skills: ['label'],
     employee_skills: ['id', 'employeeId', 'skillId'],

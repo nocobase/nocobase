@@ -33,6 +33,7 @@ export const FLOW_SURFACES_TEST_PLUGINS = [
   'block-tree',
   'kanban',
   'block-markdown',
+  'field-markdown-vditor',
   'block-iframe',
   'block-workbench',
   'calendar',

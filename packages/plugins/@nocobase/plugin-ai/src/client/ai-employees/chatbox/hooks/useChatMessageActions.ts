@@ -239,6 +239,7 @@ export const useChatMessageActions = () => {
       const decoder = new TextDecoder();
       let result = '';
       let error = false;
+      let streamBuffer = '';
 
       type MessagesStore = {
         addMessage: (msg: Message) => void;
@@ -515,8 +516,10 @@ export const useChatMessageActions = () => {
             break;
           }
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(Boolean);
+          streamBuffer += decoder.decode(value, { stream: true });
+          const parts = streamBuffer.split(/\r?\n/);
+          streamBuffer = parts.pop() ?? '';
+          const lines = parts.filter(Boolean);
 
           for (const line of lines) {
             try {

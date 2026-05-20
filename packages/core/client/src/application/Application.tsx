@@ -71,13 +71,7 @@ import {
 } from './schema-initializer/components/SchemaInitializerSwitch';
 import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
 
-import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
-
-type JsonLogic = {
-  addOperation: (name: string, fn?: any) => void;
-  rmOperation: (name: string) => void;
-};
 
 /**
  * Reference: https://ant.design/components/cascader-cn#option
@@ -126,7 +120,6 @@ export class Application extends BaseApplication<
   public declare dataSourceManager: DataSourceManager;
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
-  public declare jsonLogic: JsonLogic;
   loading = true;
   hasLoadError = false;
   locales = null;
@@ -208,11 +201,6 @@ export class Application extends BaseApplication<
     this.loading = true;
     this.hasLoadError = false;
     this.locales = null;
-  }
-
-  protected afterManagersInitialized() {
-    super.afterManagersInitialized();
-    this.jsonLogic = getOperators();
   }
 
   protected addCustomProviders() {

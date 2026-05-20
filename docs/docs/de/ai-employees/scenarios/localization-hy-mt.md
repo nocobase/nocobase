@@ -140,10 +140,18 @@ Gehen Sie zu `System Management -> Localization Management`.
 1. Zur Zielsprache wechseln.
 2. Auf `Synchronize` klicken, um Einträge zu synchronisieren.
 3. Linas Avatar anklicken.
-4. Aufgabenumfang auswählen: inkrementelle, ausgewählte oder vollständige Übersetzung.
+4. Nach Bedarf auswählen:
+   - `Incremental translation`: übersetzt Einträge, die noch keine Übersetzung haben.
+   - `Selected translation`: übersetzt die in der Tabelle ausgewählten Einträge.
+   - `Full translation`: übersetzt alle Einträge der aktuellen Sprache.
 5. Anzahl, Anbieter und Modell im Bestätigungsdialog prüfen.
-6. Bestätigen, um die asynchrone Aufgabe zu erstellen.
-7. Nach Abschluss Übersetzungen prüfen und veröffentlichen.
+6. Bei inkrementeller oder vollständiger Übersetzung den Übersetzungsumfang auswählen:
+   - `All`
+   - `Built-in entries`: System- und Plugin-Einträge.
+   - `Custom entries`: Routennamen, Sammlungs- und Feldnamen sowie UI-Inhalte.
+7. Referenzübersetzungssprachen bei Bedarf anpassen. Inkrementelle und vollständige Übersetzung konfigurieren Referenzsprachen separat für integrierte und benutzerdefinierte Einträge; die Übersetzung ausgewählter Einträge zeigt nur eine allgemeine Referenzsprachen-Konfiguration.
+8. Bestätigen, um die asynchrone Aufgabe zu erstellen.
+9. Nach Abschluss Übersetzungen prüfen und veröffentlichen.
 
 Starten Sie mit `Selected translation` für einige Einträge, um Stil und Geschwindigkeit zu prüfen.
 
@@ -151,9 +159,10 @@ Starten Sie mit `Selected translation` für einige Einträge, um Stil und Geschw
 
 Lina erstellt Anfragen aus Einträgen und Referenzübersetzungen. Für kurze Einträge werden vorhandene Referenzen genutzt, um Konsistenz zu verbessern:
 
-- Integrierte Einträge verwenden bevorzugt chinesische Übersetzungen als Referenz.
-- Nicht integrierte Einträge verwenden bevorzugt die Standardsprache des Systems.
-- Wenn eine englische Referenz vorhanden ist, wird Englisch als Quelltext verwendet.
+- Integrierte Einträge verwenden standardmäßig chinesische Übersetzungen als Referenz und Japanisch als Fallback-Referenz.
+- Benutzerdefinierte Einträge verwenden standardmäßig die Systemsprache als Referenz und Chinesisch als Fallback-Referenz.
+- Benutzer können Standardsprache und Fallback-Sprache im Bestätigungsdialog der Aufgabe anpassen.
+- Das System verwendet zuerst die Referenzübersetzung in der Standardsprache. Wenn sie nicht vorhanden ist, versucht es die Fallback-Sprache.
 - Übersetzungsergebnisse werden in die Zielsprache geschrieben, aber nicht automatisch veröffentlicht.
 
 Die Prompt-Semantik ähnelt:

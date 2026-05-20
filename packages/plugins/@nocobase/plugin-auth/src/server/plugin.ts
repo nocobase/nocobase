@@ -150,18 +150,39 @@ export class PluginAuthServer extends Plugin {
         return;
       }
 
-      const auth = await this.app.authManager.get(payload.authenticator || 'basic', {
-        getBearerToken: () => payload.token,
-        app: this.app,
-        db: this.app.db,
-        cache: this.app.cache,
-        logger: this.app.logger,
-        log: this.app.log,
-        throw: (...args) => {
-          throw new Error(...args);
-        },
-        t: this.app.i18n.t,
-      } as any);
+      // `app.emit` is Node's sync EventEmitter, so any rejection thrown
+      // inside this async listener becomes an unhandled promise rejection —
+      // under Node 22's default policy that crashes the entire process.
+      // Resolving the authenticator can fail for legitimate runtime reasons
+      // (the auth-type plugin is disabled or still loading during boot, the
+      // authenticator row was deleted, etc.); none of those should take the
+      // server down. Wrap the lookup, log, drop the connection's userId tag
+      // so the client is treated as unauthenticated, and return.
+      let auth;
+      try {
+        auth = await this.app.authManager.get(payload.authenticator || 'basic', {
+          getBearerToken: () => payload.token,
+          app: this.app,
+          db: this.app.db,
+          cache: this.app.cache,
+          logger: this.app.logger,
+          log: this.app.log,
+          throw: (...args) => {
+            throw new Error(...args);
+          },
+          t: this.app.i18n.t,
+        } as any);
+      } catch (error) {
+        this.app.logger.warn('ws:message:auth:token authenticator resolve failed', {
+          authenticator: payload.authenticator,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        this.app.emit(`ws:removeTag`, {
+          clientId,
+          tagKey: 'userId',
+        });
+        return;
+      }
 
       let user: Model;
       try {
