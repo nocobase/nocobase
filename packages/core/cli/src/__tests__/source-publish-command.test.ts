@@ -40,7 +40,7 @@ beforeEach(() => {
   });
 });
 
-test('source publish maps negative build flags to publish options', async () => {
+test('source publish maps build flags to publish options', async () => {
   const { default: SourcePublish } = await import('../commands/source/publish.js');
 
   const command = Object.assign(Object.create(SourcePublish.prototype), {
@@ -50,7 +50,7 @@ test('source publish maps negative build flags to publish options', async () => 
         cwd: '/repo',
         'npm-registry': 'http://127.0.0.1:4873',
         'no-build': true,
-        'no-build-dts': true,
+        'build-dts': true,
         json: false,
         verbose: false,
       },
@@ -69,8 +69,42 @@ test('source publish maps negative build flags to publish options', async () => 
     cwd: '/repo',
     npmRegistry: 'http://127.0.0.1:4873',
     build: false,
-    buildDts: false,
+    buildDts: true,
     verbose: false,
   });
 });
 
+test('source publish prints direct cwd errors in json mode', async () => {
+  const { default: SourcePublish } = await import('../commands/source/publish.js');
+  mocks.publishSourceSnapshot.mockRejectedValueOnce(new Error('The specified --cwd does not exist: /tmp/missing-source'));
+  const exitSignal = new Error('EXIT');
+
+  const command = Object.assign(Object.create(SourcePublish.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        snapshot: true,
+        cwd: '/tmp/missing-source',
+        'npm-registry': undefined,
+        'no-build': false,
+        'build-dts': true,
+        json: true,
+        verbose: false,
+      },
+    })),
+    log: vi.fn(),
+    logToStderr: vi.fn(),
+    exit: vi.fn(() => {
+      throw exitSignal;
+    }),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await expect(SourcePublish.prototype.run.call(command)).rejects.toBe(exitSignal);
+
+  expect(command.logToStderr).toHaveBeenCalledWith(JSON.stringify({
+    error: 'The specified --cwd does not exist: /tmp/missing-source',
+  }, null, 2));
+  expect(command.exit).toHaveBeenCalledWith(1);
+});

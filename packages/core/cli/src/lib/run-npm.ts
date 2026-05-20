@@ -37,6 +37,14 @@ function pathExists(candidate: string): boolean {
   }
 }
 
+function isDirectory(candidate: string): boolean {
+  try {
+    return Boolean(candidate) && fs.statSync(candidate).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function hasLocalNocoBaseBinary(candidate: string): boolean {
   return (
     pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1'))
@@ -55,6 +63,13 @@ export function resolveCwd(cwd?: string): string {
 export function resolveProjectCwd(cwd?: string): string {
   const normalizedCwd = typeof cwd === 'string' && cwd.trim() === '' ? undefined : cwd;
   const fallback = resolveCwd(normalizedCwd);
+  const hasExplicitInput = normalizedCwd !== undefined;
+  if (hasExplicitInput && !pathExists(fallback)) {
+    throw new Error(`The specified --cwd does not exist: ${fallback}`);
+  }
+  if (hasExplicitInput && !isDirectory(fallback)) {
+    throw new Error(`The specified --cwd is not a directory: ${fallback}`);
+  }
   const isAbsoluteInput = typeof normalizedCwd === 'string' && path.isAbsolute(normalizedCwd);
   let current = isAbsoluteInput ? fallback : process.cwd();
 
@@ -70,6 +85,9 @@ export function resolveProjectCwd(cwd?: string): string {
 
     const parent = path.dirname(current);
     if (parent === current) {
+      if (hasExplicitInput) {
+        throw new Error(`Couldn't find a NocoBase source project from --cwd: ${fallback}`);
+      }
       return fallback;
     }
     current = parent;

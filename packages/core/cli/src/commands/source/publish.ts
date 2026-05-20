@@ -12,6 +12,14 @@ import { buildSuggestedInitCommand, publishSourceSnapshot } from '../../lib/sour
 import { failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 
 function formatPublishFailure(message: string): string {
+  if (
+    message.includes('The specified --cwd does not exist:')
+    || message.includes('The specified --cwd is not a directory:')
+    || message.includes('Couldn\'t find a NocoBase source project from --cwd:')
+  ) {
+    return message;
+  }
+
   return [
     'Couldn\'t publish a source snapshot.',
     'Check that Docker is running, the target npm registry is reachable, and the current directory is a NocoBase source repo.',
@@ -26,7 +34,7 @@ export default class SourcePublish extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> --snapshot',
     '<%= config.bin %> <%= command.id %> --snapshot --no-build',
-    '<%= config.bin %> <%= command.id %> --snapshot --no-build-dts',
+    '<%= config.bin %> <%= command.id %> --snapshot --build-dts',
     '<%= config.bin %> <%= command.id %> --snapshot --cwd /path/to/nocobase/source',
     '<%= config.bin %> <%= command.id %> --snapshot --npm-registry=http://127.0.0.1:4873',
     '<%= config.bin %> <%= command.id %> --snapshot --json',
@@ -50,9 +58,9 @@ export default class SourcePublish extends Command {
       description: 'Skip building the source repo before snapshot versioning and publish',
       default: false,
     }),
-    'no-build-dts': Flags.boolean({
-      description: 'Skip generating TypeScript declaration files during the source build',
-      default: false,
+    'build-dts': Flags.boolean({
+      description: 'Generate TypeScript declaration files during the source build',
+      default: true,
     }),
     json: Flags.boolean({
       description: 'Print the publish result as JSON',
@@ -79,7 +87,7 @@ export default class SourcePublish extends Command {
         cwd: flags.cwd,
         npmRegistry: flags['npm-registry'],
         build: !flags['no-build'],
-        buildDts: !flags['no-build-dts'],
+        buildDts: flags['build-dts'],
         verbose: flags.verbose,
       });
 
