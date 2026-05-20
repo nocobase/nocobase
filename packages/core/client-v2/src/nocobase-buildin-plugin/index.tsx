@@ -243,7 +243,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
     });
     this.app.layoutManager.registerLayout({
       name: 'admin',
-      pathPrefix: '/admin',
+      basePath: '/admin',
       uid: ADMIN_LAYOUT_MODEL_UID,
       layoutModelClass: 'AdminLayoutModel',
     });

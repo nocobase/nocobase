@@ -28,6 +28,7 @@ type FlowRouteGuardState = {
 export type LegacyPageBehavior = 'redirect' | 'notFound' | 'bridge';
 
 export type FlowRouteProps = {
+  pageUid?: string;
   getLayoutModel?: (flowEngine: FlowEngine) => BaseLayoutModel | undefined;
   legacyPageBehavior?: LegacyPageBehavior;
 };
@@ -135,7 +136,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   const app = useApp();
   const routeRepository = flowEngine.context.routeRepository;
   const params = useParams();
-  const pageUid = params?.name;
+  const pageUid = props.pageUid || params?.name;
   const [guardState, setGuardState] = useState<FlowRouteGuardState>({
     pending: true,
     allowBridge: false,
@@ -145,7 +146,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   const requestIdRef = useRef(0);
 
   if (!pageUid) {
-    throw new Error('[NocoBase] FlowRoute requires route.params.name.');
+    throw new Error('[NocoBase] FlowRoute requires pageUid or route.params.name.');
   }
 
   useEffect(() => {

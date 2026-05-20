@@ -49,7 +49,7 @@ describe('PluginEmbedClientV2', () => {
     });
     expect(app.layoutManager.registerLayout).toHaveBeenCalledWith({
       name: 'embed',
-      pathPrefix: '/embed',
+      basePath: '/embed',
       uid: EMBED_LAYOUT_MODEL_UID,
       layoutModelClass: EMBED_LAYOUT_MODEL_CLASS,
     });

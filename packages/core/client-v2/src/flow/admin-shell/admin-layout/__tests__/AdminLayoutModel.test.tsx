@@ -43,6 +43,7 @@ import {
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { AdminLayoutModel, getAdminLayoutModel } from '..';
+import { getLayoutContentRouteName } from '../../../../layout-manager/utils';
 import { TopbarActionModel } from '../../../models/topbar/TopbarActionModel';
 import { UserCenterTopbarActionModel } from '../../../models/topbar/UserCenterTopbarActionModel';
 import { TopbarActionsBar } from '../TopbarActionsBar';
@@ -150,8 +151,8 @@ describe('AdminLayoutModel runtime', () => {
 
     expect(engine.context.layout).toMatchObject({
       name: 'admin',
-      pathPrefix: '/admin',
-      normalizedPathPrefix: 'admin',
+      basePath: '/admin',
+      normalizedBasePath: 'admin',
       rootPageModelClass: 'RootPageModel',
       childPageModelClass: 'ChildPageModel',
     });
@@ -161,6 +162,50 @@ describe('AdminLayoutModel runtime', () => {
     expect(engine.context.layout).toBeUndefined();
     expect(engine.context.currentRoute).toEqual({});
     expect(engine.context.layoutContentElement).toBeNull();
+  });
+
+  it('should expose layoutRoute and ignore non-content child routes', async () => {
+    const engine = new FlowEngine();
+    const routeRef = observable.ref({
+      name: getLayoutContentRouteName('admin'),
+      pathname: '/admin/page-1/view/popup',
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+    engine.context.defineProperty('route', {
+      get: () => routeRef.value,
+      cache: false,
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(engine.context.layoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        viewStack: [{ viewUid: 'page-1' }, { viewUid: 'popup' }],
+      });
+      expect(engine.context.currentRoute.title).toBe('page-1');
+    });
+
+    act(() => {
+      routeRef.value = {
+        name: 'admin.settings',
+        pathname: '/admin/settings',
+      };
+    });
+
+    await waitFor(() => {
+      expect(engine.context.layoutRoute).toBeNull();
+      expect(engine.context.currentRoute).toEqual({});
+    });
   });
 
   it('should expose live engine currentRoute when active page changes', async () => {

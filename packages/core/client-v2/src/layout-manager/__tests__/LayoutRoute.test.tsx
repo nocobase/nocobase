@@ -8,12 +8,15 @@
  */
 
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { BaseLayoutModel } from '../../flow/admin-shell/BaseLayoutModel';
+import { LayoutContentRoute } from '../LayoutContentRoute';
 import { LayoutRoute } from '../LayoutRoute';
 import type { LayoutDefinition } from '../types';
+import { getLayoutContentRouteName } from '../utils';
 
 class TestLayoutModel extends BaseLayoutModel {
   render() {
@@ -23,8 +26,8 @@ class TestLayoutModel extends BaseLayoutModel {
 
 const layout: LayoutDefinition = {
   name: 'test',
-  pathPrefix: '/test',
-  normalizedPathPrefix: 'test',
+  basePath: '/test',
+  normalizedBasePath: 'test',
   uid: 'test-layout-model',
   layoutModelClass: 'TestLayoutModel',
   rootPageModelClass: 'TestRootPageModel',
@@ -55,9 +58,97 @@ describe('LayoutRoute', () => {
     expect(model).toBeInstanceOf(TestLayoutModel);
     expect(model.layout).toMatchObject({
       name: 'test',
-      normalizedPathPrefix: 'test',
+      normalizedBasePath: 'test',
       rootPageModelClass: 'TestRootPageModel',
       childPageModelClass: 'TestChildPageModel',
+    });
+  });
+});
+
+describe('LayoutContentRoute', () => {
+  function setup(initialEntry: string) {
+    const engine = new FlowEngine();
+    engine.registerModels({ TestLayoutModel });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: () => Promise.resolve(),
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: () => Promise.resolve(),
+        getRouteBySchemaUid: () => ({ type: 'flowPage', schemaUid: 'page-1' }),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/',
+        layoutManager: {
+          getLayout: () => layout,
+        },
+        router: {
+          getBasename: () => '',
+        },
+      },
+    });
+    const model = engine.createModel<TestLayoutModel>({
+      uid: layout.uid,
+      use: TestLayoutModel,
+      props: {
+        layout,
+      },
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          id: getLayoutContentRouteName(layout.name),
+          path: '/test/*',
+          element: <LayoutContentRoute layoutName="test" />,
+        },
+      ],
+      {
+        initialEntries: [initialEntry],
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <RouterProvider router={router} />
+      </FlowEngineProvider>,
+    );
+
+    return { model };
+  }
+
+  it('syncs root layout route without rendering page content', async () => {
+    const { model } = setup('/test');
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'root',
+        pathname: '/test',
+        relativePath: '',
+      });
+    });
+  });
+
+  it('parses page route from catch-all pathname', async () => {
+    const { model } = setup('/test/page-1/tab/tab-1/view/popup');
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        tabUid: 'tab-1',
+        viewStack: [{ viewUid: 'page-1', tabUid: 'tab-1' }, { viewUid: 'popup' }],
+      });
+    });
+  });
+
+  it('renders not found for unsupported content path', async () => {
+    const { model } = setup('/test/page-1/unknown/value');
+
+    expect(await screen.findByText('404')).toBeInTheDocument();
+    expect(model.currentLayoutRoute).toMatchObject({
+      type: 'notFound',
+      relativePath: 'page-1/unknown/value',
     });
   });
 });

@@ -147,17 +147,17 @@ describe('ViewNavigation', () => {
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin', { replace: true });
     });
 
-    it('should use explicit path prefix when navigating back', () => {
-      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }], { pathPrefix: 'embed' });
+    it('should use explicit basePath when navigating back', () => {
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }], { basePath: '/embed' });
 
       viewNavigation.back();
 
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/embed', { replace: true });
     });
 
-    it('should use layout context path prefix when explicit prefix is absent', () => {
+    it('should use layout context basePath when explicit basePath is absent', () => {
       mockCtx.layout = {
-        normalizedPathPrefix: 'mobile',
+        basePath: '/mobile',
       };
       viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
 
@@ -180,8 +180,14 @@ describe('generatePathnameFromViewParams', () => {
   });
 
   it('should generate path with custom prefix', () => {
-    expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }], { prefix: 'embed' })).toBe('/embed/xxx');
-    expect(generatePathnameFromViewParams([], { prefix: 'embed' })).toBe('/embed');
+    expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }], { basePath: '/embed' })).toBe('/embed/xxx');
+    expect(generatePathnameFromViewParams([], { basePath: '/embed' })).toBe('/embed');
+  });
+
+  it('should generate path with nested basePath', () => {
+    expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }], { basePath: '/admin/settings/public-forms' })).toBe(
+      '/admin/settings/public-forms/xxx',
+    );
   });
 
   it('should generate view with tab', () => {

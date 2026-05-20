@@ -9,9 +9,10 @@
 
 import React from 'react';
 import type { BaseApplication } from '../BaseApplication';
-import { LayoutPageRoute } from './LayoutPageRoute';
+import { LayoutContentRoute } from './LayoutContentRoute';
 import { LayoutRoute } from './LayoutRoute';
 import type { LayoutDefinition, LayoutRegisterOptions } from './types';
+import { getLayoutContentRouteName } from './utils';
 
 const DEFAULT_ROOT_PAGE_MODEL_CLASS = 'RootPageModel';
 const DEFAULT_CHILD_PAGE_MODEL_CLASS = 'ChildPageModel';
@@ -34,20 +35,20 @@ const assertOptionalBoolean = (value: unknown, fieldName: string) => {
   }
 };
 
-export function normalizeLayoutPathPrefix(pathPrefix: string) {
-  const normalized = `/${pathPrefix.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+export function normalizeLayoutBasePath(basePath: string) {
+  const normalized = `/${basePath.replace(/^\/+/, '').replace(/\/+$/, '')}`;
   if (normalized === '/') {
-    throw new Error(`[NocoBase] layoutManager.registerLayout() does not support root pathPrefix '/'.`);
+    throw new Error(`[NocoBase] layoutManager.registerLayout() does not support root basePath '/'.`);
   }
   return {
-    pathPrefix: normalized,
-    normalizedPathPrefix: normalized.replace(/^\/+/, ''),
+    basePath: normalized,
+    normalizedBasePath: normalized.replace(/^\/+/, ''),
   };
 }
 
 function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefinition {
   assertNonEmptyString(options.name, 'name');
-  assertNonEmptyString(options.pathPrefix, 'pathPrefix');
+  assertNonEmptyString(options.basePath, 'basePath');
   assertNonEmptyString(options.uid, 'uid');
   assertNonEmptyString(options.layoutModelClass, 'layoutModelClass');
   assertOptionalNonEmptyString(options.rootPageModelClass, 'rootPageModelClass');
@@ -58,12 +59,12 @@ function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefini
     throw new Error(`[NocoBase] layoutManager.registerLayout() does not allow '.' in layout name '${options.name}'.`);
   }
 
-  const { pathPrefix, normalizedPathPrefix } = normalizeLayoutPathPrefix(options.pathPrefix);
+  const { basePath, normalizedBasePath } = normalizeLayoutBasePath(options.basePath);
 
   return {
     name: options.name,
-    pathPrefix,
-    normalizedPathPrefix,
+    basePath,
+    normalizedBasePath,
     uid: options.uid,
     layoutModelClass: options.layoutModelClass,
     rootPageModelClass: options.rootPageModelClass || DEFAULT_ROOT_PAGE_MODEL_CLASS,
@@ -75,7 +76,7 @@ function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefini
 export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   private readonly app: TApp;
   private readonly layouts = new Map<string, LayoutDefinition>();
-  private readonly pathPrefixIndex = new Map<string, string>();
+  private readonly basePathIndex = new Map<string, string>();
   private readonly uidIndex = new Map<string, string>();
 
   constructor(app: TApp) {
@@ -89,10 +90,10 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
       throw new Error(`[NocoBase] Layout '${layout.name}' has already been registered.`);
     }
 
-    const existingName = this.pathPrefixIndex.get(layout.pathPrefix);
+    const existingName = this.basePathIndex.get(layout.basePath);
     if (existingName) {
       throw new Error(
-        `[NocoBase] Layout pathPrefix '${layout.pathPrefix}' has already been registered by '${existingName}'.`,
+        `[NocoBase] Layout basePath '${layout.basePath}' has already been registered by '${existingName}'.`,
       );
     }
 
@@ -102,7 +103,7 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
     }
 
     this.layouts.set(layout.name, layout);
-    this.pathPrefixIndex.set(layout.pathPrefix, layout.name);
+    this.basePathIndex.set(layout.basePath, layout.name);
     this.uidIndex.set(layout.uid, layout.name);
     this.addStandardRoutes(layout);
 
@@ -130,33 +131,15 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
     const authCheck = layout.authCheck;
 
     this.app.router.add(routeBaseName, {
-      path: layout.pathPrefix,
+      path: layout.basePath,
       authCheck,
       element: <LayoutRoute layoutName={layout.name} />,
     });
 
-    this.app.router.add(`${routeBaseName}.page`, {
-      path: `${layout.pathPrefix}/:name`,
+    this.app.router.add(getLayoutContentRouteName(routeBaseName), {
+      path: '*',
       authCheck,
-      element: <LayoutPageRoute layoutName={layout.name} />,
-    });
-
-    this.app.router.add(`${routeBaseName}.page.tab`, {
-      path: `${layout.pathPrefix}/:name/tab/:tabUid`,
-      authCheck,
-      element: <LayoutPageRoute layoutName={layout.name} />,
-    });
-
-    this.app.router.add(`${routeBaseName}.page.view`, {
-      path: `${layout.pathPrefix}/:name/view/*`,
-      authCheck,
-      element: <LayoutPageRoute layoutName={layout.name} />,
-    });
-
-    this.app.router.add(`${routeBaseName}.page.tab.view`, {
-      path: `${layout.pathPrefix}/:name/tab/:tabUid/view/*`,
-      authCheck,
-      element: <LayoutPageRoute layoutName={layout.name} />,
+      element: <LayoutContentRoute layoutName={layout.name} />,
     });
   }
 }

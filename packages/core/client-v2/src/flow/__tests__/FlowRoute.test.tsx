@@ -120,6 +120,52 @@ describe('FlowRoute', () => {
     expect(adminLayoutModel.unregisterRoutePage).toHaveBeenCalledWith('test-page');
   });
 
+  it('should bridge page lifecycle with explicit pageUid', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => ({ type: 'flowPage', schemaUid: 'test-page' })),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({
+        uid: 'admin-layout-model',
+        use: 'FlowModel',
+      }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow']}>
+          <Routes>
+            <Route path="/flow" element={<FlowRoute pageUid="test-page" />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith('test-page', expect.any(Object));
+    });
+  });
+
   it('should derive layout model from current layout context when rendered from schema', async () => {
     const engine = new FlowEngine();
     const routeRepository = {
@@ -144,8 +190,8 @@ describe('FlowRoute', () => {
     routeModel.context.defineProperty('layout', {
       value: {
         name: 'embed',
-        pathPrefix: '/embed',
-        normalizedPathPrefix: 'embed',
+        basePath: '/embed',
+        normalizedBasePath: 'embed',
         uid: 'embed-layout-model',
         layoutModelClass: 'EmbedLayoutModelV2',
         rootPageModelClass: 'RootPageModel',

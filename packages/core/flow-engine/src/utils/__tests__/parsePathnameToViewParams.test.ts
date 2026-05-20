@@ -107,6 +107,18 @@ describe('parsePathnameToViewParams', () => {
     expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }, { viewUid: 'zzz' }]);
   });
 
+  test('should parse pathname by basePath', () => {
+    const result = parsePathnameToViewParams('/embed/xxx/tab/yyy/view/zzz', { basePath: '/embed' });
+    expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }, { viewUid: 'zzz' }]);
+  });
+
+  test('should parse pathname by nested basePath', () => {
+    const result = parsePathnameToViewParams('/admin/settings/public-forms/xxx/view/zzz', {
+      basePath: '/admin/settings/public-forms',
+    });
+    expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'zzz' }]);
+  });
+
   test('should keep admin as default root prefix', () => {
     expect(parsePathnameToViewParams('/embed/xxx')).toEqual([]);
   });

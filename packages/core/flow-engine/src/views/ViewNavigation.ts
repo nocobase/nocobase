@@ -15,11 +15,12 @@ type ViewParams = Omit<SharedViewParam, 'viewUid'> & { viewUid?: string };
 
 export interface GeneratePathnameFromViewParamsOptions {
   prefix?: string;
+  basePath?: string;
 }
 
 export interface ViewNavigationOptions {
-  pathPrefix?: string;
-  layoutPathPrefix?: string;
+  basePath?: string;
+  layoutBasePath?: string;
 }
 
 function encodeFilterByTk(val: SharedViewParam['filterByTk']): string {
@@ -39,6 +40,11 @@ function hasUsableSourceId(sourceId: unknown): sourceId is string | number {
   return sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
 }
 
+function normalizeBasePath(basePath?: string) {
+  const value = basePath || '/admin';
+  return `/${value.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+}
+
 /**
  * 将 ViewParam 数组转换为 pathname
  *
@@ -56,13 +62,13 @@ export function generatePathnameFromViewParams(
   viewParams: ViewParams[],
   options: GeneratePathnameFromViewParamsOptions = {},
 ): string {
-  const prefix = options.prefix || 'admin';
+  const basePath = normalizeBasePath(options.basePath || options.prefix);
 
   if (!viewParams || viewParams.length === 0) {
-    return `/${prefix}`;
+    return basePath;
   }
 
-  const segments = [prefix];
+  const segments = basePath.replace(/^\/+/, '').split('/').filter(Boolean);
 
   viewParams.forEach((viewParam, index) => {
     // 如果不是第一个视图，添加 'view' 关键字
@@ -95,12 +101,12 @@ export class ViewNavigation {
   viewStack: ReadonlyArray<ViewParams>; // 只能通过 setViewStack 修改
   ctx: FlowEngineContext;
   viewParams: ViewParams;
-  private readonly pathPrefix?: string;
+  private readonly basePath?: string;
 
   constructor(ctx: FlowEngineContext, viewParams: ViewParams[], options: ViewNavigationOptions = {}) {
     this.setViewStack(viewParams);
     this.ctx = ctx;
-    this.pathPrefix = options.pathPrefix || options.layoutPathPrefix;
+    this.basePath = options.basePath || options.layoutBasePath;
 
     define(this, {
       viewParams: observable,
@@ -122,7 +128,7 @@ export class ViewNavigation {
     });
 
     // 2. 根据 viewStack 生成新的 pathname
-    const newPathname = generatePathnameFromViewParams(newViewStack, { prefix: this.getLayoutPathPrefix() });
+    const newPathname = generatePathnameFromViewParams(newViewStack, { basePath: this.getLayoutBasePath() });
 
     // 3. 触发一次跳转。使用 replace 的方式
     this.ctx.router.navigate(newPathname, { replace: true });
@@ -132,7 +138,7 @@ export class ViewNavigation {
     // 1. 基于当前 viewStack 生成一个 pathname
     // 2. 将当前传入的参数转为 path string
     const newViewPathname = generatePathnameFromViewParams([...this.viewStack, viewParam], {
-      prefix: this.getLayoutPathPrefix(),
+      basePath: this.getLayoutBasePath(),
     });
 
     // 3. 与 pathname 拼接成新的 pathname（这里直接使用新生成的 pathname）
@@ -144,11 +150,11 @@ export class ViewNavigation {
 
   back() {
     const prevStack = this.viewStack.slice(0, -1);
-    const prevPath = generatePathnameFromViewParams(prevStack, { prefix: this.getLayoutPathPrefix() });
+    const prevPath = generatePathnameFromViewParams(prevStack, { basePath: this.getLayoutBasePath() });
     this.ctx.router.navigate(prevPath, { replace: true });
   }
 
-  private getLayoutPathPrefix() {
-    return this.pathPrefix || (this.ctx as any).layout?.normalizedPathPrefix || 'admin';
+  private getLayoutBasePath() {
+    return this.basePath || (this.ctx as any).layout?.basePath || '/admin';
   }
 }

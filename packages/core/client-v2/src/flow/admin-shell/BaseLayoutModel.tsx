@@ -8,13 +8,14 @@
  */
 
 import { define, observable, reaction } from '@formily/reactive';
-import { type FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { parsePathnameToViewParams, type FlowEngine, FlowModel, type ViewParam } from '@nocobase/flow-engine';
 import {
   BaseLayoutRouteCoordinator,
   type BaseLayoutRouteCoordinatorOptions,
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
 import type { LayoutDefinition } from '../../layout-manager/types';
+import { getLayoutContentRouteName } from '../../layout-manager/utils';
 
 export type BaseLayoutStructure = {
   subModels?: Record<string, FlowModel[]>;
@@ -29,13 +30,96 @@ export type GetLayoutModelOptions<TModel extends FlowModel = BaseLayoutModel> = 
 
 const DEFAULT_LAYOUT_DEFINITION: LayoutDefinition = {
   name: 'admin',
-  pathPrefix: '/admin',
-  normalizedPathPrefix: 'admin',
+  basePath: '/admin',
+  normalizedBasePath: 'admin',
   uid: 'admin-layout-model',
   layoutModelClass: 'AdminLayoutModel',
   rootPageModelClass: 'RootPageModel',
   childPageModelClass: 'ChildPageModel',
   authCheck: true,
+};
+
+export type LayoutRouteMatch =
+  | {
+      type: 'root';
+      pathname: string;
+      relativePath: string;
+    }
+  | {
+      type: 'page';
+      pathname: string;
+      relativePath: string;
+      pageUid: string;
+      tabUid?: string;
+      viewStack: ViewParam[];
+    }
+  | {
+      type: 'notFound';
+      pathname: string;
+      relativePath: string;
+    };
+
+export interface LayoutRouteLike {
+  id?: string;
+  name?: string;
+  pathname?: string;
+  params?: Record<string, string | undefined>;
+}
+
+const normalizeBasePath = (basePath?: string) => `/${(basePath || '/admin').replace(/^\/+/, '').replace(/\/+$/, '')}`;
+
+const normalizePathname = (pathname?: string) => {
+  if (!pathname || pathname === '/') {
+    return '/';
+  }
+  return `/${pathname.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+};
+
+const getRelativePath = (pathname: string, basePath: string) => {
+  const normalizedPathname = normalizePathname(pathname);
+  const normalizedBasePath = normalizeBasePath(basePath);
+
+  if (normalizedPathname === normalizedBasePath) {
+    return '';
+  }
+
+  if (normalizedPathname.startsWith(`${normalizedBasePath}/`)) {
+    return normalizedPathname.slice(normalizedBasePath.length + 1);
+  }
+
+  return null;
+};
+
+const isKnownViewParamName = (segment: string) => ['tab', 'filterbytk', 'sourceid'].includes(segment);
+
+const isStandardLayoutRelativePath = (relativePath: string) => {
+  if (!relativePath) {
+    return true;
+  }
+
+  const segments = relativePath.split('/').filter(Boolean);
+  if (!segments.length) {
+    return true;
+  }
+
+  let i = 1;
+  while (i < segments.length) {
+    const segment = segments[i];
+    if (segment === 'view') {
+      if (!segments[i + 1]) {
+        return false;
+      }
+      i += 2;
+      continue;
+    }
+
+    if (!isKnownViewParamName(segment) || !segments[i + 1]) {
+      return false;
+    }
+    i += 2;
+  }
+
+  return true;
 };
 
 /**
@@ -48,6 +132,7 @@ export class BaseLayoutModel<
   TStructure extends BaseLayoutStructure = BaseLayoutStructure,
 > extends FlowModel<TStructure> {
   isMobileLayout = false;
+  currentLayoutRoute: LayoutRouteMatch | null = null;
   protected routeCoordinator?: BaseLayoutRouteCoordinator;
   private routeDisposer?: () => void;
   private activePageUid = '';
@@ -59,12 +144,15 @@ export class BaseLayoutModel<
     super(options);
     define(this, {
       isMobileLayout: observable.ref,
+      currentLayoutRoute: observable.ref,
     });
   }
 
   registerRoutePage(pageUid: string, meta: RoutePageMeta) {
     this.routePageMetaMap.set(pageUid, meta);
-    return this.getCoordinator().registerPage(pageUid, meta);
+    const routeModel = this.getCoordinator().registerPage(pageUid, meta);
+    this.getCoordinator().syncRoute(this.getCurrentCoordinatorRouteLike());
+    return routeModel;
   }
 
   updateRoutePage(pageUid: string, meta: Partial<RoutePageMeta>) {
@@ -126,7 +214,92 @@ export class BaseLayoutModel<
   }
 
   protected getPageUidFromRoute(route: any) {
+    if (route?.pageUid) {
+      return route.pageUid;
+    }
+    if (route?.layoutRoute?.type === 'page') {
+      return route.layoutRoute.pageUid;
+    }
     return route?.params?.name || '';
+  }
+
+  isLayoutContentRoute(routeLike: LayoutRouteLike) {
+    const routeName = routeLike?.name || routeLike?.id;
+    return routeName === getLayoutContentRouteName(this.layout.name);
+  }
+
+  resolveLayoutRoute(routeLike: LayoutRouteLike): LayoutRouteMatch {
+    const pathname = normalizePathname(routeLike?.pathname);
+    const relativePath = getRelativePath(pathname, this.layout.basePath);
+
+    if (relativePath === null) {
+      return {
+        type: 'notFound',
+        pathname,
+        relativePath: '',
+      };
+    }
+
+    if (!relativePath) {
+      return {
+        type: 'root',
+        pathname,
+        relativePath,
+      };
+    }
+
+    if (!isStandardLayoutRelativePath(relativePath)) {
+      return {
+        type: 'notFound',
+        pathname,
+        relativePath,
+      };
+    }
+
+    const viewStack = parsePathnameToViewParams(pathname, { basePath: this.layout.basePath });
+    const pageUid = viewStack[0]?.viewUid;
+
+    if (!pageUid) {
+      return {
+        type: 'notFound',
+        pathname,
+        relativePath,
+      };
+    }
+
+    return {
+      type: 'page',
+      pathname,
+      relativePath,
+      pageUid,
+      tabUid: viewStack[0]?.tabUid,
+      viewStack,
+    };
+  }
+
+  getPageUidFromLayoutRoute(match: LayoutRouteMatch | null | undefined) {
+    return match?.type === 'page' ? match.pageUid : '';
+  }
+
+  syncLayoutRoute(routeLike: LayoutRouteLike) {
+    if (!this.isLayoutContentRoute(routeLike)) {
+      this.currentLayoutRoute = null;
+      this.activePageUid = '';
+      this.getCoordinator().syncRoute({});
+      return null;
+    }
+
+    const layoutRoute = this.resolveLayoutRoute(routeLike);
+    this.currentLayoutRoute = layoutRoute;
+    this.activePageUid = this.getPageUidFromLayoutRoute(layoutRoute);
+    this.getCoordinator().syncRoute({
+      ...routeLike,
+      pageUid: this.activePageUid,
+      pathname: layoutRoute.pathname,
+      layoutRoute,
+    });
+
+    return layoutRoute;
   }
 
   protected onMount(): void {
@@ -161,6 +334,11 @@ export class BaseLayoutModel<
       get: () => (this.contextBindingsActive ? this.layout : undefined),
       cache: false,
     });
+    this.flowEngine.context.defineProperty('layoutRoute', {
+      get: () => (this.contextBindingsActive ? this.currentLayoutRoute : undefined),
+      observable: true,
+      cache: false,
+    });
   }
 
   private setupRouteReaction() {
@@ -171,6 +349,12 @@ export class BaseLayoutModel<
     this.routeDisposer = reaction(
       () => this.flowEngine.context.route,
       (route) => {
+        if (this.isLayoutContentRoute(route || {})) {
+          this.syncLayoutRoute(route || {});
+          return;
+        }
+
+        this.currentLayoutRoute = null;
         this.activePageUid = this.getPageUidFromRoute(route);
         this.getCoordinator().syncRoute(route || {});
       },
@@ -188,11 +372,28 @@ export class BaseLayoutModel<
     this.routeCoordinator = undefined;
     this.routePageMetaMap.clear();
     this.activePageUid = '';
+    this.currentLayoutRoute = null;
     this.layoutContentElement = null;
   }
 
   private getCurrentRouteByActivePage() {
+    if (!this.activePageUid) {
+      return {};
+    }
     return this.getCurrentRouteByPageUid(this.activePageUid);
+  }
+
+  private getCurrentCoordinatorRouteLike() {
+    const route = this.flowEngine.context.route || {};
+    if (this.currentLayoutRoute?.type === 'page') {
+      return {
+        ...route,
+        pageUid: this.currentLayoutRoute.pageUid,
+        pathname: this.currentLayoutRoute.pathname,
+        layoutRoute: this.currentLayoutRoute,
+      };
+    }
+    return route;
   }
 }
 

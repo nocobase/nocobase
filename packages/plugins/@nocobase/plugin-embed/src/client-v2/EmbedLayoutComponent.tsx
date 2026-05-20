@@ -20,6 +20,7 @@ const embedContainerStyle: React.CSSProperties = { width: 'fit-content', positio
 export const EmbedLayoutComponent = observer((props: { model: EmbedLayoutModelV2 }) => {
   const { model } = props;
   const outlet = useOutlet();
+  const isRootRoute = model.currentLayoutRoute?.type === 'root';
   const { token } = antdTheme.useToken();
   const screens = Grid.useBreakpoint();
   const isMobileLayout =
@@ -56,7 +57,7 @@ export const EmbedLayoutComponent = observer((props: { model: EmbedLayoutModelV2
           } as React.CSSProperties
         }
       >
-        {outlet || <EmbedEmptyPage />}
+        {isRootRoute || !outlet ? <EmbedEmptyPage /> : outlet}
       </div>
       <div id="nocobase-embed-container" style={embedContainerStyle} />
     </ConfigProvider>

@@ -29,20 +29,20 @@ function createManager() {
 }
 
 describe('LayoutManager', () => {
-  it('registers layout with defaults and standard routes', () => {
+  it('registers layout with defaults and catch-all content route', () => {
     const { manager, routes } = createManager();
 
     const layout = manager.registerLayout({
       name: 'mobile',
-      pathPrefix: 'mobile/',
+      basePath: 'mobile/',
       uid: 'mobile-layout-model',
       layoutModelClass: 'MobileLayoutModel',
     });
 
     expect(layout).toMatchObject({
       name: 'mobile',
-      pathPrefix: '/mobile',
-      normalizedPathPrefix: 'mobile',
+      basePath: '/mobile',
+      normalizedBasePath: 'mobile',
       uid: 'mobile-layout-model',
       layoutModelClass: 'MobileLayoutModel',
       rootPageModelClass: 'RootPageModel',
@@ -54,22 +54,11 @@ describe('LayoutManager', () => {
       authCheck: true,
     });
     expect(React.isValidElement(routes.mobile.element)).toBe(true);
-    expect(routes['mobile.page']).toMatchObject({
-      path: '/mobile/:name',
+    expect(routes['mobile.__layoutContent']).toMatchObject({
+      path: '*',
       authCheck: true,
     });
-    expect(routes['mobile.page.tab']).toMatchObject({
-      path: '/mobile/:name/tab/:tabUid',
-      authCheck: true,
-    });
-    expect(routes['mobile.page.view']).toMatchObject({
-      path: '/mobile/:name/view/*',
-      authCheck: true,
-    });
-    expect(routes['mobile.page.tab.view']).toMatchObject({
-      path: '/mobile/:name/tab/:tabUid/view/*',
-      authCheck: true,
-    });
+    expect(routes['mobile.page']).toBeUndefined();
   });
 
   it('allows explicit page model classes and authCheck', () => {
@@ -78,7 +67,7 @@ describe('LayoutManager', () => {
     expect(
       manager.registerLayout({
         name: 'embed',
-        pathPrefix: '/embed',
+        basePath: '/embed',
         uid: 'embed-layout-model',
         layoutModelClass: 'EmbedLayoutModelV2',
         rootPageModelClass: 'EmbedRootPageModel',
@@ -98,7 +87,7 @@ describe('LayoutManager', () => {
     expect(() =>
       manager.registerLayout({
         name: 'bad.name',
-        pathPrefix: '/bad',
+        basePath: '/bad',
         uid: 'bad-layout-model',
         layoutModelClass: 'BadLayoutModel',
       }),
@@ -106,15 +95,15 @@ describe('LayoutManager', () => {
     expect(() =>
       manager.registerLayout({
         name: 'root',
-        pathPrefix: '/',
+        basePath: '/',
         uid: 'root-layout-model',
         layoutModelClass: 'RootLayoutModel',
       }),
-    ).toThrowError(/root pathPrefix/);
+    ).toThrowError(/root basePath/);
     expect(() =>
       manager.registerLayout({
         name: '',
-        pathPrefix: '/empty',
+        basePath: '/empty',
         uid: 'empty-layout-model',
         layoutModelClass: 'EmptyLayoutModel',
       }),
@@ -122,7 +111,7 @@ describe('LayoutManager', () => {
     expect(() =>
       manager.registerLayout({
         name: 'badRootModel',
-        pathPrefix: '/bad-root-model',
+        basePath: '/bad-root-model',
         uid: 'bad-root-model-layout-model',
         layoutModelClass: 'BadRootModelLayoutModel',
         rootPageModelClass: '' as any,
@@ -131,7 +120,7 @@ describe('LayoutManager', () => {
     expect(() =>
       manager.registerLayout({
         name: 'badChildModel',
-        pathPrefix: '/bad-child-model',
+        basePath: '/bad-child-model',
         uid: 'bad-child-model-layout-model',
         layoutModelClass: 'BadChildModelLayoutModel',
         childPageModelClass: {} as any,
@@ -140,7 +129,7 @@ describe('LayoutManager', () => {
     expect(() =>
       manager.registerLayout({
         name: 'badAuthCheck',
-        pathPrefix: '/bad-auth-check',
+        basePath: '/bad-auth-check',
         uid: 'bad-auth-check-layout-model',
         layoutModelClass: 'BadAuthCheckLayoutModel',
         authCheck: 'false' as any,
@@ -148,12 +137,12 @@ describe('LayoutManager', () => {
     ).toThrowError(/authCheck/);
   });
 
-  it('rejects duplicate name or pathPrefix', () => {
+  it('rejects duplicate name or basePath', () => {
     const { manager } = createManager();
 
     manager.registerLayout({
       name: 'admin',
-      pathPrefix: '/admin',
+      basePath: '/admin',
       uid: 'admin-layout-model',
       layoutModelClass: 'AdminLayoutModel',
     });
@@ -161,7 +150,7 @@ describe('LayoutManager', () => {
     expect(() =>
       manager.registerLayout({
         name: 'admin',
-        pathPrefix: '/admin2',
+        basePath: '/admin2',
         uid: 'admin-layout-model-2',
         layoutModelClass: 'AdminLayoutModel2',
       }),
@@ -169,15 +158,15 @@ describe('LayoutManager', () => {
     expect(() =>
       manager.registerLayout({
         name: 'admin2',
-        pathPrefix: 'admin/',
+        basePath: 'admin/',
         uid: 'admin-layout-model-3',
         layoutModelClass: 'AdminLayoutModel3',
       }),
-    ).toThrowError(/pathPrefix '\/admin'/);
+    ).toThrowError(/basePath '\/admin'/);
     expect(() =>
       manager.registerLayout({
         name: 'admin3',
-        pathPrefix: '/admin3',
+        basePath: '/admin3',
         uid: 'admin-layout-model',
         layoutModelClass: 'AdminLayoutModel3',
       }),

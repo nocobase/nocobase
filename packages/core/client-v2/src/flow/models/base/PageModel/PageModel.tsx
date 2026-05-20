@@ -183,7 +183,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
     const routePathname = this.flowEngine?.context?.route?.pathname;
     // In route-managed multi-view mode, only the top view in URL should mutate document.title.
     if (hasRouteNavigation && currentViewUid && typeof routePathname === 'string') {
-      const topViewUid = parsePathnameToViewParams(routePathname).at(-1)?.viewUid;
+      const topViewUid = parsePathnameToViewParams(routePathname, { basePath: this.context?.layout?.basePath }).at(-1)
+        ?.viewUid;
       if (topViewUid && topViewUid !== currentViewUid) {
         return;
       }

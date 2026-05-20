@@ -20,7 +20,32 @@ export interface ViewParam {
 
 export interface ParsePathnameToViewParamsOptions {
   rootPrefix?: string;
+  basePath?: string;
 }
+
+const normalizePathname = (pathname: string) => {
+  if (!pathname || pathname === '/') {
+    return '/';
+  }
+  return `/${pathname.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+};
+
+const normalizeBasePath = (basePath: string) => `/${basePath.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+
+const stripBasePath = (pathname: string, basePath: string) => {
+  const normalizedPathname = normalizePathname(pathname);
+  const normalizedBasePath = normalizeBasePath(basePath);
+
+  if (normalizedPathname === normalizedBasePath) {
+    return '';
+  }
+
+  if (normalizedPathname.startsWith(`${normalizedBasePath}/`)) {
+    return normalizedPathname.slice(normalizedBasePath.length + 1);
+  }
+
+  return '';
+};
 
 /**
  * 解析路径名为视图参数数组
@@ -46,17 +71,23 @@ export const parsePathnameToViewParams = (
   }
 
   const rootPrefix = options.rootPrefix || 'admin';
+  const relativePath = options.basePath ? stripBasePath(pathname, options.basePath) : '';
 
   // 移除开头的斜杠并分割路径
-  const segments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+  const segments = (options.basePath ? relativePath : pathname).replace(/^\/+/, '').split('/').filter(Boolean);
 
-  if (segments.length < 2) {
+  if (segments.length < (options.basePath ? 1 : 2)) {
     return [];
   }
 
   const result: ViewParam[] = [];
   let currentView: ViewParam | null = null;
   let i = 0;
+
+  if (options.basePath) {
+    currentView = { viewUid: segments[0] };
+    i = 1;
+  }
 
   while (i < segments.length) {
     const segment = segments[i];

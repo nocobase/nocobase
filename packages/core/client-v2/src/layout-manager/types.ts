@@ -9,7 +9,7 @@
 
 export interface LayoutRegisterOptions {
   name: string;
-  pathPrefix: string;
+  basePath: string;
   uid: string;
   layoutModelClass: string;
   rootPageModelClass?: string;
@@ -18,5 +18,5 @@ export interface LayoutRegisterOptions {
 }
 
 export interface LayoutDefinition extends Required<LayoutRegisterOptions> {
-  normalizedPathPrefix: string;
+  normalizedBasePath: string;
 }

@@ -29,7 +29,7 @@ export interface RoutePageMeta {
 
 export interface BaseLayoutRouteCoordinatorOptions {
   layout?: LayoutDefinition;
-  pathPrefix?: string;
+  basePath?: string;
 }
 
 interface ViewRuntimeState {
@@ -51,12 +51,17 @@ interface RoutePageRuntime {
 interface RouteLike {
   params?: { name?: string };
   pathname?: string;
+  pageUid?: string;
+  layoutRoute?: {
+    type: string;
+    pageUid?: string;
+  } | null;
 }
 
 const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
 
-const normalizePathPrefix = (pathPrefix?: string) => {
-  return (pathPrefix || 'admin').replace(/^\/+/, '').replace(/\/+$/, '') || 'admin';
+const normalizeBasePath = (basePath?: string) => {
+  return `/${(basePath || '/admin').replace(/^\/+/, '').replace(/\/+$/, '')}`;
 };
 
 /**
@@ -68,14 +73,14 @@ const normalizePathPrefix = (pathPrefix?: string) => {
 export class BaseLayoutRouteCoordinator {
   protected readonly flowEngine: FlowEngine;
   protected readonly layout: LayoutDefinition | undefined;
-  protected readonly normalizedPathPrefix: string;
+  protected readonly basePath: string;
   private readonly runtimes = new Map<string, RoutePageRuntime>();
   private layoutContentElement: HTMLElement | null = null;
 
   constructor(flowEngine: FlowEngine, options: BaseLayoutRouteCoordinatorOptions = {}) {
     this.flowEngine = flowEngine;
     this.layout = options.layout;
-    this.normalizedPathPrefix = options.layout?.normalizedPathPrefix || normalizePathPrefix(options.pathPrefix);
+    this.basePath = options.layout?.basePath || normalizeBasePath(options.basePath);
   }
 
   setLayoutContentElement(element: HTMLElement | null) {
@@ -128,7 +133,7 @@ export class BaseLayoutRouteCoordinator {
   }
 
   syncRoute(routeLike: RouteLike) {
-    const activePageUid = routeLike?.params?.name;
+    const activePageUid = routeLike?.pageUid || routeLike?.layoutRoute?.pageUid || routeLike?.params?.name;
     const pathname = routeLike?.pathname;
 
     this.runtimes.forEach((runtime) => {
@@ -190,7 +195,7 @@ export class BaseLayoutRouteCoordinator {
 
   private syncRuntimeWithPathname(runtime: RoutePageRuntime, pathname: string) {
     try {
-      const viewStack = parsePathnameToViewParams(pathname, { rootPrefix: this.normalizedPathPrefix });
+      const viewStack = parsePathnameToViewParams(pathname, { basePath: this.basePath });
       const viewList = resolveViewParamsToViewList(this.flowEngine, viewStack, runtime.routeModel);
 
       if (this.shouldStepNavigate(runtime, viewList)) {
@@ -236,15 +241,14 @@ export class BaseLayoutRouteCoordinator {
     }
 
     if (index === 0) {
-      new ViewNavigation(this.flowEngine.context, [], { pathPrefix: this.normalizedPathPrefix }).navigateTo(
-        viewList[index].params,
-        { replace: true },
-      );
+      new ViewNavigation(this.flowEngine.context, [], { basePath: this.basePath }).navigateTo(viewList[index].params, {
+        replace: true,
+      });
     } else {
       new ViewNavigation(
         this.flowEngine.context,
         viewList.slice(0, index).map((item) => item.params),
-        { pathPrefix: this.normalizedPathPrefix },
+        { basePath: this.basePath },
       ).navigateTo(viewList[index].params);
     }
 
@@ -294,7 +298,7 @@ export class BaseLayoutRouteCoordinator {
     const navigation = new ViewNavigation(
       this.flowEngine.context,
       viewList.slice(0, viewItem.index + 1).map((item) => item.params),
-      { pathPrefix: this.normalizedPathPrefix },
+      { basePath: this.basePath },
     );
 
     viewItem.model.dispatchEvent('click', {
@@ -368,6 +372,6 @@ export class BaseLayoutRouteCoordinator {
  */
 export function toViewStack(pathname: string, options: BaseLayoutRouteCoordinatorOptions = {}): ViewParam[] {
   return parsePathnameToViewParams(pathname, {
-    rootPrefix: options.layout?.normalizedPathPrefix || normalizePathPrefix(options.pathPrefix),
+    basePath: options.layout?.basePath || normalizeBasePath(options.basePath),
   });
 }

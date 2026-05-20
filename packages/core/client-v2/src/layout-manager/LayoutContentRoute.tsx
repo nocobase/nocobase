@@ -1,0 +1,71 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { type FlowEngine, useFlowEngine } from '@nocobase/flow-engine';
+import React, { useEffect, useMemo } from 'react';
+import { useLocation, useMatches } from 'react-router-dom';
+import { AppNotFound } from '../components';
+import { getLayoutModel, type BaseLayoutModel, type LayoutRouteLike } from '../flow/admin-shell/BaseLayoutModel';
+import FlowRoute from '../flow/components/FlowRoute';
+import { useApp } from '../hooks/useApp';
+
+export interface LayoutContentRouteProps {
+  layoutName: string;
+}
+
+export const LayoutContentRoute = (props: LayoutContentRouteProps) => {
+  const { layoutName } = props;
+  const app = useApp();
+  const flowEngine = useFlowEngine();
+  const layout = app.layoutManager.getLayout(layoutName);
+  const location = useLocation();
+  const matches = useMatches();
+  const model = getLayoutModel<BaseLayoutModel>(flowEngine, layout.uid, { required: true });
+  const legacyPageBehavior = layout.name === 'admin' ? 'redirect' : 'notFound';
+  const routeLike = useMemo<LayoutRouteLike>(() => {
+    const lastMatch = matches[matches.length - 1];
+    return {
+      id: lastMatch?.id,
+      name: lastMatch?.id,
+      pathname: location.pathname,
+      params: (lastMatch?.params || {}) as Record<string, string | undefined>,
+    };
+  }, [location.pathname, matches]);
+  if (!model) {
+    throw new Error(`[NocoBase] Layout '${layout.name}' model '${layout.uid}' is not mounted.`);
+  }
+
+  const layoutRoute = model.resolveLayoutRoute(routeLike);
+  const getCurrentLayoutModel = useMemo(
+    () => (flowEngine: FlowEngine) => getLayoutModel<BaseLayoutModel>(flowEngine, layout.uid, { required: true }),
+    [layout.uid],
+  );
+
+  useEffect(() => {
+    model.syncLayoutRoute(routeLike);
+  }, [model, routeLike]);
+
+  if (layoutRoute.type === 'root') {
+    return null;
+  }
+
+  if (layoutRoute.type === 'notFound') {
+    return <AppNotFound />;
+  }
+
+  return (
+    <FlowRoute
+      pageUid={layoutRoute.pageUid}
+      getLayoutModel={getCurrentLayoutModel}
+      legacyPageBehavior={legacyPageBehavior}
+    />
+  );
+};
+
+export default LayoutContentRoute;

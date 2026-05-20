@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { parsePathnameToViewParams, useFlowEngine } from '@nocobase/flow-engine';
 import React, { type FC, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { NocoBaseDesktopRouteType } from '../../../flow-compat';
 import { useApp } from '../../../hooks/useApp';
+import { getLayoutContentRouteName } from '../../../layout-manager/utils';
 import {
   findFirstV2LandingRoute,
   resolveAdminRouteRuntimeTarget,
@@ -23,7 +24,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
   const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
-  const params = useParams();
+  const matches = useMatches();
   const [ready, setReady] = useState(false);
   const replaceTriggeredRef = useRef(false);
   const routeRepository = flowEngine.context.routeRepository;
@@ -31,10 +32,17 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
     const pathname = toRouterNavigationPath(location.pathname, app.router.getBasename());
     return pathname === '/admin';
   }, [app, location.pathname]);
+  const pageUid = useMemo(() => {
+    const lastMatch = matches[matches.length - 1];
+    if (lastMatch?.id !== getLayoutContentRouteName('admin')) {
+      return '';
+    }
+    return parsePathnameToViewParams(location.pathname, { basePath: '/admin' })[0]?.viewUid || '';
+  }, [location.pathname, matches]);
 
   useEffect(() => {
     replaceTriggeredRef.current = false;
-  }, [location.pathname, location.search, location.hash, params.name]);
+  }, [location.pathname, location.search, location.hash, pageUid]);
 
   useEffect(() => {
     let active = true;
@@ -42,7 +50,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
     const run = async () => {
       setReady(false);
 
-      if (!isAdminRoot && !params.name) {
+      if (!isAdminRoot && !pageUid) {
         if (active) {
           setReady(true);
         }
@@ -64,8 +72,8 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      if (params.name) {
-        const currentRoute = routeRepository?.getRouteBySchemaUid?.(params.name);
+      if (pageUid) {
+        const currentRoute = routeRepository?.getRouteBySchemaUid?.(pageUid);
         if (currentRoute?.type === NocoBaseDesktopRouteType.page) {
           const target = resolveAdminRouteRuntimeTarget({
             app,
@@ -133,7 +141,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
     location.pathname,
     location.search,
     navigate,
-    params.name,
+    pageUid,
     routeRepository,
   ]);
 

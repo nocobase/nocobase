@@ -13,7 +13,7 @@ import { getViewDiffAndUpdateHidden } from '../../getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from '../../flows/openViewFlow';
 import { resolveViewParamsToViewList } from '../../resolveViewParamsToViewList';
 import { AdminLayoutRouteCoordinator } from '../AdminLayoutRouteCoordinator';
-import { BaseLayoutRouteCoordinator } from '../BaseLayoutRouteCoordinator';
+import { BaseLayoutRouteCoordinator, toViewStack } from '../BaseLayoutRouteCoordinator';
 import { RouteModel } from '../../models/base/RouteModel';
 
 vi.mock('../../resolveViewParamsToViewList', () => ({
@@ -137,7 +137,7 @@ describe('AdminLayoutRouteCoordinator', () => {
       viewsToOpen: [],
     });
 
-    const coordinator = new BaseLayoutRouteCoordinator(engine, { pathPrefix: 'embed' });
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePath: '/embed' });
     coordinator.registerPage('test-route', {
       active: true,
       layoutContentElement: document.createElement('div'),
@@ -148,6 +148,47 @@ describe('AdminLayoutRouteCoordinator', () => {
       [{ viewUid: 'test-route' }, { viewUid: 'popup', filterByTk: 'member' }],
       expect.anything(),
     );
+  });
+
+  it('syncs view stack from layout route pageUid', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    mockResolveViewParamsToViewList.mockReturnValue([]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePath: '/embed' });
+    coordinator.registerPage('test-route', {
+      active: false,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/embed/test-route/view/popup/filterbytk/member',
+    });
+
+    expect(mockResolveViewParamsToViewList).toHaveBeenLastCalledWith(
+      engine,
+      [{ viewUid: 'test-route' }, { viewUid: 'popup', filterByTk: 'member' }],
+      expect.anything(),
+    );
+  });
+
+  it('parses view stack with nested basePath', () => {
+    expect(
+      toViewStack('/admin/settings/public-forms/form-1/view/popup', { basePath: '/admin/settings/public-forms' }),
+    ).toEqual([{ viewUid: 'form-1' }, { viewUid: 'popup' }]);
   });
 
   it('exposes current layout on route model context', () => {
@@ -173,8 +214,8 @@ describe('AdminLayoutRouteCoordinator', () => {
 
     const layout = {
       name: 'embed',
-      pathPrefix: '/embed',
-      normalizedPathPrefix: 'embed',
+      basePath: '/embed',
+      normalizedBasePath: 'embed',
       uid: 'embed-layout-model',
       layoutModelClass: 'EmbedLayoutModelV2',
       rootPageModelClass: 'RootPageModel',

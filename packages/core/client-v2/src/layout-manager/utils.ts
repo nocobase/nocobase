@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './LayoutManager';
-export * from './LayoutContentRoute';
-export * from './LayoutRoute';
-export * from './types';
-export * from './utils';
+export function getLayoutContentRouteName(layoutName: string) {
+  return `${layoutName}.__layoutContent`;
+}
