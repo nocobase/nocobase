@@ -345,6 +345,58 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     return rowElement?.parentElement?.clientWidth || fallbackWidth;
   }
 
+  private prunePlaceholderOnlyRows(layout: GridLayoutV2): GridLayoutV2 {
+    type RowCellEntry = {
+      cell: GridCellV2;
+      size: number;
+      hasRealItem: boolean;
+    };
+
+    const pruneRows = (rows: GridRowV2[]): GridRowV2[] => {
+      return rows
+        .map((row) => {
+          const cellsWithSizes = row.cells
+            .map((cell, index) => {
+              const size = row.sizes?.[index] ?? 1;
+              if (cell.rows?.length) {
+                const childRows = pruneRows(cell.rows);
+                if (childRows.length) {
+                  return { cell: { ...cell, rows: childRows }, size, hasRealItem: true };
+                }
+                return null;
+              }
+
+              const items = cell.items || [];
+              const hasRealItem = items.some((uid) => uid !== EMPTY_COLUMN_UID);
+              const hasEmptyPlaceholder = items.includes(EMPTY_COLUMN_UID);
+              if (hasRealItem || hasEmptyPlaceholder) {
+                return { cell, size, hasRealItem };
+              }
+              return null;
+            })
+            .filter(Boolean) as RowCellEntry[];
+
+          if (!cellsWithSizes.some((entry) => entry.hasRealItem)) {
+            return null;
+          }
+
+          return {
+            ...row,
+            cells: cellsWithSizes.map((entry) => entry.cell),
+            sizes: cellsWithSizes.map((entry) => entry.size),
+          };
+        })
+        .filter(Boolean) as GridRowV2[];
+    };
+
+    return normalizeGridLayout({
+      layout: { ...layout, rows: pruneRows(layout.rows || []) },
+      itemUids: this.getItemUids(),
+      gridUid: this.uid,
+      logger: console,
+    });
+  }
+
   private resizeGridLayout({
     direction,
     resizeDistance,
@@ -414,7 +466,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     this.emitter.on('onSubModelDestroyed', (model: FlowModel) => {
       const modelUid = model.uid;
       this.resetRows(true);
-      this.setGridStepLayout(this.props.layout);
+      const layout = this.prunePlaceholderOnlyRows(this.props.layout);
+      this.setGridStepLayout(layout);
+      this.syncLayoutProps(layout);
 
       // 删除筛选配置
       this.context.filterManager?.removeFilterConfig({ targetId: modelUid });
@@ -835,6 +889,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
    * 运行态按可见 block 过滤行/列，避免“整行都是 hidden block”但依然保留行间距占位。
    * - 配置态（flowSettingsEnabled）保持原始 rows/sizes 以便拖拽和布局编辑。
    * - 运行态仅在判断为“整列/整行都不可见”时做过滤，不写回 props/stepParams，布局元数据保持不变。
+   * - 空列是拖拽缩窄后保存的布局占位，运行态需要保留其宽度，但 Grid 渲染层不会渲染其内容。
    */
   private getVisibleLayout() {
     const rawLayout = this.normalizeLayoutFromSource();
@@ -857,51 +912,53 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     }
 
     const items = this.subModels?.items || [];
-    if (!items.length) {
-      return { layout: baseLayout, rows: baseProjection.rows, sizes: baseProjection.sizes };
-    }
-
     const modelByUid = new Map(items.map((m: FlowModel) => [m.uid, m]));
+    type VisibleCellEntry = {
+      cell: GridLayoutV2['rows'][number]['cells'][number];
+      size: number;
+      hasVisibleContent: boolean;
+    };
 
     const filterRows = (rows: GridLayoutV2['rows']): GridLayoutV2['rows'] => {
       return rows
         .map((row) => {
-          const cells: GridLayoutV2['rows'][number]['cells'] = [];
-          const keptSizes: number[] = [];
-
-          row.cells.forEach((cell, index) => {
-            const sourceSize = row.sizes?.[index];
-            const keepSize = Number.isFinite(sourceSize) && sourceSize > 0 ? sourceSize : 1;
-            if (cell.rows) {
-              const childRows = filterRows(cell.rows);
-              if (childRows.length) {
-                cells.push({ ...cell, rows: childRows });
-                keptSizes.push(keepSize);
+          const cellsWithSizes = row.cells
+            .map((cell, index) => {
+              const sourceSize = row.sizes?.[index];
+              const keepSize = Number.isFinite(sourceSize) && sourceSize > 0 ? sourceSize : 1;
+              if (cell.rows) {
+                const childRows = filterRows(cell.rows);
+                if (childRows.length) {
+                  return { cell: { ...cell, rows: childRows }, size: keepSize, hasVisibleContent: true };
+                }
+                return null;
               }
-              return;
-            }
 
-            const cellItems = (cell.items || []).filter((uid) => {
-              if (uid === EMPTY_COLUMN_UID) {
-                return false;
+              const cellItems = (cell.items || []).filter((uid) => {
+                if (uid === EMPTY_COLUMN_UID) {
+                  return true;
+                }
+                return modelByUid.get(uid)?.hidden !== true;
+              });
+              const hasVisibleContent = cellItems.some((uid) => {
+                if (uid === EMPTY_COLUMN_UID) return false;
+                const model = modelByUid.get(uid);
+                return !model || !model.hidden;
+              });
+              const hasEmptyPlaceholder = cellItems.includes(EMPTY_COLUMN_UID);
+              if (hasVisibleContent || hasEmptyPlaceholder) {
+                return { cell: { ...cell, items: cellItems }, size: keepSize, hasVisibleContent };
               }
-              return modelByUid.get(uid)?.hidden !== true;
-            });
-            const hasVisibleItem = cellItems.some((uid) => {
-              const model = modelByUid.get(uid);
-              return !model || !model.hidden;
-            });
-            if (hasVisibleItem) {
-              cells.push({ ...cell, items: cellItems });
-              keptSizes.push(keepSize);
-            }
-          });
+              return null;
+            })
+            .filter(Boolean) as VisibleCellEntry[];
+          const hasVisibleContent = cellsWithSizes.some((entry) => entry.hasVisibleContent);
 
-          return cells.length
+          return hasVisibleContent
             ? {
                 ...row,
-                cells,
-                sizes: keptSizes,
+                cells: cellsWithSizes.map((entry) => entry.cell),
+                sizes: cellsWithSizes.map((entry) => entry.size),
               }
             : null;
         })
