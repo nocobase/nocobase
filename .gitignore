@@ -41,6 +41,6 @@ vitest.config.mts.timestamp-*
 .claudeignore
 python/
 git-repos.json
-CLAUDE.md
-AGENTS.md
+CLAUDE.local.md
+AGENTS.local.md
 openspec/
