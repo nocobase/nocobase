@@ -72,3 +72,45 @@ test('buildInstallArgv still forwards api-base-url for existing app setup', () =
   expect(argv).toContain('--api-base-url');
   expect(argv).toContain('http://demo.example.com/api');
 });
+
+test('buildInstallArgv forwards db schema and db underscored for new installs', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      fetchSource: true,
+      source: 'docker',
+      version: 'beta',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      dbSchema: 'test',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    },
+    {
+      yes: true,
+      verbose: true,
+    },
+  );
+
+  expect(argv).toContain('--db-schema');
+  expect(argv).toContain('test');
+  expect(argv).toContain('--db-table-prefix');
+  expect(argv).toContain('nb_');
+  expect(argv).toContain('--db-underscored');
+});

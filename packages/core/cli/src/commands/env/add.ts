@@ -62,6 +62,9 @@ type EnvAddParsedFlags = {
   'db-database'?: string;
   'db-user'?: string;
   'db-password'?: string;
+  'db-schema'?: string;
+  'db-table-prefix'?: string;
+  'db-underscored'?: boolean;
   'root-username'?: string;
   'root-email'?: string;
   'root-password'?: string;
@@ -87,6 +90,8 @@ const ENV_RUNTIME_FLAG_MAP = {
   'db-database': 'dbDatabase',
   'db-user': 'dbUser',
   'db-password': 'dbPassword',
+  'db-schema': 'dbSchema',
+  'db-table-prefix': 'dbTablePrefix',
   'root-username': 'rootUsername',
   'root-email': 'rootEmail',
   'root-password': 'rootPassword',
@@ -98,6 +103,7 @@ const ENV_BOOLEAN_RUNTIME_FLAG_MAP = {
   'dev-dependencies': 'devDependencies',
   build: 'build',
   'build-dts': 'buildDts',
+  'db-underscored': 'dbUnderscored',
 } as const;
 
 const envAddText = (key: string, values?: Record<string, unknown>) =>
@@ -256,6 +262,19 @@ export default class EnvAdd extends Command {
     'db-password': Flags.string({
       hidden: true,
       description: 'Database password saved with this env',
+    }),
+    'db-schema': Flags.string({
+      hidden: true,
+      description: 'Database schema saved with this env',
+    }),
+    'db-table-prefix': Flags.string({
+      hidden: true,
+      description: 'Database table prefix saved with this env',
+    }),
+    'db-underscored': Flags.boolean({
+      allowNo: true,
+      hidden: true,
+      description: 'Whether this env uses underscored database naming',
     }),
     'root-username': Flags.string({
       hidden: true,

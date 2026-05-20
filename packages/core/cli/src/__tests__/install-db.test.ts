@@ -312,6 +312,9 @@ test('docker app plan wires app, db, network, port, and image settings', async (
       dbDatabase: 'nocobase',
       dbUser: 'nocobase',
       dbPassword: 'nocobase',
+      dbSchema: 'test',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
     },
     rootResults: {
       rootUsername: 'nocobase',
@@ -349,6 +352,9 @@ test('docker app plan wires app, db, network, port, and image settings', async (
   expect(plan.args.includes('DB_DATABASE=nocobase')).toBe(true);
   expect(plan.args.includes('DB_USER=nocobase')).toBe(true);
   expect(plan.args.includes('DB_PASSWORD=nocobase')).toBe(true);
+  expect(plan.args.includes('DB_SCHEMA=test')).toBe(true);
+  expect(plan.args.includes('DB_TABLE_PREFIX=nb_')).toBe(true);
+  expect(plan.args.includes('DB_UNDERSCORED=true')).toBe(true);
 });
 
 test('install saved env config forwards endpoint, auth, app, storage, and db settings', () => {
@@ -379,6 +385,9 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
       dbDatabase: 'nocobase',
       dbUser: 'nocobase',
       dbPassword: 'secret',
+      dbSchema: 'test',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
     },
     rootResults: {
       rootUsername: 'admin',
@@ -414,6 +423,9 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     dbDatabase: 'nocobase',
     dbUser: 'nocobase',
     dbPassword: 'secret',
+    dbSchema: 'test',
+    dbTablePrefix: 'nb_',
+    dbUnderscored: true,
     rootUsername: 'admin',
     rootEmail: 'admin@nocobase.com',
     rootPassword: 'admin123',

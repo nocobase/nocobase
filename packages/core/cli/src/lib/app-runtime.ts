@@ -185,13 +185,23 @@ export function formatMissingManagedAppEnvMessage(envName?: string): string {
 export async function runLocalNocoBaseCommand(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    env?: Record<string, string>;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
 ): Promise<void> {
   const envVars = await buildRuntimeEnvVars(runtime);
   await runNocoBaseCommand(args, {
     cwd: runtime.projectRoot,
-    env: envVars,
+    env: {
+      ...envVars,
+      ...options?.env,
+    },
     stdio: options?.stdio,
+    onStdout: options?.onStdout,
+    onStderr: options?.onStderr,
   });
 }
 
@@ -252,13 +262,26 @@ export async function stopDockerContainer(
   return 'stopped';
 }
 
-export async function runDockerNocoBaseCommand(containerName: string, args: string[]): Promise<void> {
-  await startDockerContainer(containerName);
+export async function runDockerNocoBaseCommand(
+  containerName: string,
+  args: string[],
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    env?: Record<string, string>;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
+): Promise<void> {
+  await startDockerContainer(containerName, { stdio: options?.stdio });
+  const dockerEnvArgs = Object.entries(options?.env ?? {}).flatMap(([key, value]) => ['-e', `${key}=${value}`]);
   await run(
     'docker',
-    ['exec', '-w', DOCKER_APP_WORKDIR, containerName, 'yarn', 'nocobase', ...args],
+    ['exec', ...dockerEnvArgs, '-w', DOCKER_APP_WORKDIR, containerName, 'yarn', 'nocobase', ...args],
     {
       errorName: 'docker exec',
+      stdio: options?.stdio,
+      onStdout: options?.onStdout,
+      onStderr: options?.onStderr,
     },
   );
 }
