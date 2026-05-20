@@ -8,26 +8,40 @@
  */
 
 import { useFlowContext } from '@nocobase/flow-engine';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getSSKey, MapConfigurationResourceKey } from '../../shared/configuration';
 
 export { getSSKey, MapConfigurationResourceKey };
 
+const getCachedConfig = (type: string) => {
+  const cached = sessionStorage.getItem(getSSKey(type));
+  try {
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const useMapConfig = (type: string, caching = true) => {
   const { api } = useFlowContext();
+  const storageKey = useMemo(() => getSSKey(type), [type]);
 
   const [config, setConfig] = useState<any>(() => {
     if (!caching) return null;
-    const cached = sessionStorage.getItem(getSSKey(type));
-    try {
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
+    return getCachedConfig(type);
   });
 
   useEffect(() => {
-    if (caching && config) return;
+    if (!caching) {
+      setConfig(null);
+      return;
+    }
+
+    setConfig(getCachedConfig(type));
+  }, [type, caching]);
+
+  useEffect(() => {
+    if (caching && getCachedConfig(type)) return;
 
     let canceled = false;
     api
@@ -40,9 +54,9 @@ export const useMapConfig = (type: string, caching = true) => {
         if (canceled) return;
         const data = res.data?.data;
         if (caching) {
-          const prev = sessionStorage.getItem(getSSKey(type));
+          const prev = sessionStorage.getItem(storageKey);
           if (!prev || prev !== JSON.stringify(data)) {
-            sessionStorage.setItem(getSSKey(type), JSON.stringify(data));
+            sessionStorage.setItem(storageKey, JSON.stringify(data));
           }
         }
         setConfig(data);
@@ -54,7 +68,7 @@ export const useMapConfig = (type: string, caching = true) => {
     return () => {
       canceled = true;
     };
-  }, [api, type, caching, config]);
+  }, [api, type, caching, storageKey]);
 
   return config;
 };
