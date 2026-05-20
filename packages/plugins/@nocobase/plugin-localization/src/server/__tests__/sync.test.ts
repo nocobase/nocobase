@@ -10,6 +10,7 @@
 import { Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { NAMESPACE_COLLECTIONS } from '../constants';
+import { buildFindTextsOptions } from '../translation-scope';
 
 describe('sync', () => {
   let app: MockServer;
@@ -103,6 +104,28 @@ describe('sync', () => {
       },
     });
     expect(legacyTexts.length).toBe(0);
+
+    const textIds = texts.map((text) => text.id);
+    const builtInCount = await repo.count(
+      await buildFindTextsOptions({
+        app,
+        mode: 'incremental',
+        locale: 'ja-JP',
+        scope: 'builtIn',
+        textIds,
+      }),
+    );
+    const customCount = await repo.count(
+      await buildFindTextsOptions({
+        app,
+        mode: 'incremental',
+        locale: 'ja-JP',
+        scope: 'custom',
+        textIds,
+      }),
+    );
+    expect(builtInCount).toBe(2);
+    expect(customCount).toBe(0);
   });
 
   it('should normalize official plugin package name when adding new texts', async () => {

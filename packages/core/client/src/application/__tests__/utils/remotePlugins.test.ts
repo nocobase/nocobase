@@ -21,7 +21,10 @@ import {
 describe('remotePlugins', () => {
   afterEach(() => {
     window.define = undefined;
+    window.__nocobase_app_dev_plugins__ = undefined;
   });
+
+  const createModuleUrl = (code: string) => `data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`;
 
   describe('defineDevPlugins()', () => {
     it('should define plugins', () => {
@@ -85,6 +88,7 @@ describe('remotePlugins', () => {
       expect(exports.__esModule).toBe(true);
       expect(exports.a).toBe(1);
       expect(exports.b).toBe(2);
+      expect(window.__nocobase_app_dev_plugins__['@nocobase/demo/client']).toBe(exports);
     });
   });
 
@@ -323,7 +327,7 @@ describe('remotePlugins', () => {
       expect(requirejs.requirejs.config).toBeCalledTimes(0);
     });
 
-    it.skip('If there is devDynamicImport and devDynamicImport returns partial, remote API will be requested', async () => {
+    it('If there is devDynamicImport and devDynamicImport returns partial, remote API will be requested', async () => {
       const remoteFn = vi.fn();
       const mockPluginsModules = (pluginData, resolve) => {
         remoteFn();
@@ -373,6 +377,100 @@ describe('remotePlugins', () => {
           '@nocobase/demo2': 'https://demo2.com',
         },
       });
+    });
+
+    it('should register ESM dev plugins before importing dependent plugins', async () => {
+      const requirejs: any = {
+        requirejs: vi.fn(),
+      };
+      requirejs.requirejs.config = vi.fn();
+
+      const mockDefine: any = vi.fn();
+      window.define = mockDefine;
+
+      const plugins = await getPlugins({
+        requirejs,
+        pluginData: [
+          {
+            name: '@nocobase/dependent',
+            packageName: '@nocobase/dependent',
+            url: createModuleUrl(`
+              const dependency = window.__nocobase_app_dev_plugins__ && window.__nocobase_app_dev_plugins__['@nocobase/dependency/client'];
+              export default class DependentPlugin extends dependency.default {
+                static SharedBase = dependency.SharedBase;
+              }
+            `),
+            devMode: 'esm',
+            appDevDependencies: ['@nocobase/dependency'],
+          },
+          {
+            name: '@nocobase/dependency',
+            packageName: '@nocobase/dependency',
+            url: createModuleUrl('export class SharedBase {}; export default class DependencyPlugin {}'),
+            devMode: 'esm',
+          },
+        ] as any,
+      });
+
+      const dependencyModule = window.__nocobase_app_dev_plugins__['@nocobase/dependency/client'] as {
+        default?: unknown;
+        SharedBase?: unknown;
+      };
+      const dependentPlugin = plugins[1][1] as (typeof plugins)[number][1] & { SharedBase?: unknown };
+
+      expect(plugins.map(([name]) => name)).toEqual(['@nocobase/dependency', '@nocobase/dependent']);
+      expect(dependencyModule.SharedBase).toBeDefined();
+      expect(plugins[0][1]).toBe(dependencyModule.default);
+      expect(dependentPlugin.SharedBase).toBe(dependencyModule.SharedBase);
+      expect(mockDefine).toHaveBeenCalledWith('@nocobase/dependency/client', expect.any(Function));
+      expect(requirejs.requirejs.config).not.toHaveBeenCalled();
+    });
+
+    it('should load RequireJS dependencies before ESM dev plugins', async () => {
+      class DependencyPlugin extends Plugin {}
+      const SharedBase = { source: 'remote' };
+      const dependencyModule = {
+        SharedBase,
+        default: DependencyPlugin,
+      };
+      const requirejs: any = {
+        requirejs: vi.fn((packageNames, resolve) => {
+          expect(packageNames).toEqual(['@nocobase/remote-dependency']);
+          resolve(dependencyModule);
+        }),
+      };
+      requirejs.requirejs.config = vi.fn();
+
+      window.define = vi.fn();
+
+      const plugins = await getPlugins({
+        requirejs,
+        pluginData: [
+          {
+            name: '@nocobase/dependent',
+            packageName: '@nocobase/dependent',
+            url: createModuleUrl(`
+              const dependency = window.__nocobase_app_dev_plugins__ && window.__nocobase_app_dev_plugins__['@nocobase/remote-dependency/client'];
+              export default class DependentPlugin extends dependency.default {
+                static SharedBase = dependency.SharedBase;
+              }
+            `),
+            devMode: 'esm',
+            appDevDependencies: ['@nocobase/remote-dependency'],
+          },
+          {
+            name: '@nocobase/remote-dependency',
+            packageName: '@nocobase/remote-dependency',
+            url: 'https://dependency.com',
+          },
+        ] as any,
+      });
+
+      const dependentPlugin = plugins[1][1] as (typeof plugins)[number][1] & { SharedBase?: unknown };
+
+      expect(plugins.map(([name]) => name)).toEqual(['@nocobase/remote-dependency', '@nocobase/dependent']);
+      expect(window.__nocobase_app_dev_plugins__['@nocobase/remote-dependency/client']).toBe(dependencyModule);
+      expect(dependentPlugin.SharedBase).toBe(SharedBase);
     });
   });
 });

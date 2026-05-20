@@ -168,12 +168,17 @@ Go to `System Management -> Localization Management`.
 2. Click `Synchronize` to ensure entries are synchronized.
 3. Click Lina's avatar.
 4. Choose a task scope:
-   - `Incremental translation`: translate entries without translations.
+   - `Incremental translation`: translate entries that do not have translations yet.
    - `Selected translation`: translate selected entries in the table.
    - `Full translation`: translate all entries in the current language.
 5. Check entry count, provider, and model in the confirmation dialog.
-6. Confirm to create the async task.
-7. Wait for completion, review translations, and publish.
+6. If you choose incremental translation or full translation, select a translation scope:
+   - `All`
+   - `Built-in entries`: system and plugin entries.
+   - `Custom entries`: route names, collection and field names, and UI content.
+7. Adjust reference translation languages if needed. Incremental and full translation configure reference languages separately for built-in entries and custom entries. Selected translation shows only one general reference translation language configuration.
+8. Confirm to create the async task.
+9. Wait for completion, review translations, and publish.
 
 Start with `Selected translation` for a few entries to verify output style and speed before running incremental or full translation.
 
@@ -181,9 +186,10 @@ Start with `Selected translation` for a few entries to verify output style and s
 
 Lina builds requests from entries and reference translations. For short entries, existing references are used to improve consistency:
 
-- Built-in entries prefer Chinese translations as references.
-- Non-built-in entries prefer the system default language as references.
-- If an English reference exists, English is used as source text.
+- Built-in entries use Chinese translations as the default reference and Japanese as the fallback reference.
+- Custom entries use the system default language as the default reference and Chinese as the fallback reference.
+- Users can adjust the default language and fallback language in the task confirmation dialog.
+- The system first uses the reference translation in the default language. If it does not exist, it then tries the fallback language.
 - Translation results are written to the target language but are not published automatically.
 
 Prompt semantics are similar to:

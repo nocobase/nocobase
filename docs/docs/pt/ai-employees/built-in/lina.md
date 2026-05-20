@@ -35,6 +35,31 @@ Antes de usar Lina, conclua a configuração a seguir:
 Lina cria tarefas de tradução para o idioma atual.
 :::
 
+## Configuração do prompt
+
+Abra o diálogo de edição da Lina em `Configurações do sistema -> Funcionários de IA -> AI employees` e ajuste o prompt em `Role setting`. O prompt normalmente é usado para definir informações do domínio de negócio, regras de terminologia e restrições de saída. Ele não deve ser longo demais; caso contrário, pode não ser adequado para modelos especializados em tradução.
+
+![](https://static-docs.nocobase.com/202605191351816.png)
+
+Exemplo de prompt padrão:
+
+```text
+# Role
+You are Lina, a professional localization translator for NocoBase.
+
+# Task
+Translate NocoBase localization text into the requested target language.
+
+# Translation requirements
+1. Keep the translation faithful, concise, and natural for product UI.
+2. Use consistent NocoBase and software terminology.
+3. Preserve placeholders, variables, HTML tags, ICU syntax, line breaks, and code-like tokens.
+4. Return only the translated text. Do not explain, quote, or use Markdown.
+5. If the text should not be translated, return it unchanged.
+```
+
+As traduções de referência e o texto a traduzir não precisam ser escritos no prompt da Lina. Ao criar uma tarefa, o sistema os adiciona automaticamente com base no conteúdo da entrada, no idioma de destino e na configuração de idiomas de referência no diálogo de confirmação.
+
 ## Uso
 
 Na página de Gerenciamento de Localização, clique no avatar da Lina e escolha o escopo da tarefa de tradução por IA.
@@ -42,6 +67,8 @@ Na página de Gerenciamento de Localização, clique no avatar da Lina e escolha
 ### Tradução incremental
 
 Traduz apenas entradas que ainda não têm tradução no idioma atual.
+
+Para entradas integradas, se já existir uma tradução no pacote de idioma do sistema ou do plugin para o idioma de destino, a entrada será considerada traduzida mesmo que ainda não exista um registro correspondente na tabela de traduções de localização, e não será contada na tradução incremental.
 
 ### Tradução selecionada
 
@@ -61,28 +88,32 @@ A tradução completa pode sobrescrever traduções existentes. Confirme idioma,
 
 Antes de criar a tarefa, o sistema exibe uma confirmação com:
 
+- Descrição da tarefa.
 - Número de entradas a traduzir.
 - Provedor a usar.
 - Modelo a usar.
+- Configuração dos idiomas de tradução de referência.
 
-Após a confirmação, o sistema cria uma tarefa em segundo plano. O progresso pode ser visto nas tarefas assíncronas. Ao concluir, as traduções são gravadas no idioma correspondente.
+A tradução completa e a tradução incremental também permitem escolher o escopo de tradução no diálogo de confirmação:
 
-![](https://static-docs.nocobase.com/202605121233608.png)
+- **Todos**: processa todas as entradas que correspondem às condições da tarefa atual.
+- **Entradas integradas**: entradas do sistema e de plugins.
+- **Entradas personalizadas**: nomes de rotas, nomes de coleções e campos, e conteúdo de UI.
 
-## Estratégia de tradução
+A tradução selecionada processa apenas os registros já selecionados na tabela, portanto não exibe o escopo de tradução. Ela também exibe apenas uma configuração geral de idiomas de referência, sem separar entradas integradas e personalizadas.
 
-Lina segue estas regras ao traduzir:
+Se o número de entradas a traduzir for 0, o sistema avisa o usuário e não cria uma tarefa em segundo plano. Após a confirmação, o sistema cria uma tarefa em segundo plano. O progresso pode ser visto nas tarefas assíncronas. Ao concluir, as traduções são gravadas no idioma correspondente.
 
-- Retornar apenas o texto traduzido, sem explicação ou conteúdo adicional.
-- Preservar variáveis, placeholders, tags HTML, sintaxe ICU e formatação.
-- Manter textos de interface concisos e naturais.
+![](https://static-docs.nocobase.com/202605191341968.png)
 
 ## Traduções de referência
 
 Entradas curtas como campos, botões e status usam traduções de referência existentes para melhorar a consistência.
 
-- Entradas integradas preferem traduções chinesas como referência.
-- Entradas não integradas preferem o idioma padrão do sistema.
+- Entradas integradas usam traduções em chinês como referência padrão e japonês como referência alternativa.
+- Entradas personalizadas usam o idioma padrão do sistema como referência padrão e chinês como referência alternativa.
+- Usuários podem ajustar o idioma padrão e o idioma alternativo no diálogo de confirmação da tarefa.
+- O sistema primeiro usa a tradução de referência no idioma padrão. Se ela não existir, tenta o idioma alternativo.
 
 Quando há uma referência, Lina usa um prompt com semântica semelhante:
 
@@ -99,7 +130,7 @@ Translate the following text into {target_language}. Output only the translated 
 
 Tradução de localização costuma processar muitas entradas. Se possível, use primeiro um modelo pequeno especializado implantado localmente, pois modelos online geralmente têm limites de taxa, concorrência ou tokens.
 
-Se não for possível implantar localmente, escolha um modelo especializado em tradução em vez de um modelo de chat geral.
+Se não for possível implantar localmente, escolha um modelo especializado em tradução em vez de um modelo de chat geral. Modelos de tradução geralmente são mais adequados para entradas curtas, textos de UI e tradução em lote. Lina organiza o prompt da funcionária, as traduções de referência e o texto a traduzir em um prompt enviado ao modelo. Usuários podem ajustar o prompt da Lina para controlar o estilo e as regras de tradução.
 
 A concorrência pode ser ajustada conforme a capacidade do modelo para controlar vazão, tempo de resposta e custo.
 

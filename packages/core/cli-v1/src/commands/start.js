@@ -13,6 +13,8 @@ const { existsSync, rmSync } = require('fs');
 const { resolve, isAbsolute } = require('path');
 const chalk = require('chalk');
 const chokidar = require('chokidar');
+const { buildAppDevServerArgs, shouldUseAppDevServerSource } = require('./app-dev-utils');
+const { resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
 
 function getSocketPath() {
   const { SOCKET_PATH } = process.env;
@@ -52,6 +54,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       checkDBDialect();
+      const useAppDevServerSource = shouldUseAppDevServerSource();
       if (opts.quickstart) {
         await downloadPro();
       }
@@ -62,7 +65,7 @@ module.exports = (cli) => {
           await run('yarn', ['nocobase', 'pm2-restart']);
         }, 500);
 
-        const watcher = chokidar.watch('./storage/plugins/**/*', {
+        const watcher = chokidar.watch(`${resolvePluginStoragePath()}/**/*`, {
           cwd: process.cwd(),
           ignoreInitial: true,
           ignored: /(^|[\/\\])\../, // 忽略隐藏文件
@@ -99,7 +102,7 @@ module.exports = (cli) => {
         ]);
         return;
       }
-      if (!existsSync(resolve(process.cwd(), `${APP_PACKAGE_ROOT}/lib/index.js`))) {
+      if (!useAppDevServerSource && !existsSync(resolve(process.cwd(), `${APP_PACKAGE_ROOT}/lib/index.js`))) {
         console.log('The code is not compiled, please execute it first');
         console.log(chalk.yellow('$ yarn build'));
         console.log('If you want to run in development mode, please execute');
@@ -136,12 +139,21 @@ module.exports = (cli) => {
             ].filter(Boolean),
           );
         } else {
-          run(
-            'node',
-            [`${APP_PACKAGE_ROOT}/lib/index.js`, ...(NODE_ARGS || '').split(' '), ...process.argv.slice(2)].filter(
-              Boolean,
-            ),
-          );
+          if (useAppDevServerSource) {
+            promptForTs();
+            run('tsx', buildAppDevServerArgs(), {
+              env: {
+                IS_DEV_CMD: 'true',
+              },
+            });
+          } else {
+            run(
+              'node',
+              [`${APP_PACKAGE_ROOT}/lib/index.js`, ...(NODE_ARGS || '').split(' '), ...process.argv.slice(2)].filter(
+                Boolean,
+              ),
+            );
+          }
         }
       }
     });

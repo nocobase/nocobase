@@ -164,12 +164,17 @@ Allez dans `System Management -> Localization Management`.
 2. Cliquez sur `Synchronize` pour vous assurer que les entrées sont synchronisées.
 3. Cliquez sur l’avatar de Lina.
 4. Choisissez un périmètre de tâche:
-   - `Incremental translation`: traduit les entrées sans traduction.
+   - `Incremental translation`: traduit les entrées qui n’ont pas encore de traduction.
    - `Selected translation`: traduit les entrées sélectionnées dans le tableau.
    - `Full translation`: traduit toutes les entrées de la langue actuelle.
 5. Vérifiez le nombre d’entrées, le fournisseur et le modèle dans la boîte de confirmation.
-6. Confirmez pour créer la tâche asynchrone.
-7. Attendez la fin, relisez les traductions, puis publiez.
+6. Si vous choisissez la traduction incrémentale ou complète, sélectionnez un périmètre de traduction:
+   - `All`
+   - `Built-in entries`: entrées système et plugin.
+   - `Custom entries`: noms de routes, noms de collections et de champs, ainsi que contenu UI.
+7. Ajustez les langues de traduction de référence si nécessaire. La traduction incrémentale et complète configurent séparément les langues de référence pour les entrées intégrées et personnalisées; la traduction des éléments sélectionnés n’affiche qu’une configuration générale des langues de référence.
+8. Confirmez pour créer la tâche asynchrone.
+9. Attendez la fin, relisez les traductions, puis publiez.
 
 Commencez par `Selected translation` sur quelques entrées pour vérifier le style de sortie et la vitesse avant de lancer une traduction incrémentale ou complète.
 
@@ -177,9 +182,10 @@ Commencez par `Selected translation` sur quelques entrées pour vérifier le sty
 
 Lina construit les requêtes à partir des entrées et des traductions de référence. Pour les entrées courtes, les références existantes améliorent la cohérence:
 
-- Les entrées intégrées privilégient les traductions chinoises comme références.
-- Les entrées non intégrées privilégient la langue par défaut du système comme référence.
-- Si une référence anglaise existe, l’anglais est utilisé comme texte source.
+- Les entrées intégrées utilisent les traductions chinoises comme référence par défaut et le japonais comme référence de secours.
+- Les entrées personnalisées utilisent la langue par défaut du système comme référence par défaut et le chinois comme référence de secours.
+- Les utilisateurs peuvent ajuster la langue par défaut et la langue de secours dans la boîte de confirmation de la tâche.
+- Le système utilise d’abord la traduction de référence dans la langue par défaut. Si elle n’existe pas, il essaie ensuite la langue de secours.
 - Les résultats sont écrits dans la langue cible, mais ne sont pas publiés automatiquement.
 
 La sémantique du prompt est similaire à:
