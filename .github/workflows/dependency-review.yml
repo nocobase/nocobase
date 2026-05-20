@@ -1,0 +1,31 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'yarn.lock'
+      - 'docs/package.json'
+      - 'docs/yarn.lock'
+      - 'packages/**/package.json'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Review dependency changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          vulnerability-check: true
+          license-check: false
+          fail-on-severity: moderate
+          fail-on-scopes: runtime, development, unknown
+          comment-summary-in-pr: on-failure
