@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import path from 'node:path';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -62,8 +63,8 @@ test('resolveSourceRegistryInfo reports missing when the container does not exis
 
   expect(info.status).toBe('missing');
   expect(info.url).toBe('http://127.0.0.1:4873');
-  expect(info.configPath).toBe('/tmp/nb-home/.nocobase/verdaccio/config.yaml');
-  expect(info.storageDir).toBe('/tmp/nb-home/.nocobase/verdaccio/storage');
+  expect(info.configPath).toBe(path.join('/tmp/nb-home', '.nocobase', 'verdaccio', 'config.yaml'));
+  expect(info.storageDir).toBe(path.join('/tmp/nb-home', '.nocobase', 'verdaccio', 'storage'));
 });
 
 test('resolveSourceRegistryInfo reports running when the container exists and is running', async () => {
@@ -110,10 +111,10 @@ test('ensureSourceRegistryFiles writes a template-based config with local publis
 
   await ensureSourceRegistryFiles('/repo');
 
-  expect(mocks.readFile).toHaveBeenCalledWith('/repo/config.yaml', 'utf8');
+  expect(mocks.readFile).toHaveBeenCalledWith(path.join('/repo', 'config.yaml'), 'utf8');
   expect(mocks.writeFile).toHaveBeenCalledTimes(1);
   const [configPath, configContent, encoding] = mocks.writeFile.mock.calls[0];
-  expect(configPath).toBe('/tmp/nb-home/.nocobase/verdaccio/config.yaml');
+  expect(configPath).toBe(path.join('/tmp/nb-home', '.nocobase', 'verdaccio', 'config.yaml'));
   expect(encoding).toBe('utf8');
   expect(configContent).toContain('storage: /verdaccio/storage');
   expect(configContent).toContain('file: /verdaccio/storage/htpasswd');
