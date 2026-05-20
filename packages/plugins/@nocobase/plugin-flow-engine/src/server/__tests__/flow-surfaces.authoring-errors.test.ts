@@ -4064,6 +4064,43 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
+    const hookResourceErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'function MetricsPanel() {',
+        '  React.useEffect(function() {',
+        "    ctx.initResource('MultiRecordResource');",
+        "    ctx.resource.setResourceName('claims');",
+        '    ctx.resource.refresh();',
+        '  }, []);',
+        "  return React.createElement('div', null, 'Loading metrics');",
+        '}',
+        'ctx.render(React.createElement(MetricsPanel));',
+      ].join('\n'),
+      path: '$.hookResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(hookResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-resource-hook-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.initResource',
+            hook: 'useEffect',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-resource-hook-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.resource',
+            hook: 'useEffect',
+          }),
+        }),
+      ]),
+    );
+
     expect(
       inspectRunJsAuthoringCode({
         code: [

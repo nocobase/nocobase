@@ -114,6 +114,12 @@ type CallArgumentSource = SourceRange & {
   source: string;
 };
 
+type ResourceCallInReactHook = {
+  capability: string;
+  hook: string;
+  index: number;
+};
+
 type RunJsSourceBudget = {
   count: number;
   countLimitReported?: boolean;
@@ -1589,6 +1595,26 @@ function collectResourceRuntimeErrors(
   surface: string,
   errors: FlowSurfaceErrorItemInput[],
 ) {
+  if (modelUse === 'JSBlockModel') {
+    scan.resourceCallsInReactHooks.forEach((entry) => {
+      errors.push(
+        buildRunJsAuthoringError({
+          path,
+          repairClass: 'resource-runtime-contract-stop',
+          ruleId: 'runjs-jsblock-resource-hook-forbidden',
+          message: `flowSurfaces authoring ${path} cannot use ${entry.capability} inside React Hook ${entry.hook}(...) in JSBlock render code; load resource data before ctx.render(...) and pass values into the rendered component`,
+          modelUse,
+          surface,
+          index: entry.index,
+          source,
+          details: {
+            capability: entry.capability,
+            hook: entry.hook,
+          },
+        }),
+      );
+    });
+  }
   scan.invalidResourceTypeCalls.forEach((entry) => {
     const message =
       entry.ruleId === 'runjs-make-resource-type-invalid'
@@ -2058,6 +2084,7 @@ function scanJavaScriptSource(source: string, ast?: any) {
       ...(astInspection?.invalidFlowResourceListCalls || []),
     ]).sort((left, right) => left.index - right.index),
     invalidFlowResourceMethodCalls: astInspection?.invalidFlowResourceMethodCalls || [],
+    resourceCallsInReactHooks: collectResourceCallsInReactHooks(source, masked, reactHookCalls, sourceBindings),
     topLevelReactHookCalls: reactHookCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges)),
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
     reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases, sourceBindings),
@@ -6145,6 +6172,42 @@ function collectInvalidResourceTypeCalls(
     }
   }
   return entries;
+}
+
+function collectResourceCallsInReactHooks(
+  source: string,
+  masked: string,
+  reactHookCalls: Array<{ hook: string; index: number; match: string }>,
+  bindings: SourceBinding[],
+): ResourceCallInReactHook[] {
+  const hookArgumentRanges = reactHookCalls
+    .map((hook) => {
+      const firstArg = getCallArgumentSources(source, masked, hook.index)[0];
+      return firstArg ? { hook: hook.hook, range: firstArg } : null;
+    })
+    .filter(Boolean) as Array<{ hook: string; range: SourceRange }>;
+  if (!hookArgumentRanges.length) {
+    return [];
+  }
+
+  const entries: ResourceCallInReactHook[] = [];
+  const pattern = /\bctx\s*(?:\?\.|\.)\s*(?:(makeResource|initResource)\s*(?:\?\.)?\(|resource\b)/g;
+  for (const match of masked.matchAll(pattern)) {
+    const index = match.index || 0;
+    if (isNameBoundAtIndex(bindings, 'ctx', index)) {
+      continue;
+    }
+    const hook = hookArgumentRanges.find((entry) => index >= entry.range.start && index < entry.range.end);
+    if (!hook) {
+      continue;
+    }
+    entries.push({
+      capability: match[1] ? `ctx.${match[1]}` : 'ctx.resource',
+      hook: hook.hook,
+      index,
+    });
+  }
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
 }
 
 function resolveResourceTypeExpression(
