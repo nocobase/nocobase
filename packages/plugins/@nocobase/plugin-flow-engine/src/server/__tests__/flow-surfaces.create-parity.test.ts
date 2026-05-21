@@ -64,7 +64,7 @@ const REPRESENTATIVE_CREATE_PARITY_ENTRIES = FORMAL_FLOW_SURFACE_CREATE_PARITY_F
   FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS.includes(entry.key),
 );
 
-describe.skip('flowSurfaces create parity (formal built-in blocks)', () => {
+describe('flowSurfaces create parity (formal built-in blocks)', () => {
   let app: MockServer;
   let rootAgent: any;
 

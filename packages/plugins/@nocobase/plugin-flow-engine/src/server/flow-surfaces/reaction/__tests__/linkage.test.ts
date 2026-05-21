@@ -27,7 +27,7 @@ import {
   validateFieldLinkageRulesAgainstCapability,
 } from '../linkage';
 
-describe.skip('flow-surfaces reaction linkage helpers', () => {
+describe('flow-surfaces reaction linkage helpers', () => {
   const conditionCapability = {
     conditionMeta: {
       operatorsByPath: {

@@ -34,6 +34,27 @@ const makePublicBlockDefaultFilter = (
   items,
 });
 
+const makeAIEmployeeActionSettings = (target = 'self') => ({
+  username: 'dex',
+  auto: false,
+  workContext: [{ type: 'flow-model', target }],
+  tasks: [
+    {
+      title: 'Analyze current context',
+      message: {
+        system: 'Use the current UI context.',
+        user: 'Analyze the current record and suggest next steps.',
+        workContext: [{ type: 'flow-model', target }],
+      },
+      autoSend: false,
+      skillSettings: { skills: [], tools: [] },
+      model: null,
+      webSearch: false,
+    },
+  ],
+  style: { size: 40, mask: false },
+});
+
 export const flowSurfaceExamples = {
   catalog: {
     target: {
@@ -112,7 +133,14 @@ export const flowSurfaceExamples = {
                 ['total'],
               ],
             },
-            actions: ['submit'],
+            actions: [
+              'submit',
+              {
+                key: 'formAssistantAction',
+                type: 'aiEmployee',
+                settings: makeAIEmployeeActionSettings(),
+              },
+            ],
           },
           {
             key: 'employeesTable',
@@ -173,6 +201,18 @@ export const flowSurfaceExamples = {
               {
                 key: 'refreshAction',
                 type: 'refresh',
+              },
+              {
+                key: 'tableInsightAction',
+                type: 'aiEmployee',
+                settings: makeAIEmployeeActionSettings('employeeForm'),
+              },
+            ],
+            recordActions: [
+              {
+                key: 'recordInsightAction',
+                type: 'aiEmployee',
+                settings: makeAIEmployeeActionSettings(),
               },
             ],
           },
@@ -941,7 +981,7 @@ export const flowSurfaceExamples = {
       title: 'Run diagnostics',
       type: 'primary',
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+      code: 'ctx.console.log("diagnostics");',
     },
   },
   configureJsItemAction: {
@@ -1454,7 +1494,7 @@ export const flowSurfaceExamples = {
       title: 'Run JS',
       type: 'primary',
       version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("hello")\');',
+      code: 'ctx.console.log("hello");',
     },
   },
   addJsItemAction: {
@@ -1468,6 +1508,13 @@ export const flowSurfaceExamples = {
       version: '1.0.0',
       code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item JS complete")}>Run item JS</Button>;\n}\n\nctx.render(<JsItemAction />);',
     },
+  },
+  addAIEmployeeAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'aiEmployee',
+    settings: makeAIEmployeeActionSettings(),
   },
   addRecordAction: {
     target: {
@@ -1571,6 +1618,13 @@ export const flowSurfaceExamples = {
       version: '1.0.0',
       code: 'return currentRecord?.id;',
     },
+  },
+  addRecordAIEmployeeAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'aiEmployee',
+    settings: makeAIEmployeeActionSettings(),
   },
   addBlocks: {
     target: {
@@ -1807,6 +1861,25 @@ export const flowSurfaceExamples = {
         on: 'beforeRender',
         steps: {},
       },
+    },
+  },
+  updateAIEmployeeSettings: {
+    target: {
+      uid: 'ai-employee-action-uid',
+    },
+    tasks: [
+      {
+        title: 'Generate table insights',
+        message: {
+          user: 'Summarize the current table and identify risks.',
+          workContext: [{ type: 'flow-model', target: 'self' }],
+        },
+        autoSend: true,
+        webSearch: false,
+      },
+    ],
+    style: {
+      mask: true,
     },
   },
   getEventFlowMeta: {
