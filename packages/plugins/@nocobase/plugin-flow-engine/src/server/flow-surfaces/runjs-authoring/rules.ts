@@ -12,18 +12,24 @@ import { blockedGlobalStopRule } from './blocked-global-stop';
 import { ctxLibsMemberMismatchStopRule } from './ctx-libs-member-mismatch-stop';
 import { ctxRootMismatchStopRule } from './ctx-root-mismatch-stop';
 import { missingTopLevelReturnRule } from './missing-top-level-return';
+import { nestedRunjsStopRule } from './nested-runjs-stop';
 import { renderTopLevelFunctionWrapperRule } from './render-top-level-function-wrapper';
 import { renderUnreachableRenderCallRule } from './render-unreachable-render-call';
 import { replaceInnerHtmlWithRenderRule } from './replace-innerhtml-with-render';
 import { reactRuntimeContractStopRule } from './react-runtime-contract-stop';
 import { resourceRuntimeContractStopRule } from './resource-runtime-contract-stop';
+import { sourceLimitStopRule } from './source-limit-stop';
 import { switchToResourceApiRule } from './switch-to-resource-api';
+import { syntaxStopRule } from './syntax-stop';
 import { unknownModelStopRule } from './unknown-model-stop';
 import { unknownSurfaceStopRule } from './unknown-surface-stop';
 import { valueSurfaceForbidsRenderRule } from './value-surface-forbids-render';
 import type { RunJsAuthoringRepairClass, RunJsAuthoringRuleDefinition } from './types';
 
 export const RUNJS_AUTHORING_RULES: RunJsAuthoringRuleDefinition[] = [
+  syntaxStopRule,
+  nestedRunjsStopRule,
+  sourceLimitStopRule,
   switchToResourceApiRule,
   missingTopLevelReturnRule,
   valueSurfaceForbidsRenderRule,

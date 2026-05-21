@@ -37,6 +37,7 @@ import {
   assertActionScopeMatchesContainer,
   assertKnownActionContainerUse,
   CALENDAR_BLOCK_ACTION_CONTAINER_USES,
+  COMMENT_RECORD_ACTION_CONTAINER_USES,
   COLLECTION_BLOCK_ACTION_CONTAINER_USES,
   DETAILS_ACTION_CONTAINER_USES,
   FILTER_FORM_ACTION_CONTAINER_USES,
@@ -46,6 +47,7 @@ import {
   LIST_BLOCK_ACTION_CONTAINER_USES,
   LIST_RECORD_ACTION_CONTAINER_USES,
   RECORD_ACTION_CONTAINER_USES,
+  RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
   TABLE_BLOCK_ACTION_CONTAINER_USES,
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
@@ -120,6 +122,8 @@ const DEFAULT_DIRECT_EVENTS = ['beforeRender'];
 const ACTION_DIRECT_EVENTS = ['click', 'beforeRender'];
 const ACTION_OBJECT_EVENTS = ['click'];
 const GRID_LAYOUT_CAPABILITIES: FlowSurfaceLayoutCapabilities = { supported: true };
+const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
+const AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN = '@nocobase/plugin-ai';
 const RUN_JS_ALLOWED_PATHS = ['runJs.code', 'runJs.version'];
 const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.mode',
@@ -1525,6 +1529,40 @@ COMMENTS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   },
 });
 
+const RECORD_HISTORY_BLOCK_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams', 'flowRegistry'],
+  props: [],
+  stepParams: ['resourceSettings', 'recordHistorySettings', 'cardSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: DEFAULT_DIRECT_EVENTS,
+    object: ['click'],
+  },
+});
+RECORD_HISTORY_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
+  resourceSettings: {
+    allowedPaths: ['init.dataSourceKey', 'init.collectionName'],
+    eventBindingSteps: [],
+    pathSchemas: {
+      'init.dataSourceKey': STRING_SCHEMA,
+      'init.collectionName': STRING_SCHEMA,
+    },
+  },
+  cardSettings: BLOCK_CARD_SETTINGS_GROUP,
+  recordHistorySettings: {
+    allowedPaths: ['sortOrder.order', 'dataScope.filter', 'expand.expand', 'template.apply', 'recordId.recordId'],
+    clearable: true,
+    eventBindingSteps: [],
+    pathSchemas: {
+      'sortOrder.order': STRING_SCHEMA,
+      'dataScope.filter': FILTER_GROUP_SCHEMA,
+      'expand.expand': BOOLEAN_SCHEMA,
+      'template.apply': STRING_SCHEMA,
+      'recordId.recordId': STRING_SCHEMA,
+    },
+  },
+});
+
 const ACTION_COLUMN_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'tooltip', 'width', 'fixed'],
@@ -2507,6 +2545,18 @@ JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   jsSettings: RUN_JS_SETTINGS_GROUP,
 });
 
+const AI_EMPLOYEE_ACTION_CONTRACT = createContract({
+  editableDomains: ['props'],
+  props: ['aiEmployee', 'context', 'auto', 'tasks', 'style'],
+});
+AI_EMPLOYEE_ACTION_CONTRACT.domains.props = keyedDomain(['aiEmployee', 'context', 'auto', 'tasks', 'style'], 'deep', {
+  aiEmployee: OBJECT_SCHEMA,
+  context: OBJECT_SCHEMA,
+  auto: BOOLEAN_SCHEMA,
+  tasks: ARRAY_SCHEMA,
+  style: OBJECT_SCHEMA,
+});
+
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['labelWidth', 'labelWrap'],
@@ -2633,6 +2683,12 @@ APPROVAL_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   },
 });
 
+const COMMENT_ITEM_CONTRACT = createContract({
+  editableDomains: [],
+  props: [],
+  stepParams: [],
+});
+
 const nodeContracts = new Map<string, FlowSurfaceNodeContract>();
 
 function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
@@ -2678,6 +2734,8 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ActionPanelBlockModel', ACTION_PANEL_BLOCK_CONTRACT],
   ['MapBlockModel', MAP_BLOCK_CONTRACT],
   ['CommentsBlockModel', COMMENTS_BLOCK_CONTRACT],
+  ['CommentItemModel', COMMENT_ITEM_CONTRACT],
+  ['RecordHistoryBlockModel', RECORD_HISTORY_BLOCK_CONTRACT],
   ['TableActionsColumnModel', ACTION_COLUMN_CONTRACT],
   ['FormItemModel', FORM_ITEM_CONTRACT],
   ['FormAssociationItemModel', DETAILS_ITEM_CONTRACT],
@@ -2706,6 +2764,11 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['KanbanCardViewActionModel', KANBAN_POPUP_ACTION_CONTRACT],
   ['AddChildActionModel', POPUP_ACTION_CONTRACT],
   ['DeleteActionModel', DELETE_ACTION_CONTRACT],
+  ['EditCommentActionModel', SIMPLE_ACTION_CONTRACT],
+  ['DeleteCommentActionModel', DELETE_ACTION_CONTRACT],
+  ['QuoteReplyActionModel', SIMPLE_ACTION_CONTRACT],
+  ['RecordHistoryExpandActionModel', SIMPLE_ACTION_CONTRACT],
+  ['RecordHistoryCollapseActionModel', SIMPLE_ACTION_CONTRACT],
   ['BulkDeleteActionModel', DELETE_ACTION_CONTRACT],
   ['UpdateRecordActionModel', UPDATE_RECORD_ACTION_CONTRACT],
   ['BulkEditActionModel', BULK_EDIT_ACTION_CONTRACT],
@@ -2740,6 +2803,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
   ['JSItemActionModel', JS_ITEM_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
+  [AI_EMPLOYEE_ACTION_USE, AI_EMPLOYEE_ACTION_CONTRACT],
   ['ApplyFormSubmitModel', APPROVAL_ACTION_CONTRACT],
   ['ApplyFormSaveDraftModel', APPROVAL_ACTION_CONTRACT],
   ['ApplyFormWithdrawModel', APPROVAL_ACTION_CONTRACT],
@@ -3253,6 +3317,7 @@ const COLLECTION_RESOURCE_REQUIRED = new Set([
   'GridCardBlockModel',
   'MapBlockModel',
   'CommentsBlockModel',
+  'RecordHistoryBlockModel',
   ...APPROVAL_FORM_BLOCK_USES,
   ...APPROVAL_DETAILS_BLOCK_USES,
 ]);
@@ -3341,7 +3406,10 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'FilterActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    allowedContainerUses: [
+      ...COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+      ...RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
+    ],
     createSupported: true,
   },
   {
@@ -3371,7 +3439,30 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'RefreshActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    allowedContainerUses: [
+      ...COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+      ...RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
+    ],
+    createSupported: true,
+  },
+  {
+    publicKey: 'expandAll',
+    label: 'Expand all',
+    scope: 'block',
+    scene: 'collection',
+    use: 'RecordHistoryExpandActionModel',
+    ownerPlugin: '@nocobase/plugin-record-history',
+    allowedContainerUses: RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'collapseAll',
+    label: 'Collapse all',
+    scope: 'block',
+    scene: 'collection',
+    use: 'RecordHistoryCollapseActionModel',
+    ownerPlugin: '@nocobase/plugin-record-history',
+    allowedContainerUses: RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {
@@ -3555,6 +3646,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     createSupported: true,
   },
   {
+    publicKey: 'aiEmployee',
+    label: 'AI employee',
+    scope: 'block',
+    scene: 'collection',
+    use: AI_EMPLOYEE_ACTION_USE,
+    ownerPlugin: AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
     publicKey: 'duplicate',
     label: 'Duplicate',
     scope: 'record',
@@ -3625,6 +3726,36 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     createSupported: true,
   },
   {
+    publicKey: 'edit',
+    label: 'Edit',
+    scope: 'record',
+    scene: 'record',
+    use: 'EditCommentActionModel',
+    ownerPlugin: '@nocobase/plugin-comments',
+    allowedContainerUses: COMMENT_RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'delete',
+    label: 'Delete',
+    scope: 'record',
+    scene: 'record',
+    use: 'DeleteCommentActionModel',
+    ownerPlugin: '@nocobase/plugin-comments',
+    allowedContainerUses: COMMENT_RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'quoteReply',
+    label: 'Quote reply',
+    scope: 'record',
+    scene: 'record',
+    use: 'QuoteReplyActionModel',
+    ownerPlugin: '@nocobase/plugin-comments',
+    allowedContainerUses: COMMENT_RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
     publicKey: 'updateRecord',
     label: 'Update record',
     scope: 'record',
@@ -3675,6 +3806,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     createSupported: true,
   },
   {
+    publicKey: 'aiEmployee',
+    label: 'AI employee',
+    scope: 'record',
+    scene: 'record',
+    use: AI_EMPLOYEE_ACTION_USE,
+    ownerPlugin: AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
     publicKey: 'submit',
     label: 'Submit',
     scope: 'form',
@@ -3711,6 +3852,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'form',
     use: 'FormTriggerWorkflowActionModel',
     ownerPlugin: '@nocobase/plugin-workflow-custom-action-trigger',
+    allowedContainerUses: FORM_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'aiEmployee',
+    label: 'AI employee',
+    scope: 'form',
+    scene: 'form',
+    use: AI_EMPLOYEE_ACTION_USE,
+    ownerPlugin: AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,
   },

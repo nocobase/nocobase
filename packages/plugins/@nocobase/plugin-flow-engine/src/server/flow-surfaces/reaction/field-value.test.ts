@@ -18,7 +18,7 @@ import {
   normalizeFieldValueRules,
 } from './field-value';
 
-describe.skip('flow surfaces reaction field value helpers', () => {
+describe('flow surfaces reaction field value helpers', () => {
   it('normalizes defaults and compiles canonical rules close to assignRules.value', () => {
     const normalized = normalizeFieldValueRules([
       {

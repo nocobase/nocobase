@@ -96,6 +96,13 @@ export type FlowSurfaceComposeRuntimeDeps = {
     state: FlowSurfaceComposeRuntimeState,
     block: FlowSurfaceComposeRuntimeBlockState,
   ) => FlowSurfaceComposeObject | Promise<FlowSurfaceComposeObject>;
+  resolveActionSettings?: (
+    settings: FlowSurfaceComposeObject,
+    state: FlowSurfaceComposeRuntimeState,
+    block: FlowSurfaceComposeRuntimeBlockState,
+    action: FlowSurfaceComposeNormalizedActionSpec,
+    actionName: string,
+  ) => FlowSurfaceComposeObject | Promise<FlowSurfaceComposeObject>;
   createField: (
     payload: Record<string, unknown>,
     spec: FlowSurfaceComposeNormalizedFieldSpec,
@@ -375,19 +382,22 @@ async function createActions(
 ) {
   for (const actionTask of plan.actions) {
     const block = requireBlockState(actionTask.blockKey, state);
+    const settings = await resolveComposeActionSettings(deps, state, block, actionTask.spec, 'compose action');
+    const shouldPassSettingsDuringCreate = actionTask.spec.type === 'aiEmployee' && hasInlineSettings(settings);
     const createdAction = await deps.createAction(
       {
         target: {
           uid: block.result.uid,
         },
         ...actionTask.payload,
+        ...(shouldPassSettingsDuringCreate ? { settings } : {}),
       },
       actionTask.spec,
       block.result,
     );
 
-    if (deps.applyNodeSettings && hasInlineSettings(actionTask.spec.settings)) {
-      await deps.applyNodeSettings('compose action', createdAction.uid, actionTask.spec.settings);
+    if (deps.applyNodeSettings && hasInlineSettings(settings) && !shouldPassSettingsDuringCreate) {
+      await deps.applyNodeSettings('compose action', createdAction.uid, settings);
     }
     if (deps.applyActionPopup && shouldApplyActionPopupAfterEffect(actionTask.spec)) {
       await deps.applyActionPopup('compose action', createdAction.uid, actionTask.spec.popup);
@@ -405,12 +415,21 @@ async function createRecordActions(
 ) {
   for (const recordActionTask of plan.recordActions) {
     const block = requireBlockState(recordActionTask.blockKey, state);
+    const settings = await resolveComposeActionSettings(
+      deps,
+      state,
+      block,
+      recordActionTask.spec,
+      'compose recordAction',
+    );
+    const shouldPassSettingsDuringCreate = recordActionTask.spec.type === 'aiEmployee' && hasInlineSettings(settings);
     const createdAction = await deps.createRecordAction(
       {
         target: {
           uid: block.result.uid,
         },
         ...recordActionTask.payload,
+        ...(shouldPassSettingsDuringCreate ? { settings } : {}),
       },
       recordActionTask.spec,
       block.result,
@@ -424,8 +443,8 @@ async function createRecordActions(
       };
     }
 
-    if (deps.applyNodeSettings && hasInlineSettings(recordActionTask.spec.settings)) {
-      await deps.applyNodeSettings('compose recordAction', createdAction.uid, recordActionTask.spec.settings);
+    if (deps.applyNodeSettings && hasInlineSettings(settings) && !shouldPassSettingsDuringCreate) {
+      await deps.applyNodeSettings('compose recordAction', createdAction.uid, settings);
     }
     if (deps.applyActionPopup && shouldApplyActionPopupAfterEffect(recordActionTask.spec)) {
       await deps.applyActionPopup('compose recordAction', createdAction.uid, recordActionTask.spec.popup);
@@ -478,6 +497,21 @@ async function applyComposeLayout(
     },
     ...layoutPayload,
   });
+}
+
+async function resolveComposeActionSettings(
+  deps: FlowSurfaceComposeRuntimeDeps,
+  state: FlowSurfaceComposeRuntimeState,
+  block: FlowSurfaceComposeRuntimeBlockState,
+  action: FlowSurfaceComposeNormalizedActionSpec,
+  actionName: string,
+) {
+  if (!hasInlineSettings(action.settings)) {
+    return action.settings;
+  }
+  return deps.resolveActionSettings
+    ? await deps.resolveActionSettings(action.settings || {}, state, block, action, actionName)
+    : action.settings;
 }
 
 function requireBlockState(blockKey: string, state: FlowSurfaceComposeRuntimeState) {
