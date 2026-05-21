@@ -172,7 +172,7 @@ export default function devDynamicImport(packageName: string): Promise<any> {
             this.packagesPath,
             join(dirname(pluginPackageJsonPath), 'src', this.options.clientSourceDir),
           ).replaceAll(sep, '/');
-          exportStatement = `export { default } from '${pluginSrcClientPath}';`;
+          exportStatement = `export { default } from '${pluginSrcClientPath}';\nexport * from '${pluginSrcClientPath}';`;
         } else {
           exportStatement = `export { default } from '${pluginPackageJson.name}/${this.options.clientModuleName}';`;
         }
