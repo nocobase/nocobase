@@ -384,10 +384,15 @@ export default class AppUpgrade extends Command {
   private static buildLocalDownloadArgv(
     runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
     downloadVersion: string,
+    options?: { verbose?: boolean },
   ): string[] {
     const argv = ['-y', '--no-intro', '--source', runtime.source, '--replace'];
     const gitUrl = readEnvValue(runtime.env, 'gitUrl');
     const npmRegistry = readEnvValue(runtime.env, 'npmRegistry');
+
+    if (options?.verbose) {
+      argv.push('--verbose');
+    }
 
     argv.push('--version', downloadVersion, '--output-dir', runtime.projectRoot);
     if (gitUrl) {
@@ -412,10 +417,13 @@ export default class AppUpgrade extends Command {
   private static buildDockerDownloadArgv(
     runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
     plan: DockerUpgradePlan,
+    options?: { verbose?: boolean },
   ): string[] {
-    const argv = [
-      '-y',
-      '--no-intro',
+    const argv = ['-y', '--no-intro'];
+    if (options?.verbose) {
+      argv.push('--verbose');
+    }
+    argv.push(
       '--source',
       'docker',
       '--replace',
@@ -423,7 +431,7 @@ export default class AppUpgrade extends Command {
       plan.dockerRegistry,
       '--version',
       plan.downloadVersion,
-    ];
+    );
     const dockerPlatform = normalizeDockerPlatform(runtime.env.config.dockerPlatform);
     if (dockerPlatform) {
       argv.push('--docker-platform', dockerPlatform);
@@ -606,7 +614,12 @@ export default class AppUpgrade extends Command {
     if (!flags['skip-code-update'] && (runtime.source === 'npm' || runtime.source === 'git')) {
       startTask(`Refreshing NocoBase files for "${runtime.envName}" from the saved ${runtime.source} source...`);
       try {
-        await runCommand('source:download', AppUpgrade.buildLocalDownloadArgv(runtime, downloadVersion!));
+        await runCommand(
+          'source:download',
+          AppUpgrade.buildLocalDownloadArgv(runtime, downloadVersion!, {
+            verbose: flags.verbose,
+          }),
+        );
         succeedTask(`NocoBase files are up to date for "${runtime.envName}".`);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -668,7 +681,12 @@ export default class AppUpgrade extends Command {
       const plan = await AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
       startTask(`Refreshing the Docker image for "${runtime.envName}"...`);
       try {
-        await runCommand('source:download', AppUpgrade.buildDockerDownloadArgv(runtime, plan));
+        await runCommand(
+          'source:download',
+          AppUpgrade.buildDockerDownloadArgv(runtime, plan, {
+            verbose: flags.verbose,
+          }),
+        );
         succeedTask(`Docker image is ready for "${runtime.envName}".`);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);

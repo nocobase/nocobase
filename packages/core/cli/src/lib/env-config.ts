@@ -113,6 +113,9 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   }
 
   const authType = trimConfigValue(input.authType);
+  if (authType === 'token' || authType === 'oauth') {
+    envConfig.authType = authType;
+  }
   const accessToken = trimConfigValue(input.accessToken);
   if (authType === 'token' && accessToken) {
     envConfig.accessToken = accessToken;
