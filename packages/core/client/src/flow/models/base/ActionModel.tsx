@@ -52,10 +52,10 @@ export const ActionSceneEnum = {
 };
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
-  declare props: ButtonProps & { tooltip?: string };
+  declare props: ButtonProps & { tooltip?: string; iconOnly?: boolean };
   declare scene: ActionSceneType;
 
-  defaultProps: ButtonProps & { tooltip?: string } = {
+  defaultProps: ButtonProps & { tooltip?: string; iconOnly?: boolean } = {
     type: 'default',
     title: tExpr('Action'),
   };
@@ -66,6 +66,13 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   enableEditType = true;
   enableEditDanger = true;
   enableEditColor = false;
+  buttonTypeOptions = [
+    { value: 'default', label: '{{t("Default")}}' },
+    { value: 'primary', label: '{{t("Primary")}}' },
+    { value: 'dashed', label: '{{t("Dashed")}}' },
+    { value: 'link', label: '{{t("Link")}}' },
+    { value: 'text', label: '{{t("Text")}}' },
+  ];
 
   static _getScene() {
     return _.castArray(this['scene'] || []);
@@ -136,12 +143,12 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   renderButton() {
-    const props = this.props;
+    const { iconOnly, ...props } = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
 
     return (
       <Button {...props} onClick={this.onClick.bind(this)} icon={icon}>
-        {props.children || this.getTitle()}
+        {iconOnly ? null : props.children || this.getTitle()}
       </Button>
     );
   }
@@ -156,13 +163,13 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   renderHiddenInConfig(): React.ReactNode | undefined {
-    const props = this.props;
+    const { iconOnly, ...props } = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
     if (this.forbidden) {
       return (
         <ActionWithoutPermission>
           <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
-            {props.children || this.getTitle()}
+            {iconOnly ? null : props.children || this.getTitle()}
           </Button>
         </ActionWithoutPermission>
       );
@@ -170,7 +177,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     return (
       <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
         <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
-          {props.children || this.getTitle()}
+          {iconOnly ? null : props.children || this.getTitle()}
         </Button>
       </Tooltip>
     );
@@ -207,18 +214,19 @@ ActionModel.registerFlow({
                 title: tExpr('Button icon'),
               }
             : undefined,
+          iconOnly: ctx.model.enableEditIcon
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Switch',
+                title: tExpr('Icon only'),
+              }
+            : undefined,
           type: ctx.model.enableEditType
             ? {
                 'x-decorator': 'FormItem',
                 'x-component': 'Radio.Group',
                 title: tExpr('Button type'),
-                enum: [
-                  { value: 'default', label: '{{t("Default")}}' },
-                  { value: 'primary', label: '{{t("Primary")}}' },
-                  { value: 'dashed', label: '{{t("Dashed")}}' },
-                  { value: 'link', label: '{{t("Link")}}' },
-                  { value: 'text', label: '{{t("Text")}}' },
-                ],
+                enum: ctx.model.buttonTypeOptions,
               }
             : undefined,
           danger: ctx.model.enableEditDanger
