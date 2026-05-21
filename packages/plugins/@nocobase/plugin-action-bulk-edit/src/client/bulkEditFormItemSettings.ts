@@ -27,7 +27,7 @@ import {
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 
-export const bulkEditFormItemSettings = new SchemaSettings({
+export const bulkEditFormItemSettings: any = new SchemaSettings({
   name: 'fieldSettings:BulkEditFormItem',
   items: [
     {

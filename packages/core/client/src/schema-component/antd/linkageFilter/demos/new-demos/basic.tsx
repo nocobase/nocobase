@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useField, observer, ISchema } from '@formily/react';
-import { FilterActionProps, useRequest, SchemaComponent, Plugin } from '@nocobase/client';
+import { FilterActionProps, useRequest, SchemaComponent, Plugin } from '../../../../../index';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { css } from '@emotion/css';
 

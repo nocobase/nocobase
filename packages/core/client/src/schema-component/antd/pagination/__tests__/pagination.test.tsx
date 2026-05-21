@@ -8,7 +8,7 @@
  */
 
 import { renderAppOptions } from '@nocobase/test/client';
-import { Pagination } from '@nocobase/client';
+import { Pagination } from '../../../../index';
 
 describe('Pagination', () => {
   it('renders without errors', async () => {

@@ -9,7 +9,7 @@ import {
   useDataBlockRequest,
   useDataBlockResource,
   SchemaComponent, Plugin,
-} from '@nocobase/client';
+} from '../../../../index';
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
 

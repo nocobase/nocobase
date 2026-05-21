@@ -1,6 +1,6 @@
 import { FormItem, Input } from '@formily/antd-v5';
 import { ISchema, observer, useForm } from '@formily/react';
-import { Action, CustomRouterContextProvider, Form, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Action, CustomRouterContextProvider, Form, SchemaComponent, SchemaComponentProvider } from '../../../../index';
 import { Card } from 'antd';
 import { createMemoryHistory } from 'history';
 import React from 'react';

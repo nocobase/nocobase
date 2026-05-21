@@ -17,7 +17,7 @@ import { NAMESPACE } from '../locale';
 const DOCUMENTATION_PATH = '/api-documentation';
 const Documentation = lazy(() => import('./Document'));
 
-export const useStyles = createStyles(({ css, token }) => {
+export const useStyles: any = createStyles(({ css, token }) => {
   return css`
     position: relative;
     background: ${token.colorBgContainer};

@@ -23,7 +23,7 @@ export class PluginFieldSortServer extends Plugin {
 
     this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
       if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
-        dataSource.collectionManager.db.registerFieldTypes({
+        dataSource.collectionManager.registerFieldTypes({
           sort: SortFieldClass,
         });
         dataSource.resourceManager.registerActionHandlers({ move });

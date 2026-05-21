@@ -13,7 +13,7 @@ import { Tag } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const FieldSummary = observer(
+export const FieldSummary: any = observer(
   (props: any) => {
     const { schemaKey } = props;
     const { getInterface } = useCollectionManager_deprecated();

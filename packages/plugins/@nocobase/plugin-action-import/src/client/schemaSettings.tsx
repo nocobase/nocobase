@@ -23,7 +23,7 @@ import { Button, Space } from 'antd';
 import { Action } from '@nocobase/client';
 import React from 'react';
 
-export const importActionSchemaSettings = new SchemaSettings({
+export const importActionSchemaSettings: any = new SchemaSettings({
   name: 'actionSettings:import',
   items: [
     {

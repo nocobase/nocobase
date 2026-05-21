@@ -6,7 +6,7 @@ import {
   useDetailsPaginationProps,
   useDetailsWithPaginationDecoratorProps,
   useDetailsWithPaginationProps,
-} from '@nocobase/client';
+} from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

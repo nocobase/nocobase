@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ColorPicker } from '@nocobase/client';
+import { ColorPicker } from '../../../../index';
 import { renderAppOptions, screen, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('ColorPicker', () => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CurrentPageUidProvider, RouteSchemaComponent } from '@nocobase/client';
+import { CurrentPageUidProvider, RouteSchemaComponent } from '../../../../index';
 import { renderAppOptions, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
 

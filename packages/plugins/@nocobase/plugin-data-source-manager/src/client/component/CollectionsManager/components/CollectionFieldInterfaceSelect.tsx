@@ -37,7 +37,7 @@ const getInterfaceOptions = (data, type) => {
 const isValueInOptions = (value, options) => {
   return options?.some((option) => option.children?.some?.((child) => child.name === value));
 };
-export const CollectionFieldInterfaceSelect = observer(
+export const CollectionFieldInterfaceSelect: any = observer(
   (props: any) => {
     const { value, handleFieldChange } = props;
     const { data: record } = useCollectionRecord() as any;

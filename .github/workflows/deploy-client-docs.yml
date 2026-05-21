@@ -26,22 +26,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
-      - run: yarn install
+          cache: 'pnpm'
+      - run: pnpm install
       - name: Build zh-CN
-        run: yarn doc build core/client --lang=zh-CN
+        run: pnpm doc build core/client --lang=zh-CN
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
       - name: Build en-US
-        run: yarn doc build core/client --lang=en-US
+        run: pnpm doc build core/client --lang=en-US
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
       - name: Set tags
         id: set-tags
         run: |
           if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "::set-output name=tags::${{ github.ref_name }}"
+            echo "tags=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=tags::pr-${{ github.event.pull_request.number }}"
+            echo "tags=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
       - name: copy files via ssh - ${{ steps.set-tags.outputs.tags }}
         uses: appleboy/scp-action@v0.1.7

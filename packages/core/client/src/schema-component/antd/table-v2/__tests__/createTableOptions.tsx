@@ -15,7 +15,7 @@ import {
   tableActionInitializers,
   tableColumnInitializers,
   useTableBlockDecoratorProps,
-} from '@nocobase/client';
+} from '../../../../index';
 
 export const tableOptions = {
   designable: true,

@@ -31,7 +31,7 @@ import { recordsCountFieldSchemaSettingsItem } from './items/recordsCount';
 import { searchableSchemaSettingsItem } from './items/searchable';
 import { titleFieldSchemaSettingsItem } from './items/titleField';
 
-export const treeSettings = new SchemaSettings({
+export const treeSettings: any = new SchemaSettings({
   name: `blockSettings:${BlockNameLowercase}`,
   items: [
     {

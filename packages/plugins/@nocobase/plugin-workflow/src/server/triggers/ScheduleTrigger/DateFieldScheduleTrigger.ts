@@ -151,7 +151,7 @@ export default class DateFieldScheduleTrigger {
     const now = new Date();
     const records = await this.loadRecordsToSchedule(workflow, now);
     this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
-    records.forEach((record) => {
+    records.forEach((record: any) => {
       const nextTime = this.getRecordNextTime(workflow, record);
       this.schedule(workflow, record, nextTime, Boolean(nextTime));
     });
@@ -167,7 +167,7 @@ export default class DateFieldScheduleTrigger {
   async loadRecordsToSchedule(
     { id, config: { collection, limit, startsOn, repeat, endsOn }, stats }: WorkflowModel,
     currentDate: Date,
-  ) {
+  ): Promise<any[]> {
     const { dataSourceManager } = this.workflow.app;
     if (limit && stats.executed >= limit) {
       this.workflow.getLogger(id).warn(`[Schedule on date field] limit reached (all executed ${stats.executed})`);
@@ -412,7 +412,7 @@ export default class DateFieldScheduleTrigger {
       return;
     }
 
-    const listener = async (data: Model, { transaction }) => {
+    const listener = async (data: any, { transaction }) => {
       const nextTime = this.getRecordNextTime(workflow, data);
       this.workflow.getLogger().debug(`[Schedule on date field] record saved, nextTime: ${nextTime}`);
       return this.schedule(workflow, data, nextTime, Boolean(nextTime), { transaction });

@@ -99,7 +99,7 @@ export default class extends Trigger {
   scope = {
     useCollectionDataSource,
   };
-  components = {
+  components: Record<string, any> = {
     ScheduleConfig,
     TriggerScheduleConfig,
     TriggerCollectionRecordSelect,

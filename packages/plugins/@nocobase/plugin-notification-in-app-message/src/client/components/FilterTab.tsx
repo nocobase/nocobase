@@ -42,5 +42,5 @@ const _FilterTab = () => {
   );
 };
 
-const FilterTab = observer(_FilterTab);
+const FilterTab: any = observer(_FilterTab);
 export default FilterTab;

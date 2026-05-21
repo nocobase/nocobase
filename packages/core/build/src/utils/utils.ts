@@ -270,7 +270,7 @@ export function formatDuration(durationMs: number) {
 }
 
 export function runScript(args: string[], cwd: string, envs: Record<string, string> = {}) {
-  return execa('yarn', args, {
+  return execa('pnpm', args, {
     cwd,
     stdio: 'inherit',
     env: {
@@ -278,6 +278,7 @@ export function runScript(args: string[], cwd: string, envs: Record<string, stri
       ...envs,
       sourcemap: process.argv.includes('--sourcemap') ? 'sourcemap' : undefined,
       NODE_ENV: process.env.NODE_ENV || 'production',
+      NODE_OPTIONS: '--http-parser=legacy',
     },
   });
 }

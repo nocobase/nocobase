@@ -4,7 +4,7 @@ import {
   SchemaComponent,
   Plugin,
   useActionContext,
-} from '@nocobase/client';
+} from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React, { useState } from 'react';
 

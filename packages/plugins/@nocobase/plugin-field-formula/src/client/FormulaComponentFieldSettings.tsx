@@ -10,7 +10,7 @@
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettings, SchemaSettingsNumberFormat, useColumnSchema, useIsFieldReadPretty } from '@nocobase/client';
 import { useTargetCollectionField } from './components/Formula/Result';
-export const FormulaComponentFieldSettings = new SchemaSettings({
+export const FormulaComponentFieldSettings: any = new SchemaSettings({
   name: 'fieldSettings:component:Formula.Result',
   items: [
     {

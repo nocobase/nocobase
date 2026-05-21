@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Checkbox } from '@nocobase/client';
+import { Checkbox } from '../../../../index';
 import { fireEvent, render, renderReadPrettyApp, screen, userEvent } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/checkbox';

@@ -16,7 +16,7 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 
-export const Event = observer(
+export const Event: any = observer(
   (props) => {
     const recordData = useCollectionRecordData();
     const collection = useCollection();

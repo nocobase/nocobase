@@ -25,7 +25,7 @@ import { observer } from '@formily/reactive-react';
 import useStyles from './style';
 import { NAMESPACE } from '../locale';
 
-export const CommentSubmit = observer((props: any) => {
+export const CommentSubmit: any = observer((props: any) => {
   const { createAble = true, defaultValue } = props;
   const [value, setValue] = useState(null);
   const model: any = useFlowModel();

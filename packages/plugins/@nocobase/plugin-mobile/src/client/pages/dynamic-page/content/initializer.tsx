@@ -10,7 +10,7 @@
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { generatePluginTranslationTemplate } from '../../../locale';
 
-export const mobileAddBlockInitializer = new SchemaInitializer({
+export const mobileAddBlockInitializer: any = new SchemaInitializer({
   title: '{{t("Add block")}}',
   name: 'mobile:addBlock',
   icon: 'PlusOutlined',

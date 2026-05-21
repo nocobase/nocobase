@@ -12,11 +12,11 @@
   "description.ru-RU": "Предоставляет блок канбан.",
   "description.zh-CN": "提供看板区块。",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
-    "@nocobase/plugin-ai": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-ai": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "devDependencies": {
     "@dnd-kit/core": "^6.0.0",

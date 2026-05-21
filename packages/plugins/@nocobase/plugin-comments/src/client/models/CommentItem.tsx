@@ -37,7 +37,7 @@ const Display = ({ value, markdown, liquid, t, ctx }) => {
   return content;
 };
 
-export const CommentItem = observer((props: any) => {
+export const CommentItem: any = observer((props: any) => {
   const { value, resource, model } = props;
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);

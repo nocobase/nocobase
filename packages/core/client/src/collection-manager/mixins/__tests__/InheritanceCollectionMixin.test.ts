@@ -1,4 +1,4 @@
-import { Application } from '@nocobase/client';
+import { Application } from '../../../index';
 import { CollectionManager } from '../../../data-source/collection/CollectionManager';
 import { InheritanceCollectionMixin } from '../InheritanceCollectionMixin';
 

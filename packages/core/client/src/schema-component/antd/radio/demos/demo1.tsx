@@ -5,7 +5,7 @@
  * desc: The simplest use.
  */
 import { FormItem } from '@formily/antd-v5';
-import { Radio, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Radio, SchemaComponent, SchemaComponentProvider } from '../../../../index';
 import React from 'react';
 
 const schema = {

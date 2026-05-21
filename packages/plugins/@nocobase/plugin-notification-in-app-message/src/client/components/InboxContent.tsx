@@ -169,4 +169,4 @@ const InnerInboxContent = () => {
   );
 };
 
-export const InboxContent = observer(InnerInboxContent);
+export const InboxContent: any = observer(InnerInboxContent);

@@ -119,4 +119,4 @@ const InternalChannelList = (props: { onClickItem?: (item: any) => void }) => {
   );
 };
 
-export const ChannelList = observer(InternalChannelList, { displayName: 'ChannelList' });
+export const ChannelList: any = observer(InternalChannelList, { displayName: 'ChannelList' });

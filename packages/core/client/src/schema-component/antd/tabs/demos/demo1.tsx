@@ -11,7 +11,7 @@ import {
   SchemaComponentProvider,
   Tabs,
   AntdSchemaComponentProvider,
-} from '@nocobase/client';
+} from '../../../../index';
 import React from 'react';
 
 const schema: ISchema = {

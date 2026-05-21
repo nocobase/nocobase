@@ -59,7 +59,7 @@ const fieldComponent: any = {
   },
 };
 
-export const attachmentUrlComponentFieldSettings = new SchemaSettings({
+export const attachmentUrlComponentFieldSettings: any = new SchemaSettings({
   name: 'fieldSettings:component:AttachmentUrl',
   items: [
     {

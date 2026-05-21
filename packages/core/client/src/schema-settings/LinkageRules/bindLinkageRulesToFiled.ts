@@ -528,8 +528,8 @@ export async function replaceVariables(
   const store = {};
   const scope = {};
 
-  if (value == null) {
-    return {};
+  if (typeof value !== 'string') {
+    return { exp: value, scope: {} };
   }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {

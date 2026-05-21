@@ -166,7 +166,7 @@ export default class extends Instruction {
   scope = {
     useNodeContext,
   };
-  components = {
+  components: any = {
     ArrayItems,
     UsersSelect,
     UsersAddition,

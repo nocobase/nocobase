@@ -16,7 +16,7 @@ import { REGEX_OF_VARIABLE } from './isVariable';
  */
 
 export const getPath = (variableString: string) => {
-  if (!variableString) {
+  if (typeof variableString !== 'string') {
     return variableString;
   }
 

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, DataSourceOptions, DataSource } from '@nocobase/client';
+import { Application, DataSourceOptions, DataSource } from '../../../index';
 
 describe('DataSource', () => {
   let dataSource: DataSource;

@@ -9,9 +9,9 @@
     "minimatch": "^5.1.1"
   },
   "peerDependencies": {
-    "@nocobase/database": "2.x",
-    "@nocobase/resourcer": "2.x",
-    "@nocobase/utils": "2.x"
+    "@nocobase/database": "workspace:*",
+    "@nocobase/resourcer": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "repository": {
     "type": "git",

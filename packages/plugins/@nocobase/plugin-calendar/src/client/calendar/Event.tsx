@@ -19,7 +19,7 @@ import {
 import React, { useCallback } from 'react';
 import { DeleteEventContext } from './Calendar';
 
-export const Event = observer(
+export const Event: any = observer(
   (props) => {
     const { visible, setVisible } = useActionContext();
     const recordData = useCollectionRecordData();

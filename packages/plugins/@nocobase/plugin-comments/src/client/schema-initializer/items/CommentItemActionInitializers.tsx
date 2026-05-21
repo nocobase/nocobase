@@ -102,7 +102,7 @@ export function QuoteReplyCommentActionInitializer(props) {
   return <ActionInitializer {...props} schema={schema} />;
 }
 
-export const commentItemActionInitializers = new SchemaInitializer({
+export const commentItemActionInitializers: any = new SchemaInitializer({
   name: 'comment:configureItemActions',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',

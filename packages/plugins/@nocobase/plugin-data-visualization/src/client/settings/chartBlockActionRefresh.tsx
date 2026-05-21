@@ -14,7 +14,7 @@ import { AutoRefreshItem } from './AutoRefreshItem';
 import { useField, useFieldSchema } from '@formily/react';
 import { GlobalAutoRefreshContext } from '../block';
 
-export const chartBlockActionRefreshSettings = new SchemaSettings({
+export const chartBlockActionRefreshSettings: any = new SchemaSettings({
   name: 'chartBlockActionSettings:refresh',
   items: [
     {

@@ -13,7 +13,7 @@ import { debounce } from 'lodash';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRecord } from '@nocobase/client';
 
-export const FieldTitleInput = observer(
+export const FieldTitleInput: any = observer(
   (props: any) => {
     const { value, handleFieldChange } = props;
     const record = useRecord();

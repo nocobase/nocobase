@@ -10,7 +10,7 @@ import {
   SchemaComponentProvider,
   SchemaInitializer,
   useApp,
-} from '@nocobase/client';
+} from '../../index';
 import React from 'react';
 
 const addActionInitializer = new SchemaInitializer({

@@ -57,7 +57,7 @@ export const ShowLunarDesignerItem = () => {
   );
 };
 
-export const calendarBlockSettings = new SchemaSettings({
+export const calendarBlockSettings: any = new SchemaSettings({
   name: 'blockSettings:calendar',
   items: [
     {

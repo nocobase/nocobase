@@ -30,7 +30,7 @@ import React, { PropsWithChildren, useCallback, useMemo } from 'react';
 import { useTranslation } from '../locale';
 import useStyles from './style';
 
-export const CommentItem = observer(
+export const CommentItem: any = observer(
   (props: PropsWithChildren<{ editing: boolean; setEditing: (editing: boolean) => void }>) => {
     const { editing, setEditing } = props;
     const field = useField<Field>();

@@ -1,7 +1,7 @@
 
 
 import { FormItem } from '@formily/antd-v5';
-import { CronSet, FormProvider, SchemaComponent } from '@nocobase/client';
+import { CronSet, FormProvider, SchemaComponent } from '../../../../index';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -12,7 +12,7 @@ import { Application } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
 export class DataSourcesCollectionModel extends MagicAttributeModel {
-  async load(loadOptions: { app: Application; transaction: Transaction }) {
+  async load(loadOptions: { app: Application; transaction: Transaction }): Promise<any> {
     const { app, transaction } = loadOptions;
 
     const collectionFields = await this.getFields({ transaction });

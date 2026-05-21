@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { reaction } from '@nocobase/flow-engine';
+import { reaction } from '../index';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models';

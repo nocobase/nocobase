@@ -620,7 +620,7 @@ const CollectionsTable = observer((tableProps: any) => {
   );
 });
 
-export const CollectionsTableField = (props: { NAMESPACE: string; t: (key: string, options?: any) => string }) => {
+export const CollectionsTableField: any = (props: { NAMESPACE: string; t: (key: string, options?: any) => string }) => {
   const { NAMESPACE, t } = props;
   const Text = observer((props: any) => {
     return <span>{props.value}</span>;

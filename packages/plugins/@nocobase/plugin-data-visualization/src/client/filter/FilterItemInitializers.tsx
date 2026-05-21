@@ -60,7 +60,7 @@ const ErrorFallback = ({ error }) => {
   );
 };
 
-export const ChartFilterFormItem = observer(
+export const ChartFilterFormItem: any = observer(
   (props: any) => {
     const { t } = useChartsTranslation();
     const field = useField<Field>();

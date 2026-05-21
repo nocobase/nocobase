@@ -10,7 +10,7 @@
 import { SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
 import { mobileTabBarSchemaInitializerItem, mobileTabBarLinkInitializerItem } from './types';
 
-export const mobileTabBarInitializer = new SchemaInitializer({
+export const mobileTabBarInitializer: any = new SchemaInitializer({
   name: 'mobile:tab-bar',
   icon: 'PlusOutlined',
   style: {

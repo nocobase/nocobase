@@ -96,7 +96,7 @@ const ProfileEditForm = () => {
   );
 };
 
-export const useEditProfile = () => {
+export const useEditProfile = (): any => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useUsersTranslation();

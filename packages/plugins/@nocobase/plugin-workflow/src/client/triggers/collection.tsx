@@ -200,7 +200,7 @@ export default class extends Trigger {
     useCollectionDataSource,
     useWorkflowAnyExecuted,
   };
-  components = {
+  components: Record<string, any> = {
     FieldsSelect,
     TriggerCollectionRecordSelect,
   };

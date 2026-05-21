@@ -10,7 +10,7 @@
 import { SchemaSettings } from '@nocobase/client';
 import { usePluginTranslation } from '../../locale';
 
-export const MobileSettingsBlockSchemaSettings = new SchemaSettings({
+export const MobileSettingsBlockSchemaSettings: any = new SchemaSettings({
   name: 'blockSettings:mobileSettings',
   items: [
     {

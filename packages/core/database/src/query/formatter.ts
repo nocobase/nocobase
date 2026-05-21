@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import moment from 'moment-timezone';
 import { Sequelize } from 'sequelize';
+import moment from 'moment-timezone';
 
 export type Col = ReturnType<typeof Sequelize.col>;
 export type Literal = ReturnType<typeof Sequelize.literal>;
 export type Fn = ReturnType<typeof Sequelize.fn>;
 
-export abstract class QueryFormatter {
+export abstract class Formatter {
   sequelize: Sequelize;
   rawTimezone?: string;
 
@@ -25,16 +25,12 @@ export abstract class QueryFormatter {
 
   abstract formatDate(field: Col, format: string, timezone?: string, preserveLocalTime?: boolean): Fn | Col;
 
-  abstract formatUnixTimestamp(
+  abstract formatUnixTimeStamp(
     field: string,
     format: string,
     accuracy?: 'second' | 'millisecond',
     timezone?: string,
-  ): Fn | Literal | Col;
-
-  convertFormat(format: string) {
-    return format;
-  }
+  ): any;
 
   protected getTimezoneByOffset(offset?: string) {
     if (!offset) {
@@ -49,15 +45,12 @@ export abstract class QueryFormatter {
     return;
   }
 
-  protected getOffsetExpression(timezone: string) {
-    const sign = timezone.charAt(0);
-    const value = timezone.slice(1);
-    const [hours, minutes] = value.split(':').map(Number);
-    return `${sign}${hours * 60 + minutes} minutes`;
+  convertFormat(format: string): any {
+    return format;
   }
 
-  format(options: { type: string; field: string; format: string; timezone?: string; fieldOptions?: any }) {
-    const { type, field, format, timezone, fieldOptions } = options;
+  format(options: { type: string; field: string; format: string; options?: any; timezone?: string }): any {
+    const { type, field, format, timezone, options: fieldOptions } = options;
     const col = this.sequelize.col(field);
     switch (type) {
       case 'date':
@@ -71,10 +64,10 @@ export abstract class QueryFormatter {
         return this.formatDate(col, format);
       case 'unixTimestamp': {
         const accuracy = fieldOptions?.uiSchema?.['x-component-props']?.accuracy || fieldOptions?.accuracy || 'second';
-        return this.formatUnixTimestamp(field, format, accuracy, timezone);
+        return this.formatUnixTimeStamp(field, format, accuracy, timezone);
       }
       default:
-        return col;
+        return this.sequelize.col(field);
     }
   }
 }

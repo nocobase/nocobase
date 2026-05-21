@@ -4,7 +4,7 @@
  * title: 勾选
  */
 import { FormItem } from '@formily/antd-v5';
-import { Checkbox, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Checkbox, SchemaComponent, SchemaComponentProvider } from '../../../../index';
 import React from 'react';
 
 const schema = {

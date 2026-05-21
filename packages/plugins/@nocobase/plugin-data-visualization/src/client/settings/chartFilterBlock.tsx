@@ -10,7 +10,7 @@
 import React from 'react';
 import { SchemaSettings, SchemaSettingsRemove } from '@nocobase/client';
 
-export const chartFilterBlockSettings = new SchemaSettings({
+export const chartFilterBlockSettings: any = new SchemaSettings({
   name: 'chart:filterForm:block',
   items: [
     {

@@ -11,6 +11,7 @@ import {
   AppendsTreeSelect,
   CollectionBlockModel,
   FormSubmitActionModel,
+  ISchema,
   UpdateRecordActionModel,
   joinCollectionName,
 } from '@nocobase/client';
@@ -31,7 +32,7 @@ export function createTriggerWorkflowsSchema({
   usingContext = true,
   filter,
   description,
-}: SchemaOptions = {}) {
+}: SchemaOptions = {}): (ctx: any) => Record<string, ISchema> {
   return (ctx) => {
     const { collection: collectionModel } = ctx.blockModel as CollectionBlockModel;
     const workflowCollection = collectionModel

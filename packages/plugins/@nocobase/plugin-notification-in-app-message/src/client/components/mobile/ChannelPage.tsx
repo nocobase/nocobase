@@ -63,4 +63,4 @@ const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickI
   );
 };
 
-export const MobileChannelPage = observer(MobileMessageBoxInner, { displayName: 'MobileChannelPage' });
+export const MobileChannelPage: any = observer(MobileMessageBoxInner, { displayName: 'MobileChannelPage' });

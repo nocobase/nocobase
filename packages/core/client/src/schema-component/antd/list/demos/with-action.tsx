@@ -3,7 +3,7 @@ import { mockApp } from '@nocobase/client/demo-utils';
 import {
   BlockSchemaComponentPlugin,
   SchemaComponent, Plugin,
-} from '@nocobase/client';
+} from '../../../../index';
 
 const schema = {
   type: 'void',

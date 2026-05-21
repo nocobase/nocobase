@@ -1,6 +1,6 @@
 # CollectionRecordProvider
 
-Used to provide instances of [CollectionRecord](./collection-record).
+Used to provide instances of [CollectionRecord](./collection-record.md).
 
 ## Component
 
@@ -20,9 +20,9 @@ interface CollectionRecordProviderProps<DataType = {}, ParentDataType = {}> {
 
 - Details
 
-The specific description of the parameters can be found in [CollectionRecord](./collection-record).
+The specific description of the parameters can be found in [CollectionRecord](./collection-record.md).
 
-It should be noted that both `record` and `parentRecord` can be either plain objects or instances of [CollectionRecord](./collection-record). However, they will ultimately be converted to `CollectionRecord` instances and passed to child components through context.
+It should be noted that both `record` and `parentRecord` can be either plain objects or instances of [CollectionRecord](./collection-record.md). However, they will ultimately be converted to `CollectionRecord` instances and passed to child components through context.
 
 ## Example
 

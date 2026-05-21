@@ -12,10 +12,10 @@ if [ ! -f "/app/nocobase/package.json" ]; then
   exit 1
 fi
 
-cd /app/nocobase && yarn nocobase postinstall
-cd /app/nocobase && yarn nocobase db:auth
-cd /app/nocobase && yarn nocobase create-nginx-conf
-cd /app/nocobase && yarn nocobase generate-instance-id
+cd /app/nocobase && pnpm nocobase postinstall
+cd /app/nocobase && pnpm nocobase db:auth
+cd /app/nocobase && pnpm nocobase create-nginx-conf
+cd /app/nocobase && pnpm nocobase generate-instance-id
 rm -f /etc/nginx/conf.d/nocobase.conf
 ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/conf.d/nocobase.conf
 
@@ -31,7 +31,7 @@ if [ -d "/app/nocobase/storage/scripts" ]; then
   done
 fi
 
-cd /app/nocobase && yarn start --quickstart
+cd /app/nocobase && pnpm start --quickstart
 
 # Run command with node if the first argument contains a "-" or is not a system command. The last
 # part inside the "{}" is a workaround for the following bug in ash/dash:

@@ -17,7 +17,7 @@ import { useRemoteCollectionContext } from '../CollectionFields';
 
 const supportTypes = ['string', 'bigInt', 'integer', 'uuid', 'uid', 'nanoid'];
 
-export const SourceKey = observer(
+export const SourceKey: any = observer(
   (props: any) => {
     const { name: dataSourceKey } = useParams();
     const { collectionName, sourceKey, name } = useRecord();
@@ -52,7 +52,7 @@ export const SourceKey = observer(
   { displayName: 'SourceKey' },
 );
 
-export const ForeignKey = observer(
+export const ForeignKey: any = observer(
   (props: any) => {
     const { disabled } = props;
     const api = useAPIClient();
@@ -144,7 +144,7 @@ export const ForeignKey = observer(
   },
   { displayName: 'ForeignKey' },
 );
-export const TargetKey = observer(
+export const TargetKey: any = observer(
   (props: any) => {
     const { value, disabled } = props;
     const { targetKey, target, type } = useRecord();
@@ -232,7 +232,7 @@ export const TargetKey = observer(
   { displayName: 'TargetKey' },
 );
 
-export const SourceCollection = observer(
+export const SourceCollection: any = observer(
   () => {
     const compile = useCompile();
     const { targetCollection } = useRemoteCollectionContext();
@@ -252,7 +252,7 @@ export const SourceCollection = observer(
   { displayName: 'SourceCollection' },
 );
 
-export const ThroughCollection = observer(
+export const ThroughCollection: any = observer(
   (props: any) => {
     const { disabled } = props;
     const compile = useCompile();

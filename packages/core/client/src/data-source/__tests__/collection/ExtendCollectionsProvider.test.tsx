@@ -15,7 +15,7 @@ import {
   DataSourceManagerProvider,
   CollectionManagerProvider,
   useCollectionManager,
-} from '@nocobase/client';
+} from '../../../index';
 import { useDataSourceKey } from '../../data-source/DataSourceProvider';
 
 describe('ExtendCollectionsProvider', () => {

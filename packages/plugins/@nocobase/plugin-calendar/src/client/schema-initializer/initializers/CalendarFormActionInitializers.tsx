@@ -37,7 +37,7 @@ export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
  * @deprecated
  * 表单的操作配置
  */
-export const CalendarFormActionInitializers = new SchemaInitializer({
+export const CalendarFormActionInitializers: any = new SchemaInitializer({
   title: generateNTemplate('Configure actions'),
   name: 'CalendarFormActionInitializers',
   icon: 'SettingOutlined',

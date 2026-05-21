@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin } from '@nocobase/client';
+import { SchemaComponent, Plugin } from '../../../../../index';
 import { ISchema, useField } from '@formily/react';
 
 interface Option {
