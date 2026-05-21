@@ -992,6 +992,16 @@ function buildActionDefaults(options: {
     };
   }
 
+  if (options.use === 'DeleteCommentActionModel') {
+    stepParams.deleteSettings = {
+      confirm: {
+        enable: true,
+        title: '{{t("Delete record")}}',
+        content: '{{t("Are you sure you want to delete it?")}}',
+      },
+    };
+  }
+
   if (options.use === 'FormSubmitActionModel') {
     stepParams.submitSettings = {
       confirm: {
@@ -1088,6 +1098,18 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       title: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
     },
+    EditCommentActionModel: {
+      type: 'link',
+      title: '{{t("Edit")}}',
+    },
+    DeleteCommentActionModel: {
+      type: 'link',
+      title: '{{t("Delete")}}',
+    },
+    QuoteReplyActionModel: {
+      type: 'link',
+      title: '{{t("Quote reply", { ns: "comments" })}}',
+    },
     UpdateRecordActionModel: {
       type: 'link',
       title: '{{t("Update record")}}',
@@ -1104,6 +1126,14 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
     RefreshActionModel: {
       title: '{{t("Refresh")}}',
       icon: 'ReloadOutlined',
+    },
+    RecordHistoryExpandActionModel: {
+      title: '{{t("Expand all")}}',
+      icon: 'NodeExpandOutlined',
+    },
+    RecordHistoryCollapseActionModel: {
+      title: '{{t("Collapse all")}}',
+      icon: 'NodeCollapseOutlined',
     },
     ExpandCollapseActionModel: {
       icon: 'DownOutlined',
@@ -1238,7 +1268,11 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
 }
 
 function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
-  if (['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel'].includes(String(containerUse || '').trim())) {
+  if (
+    ['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel', 'CommentItemModel'].includes(
+      String(containerUse || '').trim(),
+    )
+  ) {
     return {
       ...props,
       type: 'link',

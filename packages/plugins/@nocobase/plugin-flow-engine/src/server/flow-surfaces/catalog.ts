@@ -37,6 +37,7 @@ import {
   assertActionScopeMatchesContainer,
   assertKnownActionContainerUse,
   CALENDAR_BLOCK_ACTION_CONTAINER_USES,
+  COMMENT_RECORD_ACTION_CONTAINER_USES,
   COLLECTION_BLOCK_ACTION_CONTAINER_USES,
   DETAILS_ACTION_CONTAINER_USES,
   FILTER_FORM_ACTION_CONTAINER_USES,
@@ -46,6 +47,7 @@ import {
   LIST_BLOCK_ACTION_CONTAINER_USES,
   LIST_RECORD_ACTION_CONTAINER_USES,
   RECORD_ACTION_CONTAINER_USES,
+  RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
   TABLE_BLOCK_ACTION_CONTAINER_USES,
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
@@ -2681,6 +2683,12 @@ APPROVAL_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   },
 });
 
+const COMMENT_ITEM_CONTRACT = createContract({
+  editableDomains: [],
+  props: [],
+  stepParams: [],
+});
+
 const nodeContracts = new Map<string, FlowSurfaceNodeContract>();
 
 function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
@@ -2726,6 +2734,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ActionPanelBlockModel', ACTION_PANEL_BLOCK_CONTRACT],
   ['MapBlockModel', MAP_BLOCK_CONTRACT],
   ['CommentsBlockModel', COMMENTS_BLOCK_CONTRACT],
+  ['CommentItemModel', COMMENT_ITEM_CONTRACT],
   ['RecordHistoryBlockModel', RECORD_HISTORY_BLOCK_CONTRACT],
   ['TableActionsColumnModel', ACTION_COLUMN_CONTRACT],
   ['FormItemModel', FORM_ITEM_CONTRACT],
@@ -2755,6 +2764,11 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['KanbanCardViewActionModel', KANBAN_POPUP_ACTION_CONTRACT],
   ['AddChildActionModel', POPUP_ACTION_CONTRACT],
   ['DeleteActionModel', DELETE_ACTION_CONTRACT],
+  ['EditCommentActionModel', SIMPLE_ACTION_CONTRACT],
+  ['DeleteCommentActionModel', DELETE_ACTION_CONTRACT],
+  ['QuoteReplyActionModel', SIMPLE_ACTION_CONTRACT],
+  ['RecordHistoryExpandActionModel', SIMPLE_ACTION_CONTRACT],
+  ['RecordHistoryCollapseActionModel', SIMPLE_ACTION_CONTRACT],
   ['BulkDeleteActionModel', DELETE_ACTION_CONTRACT],
   ['UpdateRecordActionModel', UPDATE_RECORD_ACTION_CONTRACT],
   ['BulkEditActionModel', BULK_EDIT_ACTION_CONTRACT],
@@ -3392,7 +3406,10 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'FilterActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    allowedContainerUses: [
+      ...COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+      ...RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
+    ],
     createSupported: true,
   },
   {
@@ -3422,7 +3439,30 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'collection',
     use: 'RefreshActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
-    allowedContainerUses: COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+    allowedContainerUses: [
+      ...COLLECTION_BLOCK_AND_KANBAN_ACTION_CONTAINER_USES,
+      ...RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
+    ],
+    createSupported: true,
+  },
+  {
+    publicKey: 'expandAll',
+    label: 'Expand all',
+    scope: 'block',
+    scene: 'collection',
+    use: 'RecordHistoryExpandActionModel',
+    ownerPlugin: '@nocobase/plugin-record-history',
+    allowedContainerUses: RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'collapseAll',
+    label: 'Collapse all',
+    scope: 'block',
+    scene: 'collection',
+    use: 'RecordHistoryCollapseActionModel',
+    ownerPlugin: '@nocobase/plugin-record-history',
+    allowedContainerUses: RECORD_HISTORY_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {
@@ -3683,6 +3723,36 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     use: 'DeleteActionModel',
     ownerPlugin: CORE_FLOW_SURFACE_OWNER_PLUGIN,
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'edit',
+    label: 'Edit',
+    scope: 'record',
+    scene: 'record',
+    use: 'EditCommentActionModel',
+    ownerPlugin: '@nocobase/plugin-comments',
+    allowedContainerUses: COMMENT_RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'delete',
+    label: 'Delete',
+    scope: 'record',
+    scene: 'record',
+    use: 'DeleteCommentActionModel',
+    ownerPlugin: '@nocobase/plugin-comments',
+    allowedContainerUses: COMMENT_RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'quoteReply',
+    label: 'Quote reply',
+    scope: 'record',
+    scene: 'record',
+    use: 'QuoteReplyActionModel',
+    ownerPlugin: '@nocobase/plugin-comments',
+    allowedContainerUses: COMMENT_RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },
   {

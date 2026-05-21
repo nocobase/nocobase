@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
+import { getActionContainerScope } from './action-scope';
 import { getAvailableBlockCatalogItems } from './catalog';
 import { getChartBuilderResourceInit } from './chart-config';
 import { throwBadRequest } from './errors';
@@ -43,8 +44,6 @@ const FILTER_TARGET_BLOCK_USES = new Set([
 ]);
 const DETAILS_CARD_BLOCK_USES = new Set(['ListBlockModel', 'GridCardBlockModel', 'KanbanBlockModel']);
 const DETAILS_CARD_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel', 'KanbanCardItemModel']);
-const RECORD_ACTION_ITEM_USES = new Set(['ListItemModel', 'GridCardItemModel']);
-const BLOCK_ACTION_CONTAINER_USES = new Set(['ListBlockModel', 'GridCardBlockModel', 'KanbanBlockModel']);
 
 function getDefaultGridUse(ownerUse: string | undefined, fallbackUse: string) {
   return getApprovalDefaultGridUse(ownerUse) || fallbackUse;
@@ -366,20 +365,11 @@ export class FlowSurfaceContextResolver {
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));
     if (
-      ['TableBlockModel', 'CalendarBlockModel', 'TableActionsColumnModel'].includes(node?.use) ||
-      node?.use === 'ActionPanelBlockModel' ||
-      BLOCK_ACTION_CONTAINER_USES.has(node?.use) ||
-      RECORD_ACTION_ITEM_USES.has(node?.use)
+      getActionContainerScope(node?.use) ||
+      isFormBlockUse(node?.use) ||
+      isDetailsBlockUse(node?.use) ||
+      isFilterFormBlockUse(node?.use)
     ) {
-      return {
-        parentUid: node.uid,
-        subKey: 'actions',
-        subType: 'array',
-        ownerUid: node.uid,
-        ownerUse: node.use,
-      };
-    }
-    if (isFormBlockUse(node?.use) || isDetailsBlockUse(node?.use) || isFilterFormBlockUse(node?.use)) {
       return {
         parentUid: node.uid,
         subKey: 'actions',

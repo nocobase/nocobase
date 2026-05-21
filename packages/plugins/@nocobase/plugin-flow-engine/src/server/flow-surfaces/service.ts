@@ -528,7 +528,18 @@ const CANONICAL_BLOCK_HEADER_USES = new Set([
 const COMMENTS_PAGE_SIZE_VALUES = new Set([5, 10, 20, 50, 100, 200]);
 const RECORD_HISTORY_INTERNAL_COLLECTIONS = new Set(['recordHistories', 'recordFieldHistories']);
 const CARD_FIELD_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard', 'kanban']);
-const RECORD_ACTION_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
+const RECORD_ACTION_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard', 'comments']);
+const COMMENT_ACTION_SINGLETON_USES = new Set([
+  'EditCommentActionModel',
+  'DeleteCommentActionModel',
+  'QuoteReplyActionModel',
+]);
+const RECORD_HISTORY_ACTION_SINGLETON_USES = new Set([
+  'FilterActionModel',
+  'RefreshActionModel',
+  'RecordHistoryExpandActionModel',
+  'RecordHistoryCollapseActionModel',
+]);
 const GRID_SETTINGS_FLOW_KEY = 'gridSettings';
 const GRID_SETTINGS_LAYOUT_STEP_KEY = 'grid';
 const OPEN_VIEW_MODE_ALIASES = {
@@ -7571,6 +7582,9 @@ export class FlowSurfacesService {
   private buildBlockCreateResult(tree: any, parentUid: string, subKey: string, popupSurface?: any) {
     const gridNode = getSingleNodeSubModel(tree?.subModels?.grid);
     const itemNode = getSingleNodeSubModel(tree?.subModels?.item);
+    const commentItemNode = getNodeSubModelList(tree?.subModels?.items).find(
+      (item: any) => item?.use === 'CommentItemModel',
+    );
     const itemGridNode = getSingleNodeSubModel(itemNode?.subModels?.grid);
     const columnNodes = getNodeSubModelList(tree?.subModels?.columns);
     const blockGridUid = gridNode?.uid || itemGridNode?.uid;
@@ -7582,7 +7596,7 @@ export class FlowSurfacesService {
       subKey,
       ...(blockGridUid || popupGridUid ? { gridUid: blockGridUid || popupGridUid } : {}),
       ...(blockGridUid ? { blockGridUid } : {}),
-      ...(itemNode?.uid ? { itemUid: itemNode.uid } : {}),
+      ...(itemNode?.uid || commentItemNode?.uid ? { itemUid: itemNode?.uid || commentItemNode.uid } : {}),
       ...(itemGridNode?.uid ? { itemGridUid: itemGridNode.uid } : {}),
       ...(actionsColumnUid ? { actionsColumnUid } : {}),
       ...(popupSurface
@@ -8420,6 +8434,9 @@ export class FlowSurfacesService {
     );
     const gridNode = getSingleNodeSubModel(tree.subModels?.grid);
     const itemNode = getSingleNodeSubModel(tree.subModels?.item);
+    const commentItemNode = getNodeSubModelList(tree.subModels?.items).find(
+      (item: any) => item?.use === 'CommentItemModel',
+    );
     const itemGridNode = getSingleNodeSubModel(itemNode?.subModels?.grid);
     const columnNodes = getNodeSubModelList(tree.subModels?.columns);
     const blockGridUid = gridNode?.uid || itemGridNode?.uid;
@@ -8434,7 +8451,7 @@ export class FlowSurfacesService {
       subKey,
       ...(blockGridUid || popupGridUid ? { gridUid: blockGridUid || popupGridUid } : {}),
       ...(blockGridUid ? { blockGridUid } : {}),
-      ...(itemNode?.uid ? { itemUid: itemNode.uid } : {}),
+      ...(itemNode?.uid || commentItemNode?.uid ? { itemUid: itemNode?.uid || commentItemNode.uid } : {}),
       ...(itemGridNode?.uid ? { itemGridUid: itemGridNode.uid } : {}),
       ...(actionsColumnUid ? { actionsColumnUid } : {}),
       ...(popupSurface
@@ -9215,6 +9232,24 @@ export class FlowSurfacesService {
       context: 'addRecordAction',
     });
     const materializedContainer = await this.materializeRecordActionContainer(container, options.transaction);
+    const reusableAction = await this.resolveReusableSingletonAction({
+      parentUid: materializedContainer.parentUid,
+      ownerUse: container.ownerUse,
+      actionUse: actionCatalogItem.use,
+      transaction: options.transaction,
+    });
+    if (reusableAction?.uid) {
+      await this.applyInlineNodeSettings('addRecordAction', reusableAction.uid, inlineSettings, options);
+      const result = {
+        uid: reusableAction.uid,
+        parentUid: materializedContainer.parentUid,
+        subKey: materializedContainer.subKey,
+        scope: actionCatalogItem.scope,
+        ...(await this.collectComposeActionKeys(reusableAction.uid, options.transaction)),
+      };
+      await this.persistCreatedKeysForAction('addRecordAction', values, result, options.transaction);
+      return result;
+    }
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
       : null;
@@ -16338,7 +16373,7 @@ export class FlowSurfacesService {
     const recordContainerUse = getCatalogRecordActionContainerUse(blockUse);
     if (!recordContainerUse) {
       throwBadRequest(
-        `flowSurfaces compose recordActions only support 'table', 'details', 'list' or 'gridCard' blocks`,
+        `flowSurfaces compose recordActions only support 'table', 'details', 'list', 'gridCard' or 'comments' blocks`,
       );
     }
 
@@ -17079,6 +17114,24 @@ export class FlowSurfacesService {
         subType: 'array',
       };
     }
+    if (use === 'CommentsBlockModel') {
+      const itemUid = _.castArray(node.subModels?.items || [])[0]?.uid;
+      if (!itemUid) {
+        throwConflict(
+          `flowSurfaces addRecordAction target '${use}' is missing its comment item subtree`,
+          'FLOW_SURFACE_RECORD_ACTION_ITEM_SUBTREE_MISSING',
+        );
+      }
+      return {
+        ownerNode: node,
+        ownerUid: node.uid,
+        ownerUse: use,
+        containerUse: 'CommentItemModel',
+        parentUid: itemUid,
+        subKey: 'actions',
+        subType: 'array',
+      };
+    }
     if (use === 'KanbanBlockModel') {
       throwBadRequest(
         `flowSurfaces addRecordAction target '${use}' is not supported; kanban record actions are not exposed in the public API v1`,
@@ -17089,10 +17142,10 @@ export class FlowSurfacesService {
         `flowSurfaces addRecordAction target '${use}' is an internal record action container; pass the owning table block uid instead`,
       );
     }
-    if (use === 'ListItemModel' || use === 'GridCardItemModel') {
+    if (use === 'ListItemModel' || use === 'GridCardItemModel' || use === 'CommentItemModel') {
       throwBadRequest(
         `flowSurfaces addRecordAction target '${use}' is an internal record action container; pass the owning ${
-          use === 'ListItemModel' ? 'list' : 'gridCard'
+          use === 'ListItemModel' ? 'list' : use === 'GridCardItemModel' ? 'gridCard' : 'comments'
         } block uid instead`,
       );
     }
@@ -17466,18 +17519,43 @@ export class FlowSurfacesService {
     actionUse?: string;
     transaction?: any;
   }) {
-    if (!AUTO_SUBMIT_FORM_BLOCK_USES.has(input.ownerUse || '') || input.actionUse !== 'FormSubmitActionModel') {
-      return null;
+    if (AUTO_SUBMIT_FORM_BLOCK_USES.has(input.ownerUse || '') && input.actionUse === 'FormSubmitActionModel') {
+      const parentNode = await this.repository.findModelById(input.parentUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      });
+      return (
+        _.castArray(parentNode?.subModels?.actions || []).find(
+          (action: any) => action?.use === 'FormSubmitActionModel' && action?.uid,
+        ) || null
+      );
     }
-    const parentNode = await this.repository.findModelById(input.parentUid, {
-      transaction: input.transaction,
-      includeAsyncNode: true,
-    });
-    return (
-      _.castArray(parentNode?.subModels?.actions || []).find(
-        (action: any) => action?.use === 'FormSubmitActionModel' && action?.uid,
-      ) || null
-    );
+    if (input.ownerUse === 'CommentsBlockModel' && COMMENT_ACTION_SINGLETON_USES.has(input.actionUse || '')) {
+      const parentNode = await this.repository.findModelById(input.parentUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      });
+      return (
+        _.castArray(parentNode?.subModels?.actions || []).find(
+          (action: any) => action?.use === input.actionUse && action?.uid,
+        ) || null
+      );
+    }
+    if (
+      input.ownerUse === 'RecordHistoryBlockModel' &&
+      RECORD_HISTORY_ACTION_SINGLETON_USES.has(input.actionUse || '')
+    ) {
+      const parentNode = await this.repository.findModelById(input.parentUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      });
+      return (
+        _.castArray(parentNode?.subModels?.actions || []).find(
+          (action: any) => action?.use === input.actionUse && action?.uid,
+        ) || null
+      );
+    }
+    return null;
   }
 
   private normalizeComposeBlock(
@@ -17768,8 +17846,18 @@ export class FlowSurfacesService {
     }
     if (!RECORD_ACTION_COMPOSE_BLOCK_TYPES.has(blockSpec.type)) {
       throwBadRequest(
-        `flowSurfaces compose recordActions only support 'table', 'details', 'list' or 'gridCard' blocks`,
+        `flowSurfaces compose recordActions only support 'table', 'details', 'list', 'gridCard' or 'comments' blocks`,
       );
+    }
+    if (blockSpec.type === 'comments') {
+      const itemUid = _.castArray(blockResult?.tree?.subModels?.items || [])[0]?.uid || blockResult.itemUid;
+      if (!itemUid) {
+        throwConflict(
+          `flowSurfaces compose block '${blockSpec.key}' is missing its comment item subtree`,
+          'FLOW_SURFACE_COMPOSE_ITEM_SUBTREE_MISSING',
+        );
+      }
+      return itemUid;
     }
     if (!blockResult.itemUid) {
       throwConflict(
@@ -17790,7 +17878,7 @@ export class FlowSurfacesService {
 
     if (recordActions.length && !recordContainerUse) {
       throwBadRequest(
-        `flowSurfaces compose recordActions only support 'table', 'details', 'list' or 'gridCard' blocks`,
+        `flowSurfaces compose recordActions only support 'table', 'details', 'list', 'gridCard' or 'comments' blocks`,
       );
     }
 

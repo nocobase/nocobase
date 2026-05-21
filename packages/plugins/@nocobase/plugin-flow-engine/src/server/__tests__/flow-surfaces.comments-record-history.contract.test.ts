@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { uid } from '@nocobase/utils';
 import {
   addBlockData,
   createFlowSurfacesContractContext,
@@ -31,6 +32,41 @@ import {
 const RECORD_HISTORY_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'record-history'] as const;
 const COMMENT_COLLECTION = 'fs_flow_comments';
 const RECORD_HISTORY_COLLECTION = 'fs_flow_history_posts';
+const DEFAULT_COMMENT_ACTION_USES = [
+  'EditCommentActionModel',
+  'DeleteCommentActionModel',
+  'QuoteReplyActionModel',
+] as const;
+const DEFAULT_RECORD_HISTORY_ACTION_USES = [
+  'FilterActionModel',
+  'RefreshActionModel',
+  'RecordHistoryExpandActionModel',
+  'RecordHistoryCollapseActionModel',
+] as const;
+
+function expectCommentActionDefaults(commentsBlock: any) {
+  const actions = _.castArray(commentsBlock?.subModels?.items?.[0]?.subModels?.actions || []);
+  expect(actions.map((item: any) => item.use)).toEqual(DEFAULT_COMMENT_ACTION_USES);
+  const deleteAction = actions.find((item: any) => item.use === 'DeleteCommentActionModel');
+  expect(deleteAction?.stepParams?.deleteSettings).toMatchObject({
+    confirm: {
+      enable: true,
+    },
+  });
+}
+
+function expectRecordHistoryActionDefaults(recordHistoryBlock: any) {
+  const actions = _.castArray(recordHistoryBlock?.subModels?.actions || []);
+  expect(actions.map((item: any) => item.use)).toEqual(DEFAULT_RECORD_HISTORY_ACTION_USES);
+  expect(actions.find((item: any) => item.use === 'RecordHistoryExpandActionModel')?.props).toMatchObject({
+    title: '{{t("Expand all")}}',
+    icon: 'NodeExpandOutlined',
+  });
+  expect(actions.find((item: any) => item.use === 'RecordHistoryCollapseActionModel')?.props).toMatchObject({
+    title: '{{t("Collapse all")}}',
+    icon: 'NodeCollapseOutlined',
+  });
+}
 
 describe('flowSurfaces comments and recordHistory blocks', () => {
   let context: FlowSurfacesContractContext;
@@ -97,8 +133,12 @@ describe('flowSurfaces comments and recordHistory blocks', () => {
     });
     expect(blueprintRes.status, readErrorMessage(blueprintRes)).toBe(200);
     const blueprintTree = getData(blueprintRes).surface.tree;
-    expect(findNodeByUse(blueprintTree, 'CommentsBlockModel')?.subModels?.items?.[0]?.use).toBe('CommentItemModel');
-    expect(findNodeByUse(blueprintTree, 'RecordHistoryBlockModel')?.stepParams?.recordHistorySettings).toMatchObject({
+    const blueprintCommentsBlock = findNodeByUse(blueprintTree, 'CommentsBlockModel');
+    expect(blueprintCommentsBlock?.subModels?.items?.[0]?.use).toBe('CommentItemModel');
+    expectCommentActionDefaults(blueprintCommentsBlock);
+    const blueprintRecordHistoryBlock = findNodeByUse(blueprintTree, 'RecordHistoryBlockModel');
+    expectRecordHistoryActionDefaults(blueprintRecordHistoryBlock);
+    expect(blueprintRecordHistoryBlock?.stepParams?.recordHistorySettings).toMatchObject({
       sortOrder: { order: 'asc' },
       expand: { expand: true },
       template: { apply: 'current' },
@@ -143,7 +183,24 @@ describe('flowSurfaces comments and recordHistory blocks', () => {
       }),
     );
     expect(getComposeBlock(composeRes, 'commentsFromCompose').uid).toBeTruthy();
+    expect(getComposeBlock(composeRes, 'commentsFromCompose').recordActions.map((item: any) => item.type)).toEqual([
+      'edit',
+      'delete',
+      'quoteReply',
+    ]);
     expect(getComposeBlock(composeRes, 'historyFromCompose').uid).toBeTruthy();
+    expect(getComposeBlock(composeRes, 'historyFromCompose').actions.map((item: any) => item.type)).toEqual([
+      'filter',
+      'refresh',
+      'expandAll',
+      'collapseAll',
+    ]);
+    expectCommentActionDefaults(
+      (await getSurface(rootAgent, { uid: getComposeBlock(composeRes, 'commentsFromCompose').uid })).tree,
+    );
+    expectRecordHistoryActionDefaults(
+      (await getSurface(rootAgent, { uid: getComposeBlock(composeRes, 'historyFromCompose').uid })).tree,
+    );
 
     const comments = await addBlockData(rootAgent, {
       target: { uid: page.tabSchemaUid },
@@ -160,6 +217,7 @@ describe('flowSurfaces comments and recordHistory blocks', () => {
     const commentsReadback = await getSurface(rootAgent, { uid: comments.uid });
     expect(commentsReadback.tree.use).toBe('CommentsBlockModel');
     expect(commentsReadback.tree.subModels?.items?.[0]?.use).toBe('CommentItemModel');
+    expectCommentActionDefaults(commentsReadback.tree);
     expect(commentsReadback.tree.stepParams).toMatchObject({
       resourceSettings: {
         init: {
@@ -173,6 +231,80 @@ describe('flowSurfaces comments and recordHistory blocks', () => {
         },
       },
     });
+
+    const commentsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: { uid: comments.uid },
+          sections: ['recordActions'],
+        },
+      }),
+    );
+    expect(commentsCatalog.recordActions.map((item: any) => ({ key: item.key, use: item.use }))).toEqual([
+      { key: 'edit', use: 'EditCommentActionModel' },
+      { key: 'delete', use: 'DeleteCommentActionModel' },
+      { key: 'quoteReply', use: 'QuoteReplyActionModel' },
+    ]);
+    const existingQuoteReplyAction = commentsReadback.tree.subModels.items[0].subModels.actions.find(
+      (item: any) => item.use === 'QuoteReplyActionModel',
+    );
+    const reusedQuoteReplyAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: comments.uid },
+          type: 'quoteReply',
+        },
+      }),
+    );
+    expect(reusedQuoteReplyAction.uid).toBe(existingQuoteReplyAction.uid);
+    const commentsAfterReadd = await getSurface(rootAgent, { uid: comments.uid });
+    expect(
+      commentsAfterReadd.tree.subModels.items[0].subModels.actions.filter(
+        (item: any) => item.use === 'QuoteReplyActionModel',
+      ),
+    ).toHaveLength(1);
+
+    const legacyCommentsUid = uid();
+    const legacyCommentItemUid = uid();
+    await context.flowRepo.upsertModel({
+      uid: legacyCommentsUid,
+      parentId: page.gridUid,
+      subKey: 'items',
+      subType: 'array',
+      use: 'CommentsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: COMMENT_COLLECTION,
+          },
+        },
+      },
+      subModels: {
+        items: [
+          {
+            uid: legacyCommentItemUid,
+            use: 'CommentItemModel',
+          },
+        ],
+      },
+    });
+
+    for (const type of ['edit', 'delete', 'quoteReply']) {
+      const createdAction = getData(
+        await rootAgent.resource('flowSurfaces').addRecordAction({
+          values: {
+            target: { uid: legacyCommentsUid },
+            type,
+          },
+        }),
+      );
+      expect(createdAction.parentUid).toBe(legacyCommentItemUid);
+    }
+    const legacyCommentsReadback = await getSurface(rootAgent, { uid: legacyCommentsUid });
+    expect(legacyCommentsReadback.tree.subModels.items[0].subModels.actions.map((item: any) => item.use)).toEqual(
+      DEFAULT_COMMENT_ACTION_USES,
+    );
 
     const recordHistory = await addBlockData(rootAgent, {
       target: { uid: page.tabSchemaUid },
@@ -191,6 +323,7 @@ describe('flowSurfaces comments and recordHistory blocks', () => {
     });
     const recordHistoryReadback = await getSurface(rootAgent, { uid: recordHistory.uid });
     expect(recordHistoryReadback.tree.use).toBe('RecordHistoryBlockModel');
+    expectRecordHistoryActionDefaults(recordHistoryReadback.tree);
     expect(recordHistoryReadback.tree.stepParams).toMatchObject({
       resourceSettings: {
         init: {
@@ -205,6 +338,70 @@ describe('flowSurfaces comments and recordHistory blocks', () => {
         template: { apply: 'current' },
       },
     });
+
+    const recordHistoryCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: { uid: recordHistory.uid },
+          sections: ['actions'],
+        },
+      }),
+    );
+    expect(recordHistoryCatalog.actions.map((item: any) => ({ key: item.key, use: item.use }))).toEqual([
+      { key: 'filter', use: 'FilterActionModel' },
+      { key: 'refresh', use: 'RefreshActionModel' },
+      { key: 'expandAll', use: 'RecordHistoryExpandActionModel' },
+      { key: 'collapseAll', use: 'RecordHistoryCollapseActionModel' },
+    ]);
+    const existingExpandAllAction = recordHistoryReadback.tree.subModels.actions.find(
+      (item: any) => item.use === 'RecordHistoryExpandActionModel',
+    );
+    const reusedExpandAllAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: recordHistory.uid },
+          type: 'expandAll',
+        },
+      }),
+    );
+    expect(reusedExpandAllAction.uid).toBe(existingExpandAllAction.uid);
+    const recordHistoryAfterReadd = await getSurface(rootAgent, { uid: recordHistory.uid });
+    expect(
+      recordHistoryAfterReadd.tree.subModels.actions.filter(
+        (item: any) => item.use === 'RecordHistoryExpandActionModel',
+      ),
+    ).toHaveLength(1);
+
+    const legacyRecordHistoryUid = uid();
+    await context.flowRepo.upsertModel({
+      uid: legacyRecordHistoryUid,
+      parentId: page.gridUid,
+      subKey: 'items',
+      subType: 'array',
+      use: 'RecordHistoryBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: RECORD_HISTORY_COLLECTION,
+          },
+        },
+      },
+    });
+
+    for (const type of ['filter', 'refresh', 'expandAll', 'collapseAll']) {
+      const createdAction = getData(
+        await rootAgent.resource('flowSurfaces').addAction({
+          values: {
+            target: { uid: legacyRecordHistoryUid },
+            type,
+          },
+        }),
+      );
+      expect(createdAction.parentUid).toBe(legacyRecordHistoryUid);
+    }
+    const legacyRecordHistoryReadback = await getSurface(rootAgent, { uid: legacyRecordHistoryUid });
+    expectRecordHistoryActionDefaults(legacyRecordHistoryReadback.tree);
 
     const configureCommentsRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -289,6 +486,9 @@ describe('flowSurfaces comments and recordHistory blocks', () => {
     );
     expect(addBlocksRes.successCount).toBe(2);
     expect(addBlocksRes.blocks.map((item: any) => item.ok)).toEqual([true, true]);
+    const batchRecordHistory = addBlocksRes.blocks.find((item: any) => item.key === 'historyFromBatch');
+    expect(batchRecordHistory?.result?.uid).toBeTruthy();
+    expectRecordHistoryActionDefaults((await getSurface(rootAgent, { uid: batchRecordHistory.result.uid })).tree);
   });
 
   it('should expose and create comments only for comment-template associations in record popups', async () => {
