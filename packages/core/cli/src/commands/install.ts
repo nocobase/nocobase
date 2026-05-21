@@ -1107,12 +1107,13 @@ export default class Install extends Command {
   }
 
   private buildEnvAddPromptsForInstall(parsed: InstallParsedFlags): PromptsCatalog {
+    const apiBaseUrlPrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.apiBaseUrl as TextPromptBlock),
+      validate: undefined,
+    };
     const prompts: PromptsCatalog = {
       ...EnvAdd.prompts,
-      apiBaseUrl: {
-        ...EnvAdd.prompts.apiBaseUrl,
-        validate: undefined,
-      },
+      apiBaseUrl: apiBaseUrlPrompt,
     };
 
     if (!parsed['skip-auth']) {
