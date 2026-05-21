@@ -1050,4 +1050,6 @@ SubTableColumnModel.registerFlow({
 SubTableColumnModel.define({
   hide: true,
   label: tExpr('Table column'),
+  searchable: true,
+  searchPlaceholder: tExpr('Search fields'),
 });
