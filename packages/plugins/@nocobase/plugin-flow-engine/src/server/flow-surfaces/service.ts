@@ -13724,6 +13724,7 @@ export class FlowSurfacesService {
         popupTemplateTreeCache: options.popupTemplateTreeCache,
       },
     );
+    this.validateBuilderChartFieldsForUpdateSettings(current, nextPayload);
     this.syncChartConfigureForUpdateSettings(current, nextPayload);
     await this.validateChartConfigureForUpdateSettings(current, nextPayload, options.transaction);
     this.syncCanonicalBlockHeaderForUpdateSettings(current, nextPayload);
@@ -14783,6 +14784,19 @@ export class FlowSurfacesService {
     _.set(nextPayload, ['stepParams', 'chartSettings', 'configure'], canonicalizeChartConfigure(nextConfigure));
   }
 
+  private validateBuilderChartFieldsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    if (current?.use !== 'ChartBlockModel') {
+      return;
+    }
+
+    const configure = _.get(nextPayload, ['stepParams', 'chartSettings', 'configure']);
+    if (!_.isPlainObject(configure)) {
+      return;
+    }
+
+    this.validateBuilderChartFieldsForRuntime('updateSettings', configure);
+  }
+
   private async validateChartConfigureForUpdateSettings(
     current: any,
     nextPayload: Record<string, any>,
@@ -14796,8 +14810,6 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(configure)) {
       return;
     }
-
-    this.validateBuilderChartFieldsForRuntime('updateSettings', configure);
 
     const state = deriveChartSemanticState(configure);
     if (state.query?.mode !== 'sql') {
@@ -14874,6 +14886,9 @@ export class FlowSurfacesService {
       const parsed = this.parseFieldPath(collection, fieldPath, undefined, dataSourceKey, collectionName);
       const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
       if (!field) {
+        if (this.collectionHasConcreteField(parsed.leafCollection, parsed.leafFieldPath)) {
+          continue;
+        }
         throwBadRequest(
           `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
         );

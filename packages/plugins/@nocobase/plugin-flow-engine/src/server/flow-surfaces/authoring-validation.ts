@@ -757,6 +757,9 @@ function collectBuilderChartAssetFieldErrors(
     }
     const field = resolveFieldFromCollection(collection, fieldPath);
     if (!field) {
+      if (collectionHasConcreteField(collection, fieldPath)) {
+        continue;
+      }
       pushAuthoringError(errors, {
         path: item.fieldPath,
         ruleId: 'chart-builder-query-field-unknown',
