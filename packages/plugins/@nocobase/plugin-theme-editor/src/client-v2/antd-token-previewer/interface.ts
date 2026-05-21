@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ThemeConfig } from '@nocobase/client';
+import type { ThemeConfig } from '../types';
 import type { ReactElement } from 'react';
+
+export type { ThemeConfig } from '../types';
 
 export type Theme = {
   name: string;

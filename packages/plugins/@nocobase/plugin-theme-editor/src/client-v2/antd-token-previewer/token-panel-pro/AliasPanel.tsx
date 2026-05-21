@@ -13,7 +13,7 @@ import classNames from 'classnames';
 import useMergedState from 'rc-util/es/hooks/useMergedState';
 import type { FC } from 'react';
 import React, { useMemo } from 'react';
-import { MutableTheme } from '../../../types';
+import { MutableTheme } from '../interface';
 import { Pick } from '../icons';
 import type { AliasToken, SelectedToken } from '../interface';
 import { mapRelatedAlias, seedRelatedAlias } from '../meta/TokenRelation';

@@ -11,7 +11,7 @@ import { Tabs } from 'antd';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Theme } from '../../../types';
+import { Theme } from '../interface';
 import type { SelectedToken } from '../interface';
 import { useLocale } from '../locale';
 import { tokenCategory } from '../meta';
@@ -36,6 +36,13 @@ const useStyle = makeStyle('TokenPanelPro', (token) => ({
       },
     },
   },
+  '.token-panel-pro-embedded': {
+    position: 'relative',
+
+    '.token-panel-pro-color-alias-expand': {
+      transform: 'none',
+    },
+  },
 }));
 
 export type TokenPanelProProps = {
@@ -49,6 +56,7 @@ export type TokenPanelProProps = {
   aliasOpen?: boolean;
   onAliasOpenChange?: (value: boolean) => void;
   activeTheme?: string;
+  embedded?: boolean;
 };
 
 const TokenPanelPro: FC<TokenPanelProProps> = ({
@@ -61,6 +69,7 @@ const TokenPanelPro: FC<TokenPanelProProps> = ({
   onInfoFollowPrimaryChange,
   aliasOpen,
   onAliasOpenChange,
+  embedded,
 }) => {
   const [wrapSSR, hashId] = useStyle();
   const [activeGroup, setActiveGroup] = useState<string>('brandColor');
@@ -77,12 +86,15 @@ const TokenPanelPro: FC<TokenPanelProProps> = ({
   }, [activeCategory]);
 
   return wrapSSR(
-    <div className={classNames(hashId, className, 'token-panel-pro')} style={style}>
+    <div
+      className={classNames(hashId, className, 'token-panel-pro', { 'token-panel-pro-embedded': embedded })}
+      style={style}
+    >
       <Tabs
         defaultActiveKey="color"
         tabBarGutter={32}
         tabBarStyle={{ padding: '0 16px', margin: 0 }}
-        style={{ height: '100%', flex: '0 0 540px' }}
+        style={{ height: '100%', flex: embedded ? '1 1 0' : '0 0 540px', minWidth: embedded ? 0 : undefined }}
         className="token-panel-pro-tabs"
         onChange={(key) => {
           setActiveGroup(tokenCategory.find((category) => category.nameEn === key)?.groups[0].key ?? '');
@@ -110,7 +122,22 @@ const TokenPanelPro: FC<TokenPanelProProps> = ({
         onOpenChange={(value) => onAliasOpenChange?.(value)}
         activeSeeds={activeCategory?.seedToken}
         theme={theme}
-        style={{ flex: aliasOpen ? '0 0 320px' : 'none', width: 0 }}
+        style={
+          embedded
+            ? {
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 1,
+                flex: 'none',
+                width: aliasOpen ? 'min(320px, 42%)' : 20,
+                minWidth: aliasOpen ? 220 : 20,
+                maxWidth: aliasOpen ? '42%' : undefined,
+                backgroundColor: aliasOpen ? '#F7F8FA' : 'transparent',
+              }
+            : { flex: aliasOpen ? '0 0 320px' : 'none', width: 0 }
+        }
         selectedTokens={selectedTokens}
         onTokenSelect={onTokenSelect}
       />
