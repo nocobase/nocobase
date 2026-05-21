@@ -3546,6 +3546,91 @@ test('upgrade uses --version for local npm envs and saves it on success', async 
   );
 });
 
+test('upgrade forwards --verbose to local source refresh and local runtime commands', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+      config: {
+        downloadVersion: 'fix-storage-plugin-dev',
+        appRootPath: '/tmp/nocobase',
+        gitUrl: 'git@github.com:nocobase/nocobase.git',
+      },
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => 'ok',
+    })),
+  );
+  const runCommand = vi.fn(async () => ({ projectRoot: '/tmp/nocobase' }));
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+      verbose: true,
+    },
+  }, runCommand);
+
+  await Upgrade.prototype.run.call(command);
+
+  expect(runCommand.mock.calls).toEqual([[
+    'source:download',
+    [
+      '-y',
+      '--no-intro',
+      '--source',
+      'git',
+      '--replace',
+      '--verbose',
+      '--version',
+      'fix-storage-plugin-dev',
+      '--output-dir',
+      '/tmp/nocobase',
+      '--git-url',
+      'git@github.com:nocobase/nocobase.git',
+    ],
+  ]]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
+    [
+      expect.objectContaining({
+        kind: 'local',
+        envName: 'local',
+        source: 'git',
+      }),
+      ['pm2', 'kill'],
+      { stdio: 'inherit' },
+    ],
+    [
+      expect.objectContaining({
+        kind: 'local',
+        envName: 'local',
+        source: 'git',
+      }),
+      ['postinstall'],
+      { stdio: 'inherit' },
+    ],
+    [
+      expect.objectContaining({
+        kind: 'local',
+        envName: 'local',
+        source: 'git',
+      }),
+      ['start', '--quickstart', '--port', '13000', '--daemon'],
+      { stdio: 'inherit' },
+    ],
+  ]);
+});
+
 test('upgrade skips download for local app-path envs and still restarts with quickstart', async () => {
   const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -3860,6 +3945,119 @@ test('upgrade uses --version for docker envs and saves it on success', async () 
       dbPassword: 'nocobase',
     },
   );
+});
+
+test('upgrade forwards --verbose to docker source refresh and docker runtime commands', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        dockerPlatform: 'linux/arm64',
+        downloadVersion: 'fix-storage-plugin-dev',
+        storagePath: '/tmp/storage/local',
+        appKey: 'app-key',
+        timezone: 'Asia/Shanghai',
+        dbDialect: 'postgres',
+        dbHost: 'nb-demo-postgres',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+      },
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => 'ok',
+    })),
+  );
+  const runCommand = vi.fn(async () => undefined);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      verbose: true,
+    },
+  }, runCommand);
+
+  await Upgrade.prototype.run.call(command);
+
+  expect(runCommand.mock.calls).toEqual([[
+    'source:download',
+    [
+      '-y',
+      '--no-intro',
+      '--verbose',
+      '--source',
+      'docker',
+      '--replace',
+      '--docker-registry',
+      'nocobase/nocobase',
+      '--version',
+      'fix-storage-plugin-dev',
+      '--docker-platform',
+      'linux/arm64',
+    ],
+  ]]);
+  expect(mocks.stopDockerContainer.mock.calls).toEqual([[
+    'nb-demo-docker-local-app',
+    { stdio: 'inherit' },
+  ]]);
+  expect(mocks.run.mock.calls).toEqual([
+    [
+      'docker',
+      ['rm', '-f', 'nb-demo-docker-local-app'],
+      { errorName: 'docker rm', stdio: 'inherit' },
+    ],
+    [
+      'docker',
+      [
+        'run',
+        '-d',
+        '--name',
+        'nb-demo-docker-local-app',
+        '--restart',
+        'always',
+        '--network',
+        'nb-demo',
+        '-p',
+        '13000:80',
+        '-e',
+        'APP_KEY=app-key',
+        '-e',
+        'DB_DIALECT=postgres',
+        '-e',
+        'DB_HOST=nb-demo-postgres',
+        '-e',
+        'DB_PORT=5432',
+        '-e',
+        'DB_DATABASE=nocobase',
+        '-e',
+        'DB_USER=nocobase',
+        '-e',
+        'DB_PASSWORD=nocobase',
+        '-e',
+        'TZ=Asia/Shanghai',
+        '-v',
+        '/tmp/storage/local:/app/nocobase/storage',
+        'nocobase/nocobase:fix-storage-plugin-dev-full',
+      ],
+      { errorName: 'docker run', stdio: 'inherit' },
+    ],
+  ]);
 });
 
 test('upgrade can restart docker envs without pulling a new image', async () => {

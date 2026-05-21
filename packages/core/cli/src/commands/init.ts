@@ -51,6 +51,7 @@ const INIT_ENV_ADD_FLAG_NAMES = [
   'auth-type',
   'access-token',
   'token',
+  'skip-auth',
 ] as const;
 
 const initText = (key: string, values?: Record<string, unknown>) =>
@@ -350,6 +351,24 @@ Prompt modes:
     rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
   };
 
+  private buildPromptCatalog(flags: {
+    'skip-auth'?: boolean;
+  }): PromptsCatalog {
+    if (!flags['skip-auth']) {
+      return Init.prompts;
+    }
+
+    const accessTokenPrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+      hidden: () => true,
+    };
+
+    return {
+      ...Init.prompts,
+      accessToken: existingAppOnly(accessTokenPrompt),
+    };
+  }
+
   private parsedFlagsForPromptSeeds?:
     | {
       resume?: boolean;
@@ -404,6 +423,13 @@ Prompt modes:
 
     if (normalizedFlags.ui && normalizedFlags.yes) {
       this.error('--ui cannot be used with --yes.');
+    }
+
+    if (
+      normalizedFlags['skip-auth']
+      && (normalizedFlags['access-token'] !== undefined || normalizedFlags.token !== undefined)
+    ) {
+      this.error('--skip-auth cannot be used with --access-token or --token.');
     }
 
     if (normalizedFlags.ui && normalizedFlags.resume) {
@@ -572,9 +598,10 @@ Prompt modes:
       },
       presetValues,
     );
+    const promptCatalog = this.buildPromptCatalog(normalizedFlags);
     if (useBrowserUi) {
       presetValues = await runPromptCatalogWebUI({
-        stages: Init.buildWebUiStages(),
+        stages: Init.buildWebUiStages(promptCatalog),
         values: {
           ...dynamicInitialValues,
           ...presetValues,
@@ -594,7 +621,7 @@ Prompt modes:
       });
     }
 
-    const results = await runPromptCatalog(Init.prompts, {
+    const results = await runPromptCatalog(promptCatalog, {
       initialValues: dynamicInitialValues,
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
@@ -612,7 +639,7 @@ Prompt modes:
     });
     const normalizedResults: Record<string, string | number | boolean> = {
       ...results,
-      ...pickKeys(presetValues, ['dbSchema', 'dbTablePrefix', 'dbUnderscored']),
+      ...pickKeys(presetValues, ['dbSchema', 'dbTablePrefix', 'dbUnderscored', 'skipAuth']),
     };
 
     const hasNocobase = normalizedResults.hasNocobase === 'yes';
@@ -708,8 +735,7 @@ Prompt modes:
     return out;
   }
 
-  private static buildWebUiStages(): RunPromptCatalogWebUIStage[] {
-    const c = Init.prompts;
+  private static buildWebUiStages(c: PromptsCatalog = Init.prompts): RunPromptCatalogWebUIStage[] {
 
     return [
       {
@@ -826,6 +852,7 @@ Prompt modes:
     'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
+    'skip-auth'?: boolean;
   }): PromptInitialValues {
     const preset: PromptInitialValues = {};
     const argv = process.argv.slice(2);
@@ -845,6 +872,9 @@ Prompt modes:
     }
     if (flags['auth-type'] !== undefined && String(flags['auth-type']).trim() !== '') {
       preset.authType = String(flags['auth-type']).trim();
+    }
+    if (flags['skip-auth']) {
+      preset.skipAuth = true;
     }
     const accessToken = String(flags['access-token'] ?? flags.token ?? '');
     if (flags['access-token'] !== undefined || flags.token !== undefined) {
@@ -1040,6 +1070,7 @@ Prompt modes:
               ? { kind: 'http' }
               : {}),
         ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(authType ? { authType } : {}),
         ...(authType === 'token' && accessToken ? { accessToken } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),
@@ -1074,9 +1105,11 @@ Prompt modes:
     argv.push('--no-intro');
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
-
-    if (results.authType === 'token') {
-      argv.push('--access-token', String(results.accessToken ?? ''));
+    const accessToken = String(results.accessToken ?? '');
+    if (results.skipAuth === true) {
+      argv.push('--skip-auth');
+    } else if (results.authType === 'token' && accessToken) {
+      argv.push('--access-token', accessToken);
     }
 
     return argv;
@@ -1089,6 +1122,7 @@ Prompt modes:
       force?: boolean;
       build?: boolean;
       verbose?: boolean;
+      'skip-auth'?: boolean;
       'db-host'?: string;
       'db-schema'?: string;
       'db-table-prefix'?: string;
@@ -1127,6 +1161,10 @@ Prompt modes:
 
     if (authType) {
       argv.push('--auth-type', authType);
+    }
+
+    if (Boolean(flags['skip-auth']) || results.skipAuth === true) {
+      argv.push('--skip-auth');
     }
 
     if (authType === 'token' && accessToken) {
@@ -1412,6 +1450,7 @@ Prompt modes:
     'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
+    'skip-auth'?: boolean;
   }): string[] {
     const preset = this.buildPresetValuesFromFlags(flags) as Record<string, string | number | boolean>;
     if (flags.yes) {
