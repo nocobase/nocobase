@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { AISelectionProvider } from './1.x/selector/AISelectorProvider';
 import { AISettingsProvider } from './AISettingsProvider';
 import { ChatBoxLayout } from './chatbox/ChatBoxLayout';
 import { AISelection } from './AISelection';
 import { AISelectionControl } from './AISelectionControl';
-import { useCurrentUserContext } from '@nocobase/client';
+import { CurrentUserContext } from '@nocobase/client';
 
 export const AIEmployeesProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
-  const currentUserCtx = useCurrentUserContext();
+  const currentUserCtx = useContext(CurrentUserContext);
   if (!currentUserCtx?.data?.data) {
     return <>{props.children}</>;
   }

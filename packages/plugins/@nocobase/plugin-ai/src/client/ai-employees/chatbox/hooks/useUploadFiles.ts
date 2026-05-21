@@ -32,9 +32,9 @@ export function useStorageUploadProps(props: any) {
   const { storage: storageName } = useAISettingsContext();
   const plugin = usePlugin(PluginFileManagerClient);
   const storage = useStorage(storageName);
-  const storageType = plugin?.getStorageType?.(storage?.type ?? storageName);
+  const storageType = plugin.getStorageType(storageName);
   const useStorageTypeUploadProps = storageType?.useUploadProps;
-  const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage?.rules, ...props }) || {};
+  const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
   return {
     rules: storage?.rules,
     ...storageTypeUploadProps,

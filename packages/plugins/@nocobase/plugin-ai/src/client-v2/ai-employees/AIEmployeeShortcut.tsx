@@ -21,8 +21,8 @@ export const AIEmployeeShortcut: React.FC<{
   size?: number;
   mask?: boolean;
   showNotice?: boolean;
-  onClick?: (aiEmployee: AIEmployee) => void;
-  onTaskClick?: (task: Task, aiEmployee: AIEmployee) => void;
+  onClick?: () => void;
+  onTaskClick?: (task: Task) => void;
   taskLoadingTitle?: string;
   loadingTaskTitle?: string;
 }> = ({ aiEmployee, tasks, size = 52, mask, showNotice, onClick, onTaskClick, taskLoadingTitle, loadingTaskTitle }) => {
@@ -63,7 +63,7 @@ export const AIEmployeeShortcut: React.FC<{
         <AIEmployeeProfileCard
           aiEmployee={resolvedAIEmployee}
           tasks={tasks}
-          onTaskClick={onTaskClick ? (task) => onTaskClick(task, resolvedAIEmployee) : undefined}
+          onTaskClick={onTaskClick}
           taskLoadingTitle={taskLoadingTitle}
           loadingTaskTitle={loadingTaskTitle}
         />
@@ -74,7 +74,7 @@ export const AIEmployeeShortcut: React.FC<{
         style={{ cursor: 'pointer', display: 'inline-block' }}
         onMouseEnter={() => setFocus(true)}
         onMouseLeave={() => setFocus(false)}
-        onClick={() => onClick?.(resolvedAIEmployee)}
+        onClick={onClick}
       >
         <Avatar src={currentAvatar} size={size} shape="circle" />
       </span>
