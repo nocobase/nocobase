@@ -6,10 +6,9 @@
   "description": "Create an iframe block on the page to embed and display external web pages or content.",
   "description.ru-RU": "Создавайте iframe-блоки и управляйте ими на странице для встраивания и отображения внешних веб-страниц или контента.",
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/block-iframe",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-iframe",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-iframe",
@@ -25,6 +24,7 @@
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/database": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"

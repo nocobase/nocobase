@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "changelog",
+    "label": "История изменений"
+  },
+  {
+    "type": "file",
     "name": "more",
     "label": "Дополнительные материалы"
   }

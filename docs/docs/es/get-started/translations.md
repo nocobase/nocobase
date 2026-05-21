@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/get-started/translations).
-:::
-
 # Contribución a la traducción
 
 El idioma por defecto de NocoBase es el inglés. Actualmente, la aplicación principal es compatible con inglés, italiano, neerlandés, chino simplificado y japonés. Le invitamos cordialmente a contribuir con traducciones para otros idiomas, permitiendo que los usuarios de todo el mundo disfruten de una experiencia de NocoBase aún más accesible.
@@ -83,7 +79,7 @@ https://github.com/nocobase/nocobase/tree/next/docs
 
 ### 2.1 Estructura de la documentación
 
-La documentación utiliza [Rspress](https://rspress.dev/) como generador de sitios estáticos y admite 22 idiomas. La estructura se organiza de la siguiente manera:
+La documentación utiliza [Rspress](https://rspress.dev/) como generador de sitios estáticos y admite 8 idiomas. La estructura se organiza de la siguiente manera:
 
 ```
 docs/
@@ -91,25 +87,11 @@ docs/
 │   ├── en/                    # Inglés (idioma de origen)
 │   ├── cn/                    # Chino simplificado
 │   ├── ja/                    # Japonés
-│   ├── ko/                    # Coreano
 │   ├── de/                    # Alemán
 │   ├── fr/                    # Francés
 │   ├── es/                    # Español
 │   ├── pt/                    # Portugués
 │   ├── ru/                    # Ruso
-│   ├── it/                    # Italiano
-│   ├── tr/                    # Turco
-│   ├── uk/                    # Ucraniano
-│   ├── vi/                    # Vietnamita
-│   ├── id/                    # Indonesio
-│   ├── th/                    # Tailandés
-│   ├── pl/                    # Polaco
-│   ├── nl/                    # Neerlandés
-│   ├── cs/                    # Checo
-│   ├── ar/                    # Árabe
-│   ├── he/                    # Hebreo
-│   ├── hi/                    # Hindi
-│   ├── sv/                    # Sueco
 │   └── public/                # Recursos compartidos (imágenes, etc.)
 ├── theme/                     # Tema personalizado
 ├── rspress.config.ts          # Configuración de Rspress

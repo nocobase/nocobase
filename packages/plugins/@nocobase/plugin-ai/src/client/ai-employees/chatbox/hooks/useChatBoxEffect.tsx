@@ -10,8 +10,8 @@
 import { useEffect } from 'react';
 import { useChatBoxStore } from '../stores/chat-box';
 import { aiEmployeeRole, defaultRoles } from '../roles';
-import { useChatConversationActions } from './useChatConversationActions';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 export const useChatBoxEffect = () => {
   const aiConfigRepository = useAIConfigRepository();
@@ -22,7 +22,7 @@ export const useChatBoxEffect = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setRoles = useChatBoxStore.use.setRoles();
 
-  const { conversationsService } = useChatConversationActions();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
 
   useEffect(() => {
     aiConfigRepository.getAIEmployees();
@@ -55,16 +55,13 @@ export const useChatBoxEffect = () => {
 
   useEffect(() => {
     if (open) {
-      conversationsService.run();
       senderRef?.current?.focus();
-      aiConfigRepository.refreshAITools();
     }
-  }, [open]);
+  }, [open, senderRef]);
 
-  // Refresh conversations when current employee changes
   useEffect(() => {
-    if (currentEmployee && open) {
-      conversationsService.run();
+    if (open) {
+      aiConfigRepository.refreshAITools(currentConversation);
     }
-  }, [currentEmployee?.username]);
+  }, [open, currentConversation]);
 };

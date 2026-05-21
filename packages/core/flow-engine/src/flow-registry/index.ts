@@ -10,3 +10,4 @@
 export * from './BaseFlowRegistry';
 export * from './InstanceFlowRegistry';
 export * from './GlobalFlowRegistry';
+export * from './DetachedFlowRegistry';

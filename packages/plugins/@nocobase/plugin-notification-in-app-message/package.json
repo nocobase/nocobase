@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-in-app-message",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "displayName": "Notification: In-app message",
   "displayName.ru-RU": "Уведомления: Всплывающие сообщения внутри приложения",
   "displayName.zh-CN": "通知：站内信",
@@ -14,7 +14,6 @@
     "Notification"
   ],
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "dependencies": {
     "immer": "^10.1.1"
   },
@@ -25,7 +24,9 @@
     "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
     "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
     "@nocobase/plugin-notification-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",
     "react-router-dom": "^6.x"

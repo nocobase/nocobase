@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
 
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/data-sources/data-source-kingbase/index).
-:::
-
 # Datenquelle - KingbaseES-Datenbank
 
 ## Einführung
@@ -121,5 +117,5 @@ Aktivieren Sie das Plugin
 
 ## Benutzerhandbuch
 
-- Primäre Datenbank: Siehe [Hauptdatenquelle](/data-sources/data-source-main/)
+- Primäre Datenbank: Siehe [Hauptdatenquelle](/data-sources/data-source-main/index.md)
 - Externe Datenbank: Siehe [Datenquelle / Externe Datenbank](/data-sources/data-source-manager/external-database)

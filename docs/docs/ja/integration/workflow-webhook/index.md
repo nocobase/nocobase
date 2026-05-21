@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # ワークフロー Webhook 連携
 
 Webhook トリガーを使うと、NocoBase はサードパーティシステムからの HTTP 呼び出しを受け取り、ワークフローを自動的にトリガーできます。これにより、外部システムとのシームレスな連携が実現します。
@@ -55,7 +51,7 @@ CRM、ERP などの外部システムでデータが変更された際、Webhook
 
 ### 1. プラグインのインストール
 
-プラグインマネージャーで **[ワークフロー：Webhook トリガー](/plugins/@nocobase/plugin-workflow-webhook/)** プラグインを見つけてインストールします。
+プラグインマネージャーで **[ワークフロー：Webhook トリガー](/plugins/@nocobase/plugin-workflow-webhook/index.md)** プラグインを見つけてインストールします。
 
 > 注意: このプラグインは商用プラグインであり、別途購入またはサブスクリプションが必要です。
 
@@ -246,7 +242,7 @@ if (branch === 'main') {
 
 ## 関連リソース
 
-- [ワークフロープラグインのドキュメント](/plugins/@nocobase/plugin-workflow/)
+- [ワークフロープラグインのドキュメント](/plugins/@nocobase/plugin-workflow/index.md)
 - [ワークフロー：Webhook トリガー](/workflow/triggers/webhook)
-- [ワークフロー：HTTP リクエストノード](/integration/workflow-http-request/)
-- [API キー認証](/integration/api-keys/)
+- [ワークフロー：HTTP リクエストノード](/integration/workflow-http-request/index.md)
+- [API キー認証](/integration/api-keys/index.md)

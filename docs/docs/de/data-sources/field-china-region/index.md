@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-china-region"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # China-Region

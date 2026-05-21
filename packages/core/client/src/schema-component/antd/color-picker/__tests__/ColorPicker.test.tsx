@@ -61,7 +61,12 @@ describe('ColorPicker', () => {
       value: 'rgb(139, 187, 17)',
     });
 
-    await userEvent.hover(screen.getByRole('button').querySelector('.ant-color-picker-trigger'));
+    const button = await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'color-picker-normal' })).toBeInTheDocument();
+      return screen.getByRole('button', { name: 'color-picker-normal' });
+    });
+
+    await userEvent.hover(button.querySelector('.ant-color-picker-trigger'));
 
     await waitFor(() => {
       expect(document.querySelector('.ant-color-picker-input')).toBeInTheDocument();

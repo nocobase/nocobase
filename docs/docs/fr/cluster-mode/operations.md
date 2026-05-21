@@ -5,10 +5,6 @@ description: "Exploitation du cluster : ordre de premier démarrage, mise à niv
 keywords: "exploitation cluster,mise à niveau,maintenance in-app,gestion des plugins,sauvegarde,mise à niveau progressive,NocoBase"
 ---
 
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Procédures de maintenance
 
 ## Premier démarrage de l'application

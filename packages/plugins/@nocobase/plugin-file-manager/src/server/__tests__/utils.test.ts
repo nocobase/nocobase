@@ -7,12 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { storagePathJoin } from '@nocobase/utils';
+import path from 'path';
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
 
 import { STORAGE_TYPE_LOCAL } from '../../constants';
 
-import { cloudFilenameGetter, getFileKey } from '../utils';
+import { cloudFilenameGetter, getFileKey, normalizeDocumentRoot } from '../utils';
 
 describe('file manager > utils', () => {
   let app;
@@ -45,6 +47,23 @@ describe('file manager > utils', () => {
   describe('getFileKey', () => {
     it('handles null path', async () => {
       expect(getFileKey({ path: null, filename: 'test.jpg' })).toBe('test.jpg');
+    });
+  });
+
+  describe('normalizeDocumentRoot', () => {
+    it('resolves storage-relative roots under the storage base path', () => {
+      expect(normalizeDocumentRoot('storage/uploads')).toBe(storagePathJoin('uploads'));
+      expect(normalizeDocumentRoot('./storage/uploads')).toBe(storagePathJoin('uploads'));
+      expect(normalizeDocumentRoot('storage\\uploads')).toBe(storagePathJoin('uploads'));
+    });
+
+    it('does not treat similar prefixes as storage-relative roots', () => {
+      expect(normalizeDocumentRoot('storage2/uploads')).toBe(path.resolve(process.cwd(), 'storage2/uploads'));
+    });
+
+    it('returns the storage root when the document root points at storage itself', () => {
+      expect(normalizeDocumentRoot('storage')).toBe(storagePathJoin());
+      expect(normalizeDocumentRoot('./storage')).toBe(storagePathJoin());
     });
   });
 

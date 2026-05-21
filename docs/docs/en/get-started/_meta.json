@@ -11,7 +11,8 @@
   },
   {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "Installation Methods and Version Comparison"
   },
   {
     "type": "custom-link",
@@ -125,7 +126,7 @@
       {
         "type": "custom-link",
         "label": "How to Deploy Faster",
-        "link": "https://www.nocobase.com/en/tutorials/how-to-deploy-nocobase-faster"
+        "link": "/get-started/deployment/how-to-deploy-nocobase-faster"
       }
     ]
   },

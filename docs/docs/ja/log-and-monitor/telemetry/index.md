@@ -2,10 +2,6 @@
 pkg: '@nocobase/plugin-telemetry'
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/log-and-monitor/telemetry/index)をご参照ください。
-:::
-
 # テレメトリ
 
 ## 概要

@@ -13,6 +13,8 @@ import { getProviderInternalPath } from './paths';
 
 type Provider = import('oidc-provider').Provider;
 
+const LOOPBACK_REDIRECT_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
 type DispatchContext = {
   method: string;
   path: string;
@@ -31,6 +33,50 @@ type DispatchContext = {
   status?: number;
   withoutDataWrapping?: boolean;
 };
+
+function getRequestBody(ctx: DispatchContext) {
+  const body = ctx.request.body;
+  if (typeof body === 'string') {
+    try {
+      return JSON.parse(body);
+    } catch (error) {
+      return undefined;
+    }
+  }
+  return body;
+}
+
+function isLoopbackRedirectUri(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' && LOOPBACK_REDIRECT_HOSTS.has(url.hostname) && !!url.port;
+  } catch (error) {
+    return false;
+  }
+}
+
+function assertRegistrationRedirectUris(ctx: DispatchContext, pathname: string) {
+  if (ctx.method !== 'POST' || pathname !== '/idpOAuth/register') {
+    return true;
+  }
+
+  const body = getRequestBody(ctx);
+  const redirectUris = body?.redirect_uris;
+  if (
+    !Array.isArray(redirectUris) ||
+    !redirectUris.length ||
+    !redirectUris.every((uri) => typeof uri === 'string' && isLoopbackRedirectUri(uri))
+  ) {
+    ctx.status = 400;
+    ctx.body = {
+      error: 'invalid_client_metadata',
+      error_description: 'redirect_uris must only contain http loopback callback URLs with an explicit port',
+    };
+    return false;
+  }
+
+  return true;
+}
 
 function buildPayload(ctx: DispatchContext) {
   const body = ctx.request.body;
@@ -116,7 +162,7 @@ export function rewriteProviderLocationHeader(ctx: DispatchContext, service: Idp
 }
 
 function getFrontendInteractionCookiePath(originalPath: string) {
-  const match = originalPath.match(/^\/idp-oauth\/interaction\/([^/]+)\/([^/]+)$/);
+  const match = originalPath.match(/^\/(?:apps\/([^/]+)\/)?idp-oauth\/interaction\/([^/]+)$/);
   if (!match) {
     return undefined;
   }
@@ -142,9 +188,11 @@ function rewriteProviderSetCookieHeader(ctx: DispatchContext, service: IdpOauthS
   const frontendInteractionPath = getFrontendInteractionCookiePath(originalPath);
   if (frontendInteractionPath) {
     // The browser renders the frontend interaction page, but the provider session must be sent to the backend API route.
-    rewrittenPath = `${service.getIssuerPath(frontendInteractionPath.appName)}/idpOAuth/interaction/${
-      frontendInteractionPath.uid
-    }`;
+    const interactionAppName = frontendInteractionPath.appName || providerContext.appName;
+    const interactionIssuerPath = frontendInteractionPath.appName
+      ? service.getIssuerPath(interactionAppName)
+      : providerContext.issuerPath;
+    rewrittenPath = `${interactionIssuerPath}/idpOAuth/interaction/${frontendInteractionPath.uid}`;
   }
 
   if (rewrittenPath === originalPath) {
@@ -235,6 +283,10 @@ export async function dispatchToProvider(
 ) {
   ctx.withoutDataWrapping = true;
   const search = ctx.querystring ? `?${ctx.querystring}` : '';
+  if (!assertRegistrationRedirectUris(ctx, pathname)) {
+    return;
+  }
+
   ctx.logger?.debug?.('idp-oauth provider request', {
     method: ctx.method,
     externalPath: ctx.path,

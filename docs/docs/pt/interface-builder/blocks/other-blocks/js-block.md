@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/blocks/other-blocks/js-block).
-:::
-
 # JS Block
 
 ## Introdução
@@ -38,7 +34,7 @@ O editor de script do JS Block suporta realce de sintaxe, dicas de erro e snippe
 
 Além disso, no canto superior direito do editor, você pode chamar diretamente o funcionário de IA "Engenheiro Frontend · Nathan", para que ele ajude você a escrever ou modificar scripts com base no contexto atual. Você pode então clicar em "Apply to editor" para aplicar ao editor e executar para ver o efeito. Para detalhes, consulte:
 
-- [Funcionário de IA · Nathan: Engenheiro Frontend](/ai-employees/features/built-in-employee)
+- [Funcionário de IA · Nathan: Engenheiro Frontend](/ai-employees/built-in/)
 
 ## Ambiente de Execução e Segurança
 

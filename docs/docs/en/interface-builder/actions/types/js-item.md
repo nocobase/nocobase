@@ -47,7 +47,7 @@ The JS Item runtime injects common capabilities that you can use directly in the
 
 ![](https://static-docs.nocobase.com/JS-Item-03-27-2026_03_35_PM.png)
 
-- You can use AI employees to generate / modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- You can use AI employees to generate / modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Common Usage (Simplified Examples)
 

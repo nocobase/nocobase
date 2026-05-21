@@ -10,10 +10,12 @@
 import { css } from '@emotion/css';
 import { observer } from '@nocobase/flow-engine';
 import React from 'react';
-import { SortableItem, useDesigner, useSchemaComponentContext } from '../..';
+import { BlockContext, useBlockContext } from '../../../block-provider/BlockProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
+import { SortableItem } from '../../common/sortable-item/SortableItem';
+import { useDesigner } from '../../hooks/useDesigner';
+import { useSchemaComponentContext } from '../../hooks/useSchemaComponentContext';
 import { useToken } from '../__builtins__';
-import { BlockContext, useBlockContext } from '../../../';
 
 export const designerCss = ({ margin = '-18px -16px', padding = '18px 16px' } = {}) => css`
   position: relative;

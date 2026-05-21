@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/ai-employees/index)をご参照ください。
-:::
-
 # 概要
 
 ![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
@@ -34,7 +30,7 @@ AI 従業員（`AI Employees`）は、NocoBase の業務システムに深く統
 - [LLM サービスの設定](/ai-employees/features/llm-service)：プロバイダー（Provider）に接続し、利用可能なモデルを設定・管理します。
 - [AI 従業員の有効化](/ai-employees/features/enable-ai-employee)：内蔵従業員の有効化/無効化、および利用範囲を制御します。
 - [AI 従業員の新規作成](/ai-employees/features/new-ai-employees)：ロール、キャラクター設定、ウェルカムメッセージ、能力の境界を定義します。
-- [スキルの使用](/ai-employees/features/tool)：スキルの権限（`Ask` / `Allow`）を設定し、実行リスクを制御します。
+- [スキルの使用](/ai-employees/features/tools)：スキルの権限（`Ask` / `Allow`）を設定し、実行リスクを制御します。
 
 ### B. 日常のコラボレーション（業務ユーザー）
 
@@ -45,7 +41,7 @@ AI 従業員（`AI Employees`）は、NocoBase の業務システムに深く統
 
 ### C. 高度な機能（拡張）
 
-- [内蔵 AI 従業員](/ai-employees/features/built-in-employee)：プリセットされた従業員の役割と適用シーンを理解します。
+- [内蔵 AI 従業員](/ai-employees/built-in/)：プリセットされた従業員の役割と適用シーンを理解します。
 - [権限管理](/ai-employees/permission)：組織の権限モデルに従って、従業員、スキル、データへのアクセスを制御します。
 - [AI ナレッジベース](/ai-employees/knowledge-base/index)：企業知識を導入し、回答の安定性と追跡可能性を向上させます。
 - [ワークフロー LLM ノード](/ai-employees/workflow/nodes/llm/chat)：AI 機能を自動化プロセス（ワークフロー）に組み込みます。

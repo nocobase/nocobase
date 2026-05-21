@@ -1,0 +1,82 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Args, Command, Flags } from '@oclif/core';
+import { getCurrentEnvName } from '../../lib/auth-store.js';
+import { updateEnvRuntime } from '../../lib/bootstrap.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { failTask, printVerbose, setVerboseMode, startTask, stopTask, succeedTask } from '../../lib/ui.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default class EnvUpdate extends Command {
+  static override summary = 'Refresh an environment runtime from swagger:get and persist connection overrides';
+
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> prod',
+  ];
+
+  static override args = {
+    name: Args.string({
+      description: 'Configured environment name to refresh. Defaults to the current env when omitted',
+      required: false,
+    }),
+  };
+
+  static override flags = {
+    verbose: Flags.boolean({
+      description: 'Show detailed progress output',
+      default: false,
+    }),
+    'api-base-url': Flags.string({
+      description: 'NocoBase API base URL override. When provided, persist it to the target env before saving the refreshed runtime.',
+    }),
+    role: Flags.string({
+      description: 'Role override, sent as X-Role',
+    }),
+    token: Flags.string({
+      char: 't',
+      description: 'API key override. When provided, persist it to the target env before saving the refreshed runtime.',
+    }),
+  };
+
+  async run(): Promise<void> {
+    const { args, flags } = await this.parse(EnvUpdate);
+    setVerboseMode(Boolean(flags.verbose));
+    const envName = args.name;
+    const envLabel = envName ?? (await getCurrentEnvName({ scope: resolveDefaultConfigScope() }));
+
+    startTask(`Updating env runtime: ${envLabel}`);
+
+    try {
+      const runtime = await updateEnvRuntime({
+        envName,
+        scope: resolveDefaultConfigScope(),
+        baseUrl: flags['api-base-url'],
+        role: flags.role,
+        token: flags.token,
+        configFile: path.join(path.dirname(path.dirname(path.dirname(__dirname))), 'nocobase-ctl.config.json'),
+        verbose: flags.verbose,
+      });
+
+      if (flags.verbose) {
+        succeedTask(`Updated env "${envLabel}" to runtime "${runtime.version}".`);
+      } else {
+        stopTask();
+        printVerbose(`Updated env "${envLabel}" to runtime "${runtime.version}".`);
+      }
+    } catch (error) {
+      failTask(`Failed to update env "${envLabel}".`);
+      throw error;
+    }
+  }
+}

@@ -12,7 +12,6 @@ export function getSystemPrompt({
   personal,
   task,
   environment,
-  dataSources,
   knowledgeBase,
   availableSkills,
   availableAIEmployees,
@@ -20,8 +19,7 @@ export function getSystemPrompt({
   aiEmployee: { nickname: string; about: string };
   personal?: string;
   task: { background: string; context?: string };
-  environment: { database: string; locale: string };
-  dataSources?: string;
+  environment: { database: string; locale: string; currentDateTime?: string; timezone?: string };
   knowledgeBase?: string;
   availableSkills?: { name: string; description: string; content?: string }[];
   availableAIEmployees?: {
@@ -77,6 +75,8 @@ This prompt uses a structured tag system to organize your operational framework:
 - **\`<environment>\`** - System configuration parameters
   - \`<main_database>\` - Main database engine type (affects SQL syntax and identifier quoting)
   - \`<locale>\` - Communication language and regional formatting
+  - \`<current_datetime>\` - Current system date and time for this conversation
+  - \`<timezone>\` - User or request timezone when available
 
 
 ### Resources
@@ -109,6 +109,8 @@ This prompt uses a structured tag system to organize your operational framework:
 
 4. **Communication Standards**
    - Use language specified in \`<locale>\`: ${environment.locale}, unless the user requests otherwise
+   - When the task depends on "now", "today", reporting timestamps, or time ranges, use \`<current_datetime>\` and \`<timezone>\` as the authoritative time context instead of guessing
+   - Always follow the frontend date filter contract: valid date operators are only \`$dateOn\`, \`$dateNotOn\`, \`$dateBefore\`, \`$dateAfter\`, \`$dateNotBefore\`, \`$dateNotAfter\`, \`$dateBetween\`, \`$empty\`, and \`$notEmpty\`; valid relative \`type\` values are only \`today\`, \`yesterday\`, \`tomorrow\`, \`thisWeek\`, \`lastWeek\`, \`nextWeek\`, \`thisMonth\`, \`lastMonth\`, \`nextMonth\`, \`thisQuarter\`, \`lastQuarter\`, \`nextQuarter\`, \`thisYear\`, \`lastYear\`, \`nextYear\`, \`past\`, and \`next\`; do not default to UTC timestamp boundaries for calendar queries
    - Be professional, concise, and helpful
 
 5. **Tool Integration**
@@ -133,14 +135,14 @@ ${task.context ? `<context>\n${task.context}\n</context>` : ''}
 <environment>
 <main_database>${environment.database}</main_database>
 <locale>${environment.locale}</locale>
+${environment.currentDateTime ? `<current_datetime>${environment.currentDateTime}</current_datetime>` : ''}
+${environment.timezone ? `<timezone>${environment.timezone}</timezone>` : ''}
 </environment>
 
 ${
   availableSkills?.length
     ? `<skills>
 You have access to the following skills (tools groups). When a user's request matches a skill's description, use the **getSkill** tool to load that skill's detailed content and available tools
-
-But if there is no tool named **getSkill** don't try to use **getSkill** tool to load skills
 
 ${availableSkills.map((skill) => `- **${skill.name}**: ${skill.description || 'No description'}`).join('\n')}
 </skills>

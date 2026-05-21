@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/blocks/other-blocks/js-block).
-:::
-
 # Bloque JS
 
 ## Introducción
@@ -38,7 +34,7 @@ El editor de scripts del Bloque JS es compatible con el resaltado de sintaxis, l
 
 Además, desde la esquina superior derecha del editor, puede invocar directamente al empleado de IA "Ingeniero Frontend · Nathan". Él le ayudará a escribir o modificar scripts basándose en el contexto actual. Luego, puede hacer clic en "Apply to editor" para aplicar los cambios al editor y ejecutar el código para ver el resultado. Para más detalles, consulte:
 
-- [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/features/built-in-employee)
+- [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/built-in/)
 
 ## Entorno de Ejecución y Seguridad
 

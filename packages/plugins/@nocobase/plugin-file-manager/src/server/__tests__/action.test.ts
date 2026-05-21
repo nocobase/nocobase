@@ -13,10 +13,15 @@ import querystring from 'querystring';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import PluginFileManagerServer from '../server';
+import { getDocumentRoot } from '../storages/local';
 
-const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
+const { LOCAL_STORAGE_BASE_URL } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
+
+function getStorageDestPath(storage) {
+  return path.join(getDocumentRoot(storage), storage.path || '');
+}
 
 describe('action', () => {
   let app;
@@ -169,26 +174,20 @@ describe('action', () => {
         const storage = await attachment.getStorage();
         expect(storage.get()).toMatchObject({
           type: STORAGE_TYPE_LOCAL,
-          options: { documentRoot: LOCAL_STORAGE_DEST },
           rules: { size: FILE_SIZE_LIMIT_DEFAULT },
           path: '',
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
         });
 
-        const { documentRoot = 'storage/uploads' } = storage.options || {};
-        const destPath = path.resolve(
-          path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          storage.path || '',
-        );
+        const destPath = getStorageDestPath(storage);
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
         expect(file.toString().includes('Hello world!')).toBeTruthy();
 
-        // 通过 url 是否能正确访问
-        const url = attachment.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBeTruthy();
+        // 默认 local storage 的静态访问需要至少一个端到端校验，确保静态文件中间件仍可通过生成的 URL 访问
+        const res = await agent.get(body.data.url);
+        expect(res.text).toContain('Hello world!');
       });
 
       it('filename with special character (URL)', async () => {
@@ -336,11 +335,7 @@ describe('action', () => {
         expect(body.data.size).toBe(255);
 
         const attachment = await AttachmentRepo.findById(body.data.id);
-        const { documentRoot = 'storage/uploads' } = imageStorage.options || {};
-        const destPath = path.resolve(
-          path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          imageStorage.path || '',
-        );
+        const destPath = getStorageDestPath(imageStorage);
         const stats = await fs.stat(path.join(destPath, attachment.filename));
         expect(stats.size).toBe(255);
       });
@@ -384,9 +379,9 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
 
       it('path with heading or tailing slash', async () => {
@@ -428,9 +423,9 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
 
       it('path longer than 255', async () => {
@@ -473,9 +468,9 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
     });
   });
@@ -543,11 +538,7 @@ describe('action', () => {
       // 关联的存储引擎是否正确
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = 'storage/uploads' } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
 
@@ -569,11 +560,7 @@ describe('action', () => {
 
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
 
@@ -601,11 +588,7 @@ describe('action', () => {
         },
       });
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file1 = await fs.stat(path.join(destPath, f1.data.filename));
       expect(file1).toBeTruthy();
 
@@ -630,11 +613,7 @@ describe('action', () => {
 
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const filePath = path.join(destPath, attachment.filename);
       const file = await fs.stat(filePath);
       expect(file).toBeTruthy();
@@ -655,11 +634,7 @@ describe('action', () => {
       const { data: attachment } = body;
 
       const storage = await StorageRepo.findById(attachment.storageId);
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
 
       const outsideDir = path.resolve(destPath, '..');
       await fs.mkdir(outsideDir, { recursive: true });

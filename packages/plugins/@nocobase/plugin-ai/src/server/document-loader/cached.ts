@@ -13,6 +13,7 @@ import path from 'node:path';
 import { Document } from '@langchain/core/documents';
 import { Model } from '@nocobase/database';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
+import { Cache } from '@nocobase/cache';
 import PluginAIServer from '../plugin';
 import { DOCUMENT_PARSE_META_KEY } from './constants';
 import { DocumentLoaderLike, DocumentParseMeta, ParseableFile, ParsedDocumentResult } from './types';
@@ -27,12 +28,13 @@ export type CachedDocumentLoaderOptions = {
 };
 
 export class CachedDocumentLoader {
+  protected _cache: Cache | null = null;
   constructor(
     private readonly plugin: PluginAIServer,
     private readonly options: CachedDocumentLoaderOptions,
   ) {}
 
-  async load(file: ParseableFile): Promise<ParsedDocumentResult> {
+  async load(file: ParseableFile, options?: any): Promise<ParsedDocumentResult> {
     const sourceFile = this.toPlainObject(file);
 
     if (!this.options.supports(sourceFile)) {
@@ -41,9 +43,6 @@ export class CachedDocumentLoader {
         fromCache: false,
         text: '',
         documents: [],
-        meta: {
-          sourceFileId: sourceFile.id,
-        },
       };
     }
 
@@ -53,9 +52,6 @@ export class CachedDocumentLoader {
         fromCache: false,
         text: '',
         documents: [],
-        meta: {
-          sourceFileId: sourceFile.id,
-        },
       };
     }
 
@@ -64,53 +60,40 @@ export class CachedDocumentLoader {
       return cached;
     }
 
-    try {
-      const documents = await this.options.loader.load(sourceFile);
-      const text = this.documentsToText(documents);
-      const parsedFile = await this.persistParsedText(sourceFile, text);
-      await this.updateSourceMeta(sourceFile, {
-        status: 'ready',
-        parserVersion: this.options.parserVersion,
-        parsedFileId: parsedFile.id,
-        parsedFilename: parsedFile.filename,
-        parsedMimetype: this.options.parsedMimetype,
-        updatedAt: new Date().toISOString(),
-      });
+    const documents = await this.options.loader.load(sourceFile, options);
+    const text = this.documentsToText(documents);
+    await this.persistParsedText(sourceFile, text);
 
-      return {
-        supported: true,
-        fromCache: false,
-        text,
-        documents,
-        meta: {
-          sourceFileId: sourceFile.id,
-          parsedFileId: parsedFile.id,
-        },
-      };
-    } catch (error) {
-      await this.updateSourceMeta(sourceFile, {
-        status: 'failed',
-        parserVersion: this.options.parserVersion,
-        updatedAt: new Date().toISOString(),
-        error: error?.message ?? String(error),
-      });
-      throw error;
-    }
+    return {
+      supported: true,
+      fromCache: false,
+      text,
+      documents,
+    };
   }
 
   private async loadFromCache(sourceFile: ParseableFile): Promise<ParsedDocumentResult | null> {
-    const meta = this.getParseMeta(sourceFile.meta);
-    if (!meta || meta.status !== 'ready' || meta.parserVersion !== this.options.parserVersion || !meta.parsedFileId) {
+    const cacheKey = this.getCacheKey(sourceFile);
+    if (!cacheKey) {
+      return null;
+    }
+    const cache = await this.getCache();
+    const filePath = await cache.get<string>(cacheKey);
+
+    if (!filePath) {
       return null;
     }
 
-    const parsedModel = await this.aiFilesRepo.findById(meta.parsedFileId);
-    if (!parsedModel) {
+    try {
+      const stat = await fs.stat(filePath);
+      if (!stat.isFile()) {
+        return null;
+      }
+    } catch {
       return null;
     }
 
-    const parsedFile = this.toPlainObject(parsedModel);
-    const text = await this.readTextFile(parsedFile);
+    const text = await fs.readFile(filePath, 'utf-8');
     const extname = resolveExtname(sourceFile);
     const documents = this.toDocumentsFromText(text, sourceFile, extname);
 
@@ -119,79 +102,19 @@ export class CachedDocumentLoader {
       fromCache: true,
       text,
       documents,
-      meta: {
-        sourceFileId: sourceFile.id,
-        parsedFileId: parsedFile.id,
-      },
     };
   }
 
   private async persistParsedText(sourceFile: ParseableFile, text: string) {
-    const tempFilePath = path.join(
-      os.tmpdir(),
-      `${sourceFile.id ?? Date.now()}.${Date.now()}.parsed.${this.options.parsedFileExtname}`,
-    );
+    const cacheKey = this.getCacheKey(sourceFile);
+    if (!cacheKey) {
+      return null;
+    }
+    const tempFilePath = path.join(os.tmpdir(), `${cacheKey}.${Date.now()}.parsed.${this.options.parsedFileExtname}`);
     await fs.writeFile(tempFilePath, text, 'utf-8');
 
-    try {
-      const storageName = await this.resolveStorageName(sourceFile);
-      const created = await this.fileManager.createFileRecord({
-        collectionName: 'aiFiles',
-        filePath: tempFilePath,
-        storageName,
-        values: {
-          title: `${sourceFile.title ?? sourceFile.filename ?? 'document'} (parsed)`,
-          mimetype: this.options.parsedMimetype,
-          meta: {
-            parserVersion: this.options.parserVersion,
-            sourceFileId: sourceFile.id,
-          },
-        },
-      });
-      return this.toPlainObject(created);
-    } finally {
-      await fs.rm(tempFilePath, { force: true });
-    }
-  }
-
-  private async updateSourceMeta(sourceFile: ParseableFile, documentParse: DocumentParseMeta) {
-    if (!sourceFile.id) {
-      return;
-    }
-
-    const nextMeta = {
-      ...(sourceFile.meta ?? {}),
-      [DOCUMENT_PARSE_META_KEY]: documentParse,
-    };
-
-    await this.aiFilesRepo.update({
-      filter: {
-        id: sourceFile.id,
-      },
-      values: {
-        meta: nextMeta,
-      },
-    });
-  }
-
-  private async resolveStorageName(file: ParseableFile) {
-    if (!file.storageId) {
-      return undefined;
-    }
-    if (!this.fileManager.storagesCache.size) {
-      await this.fileManager.loadStorages();
-    }
-    const storage = this.fileManager.storagesCache.get(file.storageId);
-    return storage?.name;
-  }
-
-  private async readTextFile(file: ParseableFile) {
-    const { stream } = await this.fileManager.getFileStream(file as any);
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
-    }
-    return Buffer.concat(chunks).toString('utf-8');
+    const cache = await this.getCache();
+    await cache.set(cacheKey, tempFilePath, 30 * 60 * 1000);
   }
 
   private documentsToText(documents: Document[]) {
@@ -214,13 +137,6 @@ export class CachedDocumentLoader {
     ];
   }
 
-  private getParseMeta(meta?: Record<string, any>): DocumentParseMeta | null {
-    if (!meta || typeof meta !== 'object') {
-      return null;
-    }
-    return meta[DOCUMENT_PARSE_META_KEY] ?? null;
-  }
-
   private toPlainObject<T extends ParseableFile = ParseableFile>(file: T | Model | any): T {
     if (file?.toJSON) {
       return file.toJSON() as T;
@@ -228,11 +144,21 @@ export class CachedDocumentLoader {
     return file as T;
   }
 
-  private get aiFilesRepo() {
-    return this.plugin.db.getRepository('aiFiles');
+  private async getCache() {
+    this._cache ??= await this.plugin.app.cacheManager.createCache({
+      name: 'ai-employee:document-loader:parsed',
+      store: 'memory',
+    });
+    return this._cache;
   }
 
-  private get fileManager(): PluginFileManagerServer {
-    return this.plugin.app.pm.get('file-manager');
+  private getCacheKey(sourceFile: ParseableFile) {
+    if (!sourceFile) {
+      return null;
+    }
+    if (!sourceFile.id || !sourceFile.storageId) {
+      return null;
+    }
+    return `${sourceFile.id}@${sourceFile.storageId}`;
   }
 }

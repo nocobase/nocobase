@@ -15,13 +15,16 @@ class HelloModel extends FlowModel {
 }
 ```
 
+```tsx file="./_demos/register-flow-model.tsx" preview
+```
+
 ## Available FlowModel base classes
 
-| Base Class Name         | Description                               |
-| ----------------------- | ----------------------------------------- |
-| `BlockModel`            | Base class for all blocks                 |
-| `CollectionBlockModel`  | Collection block, inherits from BlockModel |
-| `ActionModel`           | Base class for all actions                |
+| Base Class Name        | Description                                |
+| ---------------------- | ------------------------------------------ |
+| `BlockModel`           | Base class for all blocks                  |
+| `CollectionBlockModel` | Collection block, inherits from BlockModel |
+| `ActionModel`          | Base class for all actions                 |
 
 ## Register FlowModel
 

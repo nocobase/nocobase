@@ -6,7 +6,7 @@
       {
         "type": "custom-link",
         "label": "概要",
-        "link": "/multi-app/multi-app"
+        "link": "/multi-app/multi-app/"
       },
       {
         "type": "custom-link",
@@ -23,6 +23,6 @@
   {
     "type": "custom-link",
     "label": "マルチスペース",
-    "link": "/multi-app/multi-space"
+    "link": "/multi-app/multi-space/"
   }
 ]

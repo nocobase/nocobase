@@ -193,6 +193,177 @@ export default {
         },
       },
     },
+    '/roles:applyDataPermissions': {
+      post: {
+        tags: ['roles'],
+        summary: 'Apply collection-level independent ACL permissions in batch for a role',
+        description:
+          'Apply one or more collection-level independent ACL permission configs for a role in one request. Supports action scope binding by `scopeId` or `scopeKey`.',
+        parameters: [{ $ref: '#/components/parameters/RoleNameQuery' }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/RoleDataPermissionsApplyWrite',
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/RoleDataPermissionsApplyResult',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/roles/{roleName}/users:list': {
+      get: {
+        tags: ['roles.users'],
+        summary: 'List users bound to a role',
+        parameters: [
+          { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/PageQuery' },
+          { $ref: '#/components/parameters/PageSizeQuery' },
+          { $ref: '#/components/parameters/SortQuery' },
+          { $ref: '#/components/parameters/AppendsQuery' },
+          { $ref: '#/components/parameters/FilterQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  additionalProperties: true,
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                      },
+                    },
+                    meta: {
+                      type: 'object',
+                      additionalProperties: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/roles/{roleName}/users:add': {
+      post: {
+        tags: ['roles.users'],
+        summary: 'Bind one or more users to a role',
+        parameters: [
+          { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/MembershipUserFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
+    '/roles/{roleName}/users:remove': {
+      post: {
+        tags: ['roles.users'],
+        summary: 'Unbind one or more users from a role',
+        parameters: [
+          { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/MembershipUserFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
+    '/users/{userId}/roles:list': {
+      get: {
+        tags: ['users.roles'],
+        summary: 'List roles bound to a user',
+        parameters: [
+          { $ref: '#/components/parameters/UserIdPath' },
+          { $ref: '#/components/parameters/PageQuery' },
+          { $ref: '#/components/parameters/PageSizeQuery' },
+          { $ref: '#/components/parameters/SortQuery' },
+          { $ref: '#/components/parameters/AppendsQuery' },
+          { $ref: '#/components/parameters/FilterQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  additionalProperties: true,
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: true,
+                      },
+                    },
+                    meta: {
+                      type: 'object',
+                      additionalProperties: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/users/{userId}/roles:add': {
+      post: {
+        tags: ['users.roles'],
+        summary: 'Bind one or more roles to a user',
+        parameters: [
+          { $ref: '#/components/parameters/UserIdPath' },
+          { $ref: '#/components/parameters/MembershipRoleFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
+    '/users/{userId}/roles:remove': {
+      post: {
+        tags: ['users.roles'],
+        summary: 'Unbind one or more roles from a user',
+        parameters: [
+          { $ref: '#/components/parameters/UserIdPath' },
+          { $ref: '#/components/parameters/MembershipRoleFilterByTkQuery' },
+        ],
+        responses: {
+          200: {
+            description: 'OK',
+          },
+        },
+      },
+    },
     '/dataSources/{dataSourceKey}/roles:update': {
       post: {
         tags: ['dataSources.roles'],
@@ -254,9 +425,10 @@ export default {
         tags: ['roles.dataSourcesCollections'],
         summary: 'List data-source collections in role permission configuration',
         description:
-          'List collections in the target data source for the given role and indicate whether they use global permissions or collection-level independent permissions.',
+          'List collections in the target data source for the given role and indicate whether they use global permissions or collection-level independent permissions. You can pass `dataSourceKey` directly, or through `filter.dataSourceKey` for compatibility.',
         parameters: [
           { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/DataSourceKeyQuery' },
           { $ref: '#/components/parameters/PageQuery' },
           { $ref: '#/components/parameters/PageSizeQuery' },
           { $ref: '#/components/parameters/SortQuery' },
@@ -326,9 +498,12 @@ export default {
         tags: ['roles.dataSourceResources'],
         summary: 'Get one collection-level independent ACL permission for a role',
         description:
-          'Get one collection-level independent permission config. Target it with a `filter` such as `{ name, dataSourceKey }`. Do not rely on `filterByTk` for this endpoint.',
+          'Get one collection-level independent permission config. You can target it by `filterByTk`, or by `name` + `dataSourceKey`. `filter` with `{ name, dataSourceKey }` is still supported for compatibility.',
         parameters: [
           { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/ResourcePermissionTkQuery' },
+          { $ref: '#/components/parameters/DataSourceKeyQuery' },
+          { $ref: '#/components/parameters/DataSourceResourceNameQuery' },
           { $ref: '#/components/parameters/FilterQuery' },
           { $ref: '#/components/parameters/AppendsQuery' },
         ],
@@ -351,8 +526,14 @@ export default {
         tags: ['roles.dataSourceResources'],
         summary: 'Update collection-level independent ACL permissions for a role',
         description:
-          'Update one collection-level independent permission config. Target it with a `filter` such as `{ name, dataSourceKey }`. Do not rely on `filterByTk` for this endpoint.',
-        parameters: [{ $ref: '#/components/parameters/RoleNamePath' }, { $ref: '#/components/parameters/FilterQuery' }],
+          'Update one collection-level independent permission config. You can target it by `filterByTk`, or by `name` + `dataSourceKey`. `filter` with `{ name, dataSourceKey }` is still supported for compatibility.',
+        parameters: [
+          { $ref: '#/components/parameters/RoleNamePath' },
+          { $ref: '#/components/parameters/ResourcePermissionTkQuery' },
+          { $ref: '#/components/parameters/DataSourceKeyQuery' },
+          { $ref: '#/components/parameters/DataSourceResourceNameQuery' },
+          { $ref: '#/components/parameters/FilterQuery' },
+        ],
         requestBody: {
           required: true,
           content: {
@@ -594,6 +775,15 @@ export default {
         required: true,
         schema: { type: 'string' },
       },
+      UserIdPath: {
+        name: 'userId',
+        in: 'path',
+        description: 'User primary key.',
+        required: true,
+        schema: {
+          anyOf: [{ type: 'string' }, { type: 'integer' }],
+        },
+      },
       DataSourceKeyPath: {
         name: 'dataSourceKey',
         in: 'path',
@@ -601,11 +791,58 @@ export default {
         required: true,
         schema: { type: 'string' },
       },
+      DataSourceKeyQuery: {
+        name: 'dataSourceKey',
+        in: 'query',
+        description: 'Data source key, for example `main`.',
+        schema: { type: 'string' },
+      },
+      MembershipUserFilterByTkQuery: {
+        name: 'filterByTk',
+        in: 'query',
+        description: 'User primary key, or a list of user primary keys.',
+        required: true,
+        schema: {
+          anyOf: [
+            { type: 'string' },
+            { type: 'integer' },
+            {
+              type: 'array',
+              items: {
+                anyOf: [{ type: 'string' }, { type: 'integer' }],
+              },
+            },
+          ],
+        },
+      },
+      MembershipRoleFilterByTkQuery: {
+        name: 'filterByTk',
+        in: 'query',
+        description: 'Role name, or a list of role names.',
+        required: true,
+        schema: {
+          anyOf: [
+            { type: 'string' },
+            {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+          ],
+        },
+      },
       ResourceNameQuery: {
         name: 'filterByTk',
         in: 'query',
         description: 'Resource name, typically the collection name.',
         required: true,
+        schema: { type: 'string' },
+      },
+      DataSourceResourceNameQuery: {
+        name: 'name',
+        in: 'query',
+        description: 'Resource name, typically the collection name.',
         schema: { type: 'string' },
       },
       ScopePkQuery: {
@@ -720,6 +957,89 @@ export default {
           },
         },
         required: ['roleMode'],
+      },
+      RoleDataPermissionActionWrite: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'ACL action name, such as `view`, `create`, `update`, or `destroy`.',
+          },
+          fields: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional allowed field list for field-configurable actions.',
+          },
+          scopeId: {
+            type: 'integer',
+            nullable: true,
+            description: 'Optional scope id. Use `null` to clear the scope binding.',
+          },
+          scopeKey: {
+            type: 'string',
+            description: 'Optional built-in/custom scope key. When provided, server resolves it to `scopeId`.',
+          },
+          scope: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              key: { type: 'string' },
+            },
+            additionalProperties: true,
+            description: 'Optional compatibility payload from existing role-resource readback.',
+          },
+        },
+        required: ['name'],
+        additionalProperties: true,
+      },
+      RoleDataPermissionResourceWrite: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Collection name.',
+          },
+          usingActionsConfig: {
+            type: 'boolean',
+            description: 'Whether the collection uses independent action config.',
+          },
+          actions: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/RoleDataPermissionActionWrite' },
+            description: 'Independent action config list for the collection.',
+          },
+        },
+        required: ['name'],
+        additionalProperties: true,
+      },
+      RoleDataPermissionsApplyWrite: {
+        type: 'object',
+        properties: {
+          dataSourceKey: {
+            type: 'string',
+            description: 'Data source key, default is `main` when omitted.',
+          },
+          resources: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/RoleDataPermissionResourceWrite' },
+            description: 'Collection-level independent permission payloads to apply in batch.',
+          },
+        },
+        required: ['resources'],
+        additionalProperties: true,
+      },
+      RoleDataPermissionsApplyResult: {
+        type: 'object',
+        properties: {
+          roleName: { type: 'string' },
+          dataSourceKey: { type: 'string' },
+          count: { type: 'integer' },
+          resources: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/RoleDataSourceResource' },
+          },
+        },
+        additionalProperties: true,
       },
       DataSourceRole: {
         type: 'object',

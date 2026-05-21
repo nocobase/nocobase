@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Op } from '@nocobase/database';
+import { Model, Op, Transaction, Transactionable } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
@@ -16,6 +16,7 @@ export type AIConversationsOptions = {
   systemMessage?: unknown;
   skillSettings?: unknown;
   conversationSettings?: unknown;
+  modelSettings?: unknown;
   [key: string]: unknown;
 };
 
@@ -26,11 +27,13 @@ export type AIConversationFilterParams = {
 };
 
 export type CreateAIConversationParams = {
-  userId: string;
+  userId?: string;
   aiEmployee: { username: string };
   title?: string;
   options?: AIConversationsOptions;
   from?: 'main-agent' | 'sub-agent';
+  transaction?: Transaction;
+  category?: 'chat' | 'task';
 };
 
 export type UpdateAIConversationParams = {
@@ -45,6 +48,7 @@ export type GetAIConversationMessagesParams = {
   sessionId: string;
   cursor?: string;
   paginate?: boolean;
+  updateRead?: boolean;
 };
 
 export type ParsedMessageRow = AIMessage & Model;
@@ -55,10 +59,42 @@ export type GetAIConversationMessagesResult = {
   cursor?: string | null;
 };
 
+export const registerAIConversationReadNotification = (plugin: PluginAIServer) => {
+  plugin.db.on('aiConversations.beforeSave', async (model: Model, options: Transactionable) => {
+    if (model.isNewRecord || !model.changed('read')) {
+      return;
+    }
+    const values = model.toJSON();
+    if (values.from !== 'main-agent' || values.category !== 'chat') {
+      return;
+    }
+    options.transaction?.afterCommit(async () => {
+      plugin.app.emit('ws:sendToUser', {
+        userId: values.userId,
+        message: {
+          type: 'ai-conversations:read',
+          payload: {
+            sessionId: values.sessionId,
+            read: values.read,
+          },
+        },
+      });
+    });
+  });
+};
+
 export class AIConversationsManager {
   constructor(protected plugin: PluginAIServer) {}
 
-  async create({ userId, aiEmployee, title, options = {}, from = 'main-agent' }: CreateAIConversationParams) {
+  async create({
+    userId,
+    aiEmployee,
+    title,
+    options = {},
+    from = 'main-agent',
+    transaction,
+    category = 'chat',
+  }: CreateAIConversationParams) {
     return await this.aiConversationsRepo.create({
       values: {
         userId,
@@ -67,23 +103,23 @@ export class AIConversationsManager {
         options,
         thread: 1,
         from,
+        category,
       },
+      transaction,
     });
   }
 
   async update({ userId, sessionId, title, options: inputOptions }: UpdateAIConversationParams) {
-    const conversation = await this.aiConversationsRepo.findOne({
-      filter: {
-        sessionId,
-        userId,
-      },
+    const conversation = await this.getConversation({
+      sessionId,
+      userId,
     });
 
     if (!conversation) {
       throw new Error('invalid sessionId');
     }
 
-    const { systemMessage, skillSettings, conversationSettings } = inputOptions ?? {};
+    const { systemMessage, skillSettings, conversationSettings, modelSettings } = inputOptions ?? {};
     const options = conversation.options ?? {};
     if (systemMessage) {
       options['systemMessage'] = systemMessage;
@@ -93,6 +129,9 @@ export class AIConversationsManager {
     }
     if (conversationSettings) {
       options['conversationSettings'] = conversationSettings;
+    }
+    if (modelSettings) {
+      options['modelSettings'] = modelSettings;
     }
     const values: Record<string, unknown> = { options };
     if (title) {
@@ -108,21 +147,68 @@ export class AIConversationsManager {
     });
   }
 
-  async getMessages({
-    userId,
-    sessionId,
-    cursor,
-    paginate = true,
-  }: GetAIConversationMessagesParams): Promise<GetAIConversationMessagesResult> {
+  async getConversation({ sessionId, userId }: { sessionId: string; userId?: string }) {
     const conversation = await this.aiConversationsRepo.findOne({
+      filter: {
+        sessionId,
+      },
+    });
+
+    if (!userId) {
+      return conversation;
+    }
+
+    if (!conversation) {
+      return null;
+    }
+
+    let ownershipCheck = await this.aiConversationsRepo.count({
       filter: {
         sessionId,
         userId,
       },
     });
+    if (ownershipCheck === 0) {
+      ownershipCheck = await this.plugin.db.getRepository('aiWorkflowTasks').count({
+        filter: {
+          sessionId,
+          'users.id': userId,
+        },
+      });
+    }
+
+    if (ownershipCheck) {
+      return conversation;
+    } else {
+      return null;
+    }
+  }
+
+  async getMessages({
+    userId,
+    sessionId,
+    cursor,
+    paginate = true,
+    updateRead = false,
+  }: GetAIConversationMessagesParams): Promise<GetAIConversationMessagesResult> {
+    const conversation = await this.getConversation({
+      sessionId,
+      userId,
+    });
 
     if (!conversation) {
       throw new Error('invalid sessionId');
+    }
+
+    if (updateRead) {
+      await this.aiConversationsRepo.update({
+        values: {
+          read: true,
+        },
+        filter: {
+          sessionId,
+        },
+      });
     }
 
     const pageSize = 10;
@@ -206,6 +292,8 @@ export class AIConversationsManager {
           const tool = toolsMap.get(toolCall.name);
           const toolMessage = toolMessageMap.get(toolMessageKey(row.messageId, toolCall.id));
           toolCall.invokeStatus = toolMessage?.invokeStatus;
+          toolCall.invokeStartTime = toolMessage?.invokeStartTime;
+          toolCall.invokeEndTime = toolMessage?.invokeEndTime;
           toolCall.auto = toolMessage?.auto;
           toolCall.status = toolMessage?.status;
           toolCall.content = toolMessage?.content;
@@ -255,7 +343,7 @@ export class AIConversationsManager {
     };
   }
 
-  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | null> {
+  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | undefined> {
     const allInterruptedToolCall = await this.aiToolMessagesRepo.find({
       filter: {
         messageId,
@@ -264,7 +352,7 @@ export class AIConversationsManager {
       order: [['interruptActionOrder', 'ASC']],
     });
     if (!allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting')) {
-      return null;
+      return;
     }
 
     const message = await this.aiMessagesRepo.findOne({

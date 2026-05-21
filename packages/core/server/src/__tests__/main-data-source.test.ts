@@ -8,17 +8,12 @@
  */
 
 import { Application } from '@nocobase/server';
-
+import { mockServer } from '@nocobase/test';
 describe('MainDataSource', () => {
   let app: Application;
 
   beforeEach(async () => {
-    app = new Application({
-      database: {
-        dialect: 'sqlite',
-        storage: ':memory:',
-        logging: false,
-      },
+    app = mockServer({
       resourcer: {
         prefix: '/api',
       },

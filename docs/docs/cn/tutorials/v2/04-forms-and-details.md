@@ -1,6 +1,6 @@
 # 第 4 章：表单与详情 — 录入、展示、一步到位
 
-上一章我们搭好了工单列表，并用一个简易表单录入了测试数据。这一章我们来**完善表单体验**——优化[表单区块](/interface-builder/blocks/data-blocks/form)的字段布局、添加[详情区块](/interface-builder/blocks/data-blocks/details)、配置[联动规则](/interface-builder/linkage-rules)，还能用[变更历史](https://docs.nocobase.com/cn/record-history/)追踪工单的每一次修改。
+上一章我们搭好了工单列表，并用一个简易表单录入了测试数据。这一章我们来**完善表单体验**——优化[表单区块](/interface-builder/blocks/data-blocks/form)的字段布局、添加[详情区块](/interface-builder/blocks/data-blocks/details)、配置[联动规则](../../interface-builder/linkage-rule.md)，还能用[变更历史](https://docs.nocobase.com/cn/record-history/)追踪工单的每一次修改。
 
 :::tip
 本章 4.4 节「[历史记录](https://docs.nocobase.com/cn/record-history/)」功能包含在[专业版](https://www.nocobase.com/cn/commercial)中，跳过该节不影响后续章节的学习。
@@ -15,7 +15,7 @@
 1. 确保处于 UI 编辑器模式（右上角开关打开）。
 2. 进入「工单列表」页面，点击表格区块上方的 **「[操作](/interface-builder/actions)（Actions）」**。
 3. 勾选 **「添加」** 操作按钮。
-4. 表格上方会出现一个「添加」按钮，点击它会打开一个[弹窗](/interface-builder/actions/pop-up)。
+4. 表格上方会出现一个「添加」按钮，点击它会打开一个[弹窗](../../interface-builder/actions/types/pop-up.md)。
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
@@ -23,10 +23,10 @@
 
 1. 点击「添加」按钮，打开弹窗。
 2. 在弹窗中点击 **「创建[区块](/interface-builder/blocks)（Add block）」→ 数据区块 → 表单（添加）**。
-3. 选择 **「当前[数据表](/data-sources/main/collection)（Current collection）」**。弹窗已经关联了对应的数据表上下文，无需手动指定。
+3. 选择 **「当前[数据表](/data-sources/data-modeling/collection)（Current collection）」**。弹窗已经关联了对应的数据表上下文，无需手动指定。
 
    ![04-forms-and-details-2026-03-13-09-44-50](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-44-50.png)
-4. 在表单中点击 **「[字段](/data-sources/field)（Fields）」**，勾选以下字段：
+4. 在表单中点击 **「[字段](/data-sources/data-modeling/collection-fields)（Fields）」**，勾选以下字段：
 
 | 字段 | 配置要点 |
 |------|---------|
@@ -283,4 +283,4 @@
 
 - [表单区块](/interface-builder/blocks/data-blocks/form) — 表单区块详细配置
 - [详情区块](/interface-builder/blocks/data-blocks/details) — 详情区块配置
-- [联动规则](/interface-builder/linkage-rules) — 字段联动规则说明
+- [联动规则](../../interface-builder/linkage-rule.md) — 字段联动规则说明

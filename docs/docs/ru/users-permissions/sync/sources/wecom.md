@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-wecom"
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 
 # Синхронизация данных пользователей из WeChat Work
@@ -17,7 +13,7 @@ pkg: "@nocobase/plugin-wecom"
 
 Сначала вам нужно создать собственное приложение в административной консоли WeChat Work и получить **Corp ID**, **AgentId** и **Secret**.
 
-См. также [Аутентификация пользователей — WeChat Work](/auth-verification/auth-wecom/).
+См. также [Аутентификация пользователей — WeChat Work](../../../auth-verification/auth-wecom/index.md).
 
 ## Добавление источника данных для синхронизации в NocoBase
 

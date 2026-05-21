@@ -10,9 +10,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useBlockContext, useOpenModeContext } from '../../../../';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
+import { useBlockContext } from '../../../../block-provider/BlockProvider';
+import { useOpenModeContext } from '../../../../modules/popup/OpenModeProvider';
 import {
   useColumnSchema,
   useTableFieldInstanceList,

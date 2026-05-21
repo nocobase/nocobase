@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/resource/api-resource).
-:::
-
 # APIResource
 
 Un **recurso de API genérico** para realizar solicitudes basadas en URLs, adecuado para cualquier interfaz HTTP. Hereda de la clase base `FlowResource` y la extiende con configuración de solicitudes y el método `refresh()`. A diferencia de [MultiRecordResource](./multi-record-resource.md) y [SingleRecordResource](./single-record-resource.md), `APIResource` no depende de un nombre de recurso; realiza solicitudes directamente por URL, lo que lo hace ideal para interfaces personalizadas, APIs de terceros y otros escenarios.

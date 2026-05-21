@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/index).
-:::
-
 # Aperçu
 
 ![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
@@ -34,7 +30,7 @@ Consultez d'abord le [Démarrage rapide](/ai-employees/quick-start) et suivez l'
 - [Configurer le service LLM](/ai-employees/features/llm-service) : connectez les fournisseurs (Provider), configurez et gérez les modèles disponibles.
 - [Activer les employés IA](/ai-employees/features/enable-ai-employee) : activez ou désactivez les employés intégrés, contrôlez la portée de disponibilité.
 - [Créer un nouvel employé IA](/ai-employees/features/new-ai-employees) : définissez le rôle, la personnalité, le message d'accueil et les limites de capacités.
-- [Utiliser des compétences](/ai-employees/features/tool) : configurez les permissions des compétences (`Ask` / `Allow`) pour contrôler les risques d'exécution.
+- [Utiliser des compétences](/ai-employees/features/tools) : configurez les permissions des compétences (`Ask` / `Allow`) pour contrôler les risques d'exécution.
 
 ### B. Collaboration quotidienne (Utilisateurs métier)
 
@@ -45,7 +41,7 @@ Consultez d'abord le [Démarrage rapide](/ai-employees/quick-start) et suivez l'
 
 ### C. Capacités avancées (Extensions)
 
-- [Employés IA intégrés](/ai-employees/features/built-in-employee) : découvrez le positionnement et les scénarios d'application des employés prédéfinis.
+- [Employés IA intégrés](/ai-employees/built-in/) : découvrez le positionnement et les scénarios d'application des employés prédéfinis.
 - [Contrôle des permissions](/ai-employees/permission) : contrôlez l'accès aux employés, aux compétences et aux données selon le modèle de permissions de l'organisation.
 - [Base de connaissances IA](/ai-employees/knowledge-base/index) : introduisez les connaissances de l'entreprise pour améliorer la stabilité et la traçabilité des réponses.
 - [Nœud LLM de flux de travail](/ai-employees/workflow/nodes/llm/chat) : orchestrez les capacités de l'IA dans des processus automatisés.

@@ -29,9 +29,16 @@ export type AIEmployeeToolSetting = {
 
 export type AIEmployeeOptions = {
   username: string;
+  category?: string;
   description?: string;
   skills?: string[];
   tools?: AIEmployeeToolSetting[];
+  chatSettings?: {
+    systemPromptMode?: 'default' | 'raw' | 'none';
+    enableSkills?: boolean;
+    enableTools?: boolean;
+    [key: string]: unknown;
+  };
   avatar?: string;
   nickname?: string;
   position?: string;
@@ -48,6 +55,7 @@ export type AIEmployeeEntry = Omit<AIEmployeeOptions, 'skills' | 'tools' | 'syst
     skills: string[];
     tools: AIEmployeeToolSetting[];
   };
+  chatSettings?: AIEmployeeOptions['chatSettings'];
 };
 
 export type AIEmployeeFilter = {

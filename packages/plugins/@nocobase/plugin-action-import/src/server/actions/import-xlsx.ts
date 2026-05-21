@@ -9,7 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import { Mutex } from 'async-mutex';
 import { XlsxImporter } from '../services/xlsx-importer';
 import { DataSource } from '@nocobase/data-source-manager';
@@ -17,6 +17,17 @@ import { DataSource } from '@nocobase/data-source-manager';
 const IMPORT_LIMIT_COUNT = 2000;
 
 const mutex = new Mutex();
+
+export function readImportWorkbook(buffer: Buffer, sheetRows: number) {
+  return XLSX.read(buffer, {
+    type: 'buffer',
+    sheetRows,
+    // Keep Excel date cells as serial numbers. SheetJS `cellDates: true` converts
+    // them to local-time Date objects through a timezone-sensitive path, which can
+    // shift date-only values in non-UTC environments (for example Asia/Shanghai).
+    cellDates: false,
+  });
+}
 
 async function importXlsxAction(ctx: Context, next: Next) {
   let columns = (ctx.request.body as any).columns as any[];
@@ -33,11 +44,7 @@ async function importXlsxAction(ctx: Context, next: Next) {
     readLimit += 1;
   }
 
-  const workbook = XLSX.read(ctx.file.buffer, {
-    type: 'buffer',
-    sheetRows: readLimit,
-    cellDates: true,
-  });
+  const workbook = readImportWorkbook(ctx.file.buffer, readLimit);
 
   const repository = ctx.getCurrentRepository() as Repository;
   const dataSource = ctx.dataSource as DataSource;

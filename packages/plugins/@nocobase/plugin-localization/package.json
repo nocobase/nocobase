@@ -1,8 +1,7 @@
 {
   "name": "@nocobase/plugin-localization",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/localization-management",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/localization-management",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/localization-management",
@@ -11,9 +10,14 @@
     "deepmerge": "^4.3.1"
   },
   "peerDependencies": {
+    "@nocobase/ai": "workspace:*",
     "@nocobase/cache": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/database": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-ai": "workspace:*",
+    "@nocobase/plugin-async-task-manager": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"
   },

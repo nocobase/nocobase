@@ -33,7 +33,7 @@ export const aiSkills: ResourceOptions = {
         return [];
       }
 
-      const bindingSkillNames = aiEmployee.skillSettings?.skills?.map((tool) => tool.name) ?? [];
+      const bindingSkillNames: string[] = aiEmployee.skillSettings?.skills?.map((name: string) => name) ?? [];
 
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const skills = await plugin.ai.skillsManager.listSkills();

@@ -1,12 +1,11 @@
 {
   "name": "@nocobase/plugin-workflow-javascript",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "displayName": "Workflow: JavaScript",
   "displayName.zh-CN": "工作流：JavaScript 节点",
   "description": "Execute a piece of JavaScript in an isolated Node.js environment.",
   "description.zh-CN": "在隔离环境中执行一段 JavaScript 代码。",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "nocobase": {
     "supportedVersions": [
       "1.x",
@@ -26,10 +25,9 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.37.2",
     "codemirror": "^6.0.2",
-    "isolated-vm": "^5.0.4",
     "joi": "^17.13.3",
     "jshint": "^2.13.6",
-    "node-gyp": "^10.2.0"
+    "quickjs-emscripten": "^0.32.0"
   },
   "keywords": [
     "Workflow"

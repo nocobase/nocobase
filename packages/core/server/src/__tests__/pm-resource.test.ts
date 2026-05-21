@@ -104,4 +104,72 @@ describe('pm resource', () => {
       }),
     ]);
   });
+
+  it('should only cache hashed package urls', async () => {
+    const packageName = '@nocobase/plugin-auth';
+    const fetchSpy = vi
+      .spyOn(PackageUrls, 'fetch')
+      .mockResolvedValueOnce(`/static/plugins/${packageName}/dist/client-v2/index.js`)
+      .mockResolvedValueOnce(`/static/plugins/${packageName}/dist/client-v2/index.js?hash=12345678`);
+
+    const firstUrl = await PackageUrls.get(packageName, 'client-v2');
+    const secondUrl = await PackageUrls.get(packageName, 'client-v2');
+    const thirdUrl = await PackageUrls.get(packageName, 'client-v2');
+
+    expect(firstUrl).toBe(`/static/plugins/${packageName}/dist/client-v2/index.js`);
+    expect(secondUrl).toBe(`/static/plugins/${packageName}/dist/client-v2/index.js?hash=12345678`);
+    expect(thirdUrl).toBe(`/static/plugins/${packageName}/dist/client-v2/index.js?hash=12345678`);
+    expect(fetchSpy).toHaveBeenNthCalledWith(1, packageName, 'client-v2');
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, packageName, 'client-v2');
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should support array filterByTk for enable and disable', async () => {
+    const runAsCLISpy = vi.fn().mockResolvedValue(undefined);
+    const next = vi.fn();
+    const app: any = {
+      runAsCLI: runAsCLISpy,
+      log: {
+        error: vi.fn(),
+      },
+    };
+
+    const enableCtx: any = {
+      app,
+      action: {
+        params: {
+          filterByTk: ['@nocobase/plugin-a', ' @nocobase/plugin-b,@nocobase/plugin-c '],
+        },
+      },
+      throw: vi.fn(),
+    };
+
+    await resourceOptions.actions.enable(enableCtx, next);
+
+    expect(runAsCLISpy).toHaveBeenNthCalledWith(
+      1,
+      ['pm', 'enable', '@nocobase/plugin-a', '@nocobase/plugin-b', '@nocobase/plugin-c'],
+      { from: 'user' },
+    );
+    expect(enableCtx.body).toEqual(['@nocobase/plugin-a', ' @nocobase/plugin-b,@nocobase/plugin-c ']);
+
+    const disableCtx: any = {
+      app,
+      action: {
+        params: {
+          filterByTk: ['@nocobase/plugin-a', '@nocobase/plugin-b'],
+          awaitResponse: true,
+        },
+      },
+      throw: vi.fn(),
+    };
+
+    await resourceOptions.actions.disable(disableCtx, next);
+
+    expect(runAsCLISpy).toHaveBeenNthCalledWith(2, ['pm', 'disable', '@nocobase/plugin-a', '@nocobase/plugin-b'], {
+      from: 'user',
+      throwError: true,
+    });
+    expect(disableCtx.body).toEqual(['@nocobase/plugin-a', '@nocobase/plugin-b']);
+  });
 });

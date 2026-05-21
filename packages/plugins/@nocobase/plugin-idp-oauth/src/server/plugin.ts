@@ -17,6 +17,17 @@ import { resolveCurrentUser } from './utils';
 export class PluginIdpOauthServer extends Plugin {
   service: IdpOauthService;
 
+  private registerDefaultApiResource() {
+    this.service.registerResourceServer('api', {
+      path: '/',
+      scope: 'api',
+      accessTokenFormat: 'jwt',
+      jwt: {
+        sign: { alg: 'RS256' },
+      },
+    });
+  }
+
   async load() {
     const bridgeTokenCache = await this.app.cacheManager.createCache({
       name: 'idp-oauth-token',
@@ -24,6 +35,7 @@ export class PluginIdpOauthServer extends Plugin {
       store: 'memory',
     });
     this.service = new IdpOauthService(this.app, bridgeTokenCache);
+    this.registerDefaultApiResource();
     const paths = createIdpOauthPaths();
 
     this.app.use(
@@ -42,6 +54,7 @@ export class PluginIdpOauthServer extends Plugin {
       },
       {
         tag: 'idp-oauth-provider',
+        after: 'bodyParser',
         before: 'dataSource',
       },
     );
@@ -87,7 +100,9 @@ export class PluginIdpOauthServer extends Plugin {
     );
   }
 
-  async remove() {}
+  async remove() {
+    this.service?.unregisterResourceServer?.('api');
+  }
 }
 
 export default PluginIdpOauthServer;

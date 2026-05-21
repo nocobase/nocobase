@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSystemLogger, getLoggerFilePath, SystemLogger, Logger } from '@nocobase/logger';
-import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { createSystemLogger, getLoggerFilePath, Logger, SystemLogger } from '@nocobase/logger';
+import { Registry, resolveStorageRoot, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
-import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
+import { syncPluginSymlinks } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { randomUUID } from 'crypto';
@@ -19,6 +19,7 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
+import { homedir } from 'node:os';
 import { extname, isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
@@ -29,6 +30,7 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
+import { getStorageUploadSecurityHeaders } from './static-file-security';
 import { injectRuntimeScript, resolvePublicPath, resolveV2PublicPath, rewriteV2AssetPublicPath } from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
@@ -74,14 +76,16 @@ function normalizeBasePath(path = '') {
   return normalized || '/';
 }
 
+/** Align with cli-v1 `generateGatewayPath()` / `process.env.SOCKET_PATH` after initEnv. */
 function getSocketPath() {
-  const { SOCKET_PATH } = process.env;
-
-  if (isAbsolute(SOCKET_PATH)) {
-    return SOCKET_PATH;
+  const socketPath = process.env.SOCKET_PATH;
+  if (socketPath) {
+    return isAbsolute(socketPath) ? socketPath : resolve(process.cwd(), socketPath);
   }
-
-  return resolve(process.cwd(), SOCKET_PATH);
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return resolve(homedir(), '.nocobase', 'gateway.sock');
+  }
+  return storagePathJoin('gateway.sock');
 }
 
 export class Gateway extends EventEmitter {
@@ -98,9 +102,28 @@ export class Gateway extends EventEmitter {
   loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
-  private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
+  private socketPath = getSocketPath();
   private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
   private terminating = false;
+
+  private getOriginalRequestUrl(req: IncomingMessage) {
+    return ((req as any).originalUrl as string | undefined) || req.url;
+  }
+
+  private async proxyRequestToSubApp(
+    supervisor: AppSupervisor,
+    appName: string,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ) {
+    const internalUrl = req.url;
+    req.url = this.getOriginalRequestUrl(req);
+    try {
+      return await supervisor.proxyWeb(appName, req, res);
+    } finally {
+      req.url = internalUrl;
+    }
+  }
 
   private onTerminate = async (signal?: NodeJS.Signals) => {
     if (this.terminating) {
@@ -136,7 +159,6 @@ export class Gateway extends EventEmitter {
   private constructor() {
     super();
     this.reset();
-    this.socketPath = getSocketPath();
     process.once('SIGTERM', this.onTerminate);
     process.once('SIGINT', this.onTerminate);
   }
@@ -317,12 +339,14 @@ export class Gateway extends EventEmitter {
   private getV2RuntimeConfig() {
     return {
       __nocobase_public_path__: this.getV2PublicPath(),
+      __webpack_public_path__: process.env.CDN_BASE_URL ? `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/` : '',
       __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
       __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
       __nocobase_api_client_storage_type__: process.env.API_CLIENT_STORAGE_TYPE,
       __nocobase_api_client_share_token__: process.env.API_CLIENT_SHARE_TOKEN === 'true',
       __nocobase_ws_url__: process.env.WEBSOCKET_URL || '',
       __nocobase_ws_path__: process.env.WS_PATH,
+      __nocobase_app_dev__: process.env.NOCOBASE_APP_DEV === 'true',
       __esm_cdn_base_url__: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
       __esm_cdn_suffix__: process.env.ESM_CDN_SUFFIX || '',
     };
@@ -400,15 +424,19 @@ export class Gateway extends EventEmitter {
 
     if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
       if (handleApp !== 'main') {
-        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
         if (isProxy) {
           return;
         }
       }
-      req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+      const headers = getStorageUploadSecurityHeaders(pathname);
+      for (const [key, value] of Object.entries(headers)) {
+        res.setHeader(key, value);
+      }
+      req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);
       return handler(req, res, {
-        public: resolve(process.cwd()),
+        public: resolveStorageRoot(),
         directoryListing: false,
       });
     }
@@ -417,7 +445,7 @@ export class Gateway extends EventEmitter {
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
       if (handleApp !== 'main') {
-        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
         if (isProxy) {
           return;
         }
@@ -442,7 +470,7 @@ export class Gateway extends EventEmitter {
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
       if (this.isV2Request(pathname)) {
         if (handleApp !== 'main') {
-          const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+          const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
           if (isProxy) {
             return;
           }
@@ -465,7 +493,7 @@ export class Gateway extends EventEmitter {
       }
 
       if (handleApp !== 'main') {
-        const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
         if (isProxy) {
           return;
         }
@@ -479,7 +507,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (handleApp !== 'main') {
-      const isProxy = await supervisor.proxyWeb(handleApp, req, res);
+      const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
       if (isProxy) {
         return;
       }
@@ -616,7 +644,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (isStart || !ipcClient) {
-      await createStoragePluginsSymlink();
+      await syncPluginSymlinks();
     }
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);

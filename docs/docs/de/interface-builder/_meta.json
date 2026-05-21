@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Überblick",
-    "link": "/interface-builder"
+    "link": "/interface-builder/"
   },
   {
     "type": "custom-link",
@@ -11,7 +11,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/interface-builder/blocks"
+        "link": "/interface-builder/blocks/"
       },
       {
         "type": "custom-link",
@@ -47,6 +47,16 @@
             "type": "custom-link",
             "label": "Diagramm",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kalender",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kanban",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },
@@ -59,6 +69,11 @@
             "type": "custom-link",
             "label": "Formular",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Baum",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -160,7 +175,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/interface-builder/fields"
+        "link": "/interface-builder/fields/"
       },
       {
         "type": "custom-link",
@@ -337,7 +352,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/interface-builder/actions"
+        "link": "/interface-builder/actions/"
       },
       {
         "type": "custom-link",
@@ -483,8 +498,18 @@
           },
           {
             "type": "custom-link",
+            "label": "Benutzerdefinierte Anfrage",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "JS-Aktion",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS-Element",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },

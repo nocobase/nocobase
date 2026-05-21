@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Variáveis de Ambiente
 
 ## Como configurar variáveis de ambiente?
@@ -246,14 +242,6 @@ Método de saída de log. Múltiplos valores são separados por `,`. O padrão �
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Caminho de armazenamento dos logs baseados em arquivo. O valor padrão é `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Nível de saída do log. O padrão é `debug` em ambiente de desenvolvimento e `info` em produção. Opções:
@@ -357,6 +345,27 @@ Processadores de dados de rastreamento ativados. O padrão é `console`. Outros 
 ```bash
 TELEMETRY_TRACE_PROCESSOR=console
 ```
+
+### SERVER_REQUEST_WHITELIST
+
+Lista de permissões de destinos para requisições HTTP de saída iniciadas pelo servidor, usada para prevenir ataques SSRF (Server-Side Request Forgery). Aceita uma lista separada por vírgulas de IPs exatos, intervalos CIDR, nomes de host exatos e subdomínios curinga de um único nível.
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**Aplica-se a**: Nós de "Requisição HTTP" em workflows e botões de ação de requisição personalizada. Requisições com caminho relativo (chamadas à própria API do NocoBase) não são afetadas.
+
+**Sem configuração**: Todas as requisições `http`/`https` de saída são permitidas (comportamento existente). **Configurado**: Apenas requisições cujo host corresponda a uma entrada da lista de permissões são permitidas; requisições sem correspondência geram um erro.
+
+Formatos suportados:
+
+| Formato | Exemplo | Corresponde a |
+| --- | --- | --- |
+| IPv4 exato | `1.2.3.4` | Apenas esse IP |
+| IPv4 CIDR | `10.0.0.0/8` | Todos os IPs na sub-rede |
+| Nome de host exato | `api.example.com` | Apenas esse nome de host |
+| Subdomínio curinga | `*.example.com` | Um nível de subdomínio, ex. `foo.example.com`; **não** corresponde a `example.com` ou `a.b.example.com` |
 
 ## Variáveis de Ambiente Experimentais
 

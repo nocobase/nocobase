@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/fields/specific/js-item).
-:::
-
 # JS Item
 
 ## Einführung
@@ -32,7 +28,7 @@ JS Item wird für „Benutzerdefinierte Elemente“ in Formularen verwendet (kei
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Kann mit KI-Mitarbeitern kombiniert werden, um Skripte zu erstellen/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
+- Kann mit KI-Mitarbeitern kombiniert werden, um Skripte zu erstellen/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/)
 
 ## Häufige Verwendung (vereinfachte Beispiele)
 

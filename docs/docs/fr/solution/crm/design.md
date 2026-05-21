@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/solution/crm/design).
-:::
-
 # Conception détaillée du système CRM 2.0
 
 

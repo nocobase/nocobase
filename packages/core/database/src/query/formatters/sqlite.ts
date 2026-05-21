@@ -20,10 +20,13 @@ export class SQLiteQueryFormatter extends QueryFormatter {
       .replace(/ss/g, '%S');
   }
 
-  formatDate(field: Col, format: string, timezone?: string) {
+  formatDate(field: Col, format: string, timezone?: string, preserveLocalTime?: boolean) {
     const fmt = this.convertFormat(format);
-    if (timezone) {
+    if (timezone && /^[+-]\d{1,2}:\d{2}$/.test(timezone)) {
       return this.sequelize.fn('strftime', fmt, field, this.getOffsetExpression(timezone));
+    }
+    if (preserveLocalTime && this.rawTimezone && /^[+-]\d{1,2}:\d{2}$/.test(this.rawTimezone)) {
+      return this.sequelize.fn('strftime', fmt, field, this.getOffsetExpression(this.rawTimezone));
     }
     return this.sequelize.fn('strftime', fmt, field);
   }
@@ -33,7 +36,7 @@ export class SQLiteQueryFormatter extends QueryFormatter {
     const base =
       accuracy === 'millisecond' ? this.sequelize.literal(`ROUND(${quoted} / 1000)`) : this.sequelize.col(field);
     const args: any[] = [base, 'unixepoch'];
-    if (timezone) {
+    if (timezone && /^[+-]\d{1,2}:\d{2}$/.test(timezone)) {
       args.push(this.getOffsetExpression(timezone));
     }
     return this.sequelize.fn('strftime', this.convertFormat(format), this.sequelize.fn('DATETIME', ...args));

@@ -30,7 +30,7 @@ API Keys provide multiple security benefits: identity verification, usage monito
 
 ### 2.1 Activate the Auth: API Keys Plugin
 
-Ensure that the built-in [Auth: API Keys](/plugins/@nocobase/plugin-api-keys/) plugin is activated. Once enabled, a new API Keys configuration page will appear in the system settings.
+Ensure that the built-in [Auth: API Keys](/plugins/@nocobase/plugin-api-keys/index.md) plugin is activated. Once enabled, a new API Keys configuration page will appear in the system settings.
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
@@ -93,7 +93,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ### 3.1 Using the API Documentation Plugin
 
-Open the [API Documentation](/plugins/@nocobase/plugin-api-doc/) plugin to view the request methods, URLs, parameters, and headers for each API endpoint.
+Open the [API Documentation](/plugins/@nocobase/plugin-api-doc/index.md) plugin to view the request methods, URLs, parameters, and headers for each API endpoint.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
@@ -287,5 +287,5 @@ This guide covered the complete workflow for using API Keys in NocoBase:
 
 
 **Additional Resources:**
-- [API Keys Plugin Documentation](/plugins/@nocobase/plugin-api-keys/)
-- [API Documentation Plugin](/plugins/@nocobase/plugin-api-doc/)
+- [API Keys Plugin Documentation](/plugins/@nocobase/plugin-api-keys/index.md)
+- [API Documentation Plugin](/plugins/@nocobase/plugin-api-doc/index.md)

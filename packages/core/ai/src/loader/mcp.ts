@@ -16,7 +16,7 @@ import { LoadAndRegister } from './types';
 import { DirectoryScanner, DirectoryScannerOptions, FileDescriptor } from './scanner';
 import { isNonEmptyObject } from './utils';
 
-export type MCPLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
+export type MCPLoaderOptions = { pluginName: string; scan: DirectoryScannerOptions; log?: Logger };
 
 export class MCPLoader extends LoadAndRegister<MCPLoaderOptions> {
   protected readonly scanner: DirectoryScanner;

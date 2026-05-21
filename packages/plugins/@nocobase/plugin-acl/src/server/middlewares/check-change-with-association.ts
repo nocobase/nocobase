@@ -327,7 +327,7 @@ function normalizeAssociationValue(
     const result = value
       .map((v) => (typeof v === 'number' || typeof v === 'string' ? v : v[recordKey]))
       .filter((v) => v !== null && v !== undefined);
-    return result.length > 0 ? result : undefined;
+    return result;
   }
   return typeof value === 'number' || typeof value === 'string' ? value : value[recordKey];
 }

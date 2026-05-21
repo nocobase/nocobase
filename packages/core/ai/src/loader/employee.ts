@@ -17,7 +17,7 @@ import { Logger } from '@nocobase/logger';
 import path from 'path';
 import { AIEmployeeOptions, AIEmployeeToolSetting } from '../ai-employee-manager';
 
-export type AIEmployeeLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
+export type AIEmployeeLoaderOptions = { pluginName: string; scan: DirectoryScannerOptions; log?: Logger };
 
 export class AIEmployeeLoader extends LoadAndRegister<AIEmployeeLoaderOptions> {
   protected readonly scanner: DirectoryScanner;
@@ -109,7 +109,18 @@ export class AIEmployeeLoader extends LoadAndRegister<AIEmployeeLoaderOptions> {
     }
     const { employeeManager } = this.ai;
     for (const descriptor of this.employeeDescriptors) {
-      await employeeManager.registerEmployee(descriptor.options);
+      try {
+        await employeeManager.registerEmployee(descriptor.options);
+        this.log?.info(
+          `ai employee [${descriptor.options.username}] registered from plugin [${this.options.pluginName}]`,
+        );
+      } catch (e) {
+        this.log?.error(
+          `ai employee [${descriptor.name}] register ignored: error occur when invoke registerEmployee`,
+          e,
+        );
+        continue;
+      }
     }
   }
 }

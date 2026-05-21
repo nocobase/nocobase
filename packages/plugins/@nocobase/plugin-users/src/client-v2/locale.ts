@@ -1,0 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { useTranslation } from 'react-i18next';
+import enUS from '../locale/en-US.json';
+import zhCN from '../locale/zh-CN.json';
+
+export const NAMESPACE = 'users';
+
+export const usersLocaleResources = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+};
+
+export function useUsersTranslation() {
+  return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
+}

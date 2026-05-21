@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/solution/ticket-system/design).
-:::
-
 # Conception détaillée de la solution de tickets
 
 > **Version** : v2.0-beta

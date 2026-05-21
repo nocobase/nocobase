@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 
 export function winPath(path: string) {
   const isExtendedLengthPath = /^\\\\\?\\/.test(path);
@@ -16,6 +16,10 @@ export function winPath(path: string) {
     return path;
   }
   return path.replace(/\\/g, '/');
+}
+
+function realpathSync(filePath: string) {
+  return fs.realpathSync.native?.(filePath) ?? fs.realpathSync(filePath);
 }
 
 /**
@@ -46,7 +50,6 @@ export function getRltExternalsFromDeps(
  * get package.json path for specific NPM package
  */
 export function getDepPkgPath(dep: string, cwd: string) {
-  try {
     const mainFile = require.resolve(dep, { paths: [cwd] });
     let currentDir = path.dirname(mainFile);
     while (currentDir !== path.parse(currentDir).root) {
@@ -64,11 +67,11 @@ export function getDepPkgPath(dep: string, cwd: string) {
   if (dep === 'xlsx') return require.resolve('xlsx/package.json');
   if (dep === 'exceljs') return require.resolve('exceljs/package.json');
   try {
-    return require.resolve(`${dep}/package.json`, { paths: [cwd] });
+    return realpathSync(require.resolve(`${dep}/package.json`, { paths: [cwd] }));
   } catch {
     const mainFile = require.resolve(`${dep}`, { paths: cwd ? [cwd] : undefined });
     const packageDir = mainFile.slice(0, mainFile.indexOf(dep.replace('/', path.sep)) + dep.length);
-    return path.join(packageDir, 'package.json');
+    return realpathSync(path.join(packageDir, 'package.json'));
   }
 }
 
@@ -90,16 +93,16 @@ export function getDepsConfig(cwd: string, outDir: string, depsName: string[], e
 
   const depExternals = {};
   const deps = depsName.reduce<Record<string, IDepPkg>>((acc, packageName) => {
-    const depEntryPath = require.resolve(packageName, { paths: [cwd] });
+    const depEntryPath = realpathSync(require.resolve(packageName, { paths: [cwd] }));
     const depPkgPath = getDepPkgPath(packageName, cwd);
     const depPkg = require(depPkgPath);
     const depDir = path.dirname(depPkgPath);
     const outputDir = path.join(outDir, packageName);
-    const mainFile = path.join(outputDir, depEntryPath.replace(depDir, ''));
+    const mainFile = path.join(outputDir, path.relative(depDir, depEntryPath));
     acc[depEntryPath] = {
       nccConfig: {
         minify: true,
-        target: 'es5',
+        target: 'es2020',
         quiet: true,
         externals: {},
       },

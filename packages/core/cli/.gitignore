@@ -1,0 +1,15 @@
+node_modules/
+/dist/
+/lib/
+
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+/.nocobase/
+.env
+.env.*
+/yarn.lock

@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/file-manager/file-preview/index).
-:::
-
 # Aperçu des fichiers
 
 Dans les interfaces contenant des champs de fichiers (y compris les champs de pièces jointes), vous pouvez prévisualiser les fichiers en cliquant sur la miniature ou l'icône du fichier. La fonction d'aperçu intégrée prend en charge divers types de fichiers, notamment les images, les PDF et la plupart des types de fichiers nativement pris en charge par les navigateurs.

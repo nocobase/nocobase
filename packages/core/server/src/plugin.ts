@@ -11,7 +11,7 @@
 
 import { Model, Transactionable } from '@nocobase/database';
 import { Logger, LoggerOptions } from '@nocobase/logger';
-import { fsExists } from '@nocobase/utils';
+import { fsExists, resolvePluginStoragePath } from '@nocobase/utils';
 import fs from 'fs';
 import type { TFuncKey, TOptions } from 'i18next';
 import { resolve } from 'path';
@@ -221,6 +221,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
       return;
     }
     const toolsLoader = new ToolsLoader(this.ai, {
+      pluginName: this.getName(),
       scan: {
         basePath,
         pattern: ['**/tools/**/*.ts', '**/tools/**/*.js', '!**/tools/**/*.d.ts', '**/tools/**/*/description.md'],
@@ -229,6 +230,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     });
     await toolsLoader.load();
     const mcpLoader = new MCPLoader(this.ai, {
+      pluginName: this.getName(),
       scan: {
         basePath,
         pattern: ['mcp/*.ts', 'mcp/*.js', '!mcp/*.d.ts'],
@@ -237,11 +239,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
     });
     await mcpLoader.load();
     const skillsLoader = new SkillsLoader(this.ai, {
+      pluginName: this.getName(),
       scan: { basePath, pattern: ['**/skills/**/SKILLS.md'] },
       log: this.log,
     });
     await skillsLoader.load();
     const employeeLoader = new AIEmployeeLoader(this.ai, {
+      pluginName: this.getName(),
       scan: {
         basePath,
         pattern: [
@@ -285,7 +289,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
       'zh-CN': 'cn/',
       'en-US': '',
       'ja-JP': 'ja/',
-      'ko-KR': 'ko/',
       'es-ES': 'es/',
       'pt-PT': 'pt/',
       'de-DE': 'de',
@@ -316,7 +319,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
         ...(await checkAndGetCompatible(packageName)),
         lastUpdated: (await fs.promises.stat(file)).ctime,
         file,
-        updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
+        updatable: file.startsWith(resolvePluginStoragePath()),
       };
     }
 

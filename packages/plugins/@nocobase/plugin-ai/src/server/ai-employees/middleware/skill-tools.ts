@@ -23,13 +23,27 @@ export const skillToolBindingMiddleware = (
     return new Set([...baseToolNames, ...activatedSkillToolNames]);
   };
 
+  const getToolName = (tool: any) => {
+    if (!tool || typeof tool !== 'object') {
+      return null;
+    }
+    if (typeof tool.name === 'string') {
+      return tool.name;
+    }
+    if (typeof tool.function?.name === 'string') {
+      return tool.function.name;
+    }
+    return null;
+  };
+
   const filterRequestTools = async (tools: any[] = []) => {
     const allowedToolNames = await getAllowedToolNames();
-    return tools.filter((tool: any) => {
-      if (!tool || typeof tool !== 'object' || typeof tool.name !== 'string') {
+    return tools.filter((tool) => {
+      const name = getToolName(tool);
+      if (name == null) {
         return true;
       }
-      return allowedToolNames.has(tool.name);
+      return name && allowedToolNames.has(name);
     });
   };
 

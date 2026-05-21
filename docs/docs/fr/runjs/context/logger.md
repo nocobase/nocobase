@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/logger).
-:::
-
 # ctx.logger
 
 Une encapsulation de journalisation basée sur [pino](https://github.com/pinojs/pino), offrant des journaux JSON structurés de haute performance. Il est recommandé d'utiliser `ctx.logger` au lieu de `console` pour faciliter la collecte et l'analyse des journaux.

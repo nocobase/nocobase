@@ -5,10 +5,6 @@ description: "Separar servicios de larga duración (flujo de trabajo, tareas as�
 keywords: "división de servicios,WORKER_MODE,flujo asíncrono,async-task,escalado horizontal,nodo de petición,nodo de tareas,NocoBase"
 ---
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Servicios distribuidos <Badge>v1.9.0+</Badge>
 
 ## Introducción
@@ -72,12 +68,14 @@ Supongamos que hay cuatro nodos: `node1`, `node2`, `node3` y `node4`. Se pueden 
 Al desarrollar *plugins* de negocio, puede dividir los servicios que consumen recursos significativos según los requisitos del escenario. Esto se puede lograr de las siguientes maneras:
 
 1.  Defina un nuevo identificador de servicio, por ejemplo, `my-plugin:process`, para la configuración de la variable de entorno y proporcione la documentación correspondiente.
-2.  En la lógica de negocio del lado del servidor del *plugin*, utilice la interfaz `app.serving()` para verificar el entorno y determinar si el nodo actual debe proporcionar un servicio específico basándose en la variable de entorno.
+2.  En la lógica de negocio del lado del servidor del *plugin*, utilice la interfaz `serving()` para verificar el entorno y determinar si el nodo actual debe proporcionar un servicio específico basándose en la variable de entorno.
 
 ```javascript
+import { serving } from '@nocobase/server';
+
 const MY_PLUGIN_SERVICE_KEY = 'my-plugin:process';
 // En el código del lado del servidor del plugin
-if (this.app.serving(MY_PLUGIN_SERVICE_KEY)) {
+if (serving(MY_PLUGIN_SERVICE_KEY)) {
   // Procesar la lógica de negocio para este servicio
 } else {
   // No procesar la lógica de negocio para este servicio

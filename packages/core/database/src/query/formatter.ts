@@ -16,11 +16,14 @@ export type Fn = ReturnType<typeof Sequelize.fn>;
 
 export abstract class Formatter {
   sequelize: Sequelize;
-  constructor(sequelize: Sequelize) {
+  rawTimezone?: string;
+
+  constructor(sequelize: Sequelize, rawTimezone?: string) {
     this.sequelize = sequelize;
+    this.rawTimezone = rawTimezone;
   }
 
-  abstract formatDate(field: Col, format: string, timezone?: string): any;
+  abstract formatDate(field: Col, format: string, timezone?: string, preserveLocalTime?: boolean): Fn | Col;
 
   abstract formatUnixTimeStamp(
     field: string,
@@ -29,14 +32,17 @@ export abstract class Formatter {
     timezone?: string,
   ): any;
 
-  getTimezoneByOffset(offset: string): any {
-    if (!/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
+  protected getTimezoneByOffset(offset?: string) {
+    if (!offset) {
+      return;
+    }
+    if (moment.tz.zone(offset)) {
       return offset;
     }
-    const offsetMinutes = moment.duration(offset).asMinutes();
-    return moment.tz.names().find((timezone) => {
-      return moment.tz(timezone).utcOffset() === offsetMinutes;
-    });
+    if (/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
+      return offset;
+    }
+    return;
   }
 
   convertFormat(format: string): any {
@@ -52,6 +58,7 @@ export abstract class Formatter {
       case 'datetimeTz':
         return this.formatDate(col, format, timezone);
       case 'datetimeNoTz':
+        return this.formatDate(col, format, undefined, true);
       case 'dateOnly':
       case 'time':
         return this.formatDate(col, format);

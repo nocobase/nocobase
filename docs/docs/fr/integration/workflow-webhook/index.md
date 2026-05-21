@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Intégration de Webhook dans les flux de travail
 
 Grâce aux déclencheurs Webhook, NocoBase peut recevoir des appels HTTP de systèmes tiers et déclencher automatiquement des flux de travail, permettant ainsi une intégration transparente avec des systèmes externes.
@@ -55,7 +51,7 @@ Lorsqu'une modification de données se produit dans des systèmes externes (tels
 
 ### 1. Installer le plugin
 
-Dans le gestionnaire de plugins, recherchez et installez le **[plugin flux de travail : Déclencheur Webhook](/plugins/@nocobase/plugin-workflow-webhook/)**.
+Dans le gestionnaire de plugins, recherchez et installez le **[plugin flux de travail : Déclencheur Webhook](/plugins/@nocobase/plugin-workflow-webhook/index.md)**.
 
 > Remarque : Ce plugin est un plugin commercial et nécessite un achat ou un abonnement séparé.
 
@@ -246,7 +242,7 @@ if (branch === 'main') {
 
 ## Ressources associées
 
-- [Documentation du plugin flux de travail](/plugins/@nocobase/plugin-workflow/)
+- [Documentation du plugin flux de travail](/plugins/@nocobase/plugin-workflow/index.md)
 - [Flux de travail : Déclencheur Webhook](/workflow/triggers/webhook)
-- [Flux de travail : Nœud de requête HTTP](/integration/workflow-http-request/)
-- [Authentification par clés API](/integration/api-keys/)
+- [Flux de travail : Nœud de requête HTTP](/integration/workflow-http-request/index.md)
+- [Authentification par clés API](/integration/api-keys/index.md)

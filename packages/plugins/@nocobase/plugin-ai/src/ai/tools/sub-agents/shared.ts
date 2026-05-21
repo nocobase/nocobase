@@ -62,6 +62,8 @@ export function serializeEmployeeDetail(ctx: Context, employee: Model) {
 async function buildAccessibleEmployeeFilter(ctx: Context) {
   const filter: Record<string, any> = {
     enabled: true,
+    category: 'business',
+    deprecated: false,
   };
 
   if (ctx.state.currentRoles?.includes('root')) {

@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/blocks/data-blocks/form).
-:::
-
 # Formular-Block
 
 ## Einführung
@@ -77,7 +73,7 @@ Der Formular-Block unterstützt zwei Layout-Modi, die über das Attribut `layout
 
 ### Feldvorlagen
 
-Feldvorlagen werden verwendet, um die Konfiguration von Feldbereichen in Formular-Blöcken wiederzuverwenden. Weitere Details finden Sie unter [Feldvorlagen](/interface-builder/fields/field-template).
+Feldvorlagen werden verwendet, um die Konfiguration von Feldbereichen in Formular-Blöcken wiederzuverwenden. Weitere Details finden Sie unter [Feldvorlagen](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

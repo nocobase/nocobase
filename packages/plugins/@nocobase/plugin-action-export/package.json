@@ -6,10 +6,9 @@
   "description": "Export filtered records to excel, you can configure which fields to export.",
   "description.ru-RU": "Экспорт в Excel: можно настроить, какие поля будут экспортироваться.",
   "description.zh-CN": "导出筛选后的记录到 Excel 中，可以配置导出哪些字段。",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/action-export",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-export",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-export",
@@ -30,11 +29,12 @@
     "node-xlsx": "^0.16.1",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+    "xlsx": "^0.18.5"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/database": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",

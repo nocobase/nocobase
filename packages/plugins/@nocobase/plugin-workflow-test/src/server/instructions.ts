@@ -158,4 +158,14 @@ export default {
       };
     },
   },
+
+  log: {
+    run({ config = {} }: any, input, processor) {
+      return {
+        status: 1,
+        result: config.result ?? null,
+        log: config.log ?? null,
+      };
+    },
+  },
 };

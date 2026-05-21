@@ -24,27 +24,28 @@ import { QueryField, QueryOptions } from './types';
 type QuerySelection = { field: QueryField; alias?: string };
 
 const ALLOWED_AGG_FUNCS = ['sum', 'count', 'avg', 'min', 'max'];
+const ALLOWED_ORDER_DIRECTIONS = ['ASC', 'DESC'];
 
 function createQueryFormatter(database: Database): QueryFormatter {
   switch (database.sequelize.getDialect()) {
     case 'sqlite':
-      return new SQLiteQueryFormatter(database.sequelize);
+      return new SQLiteQueryFormatter(database.sequelize, database.options.rawTimezone);
     case 'postgres':
-      return new PostgresQueryFormatter(database.sequelize);
+      return new PostgresQueryFormatter(database.sequelize, database.options.rawTimezone);
     case 'mysql':
     case 'mariadb':
-      return new MySQLQueryFormatter(database.sequelize);
+      return new MySQLQueryFormatter(database.sequelize, database.options.rawTimezone);
     case 'oracle':
-      return new OracleQueryFormatter(database.sequelize);
+      return new OracleQueryFormatter(database.sequelize, database.options.rawTimezone);
     default:
       return new (class extends QueryFormatter {
-        formatDate(field: Col, _format: string, _timezone?: string) {
+        formatDate(field: Col, _format: string, _timezone?: string, _preserveLocalTime?: boolean) {
           return field;
         }
         formatUnixTimestamp(field: string, _format: string, _accuracy?: 'second' | 'millisecond', _timezone?: string) {
           return this.sequelize.col(field);
         }
-      })(database.sequelize);
+      })(database.sequelize, database.options.rawTimezone);
   }
 }
 
@@ -146,6 +147,7 @@ export function buildQuery(database: Database, collection: Collection, options: 
   let hasAgg = false;
   const attributes: any[] = [];
   const fieldMap: Record<string, any> = {};
+  const projectedFieldMap: Record<string, any> = {};
 
   measures.forEach((measure: any) => {
     const { field, aggregation, alias, distinct } = measure;
@@ -165,6 +167,7 @@ export function buildQuery(database: Database, collection: Collection, options: 
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
     fieldMap[alias || field] = measure;
+    projectedFieldMap[alias || field] = attribute[0];
   });
 
   const group: any[] = [];
@@ -184,12 +187,15 @@ export function buildQuery(database: Database, collection: Collection, options: 
       group.push(attribute[0]);
     }
     fieldMap[alias || field] = dimension;
+    projectedFieldMap[alias || field] = attribute[0];
   });
 
   const order: Order = orders.map((item: any) => {
     const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
-    const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-    let sort = (item.order || 'ASC').toUpperCase();
+    const projectedField =
+      projectedFieldMap[item.alias] || projectedFieldMap[item.name] || projectedFieldMap[item.field as string];
+    const name = hasAgg ? projectedField || sequelize.literal(alias) : sequelize.col(item.field as string);
+    let sort = ALLOWED_ORDER_DIRECTIONS.includes(item.order?.toUpperCase()) ? item.order.toUpperCase() : 'ASC';
     if (item.nulls === 'first') {
       sort += ' NULLS FIRST';
     }
@@ -219,14 +225,24 @@ export function buildQuery(database: Database, collection: Collection, options: 
 }
 
 export function normalizeQueryResult(data: any[], fieldMap: Record<string, any>) {
+  const dateTimeTypes = ['date', 'datetime', 'datetimeTz', 'datetimeNoTz'];
+
   return data.map((record: any) => {
     Object.entries(record).forEach(([key, value]) => {
       if (value === null || value === undefined) {
         return;
       }
-      const type = fieldMap[key]?.type;
+      const field = fieldMap[key];
+      const type = field?.type;
       if (['bigInt', 'integer', 'float', 'double', 'decimal'].includes(type)) {
         record[key] = Number(value);
+        return;
+      }
+      if (!field?.format && dateTimeTypes.includes(type) && !(value instanceof Date)) {
+        const dateValue = new Date(value as string | number);
+        if (!Number.isNaN(dateValue.getTime())) {
+          record[key] = dateValue;
+        }
       }
     });
     return record;

@@ -1,0 +1,323 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type {
+  FlowSurfacePlanStep,
+  FlowSurfaceReadLocator,
+  FlowSurfaceSurfaceSelector,
+  FlowSurfaceResourceBindingKey,
+} from '../types';
+import type { FlowSurfaceApplyBlueprintReactionItem, FlowSurfaceFieldLinkageRule } from '../reaction/types';
+
+export type FlowSurfaceApplyBlueprintMode = 'create' | 'replace';
+
+export type FlowSurfaceApplyBlueprintTarget = {
+  pageSchemaUid: string;
+};
+
+export type FlowSurfaceApplyBlueprintNavigationGroup = {
+  routeId?: string | number;
+  title?: string;
+  icon?: string;
+  tooltip?: string;
+  hideInMenu?: boolean;
+};
+
+export type FlowSurfaceApplyBlueprintNavigation = {
+  group?: FlowSurfaceApplyBlueprintNavigationGroup;
+  item?: {
+    title?: string;
+    icon?: string;
+    tooltip?: string;
+    hideInMenu?: boolean;
+  };
+};
+
+export type FlowSurfaceApplyBlueprintPage = {
+  title?: string;
+  icon?: string;
+  documentTitle?: string;
+  enableHeader?: boolean;
+  enableTabs?: boolean;
+  displayTitle?: boolean;
+};
+
+export type FlowSurfaceApplyBlueprintAssetMap = Record<string, Record<string, any>>;
+
+export type FlowSurfaceApplyBlueprintAssets = {
+  scripts?: FlowSurfaceApplyBlueprintAssetMap;
+  charts?: FlowSurfaceApplyBlueprintAssetMap;
+};
+
+export type FlowSurfaceApplyBlueprintIdentifier = string | number;
+
+export type FlowSurfaceApplyBlueprintLayoutCellObject = {
+  key: string;
+  span?: number;
+};
+
+export type FlowSurfaceApplyBlueprintLayoutCell = string | FlowSurfaceApplyBlueprintLayoutCellObject;
+
+export type FlowSurfaceApplyBlueprintLayout = {
+  rows: FlowSurfaceApplyBlueprintLayoutCell[][];
+};
+
+export type FlowSurfaceApplyBlueprintSemanticResource = {
+  binding: FlowSurfaceResourceBindingKey;
+  dataSourceKey?: string;
+  collectionName?: string;
+  associationField?: string;
+};
+
+export type FlowSurfaceApplyBlueprintRawResource = {
+  dataSourceKey?: string;
+  collectionName?: string;
+  associationName?: string;
+  associationPathName?: string;
+  sourceId?: FlowSurfaceApplyBlueprintIdentifier;
+  filterByTk?: FlowSurfaceApplyBlueprintIdentifier;
+};
+
+export type FlowSurfaceApplyBlueprintBlockResource =
+  | FlowSurfaceApplyBlueprintSemanticResource
+  | FlowSurfaceApplyBlueprintRawResource;
+
+export type FlowSurfaceApplyBlueprintPopup = {
+  title?: string;
+  mode?: 'replace' | 'append' | 'drawer' | 'dialog' | 'page' | 'modal' | 'embed';
+  template?: Record<string, any>;
+  tryTemplate?: boolean;
+  defaultType?: 'view' | 'edit';
+  saveAsTemplate?: {
+    name: string;
+    description: string;
+    local?: string;
+  };
+  blocks?: FlowSurfaceApplyBlueprintBlockSpec[];
+  layout?: FlowSurfaceApplyBlueprintLayout;
+};
+
+export type FlowSurfaceApplyBlueprintFieldObjectSpec = {
+  key?: string;
+  field?: string;
+  associationPathName?: string;
+  renderer?: string;
+  type?: string;
+  fieldType?: string;
+  fields?: string[];
+  titleField?: string;
+  openMode?: string;
+  popupSize?: string;
+  pageSize?: number;
+  showIndex?: boolean;
+  label?: string;
+  target?: string;
+  settings?: Record<string, any>;
+  popup?: FlowSurfaceApplyBlueprintPopup;
+  script?: string;
+  chart?: string;
+};
+
+export type FlowSurfaceApplyBlueprintFieldSpec = string | FlowSurfaceApplyBlueprintFieldObjectSpec;
+
+export type FlowSurfaceApplyBlueprintFieldGroupSpec = {
+  key?: string;
+  title: string;
+  fields: FlowSurfaceApplyBlueprintFieldSpec[];
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFieldObjectSpec = {
+  field: string;
+  titleField?: string;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFieldSpec = string | FlowSurfaceApplyBlueprintDefaultFieldObjectSpec;
+
+export type FlowSurfaceApplyBlueprintDefaultFieldGroupSpec = {
+  key?: string;
+  title: string;
+  fields: FlowSurfaceApplyBlueprintDefaultFieldSpec[];
+};
+
+export type FlowSurfaceApplyBlueprintDefaultPopupName = {
+  name: string;
+  description: string;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultPopupActionMap = {
+  view?: FlowSurfaceApplyBlueprintDefaultPopupName;
+  addNew?: FlowSurfaceApplyBlueprintDefaultPopupName;
+  edit?: FlowSurfaceApplyBlueprintDefaultPopupName;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultPopups = FlowSurfaceApplyBlueprintDefaultPopupActionMap & {
+  associations?: Record<string, FlowSurfaceApplyBlueprintDefaultPopupActionMap>;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorField = {
+  settings?: Record<string, any>;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorScene = {
+  fields?: Record<string, FlowSurfaceApplyBlueprintDefaultFormBehaviorField>;
+  fieldLinkageRules?: FlowSurfaceFieldLinkageRule[];
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehavior = {
+  addNew?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
+  edit?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewDecision =
+  | 'implemented'
+  | 'noUiBehavior'
+  | 'unsupported';
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewReasonCode =
+  | 'no-ui-behavior'
+  | 'ambiguous-description'
+  | 'unsupported-cross-field-validation'
+  | 'unsupported-association-filter'
+  | 'workflow-or-ai-generation-out-of-scope'
+  | 'ai-generated-content-out-of-scope';
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewField = null | {
+  decision: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewDecision;
+  reasonCode?: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewReasonCode;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview = {
+  fields: Record<string, FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewField>;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultCollection = {
+  fieldGroups?: FlowSurfaceApplyBlueprintDefaultFieldGroupSpec[];
+  popups?: FlowSurfaceApplyBlueprintDefaultPopups;
+  formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior;
+  formBehaviorDescriptionReview?: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultDataSource = {
+  collections?: Record<string, FlowSurfaceApplyBlueprintDefaultCollection>;
+};
+
+export type FlowSurfaceApplyBlueprintDefaults = {
+  collections?: Record<string, FlowSurfaceApplyBlueprintDefaultCollection>;
+  dataSources?: Record<string, FlowSurfaceApplyBlueprintDefaultDataSource>;
+};
+
+export type FlowSurfaceApplyBlueprintActionObjectSpec = {
+  key?: string;
+  type: string;
+  title?: string;
+  settings?: Record<string, any>;
+  popup?: FlowSurfaceApplyBlueprintPopup;
+  script?: string;
+  chart?: string;
+};
+
+export type FlowSurfaceApplyBlueprintActionSpec = string | FlowSurfaceApplyBlueprintActionObjectSpec;
+
+export type FlowSurfaceApplyBlueprintBlockType =
+  | 'table'
+  | 'createForm'
+  | 'editForm'
+  | 'details'
+  | 'filterForm'
+  | 'calendar'
+  | 'kanban'
+  | 'list'
+  | 'gridCard'
+  | 'markdown'
+  | 'iframe'
+  | 'chart'
+  | 'comments'
+  | 'recordHistory'
+  | 'actionPanel'
+  | 'jsBlock'
+  | 'tree';
+
+export type FlowSurfaceApplyBlueprintBlockSpec = {
+  key?: string;
+  type?: FlowSurfaceApplyBlueprintBlockType;
+  title?: string;
+  description?: string;
+  height?: number;
+  heightMode?: string;
+  collection?: string;
+  dataSourceKey?: string;
+  associationPathName?: string;
+  binding?: FlowSurfaceResourceBindingKey;
+  associationField?: string;
+  resource?: FlowSurfaceApplyBlueprintBlockResource;
+  template?: Record<string, any>;
+  settings?: Record<string, any>;
+  fields?: FlowSurfaceApplyBlueprintFieldSpec[];
+  fieldGroups?: FlowSurfaceApplyBlueprintFieldGroupSpec[];
+  fieldsLayout?: FlowSurfaceApplyBlueprintLayout;
+  defaultFilter?: Record<string, any>;
+  actions?: FlowSurfaceApplyBlueprintActionSpec[];
+  recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
+  script?: string;
+  chart?: string;
+  pageSize?: number;
+  sort?: unknown;
+  sorting?: unknown;
+  titleField?: string;
+  colorField?: string;
+  startField?: string;
+  endField?: string;
+};
+
+export type FlowSurfaceApplyBlueprintTabDocument = {
+  key: string;
+  title?: string;
+  icon?: string;
+  documentTitle?: string;
+  blocks: FlowSurfaceApplyBlueprintBlockSpec[];
+  layout?: FlowSurfaceApplyBlueprintLayout;
+};
+
+export type FlowSurfaceApplyBlueprintReaction = {
+  items: FlowSurfaceApplyBlueprintReactionItem[];
+};
+
+export type FlowSurfaceApplyBlueprintDocument = {
+  version: '1';
+  mode: FlowSurfaceApplyBlueprintMode;
+  target?: FlowSurfaceApplyBlueprintTarget;
+  navigation?: FlowSurfaceApplyBlueprintNavigation;
+  page?: FlowSurfaceApplyBlueprintPage;
+  defaults?: FlowSurfaceApplyBlueprintDefaults;
+  tabs: FlowSurfaceApplyBlueprintTabDocument[];
+  assets: FlowSurfaceApplyBlueprintAssets;
+  reaction?: FlowSurfaceApplyBlueprintReaction;
+};
+
+export type FlowSurfaceApplyBlueprintCollectionResolver = (
+  dataSourceKey: string | undefined,
+  collectionName: string | undefined,
+) => any;
+
+export type FlowSurfaceApplyBlueprintReplaceTargetInfo = {
+  locator: FlowSurfaceReadLocator;
+  pageUid: string;
+  pageEnableTabs?: boolean;
+  tabs: Array<{
+    uid: string;
+  }>;
+};
+
+export type FlowSurfaceApplyBlueprintProgram = {
+  document: FlowSurfaceApplyBlueprintDocument;
+  surface?: FlowSurfaceSurfaceSelector;
+  steps: FlowSurfacePlanStep[];
+  pageLocator: FlowSurfaceReadLocator;
+  pageUid?: string;
+};

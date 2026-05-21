@@ -33,6 +33,7 @@ const InnerInboxContent = () => {
   const { t } = useLocalTranslation();
   const channels = channelListObs.value;
   const selectedChannelName = selectedChannelNameObs.value;
+  const visible = inboxVisible.value;
 
   const onLoadChannelsMore = useCallback(() => {
     const filter: Record<string, any> = {};
@@ -46,10 +47,10 @@ const InnerInboxContent = () => {
   }, [channels]);
 
   useEffect(() => {
-    if (inboxVisible.value) {
+    if (visible) {
       fetchChannels({ limit: 30 });
     }
-  }, [inboxVisible.value]);
+  }, [visible]);
 
   const loadChannelsMore = showChannelLoadingMoreObs.value ? (
     <div

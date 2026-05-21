@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/solution/ticket-system/installation).
-:::
-
 # Wie man installiert
 
 > Die aktuelle Version verwendet die Form der **Sicherung und Wiederherstellung** für die Bereitstellung. In späteren Versionen werden wir möglicherweise auf die Form der **inkrementellen Migration** umsteigen, um die Integration der Lösung in Ihr bestehendes System zu erleichtern.
@@ -132,3 +128,6 @@ Konfigurieren Sie Ihre NocoBase-Startparameter (wie die Umgebungsvariablen `DB_H
 | **Empfohlenes Szenario** | Enterprise-Benutzer mit kontrollierbarer, konsistenter Umgebung, die den vollen Funktionsumfang benötigen | Fehlen einiger Plugins, Wunsch nach hoher Kompatibilität und Flexibilität, Nicht-Pro/Enterprise-Benutzer, Verlust der Dateifunktionen akzeptabel |
 
 Wir hoffen, dass dieses Tutorial Ihnen hilft, das Ticket-System erfolgreich bereitzustellen. Wenn Sie während des Vorgangs auf Probleme stoßen, können Sie uns jederzeit kontaktieren!
+---
+
+*Last updated: 2026-03-24*

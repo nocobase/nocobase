@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "إعدادات النظام",
+    "link": "/system-settings/"
+  },
+  {
+    "type": "custom-link",
+    "label": "مدير الإضافات",
+    "link": "/system-settings/plugin-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "إعدادات اللغة",
+    "link": "/system-settings/language-settings/"
+  },
+  {
+    "type": "custom-link",
+    "label": "إدارة الترجمة",
+    "link": "/system-settings/localization-management/"
+  },
+  {
+    "type": "custom-link",
+    "label": "العلامة التجارية المخصصة",
+    "link": "/system-settings/custom-brand/"
+  },
+  {
+    "type": "custom-link",
+    "label": "محرر السمات",
+    "link": "/system-settings/theme-editor/"
+  }
+]

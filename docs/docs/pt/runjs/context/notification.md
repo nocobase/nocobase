@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/runjs/context/notification).
-:::
-
 # ctx.notification
 
 Baseada na API de notificação do Ant Design, esta API global de notificação é usada para exibir painéis de notificação no **canto superior direito** da página. Comparada ao `ctx.message`, as notificações podem incluir um título e uma descrição, tornando-as adequadas para conteúdos que precisam ser exibidos por um período mais longo ou que exigem a atenção do usuário.

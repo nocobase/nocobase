@@ -8,7 +8,7 @@
  */
 
 import { theme } from 'antd';
-import { CustomToken } from '../../../../global-theme';
+import type { CustomToken } from '@nocobase/client-v2';
 
 interface Result extends ReturnType<typeof theme.useToken> {
   token: CustomToken;

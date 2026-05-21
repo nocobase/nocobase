@@ -5,10 +5,6 @@ description: "Plugin-Entwicklung im Cluster-Modus: Cache, SyncMessageManager, Pu
 keywords: "Cluster Plugin-Entwicklung,Cache,SyncMessageManager,PubSubManager,Queue,verteilte Sperre,WORKER_MODE,NocoBase"
 ---
 
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Plugin-Entwicklung
 
 ## Hintergrund und Problemstellung

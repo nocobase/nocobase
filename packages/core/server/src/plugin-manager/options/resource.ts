@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Cache } from '@nocobase/cache';
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import fs from 'fs';
 import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
-import crypto from 'crypto';
+import { pmListSummary } from '../utils';
 
 import packageJson from '../../../package.json';
 
@@ -30,6 +30,32 @@ const PLUGIN_CLIENT_MARKER_FILES: Record<PluginClientLane, string> = {
   'client-v2': 'client-v2.js',
 };
 
+function getAppDevPluginUrls(): Record<string, Partial<Record<PluginClientLane, string>>> {
+  if (process.env.NOCOBASE_APP_DEV !== 'true' || !process.env.NOCOBASE_APP_DEV_PLUGIN_URLS) {
+    return {};
+  }
+  try {
+    return JSON.parse(process.env.NOCOBASE_APP_DEV_PLUGIN_URLS);
+  } catch (error) {
+    return {};
+  }
+}
+
+function getAppDevPluginDependencies(packageJson: any, lane: PluginClientLane): string[] {
+  const appDevPluginUrls = getAppDevPluginUrls();
+  const deps = {
+    ...packageJson.dependencies,
+    ...packageJson.peerDependencies,
+    ...packageJson.devDependencies,
+  };
+  return Object.keys(deps).filter(
+    (packageName) =>
+      appDevPluginUrls[packageName]?.[lane] ||
+      packageName.startsWith('@nocobase/plugin-') ||
+      packageName.startsWith('@nocobase/preset-'),
+  );
+}
+
 export class PackageUrls {
   static items: Record<string, string | undefined> = {};
 
@@ -42,14 +68,37 @@ export class PackageUrls {
   }
 
   static async get(packageName: string, lane: PluginClientLane = 'client') {
-    const cacheKey = this.getCacheKey(packageName, lane);
-    if (!this.items[cacheKey]) {
-      this.items[cacheKey] = await this.fetch(packageName, lane);
+    const appDevUrl = this.getAppDevUrl(packageName, lane);
+    if (appDevUrl) {
+      return appDevUrl;
     }
-    return this.items[cacheKey];
+
+    const cacheKey = this.getCacheKey(packageName, lane);
+    const cached = this.items[cacheKey];
+    if (cached) {
+      return cached;
+    }
+
+    const nextUrl = await this.fetch(packageName, lane);
+
+    if (nextUrl?.includes('?hash=')) {
+      this.items[cacheKey] = nextUrl;
+    } else {
+      delete this.items[cacheKey];
+    }
+
+    return nextUrl;
+  }
+
+  static getAppDevUrl(packageName: string, lane: PluginClientLane) {
+    return getAppDevPluginUrls()[packageName]?.[lane];
   }
 
   static async hasClientEntry(packageName: string, lane: PluginClientLane) {
+    if (this.getAppDevUrl(packageName, lane)) {
+      return true;
+    }
+
     const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
     if (!(await fse.exists(pkgPath))) {
       return false;
@@ -112,21 +161,77 @@ async function listEnabledPlugins(ctx, lane: PluginClientLane = 'client') {
     const url = await PackageUrls.get(item.packageName, lane);
     const { name, packageName, options } = item.toJSON();
     if (url) {
-      arr.push({
+      const entry: {
+        name: string;
+        packageName: string;
+        options: unknown;
+        url: string;
+        clientV2Url?: string;
+        devMode?: 'esm';
+        appDevDependencies?: string[];
+      } = {
         name,
         packageName,
         options,
         url,
-      });
+      };
+      if (PackageUrls.getAppDevUrl(packageName, lane)) {
+        const packageJson = await PluginManager.getPackageJson(packageName);
+        entry.devMode = 'esm';
+        entry.appDevDependencies = getAppDevPluginDependencies(packageJson, lane);
+      }
+      // 让 v1 lane 的前端 PluginManager 能精准注册跨 lane 的 paths,而不必猜 URL。
+      if (lane === 'client' && (await PackageUrls.hasClientEntry(packageName, 'client-v2'))) {
+        const clientV2Url = await PackageUrls.get(packageName, 'client-v2');
+        if (clientV2Url) {
+          entry.clientV2Url = clientV2Url;
+        }
+      }
+      arr.push(entry);
     }
   }
   return arr;
+}
+
+function normalizePmPluginKeys(filterByTk: unknown): string[] {
+  if (typeof filterByTk === 'string') {
+    return filterByTk
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean);
+  }
+
+  if (!Array.isArray(filterByTk) || filterByTk.some((item) => typeof item !== 'string')) {
+    return [];
+  }
+
+  return filterByTk.flatMap((item) =>
+    item
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean),
+  );
+}
+
+/** Query/body values often arrive as strings (`"true"`, `"1"`). */
+function coerceAwaitResponse(value: unknown): boolean {
+  if (value === true || value === 1) {
+    return true;
+  }
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes';
+  }
+  return false;
 }
 
 export default {
   name: 'pm',
   actions: {
     async add(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const { values = {} } = ctx.action.params;
       if (values?.packageName) {
@@ -142,13 +247,13 @@ export default {
         }
         app.runAsCLI(['pm', 'add', values.packageName, ...args], { from: 'user' });
       } else if (ctx.file) {
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         app.runAsCLI(['pm', 'add', tempFile], { from: 'user' });
       } else if (values.compressedFileUrl) {
@@ -158,6 +263,9 @@ export default {
       await next();
     },
     async update(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const values = ctx.action.params.values || {};
       const args = [];
@@ -175,13 +283,13 @@ export default {
       // }
       if (ctx.file) {
         values.packageName = ctx.request.body.packageName;
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         // args.push(`--url=${tempFile}`);
         values.compressedFileUrl = tempFile;
@@ -200,23 +308,40 @@ export default {
       await next();
     },
     async enable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
       const app = ctx.app as Application;
-      if (!filterByTk) {
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
         ctx.throw(400, 'plugin name invalid');
       }
-      const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
-      app.runAsCLI(['pm', 'enable', ...keys], { from: 'user' });
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'enable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
     async disable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
-      if (!filterByTk) {
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
+      const app = ctx.app as Application;
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
         ctx.throw(400, 'plugin name invalid');
       }
-      const app = ctx.app as Application;
-      app.runAsCLI(['pm', 'disable', filterByTk], { from: 'user' });
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'disable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
@@ -231,6 +356,11 @@ export default {
       await next();
     },
     async list(ctx, next) {
+      const { mode } = ctx.action.params;
+      if (mode === 'summary') {
+        ctx.body = await pmListSummary(ctx.app);
+        return next();
+      }
       const locale = ctx.getCurrentLocale();
       const pm = ctx.app.pm as PluginManager;
       // ctx.body = await pm.list({ locale, isPreset: false });

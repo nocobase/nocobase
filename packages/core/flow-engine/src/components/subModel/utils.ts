@@ -196,12 +196,16 @@ export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstruc
       const baseKey = typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name;
       const menuType = BaseClass?.meta?.menuType || 'group';
       const groupSort = BaseClass?.meta?.sort ?? 1000;
+      const searchable = !!BaseClass?.meta?.searchable;
+      const searchPlaceholder = BaseClass?.meta?.searchPlaceholder;
       if (menuType === 'submenu') {
         // 作为可点击的一级项，展开二级子菜单
         items.push({
           key: baseKey,
           label: groupLabel,
           sort: groupSort,
+          searchable,
+          searchPlaceholder,
           children,
         });
       } else {
@@ -211,6 +215,8 @@ export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstruc
           type: 'group',
           label: groupLabel,
           sort: groupSort,
+          searchable,
+          searchPlaceholder,
           children,
         });
       }

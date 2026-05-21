@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-workbench",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "displayName": "Block: Action panel",
   "displayName.ru-RU": "Блок: Панель действий",
   "displayName.zh-CN": "区块：操作面板",
@@ -8,9 +8,9 @@
   "description.ru-RU": "Централизованное управление и отображение различных действий для эффективного выполнения задач. Поддерживает расширяемость, текущие типы действий — всплывающие окна, ссылки, сканирование и произвольные запросы.",
   "description.zh-CN": "集中管理和展示各种操作，方便用户快速执行任务。支持扩展，目前支持的操作类型有弹窗、链接、扫描、自定义请求。",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/plugin-mobile": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"

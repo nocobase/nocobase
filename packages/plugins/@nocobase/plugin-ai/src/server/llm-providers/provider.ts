@@ -9,7 +9,7 @@
 
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { Model } from '@nocobase/database';
-import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import axios from 'axios';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
@@ -20,11 +20,31 @@ import { Context } from '@nocobase/actions';
 import '@langchain/core/utils/stream';
 import { LLMResult } from '@langchain/core/outputs';
 import { ContentBlock } from '@langchain/core/messages';
+import { CachedDocumentLoader, SUPPORTED_DOCUMENT_EXTNAMES } from '../document-loader';
+import path from 'node:path';
+import PluginAIServer from '../plugin';
+import { MODEL_KWARGS_KEY } from './common/reasoning';
 
 export type ParsedAttachmentResult = {
   placement: string;
   content: any;
 };
+
+export type LLMProviderInvokeOptions = {
+  modelKwargs?: Record<string, any>;
+  modelRequestParams?: Record<string, any>;
+  [key: string]: any;
+};
+
+export type LLMModelRequestBuilderResult = {
+  context: AIChatContext;
+  options?: LLMProviderInvokeOptions;
+};
+
+export type LLMModelRequestBuilder = (input: {
+  context: AIChatContext;
+  options?: LLMProviderInvokeOptions;
+}) => LLMModelRequestBuilderResult;
 
 export interface LLMProviderOptions {
   app: Application;
@@ -40,7 +60,7 @@ export abstract class LLMProvider {
 
   abstract createModel(): BaseChatModel | any;
 
-  get baseURL() {
+  get baseURL(): string | null {
     return null;
   }
 
@@ -52,6 +72,10 @@ export abstract class LLMProvider {
       this.modelOptions = modelOptions;
       this.chatModel = this.createModel();
     }
+  }
+
+  protected getModelRequestBuilder(_model?: string): LLMModelRequestBuilder | null {
+    return null;
   }
 
   prepareChain(context: AIChatContext) {
@@ -77,9 +101,25 @@ export abstract class LLMProvider {
     return chain;
   }
 
-  async invoke(context: AIChatContext, options?: any) {
-    const chain = this.prepareChain(context);
-    return chain.invoke(context.messages, options);
+  async invoke(context: AIChatContext, options?: LLMProviderInvokeOptions) {
+    const builder = this.getModelRequestBuilder(this.modelOptions?.model);
+    const request = builder?.({ context, options }) || { context, options };
+    const chain = this.prepareChain(request.context);
+    const { modelKwargs, modelRequestParams, options: requestOptions, ...restOptions } = request.options || {};
+    const invokeOptions = modelKwargs
+      ? {
+          ...restOptions,
+          [MODEL_KWARGS_KEY]: modelKwargs,
+          options: {
+            ...(requestOptions || {}),
+            [MODEL_KWARGS_KEY]: modelKwargs,
+          },
+        }
+      : {
+          ...restOptions,
+          ...(requestOptions ? { options: requestOptions } : {}),
+        };
+    return chain.invoke(request.context.messages, invokeOptions);
   }
 
   async stream(context: AIChatContext, options?: any) {
@@ -133,7 +173,34 @@ export abstract class LLMProvider {
     return stripToolCallTags(chunk);
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
+  async parseAttachment(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
+    if (this.isApiSupportedAttachment(attachment)) {
+      return await this.convertToContent(ctx, attachment);
+    } else if (this.isDocumentLoaderSupportedAttachment(attachment)) {
+      return await this.loadDocument(ctx, attachment);
+    } else {
+      const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
+      return {
+        placement: 'system',
+        content: `The user has uploaded a ${attachment.mimetype} file (filename: ${safeFilename}). Please inform the user directly that you do not support parsing ${attachment.mimetype} content.`,
+      };
+    }
+  }
+
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    const media = ['image/'];
+    const pdf = ['application/pdf'];
+    const supportedMedia = media.some((it) => attachment?.mimetype?.startsWith(it));
+    const supportedPdf = pdf.some((it) => attachment?.mimetype?.includes(it));
+    return supportedMedia || supportedPdf;
+  }
+
+  protected isDocumentLoaderSupportedAttachment(attachment: AttachmentModel): boolean {
+    const ext = path.extname(attachment?.filename ?? '').toLocaleLowerCase();
+    return SUPPORTED_DOCUMENT_EXTNAMES.includes(ext);
+  }
+
+  protected async convertToContent(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
     const data = await encodeFile(ctx, decodeURIComponent(url));
@@ -160,6 +227,36 @@ export abstract class LLMProvider {
         } as ContentBlock.Multimodal.File,
       } as ParsedAttachmentResult;
     }
+  }
+
+  protected async loadDocument(ctx: Context, attachment: any): Promise<any> {
+    const referer = ctx.get('referer') || '';
+    const ua = ctx.get('user-agent') || '';
+    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
+    const parsed = await this.documentLoader.load(attachment, {
+      requestOptions: {
+        headers: {
+          Referer: referer,
+          'User-Agent': ua,
+        },
+      },
+    });
+    if (!parsed.supported) {
+      return {
+        placement: 'system',
+        content: `File ${safeFilename} is not a supported document type for text parsing.`,
+      };
+    }
+    if (parsed.text.length === 0) {
+      return {
+        placement: 'system',
+        content: `The file provided by the user is an empty file, file name is "${safeFilename}"`,
+      };
+    }
+    return {
+      placement: 'system',
+      content: `<parsed_document filename="${safeFilename}">\n${parsed.text}\n</parsed_document>`,
+    };
   }
 
   getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']): any {
@@ -236,6 +333,14 @@ export abstract class LLMProvider {
 
   parseResponseError(err) {
     return err?.message ?? 'Unexpected LLM service error';
+  }
+
+  protected get documentLoader(): CachedDocumentLoader {
+    return this.aiPlugin.documentLoaders.cached;
+  }
+
+  protected get aiPlugin(): PluginAIServer {
+    return this.app.pm.get('ai');
   }
 }
 

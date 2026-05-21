@@ -1,8 +1,7 @@
 {
   "name": "@nocobase/plugin-block-markdown",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "displayName": "Block: Markdown",
   "displayName.zh-CN": "Markdown",
   "description": "Provide Markdown block",
@@ -12,6 +11,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-markdown",
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"
   },

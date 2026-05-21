@@ -36,19 +36,24 @@ Click the `Submit` button to create the knowledge base.
 After creating the knowledge base, on the knowledge base list page, click the newly created knowledge base to enter the knowledge base document management page.
 
 
-![20251023100458](https://static-docs.nocobase.com/20251023100458.png)
+![20260426233838](https://static-docs.nocobase.com/20260426233838.png)
 
 
 
-![20251023100527](https://static-docs.nocobase.com/20251023100527.png)
+![20260426233417](https://static-docs.nocobase.com/20260426233417.png)
 
 
 Click the `Upload` button to upload documents. After the documents are uploaded, vectorization will start automatically. Wait for the `Status` to change from `Pending` to `Success`.
 
-Currently, the knowledge base supports the following document types: txt, pdf, doc, docx, ppt, pptx; pdf only supports plain text.
+Currently, the knowledge base supports the following document types: txt, md, json, cvs, xls, xlsx, pdf, doc, docx, ppt, pptx; pdf only supports plain text.
 
+If you need to upload files in bulk, you can create a zip archive and upload it to the knowledge base. The backend will extract the zip archive and automatically import and vectorize the documents.
 
-![20251023100901](https://static-docs.nocobase.com/20251023100901.png)
+![20260426233711](https://static-docs.nocobase.com/20260426233711.png)
+
+If uploading a zip archive fails because the file is too large, you can adjust the upload file size limit in the File Manager module.
+
+![20260426234224](https://static-docs.nocobase.com/20260426234224.png)
 
 
 ## Knowledge Base Types

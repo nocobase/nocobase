@@ -8,12 +8,15 @@
  */
 
 import type { Cache } from '@nocobase/cache';
-import type Application from '@nocobase/server';
+import { defaultTokenPolicyConfig } from '@nocobase/plugin-auth';
+import Application, { AppSupervisor } from '@nocobase/server';
 import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { createCacheAdapter } from './cache-adapter';
+import { storagePathJoin } from '@nocobase/utils';
+import ms from 'ms';
+import { createDbAdapter } from './db-adapter';
 import { normalizeBasePath } from './utils';
 
 type OidcModule = typeof import('oidc-provider');
@@ -58,9 +61,20 @@ type ProviderContext = {
 
 const defaultSupportedScopes = ['openid', 'offline_access', 'profile', 'email'] as const;
 const envJwksKeys = ['IDP_OAUTH_JWKS', 'OAUTH_JWKS'] as const;
+const MAX_CACHE_TTL_MS = 2_147_483_647;
+const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = Math.floor(ms(defaultTokenPolicyConfig.tokenExpirationTime) / 1000);
+const DEFAULT_SESSION_TTL_SECONDS = Math.floor(ms(defaultTokenPolicyConfig.sessionExpirationTime) / 1000);
 type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
   ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
   : { keys: Array<Record<string, any>> };
+
+function policyMillisecondsToSeconds(value: unknown, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.floor(value / 1000));
+}
 
 export class IdpOauthService {
   private providers = new Map<string, ProviderInstance>();
@@ -79,23 +93,91 @@ export class IdpOauthService {
     return process.env.APP_PUBLIC_ORIGIN || `${protocol}://${host}`;
   }
 
-  getIssuerPath(appName = this.app.name) {
-    const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
+  private getApiBasePath() {
+    return normalizeBasePath(process.env.API_BASE_PATH || '/api');
+  }
+
+  private getRequestPath(ctx: any) {
+    if (typeof ctx?.req?.originalUrl === 'string') {
+      return ctx.req.originalUrl.split('?')[0];
+    }
+
+    if (typeof ctx?.path === 'string') {
+      return ctx.path;
+    }
+
+    if (typeof ctx?.req?.url === 'string') {
+      return ctx.req.url.split('?')[0];
+    }
+
+    return '';
+  }
+
+  private getAppIssuerPath(appName = this.app.name) {
+    const apiBasePath = this.getApiBasePath();
     if (appName === 'main') {
       return apiBasePath;
     }
     return `${apiBasePath}/__app/${appName}`;
   }
 
-  getIssuer(origin: string, appName = this.app.name) {
-    return `${origin}${this.getIssuerPath(appName)}`;
+  getIssuerPath(appName = this.app.name, ctx?: any) {
+    const apiBasePath = this.getApiBasePath();
+    if (appName === 'main') {
+      return apiBasePath;
+    }
+
+    const appSupervisor = AppSupervisor.getInstance();
+    if (appSupervisor?.runningMode === 'single') {
+      return apiBasePath;
+    }
+
+    const appIssuerPath = this.getAppIssuerPath(appName);
+    if (!ctx) {
+      return appIssuerPath;
+    }
+
+    const requestPath = this.getRequestPath(ctx);
+    if (!requestPath.startsWith(appIssuerPath)) {
+      return apiBasePath;
+    }
+
+    return appIssuerPath;
+  }
+
+  getIssuer(origin: string, appName = this.app.name, ctx?: any) {
+    return `${origin}${this.getIssuerPath(appName, ctx)}`;
+  }
+
+  private shouldUseSubAppPublicPrefix(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    if (!appName || appName === 'main') {
+      return false;
+    }
+
+    return issuerPath !== this.getApiBasePath();
+  }
+
+  getFrontendInteractionPath(appName: string, uid: string, issuerPath = this.getIssuerPath(appName)) {
+    if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
+      return `/idp-oauth/interaction/${uid}`;
+    }
+
+    return `/apps/${appName}/idp-oauth/interaction/${uid}`;
+  }
+
+  getFrontendErrorPath(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
+      return '/idp-oauth/error';
+    }
+
+    return `/apps/${appName}/idp-oauth/error`;
   }
 
   getProviderContext(ctx: any): ProviderContext {
     const appName = ctx.app?.name || this.app.name;
     const origin = this.getOrigin(ctx);
-    const issuerPath = this.getIssuerPath(appName);
-    const issuer = this.getIssuer(origin, appName);
+    const issuerPath = this.getIssuerPath(appName, ctx);
+    const issuer = this.getIssuer(origin, appName, ctx);
 
     return {
       appName,
@@ -186,13 +268,32 @@ export class IdpOauthService {
   }
 
   private getRequestResourceConfig(ctx: any) {
+    const requestPath = normalizeBasePath(ctx.path || this.getRequestPath(ctx) || '/');
+    let matchedConfig: ResourceServerConfig | undefined;
+    let matchedPathLength = -1;
+
     for (const config of this.resourceServers.values()) {
-      const requestPath = this.getResourcePath(config);
-      if (requestPath && ctx.path === requestPath) {
-        return config;
+      const resourcePath = this.getResourcePath(config);
+      if (!resourcePath) {
+        continue;
+      }
+
+      const normalizedResourcePath = normalizeBasePath(resourcePath);
+      const isRootResource = normalizedResourcePath === normalizeBasePath(`${this.getApiBasePath()}/`);
+      const matches =
+        requestPath === normalizedResourcePath ||
+        requestPath.startsWith(`${normalizedResourcePath}/`) ||
+        (isRootResource && requestPath.startsWith(`${this.getApiBasePath()}/`));
+
+      if (matches) {
+        if (normalizedResourcePath.length > matchedPathLength) {
+          matchedConfig = config;
+          matchedPathLength = normalizedResourcePath.length;
+        }
       }
     }
-    return undefined;
+
+    return matchedConfig;
   }
 
   private async getProviderJwks(provider: ProviderInstance) {
@@ -243,7 +344,7 @@ export class IdpOauthService {
   }
 
   private getDefaultJwksPath(appName: string) {
-    return path.resolve(process.cwd(), 'storage', 'apps', appName, 'idp_oauth_jwks.json');
+    return storagePathJoin('apps', appName, 'idp_oauth_jwks.json');
   }
 
   private async getProviderSigningJwks(appName: string) {
@@ -317,12 +418,17 @@ export class IdpOauthService {
   }
 
   async resolveInteractionBridgeUser(ctx: any) {
-    const { bridge_token: token, bridge_authenticator: authenticator } = ctx.request.body || {};
+    const token = ctx.getBearerToken?.();
     if (!token || typeof token !== 'string') {
+      ctx.logger?.debug?.('idp-oauth interaction bridge user missing token', {
+        path: ctx.path,
+        hasBearerToken: !!token,
+      });
       return undefined;
     }
 
-    const authenticatorName = typeof authenticator === 'string' && authenticator ? authenticator : 'basic';
+    const headerAuthenticator = ctx.get?.('x-authenticator');
+    const authenticatorName = headerAuthenticator || 'basic';
     try {
       const auth = await ctx.app.authManager.get(authenticatorName, {
         app: ctx.app,
@@ -369,7 +475,12 @@ export class IdpOauthService {
         return user;
       }
       return undefined;
-    } catch (_error) {
+    } catch (error) {
+      ctx.logger?.debug?.('idp-oauth interaction bridge user failed', {
+        path: ctx.path,
+        authenticator: authenticatorName,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return undefined;
     }
   }
@@ -437,12 +548,15 @@ export class IdpOauthService {
     const cachedInternalToken = await this.bridgeTokenCache.get<string>(bridgeTokenCacheKey);
     const internalToken = cachedInternalToken || (await this.issueInternalToken(user.id, oauthExpiresInMs));
     if (!cachedInternalToken && typeof oauthExpiresInMs === 'number' && oauthExpiresInMs > 0) {
-      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, oauthExpiresInMs);
+      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, Math.min(oauthExpiresInMs, MAX_CACHE_TTL_MS));
     }
     const authorizationHeader = `Bearer ${internalToken}`;
 
     ctx.req.headers.authorization = authorizationHeader;
+    ctx.request.headers.authorization = authorizationHeader;
+    ctx.getBearerToken = () => internalToken;
     ctx.req.headers['x-authenticator'] = 'basic';
+    ctx.request.headers['x-authenticator'] = 'basic';
     ctx.state.currentUser = user;
     ctx.auth = ctx.auth || {};
     ctx.auth.user = user;
@@ -450,7 +564,7 @@ export class IdpOauthService {
     return user;
   }
 
-  private getPublicErrorLocation(appName: string, out: Record<string, any>) {
+  private getPublicErrorLocation(appName: string, out: Record<string, any>, issuerPath = this.getIssuerPath(appName)) {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(out || {})) {
       if (typeof value === 'undefined' || value === null) {
@@ -459,19 +573,26 @@ export class IdpOauthService {
       query.set(key, String(value));
     }
 
-    return `/idp-oauth/error/${appName}${query.size ? `?${query.toString()}` : ''}`;
+    return `${this.getFrontendErrorPath(appName, issuerPath)}${query.size ? `?${query.toString()}` : ''}`;
   }
 
   private async createConfiguration({ appName, issuer, issuerPath, origin }: ProviderContext) {
     const app = this.app;
+    const service = this;
     const cookieKey = this.app.authManager.jwt.getSecret();
     if (!cookieKey) {
       throw new Error('JWT secret is required for plugin-idp-oauth');
     }
     const jwks = await this.getProviderSigningJwks(appName);
+    const tokenPolicy = await this.app.authManager.tokenController.getConfig();
+    const accessTokenTtl = policyMillisecondsToSeconds(
+      tokenPolicy?.tokenExpirationTime,
+      DEFAULT_ACCESS_TOKEN_TTL_SECONDS,
+    );
+    const sessionTtl = policyMillisecondsToSeconds(tokenPolicy?.sessionExpirationTime, DEFAULT_SESSION_TTL_SECONDS);
 
     return {
-      adapter: createCacheAdapter(this.app.cache, 'idp-oauth'),
+      adapter: createDbAdapter(this.app, 'oidcStates'),
       clients: [],
       scopes: this.getSupportedScopes(),
       jwks,
@@ -485,7 +606,7 @@ export class IdpOauthService {
       },
       interactions: {
         url(_ctx: unknown, interaction: { uid: string }) {
-          return `/idp-oauth/interaction/${appName}/${interaction.uid}`;
+          return service.getFrontendInteractionPath(appName, interaction.uid, issuerPath);
         },
       },
       routes: {
@@ -536,12 +657,12 @@ export class IdpOauthService {
         },
       },
       ttl: {
-        AccessToken: () => 10 * 60,
+        AccessToken: accessTokenTtl,
         AuthorizationCode: 60,
-        Grant: 14 * 24 * 60 * 60,
+        Grant: sessionTtl,
         IdToken: 60 * 60,
-        RefreshToken: () => 30 * 24 * 60 * 60,
-        Session: 14 * 24 * 60 * 60,
+        RefreshToken: sessionTtl,
+        Session: sessionTtl,
         Interaction: 60 * 60,
       },
       pkce: {
@@ -574,7 +695,7 @@ export class IdpOauthService {
       },
       renderError: async (ctx: any, out: Record<string, any>) => {
         ctx.status = 302;
-        ctx.redirect(this.getPublicErrorLocation(appName, out));
+        ctx.redirect(this.getPublicErrorLocation(appName, out, issuerPath));
       },
     };
   }

@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "概述",
-    "link": "/notification-manager"
+    "link": "/notification-manager/"
   },
   {
     "type": "custom-link",
@@ -11,17 +11,17 @@
       {
         "type": "custom-link",
         "label": "站内信",
-        "link": "/notification-manager/notification-in-app-message"
+        "link": "/notification-manager/notification-in-app-message/"
       },
       {
         "type": "custom-link",
         "label": "电子邮件",
-        "link": "/notification-manager/notification-email"
+        "link": "/notification-manager/notification-email/"
       },
       {
         "type": "custom-link",
         "label": "企业微信",
-        "link": "/notification-manager/wecom"
+        "link": "/notification-manager/wecom/"
       }
     ]
   },

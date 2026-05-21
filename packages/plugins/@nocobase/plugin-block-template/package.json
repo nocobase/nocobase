@@ -6,15 +6,15 @@
   "description": "Create and manage block templates for reuse on pages.",
   "description.ru-RU": "Создавайте и управляйте шаблонами блоков для повторного использования на страницах.",
   "description.zh-CN": "创建和管理区块模板，用于在页面中重复使用。",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "license": "Apache-2.0",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/block-template",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-template",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-template",
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
     "@nocobase/plugin-ui-schema-storage": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"

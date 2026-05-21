@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/resource/multi-record-resource).
-:::
-
 # MultiRecordResource
 
 Une ressource orientée vers les tables de données (collections) : les requêtes renvoient un tableau et prennent en charge la pagination, le filtrage, le tri ainsi que les opérations CRUD (création, lecture, mise à jour, suppression). Elle est adaptée aux scénarios impliquant "plusieurs enregistrements" tels que les tableaux et les listes. Contrairement à [APIResource](./api-resource.md), `MultiRecordResource` spécifie le nom de la ressource via `setResourceName()`, construit automatiquement des URL telles que `users:list` ou `users:create`, et intègre des capacités natives pour la pagination, le filtrage et la sélection de lignes.

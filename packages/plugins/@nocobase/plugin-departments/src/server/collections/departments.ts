@@ -46,6 +46,19 @@ export const ownersField = {
   },
 };
 
+export const parentIdField = {
+  type: 'bigInt',
+  name: 'parentId',
+  interface: 'integer',
+  isForeignKey: true,
+  uiSchema: {
+    type: 'number',
+    title: 'parentId',
+    'x-component': 'InputNumber',
+    'x-read-pretty': true,
+  },
+};
+
 export default defineCollection({
   name: 'departments',
   migrationRules: ['overwrite'],
@@ -82,6 +95,7 @@ export default defineCollection({
         'x-component': 'Input',
       },
     },
+    parentIdField,
     {
       type: 'boolean',
       name: 'isLeaf',

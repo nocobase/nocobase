@@ -1,8 +1,7 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
   "license": "Apache-2.0",
@@ -15,7 +14,6 @@
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/plugin-acl": "workspace:*",
-    "@nocobase/plugin-localization": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"
   },

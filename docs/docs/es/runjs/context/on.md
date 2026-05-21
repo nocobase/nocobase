@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/runjs/context/on).
-:::
-
 # ctx.on()
 
 Suscríbase a eventos de contexto (como cambios en el valor de los campos, cambios de propiedades, actualizaciones de recursos, etc.) en RunJS. Los eventos se mapean a eventos DOM personalizados en `ctx.element` o al bus de eventos interno de `ctx.resource` según su tipo.

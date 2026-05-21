@@ -24,14 +24,23 @@ const aggregators = {
 
 export default class extends Instruction {
   configSchema = Joi.object({
-    aggregator: Joi.string()
-      .valid(...Object.keys(aggregators))
-      .required(),
-    collection: Joi.when('associated', {
-      is: Joi.exist().invalid(null, false, 0, ''),
-      then: Joi.string(),
-      otherwise: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+    aggregator: Joi.string().valid(...Object.keys(aggregators)),
+    collection: Joi.string(),
+    associated: Joi.boolean(),
+    association: Joi.when('associated', {
+      is: true,
+      then: Joi.object({
+        associatedCollection: Joi.string().required(),
+        name: Joi.string().required(),
+        associatedKey: Joi.string().required(),
+      }),
+      otherwise: Joi.forbidden().allow(null),
     }),
+    params: Joi.object({
+      field: Joi.string(),
+      filter: Joi.object(),
+    }),
+    precision: Joi.number().integer().min(0).max(14).default(2),
   });
 
   async run(node: FlowNodeModel, input, processor: Processor) {

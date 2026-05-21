@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/get-started/system-requirements).
-:::
-
 # Systemanforderungen
 
 Die in diesem Dokument beschriebenen Systemanforderungen beziehen sich **ausschließlich auf den NocoBase-Anwendungsdienst selbst** und decken die für die Anwendungsprozesse erforderlichen Rechen- und Speicherressourcen ab. Sie **umfassen keine abhängigen Drittanbieter-Dienste**, einschließlich, aber nicht beschränkt auf:

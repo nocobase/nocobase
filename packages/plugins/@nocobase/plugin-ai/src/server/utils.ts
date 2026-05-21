@@ -10,8 +10,7 @@
 import { Model } from '@nocobase/database';
 import path from 'path';
 import fs from 'fs';
-import axios from 'axios';
-import { getDateVars, parse } from '@nocobase/utils';
+import { getDateVars, parse, serverRequest } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 import { ToolsEntry } from '@nocobase/ai';
 import { tool } from 'langchain';
@@ -59,7 +58,11 @@ export function parseResponseMessage(row: Model) {
 }
 
 export async function encodeLocalFile(url: string) {
+  if (process.env.APP_PUBLIC_PATH && url.startsWith(process.env.APP_PUBLIC_PATH)) {
+    url = url.slice(process.env.APP_PUBLIC_PATH.length);
+  }
   url = path.join(process.cwd(), url);
+
   const data = await fs.promises.readFile(url);
   return Buffer.from(data).toString('base64');
 }
@@ -71,7 +74,9 @@ export async function encodeFile(ctx: Context, url: string) {
   const referer = ctx.get('referer') || '';
   const ua = ctx.get('user-agent') || '';
   ctx.log.trace('llm message encode file', { url, referer, ua });
-  const response = await axios.get(url, {
+  const response = await serverRequest({
+    method: 'get',
+    url,
     responseType: 'arraybuffer',
     headers: {
       referer,
@@ -110,7 +115,7 @@ export async function parseVariables(ctx: Context, value: string) {
   for (const [key, value] of Object.entries(dateVariables)) {
     if (typeof value === 'function') {
       $nDate[key] = value({
-        timezone: ctx.get('x-timezone'),
+        timezone: ctx.get?.('x-timezone'),
         now: new Date().toISOString(),
       });
     } else {
@@ -120,7 +125,7 @@ export async function parseVariables(ctx: Context, value: string) {
   return parse(value)({
     $user,
     $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
-    $nLang: ctx.getCurrentLocale(),
+    $nLang: ctx.getCurrentLocale?.(),
     $nDate,
   });
 }
@@ -145,3 +150,14 @@ export const buildTool = (toolsEntry: ToolsEntry) => {
     },
   );
 };
+
+export class ResourceActionError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = 'ResourceActionError';
+  }
+}

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isURL } from '@nocobase/utils';
+import { isURL, storagePathJoin } from '@nocobase/utils';
 import fsSync from 'fs';
 import fs from 'fs/promises';
 import multer from 'multer';
@@ -16,19 +16,22 @@ import type { Readable } from 'stream';
 import urlJoin from 'url-join';
 import { AttachmentModel, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
-import { diskFilenameGetter } from '../utils';
+import { diskFilenameGetter, normalizeDocumentRoot } from '../utils';
 
 const DEFAULT_BASE_URL = '/storage/uploads';
 
 export function getDocumentRoot(storage): string {
-  const { documentRoot = process.env.LOCAL_STORAGE_DEST || path.join(process.cwd(), 'storage', 'uploads') } =
-    storage.options || {};
-  // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
-  return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
+  const raw = storage?.options?.documentRoot ?? process.env.LOCAL_STORAGE_DEST ?? storagePathJoin('uploads');
+
+  if (path.isAbsolute(raw)) {
+    return raw;
+  }
+
+  return normalizeDocumentRoot(raw);
 }
 
 export function resolveSafePath(documentRoot: string, filePath?: string, filename?: string) {
-  const root = path.resolve(documentRoot);
+  const root = normalizeDocumentRoot(documentRoot);
   const target = path.resolve(root, filePath || '', filename || '');
   const relative = path.relative(root, target);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {

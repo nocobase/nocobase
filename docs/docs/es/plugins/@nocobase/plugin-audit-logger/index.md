@@ -12,8 +12,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-audit-logger/index).
-:::
-
 # Registros de auditoría

@@ -24,7 +24,8 @@ export async function query(ctx: Context, next) {
     ctx.throw(400, 'Query action requires at least one measure or dimension');
   }
 
-  const repository = ctx.db.getRepository(ctx.action.resourceName) as any;
+  const database = ctx.database || ctx.db;
+  const repository = database.getRepository(ctx.action.resourceName) as any;
   ctx.body = await repository.query({
     context: ctx,
     ...queryParams,

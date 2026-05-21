@@ -14,7 +14,7 @@ import { Schema, observer, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { HTMLAttributes, createContext, useContext, useMemo } from 'react';
 import { useToken } from '../../antd/__builtins__';
-import { useDesignable } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
 
 export const DraggableContext = createContext(null);
 DraggableContext.displayName = 'DraggableContext';
@@ -79,7 +79,7 @@ const useSortableItemId = (props) => {
   if (props.id) {
     return props.id;
   }
-  return field.address?.toString();
+  return field?.address?.toString();
 };
 
 interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {

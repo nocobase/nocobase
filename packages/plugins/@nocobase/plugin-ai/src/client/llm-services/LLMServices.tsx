@@ -145,7 +145,9 @@ const providerDescriptions: Record<string, string> = {
   deepseek: 'DeepSeek',
   dashscope: 'Qwen (Tongyi)',
   kimi: 'Kimi',
+  xai: 'Grok models by xAI',
   ollama: 'Local models',
+  mimo: 'Xiaomi MIMO',
 };
 
 const providerSortOrder: string[] = [

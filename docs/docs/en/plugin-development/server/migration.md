@@ -1,8 +1,14 @@
+---
+title: "Migration"
+description: "NocoBase plugin database migration: Migration class, up/down, version upgrades, schema changes."
+keywords: "Migration,database migration,up,down,upgrade scripts,schema changes,NocoBase"
+---
+
 # Migration
 
-During NocoBase plugin development and updates, plugin database structures or configurations may undergo incompatible changes. To ensure smooth upgrades, NocoBase provides a **Migration** mechanism to handle these changes by writing migration files. This guide will help you systematically understand Migration usage and development workflow.
+During NocoBase plugin development and updates, plugin database structures or configurations may undergo incompatible changes. To ensure smooth upgrades, NocoBase provides a **Migration** mechanism -- handling these changes by writing migration files.
 
-## Migration Concept
+## Migration Concepts
 
 Migration is a script that automatically executes during plugin upgrades, used to solve the following problems:
 
@@ -60,7 +66,11 @@ export default class extends Migration {
 }
 ```
 
-> ⚠️ `appVersion` is used to identify the version targeted by the upgrade. Environments with versions less than the specified version will execute this migration.
+:::tip Tip
+
+`appVersion` is used to identify the version targeted by the upgrade. Environments with versions less than the specified version will execute this migration.
+
+:::
 
 ## Writing Migration
 
@@ -132,7 +142,7 @@ export default class extends Migration {
 }
 ```
 
-In addition to the common properties listed above, Migration also provides rich APIs. For detailed documentation, see [Migration API](/api/server/migration).
+In addition to the common properties listed above, Migration provides more APIs. For detailed usage, see [Migration API](../../api/server/migration.md).
 
 ## Trigger Migration
 
@@ -172,7 +182,11 @@ describe('Migration Test', () => {
 });
 ```
 
-> Tip: Using Mock Server can quickly simulate upgrade scenarios and verify Migration execution order and data changes.
+:::tip Tip
+
+Using Mock Server can quickly simulate upgrade scenarios and verify Migration execution order and data changes.
+
+:::
 
 ## Development Practice Recommendations
 
@@ -187,4 +201,13 @@ describe('Migration Test', () => {
 
 4. **Test Coverage**  
    Verify the migration on a Mock Server before executing the upgrade in a real environment.
+
+## Related Links
+
+- [Collections](./collections.md) -- Data table structure definitions commonly adjusted in Migration
+- [Database](./database.md) -- APIs for operating data via `this.db` in Migration
+- [Plugin](./plugin.md) -- How Migration files are organized and loaded within plugins
+- [Command](./command.md) -- Triggering migrations via `nocobase upgrade` and `create-migration` commands
+- [Test](./test.md) -- Using Mock Server to test Migration execution results
+- [Migration API](../../api/server/migration.md) -- Complete API reference for the Migration class
 

@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/get-started/translations).
-:::
-
 # Beitrag zur Übersetzung
 
 Die Standardsprache von NocoBase ist Englisch. Derzeit unterstützt die Hauptanwendung Englisch, Italienisch, Niederländisch, vereinfachtes Chinesisch und Japanisch. Wir laden Sie herzlich ein, Übersetzungen für weitere Sprachen beizutragen, damit Benutzer weltweit eine noch komfortablere NocoBase-Erfahrung genießen können.
@@ -83,7 +79,7 @@ https://github.com/nocobase/nocobase/tree/next/docs
 
 ### 2.1 Dokumentationsstruktur
 
-Die Dokumentation verwendet [Rspress](https://rspress.dev/) als statischen Website-Generator und unterstützt 22 Sprachen. Die Struktur ist wie folgt organisiert:
+Die Dokumentation verwendet [Rspress](https://rspress.dev/) als statischen Website-Generator und unterstützt 8 Sprachen. Die Struktur ist wie folgt organisiert:
 
 ```
 docs/
@@ -91,25 +87,11 @@ docs/
 │   ├── en/                    # Englisch (Quellsprache)
 │   ├── cn/                    # Vereinfachtes Chinesisch
 │   ├── ja/                    # Japanisch
-│   ├── ko/                    # Koreanisch
 │   ├── de/                    # Deutsch
 │   ├── fr/                    # Französisch
 │   ├── es/                    # Spanisch
 │   ├── pt/                    # Portugiesisch
 │   ├── ru/                    # Russisch
-│   ├── it/                    # Italienisch
-│   ├── tr/                    # Türkisch
-│   ├── uk/                    # Ukrainisch
-│   ├── vi/                    # Vietnamesisch
-│   ├── id/                    # Indonesisch
-│   ├── th/                    # Thailändisch
-│   ├── pl/                    # Polnisch
-│   ├── nl/                    # Niederländisch
-│   ├── cs/                    # Tschechisch
-│   ├── ar/                    # Arabisch
-│   ├── he/                    # Hebräisch
-│   ├── hi/                    # Hindi
-│   ├── sv/                    # Schwedisch
 │   └── public/                # Gemeinsame Ressourcen (Bilder etc.)
 ├── theme/                     # Benutzerdefiniertes Theme
 ├── rspress.config.ts          # Rspress-Konfiguration

@@ -1,8 +1,7 @@
 {
   "name": "@nocobase/plugin-action-custom-request",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/action-custom-request",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-custom-request",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-custom-request",
@@ -17,18 +16,21 @@
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
     "antd": "5.x",
+    "file-saver": "^2.0.5",
     "lodash": "4.x",
     "react-i18next": "^11.15.1",
     "react-router-dom": "6.x"
   },
   "nocobase": {
     "supportedVersions": [
-      "1.x"
+      "1.x",
+      "2.x"
     ],
     "editionLevel": 0
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"
   },

@@ -29,8 +29,8 @@
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)
 
 
-3. 顶部导航栏会立即出现「工单管理」[菜单](/interface-builder/menus)。**点击它**，左侧会展开分组菜单栏。
-4. 在左侧菜单栏，点击橙色的 **「添加菜单项（Add menu item）」** 按钮，选择 **「新版页面（v2）（Modern page (v2)）」**，依次添加两个子[页面](/interface-builder/pages)：
+3. 顶部导航栏会立即出现「工单管理」菜单。**点击它**，左侧会展开分组菜单栏。
+4. 在左侧菜单栏，点击橙色的 **「添加菜单项（Add menu item）」** 按钮，选择 **「新版页面（v2）（Modern page (v2)）」**，依次添加两个子页面：
    - **工单列表** — 展示所有工单
    - **工单分类** — 管理分类数据
 
@@ -72,13 +72,13 @@
 
 ![03-building-pages-2026-03-17-15-03-04](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-03-04.png)
 
-> 表单的详细配置（字段联动、编辑表单、详情弹窗等）我们在[第 4 章](/tutorials/v2/04-forms-and-details/)深入讲解，这里先能录入数据就够了。
+> 表单的详细配置（字段联动、编辑表单、详情弹窗等）我们在[第 4 章](/tutorials/v2/04-forms-and-details)深入讲解，这里先能录入数据就够了。
 
 ## 3.4 配置显示列
 
 默认情况下表格不会自动显示所有字段，我们需要手动选择要展示的列：
 
-1. 在表格区块表头右侧，点击 **「[字段](/data-sources/field)（Fields）」**。
+1. 在表格区块表头右侧，点击 **「[字段](/data-sources/data-modeling/collection-fields)（Fields）」**。
 2. 勾选需要展示的字段：
    - **标题** — 工单主题，一眼就能看到
    - **状态** — 当前处理进度
@@ -106,7 +106,7 @@
 
 **方式二：在数据源中修改（全局生效，推荐）**
 
-进入 **设置 → [数据源](/data-sources) → [数据表](/data-sources/main/collection) → 分类表**，将 **「标题字段」** 改为 **名称**。这样所有引用分类表的地方都会默认显示名称，一劳永逸。修改后需要回到页面重新添加该字段才能生效。
+进入 **设置 → [数据源](/data-sources) → [数据表](/data-sources/data-modeling/collection) → 分类表**，将 **「标题字段」** 改为 **名称**。这样所有引用分类表的地方都会默认显示名称，一劳永逸。修改后需要回到页面重新添加该字段才能生效。
 ![03-building-pages-2026-03-13-09-23-41](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-23-41.png)
 
 ## 3.5 添加筛选和排序
@@ -178,7 +178,7 @@
 光看列表还不够，我们还需要能点进去查看工单详情，以及编辑工单。
 
 1. 在操作列上方，点击第二个 ”+“ 号。
-2. 点击操作：**查看**、**[编辑](/interface-builder/actions/edit)**、**[删除](/interface-builder/actions/delete)**。
+2. 点击操作：**查看**、**[编辑](../../interface-builder/actions/types/edit.md)**、**[删除](../../interface-builder/actions/types/delete.md)**。
 3. 每行数据操作栏位会出现「查看」、「编辑」和「删除」按钮。
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)
@@ -241,4 +241,3 @@
 - [区块概述](/interface-builder/blocks) — 所有区块类型说明
 - [表格区块](/interface-builder/blocks/data-blocks/table) — 表格区块详细配置
 - [筛选区块](/interface-builder/blocks/filter-blocks/form) — 筛选表单配置
-

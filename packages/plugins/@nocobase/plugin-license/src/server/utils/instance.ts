@@ -8,31 +8,39 @@
  */
 
 import fs from 'fs';
-import path from 'path';
-import { exec } from 'child_process';
+import { storagePathJoin } from '@nocobase/utils';
+import { getInstanceIdAsync } from '@nocobase/license-kit';
 
 export async function getInstanceId() {
-  const dir = path.resolve(process.cwd(), 'storage/.license');
-  const filePath = path.resolve(dir, 'instance-id');
+  const filePath = storagePathJoin('.license', 'instance-id');
   await createInstanceId(true);
-  const id = fs.readFileSync(filePath, 'utf-8');
-  return id;
+  const id = await fs.promises.readFile(filePath, 'utf-8');
+  return id.trim();
 }
 
 export async function createInstanceId(force = false) {
-  return new Promise((resolve, reject) => {
-    exec(`yarn nocobase generate-instance-id ${force ? '--force' : ''}`, (err, stdout, stderr) => {
-      if (err) {
-        reject(err);
-        return;
+  const dir = storagePathJoin('.license');
+  const filePath = storagePathJoin('.license', 'instance-id');
+
+  if (!force) {
+    try {
+      const existing = await fs.promises.readFile(filePath, 'utf-8');
+      const normalized = existing.trim();
+      if (normalized) {
+        return normalized;
       }
-      resolve(stdout);
-    });
-  });
+    } catch (e) {
+      // Continue to generate when the file does not exist or cannot be read.
+    }
+  }
+
+  await fs.promises.mkdir(dir, { recursive: true });
+  const instanceId = String(await getInstanceIdAsync()).trim();
+  await fs.promises.writeFile(filePath, `${instanceId}\n`);
+  return instanceId;
 }
 
 export async function isLicenseKeyExists() {
-  const dir = path.resolve(process.cwd(), 'storage/.license');
-  const filePath = path.resolve(dir, 'license-key');
+  const filePath = storagePathJoin('.license', 'license-key');
   return fs.existsSync(filePath);
 }

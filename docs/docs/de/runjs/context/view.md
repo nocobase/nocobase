@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/view).
-:::
-
 # ctx.view
 
 Der aktuell aktive View-Controller (Dialog, Drawer, Popover, eingebetteter Bereich usw.), der für den Zugriff auf Informationen und Operationen auf Ansichtsebene verwendet wird. Er wird von `FlowViewContext` bereitgestellt und ist nur innerhalb von Inhalten verfügbar, die über `ctx.viewer` oder `ctx.openView` geöffnet wurden.

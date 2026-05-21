@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-china-region",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "displayName": "Collection field: administrative divisions of China",
   "displayName.zh-CN": "数据表字段：中国行政区划",
   "displayName.ru-RU": "Поле коллекции: административное деление Китая",
@@ -8,7 +8,6 @@
   "description.zh-CN": "提供中国行政区划数据和字段类型。",
   "description.ru-RU": "Предоставляет данные и тип поля для административного деления Китая.",
   "main": "./dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/china-region",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/china-region",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/china-region",
@@ -22,6 +21,7 @@
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/database": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"

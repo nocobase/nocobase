@@ -15,6 +15,16 @@
     "label": "Installation"
   },
   {
+    "type": "dir",
+    "name": "guide",
+    "label": "Bedienungsanleitung"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "Änderungsprotokoll"
+  },
+  {
     "type": "file",
     "name": "v1",
     "label": "Legacy-CRM (v1)"

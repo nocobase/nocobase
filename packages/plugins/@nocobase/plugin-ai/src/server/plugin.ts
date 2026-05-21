@@ -17,21 +17,16 @@ import aiResource from './resource/ai';
 import PluginWorkflowServer from '@nocobase/plugin-workflow';
 import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
+import aiWorkflowTasks from './resource/aiWorkflowTasks';
 import aiTools from './resource/aiTools';
 import aiSkills from './resource/aiSkills';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
-import { AIConversationsManager } from './ai-employees/ai-conversations';
+import { AIConversationsManager, registerAIConversationReadNotification } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import {
-  getWorkflowCallers,
-  createDocsSearchTool,
-  createReadDocEntryTool,
-  loadDocsIndexes,
-  describeDocModules,
-} from './tools';
+import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -44,23 +39,35 @@ import aiMcpClients from './resource/aiMcpClients';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { xaiProviderOptions } from './llm-providers/xai';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
+import { mimoProviderOptions } from './llm-providers/mimo';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
-// import { tongyiProviderOptions } from './llm-providers/tongyi';
+import {
+  AIEmployeeInstruction,
+  registerAIEmployeeTaskNotification,
+  registerOnJobAbortedHandler,
+  getWorkflowTasks,
+} from './workflow/nodes/employee';
+import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
+import { LLMStreamCachedManager } from './manager/llm-stream-manager';
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
   aiConversationsManager = new AIConversationsManager(this);
+  llmStreamCachedManager = new LLMStreamCachedManager(this);
   builtInManager = new BuiltInManager(this);
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
   aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
   documentLoaders = new DocumentLoaders(this);
   subAgentsDispatcher = new SubAgentsDispatcher(this);
+  knowledgeBaseManager = new KnowledgeBaseManager(this);
+  docsFsCache: DocsFsCache = null;
   snowflake: Snowflake;
 
   /**
@@ -102,13 +109,15 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
-    await loadDocsIndexes();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
     this.setPermissions();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
+    registerAIEmployeeTaskNotification(this);
+    registerAIConversationReadNotification(this);
+    registerOnJobAbortedHandler(this);
   }
 
   registerLLMProviders() {
@@ -117,18 +126,21 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
-    // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
   }
 
   registerTools() {
     const toolsManager = this.ai.toolsManager;
 
-    toolsManager.registerTools([createDocsSearchTool(), createReadDocEntryTool()]);
+    toolsManager.registerTools([createDocsSearchTool(this)]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
+    toolsManager.registerDynamicTools(getWorkflowTasks(this));
 
     // Register MCP tools dynamically
     toolsManager.registerDynamicTools(this.ai.mcpManager.getMCPToolsProvider());
@@ -137,6 +149,7 @@ export class PluginAIServer extends Plugin {
   defineResources() {
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
+    this.app.resourceManager.define(aiWorkflowTasks);
     this.app.resourceManager.define(aiTools);
     this.app.resourceManager.define(aiSkills);
     this.app.resourceManager.define(aiSettings);
@@ -179,6 +192,7 @@ export class PluginAIServer extends Plugin {
       actions: ['aiSettings:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
+    this.app.acl.allow('aiWorkflowTasks', '*', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'get', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
@@ -239,6 +253,7 @@ export class PluginAIServer extends Plugin {
     const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstruction('llm', LLMInstruction);
+    workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
   }
 
   registerWorkContextResolveStrategy() {

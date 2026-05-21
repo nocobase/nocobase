@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/context/request).
-:::
-
 # ctx.request()
 
 Startet eine authentifizierte HTTP-Anfrage in RunJS. Die Anfrage überträgt automatisch die `baseURL`, den `Token`, die `locale`, die `role` usw. der aktuellen Anwendung und folgt der Logik für Anfrage-Interceptors und die Fehlerbehandlung der Anwendung.

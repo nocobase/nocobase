@@ -1,0 +1,344 @@
+{
+  "promptCatalog": {
+    "common": {
+      "cancelled": "Cancelled.",
+      "required": "Required",
+      "mustBeInteger": "Must be an integer"
+    },
+    "preset": {
+      "required": "\"{{key}}\" is required; set a non-empty values.{{key}} or omit it to prompt.",
+      "invalidSelect": "Invalid values.{{key}}: \"{{value}}\". Expected one of: {{options}}",
+      "invalidInteger": "Invalid values.{{key}}: must be an integer."
+    },
+    "nonInteractive": {
+      "textRequired": "Non-interactive: \"{{key}}\" is required; set initialValues.{{key}}, yesInitialValues.{{key}}, yesInitialValue on the block, or initialValue.",
+      "selectMissingDefault": "Non-interactive: set initialValues.{{key}}, yesInitialValues.{{key}}, or select.initialValue / yesInitialValue / options on the catalog block.",
+      "selectInvalidValue": "Invalid value for {{key}}: {{value}}. Expected one of: {{options}}",
+      "selectRequiredNoOptions": "Select \"{{key}}\" is required but has no options.",
+      "selectRequiredInteractive": "Select \"{{key}}\" is required; set initialValues.{{key}} or select.initialValue / options on the catalog block.",
+      "selectMissingInteractiveDefault": "Select \"{{key}}\" has no valid default; set initialValues.{{key}} or options on the catalog block.",
+      "passwordRequired": "Non-interactive: \"{{key}}\" is required; set initialValues.{{key}}, yesInitialValues.{{key}}, or initialValue / yesInitialValue on the block.",
+      "passwordRequiredNonEmpty": "Non-interactive: \"{{key}}\" is required; set a non-empty initialValues / yesInitialValues / initialValue / yesInitialValue.",
+      "integerRequired": "Non-interactive: \"{{key}}\" is required; set initialValues.{{key}}, yesInitialValues.{{key}}, or initialValue / yesInitialValue on the block."
+    },
+    "web": {
+      "pageTitle": "Prompt catalog (local UI)",
+      "documentHeading": "Configure parameters (localhost only)",
+      "documentHint": "This server is only bound to the loopback interface. After submit, the CLI continues in the same terminal session.",
+      "defaultFormTitle": "Form",
+      "defaultStepTitle": "Step {{index}}",
+      "stepsAriaLabel": "Form steps",
+      "stepsSidebarAriaLabel": "Steps",
+      "stepNavigationAriaLabel": "Step navigation and submit",
+      "submitAriaLabel": "Submit",
+      "back": "Back",
+      "next": "Next",
+      "submit": "Submit & continue in terminal",
+      "checking": "Checking...",
+      "sending": "Sending...",
+      "successTitle": "Success",
+      "errorTitle": "Error",
+      "savedAndClosing": "Saved. This tab will close automatically in 5 seconds.",
+      "savedCloseBlocked": "Saved. Automatic close was blocked by the browser. You can close this tab now.",
+      "invalidValue": "Invalid value",
+      "invalidRequest": "Invalid request",
+      "invalidStep": "Invalid or missing wizard step.",
+      "invalidField": "Invalid or missing field key.",
+      "fieldRequired": "Field \"{{key}}\" is required.",
+      "fieldMustBeInteger": "Field \"{{key}}\" must be an integer."
+    }
+  },
+  "validators": {
+    "apiBaseUrl": {
+      "invalid": "Enter a valid URL, for example {{example}}.",
+      "invalidProtocol": "URL must start with http:// or https://, for example {{example}}.",
+      "healthCheckPathNotAllowed": "Do not include /__health_check in the API base URL. Enter the application API base URL, for example http://localhost:13000/api.",
+      "maintaining": "The API base URL is reachable, but the app is still starting or in maintenance mode. Please try again later.",
+      "healthCheckFailed": "The API base URL did not pass the health check (HTTP {{status}}). Make sure it points to a running NocoBase API endpoint.",
+      "timeout": "Timed out waiting for the API base URL health check after about {{seconds}} seconds.",
+      "unreachable": "Unable to connect to the API base URL. Check the address and make sure the server is reachable. Details: {{details}}"
+    },
+    "envKey": {
+      "invalid": "Use letters and numbers only."
+    },
+    "tcpPort": {
+      "invalid": "Enter a valid TCP port between 1 and 65535, for example {{example}}.",
+      "allocateFailed": "Failed to allocate an available TCP port.",
+      "allocateNotDockerPublished": "Failed to allocate an available TCP port that is not already published by Docker.",
+      "alreadyInUse": "Port {{port}} is already in use. Choose another port.",
+      "alreadyInUseByDocker": "Port {{port}} is already in use by a Docker container. Choose another port."
+    },
+    "dbConnection": {
+      "unreachable": "Can't reach the database at {{host}}:{{port}}. Check the host, port, and network connectivity. Details: {{details}}",
+      "timeout": "Timed out connecting to the database at {{host}}:{{port}} after about {{seconds}} seconds.",
+      "authenticationFailed": "Failed to sign in to database \"{{database}}\" with user \"{{user}}\". Check the username and password.",
+      "databaseNotFound": "Database \"{{database}}\" does not exist or is not accessible with the current connection settings.",
+      "connectionFailed": "Database connection check failed. Details: {{details}}"
+    }
+  },
+  "commands": {
+    "envAdd": {
+      "prompts": {
+        "name": {
+          "message": "What would you like to call this environment?",
+          "placeholder": "default"
+        },
+        "scope": {
+          "message": "Where should this connection be saved?",
+          "globalLabel": "Global",
+          "globalHint": "user-level config"
+        },
+        "apiBaseUrl": {
+          "message": "What is the API base URL?",
+          "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
+        },
+        "authType": {
+          "message": "How would you like to sign in?",
+          "oauthLabel": "OAuth (browser login)",
+          "oauthHint": "runs nb env auth after save",
+          "tokenLabel": "API token / API key"
+        },
+        "accessToken": {
+          "message": "Enter an API token or API key",
+          "placeholder": "Enter your API token / API key"
+        }
+      }
+    },
+    "download": {
+      "failures": {
+        "dependencyInstall": {
+          "title": "Couldn't finish preparing the local NocoBase app.",
+          "body": "The download completed, but dependency installation did not finish successfully.",
+          "hint": "Run the same command again with `--verbose` to see the full install logs."
+        },
+        "gitClone": {
+          "title": "Couldn't download NocoBase from Git.",
+          "body": "The CLI was not able to clone the selected NocoBase repository.",
+          "hint": "Run the same command again with `--verbose` to see the full clone logs."
+        },
+        "dockerPull": {
+          "title": "Couldn't download the Docker image.",
+          "body": "The CLI was not able to pull the selected NocoBase image.",
+          "hint": "Run the same command again with `--verbose` to see the full Docker pull logs."
+        },
+        "dockerSave": {
+          "title": "The Docker image was pulled, but saving the tar file failed.",
+          "body": "The CLI could not finish exporting the image to the target tarball path.",
+          "hint": "Run the same command again with `--verbose` to see the full Docker save logs."
+        },
+        "scaffold": {
+          "title": "Couldn't create the local NocoBase app scaffold.",
+          "body": "The CLI was not able to finish generating the initial app files.",
+          "hint": "Run the same command again with `--verbose` to see the full scaffold logs."
+        },
+        "build": {
+          "title": "The local NocoBase app was downloaded, but the build step failed.",
+          "body": "The CLI could not finish building the downloaded source code.",
+          "hint": "Run the same command again with `--verbose` to see the full build logs."
+        },
+        "generic": {
+          "title": "Couldn't finish downloading NocoBase.",
+          "body": "The CLI hit an unexpected command failure while preparing the download.",
+          "hint": "Run the same command again with `--verbose` to see the full command logs."
+        }
+      },
+      "prompts": {
+        "source": {
+          "message": "How would you like to get NocoBase?",
+          "dockerLabel": "Docker install (Recommended)",
+          "dockerHint": "Best for no-code and low-maintenance setups. You can upgrade later by pulling a newer image and restarting the app.",
+          "npmLabel": "create-nocobase-app install",
+          "npmHint": "Best when you want an app project with business code kept separate from the NocoBase framework, while still supporting low-code development.",
+          "gitLabel": "Git source install",
+          "gitHint": "Best when you want to try the latest unreleased changes, contribute code, or debug and modify NocoBase source directly. This option is more developer-oriented."
+        },
+        "version": {
+          "message": "Which version would you like to use?",
+          "latestLabel": "latest",
+          "latestHint": "Stable release. Best for production use and the most predictable experience. Currently unavailable.",
+          "betaLabel": "beta",
+          "betaHint": "Preview release. Good for trying upcoming features before general release.",
+          "alphaLabel": "alpha",
+          "alphaHint": "Development release. Includes the newest changes, but may be incomplete or unstable.",
+          "otherLabel": "Other",
+          "otherHint": "Enter another package version, Docker tag, or Git ref manually, such as a branch name."
+        },
+        "otherVersion": {
+          "message": "Enter the version, Docker tag, or Git ref you want to use.",
+          "placeholder": "For example: fix/cli-v2"
+        },
+        "dockerRegistry": {
+          "message": "Which Docker registry would you like to use? The image tag is set separately in Version.",
+          "placeholder": "nocobase/nocobase"
+        },
+        "dockerPlatform": {
+          "message": "Which Docker image platform should be used?",
+          "autoLabel": "Auto",
+          "autoHint": "Use Docker default for this machine"
+        },
+        "dockerSave": {
+          "message": "Save the Docker image as a tar file"
+        },
+        "gitUrl": {
+          "message": "Git repository URL",
+          "placeholder": "https://github.com/nocobase/nocobase.git"
+        },
+        "outputDir": {
+          "message": "Download location",
+          "placeholder": "e.g. ./nocobase-latest"
+        },
+        "npmRegistry": {
+          "message": "npm registry URL (optional)",
+          "placeholder": "Leave empty to use the default registry"
+        },
+        "replace": {
+          "message": "Clear the app directory if it already contains files"
+        },
+        "devDependencies": {
+          "message": "Install development dependencies (npm only)"
+        },
+        "build": {
+          "message": "Build the app after download"
+        },
+        "buildDts": {
+          "message": "Generate TypeScript declaration files"
+        }
+      }
+    },
+    "install": {
+      "validation": {
+        "builtinDbUnsupported": "Built-in database does not support \"{{dialect}}\" yet. Choose PostgreSQL, MySQL, or MariaDB, or turn off built-in database."
+      },
+      "prompts": {
+        "env": {
+          "message": "What would you like to call this app?",
+          "placeholder": "local"
+        },
+        "lang": {
+          "message": "Which language would you like to use?"
+        },
+        "appRootPath": {
+          "message": "Where should this app be stored?",
+          "placeholder": "./<env>/source/"
+        },
+        "appPort": {
+          "message": "Which port should this app use?",
+          "placeholder": "13000"
+        },
+        "storagePath": {
+          "message": "Where should uploads and local files be stored?",
+          "placeholder": "./<env>/storage/"
+        },
+        "fetchSource": {
+          "message": "Download NocoBase automatically if the app directory is empty?"
+        },
+        "dbDialect": {
+          "message": "Which database would you like to use?"
+        },
+        "builtinDb": {
+          "message": "Would you like to use the built-in database?"
+        },
+        "builtinDbImage": {
+          "message": "Which Docker image should be used for the built-in database?",
+          "placeholder": "postgres:16"
+        },
+        "dbHost": {
+          "message": "What is the database host?",
+          "placeholder": "127.0.0.1"
+        },
+        "dbPort": {
+          "message": "What is the database port?",
+          "placeholder": "5432"
+        },
+        "dbDatabase": {
+          "message": "What is the database name?"
+        },
+        "dbUser": {
+          "message": "What is the database username?"
+        },
+        "dbPassword": {
+          "message": "What is the database password?"
+        },
+        "rootUsername": {
+          "message": "Choose the initial admin username",
+          "placeholder": "nocobase"
+        },
+        "rootEmail": {
+          "message": "What is the initial admin email?",
+          "placeholder": "admin@nocobase.com"
+        },
+        "rootPassword": {
+          "message": "Choose the initial admin password"
+        },
+        "rootNickname": {
+          "message": "What display name should the initial admin use?",
+          "placeholder": "Super Admin"
+        }
+      }
+    },
+    "init": {
+      "validation": {
+        "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
+      },
+      "messages": {
+        "title": "Set Up NocoBase for Coding Agents",
+        "appNameRequiredWhenSkipped": "Env name is required when prompts are skipped.",
+        "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
+        "resumeEnvRequired": "Env name is required when resuming setup.",
+        "resumeEnvHelp": "Use `nb init --resume --env <envName>` to continue.",
+        "resumeAfterInstallFailure": "Resume this setup with:\n  {{command}}",
+        "uiOpening": "A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.",
+        "uiReady": "Local setup form is ready.",
+        "uiReadyHelp": "If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.",
+        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process."
+      },
+      "prompts": {
+        "appName": {
+          "message": "What should this environment use for `--env`?",
+          "placeholder": "local"
+        },
+        "hasNocobase": {
+          "message": "Do you already have a NocoBase application?",
+          "noLabel": "I don't have a NocoBase application yet",
+          "yesLabel": "I already have a NocoBase application"
+        },
+        "installSkills": {
+          "message": "Install NocoBase AI coding skills (nocobase/skills)?"
+        },
+        "apiBaseUrl": {
+          "message": "API base URL",
+          "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
+        }
+      },
+      "webUi": {
+        "pageTitle": "Set Up NocoBase for Coding Agents",
+        "documentHeading": "Set Up NocoBase for Coding Agents",
+        "documentHint": "Connect an existing NocoBase app, or install a new one, so coding agents can access and work with NocoBase.",
+        "gettingStarted": {
+          "title": "Getting started",
+          "description": "Choose whether to connect an existing app or install a new one."
+        },
+        "connectExistingApp": {
+          "title": "Connect an existing app",
+          "description": "Save your app connection."
+        },
+        "createNewApp": {
+          "title": "Install a new app",
+          "description": "Set app basics and install options."
+        },
+        "downloadAppFiles": {
+          "title": "Download app files",
+          "description": "Choose how to get the app files."
+        },
+        "configureDatabase": {
+          "title": "Configure the database",
+          "description": "Use built-in or custom."
+        },
+        "createAdminAccount": {
+          "title": "Create an admin account",
+          "description": "Set up the first admin."
+        }
+      }
+    }
+  }
+}

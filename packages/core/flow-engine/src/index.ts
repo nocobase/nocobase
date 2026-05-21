@@ -57,5 +57,7 @@ export {
 } from './views/viewEvents';
 
 export * from './FlowDefinition';
+export { DetachedFlowRegistry, replaceFlowRegistry, serializeFlowRegistry } from './flow-registry';
+export type { FlowRegistryData } from './flow-registry';
 export { createViewScopedEngine } from './ViewScopedFlowEngine';
 export { createBlockScopedEngine } from './BlockScopedFlowEngine';

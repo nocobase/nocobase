@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
+import { mockServer, startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
 import { vi } from 'vitest';
 console.log('before import');
 import ws from 'ws';
@@ -63,6 +63,26 @@ describe('gateway', () => {
       expect((req as any).originalUrl).toBe('/api/__app/demo/idpOAuth:authorize?foo=bar');
     });
 
+    it('should proxy sub app requests with original url', async () => {
+      const req = {
+        url: '/api/__app/demo/.well-known/oauth-authorization-server',
+        headers: {},
+      } as any;
+      const res = {} as any;
+
+      const supervisor = AppSupervisor.getInstance();
+      const proxyWeb = vi.spyOn(supervisor, 'proxyWeb').mockImplementation(async (_appName, forwardedReq) => {
+        expect(forwardedReq.url).toBe('/api/__app/demo/.well-known/oauth-authorization-server');
+        return true;
+      });
+
+      await gateway.requestHandler(req, res);
+
+      expect(proxyWeb).toHaveBeenCalledWith('demo', req, res);
+      expect(req.url).toBe('/api/.well-known/oauth-authorization-server');
+      expect((req as any).originalUrl).toBe('/api/__app/demo/.well-known/oauth-authorization-server');
+    });
+
     it('should add same middleware into app selector once', async () => {
       const fn = async (ctx, next) => {
         ctx.resolvedAppName = 'test';
@@ -90,12 +110,7 @@ describe('gateway', () => {
     });
 
     it('should match error structure', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
       expect(res.status).toBe(503);
       const data = res.body;
@@ -109,12 +124,7 @@ describe('gateway', () => {
     });
 
     it('should return error when app not installed', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       // app should have error when not installed
       await main.runAsCLI(['start'], {
         from: 'user',
@@ -137,12 +147,7 @@ describe('gateway', () => {
       });
     });
     it('should return running message when app is command running status', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       main.on('beforeInstall', async () => {
         await new Promise((resolve) => {
           setTimeout(resolve, 2000);

@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/data-sources/data-modeling/collection-fields/advanced/snowflake-id).
-:::
-
 # Snowflake ID (53 bits)
 
 ## Introducción

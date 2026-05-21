@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/blocks/other-blocks/js-block).
-:::
-
 # Bloc JS
 
 ## Introduction
@@ -38,7 +34,7 @@ L'éditeur de script du Bloc JS prend en charge la coloration syntaxique, les in
 
 De plus, vous pouvez directement invoquer l'employé IA "Ingénieur Frontend · Nathan" depuis le coin supérieur droit de l'éditeur. Nathan peut vous aider à écrire ou à modifier des scripts en fonction du contexte actuel. Vous pouvez ensuite "Apply to editor" (Appliquer à l'éditeur) en un clic et exécuter le code pour en voir l'effet. Pour plus de détails, consultez :
 
-- [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/features/built-in-employee)
+- [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/)
 
 ## Environnement d'exécution et sécurité
 

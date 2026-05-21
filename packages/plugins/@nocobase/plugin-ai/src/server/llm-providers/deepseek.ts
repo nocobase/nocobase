@@ -9,15 +9,22 @@
 
 import { ChatDeepSeek } from '@langchain/deepseek';
 import { AIMessageChunk, BaseMessage } from '@langchain/core/messages';
-import { LLMProvider } from './provider';
+import { LLMProvider, ParsedAttachmentResult } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
 import type OpenAI from 'openai';
-import { collectReasoningMap, patchRequestMessagesReasoning, REASONING_MAP_KEY } from './common/reasoning';
+import {
+  collectReasoningMap,
+  MODEL_KWARGS_KEY,
+  patchRequestMessagesReasoning,
+  patchRequestModelKwargs,
+  REASONING_MAP_KEY,
+} from './common/reasoning';
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import path from 'node:path';
+import { AttachmentModel } from '@nocobase/plugin-file-manager';
 
 class ReasoningDeepSeek extends ChatDeepSeek {
   async _generate(messages: BaseMessage[], options: any, runManager?: any) {
@@ -54,7 +61,9 @@ class ReasoningDeepSeek extends ChatDeepSeek {
     requestOptions?: OpenAI.RequestOptions,
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | OpenAI.Chat.Completions.ChatCompletion> {
     const reasoningMap = requestOptions?.[REASONING_MAP_KEY] as Map<string, string> | undefined;
+    const modelKwargs = requestOptions?.[MODEL_KWARGS_KEY] as Record<string, any> | undefined;
     patchRequestMessagesReasoning(request, reasoningMap);
+    patchRequestModelKwargs(request, modelKwargs);
     if (request.stream) {
       return super.completionWithRetry(request as OpenAI.Chat.ChatCompletionCreateParamsStreaming, requestOptions);
     }
@@ -121,35 +130,8 @@ export class DeepSeekProvider extends LLMProvider {
     return null;
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
-    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
-    if (!attachment?.mimetype || attachment.mimetype.startsWith('image/')) {
-      return {
-        placement: 'system',
-        content: `The user has uploaded a ${attachment.mimetype} file (filename: ${safeFilename}). Please inform the user directly that you do not support parsing image content.`,
-      };
-    }
-    const parsed = await this.aiPlugin.documentLoaders.cached.load(attachment);
-    if (!parsed.supported) {
-      return {
-        placement: 'system',
-        content: `File ${safeFilename} is not a supported document type for text parsing.`,
-      };
-    }
-    if (parsed.text.length === 0) {
-      return {
-        placement: 'system',
-        content: `The file provided by the user is an empty file, file name is "${safeFilename}"`,
-      };
-    }
-    return {
-      placement: 'system',
-      content: `<parsed_document filename="${safeFilename}">\n${parsed.text}\n</parsed_document>`,
-    };
-  }
-
-  private get aiPlugin(): PluginAIServer {
-    return this.app.pm.get('ai');
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    return false;
   }
 }
 

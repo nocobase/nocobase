@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Stockage local
 
 Les fichiers téléchargés sont enregistrés dans un répertoire local sur le serveur. Cette option convient aux scénarios à petite échelle ou expérimentaux où le volume total de fichiers gérés par le système est relativement faible.

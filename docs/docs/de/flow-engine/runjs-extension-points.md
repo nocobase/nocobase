@@ -2,10 +2,6 @@
 title: RunJS-Plugin-Erweiterungspunkte (ctx-Dokumentation / Snippets / Szenen-Mapping)
 ---
 
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/flow-engine/runjs-extension-points).
-:::
-
 # RunJS-Plugin-Erweiterungspunkte (ctx-Dokumentation / Snippets / Szenen-Mapping)
 
 Wenn ein Plugin RunJS-Funktionen hinzufügt oder erweitert, wird empfohlen, das „Kontext-Mapping / die `ctx`-Dokumentation / den Beispielcode“ über die **offiziellen Erweiterungspunkte** zu registrieren. Dies stellt sicher, dass:

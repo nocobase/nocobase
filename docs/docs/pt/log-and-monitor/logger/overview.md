@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/log-and-monitor/logger/overview).
-:::
-
 # Logs do Servidor, Logs de Auditoria e Histórico de Registros
 
 ## Logs do Servidor

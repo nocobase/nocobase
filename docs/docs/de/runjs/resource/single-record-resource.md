@@ -1,7 +1,3 @@
-:::tip{title="KI-Übersetzungshinweis"}
-Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/runjs/resource/single-record-resource).
-:::
-
 # SingleRecordResource
 
 Eine auf **einzelne Datensätze** ausgerichtete Resource: Die Daten bestehen aus einem einzelnen Objekt. Sie unterstützt das Abrufen per Hauptschlüssel, das Erstellen/Aktualisieren (`save`) sowie das Löschen. Sie eignet sich für Szenarien mit „einzelnen Datensätzen“ wie Details oder Formulare. Im Gegensatz zur [MultiRecordResource](./multi-record-resource.md) gibt `getData()` bei der `SingleRecordResource` ein einzelnes Objekt zurück. Über `setFilterByTk(id)` wird der Hauptschlüssel festgelegt, und `save()` ruft je nach Zustand von `isNewRecord` automatisch `create` oder `update` auf.

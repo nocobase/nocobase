@@ -13,6 +13,7 @@ import { Application } from '../application';
 import { Plugin } from '../plugin';
 import longJson from './fixtures/long-json';
 import { getBodyLimit } from '../helper';
+import { MockServer, mockServer } from '@nocobase/test';
 
 class MyPlugin extends Plugin {
   async load() {}
@@ -27,12 +28,7 @@ describe('application', () => {
   let agent;
 
   beforeEach(() => {
-    app = new Application({
-      database: {
-        dialect: 'sqlite',
-        storage: ':memory:',
-        logging: false,
-      },
+    app = mockServer({
       resourcer: {
         prefix: '/api',
       },
@@ -143,78 +139,6 @@ describe('application', () => {
 
     expect(jestFn).toBeCalledTimes(1);
   });
-
-  describe('serving', () => {
-    let orginalMode;
-    beforeEach(async () => {
-      orginalMode = process.env.WORKER_MODE;
-    });
-
-    afterEach(() => {
-      process.env.WORKER_MODE = orginalMode;
-    });
-
-    it('configure as default (empty)', () => {
-      expect(app.serving()).toBe(true);
-      expect(app.serving('a')).toBe(true);
-    });
-
-    it('configure as dispatcher only', () => {
-      process.env.WORKER_MODE = '!';
-
-      expect(app.serving()).toBe(true);
-      expect(app.serving('a')).toBe(false);
-    });
-
-    it('configure as services only', () => {
-      process.env.WORKER_MODE = '!';
-
-      expect(app.serving()).toBe(true);
-      expect(app.serving('a')).toBe(false);
-    });
-
-    it('configure as multiple services', () => {
-      process.env.WORKER_MODE = 'a,b';
-
-      expect(app.serving()).toBe(false);
-      expect(app.serving('a')).toBe(true);
-      expect(app.serving('b')).toBe(true);
-      expect(app.serving('c')).toBe(false);
-    });
-
-    it('configure as any services', () => {
-      process.env.WORKER_MODE = '*';
-
-      expect(app.serving()).toBe(false);
-      expect(app.serving('a')).toBe(true);
-      expect(app.serving('b')).toBe(true);
-      expect(app.serving('c')).toBe(true);
-    });
-
-    it('configure as dispatcher and specific services', () => {
-      process.env.WORKER_MODE = '!,a';
-
-      expect(app.serving()).toBe(true);
-      expect(app.serving('a')).toBe(true);
-      expect(app.serving('b')).toBe(false);
-    });
-
-    it('configure as dispatcher and specific services (with order)', () => {
-      process.env.WORKER_MODE = 'a,!';
-
-      expect(app.serving()).toBe(true);
-      expect(app.serving('a')).toBe(true);
-      expect(app.serving('b')).toBe(false);
-    });
-
-    it('configure as none', () => {
-      process.env.WORKER_MODE = '-';
-
-      expect(app.serving()).toBe(false);
-      expect(app.serving('a')).toBe(false);
-      expect(app.serving('b')).toBe(false);
-    });
-  });
 });
 
 describe('body limit test', () => {
@@ -229,12 +153,7 @@ describe('body limit test', () => {
     const bodyLimit = getBodyLimit();
     expect(bodyLimit).toBe('1kb');
 
-    const app = new Application({
-      database: {
-        dialect: 'sqlite',
-        storage: ':memory:',
-        logging: false,
-      },
+    const app = mockServer({
       resourcer: {
         prefix: '/api',
       },

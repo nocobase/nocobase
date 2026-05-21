@@ -11,6 +11,7 @@ import { defineAIEmployee } from '@nocobase/ai';
 
 export default defineAIEmployee({
   username: 'dara',
+  category: 'developer',
   description: 'AI employee for data visualization',
   avatar: 'nocobase-048-female',
   nickname: 'Dara',

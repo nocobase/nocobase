@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Fluxo de Eventos
 
 No FlowEngine, todos os componentes da interface são **orientados a eventos (event-driven)**.

@@ -124,7 +124,11 @@ export const useSubmitProps = () => {
         return;
       }
 
-      message.success(t('License key saved successfully. Please retry the plugin installation.'));
+      message.success(
+        t(
+          'The license key has been saved successfully. Please restart the service, and the system will automatically install the plugin.',
+        ),
+      );
     } catch (e) {
       setLoading(false);
       message.error(t('Network error. Please try again.'));

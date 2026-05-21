@@ -1,7 +1,3 @@
-:::tip{title="Уведомление об ИИ-переводе"}
-Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/interface-builder/blocks/data-blocks/form).
-:::
-
 # Блок формы
 
 ## Введение
@@ -77,7 +73,7 @@
 
 ### Шаблон поля
 
-Шаблоны полей используются для повторного использования конфигураций областей полей в блоках формы. Подробности см. в [Шаблон поля](/interface-builder/fields/field-template).
+Шаблоны полей используются для повторного использования конфигураций областей полей в блоках формы. Подробности см. в [Шаблон поля](../../ui-templates.md).
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 
@@ -88,4 +84,4 @@
 - [Отправить](/interface-builder/actions/types/submit)
 - [Запустить рабочий процесс](/interface-builder/actions/types/trigger-workflow)
 - [JS Action](/interface-builder/actions/types/js-action)
-- [ИИ-сотрудник](/interface-builder/actions/types/ai-employee)
+- [AI-сотрудник](/interface-builder/actions/types/ai-employee)

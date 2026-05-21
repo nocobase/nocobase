@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-form-drafts"
 ---
 
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/form-drafts).
-:::
-
 # Rascunhos de Formulário
 
 Quando os rascunhos de formulário estão ativados, o conteúdo que está sendo preenchido é salvo automaticamente localmente. Mesmo que você feche o formulário acidentalmente ou atualize a página, os dados preenchidos não serão perdidos.

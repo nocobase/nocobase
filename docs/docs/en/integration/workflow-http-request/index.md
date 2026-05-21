@@ -59,7 +59,7 @@ The HTTP Request node is a core integration component in workflows, allowing you
 
 ### 1. Verify Plugin is Enabled
 
-The HTTP Request node is a built-in feature of the Workflow plugin. Ensure the **[Workflow](/plugins/@nocobase/plugin-workflow/)** plugin is enabled.
+The HTTP Request node is a built-in feature of the Workflow plugin. Ensure the **[Workflow](/plugins/@nocobase/plugin-workflow/index.md)** plugin is enabled.
 
 ### 2. Add HTTP Request Node to Workflow
 
@@ -318,8 +318,8 @@ These two features complement each other to build a complete system integration 
 
 ## Related Resources
 
-- [Workflow Plugin Documentation](/plugins/@nocobase/plugin-workflow/)
+- [Workflow Plugin Documentation](/plugins/@nocobase/plugin-workflow/index.md)
 - [Workflow: HTTP Request Node](/workflow/nodes/request)
-- [Workflow: Webhook Trigger](/integration/workflow-webhook/)
-- [API Keys Authentication](/integration/api-keys/)
-- [API Documentation Plugin](/plugins/@nocobase/plugin-api-doc/)
+- [Workflow: Webhook Trigger](/integration/workflow-webhook/index.md)
+- [API Keys Authentication](/integration/api-keys/index.md)
+- [API Documentation Plugin](/plugins/@nocobase/plugin-api-doc/index.md)

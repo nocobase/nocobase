@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "Visão Geral",
-    "link": "/file-manager/index"
+    "link": "/file-manager/"
   },
   {
     "type": "custom-link",
@@ -15,7 +15,7 @@
       {
         "type": "custom-link",
         "label": "Visão Geral",
-        "link": "/file-manager/storage/index"
+        "link": "/file-manager/storage/"
       },
       {
         "type": "custom-link",
@@ -56,7 +56,28 @@
   },
   {
     "type": "custom-link",
+    "label": "Pré-visualização de arquivos",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visão Geral",
+        "link": "/file-manager/file-preview/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Pré-visualização de arquivos do Office",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "Desenvolvimento de Extensões",
-    "link": "/file-manager/development/index"
+    "link": "/file-manager/development/"
   }
 ]

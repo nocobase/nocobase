@@ -65,7 +65,7 @@ export default defineTools({
       ctx,
       sessionId: subSessionId,
       employee,
-      model: employee.get('modelSettings') ?? ctx.action?.params?.values?.model,
+      model: ctx.action?.params?.values?.model ?? employee.get('modelSettings'),
       question,
       skillSettings,
       writer,

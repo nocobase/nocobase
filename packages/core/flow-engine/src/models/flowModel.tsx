@@ -35,6 +35,8 @@ import { IModelComponentProps, ReadonlyModelProps } from '../types';
 import { isInheritedFrom, setupRuntimeContextSteps } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
 import { Typography } from 'antd';
+import type { MenuProps } from 'antd';
+import { observer } from '..';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
 import { buildSubModelItem } from '../components/subModel/utils';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
@@ -44,8 +46,6 @@ import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
 import type { DispatchEventOptions, EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
-import type { MenuProps } from 'antd';
-import { observer } from '..';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -60,16 +60,22 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
 type BaseMenuItem = NonNullable<MenuProps['items']>[number];
-type MenuLeafItem = Exclude<BaseMenuItem, { children: MenuProps['items'] }>;
+type MenuBaseItem = Omit<Exclude<BaseMenuItem, null>, 'key' | 'children'>;
 
-export type FlowModelExtraMenuItem = Omit<MenuLeafItem, 'key'> & {
+export type FlowModelExtraMenuItem = MenuBaseItem & {
   key: React.Key;
   group?: string;
   sort?: number;
+  label?: React.ReactNode;
+  disabled?: boolean;
   onClick?: () => void;
+  children?: FlowModelExtraMenuItem[];
 };
 
-type FlowModelExtraMenuItemInput = Omit<FlowModelExtraMenuItem, 'key'> & { key?: React.Key };
+type FlowModelExtraMenuItemInput = Omit<FlowModelExtraMenuItem, 'key' | 'children'> & {
+  key?: React.Key;
+  children?: FlowModelExtraMenuItemInput[];
+};
 
 type ExtraMenuItemEntry = {
   group?: string;
@@ -85,6 +91,56 @@ type ExtraMenuItemEntry = {
 };
 
 const classMenuExtensions = new WeakMap<typeof FlowModel, Set<ExtraMenuItemEntry>>();
+
+const sortExtraMenuItems = (items: FlowModelExtraMenuItem[]) => {
+  return [...items].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+};
+
+const isFlowModelExtraMenuItem = (item: FlowModelExtraMenuItem | null): item is FlowModelExtraMenuItem => {
+  return item !== null;
+};
+
+const normalizeExtraMenuItem = (
+  item: FlowModelExtraMenuItemInput,
+  {
+    group,
+    sort,
+    prefix,
+    path,
+  }: {
+    group: string;
+    sort: number;
+    prefix: string;
+    path: string;
+  },
+): FlowModelExtraMenuItem | null => {
+  if (!item) {
+    return null;
+  }
+
+  const normalizedGroup = item.group || group;
+  const normalizedSort = typeof item.sort === 'number' ? item.sort : sort;
+  const normalizedChildren = sortExtraMenuItems(
+    (item.children || [])
+      .map((child, index) =>
+        normalizeExtraMenuItem(child, {
+          group: normalizedGroup,
+          sort: normalizedSort,
+          prefix,
+          path: `${path}-${index}`,
+        }),
+      )
+      .filter(isFlowModelExtraMenuItem),
+  );
+
+  return {
+    ...item,
+    key: item.key ?? `${prefix}-${normalizedGroup}-${path}`,
+    group: normalizedGroup,
+    sort: normalizedSort,
+    children: normalizedChildren.length ? normalizedChildren : undefined,
+  };
+};
 
 async function loadOpenStepSettingsDialog() {
   const mod = await import('../components/settings/wrappers/contextual/StepSettingsDialog');
@@ -216,11 +272,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       if (changed.type === 'set' && _.isEqual(changed.value, changed.oldValue)) {
         return;
       }
+      const hasLastAutoRun = !!this._lastAutoRunParams;
 
       if (this.flowEngine) {
         this.invalidateFlowCache('beforeRender');
       }
-      this._rerunLastAutoRun();
+      if (hasLastAutoRun) {
+        this._rerunLastAutoRun();
+      }
       this.forks.forEach((fork) => {
         fork.rerender();
       });
@@ -703,6 +762,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     } else {
       this.props = { ...this.props, ...props };
     }
+
+    this._options.props = { ...this.props };
   }
 
   getProps(): ReadonlyModelProps {
@@ -866,6 +927,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }, 100);
 
+  private resetAutoRunState(): void {
+    this._rerunLastAutoRun?.cancel?.();
+    this._lastAutoRunParams = null;
+  }
+
   /**
    * 通用事件分发钩子：开始
    * 子类可覆盖；beforeRender 事件可通过抛出 FlowExitException 提前终止。
@@ -959,7 +1025,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
 
       // 创建缓存的响应式包装器组件工厂（只创建一次）
-      const createReactiveWrapper = (modelInstance: any) => {
+      const createReactiveWrapper = (modelInstance: FlowModel) => {
         const ReactiveWrapper = observer(() => {
           // 触发响应式更新的关键属性访问（读取 run/渲染目标的 props）
           const renderTarget = modelInstance;
@@ -985,6 +1051,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
               model: renderTarget,
             });
             return () => {
+              renderTarget.resetAutoRunState();
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }
@@ -1185,17 +1252,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return model;
   }
 
-  filterSubModels<K extends keyof Structure['subModels'], R>(
+  filterSubModels<K extends keyof NonNullable<Structure['subModels']>, R>(
     subKey: K,
-    callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => boolean,
-  ): ArrayElementType<Structure['subModels'][K]>[] {
+    callback: (model: ArrayElementType<NonNullable<Structure['subModels']>[K]>, index: number) => boolean,
+  ): ArrayElementType<NonNullable<Structure['subModels']>[K]>[] {
     const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
       return [];
     }
 
-    const results: ArrayElementType<Structure['subModels'][K]>[] = [];
+    const results: ArrayElementType<NonNullable<Structure['subModels']>[K]>[] = [];
 
     _.castArray(model)
       .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
@@ -1209,9 +1276,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return results;
   }
 
-  mapSubModels<K extends keyof Structure['subModels'], R>(
+  mapSubModels<K extends keyof NonNullable<Structure['subModels']>, R>(
     subKey: K,
-    callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => R,
+    callback: (model: ArrayElementType<NonNullable<Structure['subModels']>[K]>, index: number) => R,
   ): R[] {
     const model = (this.subModels as any)[subKey as string];
 
@@ -1231,7 +1298,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return results;
   }
 
-  hasSubModel<K extends keyof Structure['subModels']>(subKey: K) {
+  hasSubModel<K extends keyof NonNullable<Structure['subModels']>>(subKey: K) {
     const subModel = (this.subModels as any)[subKey as string];
     if (!subModel) {
       return false;
@@ -1239,10 +1306,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return _.castArray(subModel).length > 0;
   }
 
-  findSubModel<K extends keyof Structure['subModels'], R>(
+  findSubModel<K extends keyof NonNullable<Structure['subModels']>, R>(
     subKey: K,
-    callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
-  ): ArrayElementType<Structure['subModels'][K]> | null {
+    callback: (model: ArrayElementType<NonNullable<Structure['subModels']>[K]>) => R,
+  ): ArrayElementType<NonNullable<Structure['subModels']>[K]> | null {
     const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
@@ -1252,7 +1319,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return (
       (_.castArray(model).find((item) => {
         return (callback as (model: any) => R)(item);
-      }) as ArrayElementType<Structure['subModels'][K]> | undefined) || null
+      }) as ArrayElementType<NonNullable<Structure['subModels']>[K]> | undefined) || null
     );
   }
 
@@ -1444,6 +1511,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const data = {
       uid: this.uid,
       ..._.omit(this._options, ['flowEngine']),
+      props: { ...this.props },
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
       flowRegistry: {},
@@ -1598,6 +1666,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       seen.add(Cls);
       const reg = classMenuExtensions.get(Cls);
       if (reg) {
+        let entryIndex = 0;
         for (const entry of reg) {
           if (entry.matcher && !entry.matcher(model)) continue;
           const items =
@@ -1605,16 +1674,21 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           const group = entry.group || 'common-actions';
           const sort = entry.sort ?? 0;
           const prefix = entry.keyPrefix || Cls.name || 'extra';
-          (items || []).forEach((it, idx: number) => {
-            if (!it) return;
-            const key = it.key ?? `${prefix}-${group}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
-            collected.push({
-              ...it,
-              key,
-              group: it.group || group,
-              sort: typeof it.sort === 'number' ? it.sort : sort,
-            });
+          sortExtraMenuItems(
+            (items || [])
+              .map((it, idx: number) =>
+                normalizeExtraMenuItem(it, {
+                  group,
+                  sort,
+                  prefix,
+                  path: `${entryIndex}-${idx}`,
+                }),
+              )
+              .filter(isFlowModelExtraMenuItem),
+          ).forEach((it) => {
+            collected.push(it);
           });
+          entryIndex += 1;
         }
       }
       const ParentClass = Object.getPrototypeOf(Cls) as typeof FlowModel;

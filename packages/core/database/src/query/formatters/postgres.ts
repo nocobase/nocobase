@@ -14,14 +14,21 @@ export class PostgresQueryFormatter extends QueryFormatter {
     return format.replace(/hh/g, 'HH24').replace(/mm/g, 'MI').replace(/ss/g, 'SS');
   }
 
-  formatDate(field: Col, format: string, timezone?: string) {
+  private buildTimezoneLiteral(target: string) {
+    if (/^[+-]\d{1,2}:\d{2}$/.test(target)) {
+      return `INTERVAL '${target}'`;
+    }
+    return `'${target}'`;
+  }
+
+  formatDate(field: Col, format: string, timezone?: string, _preserveLocalTime?: boolean) {
     const fmt = this.convertFormat(format);
-    if (timezone) {
-      const resolvedTimezone = this.getTimezoneByOffset(timezone);
+    const resolvedTimezone = this.getTimezoneByOffset(timezone);
+    if (resolvedTimezone) {
       const quoted = this.sequelize.getQueryInterface().quoteIdentifiers((field as any).col);
       return this.sequelize.fn(
         'to_char',
-        this.sequelize.literal(`(${quoted} AT TIME ZONE '${resolvedTimezone}')`),
+        this.sequelize.literal(`timezone(${this.buildTimezoneLiteral(resolvedTimezone)}, ${quoted})`),
         fmt,
       );
     }
@@ -31,7 +38,10 @@ export class PostgresQueryFormatter extends QueryFormatter {
   formatUnixTimestamp(field: string, format: string, accuracy: 'second' | 'millisecond' = 'second', timezone?: string) {
     const quoted = this.sequelize.getQueryInterface().quoteIdentifiers(field);
     const timestamp = accuracy === 'millisecond' ? `to_timestamp(ROUND(${quoted} / 1000))` : `to_timestamp(${quoted})`;
-    const literal = timezone ? `${timestamp} AT TIME ZONE '${this.getTimezoneByOffset(timezone)}'` : timestamp;
+    const resolvedTimezone = this.getTimezoneByOffset(timezone);
+    const literal = resolvedTimezone
+      ? `timezone(${this.buildTimezoneLiteral(resolvedTimezone)}, ${timestamp})`
+      : timestamp;
     return this.sequelize.fn('to_char', this.sequelize.literal(literal), this.convertFormat(format));
   }
 }

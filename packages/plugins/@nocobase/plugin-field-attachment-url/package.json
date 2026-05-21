@@ -1,8 +1,7 @@
 {
   "name": "@nocobase/plugin-field-attachment-url",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "displayName": "Collection field: Attachment(URL)",
   "displayName.ru-RU": "Поле коллекции: Вложение (URL)",
   "displayName.zh-CN": "数据表字段：附件（URL）",
@@ -11,6 +10,7 @@
   "description.zh-CN": "支持 URL 格式的附件。",
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/plugin-file-manager": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"

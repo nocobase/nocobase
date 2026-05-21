@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/ai-employees/features/task).
-:::
-
 # Tarefas de Atalho
 
 Para permitir que os funcionários de IA comecem a trabalhar de forma mais eficiente, você pode vincular funcionários de IA a blocos de cenário e predefinir várias tarefas comuns.

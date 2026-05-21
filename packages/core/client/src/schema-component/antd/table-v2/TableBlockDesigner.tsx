@@ -12,32 +12,31 @@ import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile } from '../../';
-import { useAPIClient } from '../../../api-client';
-import { useTableBlockContext } from '../../../block-provider';
+import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
+import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType } from '../../../filter-provider/utils';
 import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
-  GeneralSchemaDesigner,
   SchemaSettingsDivider,
+  SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
-  SchemaSettingsLinkageRules,
-} from '../../../schema-settings';
+} from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
-import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
-import { useDesignable } from '../../hooks';
-import { removeNullCondition } from '../filter';
+import { removeNullCondition } from '../filter/useFilterActionProps';
+import { useCompile } from '../../hooks/useCompile';
+import { useDesignable } from '../../hooks/useDesignable';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();

@@ -10,32 +10,65 @@
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { formatters, debugLog } from '../utils';
 
+function isDatabaseDataSource(dataSource: any) {
+  return dataSource?.key === DEFAULT_DATA_SOURCE_KEY || dataSource?.options?.isDBInstance || dataSource?.isDBInstance;
+}
+
+function getFieldInterface(dm: any, field: any) {
+  return field?.getInterfaceOptions?.() || dm?.collectionFieldInterfaceManager?.getFieldInterface?.(field?.interface);
+}
+
+function getFieldFilterable(dm: any, field: any) {
+  if (field?.filterable === false) {
+    return false;
+  }
+  return field?.filterable || getFieldInterface(dm, field)?.filterable;
+}
+
+function getFieldTitle(field: any) {
+  return field?.uiSchema?.title ?? field?.options?.uiSchema?.title ?? field?.title ?? field?.name;
+}
+
+function getTargetFields(dm: any, dataSourceKey: string, field: any) {
+  try {
+    return (
+      field?.getFields?.() ||
+      field?.targetCollection?.getFields?.() ||
+      dm.getCollection?.(dataSourceKey, field.target)?.getFields?.() ||
+      []
+    );
+  } catch {
+    return [];
+  }
+}
+
 // 纯函数：构建字段树
 export function getFieldOptions(dm: any, compile: (v: any) => string, collectionPath?: string[]) {
   const [dataSourceKey, collectionName] = collectionPath || [];
-  const ds = dm.getDataSource(dataSourceKey || DEFAULT_DATA_SOURCE_KEY);
-  const cm = ds?.collectionManager;
-  const fim = dm.collectionFieldInterfaceManager;
+  if (!dm || !collectionName) return [];
 
-  if (!cm || !fim || !collectionName) return [];
+  const dsKey = dataSourceKey || DEFAULT_DATA_SOURCE_KEY;
+  const collection = dm.getCollection?.(dsKey, collectionName);
 
-  const collectionFields = cm.getCollectionFields(collectionName) || [];
+  if (!collection) return [];
+
+  const collectionFields = collection.getFields?.() || [];
 
   const toOption = (field: any, depth: number, prefix?: string) => {
     if (!field?.interface) return undefined;
-    const iface = fim.getFieldInterface(field.interface);
-    if (!iface?.filterable) return undefined;
+    const filterable = getFieldFilterable(dm, field);
+    if (!filterable) return undefined;
 
     const value = prefix ? `${prefix}.${field.name}` : field.name;
     const opt: any = {
       name: field.name,
-      title: compile(field?.uiSchema?.title ?? field.name),
+      title: compile(getFieldTitle(field)),
       key: value,
       value: field.name,
     };
 
     if (depth < 1) {
-      const children = iface.filterable?.children || [];
+      const children = filterable?.children || [];
       if (children.length) {
         opt.children = children.map((c: any) => ({
           ...c,
@@ -44,8 +77,8 @@ export function getFieldOptions(dm: any, compile: (v: any) => string, collection
           value: c.name,
         }));
       }
-      if (iface.filterable?.nested && field.target) {
-        const targetFields = cm.getCollectionFields(field.target) || [];
+      if (filterable?.nested && field.target) {
+        const targetFields = getTargetFields(dm, dsKey, field);
         const nested = targetFields.map((tf: any) => toOption(tf, depth + 1, field.name)).filter(Boolean);
         opt.children = [...(opt.children || []), ...nested];
       }
@@ -61,6 +94,25 @@ export function aliasOf(val: any): string {
   return Array.isArray(val) ? val.filter(Boolean).join('.') : val || '';
 }
 
+function orderKeyOf(item: any): string {
+  return item?.alias || aliasOf(item?.field);
+}
+
+function findOptionByPath(options: any[] = [], path: string[]): any {
+  if (!path.length) return null;
+
+  let currentOptions = options;
+  let currentOption = null;
+
+  for (const segment of path) {
+    currentOption = (currentOptions || []).find((opt) => opt?.name === segment);
+    if (!currentOption) return null;
+    currentOptions = currentOption?.children || [];
+  }
+
+  return currentOption;
+}
+
 export function buildOrderFieldOptions(
   fieldOptions: any[] = [],
   dimensionsValue: any[] = [],
@@ -69,56 +121,34 @@ export function buildOrderFieldOptions(
   const hasAgg = (measuresValue || []).some((m: any) => !!m?.aggregation);
   if (!hasAgg) return fieldOptions;
 
-  const pickedPaths: string[][] = [];
-
   const toPath = (val: any): string[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val.filter(Boolean).map(String);
     return [String(val)];
   };
 
-  (dimensionsValue || []).forEach((d: any) => {
-    const p = toPath(d?.field);
-    if (p.length) pickedPaths.push(p);
-  });
-  (measuresValue || []).forEach((m: any) => {
-    const p = toPath(m?.field);
-    if (p.length) pickedPaths.push(p);
-  });
+  const selectedFields = [...(dimensionsValue || []), ...(measuresValue || [])];
+  const uniqueOptions = new Map<string, any>();
 
-  if (!pickedPaths.length) return fieldOptions;
+  selectedFields.forEach((item: any) => {
+    const path = toPath(item?.field);
+    const key = orderKeyOf(item);
+    if (!path.length || !key || uniqueOptions.has(key)) {
+      return;
+    }
 
-  const filterTree = (options: any[], paths: string[][]): any[] => {
-    const map = new Map<string, string[][]>();
-    paths.forEach((p) => {
-      const [head, ...tail] = p;
-      if (!head) return;
-      const list = map.get(head) || [];
-      list.push(tail);
-      map.set(head, list);
+    const matched = findOptionByPath(fieldOptions, path);
+    uniqueOptions.set(key, {
+      ...(matched || {}),
+      name: key,
+      key,
+      value: key,
+      title: item?.alias || matched?.title || aliasOf(item?.field),
+      children: undefined,
     });
+  });
 
-    return (options || [])
-      .map((opt) => {
-        const name = opt?.name;
-        const tails = map.get(name);
-        if (!tails) return null;
-
-        const hasNext = tails.some((t) => (t || []).length > 0);
-        if (!hasNext) {
-          return opt;
-        }
-
-        const nextPaths = tails.filter((t) => (t || []).length > 0) as string[][];
-        const children = opt?.children ? filterTree(opt.children, nextPaths) : [];
-        if (!children.length) return null;
-
-        return { ...opt, children };
-      })
-      .filter(Boolean);
-  };
-
-  return filterTree(fieldOptions, pickedPaths);
+  return Array.from(uniqueOptions.values());
 }
 
 // 纯函数：根据维度“字段值”返回格式化选项
@@ -127,20 +157,22 @@ export function getFormatterOptionsByField(dm: any, collectionPath: string[] | u
   if (!alias) return [];
 
   const [dataSourceKey, collectionName] = collectionPath || [];
-  const ds = dm.getDataSource(dataSourceKey || DEFAULT_DATA_SOURCE_KEY);
-  const cm = ds?.collectionManager;
-  if (!cm || !collectionName) return [];
+  if (!dm || !collectionName) return [];
+
+  const dsKey = dataSourceKey || DEFAULT_DATA_SOURCE_KEY;
+  const collection = dm.getCollection?.(dsKey, collectionName);
+  if (!collection) return [];
 
   const parts = alias.split('.');
   const [first, second] = parts;
 
-  const rootFields = cm.getCollectionFields(collectionName) || [];
+  const rootFields = collection.getFields?.() || [];
   const root = rootFields.find((f: any) => f.name === first);
   if (!root) return [];
 
   const iface =
     second && root.target
-      ? (cm.getCollectionFields(root.target) || []).find((f: any) => f.name === second)?.interface
+      ? getTargetFields(dm, dsKey, root).find((f: any) => f.name === second)?.interface
       : root.interface;
 
   switch (iface) {
@@ -162,9 +194,16 @@ export function getFormatterOptionsByField(dm: any, collectionPath: string[] | u
 
 // 新增：纯函数，构建“数据源/集合”选项（保持原有签名）
 export function getCollectionOptions(dm: any, compile: (v: any) => string) {
-  const allCollections = dm.getAllCollections();
-  return allCollections
-    .filter(({ key, isDBInstance }: any) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
+  if (!dm) return [];
+
+  const dataSources = dm.getDataSources?.() || [];
+  return dataSources
+    .filter(isDatabaseDataSource)
+    .map((dataSource: any) => ({
+      key: dataSource.key,
+      displayName: dataSource.displayName,
+      collections: dataSource.getCollections?.() || [],
+    }))
     .map(({ key, displayName, collections }: any) => ({
       value: key,
       label: compile(displayName),
@@ -198,17 +237,17 @@ export function validateQuery(query: Record<string, any>): { success: boolean; m
     if (hasAgg) {
       const allowedOrderFields = new Set<string>();
       (query.dimensions || []).forEach((d: any) => {
-        const alias = aliasOf(d?.field);
+        const alias = orderKeyOf(d);
         if (alias) allowedOrderFields.add(alias);
       });
       (query.measures || []).forEach((m: any) => {
-        const alias = aliasOf(m?.field);
+        const alias = orderKeyOf(m);
         if (alias) allowedOrderFields.add(alias);
       });
 
       if (Array.isArray(query.orders) && query.orders.length) {
         for (const order of query.orders) {
-          const alias = aliasOf(order?.field);
+          const alias = orderKeyOf(order);
           if (!alias || !allowedOrderFields.has(alias)) {
             return { success: false, message: 'please select valid sort field' };
           }

@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/data-sources/data-source-kingbase/index).
-:::
-
 # Fuente de datos - KingbaseES
 
 ## Introducción
@@ -121,5 +117,5 @@ Active el plugin
 
 ## Guía de uso
 
-- Base de datos principal: Consulte la [fuente de datos principal](/data-sources/data-source-main/)
+- Base de datos principal: Consulte la [fuente de datos principal](/data-sources/data-source-main/index.md)
 - Base de datos externa: Consulte [Fuente de datos / Base de datos externa](/data-sources/data-source-manager/external-database)

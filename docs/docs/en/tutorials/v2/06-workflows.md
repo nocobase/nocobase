@@ -16,7 +16,7 @@ NocoBase workflows follow the same idea:
 
 - **[Trigger](/workflow/triggers/collection)**: The entry point for the workflow. For example, "someone created a new ticket" or "a record was updated"
 - **Condition**: An optional filtering step. For example, "only continue if the assignee is not empty"
-- **Action**: The step that does the actual work. For example, "send a notification" or "update a [field](/data-sources/field)"
+- **Action**: The step that does the actual work. For example, "send a notification" or "update a [field](/data-sources/data-modeling/collection-fields)"
 
 Actions can be chained with multiple nodes. Common node types include:
 
@@ -34,7 +34,7 @@ NocoBase offers several trigger types, which you select when creating a workflow
 |---------|-------------|-----------------|
 | **[Collection event](/workflow/triggers/collection)** | Fires when a record is created, updated, or deleted | New ticket notification, status change logging |
 | **[Schedule](/workflow/triggers/schedule)** | Fires on a Cron expression or fixed time | Daily reports, periodic data cleanup |
-| **[Post-action event](/workflow/triggers/action)** | Fires after a user performs a UI action | Send notification after form submission |
+| **[Post-action event](../../workflow/triggers/post-action.md)** | Fires after a user performs a UI action | Send notification after form submission |
 | **Approval** | Initiates an approval flow with multi-level support | Leave requests, purchase approvals |
 | **Custom action** | Bound to a custom button, fires on click | One-click archiving, batch operations |
 | **Pre-action event** | Intercepts a user action synchronously before it completes | Pre-submit validation, auto-fill fields |
@@ -67,7 +67,7 @@ After submitting, click the **Configure** link in the list to enter the flow edi
 
 Click the trigger card at the top to open its configuration drawer:
 
-- **[Collection](/data-sources/main/collection)**: Select Main datasource / "Tickets"
+- **[Collection](/data-sources/data-modeling/collection)**: Select Main datasource / "Tickets"
 - **Trigger on**: Select "After record created or updated"
 - **Changed fields**: Check "Assignee" — the workflow only triggers when the Assignee field changes, avoiding unnecessary notifications from other field updates (when creating a record, all fields are considered changed, so new tickets will also trigger)
 - **Only triggers when conditions are met**: Set the mode to "Match **any** condition in the group," then add two conditions:

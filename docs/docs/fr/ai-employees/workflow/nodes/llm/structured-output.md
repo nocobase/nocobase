@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-ai-ee"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 
 # Sortie structurée

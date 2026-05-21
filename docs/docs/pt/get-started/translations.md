@@ -1,7 +1,3 @@
-:::tip{title="Aviso de tradução por IA"}
-Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/get-started/translations).
-:::
-
 # Contribuição de tradução
 
 O idioma padrão do NocoBase é o inglês. Atualmente, o aplicativo principal suporta inglês, italiano, holandês, chinês simplificado e japonês. Convidamos você sinceramente a contribuir com traduções para outros idiomas, permitindo que usuários de todo o mundo desfrutem de uma experiência NocoBase ainda mais conveniente.
@@ -83,7 +79,7 @@ https://github.com/nocobase/nocobase/tree/next/docs
 
 ### 2.1 Estrutura da Documentação
 
-A documentação utiliza o [Rspress](https://rspress.dev/) como gerador de site estático e suporta 22 idiomas. A estrutura é organizada da seguinte forma:
+A documentação utiliza o [Rspress](https://rspress.dev/) como gerador de site estático e suporta 8 idiomas. A estrutura é organizada da seguinte forma:
 
 ```
 docs/
@@ -91,25 +87,11 @@ docs/
 │   ├── en/                    # Inglês (idioma de origem)
 │   ├── cn/                    # Chinês Simplificado
 │   ├── ja/                    # Japonês
-│   ├── ko/                    # Coreano
 │   ├── de/                    # Alemão
 │   ├── fr/                    # Francês
 │   ├── es/                    # Espanhol
 │   ├── pt/                    # Português
 │   ├── ru/                    # Russo
-│   ├── it/                    # Italiano
-│   ├── tr/                    # Turco
-│   ├── uk/                    # Ucraniano
-│   ├── vi/                    # Vietnamita
-│   ├── id/                    # Indonésio
-│   ├── th/                    # Tailandês
-│   ├── pl/                    # Polonês
-│   ├── nl/                    # Holandês
-│   ├── cs/                    # Tcheco
-│   ├── ar/                    # Árabe
-│   ├── he/                    # Hebraico
-│   ├── hi/                    # Hindi
-│   ├── sv/                    # Sueco
 │   └── public/                # Ativos compartilhados (imagens, etc.)
 ├── theme/                     # Tema personalizado
 ├── rspress.config.ts          # Configuração do Rspress

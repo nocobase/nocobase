@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-embed"
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 
 # NocoBase の埋め込み
@@ -25,8 +21,8 @@ pkg: "@nocobase/plugin-embed"
 
 ![](https://static-docs.nocobase.com/f11bd6d5e88d38731d7cd3cb149022c8.png)
 
-クリックすると、取得したリンクは個別に開くことができます。例えば、`https://xxx.com/embed/qs087rz4o2b` のようになります。
+クリックすると、取得したリンクは個別に開くことができます。例えば、`https://example.com/embed/qs087rz4o2b` のようになります。
 
 ![](https://static-docs.nocobase.com/9d847805a00fd07372a474665ec0e968.png)
 
-NocoBase のページを他のウェブサイトやアプリケーションに埋め込みたい場合は、ユーザー認証が必要です。その際、`token` をリンクに付加してください。例えば、`https://xxx.com/embed/qs087rz4o2b?token=xxx` のようになります。
+NocoBase のページを他のウェブサイトやアプリケーションに埋め込みたい場合は、ユーザー認証が必要です。その際、`token` をリンクに付加してください。例えば、`https://example.com/embed/qs087rz4o2b?token=xxx` のようになります。

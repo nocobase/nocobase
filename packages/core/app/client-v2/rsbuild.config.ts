@@ -14,7 +14,7 @@ import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
-import { generateV2Plugins, getRsbuildAlias } from '@nocobase/devtools/rsbuildConfig';
+import { generateV2Plugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +41,9 @@ function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean) {
   if (!isBuild) {
     return [
       `window['__nocobase_public_path__'] = window['__nocobase_public_path__'] || ${JSON.stringify(v2PublicPath)};`,
+      `window['__nocobase_app_dev__'] = window['__nocobase_app_dev__'] || ${JSON.stringify(
+        process.env.NOCOBASE_APP_DEV === 'true',
+      )};`,
       `window['__esm_cdn_base_url__'] = window['__esm_cdn_base_url__'] || ${JSON.stringify(
         process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
       )};`,
@@ -68,6 +71,9 @@ function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean) {
       process.env.WEBSOCKET_URL || '',
     )};`,
     `window['__nocobase_ws_path__'] = window['__nocobase_ws_path__'] || ${JSON.stringify(process.env.WS_PATH || '')};`,
+    `window['__nocobase_app_dev__'] = window['__nocobase_app_dev__'] || ${JSON.stringify(
+      process.env.NOCOBASE_APP_DEV === 'true',
+    )};`,
     `window['__esm_cdn_base_url__'] = window['__esm_cdn_base_url__'] || ${JSON.stringify(
       process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
     )};`,
@@ -96,13 +102,16 @@ export default defineConfig(({ command }) => {
   const isBuild = command === 'build';
   const appPublicPath = ensurePublicPath(process.env.APP_PUBLIC_PATH || '/');
   const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH || '/api/');
+  const localStorageBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/storage/uploads/`);
+  const staticBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/static/`);
   const v2PublicPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/v2/`);
+  const wsBasePath = ensurePublicPath(process.env.WS_PATH || '/ws/');
   const hmrPath = `${v2PublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const v2Port = toNumber(process.env.APP_V2_PORT, 13002);
-  const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST || 'localhost';
+  const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT || process.env.APP_PORT, v2Port);
   const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${process.env.APP_PORT || 13001}`;
-  const workspaceAliases = getRsbuildAlias();
+  const workspaceAliases = getRsbuildBrowserAlias();
 
   return {
     plugins: [pluginReact(), pluginLess(), pluginNodePolyfill(), pluginSvgr()],
@@ -179,7 +188,7 @@ export default defineConfig(({ command }) => {
         media: '[name]-[contenthash:8][ext][query]',
       },
       assetPrefix: v2PublicPath,
-      cleanDistPath: true,
+      cleanDistPath: isBuild,
       sourceMap: {
         js: isBuild ? false : 'eval-cheap-module-source-map',
         css: false,
@@ -211,6 +220,20 @@ export default defineConfig(({ command }) => {
               });
             }
           },
+        },
+        [localStorageBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+        },
+        [staticBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+        },
+        [wsBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          ws: true,
+          xfwd: true,
         },
       },
       historyApiFallback: {

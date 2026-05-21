@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-ai"
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/index).
-:::
-
 # Descripción general
 
 ![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
@@ -34,7 +30,7 @@ Primero consulte el [Inicio rápido](/ai-employees/quick-start) y complete la co
 - [Configurar Servicio LLM](/ai-employees/features/llm-service): conecte proveedores, configure y gestione los modelos disponibles.
 - [Habilitar Empleados de IA](/ai-employees/features/enable-ai-employee): active o desactive empleados integrados y controle el alcance de disponibilidad.
 - [Nuevo Empleado de IA](/ai-employees/features/new-ai-employees): defina el rol, la personalidad, el mensaje de bienvenida y los límites de capacidad.
-- [Uso de habilidades](/ai-employees/features/tool): configure los permisos de las habilidades (`Ask` / `Allow`) para controlar los riesgos de ejecución.
+- [Uso de habilidades](./features/tools.md): configure los permisos de las habilidades (`Ask` / `Allow`) para controlar los riesgos de ejecución.
 
 ### B. Colaboración diaria (Usuario de negocio)
 
@@ -45,7 +41,7 @@ Primero consulte el [Inicio rápido](/ai-employees/quick-start) y complete la co
 
 ### C. Capacidades avanzadas (Extensiones)
 
-- [Empleados de IA integrados](/ai-employees/features/built-in-employee): conozca el posicionamiento y los escenarios de aplicación de los empleados preestablecidos.
+- [Empleados de IA integrados](/ai-employees/built-in/): conozca el posicionamiento y los escenarios de aplicación de los empleados preestablecidos.
 - [Control de permisos](/ai-employees/permission): controle el acceso a empleados, habilidades y datos según el modelo de permisos de la organización.
 - [Base de conocimientos de IA](/ai-employees/knowledge-base/index): introduzca el conocimiento de la empresa para mejorar la estabilidad y trazabilidad de las respuestas.
 - [Nodo LLM de flujo de trabajo](/ai-employees/workflow/nodes/llm/chat): organice las capacidades de IA en procesos automatizados.

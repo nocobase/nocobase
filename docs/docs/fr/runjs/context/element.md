@@ -1,7 +1,3 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/runjs/context/element).
-:::
-
 # ctx.element
 
 Une instance `ElementProxy` pointant vers le conteneur DOM du bac à sable (sandbox), servant de cible de rendu par défaut pour `ctx.render()`. Elle est disponible dans les scénarios disposant d'un conteneur de rendu, tels que `JSBlock`, `JSField`, `JSItem` et `JSColumn`.

@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 
 # Impression de modèles
@@ -26,7 +22,7 @@ Le plugin d'Impression de modèles vous permet de concevoir des modèles dans Wo
 
 ### Installer le plugin
 
-Veuillez consulter [Installation et mise à niveau des plugins commerciaux](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)
+Veuillez consulter [Installation et mise à niveau des plugins commerciaux](https://www.nocobase.com/fr/blog/nocobase-commercial-license-activation-guide)
 
 ### Installer LibreOffice (facultatif)
 

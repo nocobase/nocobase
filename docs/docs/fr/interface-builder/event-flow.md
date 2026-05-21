@@ -1,117 +1,119 @@
-:::tip{title="Avis de traduction IA"}
-Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/event-flow).
-:::
+---
+title: "Flux d'événements"
+description: "Flux d'événements de la construction d'interface : configurez la logique d'interaction des blocs et des champs, piloté par Flow et chaîné par Step pour orchestrer la logique métier sans code."
+keywords: "flux d'événements, Event Flow, Flow, Step, logique d'interaction, orchestration sans code, construction d'interface, NocoBase"
+---
 
 # Flux d'événements
 
 ## Introduction
 
-Si vous souhaitez déclencher des opérations personnalisées lors de la modification d'un formulaire, vous pouvez utiliser les flux d'événements pour y parvenir. Outre les formulaires, les pages, les blocs, les boutons et les champs peuvent également utiliser les flux d'événements pour configurer des opérations personnalisées.
+Si vous souhaitez déclencher des opérations personnalisées lorsqu'un formulaire change, vous pouvez utiliser le flux d'événements. Outre les formulaires, les pages, blocs, boutons et champs peuvent également utiliser le flux d'événements pour configurer des opérations personnalisées.
 
 ## Comment l'utiliser
 
-L'exemple simple suivant illustre comment configurer un flux d'événements. Réalisons une liaison entre deux tableaux : lorsque vous cliquez sur une ligne du tableau de gauche, les données du tableau de droite sont automatiquement filtrées.
+Voici un exemple simple pour illustrer la configuration d'un flux d'événements. Implémentons une interaction entre deux tableaux : lorsque vous cliquez sur une ligne du tableau de gauche, les données du tableau de droite sont automatiquement filtrées.
 
 ![20251031092211_rec_](https://static-docs.nocobase.com/20251031092211_rec_.gif)
 
-Les étapes de configuration sont les suivantes :
+Étapes de configuration :
 
-1. Cliquez sur l'icône « éclair » en haut à droite du bloc de tableau de gauche pour ouvrir l'interface de configuration du flux d'événements.
+1. Cliquez sur l'icône «éclair» en haut à droite du bloc de tableau de gauche pour ouvrir l'interface de configuration du flux d'événements.
 ![20251031092425](https://static-docs.nocobase.com/20251031092425.png)
-2. Cliquez sur « Ajouter un flux d'événements (Add event flow) », sélectionnez « Clic sur une ligne » pour l'« Événement déclencheur », ce qui signifie qu'il se déclenchera lors du clic sur une ligne du tableau.
+2. Cliquez sur «Ajouter un flux d'événements (Add event flow)», sélectionnez «Clic sur ligne» comme «Événement déclencheur», ce qui signifie que le flux est déclenché lorsque vous cliquez sur une ligne du tableau.
 ![20251031092637](https://static-docs.nocobase.com/20251031092637.png)
-3. Configurez le « Moment d'exécution », utilisé pour contrôler l'ordre de ce flux d'événements par rapport aux processus intégrés du système. En général, conservez la valeur par défaut ; si vous souhaitez afficher un message ou naviguer après l'exécution de la logique intégrée, vous pouvez choisir « Après tous les flux ». Pour plus d'explications, voir ci-dessous [Moment d'exécution](#moment-dexécution).
+3. Configurez le «Moment d'exécution» pour contrôler l'ordre d'exécution de ce flux d'événements par rapport aux flux intégrés du système. Conservez généralement la valeur par défaut ; si vous souhaitez afficher un message ou rediriger après l'exécution de la logique intégrée, vous pouvez choisir «Après tous les flux». Pour plus de détails, voir [Moment d'exécution](#moment-dexécution) ci-dessous.
 ![event-flow-event-flow-20260204](https://static-docs.nocobase.com/event-flow-event-flow-20260204.png)
-4. La « Condition de déclenchement (Trigger condition) » est utilisée pour configurer des conditions ; le flux d'événements ne se déclenchera que si les conditions sont remplies. Ici, nous n'avons pas besoin de configuration, le flux se déclenchera dès qu'une ligne est cliquée.
+4. La «Condition de déclenchement (Trigger condition)» permet de configurer une condition : le flux d'événements ne sera déclenché que si la condition est remplie. Ici, nous n'avons pas besoin de la configurer ; tout clic sur une ligne déclenchera le flux d'événements.
 ![20251031092717](https://static-docs.nocobase.com/20251031092717.png)
-5. Survolez « Ajouter une étape (Add step) » pour ajouter des étapes d'opération. Choisissez « Définir la portée des données (Set data scope) » pour configurer la portée des données du tableau de droite.
+5. Survolez «Ajouter une étape (Add step)» avec la souris pour ajouter des étapes d'opération. Choisissons «Définir la portée des données (Set data scope)» pour définir la portée des données du tableau de droite.
 ![20251031092755](https://static-docs.nocobase.com/20251031092755.png)
-6. Copiez l'UID du tableau de droite et saisissez-le dans le champ « UID du bloc cible (Target block UID) ». Une interface de configuration de condition s'affichera immédiatement en dessous pour configurer la portée des données du tableau de droite.
+6. Copiez l'UID du tableau de droite et collez-le dans le champ «UID du bloc cible (Target block UID)». Une interface de configuration de condition s'affiche immédiatement en dessous, où vous pouvez configurer la portée des données du tableau de droite.
 ![20251031092915](https://static-docs.nocobase.com/20251031092915.png)
-7. Configurons une condition, comme illustré ci-dessous :
+7. Configurons une condition comme illustré ci-dessous :
 ![20251031093233](https://static-docs.nocobase.com/20251031093233.png)
-8. Après avoir configuré la portée des données, vous devez rafraîchir le bloc pour afficher les résultats du filtrage. Configurons ensuite le rafraîchissement du bloc de tableau de droite. Ajoutez une étape « Rafraîchir les blocs cibles (Refresh target blocks) », puis saisissez l'UID du tableau de droite.
+8. Après avoir configuré la portée des données, vous devez encore rafraîchir le bloc pour afficher les résultats filtrés. Configurons maintenant le rafraîchissement du bloc de tableau de droite. Ajoutez une étape «Rafraîchir les blocs cibles (Refresh target blocks)», puis saisissez l'UID du tableau de droite.
 ![20251031093150](https://static-docs.nocobase.com/20251031093150.png)
 ![20251031093341](https://static-docs.nocobase.com/20251031093341.png)
-9. Enfin, cliquez sur le bouton Enregistrer en bas à droite pour terminer la configuration.
+9. Enfin, cliquez sur le bouton de sauvegarde en bas à droite et la configuration est terminée.
 
-## Détails des événements
+## Détail des événements
 
-### Avant le rendu
+### Avant rendu
 
-Événement universel, utilisable dans les pages, blocs, boutons ou champs. Cet événement permet d'effectuer des travaux d'initialisation, comme configurer différentes portées de données selon différentes conditions.
+Événement générique, utilisable dans les pages, blocs, boutons ou champs. Dans cet événement, vous pouvez effectuer des tâches d'initialisation. Par exemple, configurer différentes portées de données selon différentes conditions.
 
-### Clic sur une ligne (Row click)
+### Clic sur ligne (Row click)
 
-Événement exclusif aux blocs de tableau. Se déclenche lors du clic sur une ligne du tableau. Lors du déclenchement, un « Clicked row record » est ajouté au contexte, utilisable comme variable dans les conditions et les étapes.
+Événement spécifique aux blocs de tableau. Déclenché lorsque vous cliquez sur une ligne du tableau. Lors du déclenchement, un Clicked row record est ajouté au contexte et peut être utilisé comme variable dans les conditions et les étapes.
 
-### Changement des valeurs du formulaire (Form values change)
+### Changement de valeur du formulaire (Form values change)
 
-Événement exclusif aux blocs de formulaire. Se déclenche lorsque la valeur d'un champ du formulaire est modifiée. Vous pouvez obtenir les valeurs du formulaire via la variable « Current form » dans les conditions et les étapes.
+Événement spécifique aux blocs de formulaire. Déclenché lorsque la valeur d'un champ du formulaire change. Vous pouvez accéder aux valeurs du formulaire dans les conditions et les étapes via la variable «Current form».
 
 ### Clic (Click)
 
-Événement exclusif aux boutons. Se déclenche lors du clic sur le bouton.
+Événement spécifique aux boutons. Déclenché lorsque vous cliquez sur le bouton.
 
 ## Moment d'exécution
 
-Dans la configuration du flux d'événements, deux concepts peuvent être confondus :
+Dans la configuration du flux d'événements, deux concepts sont facilement confondus :
 
-- **Événement déclencheur :** Quand commencer l'exécution (par exemple : Avant le rendu, Clic sur une ligne, Clic, Changement des valeurs du formulaire, etc.).
-- **Moment d'exécution :** Une fois que l'événement déclencheur se produit, à quel endroit votre **flux d'événements personnalisé** doit être inséré dans le **processus intégré** pour être exécuté.
+- **Événement déclencheur :** quand commencer l'exécution (par exemple : avant rendu, clic sur ligne, clic, changement de valeur du formulaire, etc.).
+- **Moment d'exécution :** une fois le même événement déclencheur survenu, à quel emplacement votre **flux d'événements personnalisé** doit s'insérer dans le **processus intégré**.
 
-### Qu'est-ce qu'un « processus intégré / étape intégrée » ?
+### Qu'est-ce qu'un «processus / étape intégré» ?
 
-De nombreuses pages, blocs ou opérations possèdent leur propre processus de traitement intégré au système (par exemple : soumission, ouverture d'une fenêtre contextuelle, requête de données, etc.). Lorsque vous ajoutez un flux d'événements personnalisé pour le même événement (par exemple « Clic »), le « Moment d'exécution » permet de décider :
+De nombreuses pages, blocs ou opérations disposent d'un processus de traitement intégré au système (par exemple : soumettre, ouvrir une fenêtre contextuelle, requêter des données, etc.). Lorsque vous ajoutez un flux d'événements personnalisé pour un même événement (par exemple «Clic»), le «Moment d'exécution» détermine :
 
-- S'il faut exécuter votre flux d'événements avant ou après la logique intégrée ;
-- Ou s'il faut insérer votre flux d'événements avant ou après une étape spécifique du processus intégré.
+- si votre flux d'événements s'exécute avant ou après la logique intégrée ;
+- ou si votre flux d'événements s'insère avant ou après une étape donnée du processus intégré.
 
-### Comment comprendre les options du moment d'exécution dans l'interface ?
+### Comment comprendre les options de moment d'exécution dans l'UI ?
 
-- **Avant tous les flux (par défaut) :** S'exécute en premier. Idéal pour l'« interception/préparation » (par exemple : validation, confirmation secondaire, initialisation de variables, etc.).
-- **Après tous les flux :** S'exécute après la fin de la logique intégrée. Idéal pour la « finalisation/retour » (par exemple : message de notification, rafraîchissement d'autres blocs, navigation, etc.).
-- **Avant un flux spécifique / Après un flux spécifique :** Point d'insertion plus précis. Nécessite de choisir un « processus intégré » spécifique après la sélection.
-- **Avant une étape de flux spécifique / Après une étape de flux spécifique :** Point d'insertion le plus précis. Nécessite de choisir à la fois le « processus intégré » et l'« étape du processus intégré ».
+- **Avant tous les flux (par défaut) :** s'exécute en premier. Idéal pour «intercepter / préparer» (par exemple validation, double confirmation, initialisation de variables, etc.).
+- **Après tous les flux :** s'exécute après la fin de la logique intégrée. Idéal pour «finaliser / fournir un retour» (par exemple message, rafraîchissement d'autres blocs, redirection, etc.).
+- **Avant un flux spécifique / Après un flux spécifique :** point d'insertion plus précis. Après sélection, vous devez choisir un «processus intégré» spécifique.
+- **Avant une étape de flux spécifique / Après une étape de flux spécifique :** point d'insertion le plus précis. Après sélection, vous devez choisir à la fois le «processus intégré» et l'«étape du processus intégré».
 
-> Conseil : Si vous n'êtes pas sûr de l'option à choisir, privilégiez les deux premières (« Avant / Après »).
+> Astuce : si vous n'êtes pas sûr du processus / de l'étape intégrée à choisir, utilisez de préférence les deux premières options («Avant / Après»).
 
-## Détails des étapes
+## Détail des étapes
 
 ### Variable personnalisée (Custom variable)
 
-Permet de définir une variable personnalisée pour l'utiliser ensuite dans le contexte.
+Permet de définir une variable, puis de l'utiliser dans le contexte.
 
 #### Portée
 
-Les variables personnalisées ont une portée ; par exemple, une variable définie dans le flux d'événements d'un bloc ne peut être utilisée que dans ce bloc. Si vous souhaitez qu'elle soit utilisable dans tous les blocs de la page actuelle, vous devez la configurer dans le flux d'événements de la page.
+Les variables personnalisées ont une portée. Par exemple, une variable définie dans le flux d'événements d'un bloc ne peut être utilisée que dans ce bloc. Si vous souhaitez l'utiliser dans tous les blocs de la page courante, vous devez la configurer dans le flux d'événements de la page.
 
 #### Variable de formulaire (Form variable)
 
-Utilise la valeur d'un bloc de formulaire spécifique comme variable. La configuration est la suivante :
+Utilise la valeur d'un bloc de formulaire comme variable. Configuration spécifique :
 
 ![20251031093516](https://static-docs.nocobase.com/20251031093516.png)
 
-- Variable title : Titre de la variable
-- Variable identifier : Identifiant de la variable
+- Variable title : titre de la variable
+- Variable identifier : identifiant de la variable
 - Form UID : UID du formulaire
 
 #### Autres variables
 
-D'autres variables seront supportées ultérieurement, restez à l'écoute.
+D'autres variables seront prises en charge progressivement, restez à l'écoute.
 
 ### Définir la portée des données (Set data scope)
 
-Définit la portée des données du bloc cible. La configuration est la suivante :
+Définit la portée des données du bloc cible. Configuration spécifique :
 
 ![20251031093609](https://static-docs.nocobase.com/20251031093609.png)
 
 - Target block UID : UID du bloc cible
-- Condition : Condition de filtrage
+- Condition : condition de filtrage
 
 ### Rafraîchir les blocs cibles (Refresh target blocks)
 
-Rafraîchit les blocs cibles, permet de configurer plusieurs blocs. La configuration est la suivante :
+Rafraîchit les blocs cibles, plusieurs blocs peuvent être configurés. Configuration spécifique :
 
 ![20251031093657](https://static-docs.nocobase.com/20251031093657.png)
 
@@ -119,51 +121,51 @@ Rafraîchit les blocs cibles, permet de configurer plusieurs blocs. La configura
 
 ### Naviguer vers une URL (Navigate to URL)
 
-Redirige vers une URL. La configuration est la suivante :
+Redirige vers une URL. Configuration spécifique :
 
 ![20251031093742](https://static-docs.nocobase.com/20251031093742.png)
 
-- URL : URL cible, supporte l'utilisation de variables
-- Search parameters : Paramètres de requête dans l'URL
-- Open in new window : Si coché, ouvre une nouvelle page de navigateur lors de la redirection
+- URL : URL cible, prend en charge les variables
+- Search parameters : paramètres de requête de l'URL
+- Open in new window : si coché, ouvre une nouvelle page de navigateur lors de la redirection
 
 ### Afficher un message (Show message)
 
-Affiche globalement des informations de retour sur l'opération.
+Affiche globalement un retour d'information sur l'opération.
 
 #### Quand l'utiliser
 
-- Permet de fournir des informations de retour telles que succès, avertissement et erreur.
-- S'affiche centré en haut et disparaît automatiquement ; c'est un mode de notification léger qui n'interrompt pas les opérations de l'utilisateur.
+- Permet de fournir des retours de succès, d'avertissement, d'erreur, etc.
+- Affichage centré en haut, disparition automatique : c'est une notification légère qui n'interrompt pas l'opération de l'utilisateur.
 
 #### Configuration spécifique
 
 ![20251031093825](https://static-docs.nocobase.com/20251031093825.png)
 
-- Message type : Type de message
-- Message content : Contenu du message
-- Duration : Durée d'affichage, en secondes
+- Message type : type de message
+- Message content : contenu du message
+- Duration : durée d'affichage en secondes
 
 ### Afficher une notification (Show notification)
 
-Affiche globalement des alertes de notification.
+Affiche globalement une notification.
 
 #### Quand l'utiliser
 
-Affiche des alertes de notification dans les quatre coins du système. Souvent utilisé dans les cas suivants :
+Affiche une notification dans l'un des quatre coins du système. Souvent utilisé dans les cas suivants :
 
-- Contenu de notification complexe.
-- Notifications avec interaction, proposant des actions à l'utilisateur.
-- Notifications poussées par le système.
+- Contenu de notification relativement complexe.
+- Notifications interactives, fournissant à l'utilisateur la prochaine action à effectuer.
+- Push système actif.
 
 #### Configuration spécifique
 
 ![20251031093934](https://static-docs.nocobase.com/20251031093934.png)
 
-- Notification type : Type de notification
-- Notification title : Titre de la notification
-- Notification description : Description de la notification
-- Placement : Position, les options sont : haut-gauche, haut-droite, bas-gauche, bas-droite
+- Notification type : type de notification
+- Notification title : titre de la notification
+- Notification description : description de la notification
+- Placement : position, options : haut-gauche, haut-droite, bas-gauche, bas-droite
 
 ### Exécuter du JavaScript (Execute JavaScript)
 
@@ -171,18 +173,46 @@ Affiche des alertes de notification dans les quatre coins du système. Souvent u
 
 Exécute du code JavaScript.
 
-## Exemple
+### Requête personnalisée (Custom request)
 
-### Formulaire : Appeler une API tierce pour remplir des champs
+#### Quand l'utiliser
+Lorsque vous devez appeler une interface externe ou un service tiers dans le flux, vous pouvez utiliser **Custom request** pour déclencher une requête HTTP personnalisée. Cas d'usage courants :
 
-Scénario : Déclencher un flux d'événements dans un formulaire pour appeler une API tierce, puis remplir automatiquement les champs du formulaire avec les données obtenues.
+* Appeler une API d'un système externe (CRM, services AI, etc.)
+* Récupérer des données distantes et les traiter dans les étapes ultérieures du flux
+* Pousser des données vers un système tiers (Webhook, notifications, etc.)
+* Déclencher des flux d'automatisation de services internes ou externes
+
+Une fois la requête exécutée, ses données de réponse peuvent être utilisées dans les étapes suivantes, par exemple pour le traitement des données, des conditions ou le stockage.
+
+#### Configuration spécifique
+
+![](https://static-docs.nocobase.com/Leads-03-16-2026_05_50_PM%20(1).png)
+
+* HTTP method : méthode de requête HTTP, par exemple `GET`, `POST`, `PUT`, `DELETE`, etc.
+* URL : adresse cible de la requête, vous pouvez saisir une URL complète ou la composer dynamiquement avec des variables.
+* Headers : en-têtes de requête, utilisés pour transmettre les informations d'authentification ou la configuration de l'interface, par exemple `Authorization`, `Content-Type`, etc.
+* Parameters : paramètres de requête de l'URL (Query Parameters), généralement utilisés pour les requêtes `GET`.
+* Body : contenu du corps de la requête, généralement utilisé pour les requêtes `POST`, `PUT`, etc., peut contenir du JSON, des données de formulaire, etc.
+* Timeout config : configuration du délai d'expiration de la requête, pour limiter la durée maximale d'attente et éviter de bloquer le flux trop longtemps.
+* Response type : type de données de la réponse de la requête.
+  * JSON : l'interface renvoie des données JSON, le résultat est injecté dans le contexte du flux et peut être récupéré dans les étapes suivantes via `ctx.steps`.
+  * Stream : l'interface renvoie un flux de données (Stream), un téléchargement de fichier est déclenché automatiquement après la requête réussie.
+* Access control : contrôle d'accès, permet de restreindre les rôles autorisés à déclencher cette étape de requête, pour garantir la sécurité de l'appel d'interface.
+
+
+## Exemples
+
+### Formulaire : appeler une API tierce pour pré-remplir des champs
+
+Scénario : déclencher un flux d'événements dans un formulaire pour appeler une API tierce, puis pré-remplir automatiquement les champs du formulaire avec les données reçues.
 
 Étapes de configuration :
 
-1. Ouvrez la configuration du flux d'événements dans le bloc de formulaire et ajoutez un nouveau flux ;
-2. Sélectionnez « Avant le rendu » comme événement déclencheur ;
-3. Sélectionnez « Après tous les flux » comme moment d'exécution ;
-4. Ajoutez l'étape « Exécuter du JavaScript (Execute JavaScript) », copiez et modifiez le code suivant selon vos besoins :
+1. Ouvrez la configuration du flux d'événements dans le bloc de formulaire et ajoutez un nouveau flux d'événements ;
+2. Sélectionnez «Avant rendu» comme événement déclencheur ;
+3. Sélectionnez «Après tous les flux» comme moment d'exécution ;
+4. Ajoutez l'étape «Exécuter du JavaScript (Execute JavaScript)», collez et adaptez le code suivant :
 
 ```js
 const res = await ctx.api.request({

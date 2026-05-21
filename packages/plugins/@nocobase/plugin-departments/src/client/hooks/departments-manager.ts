@@ -39,6 +39,7 @@ export const useDepartmentManager = (options?: DepartmentManagerOptions) => {
     const { data } = await resourceAPI.list(
       deepmerge(params, {
         paginate: false,
+        sort: ['sort'],
         appends: ['parent(recursively=true)'],
         filter: {
           parentId: key,
@@ -55,6 +56,7 @@ export const useDepartmentManager = (options?: DepartmentManagerOptions) => {
     const { data } = await resourceAPI.list(
       deepmerge(params, {
         paginate: false,
+        sort: ['sort'],
         filter: {
           title: {
             $includes: keyword,

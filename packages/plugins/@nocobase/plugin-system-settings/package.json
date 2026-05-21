@@ -6,16 +6,16 @@
   "description": "Used to adjust the system title, logo, language, etc.",
   "description.zh-CN": "用于调整系统的标题、LOGO、语言等。",
   "description.ru-RU": "Используется для настройки заголовка системы, логотипа, языка и т.д.",
-  "version": "2.1.0-alpha.13",
+  "version": "2.1.0-alpha.39",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/system-settings",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/system-settings",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/system-settings",
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-file-manager": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"
   },

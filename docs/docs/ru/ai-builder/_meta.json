@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Быстрый старт",
+    "link": "/ai-builder/"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "Безопасность и аудит"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "Управление окружениями"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "Моделирование данных"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "Настройка интерфейса"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "Управление рабочими процессами"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "Настройка прав доступа"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "Готовые решения"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "Управление плагинами"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "Управление публикацией"
+  }
+]

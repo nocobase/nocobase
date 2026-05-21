@@ -26,8 +26,9 @@ import {
   skillToolBindingMiddleware,
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
+  workflowHistoryMiddleware,
 } from './middleware';
-import { SkillsEntry, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
+import { listSystemTools, SkillsEntry, SYSTEM_TOOLS, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
@@ -38,6 +39,7 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
 import { Context } from '@nocobase/actions';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
+import { LLMStreamCached } from '../manager/llm-stream-manager';
 
 export interface ModelRef {
   llmService: string;
@@ -54,7 +56,25 @@ export interface AIEmployeeOptions {
   model?: ModelRef;
   legacy?: boolean;
   from?: 'main-agent' | 'sub-agent';
+  tools?: { name: string }[];
 }
+
+type InterruptPayload = {
+  actionRequests: { name: string; args: unknown; description: string }[];
+  reviewConfigs: { actionName: string; allowedDecisions: string[] }[];
+};
+
+type InterruptAction = {
+  order: number;
+  description: string;
+  allowedDecisions: string[];
+  toolCall?: { id: string; name: string };
+  currentConversation?: {
+    sessionId: string;
+    from: string;
+    username: string;
+  };
+};
 
 export class AIEmployee {
   sessionId: string;
@@ -66,11 +86,14 @@ export class AIEmployee {
   private db: Database;
 
   private ctx: Context;
-  private systemMessage: string;
+  private systemMessage?: string;
   private protocol: ChatStreamProtocol;
   private webSearch?: boolean;
   private model?: ModelRef;
   private legacy?: boolean;
+  private tools: { name: string }[];
+  private inWorkflow?: boolean;
+  private streamCached: LLMStreamCached;
 
   constructor({
     ctx,
@@ -82,6 +105,7 @@ export class AIEmployee {
     model,
     legacy,
     from = 'main-agent',
+    tools = [],
   }: AIEmployeeOptions) {
     this.employee = employee;
     this.ctx = ctx;
@@ -94,20 +118,59 @@ export class AIEmployee {
     this.model = model;
     this.legacy = legacy;
     this.from = from;
+    this.tools = tools;
+    this.streamCached = this.plugin.llmStreamCachedManager.getCached(sessionId);
 
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
-    this.protocol = ChatStreamProtocol.fromContext(ctx);
+    this.protocol = ChatStreamProtocol.fromContext(ctx, async (chunk) => {
+      try {
+        await this.streamCached.append(chunk);
+      } catch (error) {
+        this.logger.warn('Failed to append LLM stream cache', { sessionId: this.sessionId, error });
+      }
+    });
+  }
+
+  private get chatSettings() {
+    return (this.employee?.get?.('chatSettings') ?? (this.employee as any)?.chatSettings ?? {}) as {
+      systemPromptMode?: 'default' | 'raw' | 'none';
+      enableSkills?: boolean;
+      enableTools?: boolean;
+    };
+  }
+
+  private get systemPromptMode() {
+    return this.chatSettings.systemPromptMode ?? 'default';
+  }
+
+  private areSkillsEnabled() {
+    return this.chatSettings.enableSkills !== false;
+  }
+
+  private areToolsEnabled() {
+    return this.chatSettings.enableTools !== false;
   }
 
   async getFormatMessages(userMessages: AIMessageInput[]) {
-    const { provider } = await this.getLLMService();
+    const { provider } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const { messages } = await this.aiChatConversation.getChatContext({
       userMessages,
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
     });
     return messages;
+  }
+
+  async isInWorkflow() {
+    if (this.inWorkflow !== undefined) {
+      return this.inWorkflow;
+    }
+    const conversation = await this.aiConversationsRepo.findByTargetKey(this.sessionId);
+    this.inWorkflow = conversation?.category === 'task';
+    return this.inWorkflow;
   }
 
   // === Chat flow ===
@@ -122,13 +185,15 @@ export class AIEmployee {
     };
   }
 
-  private async initSession({ messageId, provider, model, providerName }) {
+  private async initSession({ messageId, provider, model, providerName, llmService }) {
     const { tools, baseToolNames } = await this.getAgentTools();
+    const resolvedTools = provider.resolveTools(tools.map(buildTool));
     if (!messageId && this.legacy !== true) {
       return {
         historyMessages: [],
         tools,
-        middleware: this.getMiddleware({ tools, baseToolNames, model, providerName }),
+        resolvedTools,
+        middleware: await this.getMiddleware({ tools, baseToolNames, model, providerName, llmService }),
         config: undefined,
         state: undefined,
       };
@@ -143,11 +208,13 @@ export class AIEmployee {
     return {
       historyMessages,
       tools,
-      middleware: this.getMiddleware({
+      resolvedTools,
+      middleware: await this.getMiddleware({
         tools,
         baseToolNames,
         model,
         providerName,
+        llmService,
         messageId,
         agentThread,
       }),
@@ -172,24 +239,35 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
-    const { provider, model, service } = await this.getLLMService();
-    const { historyMessages, tools, middleware, config, state } = await this.initSession({
+    const { provider, model, service } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
+    const { historyMessages, tools, resolvedTools, middleware, config, state } = await this.initSession({
       messageId,
       provider,
       model,
       providerName: service.provider,
+      llmService: service.get?.('name') || (service as any).name,
     });
 
     const chatContext = await this.aiChatConversation.getChatContext({
       userMessages: [...historyMessages, ...(userMessages ?? [])],
       userDecisions,
-      tools,
+      tools: resolvedTools,
       middleware,
       getSystemPrompt: (userMessages) => this.getSystemPrompt(userMessages),
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
     });
 
-    return { providerName: service.provider, model, provider, chatContext, config, state };
+    return {
+      providerName: service.provider,
+      llmService: service.get?.('name') || (service as any).name,
+      model,
+      provider,
+      chatContext,
+      config,
+      state,
+    };
   }
 
   async stream({
@@ -204,8 +282,15 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
+    await this.streamCached.clear();
+    await this.aiConversationsRepo.update({
+      values: { llmActiveState: 'streaming' },
+      filter: {
+        sessionId: this.sessionId,
+      },
+    });
     try {
-      const { providerName, model, provider, chatContext, config, state } = await this.buildChatContext({
+      const { providerName, llmService, model, provider, chatContext, config, state } = await this.buildChatContext({
         messageId,
         userMessages,
         userDecisions,
@@ -223,6 +308,7 @@ export class AIEmployee {
       await this.processChatStream(stream, {
         signal,
         providerName,
+        llmService,
         model,
         provider,
         responseMetadata,
@@ -233,6 +319,14 @@ export class AIEmployee {
       this.ctx.log.error(err);
       this.sendErrorResponse(err.message || 'Chat error warning');
       return false;
+    } finally {
+      await this.aiConversationsRepo.update({
+        values: { llmActiveState: 'idle', read: false },
+        filter: {
+          sessionId: this.sessionId,
+        },
+      });
+      await this.streamCached.clear();
     }
   }
 
@@ -252,6 +346,12 @@ export class AIEmployee {
     writer?: (chunk: any) => void;
     context?: any;
   }) {
+    await this.aiConversationsRepo.update({
+      values: { llmActiveState: 'invoking' },
+      filter: {
+        sessionId: this.sessionId,
+      },
+    });
     try {
       const { provider, chatContext, config, state } = await this.buildChatContext({
         messageId,
@@ -259,71 +359,34 @@ export class AIEmployee {
         userDecisions,
       });
 
+      const { threadId } = await this.getCurrentThread();
       const invokeConfig = {
         context: { ctx: this.ctx, decisions: chatContext.decisions, ...context },
         recursionLimit: 100,
+        configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
         writer,
         ...config,
       };
 
-      if (this.from === 'main-agent') {
-        const { threadId } = await this.getCurrentThread();
-        invokeConfig.configurable = { thread_id: threadId };
-      }
+      const invokeResult = await this.agentInvoke(provider, chatContext, invokeConfig, state);
 
-      return await this.agentInvoke(provider, chatContext, invokeConfig, state);
+      await this.handleInterruptedToolCalls(invokeResult?.__interrupt__?.[0], () => invokeResult?.messageId);
+
+      return invokeResult;
     } catch (err) {
       if (err.name === 'GraphInterrupt') {
         throw err;
       }
       this.ctx.log.error(err);
       throw err;
+    } finally {
+      await this.aiConversationsRepo.update({
+        values: { llmActiveState: 'idle' },
+        filter: {
+          sessionId: this.sessionId,
+        },
+      });
     }
-  }
-
-  // === LLM/provider setup ===
-  async getLLMService() {
-    // model is required - it's set by the frontend ModelSwitcher
-    if (!this.model?.llmService || !this.model?.model) {
-      throw new Error('LLM service not configured');
-    }
-
-    const llmServiceName = this.model.llmService;
-    const model = this.model.model;
-
-    // Build model options from model
-    const modelOptions: Record<string, any> = {
-      llmService: llmServiceName,
-      model,
-    };
-
-    if (this.webSearch === true) {
-      modelOptions.builtIn = { webSearch: true };
-    }
-
-    const service = await this.db.getRepository('llmServices').findOne({
-      filter: {
-        name: llmServiceName,
-      },
-    });
-
-    if (!service) {
-      throw new Error('LLM service not found');
-    }
-
-    const providerOptions = this.plugin.aiManager.llmProviders.get(service.provider);
-    if (!providerOptions) {
-      throw new Error('LLM service provider not found');
-    }
-
-    const Provider = providerOptions.provider;
-    const provider = new Provider({
-      app: this.ctx.app,
-      serviceOptions: service.options,
-      modelOptions,
-    });
-
-    return { provider, model, service };
   }
 
   // === Agent wiring & execution ===
@@ -339,7 +402,7 @@ export class AIEmployee {
     middleware?: any[];
   }) {
     const model = provider.createModel();
-    const allTools = provider.resolveTools(tools?.map(buildTool) ?? []);
+    const allTools = tools ?? [];
     if (this.from === 'main-agent') {
       const checkpointer = new SequelizeCollectionSaver(() => this.ctx.app.mainDataSource);
       return createLangChainAgent({ model, tools: allTools, middleware, systemPrompt, checkpointer });
@@ -382,6 +445,9 @@ export class AIEmployee {
     const { systemPrompt, tools, middleware } = context;
     const agent = await this.createAgent({ provider, systemPrompt, tools, middleware });
     const input = this.getAgentInput(context, state);
+    if (this.from === 'sub-agent') {
+      delete config.configurable;
+    }
     return agent.invoke(input, this.withRunMetadata(config));
   }
 
@@ -426,6 +492,7 @@ export class AIEmployee {
     options: {
       signal: AbortSignal;
       providerName: string;
+      llmService?: string;
       model: string;
       provider: LLMProvider;
       allowEmpty?: boolean;
@@ -433,25 +500,38 @@ export class AIEmployee {
     },
   ) {
     const aiMessageIdMap = new Map<string, string>();
-    const { signal, providerName, model, provider, responseMetadata, allowEmpty = false } = options;
+    const { signal, providerName, llmService, model, provider, responseMetadata, allowEmpty = false } = options;
 
     let isReasoning = false;
     let gathered: any;
     signal.addEventListener('abort', async () => {
-      if (gathered?.type === 'ai') {
-        const values = convertAIMessage({
-          aiEmployee: this,
-          providerName,
-          model,
-          aiMessage: gathered,
-        });
-        if (values) {
-          values.metadata.interrupted = true;
-        }
+      try {
+        if (gathered?.type === 'ai') {
+          const values = convertAIMessage({
+            aiEmployee: this,
+            providerName,
+            llmService,
+            model,
+            aiMessage: gathered,
+          });
+          if (values) {
+            values.metadata.interrupted = true;
+          }
 
-        await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-          const result: AIMessage = await conversation.addMessages(values);
+          await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+            const result: AIMessage = await conversation.addMessages(values);
+          });
+        }
+      } catch (e) {
+        this.logger.error('Fail to save message after conversation abort', gathered);
+      } finally {
+        await this.aiConversationsRepo.update({
+          values: { llmActiveState: 'idle', read: true },
+          filter: {
+            sessionId: this.sessionId,
+          },
         });
+        await this.streamCached.clear();
       }
     });
 
@@ -461,7 +541,7 @@ export class AIEmployee {
         from: this.from,
         username: this.employee.username,
       };
-      this.protocol.with(aiEmployeeConversation).startStream();
+      await this.protocol.with(aiEmployeeConversation).startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk, metadata] = chunks;
@@ -471,64 +551,54 @@ export class AIEmployee {
             if (chunk.content) {
               if (isReasoning) {
                 isReasoning = false;
-                this.protocol.with(currentConversation).stopReasoning();
+                await this.protocol.with(currentConversation).stopReasoning();
               }
               const parsedContent = provider.parseResponseChunk(chunk.content);
               if (parsedContent) {
-                this.protocol.with(currentConversation).content(parsedContent);
+                await this.protocol.with(currentConversation).content(parsedContent);
               }
             }
 
             if (chunk.tool_call_chunks?.length) {
-              this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
+              await this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
             }
 
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
-              this.protocol.with(currentConversation).webSearch(webSearch);
+              await this.protocol.with(currentConversation).webSearch(webSearch);
             }
 
             const reasoningContent = provider.parseReasoningContent(chunk);
             if (reasoningContent) {
               isReasoning = true;
-              this.protocol.with(currentConversation).reasoning(reasoningContent);
+              await this.protocol.with(currentConversation).reasoning(reasoningContent);
             }
           }
         } else if (mode === 'updates') {
-          if ('__interrupt__' in chunks) {
-            const interruptId = chunks.__interrupt__[0].id;
-            const interruptActions = this.toInterruptActions(chunks.__interrupt__[0].value);
-            if (interruptActions.size) {
-              const toolsMap = await this.getToolsMap();
-              for (const interruptAction of interruptActions.values()) {
-                if (!interruptAction.currentConversation || !interruptAction.toolCall) {
-                  this.logger.warn('currentConversation or toolCall not exist in __interrupt__', interruptAction);
-                  continue;
-                }
-                const { sessionId, from, username } = interruptAction.currentConversation;
-                const { id: toolCallId, name: toolCallName } = interruptAction.toolCall;
-                const messageId = aiMessageIdMap.get(sessionId);
-                if (!messageId) {
-                  continue;
-                }
-
-                await this.updateToolCallInterrupted(sessionId, messageId, toolCallId, interruptId, interruptAction);
-                this.protocol.with(interruptAction.currentConversation).toolCallStatus({
+          const interrupt = chunks?.__interrupt__?.[0];
+          if (interrupt) {
+            const toolsMap = await this.getToolsMap();
+            await this.handleInterruptedToolCalls(
+              interrupt,
+              (sessionId) => aiMessageIdMap.get(sessionId),
+              async ({ messageId, interruptAction, toolCall, currentConversation }) => {
+                await this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
-                    messageId: messageId,
-                    id: toolCallId,
-                    name: toolCallName,
-                    willInterrupt: this.shouldInterruptToolCall(toolsMap.get(toolCallName)),
+                    messageId,
+                    id: toolCall.id,
+                    name: toolCall.name,
+                    willInterrupt: this.shouldInterruptToolCall(toolsMap.get(toolCall.name)),
                   },
                   invokeStatus: 'interrupted',
                   interruptAction,
                 });
-              }
-            }
+              },
+            );
           }
         } else if (mode === 'custom') {
           const { currentConversation } = chunks;
           if (chunks.action === 'AfterAIMessageSaved') {
+            await this.streamCached.skipped();
             aiMessageIdMap.set(currentConversation.sessionId, chunks.body.messageId);
 
             const data = responseMetadata.get(chunks.body.id);
@@ -558,11 +628,11 @@ export class AIEmployee {
               }
             }
           } else if (chunks.action === 'initToolCalls') {
-            this.protocol.with(currentConversation).toolCalls(chunks.body);
+            await this.protocol.with(currentConversation).toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.with(currentConversation).toolCallStatus({
+            await this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -574,7 +644,7 @@ export class AIEmployee {
           } else if (chunks.action === 'afterToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.with(currentConversation).toolCallStatus({
+            await this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -583,6 +653,9 @@ export class AIEmployee {
               },
               invokeStatus: 'done',
               status: chunks.body?.toolCallResult?.status,
+              invokeStartTime: chunks.body?.toolCallResult?.invokeStartTime,
+              invokeEndTime: chunks.body?.toolCallResult?.invokeEndTime,
+              content: chunks.body?.toolCallResult?.content,
             });
           } else if (chunks.action === 'beforeSendToolMessage') {
             const { messageId, messages } = chunks.body ?? {};
@@ -595,7 +668,7 @@ export class AIEmployee {
               for (const { metadata } of messages) {
                 const tools = toolsMap.get(metadata.toolName);
                 const toolCallResult = toolCallResultMap.get(metadata.toolCallId);
-                this.protocol.with(currentConversation).toolCallStatus({
+                await this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
                     messageId,
                     id: metadata.toolCallId,
@@ -604,13 +677,16 @@ export class AIEmployee {
                   },
                   invokeStatus: 'confirmed',
                   status: toolCallResult?.status,
+                  invokeStartTime: toolCallResult?.invokeStartTime,
+                  invokeEndTime: toolCallResult?.invokeEndTime,
+                  content: toolCallResult?.content,
                 });
               }
             }
 
-            this.protocol.with(currentConversation).newMessage();
+            await this.protocol.with(currentConversation).newMessage();
           } else if (chunks.action === 'afterSubAgentInvoke') {
-            this.protocol.with(currentConversation).subAgentCompleted();
+            await this.protocol.with(currentConversation).subAgentCompleted();
           }
         }
       }
@@ -620,7 +696,7 @@ export class AIEmployee {
         return;
       }
 
-      this.protocol.with(aiEmployeeConversation).endStream();
+      await this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       this.ctx.log.error(err);
       if (err.name === 'GraphRecursionError') {
@@ -632,6 +708,53 @@ export class AIEmployee {
       if (this.from === 'main-agent') {
         this.ctx.res.end();
       }
+    }
+  }
+
+  private async handleInterruptedToolCalls(
+    interrupt: { id?: string; value?: InterruptPayload } | undefined,
+    getMessageId: (sessionId: string) => string | undefined,
+    onInterrupted?: (params: {
+      messageId: string;
+      interruptId: string;
+      interruptAction: InterruptAction;
+      toolCall: { id: string; name: string };
+      currentConversation: { sessionId: string; from: string; username: string };
+    }) => Promise<void> | void,
+  ) {
+    const interruptId = interrupt?.id;
+    const interruptActions = this.toInterruptActions(interrupt?.value);
+    if (!interruptId || !interruptActions.size) {
+      return;
+    }
+
+    for (const interruptAction of interruptActions.values()) {
+      const currentConversation = interruptAction.currentConversation;
+      const toolCall = interruptAction.toolCall;
+      if (!currentConversation || !toolCall) {
+        this.logger.warn('currentConversation or toolCall not exist in __interrupt__', interruptAction);
+        continue;
+      }
+
+      const messageId = getMessageId(currentConversation.sessionId);
+      if (!messageId) {
+        continue;
+      }
+
+      await this.updateToolCallInterrupted(
+        currentConversation.sessionId,
+        messageId,
+        toolCall.id,
+        interruptId,
+        interruptAction,
+      );
+      await onInterrupted?.({
+        messageId,
+        interruptId,
+        interruptAction,
+        toolCall,
+        currentConversation,
+      });
     }
   }
 
@@ -688,22 +811,29 @@ export class AIEmployee {
   }
 
   async getSystemPrompt(userMessages: AIMessageInput[]) {
+    if (this.systemPromptMode === 'none') {
+      return '';
+    }
+
+    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
+    if (this.systemPromptMode === 'raw') {
+      return about;
+    }
+
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
-        userId: this.ctx.auth?.user.id,
+        userId: this.ctx.auth?.user.id ?? 0,
         aiEmployee: this.employee.username,
       },
     });
 
-    let systemMessage = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
-    const dataSourceMessage = this.getEmployeeDataSourceContext();
-    if (dataSourceMessage) {
-      systemMessage = `${systemMessage}\n${dataSourceMessage}`;
-    }
-
     let background = '';
     if (this.systemMessage) {
       background = await parseVariables(this.ctx, this.systemMessage);
+    }
+    const dataSourceMessage = this.getEmployeeDataSourceContext();
+    if (dataSourceMessage) {
+      background = `${background}\n${dataSourceMessage}`;
     }
 
     const aiMessages = await this.aiChatConversation.listMessages();
@@ -711,19 +841,25 @@ export class AIEmployee {
     if (workContextBackground?.length) {
       background = `${background}\n${workContextBackground.join('\n')}`;
     }
+    const addSystemPrompt = userMessages?.filter((it) => it.role == 'system');
+    if (addSystemPrompt.length) {
+      background = `${background}\n${addSystemPrompt.map((it) => it.content).join('\n')}`;
+    }
 
-    let knowledgeBase;
-    if (this.isEnabledKnowledgeBase() && this.employee.knowledgeBasePrompt && userMessages?.length) {
+    let knowledgeBase: string | undefined;
+    const { knowledgeBaseManager } = this.plugin;
+    const employee: AIEmployeeType = this.employee.toJSON();
+    if (
+      (await knowledgeBaseManager.isEnabledKnowledgeBase(employee)) &&
+      employee.knowledgeBasePrompt &&
+      userMessages?.length
+    ) {
       const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
       if (lastUserMessage) {
-        const docs = await this.retrieveKnowledgeBase(lastUserMessage);
-        const knowledgeBaseData = docs.map((x) => x.content).join('\n');
-        const promptTemplate = ChatPromptTemplate.fromTemplate(this.employee.knowledgeBasePrompt);
-        knowledgeBase = _.isEmpty(knowledgeBaseData)
-          ? undefined
-          : await promptTemplate.format({
-              knowledgeBaseData,
-            });
+        knowledgeBase = await knowledgeBaseManager.retrievePrompt({
+          employee,
+          query: lastUserMessage.content.content as string,
+        });
       }
     }
 
@@ -733,23 +869,24 @@ export class AIEmployee {
     const systemPrompt = getSystemPrompt({
       aiEmployee: {
         nickname: this.employee.nickname,
-        about: this.employee.about ?? this.employee.defaultPrompt,
+        about,
       },
       task: {
         background,
       },
       personal: userConfig?.prompt,
-      dataSources: dataSourceMessage,
       environment: {
         database: this.db.sequelize.getDialect(),
-        locale: this.ctx.getCurrentLocale() || 'en-US',
+        locale: this.ctx.getCurrentLocale?.() || 'en-US',
+        currentDateTime: getCurrentDateTimeForPrompt(this.ctx.getCurrentLocale?.(), getCurrentTimezone(this.ctx)),
+        timezone: getCurrentTimezone(this.ctx),
       },
       knowledgeBase,
       availableSkills,
       availableAIEmployees,
     });
 
-    const { important } = this.ctx.action.params.values || {};
+    const { important } = this.ctx.action?.params?.values || {};
     if (important === 'GraphRecursionError') {
       const importantPrompt = `<Important>You have already called tools multiple times and gathered sufficient information.
 First, provide a summary based on the existing information. Do not call additional tools.
@@ -780,8 +917,8 @@ If information is missing, clearly state it in the summary.</Important>`;
           vectorStoreConfig.vectorStoreProvider,
           [
             {
-              key: 'vectorStoreConfigId',
-              value: vectorStoreConfig.vectorStoreConfigId,
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
             },
           ],
         );
@@ -795,23 +932,20 @@ If information is missing, clearly state it in the summary.</Important>`;
         });
         queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'READONLY') {
-        for (const knowledgeBase of knowledgeBaseList) {
-          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-            vectorStoreConfig.vectorStoreProvider,
-            [
-              ...knowledgeBase.vectorStoreProps,
-              {
-                key: 'vectorStoreConfigId',
-                value: vectorStoreConfig.vectorStoreConfigId,
-              },
-            ],
-          );
-          const result = await vectorStoreService.search(queryString, {
-            topK,
-            score,
-          });
-          queryResult = [...queryResult, ...result];
-        }
+        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+          vectorStoreConfig.vectorStoreProvider,
+          [
+            {
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
+            },
+          ],
+        );
+        const result = await vectorStoreService.search(queryString, {
+          topK,
+          score,
+        });
+        queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'EXTERNAL') {
         for (const knowledgeBase of knowledgeBaseList) {
           const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
@@ -847,11 +981,11 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   async getKnowledgeBaseGroup(): Promise<KnowledgeBaseGroup[]> {
-    const { knowledgeBaseIds } = this.employee.knowledgeBase ?? {};
-    if (!knowledgeBaseIds || _.isEmpty(knowledgeBaseIds)) {
+    const { knowledgeBaseKeys } = this.employee.knowledgeBase ?? {};
+    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
       return [];
     }
-    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseIds);
+    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseKeys);
   }
 
   // === Tool calls ===
@@ -1064,7 +1198,9 @@ If information is missing, clearly state it in the summary.</Important>`;
       return;
     }
 
-    const { model, service } = await this.getLLMService();
+    const { model, service } = await this.plugin.aiManager.getLLMService({
+      ...this.model,
+    });
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
     const toolMessageContent = 'The user ignored the application for tools usage and will continued to ask questions';
@@ -1158,7 +1294,6 @@ If information is missing, clearly state it in the summary.</Important>`;
   private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
     const formattedMessages = [];
     const workContextHandler = this.plugin.workContextHandler;
-    await this.hydrateAttachmentsMeta(messages);
 
     // 截断过长的内容
     const truncate = (text: string, maxLen = 50000) => {
@@ -1195,7 +1330,7 @@ If information is missing, clearly state it in the summary.</Important>`;
         const contentBlocks = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
-            const parsed = await provider.parseAttachment(this.ctx, attachment);
+            const parsed = await provider.parseAttachment(this.ctx, attachment as any);
             if (parsed.placement === 'system') {
               formattedMessages.push({
                 role: 'system',
@@ -1249,51 +1384,6 @@ If information is missing, clearly state it in the summary.</Important>`;
     return formattedMessages;
   }
 
-  private async hydrateAttachmentsMeta(messages: AIMessageInput[]) {
-    type AttachmentWithMeta = { id?: string | number; meta?: unknown };
-    const attachmentIds = new Set<string | number>();
-
-    for (const message of messages) {
-      if (!message.attachments?.length) {
-        continue;
-      }
-      for (const attachment of message.attachments as AttachmentWithMeta[]) {
-        if (attachment?.id != null) {
-          attachmentIds.add(attachment.id);
-        }
-      }
-    }
-
-    if (!attachmentIds.size) {
-      return;
-    }
-
-    const files = await this.aiFilesModel.findAll({
-      where: {
-        id: {
-          [Op.in]: Array.from(attachmentIds),
-        },
-      },
-      attributes: ['id', 'meta'],
-    });
-    const metaById = new Map(files.map((file) => [file.get('id') as string | number, file.get('meta')]));
-
-    for (const message of messages) {
-      if (!message.attachments?.length) {
-        continue;
-      }
-      for (const attachment of message.attachments as AttachmentWithMeta[]) {
-        if (attachment?.id == null) {
-          continue;
-        }
-        const meta = metaById.get(attachment.id);
-        if (meta !== undefined) {
-          attachment.meta = meta;
-        }
-      }
-    }
-  }
-
   private async getToolCallMap(messageId: string): Promise<
     Map<
       string,
@@ -1316,25 +1406,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     return result;
   }
 
-  private toInterruptActions(interrupt: {
-    actionRequests: { name: string; args: unknown; description: string }[];
-    reviewConfigs: { actionName: string; allowedDecisions: string[] }[];
-  }): Map<
-    string,
-    {
-      order: number;
-      description: string;
-      allowedDecisions: string[];
-      toolCall?: { id: string; name: string };
-      currentConversation?: {
-        sessionId: string;
-        from: string;
-        username: string;
-      };
-    }
-  > {
-    const result = new Map();
-    const { actionRequests = [], reviewConfigs = [] } = interrupt;
+  private toInterruptActions(interrupt?: InterruptPayload): Map<string, InterruptAction> {
+    const result = new Map<string, InterruptAction>();
+    const { actionRequests = [], reviewConfigs = [] } = interrupt ?? {};
     if (!actionRequests.length) {
       return result;
     }
@@ -1363,10 +1437,24 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getAIEmployeeTools() {
+    if (!this.areToolsEnabled()) {
+      return [];
+    }
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
+    if (this.webSearch === true) {
+      const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH);
+      tools.push(subAgentWebSearch);
+    }
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
-    const employeeTools = this.employee.skillSettings?.tools ?? [];
+    const settingsTools = this.employee.skillSettings?.tools ?? [];
+    const employeeTools = [...settingsTools, ...this.tools];
+    if (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.employee.toJSON() as AIEmployeeType)) {
+      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE);
+      if (knowledgeBaseRetrieveTool) {
+        employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
+      }
+    }
     for (const toolSetting of employeeTools) {
       if (generalToolsNameSet.has(toolSetting.name)) {
         continue;
@@ -1377,48 +1465,75 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
       tools.push(tool);
     }
-    const toolFilter = this.skillSettings?.tools ?? [];
-    return tools.filter((t) => toolFilter.length === 0 || toolFilter.includes(t.definition.name));
+    const systemTools = listSystemTools();
+    if (!this.skillSettings) {
+      return tools;
+    } else if (!this.skillSettings.toolsVersion) {
+      const toolFilter = this.skillSettings.tools ?? [];
+      return tools.filter(
+        (t) =>
+          toolFilter.length === 0 || systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name),
+      );
+    } else {
+      const toolFilter = this.skillSettings.tools;
+      if (_.isArray(toolFilter)) {
+        return tools.filter((t) => systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name));
+      } else {
+        return tools;
+      }
+    }
   }
 
   private async getAvailableSkills(): Promise<SkillsEntry[]> {
+    if (!this.areSkillsEnabled()) {
+      return [];
+    }
     const { skillsManager } = this.plugin.ai;
     const aIEmployeeTools = await this.getAIEmployeeTools();
-    const getSkills = aIEmployeeTools.find((it) => it.definition.name === 'getSkills');
-    if (!getSkills) {
+    const getSkill = aIEmployeeTools.find((it) => it.definition.name === 'getSkill');
+    if (!getSkill) {
       return [];
     }
     const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
     const specifiedSkillNames = this.employee.skillSettings?.skills ?? [];
     const specifiedSkills = specifiedSkillNames.length ? await skillsManager.getSkills(specifiedSkillNames) : [];
-    const skillFilter = this.skillSettings?.skills ?? [];
-    return _.uniqBy([...(specifiedSkills || []), ...(generalSkills || [])], 'name').filter(
-      (it) => skillFilter.length === 0 || skillFilter.includes(it.name),
-    );
+    const mergedSkills = _.uniqBy([...(specifiedSkills || []), ...(generalSkills || [])], 'name');
+
+    if (!this.skillSettings) {
+      return mergedSkills;
+    } else if (!this.skillSettings.skillsVersion) {
+      const skillFilter = this.skillSettings.skills ?? [];
+      return mergedSkills.filter((it) => skillFilter.length === 0 || skillFilter.includes(it.name));
+    } else {
+      const skillFilter = this.skillSettings.skills;
+      if (_.isArray(skillFilter)) {
+        return mergedSkills.filter((it) => skillFilter.includes(it.name));
+      } else {
+        return mergedSkills;
+      }
+    }
   }
 
-  private async getAgentTools(): Promise<{ tools: ToolsEntry[]; baseToolNames: Set<string> }> {
+  private async getAgentTools(): Promise<{
+    tools: ToolsEntry[];
+    baseToolNames: Set<string>;
+  }> {
+    if (!this.areToolsEnabled()) {
+      return {
+        tools: [],
+        baseToolNames: new Set(),
+      };
+    }
     const baseTools = await this.getAIEmployeeTools();
-    const baseToolNames = new Set(baseTools.map((it) => it.definition.name));
     const toolMap = await this.getToolsMap();
     const availableSkills = await this.getAvailableSkills();
-    const skillTools = _.uniq(
-      availableSkills
-        .flatMap((it) => it.tools ?? [])
-        .map((toolName) => toolMap.get(toolName))
-        .filter((it) => !!it)
-        .map((it) => it.definition.name),
-    )
-      .map((toolName) => toolMap.get(toolName))
-      .filter((it) => !!it);
-
-    const toolsMap = new Map<string, ToolsEntry>(baseTools.map((it) => [it.definition.name, it]));
-    for (const tool of skillTools) {
-      toolsMap.set(tool.definition.name, tool);
-    }
+    const skillOwnedToolNames = new Set(availableSkills.flatMap((it) => it.tools ?? []));
+    const baseToolNames = new Set(
+      baseTools.map((it) => it.definition.name).filter((name) => name === 'getSkill' || !skillOwnedToolNames.has(name)),
+    );
 
     return {
-      tools: Array.from(toolsMap.values()),
+      tools: Array.from(toolMap.values()),
       baseToolNames,
     };
   }
@@ -1459,7 +1574,11 @@ If information is missing, clearly state it in the summary.</Important>`;
       return new Set<string>();
     }
     const availableSkills = await this.getAvailableSkills();
-    const skillsMap = new Map(availableSkills.map((it) => [it.name, it]));
+    const loadedSkills = await this.plugin.ai.skillsManager.getSkills(loadedSkillNames);
+    const normalizedLoadedSkills = Array.isArray(loadedSkills) ? loadedSkills : [loadedSkills];
+    const skillsMap = new Map(
+      [...availableSkills, ...normalizedLoadedSkills.filter(Boolean)].map((it) => [it.name, it]),
+    );
     const result = new Set<string>();
     for (const skillName of loadedSkillNames) {
       const target = skillsMap.get(skillName);
@@ -1471,28 +1590,36 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getAvailableAIEmployees() {
-    const availableAIEmployees = (await listAccessibleAIEmployees(this.ctx)).map((employee) =>
-      serializeEmployeeSummary(this.ctx, employee),
-    );
+    const specifiedToolNames: string[] =
+      this.employee.skillSettings?.tools?.map(({ name }: { name: string }) => name) ?? [];
+    if (!specifiedToolNames.includes('dispatch-sub-agent-task')) {
+      return [];
+    }
+    const availableAIEmployees = (await listAccessibleAIEmployees(this.ctx))
+      .map((employee) => serializeEmployeeSummary(this.ctx, employee))
+      .filter((it) => it.username !== this.employee.username);
     return availableAIEmployees;
   }
 
-  private getMiddleware(options: {
+  private async getMiddleware(options: {
     providerName: string;
+    llmService?: string;
     model: string;
-    tools: ToolsEntry[];
+    tools: any[];
     baseToolNames: Set<string>;
     messageId?: string;
     agentThread?: AgentThread;
   }) {
-    const { providerName, model, tools, baseToolNames, messageId, agentThread } = options;
+    const { providerName, llmService, model, tools, baseToolNames, messageId, agentThread } = options;
+    const inWorkflow = await this.isInWorkflow();
     return [
       skillToolBindingMiddleware(this, {
         baseToolNames: Array.from(baseToolNames.values()),
       }),
       toolInteractionMiddleware(this, tools),
       toolCallStatusMiddleware(this),
-      conversationMiddleware(this, { providerName, model, messageId, agentThread }),
+      ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
+      conversationMiddleware(this, { providerName, llmService, model, messageId, agentThread }),
     ];
   }
 
@@ -1519,7 +1646,9 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   async getToolsMap() {
-    const tools = await this.listTools();
+    const tools = await this.listTools({
+      sessionId: this.sessionId,
+    });
     return new Map(tools.map((tool) => [tool.definition.name, tool]));
   }
 
@@ -1570,6 +1699,42 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 }
 
+function getCurrentTimezone(ctx: Context): string | undefined {
+  const value =
+    ctx.get?.('x-timezone') ||
+    ctx.request?.get?.('x-timezone') ||
+    ctx.request?.header?.['x-timezone'] ||
+    ctx.req?.headers?.['x-timezone'] ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getCurrentDateTimeForPrompt(locale: string | undefined, timezone?: string) {
+  const now = new Date();
+  const normalizedLocale = locale || 'en-US';
+
+  try {
+    const formatter = new Intl.DateTimeFormat(normalizedLocale, {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    return `${formatter.format(now)}${timezone ? ` (${timezone})` : ''}`;
+  } catch (error) {
+    return `${now.toISOString()}${timezone ? ` (${timezone})` : ''}`;
+  }
+}
+
 class AgentThread {
   constructor(
     private readonly _sessionId: string,
@@ -1608,52 +1773,56 @@ export class ChatStreamProtocol {
     },
   };
 
-  constructor(private readonly streamConsumer: StreamConsumer) {}
+  constructor(
+    private readonly streamConsumer: StreamConsumer,
+    private readonly onWrite?: (chunk: string) => Promise<void>,
+  ) {}
 
-  static fromContext(ctx: Context) {
-    return new ChatStreamProtocol(ctx.res);
+  static fromContext(ctx: Context, onWrite?: (chunk: string) => Promise<void>) {
+    return new ChatStreamProtocol(ctx.res, onWrite);
   }
 
   with(conversation: { sessionId: string; from: string; username: string }) {
-    const write = ({ type, body }: { type: string; body?: any }) => {
+    const write = async ({ type, body }: { type: string; body?: any }) => {
       const { sessionId, from, username } = conversation;
       const data = `data: ${JSON.stringify({ sessionId, from, username, type, body })}\n\n`;
+      await this.onWrite?.(data);
       this.streamConsumer.write(data);
       this._statistics.addSent(data.length);
     };
 
     return {
-      startStream: () => {
+      startStream: async () => {
         this._statistics.reset();
-        write({ type: 'stream_start' });
+        await write({ type: 'stream_start' });
       },
 
-      endStream: () => {
-        write({ type: 'stream_end' });
+      endStream: async () => {
+        await write({ type: 'stream_end' });
       },
 
-      subAgentCompleted: () => {
-        write({ type: 'sub_agent_completed' });
+      subAgentCompleted: async () => {
+        await write({ type: 'sub_agent_completed' });
       },
 
-      newMessage: (content?: unknown) => {
-        write({ type: 'new_message', body: content });
+      newMessage: async (content?: unknown) => {
+        await write({ type: 'new_message', body: content });
       },
 
-      content: (content: string): void => {
-        write({ type: 'content', body: content });
+      content: async (content: string): Promise<void> => {
+        await write({ type: 'content', body: content });
       },
 
-      webSearch: (content: { type: string; query: string }[]) => {
-        write({ type: 'web_search', body: content });
+      webSearch: async (content: { type: string; query: string }[]) => {
+        await write({ type: 'web_search', body: content });
       },
 
-      reasoning: (content: { status: string; content: string }) => {
-        write({ type: 'reasoning', body: content });
+      reasoning: async (content: { status: string; content: string }) => {
+        await write({ type: 'reasoning', body: content });
       },
 
-      stopReasoning: () => {
-        write({
+      stopReasoning: async () => {
+        await write({
           type: 'reasoning',
           body: {
             status: 'stop',
@@ -1662,35 +1831,44 @@ export class ChatStreamProtocol {
         });
       },
 
-      toolCallChunks: (content: unknown) => {
-        write({ type: 'tool_call_chunks', body: content });
+      toolCallChunks: async (content: unknown) => {
+        await write({ type: 'tool_call_chunks', body: content });
       },
 
-      toolCalls: (content: unknown) => {
-        write({ type: 'tool_calls', body: content });
+      toolCalls: async (content: unknown) => {
+        await write({ type: 'tool_calls', body: content });
       },
 
-      toolCallStatus: ({
+      toolCallStatus: async ({
         toolCall,
         invokeStatus,
         status,
+        invokeStartTime,
+        invokeEndTime,
+        content,
         interruptAction,
       }: {
         toolCall: { messageId: string; id: string; name: string; willInterrupt: boolean };
         invokeStatus: string;
         status?: string;
+        invokeStartTime?: string | Date | null;
+        invokeEndTime?: string | Date | null;
+        content?: unknown;
         interruptAction?: {
           order: number;
           description: string;
           allowedDecisions: string[];
         };
       }) => {
-        write({
+        await write({
           type: 'tool_call_status',
           body: {
             toolCall,
             invokeStatus,
             status,
+            invokeStartTime,
+            invokeEndTime,
+            content,
             interruptAction,
           },
         });

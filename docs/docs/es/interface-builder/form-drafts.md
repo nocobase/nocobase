@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-form-drafts"
 ---
 
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/form-drafts).
-:::
-
 # Borradores de formulario
 
 Cuando se habilitan los borradores de formulario, el contenido que se está completando se guarda automáticamente de forma local. Incluso si el formulario se cierra accidentalmente o se actualiza la página, los datos ingresados no se perderán.

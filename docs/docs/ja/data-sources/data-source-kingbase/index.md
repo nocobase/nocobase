@@ -2,10 +2,6 @@
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
 
-:::tip{title="AI翻訳通知"}
-このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/data-sources/data-source-kingbase/index)をご参照ください。
-:::
-
 # データソース - 人大金倉 (KingbaseES)
 
 ## はじめに
@@ -121,5 +117,5 @@ yarn nocobase upgrade
 
 ## 利用ガイド
 
-- プライマリデータベース：[メインデータソース](/data-sources/data-source-main/) をご参照ください。
+- プライマリデータベース：[メインデータソース](/data-sources/data-source-main/index.md) をご参照ください。
 - 外部データベース：[データソース / 外部データベース](/data-sources/data-source-manager/external-database) をご参照ください。

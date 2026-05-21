@@ -10,12 +10,7 @@
 import { AIMessage, createMiddleware, HumanMessage, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
 import { AIMessageInput } from '../../types';
-import {
-  AIMessage as AIConversationMessage,
-  AIMessageContent,
-  AIToolCall,
-  AIToolMessage,
-} from '../../types/ai-message.type';
+import { AIMessage as AIConversationMessage, AIToolCall, AIToolMessage } from '../../types/ai-message.type';
 import z from 'zod';
 import { Model } from '@nocobase/database';
 import { ToolsEntry } from '@nocobase/ai';
@@ -29,27 +24,30 @@ export const conversationMiddleware = (
   aiEmployee: AIEmployee,
   options: {
     providerName: string;
+    llmService?: string;
     model: string;
     messageId?: string;
     agentThread?: { sessionId: string; thread: number };
   },
 ) => {
-  const { providerName, model, messageId, agentThread } = options;
+  const { providerName, llmService, model, messageId, agentThread } = options;
 
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput =>
     _convertAIMessage({
       aiEmployee,
       providerName,
+      llmService,
       model,
       aiMessage,
     });
 
   const convertHumanMessage = (humanMessage: HumanMessage): AIMessageInput =>
-    _convertHumanMessage({ providerName, model, humanMessage });
+    _convertHumanMessage({ providerName, llmService, model, humanMessage });
 
   const convertToolMessage = (toolMessage: ToolMessage): AIMessageInput =>
     _convertToolMessage({
       providerName,
+      llmService,
       model,
       toolMessage,
     });
@@ -120,6 +118,9 @@ export const conversationMiddleware = (
         }
       });
     },
+    afterAgent: async () => {
+      aiEmployee.removeAbortController();
+    },
     beforeModel: async (state, runtime) => {
       const { messageId } = state;
       const lastToolMessageIndex = state.lastMessageIndex.lastToolMessageIndex;
@@ -174,7 +175,6 @@ export const conversationMiddleware = (
           return newState;
         }
 
-        aiEmployee.removeAbortController();
         if (runtime.signal?.aborted) {
           return newState;
         }
@@ -197,16 +197,17 @@ export const conversationMiddleware = (
             }
           });
 
+          if (toolCalls?.length) {
+            runtime.writer?.({
+              action: 'initToolCalls',
+              body: { toolCalls },
+              currentConversation,
+            });
+          }
+
           runtime.writer?.({
             action: 'AfterAIMessageSaved',
             body: { id: aiMessage.id, messageId: newState.messageId },
-            currentConversation,
-          });
-        }
-        if (toolCalls?.length) {
-          runtime.writer?.({
-            action: 'initToolCalls',
-            body: { toolCalls },
             currentConversation,
           });
         }

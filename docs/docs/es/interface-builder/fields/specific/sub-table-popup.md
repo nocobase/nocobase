@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/fields/specific/sub-table-popup).
-:::
-
 # Subtabla (edición en ventana emergente)
 
 ## Introducción

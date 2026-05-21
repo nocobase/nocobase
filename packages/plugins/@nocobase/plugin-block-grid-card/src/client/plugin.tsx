@@ -8,7 +8,8 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { GridCardBlockModel, GridCardItemModel } from './models';
+import { GridCardBlockModel } from '../client-v2/models/GridCardBlockModel';
+import { GridCardItemModel } from '../client-v2/models/GridCardItemModel';
 
 export class PluginBlockGridCardClient extends Plugin {
   async load() {

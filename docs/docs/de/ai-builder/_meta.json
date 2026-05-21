@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Schnellstart",
+    "link": "/ai-builder/"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "Sicherheit und Audit"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "Umgebungsverwaltung"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "Datenmodellierung"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "Oberflächenkonfiguration"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "Workflow-Verwaltung"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "Berechtigungskonfiguration"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "Lösungen"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "Plugin-Verwaltung"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "Release-Verwaltung"
+  }
+]

@@ -18,7 +18,7 @@ import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, StorageClassType, StorageModel } from './storages';
+import { AttachmentModel, GetFileStreamOptions, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal from './storages/local';
 import StorageTypeS3 from './storages/s3';
@@ -352,7 +352,10 @@ export class PluginFileManagerServer extends Plugin {
     }
     return !!storage.options?.public;
   }
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+  async getFileStream(
+    file: AttachmentModel,
+    options?: GetFileStreamOptions,
+  ): Promise<{ stream: Readable; contentType?: string }> {
     if (!file.storageId) {
       throw new Error('File storageId not found');
     }
@@ -371,7 +374,7 @@ export class PluginFileManagerServer extends Plugin {
       throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
     }
 
-    return storageInstance.getFileStream(file);
+    return storageInstance.getFileStream(file, options);
   }
 }
 

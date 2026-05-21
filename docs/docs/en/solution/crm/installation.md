@@ -9,8 +9,8 @@ Before you begin, please ensure:
 - You have a basic NocoBase running environment. For main system installation, please refer to the [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
 - NocoBase version **v2.1.0-beta.2 or above**.
 - You have downloaded the corresponding CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) - For Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) - For Method 2
+  - **Backup file**: [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata) - For Method 1
+  - **SQL file**: [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip) - For Method 2
 
 **Important Notes**:
 - This solution is built on **PostgreSQL 16**. Please ensure your environment uses PostgreSQL 16.
@@ -130,4 +130,31 @@ Configure your NocoBase startup parameters (such as environment variables `DB_HO
 | **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
 | **Recommended Scenarios** | Enterprise users with controlled, consistent environments needing full functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, or those who can accept the loss of file features |
 
+---
+
+## FAQ
+
+### Can Pro Edition users install this? Will it cause errors?
+
+Yes, it works directly without errors. The demo uses some Enterprise Edition plugins (e.g., email management, audit logs). When Pro Edition lacks these plugins, the corresponding menu entries simply won't appear — **other features are not affected**. For example, the email entry disappears, but leads, opportunities, orders, and all other core modules work normally.
+
+### Which version should I use?
+
+We recommend the latest `beta-full` image (e.g., `nocobase/nocobase:beta-full`). The `full` image includes database client tools and other dependencies, preventing restoration failures caused by missing tools.
+
+### Logo not showing after restoration?
+
+The demo's logo is configured with a domain restriction and cannot load on local domains. Go to **System Settings** and re-upload your own logo.
+
+### File upload error (OSS Key error)?
+
+After SQL import, file uploads may fail with an OSS-related error. Solution: go to **Plugin Manager → File Manager**, set **Local Storage** as the default storage, and save. Uploads will work normally after this.
+
+### What about incremental upgrades?
+
+Currently, version upgrades are full replacements — your custom modifications will be overwritten. Always back up before upgrading. An incremental migration solution is being planned and will prioritize Pro/Enterprise editions. Community edition support is more difficult due to the lack of the migration management plugin.
+
 We hope this tutorial helps you successfully deploy the CRM 2.0 system. If you encounter any problems during the process, please feel free to contact us!
+---
+
+*Last updated: 2026-04-02*

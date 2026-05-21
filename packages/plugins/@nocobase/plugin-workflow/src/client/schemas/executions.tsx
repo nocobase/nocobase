@@ -83,10 +83,9 @@ export const executionSchema = {
           resource: 'executions',
           action: 'list',
           params: {
-            appends: ['workflow.id', 'workflow.title'],
             pageSize: 20,
-            sort: ['-createdAt'],
-            except: ['context', 'output'],
+            sort: ['-id'],
+            except: ['context', 'output', 'stack'],
             filter: {},
           },
         },

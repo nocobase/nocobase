@@ -19,7 +19,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
-export const AIEmployeeSwitcher: React.FC = observer(() => {
+export const AIEmployeeSwitcher: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const aiConfigRepository = useAIConfigRepository();
@@ -43,26 +43,28 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
           style: { cursor: 'default', padding: '16px 12px', height: 'auto', minHeight: 0 },
         },
       ]
-    : aiEmployees.map((employee) => {
-        const isSelected = currentEmployee?.username === employee.username;
-        return {
-          key: employee.username,
-          label: (
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <AIEmployeeListItem aiEmployee={employee} />
-              {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
-            </span>
-          ),
-          onClick: () =>
-            switchAIEmployee(employee, {
-              clear: {
-                sender: false,
-                attachments: false,
-                contextItems: false,
-              },
-            }),
-        };
-      });
+    : aiEmployees
+        .filter((it) => it.category === 'business')
+        .map((employee) => {
+          const isSelected = currentEmployee?.username === employee.username;
+          return {
+            key: employee.username,
+            label: (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <AIEmployeeListItem aiEmployee={employee} />
+                {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
+              </span>
+            ),
+            onClick: () =>
+              switchAIEmployee(employee, {
+                clear: {
+                  sender: false,
+                  attachments: false,
+                  contextItems: false,
+                },
+              }),
+          };
+        });
 
   const hasEmployees = aiEmployees.length > 0;
   const currentLabel = currentEmployee ? currentEmployee.nickname : `${t('Select an')} ${t('AI employee')}`;
@@ -101,6 +103,7 @@ export const AIEmployeeSwitcher: React.FC = observer(() => {
 
   return (
     <Dropdown
+      disabled={disabled}
       menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
       trigger={['hover']}
       open={isOpen}

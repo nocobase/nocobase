@@ -1,7 +1,3 @@
-:::tip{title="Aviso de traducción IA"}
-Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/fields/specific/js-item).
-:::
-
 # JS Item
 
 ## Introducción
@@ -32,7 +28,7 @@ JS Item se utiliza para "elementos personalizados" (no vinculados a campos) en f
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Puede combinarse con el empleado de IA para generar/modificar scripts: [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/features/built-in-employee)
+- Puede combinarse con el empleado de IA para generar/modificar scripts: [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/built-in/)
 
 ## Usos Comunes (Ejemplos Simplificados)
 

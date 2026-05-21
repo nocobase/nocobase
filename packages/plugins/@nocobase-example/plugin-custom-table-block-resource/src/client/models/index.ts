@@ -9,7 +9,13 @@
 
 import { ModelConstructor } from '@nocobase/flow-engine';
 import { CustomResourceTableBlockModel } from './CustomResourceTableBlockModel';
+import { TodoBlockModel } from './TodoBlockModel';
+import { PriorityFieldModel } from './PriorityFieldModel';
+import { NewTodoActionModel } from './NewTodoActionModel';
 
 export default {
   CustomResourceTableBlockModel,
+  TodoBlockModel,
+  PriorityFieldModel,
+  NewTodoActionModel,
 } as Record<string, ModelConstructor>;

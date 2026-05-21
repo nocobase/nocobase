@@ -9,8 +9,6 @@
 
 import { Document } from '@langchain/core/documents';
 
-export type SupportedDocumentExtname = '.pdf' | '.ppt' | '.pptx' | '.doc' | '.docx' | '.txt';
-
 export type DocumentParseMeta = {
   status: 'ready' | 'failed';
   parserVersion: string;
@@ -26,11 +24,6 @@ export type ParsedDocumentResult = {
   fromCache: boolean;
   text: string;
   documents: Document[];
-  meta?: {
-    sourceFileId?: string | number;
-    parsedFileId?: string | number;
-    extname?: string;
-  };
 };
 
 export type ParseableFile = {
@@ -45,5 +38,5 @@ export type ParseableFile = {
 };
 
 export type DocumentLoaderLike = {
-  load(file: ParseableFile): Promise<Document[]>;
+  load(file: ParseableFile, options?: any): Promise<Document[]>;
 };
