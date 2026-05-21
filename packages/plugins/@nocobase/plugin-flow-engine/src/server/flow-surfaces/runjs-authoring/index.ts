@@ -702,7 +702,6 @@ const MULTI_RECORD_RESOURCE_METHODS = unionMethodSets([
     'setUpdateActionOptions',
     'setSelectedRows',
     'getSelectedRows',
-    'getCount',
     'setPage',
     'getPage',
     'setPageSize',
@@ -757,7 +756,10 @@ const FLOW_RESOURCE_METHODS_BY_TYPE: Record<Exclude<FlowResourceInstanceType, 'u
   SQLResource: SQL_RESOURCE_METHODS,
 };
 const UNKNOWN_FLOW_RESOURCE_METHODS = unionMethodSets(Object.values(FLOW_RESOURCE_METHODS_BY_TYPE));
-const FLOW_RESOURCE_METHOD_SUGGESTIONS = new Map([['setFilters', 'setFilter']]);
+const FLOW_RESOURCE_METHOD_SUGGESTIONS = new Map([
+  ['setFilters', 'setFilter'],
+  ['getCount', 'getData'],
+]);
 const CONTEXT_FIRST_REPAIR_CLASSES = new Set<RunJsAuthoringRepairClass>([
   'unknown-surface-stop',
   'unknown-model-stop',

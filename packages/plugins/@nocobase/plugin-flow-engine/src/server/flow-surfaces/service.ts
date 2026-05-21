@@ -4111,6 +4111,22 @@ export class FlowSurfacesService {
     });
   }
 
+  private async prevalidateApplyBlueprintChartAssets(document: FlowSurfaceApplyBlueprintDocument, transaction?: any) {
+    const chartAssets = _.isPlainObject(document.assets?.charts) ? document.assets.charts : {};
+    for (const [chartKey, chartAsset] of Object.entries(chartAssets)) {
+      if (!_.isPlainObject(chartAsset)) {
+        continue;
+      }
+      assertSupportedSimpleChanges('chart', chartAsset, getConfigureOptionKeysForUse('ChartBlockModel'));
+      const nextConfigure = buildChartConfigureFromSemanticChanges(undefined, chartAsset);
+      await this.validateChartConfigureForRuntime(
+        `applyBlueprint assets.charts.${chartKey}`,
+        nextConfigure,
+        transaction,
+      );
+    }
+  }
+
   private getApplyBlueprintKanbanBlockResourceObject(block: any) {
     return _.isPlainObject(block?.resource) ? block.resource : {};
   }
@@ -4602,6 +4618,7 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceApplyBlueprintMutationResult> {
     try {
       const document = prepareFlowSurfaceApplyBlueprintDocument(values);
+      await this.prevalidateApplyBlueprintChartAssets(document);
       if (document.mode === 'create') {
         return await this.applyBlueprintWithTransaction(values, options, createdKanbanSortFields, {
           readSurface: false,
@@ -15068,6 +15085,42 @@ export class FlowSurfacesService {
     return {
       suggestedFieldPath: `${fieldPath}.<field>`,
     };
+  }
+
+  private async validateChartConfigureForRuntime(actionName: string, configure: any, transaction?: any) {
+    if (!_.isPlainObject(configure)) {
+      return;
+    }
+
+    this.validateBuilderChartFieldsForRuntime(actionName, configure);
+
+    const state = deriveChartSemanticState(configure);
+    if (state.query?.mode !== 'sql') {
+      return;
+    }
+
+    const sqlPreview = await this.resolveSqlChartPreview(state.query, transaction);
+    if (state.visual?.mode !== 'basic') {
+      return;
+    }
+
+    if (!sqlPreview.queryOutputs?.length) {
+      throwBadRequest(
+        "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
+      );
+    }
+
+    const supportedOutputs = new Set(
+      sqlPreview.queryOutputs.map((output) => String(output?.alias || '').trim()).filter(Boolean),
+    );
+
+    for (const mappingField of getChartVisualMappingAliases(state.visual)) {
+      if (!supportedOutputs.has(mappingField)) {
+        throwBadRequest(
+          `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
+        );
+      }
+    }
   }
 
   private stripChartSqlForInspection(sql: string) {

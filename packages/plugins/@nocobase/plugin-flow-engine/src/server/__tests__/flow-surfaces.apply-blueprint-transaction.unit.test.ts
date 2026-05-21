@@ -80,6 +80,108 @@ describe('flowSurfaces applyBlueprint transaction boundary', () => {
     expect(cleanup).not.toHaveBeenCalled();
   });
 
+  it('should reject invalid create-mode chart SQL before mutating', async () => {
+    const service = new FlowSurfacesService({} as any);
+    const sqlError = new Error('chart query.sql is invalid: missing table');
+    const mutate = vi
+      .spyOn(service as any, 'applyBlueprintWithTransaction')
+      .mockRejectedValue(new Error('create mode should not mutate before chart SQL prevalidation passes'));
+    vi.spyOn(service as any, 'resolveSqlChartPreview').mockRejectedValue(sqlError);
+
+    await expect(
+      service.applyBlueprint(
+        {
+          mode: 'create',
+          assets: {
+            charts: {
+              brokenTrend: {
+                query: {
+                  mode: 'sql',
+                  sql: 'select * from missing_flow_surfaces_chart_table',
+                  sqlDatasource: 'main',
+                },
+                visual: {
+                  mode: 'basic',
+                  type: 'bar',
+                  mappings: {
+                    x: 'name',
+                    y: 'total',
+                  },
+                },
+              },
+            },
+          },
+          tabs: [
+            {
+              key: 'main',
+              blocks: [
+                {
+                  key: 'trend',
+                  type: 'chart',
+                  chart: 'brokenTrend',
+                },
+              ],
+            },
+          ],
+        },
+        { currentRoles: ['root'] },
+      ),
+    ).rejects.toThrow(sqlError);
+
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('should reject unsupported create-mode chart asset keys before mutating', async () => {
+    const service = new FlowSurfacesService({} as any);
+    const mutate = vi
+      .spyOn(service as any, 'applyBlueprintWithTransaction')
+      .mockRejectedValue(new Error('create mode should not mutate before chart asset key prevalidation passes'));
+
+    await expect(
+      service.applyBlueprint({
+        mode: 'create',
+        assets: {
+          charts: {
+            categoryChart: {
+              type: 'doughnut',
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'claims',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'claimCount' }],
+                dimensions: [{ field: 'claim_category' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'doughnut',
+                mappings: {
+                  category: 'claim_category',
+                  value: 'claimCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            blocks: [
+              {
+                key: 'categoryChart',
+                type: 'chart',
+                chart: 'categoryChart',
+              },
+            ],
+          },
+        ],
+      }),
+    ).rejects.toThrow('flowSurfaces configure chart does not support: type');
+
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
   it('should read replace-mode mutations back outside the mutation transaction', async () => {
     const service = new FlowSurfacesService({} as any);
     const events: string[] = [];
