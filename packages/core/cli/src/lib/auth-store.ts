@@ -350,7 +350,7 @@ export class Env {
     const out: Record<string, string> = {
       STORAGE_PATH: this.storagePath,
     };
-    const put = (key: string, value: string | number | undefined | null) => {
+    const put = (key: string, value: string | number | boolean | undefined | null) => {
       if (value === undefined || value === null) {
         return;
       }
@@ -369,6 +369,9 @@ export class Env {
     put('DB_DATABASE', this.config.dbDatabase);
     put('DB_USER', this.config.dbUser);
     put('DB_PASSWORD', this.config.dbPassword);
+    put('DB_SCHEMA', this.config.dbSchema);
+    put('DB_TABLE_PREFIX', this.config.dbTablePrefix);
+    put('DB_UNDERSCORED', this.config.dbUnderscored);
     return out;
   }
 }

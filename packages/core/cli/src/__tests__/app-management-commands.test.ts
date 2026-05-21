@@ -870,6 +870,9 @@ test('start recreates missing docker app containers through docker run', async (
         dbDatabase: 'nocobase',
         dbUser: 'nocobase',
         dbPassword: 'nocobase',
+        dbSchema: 'test',
+        dbTablePrefix: 'nb_',
+        dbUnderscored: true,
         dockerRegistry: 'nocobase/nocobase',
         downloadVersion: 'next',
         storagePath: './docker-local/storage',
@@ -929,6 +932,12 @@ test('start recreates missing docker app containers through docker run', async (
       'TZ=Asia/Shanghai',
       '-v',
       `${path.resolve(resolveCliHomeRoot(), './docker-local/storage')}:/app/nocobase/storage`,
+      '-e',
+      'DB_SCHEMA=test',
+      '-e',
+      'DB_TABLE_PREFIX=nb_',
+      '-e',
+      'DB_UNDERSCORED=true',
       'nocobase/nocobase:next-full',
     ],
     {
@@ -4310,6 +4319,209 @@ test('pm list forwards explicit env selection to API fallback', async () => {
     await PmList.prototype.run.call(command);
 
     expect(runCommand.mock.calls).toEqual([['api:pm:list', ['--mode=summary', '--env', 'remote', '--yes']]]);
+  } finally {
+    restoreTerminal();
+  }
+});
+
+test('v1 forwards passthrough commands to local envs', async () => {
+  const { default: V1 } = await import('../commands/v1.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'local',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+
+  const command = createCommandHarness({});
+  command.argv = ['--env', 'local', 'pm', 'list', '--json'];
+
+  await V1.prototype.run.call(command);
+
+  expect(mocks.announceTargetEnv).toHaveBeenCalledWith('local');
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[
+    runtime,
+    ['pm', 'list', '--json'],
+    undefined,
+  ]]);
+});
+
+test('v1 defaults to the current env when --env is omitted', async () => {
+  const { default: V1 } = await import('../commands/v1.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'local',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+
+  const command = createCommandHarness({});
+  command.argv = ['pm', 'list'];
+
+  await V1.prototype.run.call(command);
+
+  expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([[undefined]]);
+  expect(mocks.announceTargetEnv).toHaveBeenCalledWith('local');
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[
+    runtime,
+    ['pm', 'list'],
+    undefined,
+  ]]);
+});
+
+test('v1 silent mode suppresses bridge chatter and filters known runtime warnings', async () => {
+  const { default: V1 } = await import('../commands/v1.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'test3',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+
+  const stdoutWrite = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+  const command = createCommandHarness({});
+  command.argv = ['generate-api-key', '-n', 'test1', '-r', 'root', '-u', 'nocobase', '-e', '30d', '--silent'];
+
+  try {
+    await V1.prototype.run.call(command);
+
+    expect(mocks.announceTargetEnv).not.toHaveBeenCalled();
+    expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(1);
+    const forwardedOptions = mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2];
+    expect(forwardedOptions).toMatchObject({
+      stdio: 'pipe',
+      env: {
+        LOGGER_SILENT: 'true',
+        NODE_NO_WARNINGS: '1',
+      },
+    });
+
+    forwardedOptions?.onStdout?.('-----BEGIN API KEY-----\n');
+    forwardedOptions?.onStderr?.(
+      '(node:27271) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n',
+    );
+    forwardedOptions?.onStderr?.('(Use `node --trace-deprecation ...` to show where the warning was created)\n');
+    forwardedOptions?.onStderr?.(
+      'About to overwrite ArrayBuffer.prototype properties ["sliceToImmutable","immutable","transferToImmutable"]\n',
+    );
+    forwardedOptions?.onStderr?.('kept stderr line\n');
+
+    expect(stdoutWrite).toHaveBeenCalledWith('-----BEGIN API KEY-----\n');
+    expect(stderrWrite.mock.calls).toEqual([['kept stderr line\n']]);
+  } finally {
+    stdoutWrite.mockRestore();
+    stderrWrite.mockRestore();
+  }
+});
+
+test('v1 supports the `--` separator for docker passthrough commands', async () => {
+  const { default: V1 } = await import('../commands/v1.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {},
+  });
+
+  const command = createCommandHarness({});
+  command.argv = ['--env', 'docker-local', '--yes', '--', 'pm', 'enable', '@nocobase/plugin-sample', '--yes'];
+
+  try {
+    await V1.prototype.run.call(command);
+
+    expect(mocks.announceTargetEnv).toHaveBeenCalledWith('docker-local');
+    expect(mocks.runDockerNocoBaseCommand.mock.calls).toEqual([[
+      'nb-demo-docker-local-app',
+      ['pm', 'enable', '@nocobase/plugin-sample', '--yes'],
+      undefined,
+    ]]);
+  } finally {
+    restoreTerminal();
+  }
+});
+
+test('v1 rejects http envs because the bridge needs a managed runtime', async () => {
+  const { default: V1 } = await import('../commands/v1.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {},
+  });
+
+  const command = createCommandHarness({});
+  command.argv = ['--env', 'remote', '--yes', 'pm', 'list'];
+
+  try {
+    await expect((() => V1.prototype.run.call(command))()).rejects.toThrow(
+      /Can't run `nb v1` for "remote" yet\..*only has an API connection.*Use a local or Docker env instead\./s,
+    );
+    expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
+    expect(mocks.runDockerNocoBaseCommand.mock.calls.length).toBe(0);
+  } finally {
+    restoreTerminal();
+  }
+});
+
+test('v1 rejects ssh envs as not implemented yet', async () => {
+  const { default: V1 } = await import('../commands/v1.js');
+  const restoreTerminal = setTerminalInteractivity(true);
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'ssh',
+    envName: 'jumpbox',
+    source: undefined,
+    env: {},
+  });
+
+  const command = createCommandHarness({});
+  command.argv = ['--env', 'jumpbox', '--yes', 'pm', 'list'];
+
+  try {
+    await expect((() => V1.prototype.run.call(command))()).rejects.toThrow(
+      /Can't run `nb v1` for "jumpbox" yet\..*SSH env support is reserved but not implemented yet\..*Use a local or Docker env right now\./s,
+    );
+  } finally {
+    restoreTerminal();
+  }
+});
+
+test('v1 rejects cross-env requests in non-interactive agent sessions without --yes', async () => {
+  const { default: V1 } = await import('../commands/v1.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'prod',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      envVars: {},
+    },
+  });
+  const restoreTerminal = setTerminalInteractivity(false);
+  const command = createCommandHarness({});
+  command.argv = ['--env', 'prod', 'pm', 'list'];
+
+  try {
+    await expect((() => V1.prototype.run.call(command))()).rejects.toThrow(
+      /Refusing to run against env "prod".*interactive confirmation is unavailable.*re-run the same command with `--env prod --yes` to confirm this one-off cross-env operation\./s,
+    );
+    expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
   } finally {
     restoreTerminal();
   }

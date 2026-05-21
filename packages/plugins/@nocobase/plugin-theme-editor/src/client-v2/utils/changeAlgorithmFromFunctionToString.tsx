@@ -9,7 +9,7 @@
 
 import { theme as antdTheme } from 'antd';
 import _ from 'lodash';
-import { ThemeConfig } from '../../types';
+import { ThemeConfig } from '../types';
 
 export function changeAlgorithmFromFunctionToString(themeConfig: any) {
   themeConfig = _.cloneDeep(themeConfig);

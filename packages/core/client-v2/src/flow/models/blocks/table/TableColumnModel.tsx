@@ -327,6 +327,8 @@ export class TableColumnModel extends DisplayItemModel {
 
 TableColumnModel.define({
   label: tExpr('Display fields'),
+  searchable: true,
+  searchPlaceholder: tExpr('Search fields'),
 });
 
 TableColumnModel.registerFlow({

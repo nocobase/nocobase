@@ -29,6 +29,10 @@ import { getRowKey } from './utils';
 import { FormBlockModel } from '../form/FormBlockModel';
 
 const recordIdentityByFork = new WeakMap<ForkFlowModel<any>, string>();
+const rowActionButtonTypeOptions = [
+  { value: 'link', label: '{{t("Link")}}' },
+  { value: 'text', label: '{{t("Text")}}' },
+];
 
 const Columns = observer<any>(({ record, model, index }) => {
   const isConfigMode = !!model.context.flowSettingsEnabled;
@@ -65,6 +69,7 @@ const Columns = observer<any>(({ record, model, index }) => {
           }
 
           const fork = action.createFork({}, slotKey);
+          (fork as any).buttonTypeOptions = rowActionButtonTypeOptions;
           recordIdentityByFork.set(fork, recordIdentity);
 
           fork.invalidateFlowCache('beforeRender');

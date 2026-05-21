@@ -31,9 +31,11 @@ function defineAppDevPluginModule(moduleId: string, pluginModule: RemotePluginMo
 /**
  * @internal
  */
-export function defineDevPlugins(plugins: Record<string, PluginClass<any>>) {
-  Object.entries(plugins).forEach(([packageName, plugin]) => {
-    window.define(getClientModuleId(packageName), () => plugin);
+export function defineDevPlugins(plugins: Record<string, RemotePluginModule>) {
+  Object.entries(plugins).forEach(([packageName, pluginModule]) => {
+    const moduleId = getClientModuleId(packageName);
+    window.define(moduleId, () => pluginModule);
+    defineAppDevPluginModule(moduleId, pluginModule);
   });
 }
 
@@ -224,15 +226,18 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<[stri
   const res: Array<[string, PluginClass<any>]> = [];
 
   const resolveDevPlugins: Record<string, PluginClass<any>> = {};
+  const resolveDevPluginModules: Record<string, RemotePluginModule> = {};
   if (devDynamicImport) {
     for await (const plugin of pluginData) {
-      const pluginModule = await devDynamicImport(plugin.packageName);
+      const pluginModule: RemotePluginModule | null = await devDynamicImport(plugin.packageName);
       if (pluginModule) {
-        res.push([plugin.name, pluginModule.default]);
-        resolveDevPlugins[plugin.packageName] = pluginModule.default;
+        const pluginClass = getPluginClass(pluginModule);
+        res.push([plugin.name, pluginClass]);
+        resolveDevPlugins[plugin.packageName] = pluginClass;
+        resolveDevPluginModules[plugin.packageName] = pluginModule;
       }
     }
-    defineDevPlugins(resolveDevPlugins);
+    defineDevPlugins(resolveDevPluginModules);
   }
 
   const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.packageName]);
