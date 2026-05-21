@@ -17,6 +17,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BlockModel, CodeEditor, joinUrlSearch, TextAreaWithContextSelector } from '@nocobase/client-v2';
 import { tExpr, useT } from '../locale';
 
+const iframeBlockCardClass = css`
+  & > .ant-card-body {
+    padding: 0 !important;
+  }
+`;
+
 const HtmlEditorBase: React.FC<any> = (props) => {
   const { value, onChange } = props;
   const ctx = useFlowContext();
@@ -52,6 +58,7 @@ const Iframe: any = observer(
     const [loading, setLoading] = useState(false);
     const [htmlContent, setHtmlContent] = useState<string>();
     const [src, setSrc] = useState(null);
+    const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
     const iframeHeight = !heightMode || heightMode === 'defaultHeight' ? '60vh' : '100%';
     const renderTemplate = useCallback(
       async (value: any) => {
@@ -140,8 +147,13 @@ const Iframe: any = observer(
       return (
         <div
           style={{
-            height: iframeHeight,
+            height: isFixedHeight ? '100%' : iframeHeight,
+            flex: isFixedHeight ? 1 : undefined,
+            minHeight: isFixedHeight ? 0 : undefined,
             border: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <Spin />
@@ -158,6 +170,8 @@ const Iframe: any = observer(
         styles={{
           height: iframeHeight,
           border: 0,
+          flex: isFixedHeight ? 1 : undefined,
+          minHeight: isFixedHeight ? 0 : undefined,
         }}
         {...others}
       />
@@ -170,13 +184,7 @@ export class IframeBlockModel extends BlockModel {
   onInit(options: any): void {
     super.onInit(options);
     this.setDecoratorProps({
-      styles: {
-        ...this.decoratorProps.styles,
-        body: {
-          ...this.decoratorProps.styles?.body,
-          padding: 0,
-        },
-      },
+      className: [this.decoratorProps.className, iframeBlockCardClass].filter(Boolean).join(' '),
     });
   }
 
