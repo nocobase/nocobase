@@ -120,6 +120,12 @@ type ResourceCallInReactHook = {
   index: number;
 };
 
+type SharedCtxResourceCallInFunction = {
+  capability: string;
+  functionName?: string;
+  index: number;
+};
+
 type RunJsSourceBudget = {
   count: number;
   countLimitReported?: boolean;
@@ -169,6 +175,7 @@ type RunJsAstInspection = {
     component: string;
     index: number;
   }>;
+  sharedCtxResourceCallsInFunctions: SharedCtxResourceCallInFunction[];
 };
 
 type CtxMethodAlias = SourceRange & {
@@ -1614,6 +1621,27 @@ function collectResourceRuntimeErrors(
         }),
       );
     });
+    scan.sharedCtxResourceCallsInFunctions.forEach((entry) => {
+      const functionScope = entry.functionName
+        ? ` inside function '${entry.functionName}'`
+        : ' inside a nested function';
+      errors.push(
+        buildRunJsAuthoringError({
+          path,
+          repairClass: 'resource-runtime-contract-stop',
+          ruleId: 'runjs-jsblock-shared-resource-helper-forbidden',
+          message: `flowSurfaces authoring ${path} cannot use ${entry.capability}${functionScope} in JSBlock render code; ctx.initResource reuses ctx.resource across calls and can retain stale request params. Use a local ctx.makeResource(...) resource inside the helper instead`,
+          modelUse,
+          surface,
+          index: entry.index,
+          source,
+          details: {
+            capability: entry.capability,
+            functionName: entry.functionName,
+          },
+        }),
+      );
+    });
   }
   scan.invalidResourceTypeCalls.forEach((entry) => {
     const message =
@@ -2089,6 +2117,7 @@ function scanJavaScriptSource(source: string, ast?: any) {
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
     reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases, sourceBindings),
     reactAsyncComponentReferences: astInspection?.reactAsyncComponentReferences || [],
+    sharedCtxResourceCallsInFunctions: astInspection?.sharedCtxResourceCallsInFunctions || [],
     ctxRenderComponentSignatureCalls: collectCtxRenderComponentSignatureCalls(
       source,
       masked,
@@ -2145,6 +2174,12 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
   const invalidFlowResourceListCalls: RunJsAstInspection['invalidFlowResourceListCalls'] = [];
   const invalidFlowResourceMethodCalls: RunJsAstInspection['invalidFlowResourceMethodCalls'] = [];
   const reactAsyncComponentReferences: RunJsAstInspection['reactAsyncComponentReferences'] = [];
+  const sharedCtxResourceCallsInFunctions = collectAstSharedCtxResourceCallsInFunctions(
+    ast,
+    source,
+    aliases,
+    identifierBindings,
+  );
 
   walkAstSimple(ast, {
     CallExpression(node: any) {
@@ -2247,6 +2282,7 @@ function inspectRunJsAst(ast: any, source: string, stringBindings: StringLiteral
     reactAsyncComponentReferences: dedupeIndexedEntries(reactAsyncComponentReferences).sort(
       (left, right) => left.index - right.index,
     ),
+    sharedCtxResourceCallsInFunctions,
   };
 }
 
@@ -6208,6 +6244,78 @@ function collectResourceCallsInReactHooks(
     });
   }
   return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function collectAstSharedCtxResourceCallsInFunctions(
+  ast: any,
+  source: string,
+  ctxMethodAliases: CtxMethodAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): SharedCtxResourceCallInFunction[] {
+  const entries: SharedCtxResourceCallInFunction[] = [];
+  const seen = new Set<string>();
+
+  const addEntry = (capability: string, index: number, ancestors: any[]) => {
+    const functionNode = getNearestAstFunctionAncestor(ancestors);
+    if (!functionNode) {
+      return;
+    }
+    const functionName = getAstFunctionDisplayName(functionNode, ancestors);
+    const key = `${capability}:${functionNode.start || 0}:${functionNode.end || source.length}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    entries.push({
+      capability,
+      functionName,
+      index,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    CallExpression(node: any, ancestors: any[]) {
+      const method = resolveCtxMethodCall(node, ctxMethodAliases, identifierBindings);
+      if (method?.method === 'initResource') {
+        addEntry(method.capability, node.start || 0, ancestors);
+      }
+    },
+    MemberExpression(node: any, ancestors: any[]) {
+      if (isAstCtxResourceMember(node, identifierBindings)) {
+        addEntry('ctx.resource', node.start || 0, ancestors);
+      }
+    },
+  });
+
+  return entries.sort((left, right) => left.index - right.index);
+}
+
+function getNearestAstFunctionAncestor(ancestors: any[]) {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const ancestor = ancestors[index];
+    if (isAstFunctionLike(ancestor)) {
+      return ancestor;
+    }
+  }
+  return undefined;
+}
+
+function getAstFunctionDisplayName(functionNode: any, ancestors: any[]) {
+  if (functionNode?.id?.type === 'Identifier') {
+    return functionNode.id.name;
+  }
+  const functionIndex = ancestors.findIndex((ancestor) => ancestor === functionNode);
+  const parent = functionIndex >= 0 ? ancestors[functionIndex - 1] : undefined;
+  if (parent?.type === 'VariableDeclarator' && parent.id?.type === 'Identifier') {
+    return parent.id.name;
+  }
+  if (parent?.type === 'Property') {
+    const key = getAstStaticPropertyName(parent);
+    if (key) {
+      return key;
+    }
+  }
+  return undefined;
 }
 
 function resolveResourceTypeExpression(

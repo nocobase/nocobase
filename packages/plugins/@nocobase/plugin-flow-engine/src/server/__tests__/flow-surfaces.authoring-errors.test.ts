@@ -3609,6 +3609,63 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
+    const sharedResourceHelperErrors = inspectRunJsAuthoringCode({
+      code: [
+        'async function fetchAll(resourceName, filter) {',
+        "  ctx.initResource('MultiRecordResource');",
+        '  ctx.resource.setResourceName(resourceName);',
+        '  ctx.resource.setPageSize(200);',
+        '  if (filter) ctx.resource.setFilter(filter);',
+        '  await ctx.resource.refresh();',
+        '  return ctx.resource.getData() || [];',
+        '}',
+        "const activeGroups = await fetchAll('employer_groups', { group_status: { $eq: 'Active' } });",
+        "const claimsRows = await fetchAll('claims');",
+        "ctx.render(ctx.React.createElement('div', null, String(activeGroups.length + claimsRows.length)));",
+      ].join('\n'),
+      path: '$.sharedResourceHelper.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(sharedResourceHelperErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-shared-resource-helper-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.initResource',
+            functionName: 'fetchAll',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-shared-resource-helper-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.resource',
+            functionName: 'fetchAll',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'async function fetchAll(resourceName, filter) {',
+          "  const resource = ctx.makeResource('MultiRecordResource');",
+          '  resource.setResourceName(resourceName);',
+          '  resource.setPageSize(200);',
+          '  if (filter) resource.setFilter(filter);',
+          '  await resource.refresh();',
+          '  return resource.getData() || [];',
+          '}',
+          "const rows = await fetchAll('claims', { review_status: { $eq: 'Needs Review' } });",
+          "ctx.render(ctx.React.createElement('div', null, String(rows.length)));",
+        ].join('\n'),
+        path: '$.localResourceHelper.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
     expect(
       inspectRunJsAuthoringCode({
         code: [
