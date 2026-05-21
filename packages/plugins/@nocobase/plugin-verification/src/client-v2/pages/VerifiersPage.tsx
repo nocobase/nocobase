@@ -18,27 +18,88 @@ import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useT, useVerificationTranslation } from '../locale';
 import PluginVerificationClientV2 from '../plugin';
 
-type VerifierRecord = {
-  id?: number | string;
+export type VerifierOptions = Record<string, unknown>;
+
+export type VerifierRecord = {
   name?: string;
-  title?: string;
-  description?: string;
+  title?: string | null;
+  description?: string | null;
   verificationType?: string;
-  options?: Record<string, any>;
-  [key: string]: any;
+  options?: VerifierOptions;
+};
+
+export type VerifierFormValues = {
+  name?: string;
+  title?: string | null;
+  description?: string | null;
+  verificationType?: string;
+  options?: VerifierOptions;
 };
 
 type VerificationTypeOption = { name: string; title?: string };
 
 const PAGE_SIZE = 50;
 
-function recursiveTrim(value: any): any {
-  if (typeof value === 'string') return value.trim();
-  if (Array.isArray(value)) return value.map(recursiveTrim);
+export function recursiveTrim<T>(value: T): T {
+  if (typeof value === 'string') return value.trim() as T;
+  if (Array.isArray(value)) {
+    return value.map((item) => recursiveTrim(item)) as unknown as T;
+  }
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, recursiveTrim(v)]));
+    const entries = Object.entries(value as Record<string, unknown>).map(
+      ([key, v]) => [key, recursiveTrim(v)] as const,
+    );
+    return Object.fromEntries(entries) as T;
   }
   return value;
+}
+
+/**
+ * Submit pipeline for the create/edit verifier drawer.
+ *
+ * Extracted from the React component so the request layer can be tested
+ * directly without spinning up the full FlowEngine + viewer stack.
+ *
+ * The fallthrough `else` is deliberate — it converts what used to be a
+ * silent no-op (when `record.name` was undefined because we read the
+ * wrong primary key) into a loud error. The `verifiers` collection uses
+ * `name` as its primary key (`autoGenId: false`), so `filterByTk` must
+ * be the name string.
+ */
+export type VerifierResource = {
+  create(params: { values: VerifierFormValues }): Promise<unknown>;
+  update(params: { filterByTk: string; values: VerifierFormValues }): Promise<unknown>;
+};
+
+export async function submitVerifierForm(args: {
+  raw: VerifierFormValues;
+  mode: 'create' | 'edit';
+  record?: VerifierRecord;
+  resource: VerifierResource;
+  onSubmitted: () => void;
+}): Promise<void> {
+  const trimmedOptions = recursiveTrim(args.raw.options || {});
+  if (args.mode === 'create') {
+    await args.resource.create({ values: { ...args.raw, options: trimmedOptions } });
+    args.onSubmitted();
+    return;
+  }
+  if (args.record?.name != null) {
+    // antd Form.validateFields only returns DECLARED paths, so any options
+    // sub-keys the current admin-settings form doesn't render would silently
+    // disappear on update. Merge the original record's top-level fields and
+    // existing `options` so unrelated keys survive — only paths this form
+    // owns get overwritten.
+    const merged: VerifierFormValues = {
+      ...cloneDeep(args.record),
+      ...args.raw,
+      options: { ...(args.record.options || {}), ...trimmedOptions },
+    };
+    await args.resource.update({ filterByTk: args.record.name, values: merged });
+    args.onSubmitted();
+    return;
+  }
+  throw new Error(`Edit mode requires record.name; got ${JSON.stringify(args.record)}`);
 }
 
 function useVerifiersResource() {
@@ -108,28 +169,15 @@ function VerifierFormView(props: {
 
   const handleSubmit = useMemoizedFn(async () => {
     const raw = await form.validateFields();
-    const trimmedOptions = recursiveTrim(raw.options || {});
     setSubmitting(true);
     try {
-      if (props.mode === 'create') {
-        await resource.create({ values: { ...raw, options: trimmedOptions } });
-      } else if (props.record?.name != null) {
-        // `verifiers` collection uses `name` as its primary key (autoGenId: false),
-        // so `filterByTk` must be the name string — there is no numeric `id`.
-        //
-        // antd Form.validateFields only returns DECLARED paths, so any
-        // options sub-keys the current admin-settings form doesn't render
-        // would silently disappear on update. Merge the original record's
-        // top-level fields and existing `options` so unrelated keys
-        // survive — only paths this form owns get overwritten.
-        const merged = {
-          ...cloneDeep(props.record),
-          ...raw,
-          options: { ...(props.record.options || {}), ...trimmedOptions },
-        };
-        await resource.update({ filterByTk: props.record.name, values: merged });
-      }
-      props.onSubmitted();
+      await submitVerifierForm({
+        raw,
+        mode: props.mode,
+        record: props.record,
+        resource,
+        onSubmitted: props.onSubmitted,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -180,14 +228,19 @@ function VerifierFormView(props: {
   );
 }
 
-function normalizeListResponse(response: any) {
+type ListMeta = { count?: number; total?: number };
+type ListBody = { data?: VerifierRecord[] | { data?: VerifierRecord[]; meta?: ListMeta }; meta?: ListMeta };
+type ListResponse = { data?: ListBody };
+
+function normalizeListResponse(response: ListResponse | undefined): { records: VerifierRecord[]; total: number } {
   const body = response?.data;
   const payload = body?.data;
   const records: VerifierRecord[] = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
-  const meta = body?.meta || payload?.meta || {};
+  const nestedMeta = !Array.isArray(payload) ? payload?.meta : undefined;
+  const meta = body?.meta || nestedMeta || {};
   return {
     records,
-    total: meta.count || meta.total || records.length,
+    total: meta.count ?? meta.total ?? records.length,
   };
 }
 
