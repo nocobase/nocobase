@@ -11,10 +11,8 @@ import { theme as antdTheme } from 'antd';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useSystemSettings } from '@nocobase/client-v2';
+import { PoweredBy, SwitchLanguage, useSystemSettings } from '@nocobase/client-v2';
 import AuthenticatorsContextProvider from '../providers/AuthenticatorsContextProvider';
-import SwitchLanguage from '../components/SwitchLanguage';
-import PoweredByLite from '../components/PoweredByLite';
 
 export default function AuthLayout() {
   const { token } = antdTheme.useToken();
@@ -48,7 +46,7 @@ export default function AuthLayout() {
           backgroundColor: token.colorBgContainer,
         }}
       >
-        <PoweredByLite />
+        <PoweredBy />
       </div>
     </div>
   );
