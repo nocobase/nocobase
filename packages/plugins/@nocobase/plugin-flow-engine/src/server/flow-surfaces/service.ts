@@ -13786,7 +13786,12 @@ export class FlowSurfacesService {
       Object.keys(effectiveNode.flowRegistry).length
     ) {
       this.contractGuard.validateFlowRegistry(effectiveNode, effectiveNode.flowRegistry);
-      this.assertFlowRegistryRunJsAuthoringPayload(effectiveNode.flowRegistry);
+      await this.assertFlowRegistryRunJsAuthoringPayload(effectiveNode.flowRegistry, {
+        current: effectiveNode,
+        resolved: target,
+        target: writeTarget,
+        transaction: options.transaction,
+      });
     }
 
     if (Object.keys(nextPayload).length === 1) {
@@ -15416,7 +15421,12 @@ export class FlowSurfacesService {
   ) {
     this.assertNoTreeConnectFieldsFlowRegistry(current, flowRegistry, actionName);
     this.contractGuard.validateFlowRegistry(current, flowRegistry);
-    this.assertFlowRegistryRunJsAuthoringPayload(flowRegistry);
+    await this.assertFlowRegistryRunJsAuthoringPayload(flowRegistry, {
+      current,
+      resolved: target,
+      target,
+      transaction: options.transaction,
+    });
 
     if (target.kind === 'tab' && target.tabRoute) {
       await this.routeSync.persistTabSettings(
@@ -15450,8 +15460,49 @@ export class FlowSurfacesService {
     };
   }
 
-  private assertFlowRegistryRunJsAuthoringPayload(flowRegistry: Record<string, any>) {
-    const errors = collectFlowRegistryRunJsAuthoringErrors(flowRegistry);
+  private async buildFlowRegistryRunJsAuthoringContext(input: {
+    current?: any;
+    resolved?: any;
+    target?: any;
+    transaction?: any;
+  }) {
+    const currentResourceInit = this.getDataBlockResourceInit(input.current);
+    const inheritedResourceInit = currentResourceInit?.collectionName
+      ? currentResourceInit
+      : input.current?.uid
+        ? (await this.locator.resolveCollectionContext(input.current.uid, input.transaction).catch(() => null))
+            ?.resourceInit
+        : null;
+    const resourceDataSourceKey =
+      inheritedResourceInit?.dataSourceKey || (inheritedResourceInit?.collectionName ? 'main' : undefined);
+    const popupProfile = input.target?.uid
+      ? await this.resolvePopupBlockProfile(
+          input.target.uid,
+          input.resolved || input.target,
+          input.current,
+          input.transaction,
+        ).catch(() => null)
+      : null;
+    return buildDefinedPayload({
+      hostBlockType: input.current?.use,
+      hostDataSourceKey: resourceDataSourceKey,
+      hostCollectionName: inheritedResourceInit?.collectionName,
+      currentDataSourceKey: resourceDataSourceKey,
+      currentCollectionName: inheritedResourceInit?.collectionName,
+      ...this.buildAuthoringContextFromPopupProfile(popupProfile),
+      currentNode: input.current,
+    });
+  }
+
+  private async assertFlowRegistryRunJsAuthoringPayload(
+    flowRegistry: Record<string, any>,
+    context: { current?: any; resolved?: any; target?: any; transaction?: any } = {},
+  ) {
+    const authoringContext = await this.buildFlowRegistryRunJsAuthoringContext(context);
+    const errors = collectFlowRegistryRunJsAuthoringErrors(flowRegistry, '$.flowRegistry', {
+      ...authoringContext,
+      getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+    });
     if (errors.length) {
       throwAggregateBadRequest(errors);
     }

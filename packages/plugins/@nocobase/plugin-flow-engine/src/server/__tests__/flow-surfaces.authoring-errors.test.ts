@@ -4189,6 +4189,693 @@ ctx.render(React.createElement(DashboardKPIs));
     ).toEqual([]);
   });
 
+  it('should reject statically invalid RunJS resource filters before write', async () => {
+    const makeCollection = (name: string, fields: any[]) => {
+      const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+      return {
+        dataSourceKey: 'main',
+        name,
+        fields: fieldsByName,
+        getField: (fieldName: string) => fieldsByName.get(fieldName),
+        getFields: () => fields,
+      };
+    };
+    const collections: Record<string, any> = {
+      reimbursement_requests: makeCollection('reimbursement_requests', [
+        { name: 'request_status', type: 'string', interface: 'select' },
+      ]),
+      claims: makeCollection('claims', [
+        { name: 'review_status', type: 'string', interface: 'select' },
+        { name: 'claim_category', type: 'string', interface: 'select' },
+        { name: 'chain_status', type: 'string', interface: 'select' },
+        { name: 'chained_setup_status', type: 'string', interface: 'select' },
+        { name: 'destructured_status', type: 'string', interface: 'select' },
+        { name: 'destructured_copy_status', type: 'string', interface: 'select' },
+        { name: 'destructured_assignment_status', type: 'string', interface: 'select' },
+        { name: 'alias_before_configuration_status', type: 'string', interface: 'select' },
+        { name: 'ctx_alias_before_configuration_status', type: 'string', interface: 'select' },
+        { name: 'destructured_before_configuration_status', type: 'string', interface: 'select' },
+        { name: 'nested_ctx_status', type: 'string', interface: 'select' },
+        { name: 'nested_late_config_status', type: 'string', interface: 'select' },
+        { name: 'nested_alias_status', type: 'string', interface: 'select' },
+        { name: 'nested_destructured_status', type: 'string', interface: 'select' },
+        { name: 'not_status', type: 'string', interface: 'select' },
+        { name: 'not_inner_status', type: 'string', interface: 'select' },
+      ]),
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        blocks: [
+          {
+            key: 'missingDollarOperator',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('reimbursement_requests');",
+                "ctx.resource.setFilter({ request_status: { in: ['Draft', 'Submitted'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'unknownField',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ missing_status: 'Active' });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'unknownCollection',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('missing_collection');",
+                "ctx.resource.setFilter({ status: 'Active' });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'ctxResourceAliasAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'const aliased = ctx.resource;',
+                "aliased.setFilter({ review_status: { in: ['Needs Review'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'resourceAliasCopyAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const base = ctx.makeResource('MultiRecordResource');",
+                "base.setResourceName('claims');",
+                'const copied = base;',
+                "copied.setFilter({ claim_category: { in: ['Excess'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'chainedSetResourceNameFilter',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims').setFilter({ chain_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'chainedStateSetupSeparateFilter',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setDataSourceKey('main').setResourceName('claims');",
+                "resource.setFilter({ chained_setup_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceAliasAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'const { resource } = ctx;',
+                "resource.setFilter({ destructured_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceAliasCopyAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'const { resource: base } = ctx;',
+                'const copied = base;',
+                "copied.setFilter({ destructured_copy_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceAssignmentAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                'let assigned;',
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                '({ resource: assigned } = ctx);',
+                "assigned.setFilter({ destructured_assignment_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'resourceAliasBeforeConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                'const copied = resource;',
+                "resource.setResourceName('claims');",
+                "copied.setFilter({ alias_before_configuration_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'ctxResourceAliasBeforeConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                'const aliased = ctx.resource;',
+                "ctx.resource.setResourceName('claims');",
+                "aliased.setFilter({ ctx_alias_before_configuration_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceBeforeConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                'const { resource } = ctx;',
+                "ctx.resource.setResourceName('claims');",
+                "resource.setFilter({ destructured_before_configuration_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionCtxResourceAfterOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'function applyFilter() {',
+                "  ctx.resource.setFilter({ nested_ctx_status: { in: ['Open'] } });",
+                '}',
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionCtxResourceDeclaredBeforeOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                'function applyFilter() {',
+                "  ctx.resource.setFilter({ nested_late_config_status: { in: ['Open'] } });",
+                '}',
+                "ctx.resource.setResourceName('claims');",
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionCtxResourceAliasAfterOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'function applyFilter() {',
+                '  const resource = ctx.resource;',
+                "  resource.setFilter({ nested_alias_status: { in: ['Open'] } });",
+                '}',
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionDestructuredCtxResourceAfterOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'function applyFilter() {',
+                '  const { resource } = ctx;',
+                "  resource.setFilter({ nested_destructured_status: { in: ['Open'] } });",
+                '}',
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'topLevelNotWrapper',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ $not: { not_status: { in: ['Closed'] } } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'fieldLevelNotWrapper',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ not_inner_status: { $not: { in: ['Closed'] } } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'topLevelNotUnknownField',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ $not: { missing_not_status: 'Closed' } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    const missingDollarFieldPaths = errors
+      .filter((error: any) => error.ruleId === 'runjs-resource-filter-operator-missing-dollar')
+      .map((error: any) => error.details?.fieldPath);
+    expect(missingDollarFieldPaths).toEqual(
+      expect.arrayContaining([
+        'request_status',
+        'review_status',
+        'claim_category',
+        'chain_status',
+        'chained_setup_status',
+        'destructured_status',
+        'destructured_copy_status',
+        'destructured_assignment_status',
+        'alias_before_configuration_status',
+        'ctx_alias_before_configuration_status',
+        'destructured_before_configuration_status',
+        'nested_ctx_status',
+        'nested_late_config_status',
+        'nested_alias_status',
+        'nested_destructured_status',
+        'not_status',
+        'not_inner_status',
+      ]),
+    );
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            fieldPath: 'request_status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-field-unknown',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'missing_status',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-field-unknown',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'missing_not_status',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-collection-unknown',
+          details: expect.objectContaining({
+            collectionName: 'missing_collection',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should pass collection context into top-level RunJS reactions', async () => {
+    const fields = [{ name: 'review_status', type: 'string', interface: 'select' }];
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const collections: Record<string, any> = {
+      claims: {
+        dataSourceKey: 'main',
+        name: 'claims',
+        fields: fieldsByName,
+        getField: (fieldName: string) => fieldsByName.get(fieldName),
+        getFields: () => fields,
+      },
+    };
+    const code = [
+      "const resource = ctx.makeResource('MultiRecordResource');",
+      "resource.setResourceName('claims');",
+      "resource.setFilter({ review_status: { in: ['Needs Review'] } });",
+    ].join('\n');
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'claims-widget' },
+        reaction: {
+          items: [{ type: 'runjs', code }],
+        },
+        changes: {
+          reaction: {
+            items: [{ type: 'runjs', code }],
+          },
+        },
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    const filterErrors = errors.filter(
+      (error: any) => error.ruleId === 'runjs-resource-filter-operator-missing-dollar',
+    );
+    expect(filterErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining(['$.reaction.items[0].code', '$.changes.reaction.items[0].code']),
+    );
+    expect(filterErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.reaction.items[0].code',
+          details: expect.objectContaining({
+            fieldPath: 'review_status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.changes.reaction.items[0].code',
+          details: expect.objectContaining({
+            fieldPath: 'review_status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should validate pre-bound ctx.resource filters with known authoring resource context', async () => {
+    const claimsFields = [{ name: 'review_status', type: 'string', interface: 'select' }];
+    const employeeFields = [
+      { name: 'id', type: 'bigInt', interface: 'id' },
+      { name: 'status', type: 'string', interface: 'select' },
+    ];
+    const claimsFieldsByName = new Map(claimsFields.map((field) => [field.name, field]));
+    const employeeFieldsByName = new Map(employeeFields.map((field) => [field.name, field]));
+    const collections: Record<string, any> = {
+      claims: {
+        dataSourceKey: 'main',
+        name: 'claims',
+        fields: claimsFieldsByName,
+        getField: (fieldName: string) => claimsFieldsByName.get(fieldName),
+        getFields: () => claimsFields,
+      },
+      employees: {
+        dataSourceKey: 'main',
+        name: 'employees',
+        fields: employeeFieldsByName,
+        getField: (fieldName: string) => employeeFieldsByName.get(fieldName),
+        getFields: () => employeeFields,
+      },
+    };
+
+    const reactionCode = "ctx.resource.setFilter({ review_status: { in: ['Needs Review'] } });";
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'claims-widget' },
+        reaction: {
+          items: [{ type: 'runjs', code: reactionCode }],
+        },
+        changes: {
+          reaction: {
+            items: [{ type: 'runjs', code: reactionCode }],
+          },
+        },
+      },
+      {
+        currentDataSourceKey: 'main',
+        currentCollectionName: 'claims',
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+        hostDataSourceKey: 'main',
+        hostCollectionName: 'claims',
+      },
+    );
+
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.reaction.items[0].code',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'review_status',
+            operator: 'in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.changes.reaction.items[0].code',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'review_status',
+            operator: 'in',
+          }),
+        }),
+      ]),
+    );
+
+    const chartConfigureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'employee-chart' },
+        changes: {
+          visual: {
+            raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });\nreturn {};",
+          },
+          events: {
+            raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });",
+          },
+        },
+      },
+      {
+        currentDataSourceKey: 'main',
+        currentCollectionName: 'employees',
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+        hostBlockType: 'ChartBlockModel',
+        hostDataSourceKey: 'main',
+        hostCollectionName: 'employees',
+      },
+    );
+    expect(chartConfigureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.visual.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.changes.events.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+      ]),
+    );
+
+    const chartAssetErrors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Pre-bound chart resource context page',
+          },
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [
+                  {
+                    field: 'id',
+                    aggregation: 'count',
+                    alias: 'employeeCount',
+                  },
+                ],
+              },
+              visual: {
+                mode: 'custom',
+                raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });\nreturn {};",
+              },
+              events: {
+                raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });",
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+    expect(chartAssetErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.statusChart.visual.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.assets.charts.statusChart.events.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should allow statically valid RunJS resource filters', async () => {
+    const reimbursementRequestFields = [{ name: 'request_status', type: 'string', interface: 'select' }];
+    const departmentFields = [{ name: 'name', type: 'string', interface: 'input' }];
+    const departmentFieldsByName = new Map(departmentFields.map((field) => [field.name, field]));
+    const departmentCollection = {
+      dataSourceKey: 'main',
+      name: 'departments',
+      fields: departmentFieldsByName,
+      getField: (fieldName: string) => departmentFieldsByName.get(fieldName),
+      getFields: () => departmentFields,
+    };
+    const employeeFields = [
+      {
+        name: 'department',
+        type: 'belongsTo',
+        interface: 'm2o',
+        targetCollection: departmentCollection,
+      },
+    ];
+    const employeeFieldsByName = new Map(employeeFields.map((field) => [field.name, field]));
+    const reimbursementRequestFieldsByName = new Map(reimbursementRequestFields.map((field) => [field.name, field]));
+    const collections: Record<string, any> = {
+      reimbursement_requests: {
+        dataSourceKey: 'main',
+        name: 'reimbursement_requests',
+        fields: reimbursementRequestFieldsByName,
+        getField: (fieldName: string) => reimbursementRequestFieldsByName.get(fieldName),
+        getFields: () => reimbursementRequestFields,
+      },
+      employees: {
+        dataSourceKey: 'main',
+        name: 'employees',
+        fields: employeeFieldsByName,
+        getField: (fieldName: string) => employeeFieldsByName.get(fieldName),
+        getFields: () => employeeFields,
+      },
+      departments: departmentCollection,
+    };
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'addBlock',
+      {
+        type: 'jsBlock',
+        settings: {
+          code: [
+            "const resource = ctx.makeResource('MultiRecordResource');",
+            "resource.setResourceName('reimbursement_requests');",
+            "resource.setFilter({ request_status: { $in: ['Draft', 'Submitted'] } });",
+            'await resource.refresh();',
+            "const employees = ctx.makeResource('MultiRecordResource');",
+            "employees.setResourceName('employees');",
+            "employees.setFilter({ department: { name: { $eq: 'Sales' } } });",
+            'ctx.render(null);',
+          ].join('\n'),
+        },
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    expect(errors).toEqual([]);
+  });
+
   it('should reject AST-detected RunJS syntax, nested runjs, resource arguments, and source limits', async () => {
     expect(
       inspectRunJsAuthoringCode({

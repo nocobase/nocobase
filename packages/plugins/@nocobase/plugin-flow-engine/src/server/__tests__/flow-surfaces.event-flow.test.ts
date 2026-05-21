@@ -438,6 +438,42 @@ describe('flowSurfaces event flow', () => {
       ]),
     );
 
+    const updateSettingsResponse = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        flowRegistry: {
+          unsafeUpdateSettings: {
+            key: 'unsafeUpdateSettings',
+            on: 'beforeRender',
+            steps: {
+              runUnsafe: {
+                use: 'runjs',
+                defaultParams: {
+                  code: "ctx.resource.setFilter({ status: { in: ['Active'] } });",
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(updateSettingsResponse.status).toBe(400);
+    expect(updateSettingsResponse.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.flowRegistry.unsafeUpdateSettings.steps.runUnsafe.defaultParams.code',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            fieldPath: 'status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+      ]),
+    );
+
     const readback = await getSurface(rootAgent, {
       uid: formUid,
     });
