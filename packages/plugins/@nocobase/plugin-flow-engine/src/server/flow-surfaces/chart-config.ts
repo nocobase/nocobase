@@ -65,6 +65,36 @@ type NormalizedCustomChartVisual = {
 
 type NormalizedChartVisual = NormalizedBasicChartVisual | NormalizedCustomChartVisual;
 
+type DerivedChartResource = {
+  dataSourceKey: string;
+  collectionName: string;
+};
+
+type DerivedSqlChartQuery = {
+  mode: 'sql';
+  sql?: any;
+  sqlDatasource?: any;
+};
+
+type DerivedBuilderChartQuery = {
+  mode: 'builder';
+  resource?: DerivedChartResource | null;
+  measures?: any;
+  dimensions?: any;
+  filter?: any;
+  sorting?: any[];
+  limit?: any;
+  offset?: any;
+};
+
+type DerivedChartQuery = DerivedSqlChartQuery | DerivedBuilderChartQuery;
+
+type DerivedChartSemanticState = {
+  query?: DerivedChartQuery;
+  visual?: ReturnType<typeof deriveChartVisual>;
+  events?: ReturnType<typeof deriveChartEvents>;
+};
+
 const EMPTY_FILTER_GROUP = {
   logic: '$and',
   items: [],
@@ -1259,7 +1289,7 @@ function deriveChartSortingItem(item: any) {
   });
 }
 
-function deriveChartQuery(configure: any) {
+function deriveChartQuery(configure: any): DerivedChartQuery | undefined {
   const query = configure?.query;
   if (!_.isPlainObject(query)) {
     return undefined;
@@ -1272,10 +1302,10 @@ function deriveChartQuery(configure: any) {
       mode: 'sql',
       sql: query.sql,
       sqlDatasource: query.sqlDatasource,
-    });
+    }) as DerivedSqlChartQuery;
   }
   return buildDefinedObject({
-    mode: query.mode || 'builder',
+    mode: 'builder',
     resource: getChartBuilderResourceInit(configure),
     measures: _.cloneDeep(query.measures),
     dimensions: _.cloneDeep(query.dimensions),
@@ -1285,7 +1315,7 @@ function deriveChartQuery(configure: any) {
       .filter(Boolean),
     limit: query.limit,
     offset: query.offset,
-  });
+  }) as DerivedBuilderChartQuery;
 }
 
 function deriveChartVisual(configure: any) {
@@ -1360,12 +1390,12 @@ function rebuildChartConfigureFromSemanticState(nextState: Record<string, any>) 
   return nextConfigure;
 }
 
-export function deriveChartSemanticState(configure: any) {
+export function deriveChartSemanticState(configure: any): DerivedChartSemanticState {
   return buildDefinedObject({
     query: deriveChartQuery(configure),
     visual: deriveChartVisual(configure),
     events: deriveChartEvents(configure),
-  });
+  }) as DerivedChartSemanticState;
 }
 
 export function getChartBuilderResourceInit(configure: any) {
