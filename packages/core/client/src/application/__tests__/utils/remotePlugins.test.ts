@@ -56,6 +56,26 @@ describe('remotePlugins', () => {
 
       defineDevPlugins(plugins);
     });
+
+    it('should preserve named exports from dev plugin modules', () => {
+      class DemoPlugin extends Plugin {}
+      class DemoActionModel {}
+      const plugins = {
+        '@nocobase/demo': {
+          default: DemoPlugin,
+          DemoActionModel,
+        },
+      };
+      const define: any = function (packageName: string, load: any) {
+        expect(packageName).toEqual('@nocobase/demo/client');
+        expect(load()).toEqual(plugins['@nocobase/demo']);
+      };
+      window.define = define;
+
+      defineDevPlugins(plugins);
+
+      expect(window.__nocobase_app_dev_plugins__['@nocobase/demo/client']).toBe(plugins['@nocobase/demo']);
+    });
   });
 
   describe('definePluginClient()', () => {
@@ -325,6 +345,42 @@ describe('remotePlugins', () => {
       expect(remoteFn).toBeCalledTimes(0);
       expect(mockDefine).toBeCalledTimes(2);
       expect(requirejs.requirejs.config).toBeCalledTimes(0);
+    });
+
+    it('should expose named exports from devDynamicImport modules to RequireJS consumers', async () => {
+      class DemoPlugin extends Plugin {}
+      class DemoActionModel {}
+
+      const requirejs: any = {
+        requirejs: vi.fn(),
+      };
+      requirejs.requirejs.config = vi.fn();
+
+      const mockDefine: any = vi.fn();
+      window.define = mockDefine;
+
+      const plugins = await getPlugins({
+        requirejs,
+        pluginData: [
+          {
+            name: '@nocobase/demo',
+            packageName: '@nocobase/demo',
+            url: 'https://demo.com',
+          },
+        ] as any,
+        devDynamicImport: (() => {
+          return Promise.resolve({ default: DemoPlugin, DemoActionModel });
+        }) as any,
+      });
+
+      const moduleFactory = mockDefine.mock.calls.find((call) => call[0] === '@nocobase/demo/client')?.[1];
+
+      expect(plugins).toEqual([['@nocobase/demo', DemoPlugin]]);
+      expect(moduleFactory()).toEqual({ default: DemoPlugin, DemoActionModel });
+      expect(window.__nocobase_app_dev_plugins__['@nocobase/demo/client']).toEqual({
+        default: DemoPlugin,
+        DemoActionModel,
+      });
     });
 
     it('If there is devDynamicImport and devDynamicImport returns partial, remote API will be requested', async () => {
