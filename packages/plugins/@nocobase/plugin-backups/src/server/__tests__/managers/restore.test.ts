@@ -18,6 +18,7 @@ import { MockServer, sleep } from '@nocobase/test/server';
 import { BackupManager, BackupSettings } from '../../managers/backup';
 import { RestoreManager } from '../../managers/restore';
 import backupCliResource from '../../resourcers/backup-cli';
+import backupsResource from '../../resourcers/backups';
 
 let mockExecImplementation = (command, _options, callback) => {
   callback(null, 'done');
@@ -128,6 +129,27 @@ describe('RestoreManager', () => {
       i18n: app.i18n,
       request: {
         body: requestBody,
+      },
+    };
+  }
+
+  function createStatusCache() {
+    return {
+      set: vi.fn().mockResolvedValue(undefined),
+    };
+  }
+
+  function createResourceApp(statusCache: ReturnType<typeof createStatusCache>) {
+    return {
+      name: 'main',
+      db: {
+        options: {
+          dialect: 'sqlite',
+          storage: ':memory:',
+        },
+      },
+      cacheManager: {
+        getCache: vi.fn().mockReturnValue(statusCache),
       },
     };
   }
@@ -313,20 +335,7 @@ describe('RestoreManager', () => {
     const restoreSpy = vi.spyOn(RestoreManager.prototype, 'restore').mockResolvedValue(undefined);
     const next = vi.fn();
     const ctx = {
-      app: {
-        name: 'main',
-        db: {
-          options: {
-            dialect: 'sqlite',
-            storage: ':memory:',
-          },
-        },
-        cacheManager: {
-          getCache: () => ({
-            set: vi.fn(),
-          }),
-        },
-      },
+      app: createResourceApp(createStatusCache()),
       action: {
         params: {
           name: `backup.${BACKUP_EXTENSION}`,
@@ -344,7 +353,7 @@ describe('RestoreManager', () => {
     await backupCliResource.actions.restore(ctx as any, next);
 
     expect(restoreSpy).toHaveBeenCalledWith(
-      expect.stringContaining(`backup.${BACKUP_EXTENSION}`),
+      path.resolve(storagePathJoin('backups', 'main'), `backup.${BACKUP_EXTENSION}`),
       expect.any(String),
       undefined,
       true,
@@ -354,6 +363,137 @@ describe('RestoreManager', () => {
       },
     );
     expect(next).toHaveBeenCalled();
+    restoreSpy.mockRestore();
+  });
+
+  it('marks backups restore task as failed when restoreFromBackup rejects early', async () => {
+    const statusCache = createStatusCache();
+    const restoreSpy = vi
+      .spyOn(RestoreManager.prototype, 'restoreFromBackup')
+      .mockRejectedValue(new Error('Invalid backup name'));
+    const ctx = {
+      app: createResourceApp(statusCache),
+      request: {
+        body: {
+          name: `backup.${BACKUP_EXTENSION}`,
+          password: 'secret',
+        },
+      },
+    };
+
+    await expect(backupsResource.actions.restore(ctx as any, vi.fn())).rejects.toThrow('Invalid backup name');
+
+    const taskId = statusCache.set.mock.calls[0][0];
+    expect(statusCache.set).toHaveBeenNthCalledWith(1, taskId, {
+      inProgress: true,
+    });
+    expect(statusCache.set).toHaveBeenNthCalledWith(2, taskId, {
+      inProgress: false,
+      message: 'Invalid backup name',
+    });
+
+    restoreSpy.mockRestore();
+  });
+
+  it('marks backups upload restore task as failed when restoreFromUpload rejects early', async () => {
+    const taskId = 'backups-upload';
+    const uploadPath = path.join(backupFilesFolder, `${taskId}.${BACKUP_EXTENSION}`);
+    await fs.promises.writeFile(uploadPath, 'temp backup upload');
+
+    const statusCache = createStatusCache();
+    const restoreSpy = vi
+      .spyOn(RestoreManager.prototype, 'restoreFromUpload')
+      .mockRejectedValue(new Error('Invalid upload file'));
+    const ctx = {
+      app: createResourceApp(statusCache),
+      request: {
+        file: {
+          path: uploadPath,
+        },
+        body: {
+          password: 'secret',
+        },
+      },
+    };
+
+    await expect(backupsResource.actions.upload(ctx as any, vi.fn())).rejects.toThrow('Invalid upload file');
+
+    const restoreTaskId = statusCache.set.mock.calls[0][0];
+    expect(statusCache.set).toHaveBeenNthCalledWith(1, restoreTaskId, {
+      inProgress: true,
+    });
+    expect(statusCache.set).toHaveBeenNthCalledWith(2, restoreTaskId, {
+      inProgress: false,
+      message: 'Invalid upload file',
+    });
+    expect(fs.existsSync(uploadPath)).toBe(false);
+
+    restoreSpy.mockRestore();
+  });
+
+  it('marks backup CLI restore task as failed when backup name validation fails early', async () => {
+    const statusCache = createStatusCache();
+    const ctx = {
+      app: createResourceApp(statusCache),
+      action: {
+        params: {
+          name: `../backup.${BACKUP_EXTENSION}`,
+        },
+      },
+      request: {
+        body: {},
+      },
+      throw: (_status: number, message: string) => {
+        throw new Error(message);
+      },
+    };
+
+    await expect(backupCliResource.actions.restore(ctx as any, vi.fn())).rejects.toThrow('Invalid backup name');
+
+    const taskId = statusCache.set.mock.calls[0][0];
+    expect(statusCache.set).toHaveBeenNthCalledWith(1, taskId, {
+      inProgress: true,
+    });
+    expect(statusCache.set).toHaveBeenNthCalledWith(2, taskId, {
+      inProgress: false,
+      message: 'Invalid backup name',
+    });
+  });
+
+  it('marks backup CLI upload restore task as failed when restore rejects early', async () => {
+    const taskId = 'backup-cli-upload';
+    const uploadPath = path.join(backupFilesFolder, `${taskId}.${BACKUP_EXTENSION}`);
+    await fs.promises.writeFile(uploadPath, 'temp backup upload');
+
+    const statusCache = createStatusCache();
+    const restoreSpy = vi
+      .spyOn(RestoreManager.prototype, 'restore')
+      .mockRejectedValue(new Error('Invalid backup file'));
+    const ctx = {
+      app: createResourceApp(statusCache),
+      action: {
+        params: {},
+      },
+      request: {
+        body: {},
+        file: {
+          path: uploadPath,
+        },
+      },
+    };
+
+    await expect(backupCliResource.actions.restoreUpload(ctx as any, vi.fn())).rejects.toThrow('Invalid backup file');
+
+    const restoreTaskId = statusCache.set.mock.calls[0][0];
+    expect(statusCache.set).toHaveBeenNthCalledWith(1, restoreTaskId, {
+      inProgress: true,
+    });
+    expect(statusCache.set).toHaveBeenNthCalledWith(2, restoreTaskId, {
+      inProgress: false,
+      message: 'Invalid backup file',
+    });
+    expect(fs.existsSync(uploadPath)).toBe(false);
+
     restoreSpy.mockRestore();
   });
 });

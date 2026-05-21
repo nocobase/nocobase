@@ -18,6 +18,13 @@ import { Cache } from '@nocobase/cache';
 import crypto from 'crypto';
 import { AppSupervisor } from '@nocobase/server';
 
+async function setRestoreTaskError(statusCache: Cache, taskId: string, error: unknown) {
+  await statusCache.set(taskId, {
+    inProgress: false,
+    message: error instanceof Error ? error.message : String(error),
+  });
+}
+
 export default {
   name: 'backups',
   middleware: async (ctx, next) => {
@@ -59,6 +66,9 @@ export default {
           task: taskId,
         };
         await next();
+      } catch (error) {
+        await setRestoreTaskError(statusCache, taskId, error);
+        throw error;
       } finally {
         if (uploadedFilePath) {
           await fsPromises.unlink(uploadedFilePath).catch(() => {});
@@ -130,12 +140,17 @@ export default {
       await statusCache.set(taskId, {
         inProgress: true,
       });
-      await restoreManager.restoreFromBackup(ctx.request.body.name, taskId, ctx.request.body.password, true);
-      ctx.body = {
-        status: 'ok',
-        task: taskId,
-      };
-      await next();
+      try {
+        await restoreManager.restoreFromBackup(ctx.request.body.name, taskId, ctx.request.body.password, true);
+        ctx.body = {
+          status: 'ok',
+          task: taskId,
+        };
+        await next();
+      } catch (error) {
+        await setRestoreTaskError(statusCache, taskId, error);
+        throw error;
+      }
     },
     async restoreStatus(ctx, next) {
       const statusCache: Cache = ctx.app.cacheManager.getCache(RESTORE_TASKS_CACHE_NAME);

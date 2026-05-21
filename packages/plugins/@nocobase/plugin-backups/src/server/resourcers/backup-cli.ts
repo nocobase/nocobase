@@ -9,7 +9,7 @@
 
 import { Cache } from '@nocobase/cache';
 import { ResourceOptions } from '@nocobase/resourcer';
-import { koaMulter as multer } from '@nocobase/utils';
+import { koaMulter as multer, storagePathJoin } from '@nocobase/utils';
 import crypto from 'crypto';
 import fsPromises from 'fs/promises';
 import os from 'os';
@@ -17,6 +17,13 @@ import path from 'path';
 import { BackupManager, BackupSettings, BackupTaskResult } from '../managers/backup';
 import { RestoreManager } from '../managers/restore';
 import { BACKUP_EXTENSION, BACKUP_TASKS_CACHE_NAME, isQsTruly, RESTORE_TASKS_CACHE_NAME, SETTINGS } from '../utils';
+
+async function setRestoreTaskError(statusCache: Cache, taskId: string, error: unknown) {
+  await statusCache.set(taskId, {
+    inProgress: false,
+    message: error instanceof Error ? error.message : String(error),
+  });
+}
 
 function getBackupName(ctx) {
   return ctx.action.params.name || ctx.request.body?.name;
@@ -35,7 +42,7 @@ function getForceSchemaRestore(ctx) {
 }
 
 function getBackupDir(ctx) {
-  return path.resolve(process.cwd(), 'storage', 'backups', ctx.app.name);
+  return storagePathJoin('backups', ctx.app.name);
 }
 
 function getBackupFilePath(ctx, name: string) {
@@ -168,21 +175,26 @@ export default {
       await statusCache.set(taskId, {
         inProgress: true,
       });
-      await restoreManager.restore(
-        getBackupFilePath(ctx, name),
-        taskId,
-        getPassword(ctx),
-        true,
-        getSkipRevertOnError(ctx),
-        {
-          forceSchemaRestore: getForceSchemaRestore(ctx),
-        },
-      );
-      ctx.body = {
-        status: 'ok',
-        task: taskId,
-      };
-      await next();
+      try {
+        await restoreManager.restore(
+          getBackupFilePath(ctx, name),
+          taskId,
+          getPassword(ctx),
+          true,
+          getSkipRevertOnError(ctx),
+          {
+            forceSchemaRestore: getForceSchemaRestore(ctx),
+          },
+        );
+        ctx.body = {
+          status: 'ok',
+          task: taskId,
+        };
+        await next();
+      } catch (error) {
+        await setRestoreTaskError(statusCache, taskId, error);
+        throw error;
+      }
     },
 
     async restoreUpload(ctx, next) {
@@ -202,6 +214,9 @@ export default {
           task: taskId,
         };
         await next();
+      } catch (error) {
+        await setRestoreTaskError(statusCache, taskId, error);
+        throw error;
       } finally {
         if (uploadedFilePath) {
           await fsPromises.unlink(uploadedFilePath).catch(() => {});
