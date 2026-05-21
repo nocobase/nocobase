@@ -20,6 +20,7 @@ import {
   type PromptsCatalog,
   type PromptValue,
   type RunPromptCatalogOptions,
+  type TextPromptBlock,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
 import {
@@ -1103,6 +1104,30 @@ export default class Install extends Command {
       'authType',
       'accessToken',
     ]);
+  }
+
+  private buildEnvAddPromptsForInstall(parsed: InstallParsedFlags): PromptsCatalog {
+    const prompts: PromptsCatalog = {
+      ...EnvAdd.prompts,
+      apiBaseUrl: {
+        ...EnvAdd.prompts.apiBaseUrl,
+        validate: undefined,
+      },
+    };
+
+    if (!parsed['skip-auth']) {
+      return prompts;
+    }
+
+    const accessTokenPrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+      hidden: () => true,
+    };
+
+    return {
+      ...prompts,
+      accessToken: accessTokenPrompt,
+    };
   }
 
   private static toOptionalPromptString(value: unknown): string | undefined {
@@ -2972,13 +2997,7 @@ export default class Install extends Command {
       yes,
     });
 
-    const envAddPromptsForInstall = {
-      ...EnvAdd.prompts,
-      apiBaseUrl: {
-        ...EnvAdd.prompts.apiBaseUrl,
-        validate: undefined,
-      },
-    };
+    const envAddPromptsForInstall = this.buildEnvAddPromptsForInstall(parsed);
 
     const envAddResults = await runPromptCatalog(envAddPromptsForInstall, {
       initialValues: {

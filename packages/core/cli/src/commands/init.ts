@@ -351,6 +351,24 @@ Prompt modes:
     rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
   };
 
+  private buildPromptCatalog(flags: {
+    'skip-auth'?: boolean;
+  }): PromptsCatalog {
+    if (!flags['skip-auth']) {
+      return Init.prompts;
+    }
+
+    const accessTokenPrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+      hidden: () => true,
+    };
+
+    return {
+      ...Init.prompts,
+      accessToken: existingAppOnly(accessTokenPrompt),
+    };
+  }
+
   private parsedFlagsForPromptSeeds?:
     | {
       resume?: boolean;
@@ -580,9 +598,10 @@ Prompt modes:
       },
       presetValues,
     );
+    const promptCatalog = this.buildPromptCatalog(normalizedFlags);
     if (useBrowserUi) {
       presetValues = await runPromptCatalogWebUI({
-        stages: Init.buildWebUiStages(),
+        stages: Init.buildWebUiStages(promptCatalog),
         values: {
           ...dynamicInitialValues,
           ...presetValues,
@@ -602,7 +621,7 @@ Prompt modes:
       });
     }
 
-    const results = await runPromptCatalog(Init.prompts, {
+    const results = await runPromptCatalog(promptCatalog, {
       initialValues: dynamicInitialValues,
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
@@ -716,8 +735,7 @@ Prompt modes:
     return out;
   }
 
-  private static buildWebUiStages(): RunPromptCatalogWebUIStage[] {
-    const c = Init.prompts;
+  private static buildWebUiStages(c: PromptsCatalog = Init.prompts): RunPromptCatalogWebUIStage[] {
 
     return [
       {
@@ -1087,12 +1105,11 @@ Prompt modes:
     argv.push('--no-intro');
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
+    const accessToken = String(results.accessToken ?? '');
     if (results.skipAuth === true) {
       argv.push('--skip-auth');
-    }
-
-    if (results.authType === 'token') {
-      argv.push('--access-token', String(results.accessToken ?? ''));
+    } else if (results.authType === 'token' && accessToken) {
+      argv.push('--access-token', accessToken);
     }
 
     return argv;

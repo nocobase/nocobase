@@ -1705,7 +1705,7 @@ test('nb init forwards --skip-auth to env add for an existing app flow', async (
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
     hasNocobase: 'yes',
     appName: 'staging',
-    authType: 'oauth',
+    authType: 'token',
     ...(options.values ?? {}),
   }));
   mocks.runNpm.mockResolvedValue(undefined);
@@ -1719,7 +1719,7 @@ test('nb init forwards --skip-auth to env add for an existing app flow', async (
         ui: false,
         env: 'staging',
         'api-base-url': 'http://demo.example.com/api',
-        'auth-type': 'oauth',
+        'auth-type': 'token',
         'skip-auth': true,
       },
     })),
@@ -1734,6 +1734,12 @@ test('nb init forwards --skip-auth to env add for an existing app flow', async (
 
   await Init.prototype.run.call(command);
 
+  expect(mocks.runPromptCatalog).toHaveBeenCalledTimes(1);
+  const promptCatalog = mocks.runPromptCatalog.mock.calls[0]?.[0];
+  expect(promptCatalog?.accessToken?.hidden?.({
+    hasNocobase: 'yes',
+    authType: 'token',
+  })).toBe(true);
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     [
@@ -1742,7 +1748,7 @@ test('nb init forwards --skip-auth to env add for an existing app flow', async (
       '--api-base-url',
       'http://demo.example.com/api',
       '--auth-type',
-      'oauth',
+      'token',
       '--skip-auth',
     ],
   ]);
