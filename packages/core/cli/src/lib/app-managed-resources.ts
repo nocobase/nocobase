@@ -47,6 +47,20 @@ function trimValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function pushOptionalEnvArg(args: string[], key: string, value: string | boolean | undefined) {
+  if (typeof value === 'string') {
+    if (!value) {
+      return;
+    }
+    args.push('-e', `${key}=${value}`);
+    return;
+  }
+
+  if (typeof value === 'boolean') {
+    args.push('-e', `${key}=${String(value)}`);
+  }
+}
+
 function normalizeDockerPlatform(value: unknown): string | undefined {
   const text = trimValue(value);
   if (!text || text === 'auto') {
@@ -141,6 +155,10 @@ export async function buildSavedDockerRunArgs(
   const dbDatabase = trimValue(config.dbDatabase);
   const dbUser = trimValue(config.dbUser);
   const dbPassword = trimValue(config.dbPassword);
+  const dbSchema = trimValue(config.dbSchema);
+  const dbTablePrefix = trimValue(config.dbTablePrefix);
+  const dbUnderscored =
+    typeof config.dbUnderscored === 'boolean' ? config.dbUnderscored : undefined;
   const dockerRegistry = trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY;
   const version = trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION;
   const imageRef = resolveDockerImageRef(dockerRegistry, version, {
@@ -221,8 +239,11 @@ export async function buildSavedDockerRunArgs(
     `TZ=${timeZone}`,
     '-v',
     `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
-    imageRef,
   );
+  pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
+  pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
+  pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+  args.push(imageRef);
 
   return {
     appPort: appPort || undefined,

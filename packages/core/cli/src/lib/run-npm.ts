@@ -91,7 +91,14 @@ export function resolveProjectCwd(cwd?: string): string {
 export function run(
   name: string,
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string>; errorName?: string },
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    cwd?: string;
+    env?: Record<string, string>;
+    errorName?: string;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
 ): Promise<void> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
@@ -106,6 +113,20 @@ export function run(
       },
       windowsHide: process.platform === 'win32',
     });
+    if (options?.stdio === 'pipe') {
+      child.stdout?.setEncoding('utf8');
+      child.stderr?.setEncoding('utf8');
+      if (options.onStdout) {
+        child.stdout?.on('data', (chunk) => {
+          options.onStdout?.(String(chunk));
+        });
+      }
+      if (options.onStderr) {
+        child.stderr?.on('data', (chunk) => {
+          options.onStderr?.(String(chunk));
+        });
+      }
+    }
     const cleanupSignalForwarding = forwardSignalsToChild(child);
     child.once('error', (error) => {
       cleanupSignalForwarding();
@@ -291,14 +312,26 @@ export async function commandOutputViaFile(
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */
 export function runNpm(
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    cwd?: string;
+    env?: Record<string, string>;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
 ): Promise<void> {
   return run('yarn', [...args], { ...options, errorName: 'npm' });
 }
 
 export function runNocoBaseCommand(
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    cwd?: string;
+    env?: Record<string, string>;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
 ): Promise<void> {
   const cwd = resolveProjectCwd(options?.cwd);
   const localBin = path.join(cwd, 'node_modules', '.bin');
