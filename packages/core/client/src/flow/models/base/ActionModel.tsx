@@ -14,8 +14,8 @@ import { useTranslation } from 'react-i18next';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { Icon } from '../../../icon/Icon';
-import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
+import { ButtonColorPanel, LEGACY_TYPE_TO_VARIANT, isAntdButtonColor } from '../../components/ButtonColorPanel';
 
 export function ActionWithoutPermission(props) {
   const { t } = useTranslation();
@@ -65,7 +65,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   enableEditIcon = true;
   enableEditType = true;
   enableEditDanger = true;
-  enableEditColor = false;
+  enableEditColor = true;
 
   static _getScene() {
     return _.castArray(this['scene'] || []);
@@ -135,12 +135,34 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     return this.props.icon;
   }
 
-  renderButton() {
+  getButtonRenderProps() {
     const props = this.props;
-    const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    const resolvedColor = typeof props.color === 'string' && isAntdButtonColor(props.color) ? props.color : undefined;
+    const resolvedVariant =
+      resolvedColor && !props.variant ? LEGACY_TYPE_TO_VARIANT[props.type || 'default'] : props.variant;
+    let normalizedProps = resolvedColor === props.color ? props : { ...props, color: resolvedColor };
+
+    // Antd v5 color/variant already covers visual intent; keeping legacy type/danger together may override color styles.
+    if (resolvedColor) {
+      const { type, danger, ...restProps } = normalizedProps;
+      normalizedProps = {
+        ...restProps,
+        color: resolvedColor,
+      };
+    }
+
+    return {
+      props: normalizedProps,
+      variant: resolvedVariant,
+      icon: this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined,
+    };
+  }
+
+  renderButton() {
+    const { props, icon, variant } = this.getButtonRenderProps();
 
     return (
-      <Button {...props} onClick={this.onClick.bind(this)} icon={icon}>
+      <Button {...props} variant={variant} onClick={this.onClick.bind(this)} icon={icon}>
         {props.children || this.getTitle()}
       </Button>
     );
@@ -156,12 +178,12 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   renderHiddenInConfig(): React.ReactNode | undefined {
-    const props = this.props;
-    const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    const { props, icon, variant } = this.getButtonRenderProps();
+    const hiddenStyle = { ...(props.style || {}), opacity: '0.3' };
     if (this.forbidden) {
       return (
         <ActionWithoutPermission>
-          <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+          <Button {...props} variant={variant} onClick={this.onClick.bind(this)} icon={icon} style={hiddenStyle}>
             {props.children || this.getTitle()}
           </Button>
         </ActionWithoutPermission>
@@ -169,7 +191,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     }
     return (
       <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
-        <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+        <Button {...props} variant={variant} onClick={this.onClick.bind(this)} icon={icon} style={hiddenStyle}>
           {props.children || this.getTitle()}
         </Button>
       </Tooltip>
@@ -231,8 +253,8 @@ ActionModel.registerFlow({
           color: ctx.model.enableEditColor
             ? {
                 'x-decorator': 'FormItem',
-                'x-component': ColorPicker,
-                title: tExpr('Color'),
+                'x-component': ButtonColorPanel,
+                title: tExpr('Button color'),
               }
             : undefined,
         };
@@ -242,10 +264,18 @@ ActionModel.registerFlow({
       },
       handler(ctx, params) {
         const { title, tooltip, ...rest } = params;
+        const colorCandidate =
+          typeof rest.color === 'string'
+            ? rest.color
+            : rest.color && typeof rest.color === 'object' && typeof rest.color.value === 'string'
+              ? rest.color.value
+              : undefined;
+        const normalizedColor = isAntdButtonColor(colorCandidate) ? colorCandidate : undefined;
         ctx.model.setProps({
           title: ctx.t(title, { ns: 'lm-flow-engine' }),
           tooltip: ctx.t(tooltip, { ns: 'lm-flow-engine' }),
           ...rest,
+          color: normalizedColor,
         });
       },
     },

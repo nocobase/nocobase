@@ -1892,14 +1892,44 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       const setProps = (model: FlowModel & { __originalProps?: any; __shouldReset?: boolean }, props: any) => {
         // 存储原始值，用于恢复
         if (!model.__originalProps) {
-          model.__originalProps = {
-            hiddenModel: model.hidden,
-            hiddenText: undefined,
-            disabled: undefined,
-            required: undefined,
-            hidden: undefined,
-            ...model.props,
-          };
+          model.__originalProps = {};
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(model.__originalProps, 'hiddenModel')) {
+          model.__originalProps.hiddenModel = model.hidden;
+        }
+        if (!Object.prototype.hasOwnProperty.call(model.__originalProps, 'hiddenText')) {
+          model.__originalProps.hiddenText = undefined;
+        }
+
+        Object.keys(props || {}).forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(model.__originalProps, key)) {
+            return;
+          }
+          if (key === 'hiddenModel') {
+            model.__originalProps.hiddenModel = model.hidden;
+            return;
+          }
+          if (key === 'hiddenText') {
+            model.__originalProps.hiddenText = undefined;
+            if (!Object.prototype.hasOwnProperty.call(model.__originalProps, 'title')) {
+              model.__originalProps.title = model.props?.title;
+            }
+            return;
+          }
+
+          model.__originalProps[key] = model.props?.[key];
+
+          if (key === 'required' && !Object.prototype.hasOwnProperty.call(model.__originalProps, 'rules')) {
+            model.__originalProps.rules = model.props?.rules;
+          }
+        });
+
+        if (
+          Object.prototype.hasOwnProperty.call(props || {}, 'required') &&
+          !Object.prototype.hasOwnProperty.call(model.__originalProps, 'required')
+        ) {
+          model.__originalProps.required = undefined;
         }
 
         // 临时存起来，遍历完所有规则后，再统一处理

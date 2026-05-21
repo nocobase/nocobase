@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { LockOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Space, Avatar, Button, Tooltip, ConfigProvider } from 'antd';
+import { Space, Avatar, Button, Tooltip, ConfigProvider, theme } from 'antd';
 import { Grid, List } from 'antd-mobile';
 import React from 'react';
 import { BlockModel, useOpenModeContext, Icon, ActionModel } from '@nocobase/client';
@@ -31,6 +31,96 @@ function isMobile() {
 export const WorkbenchLayout = {
   Grid: 'grid',
   List: 'list',
+};
+
+const ANTD_DEFAULT_SEED = theme.defaultSeed as unknown as Record<string, string>;
+const DEFAULT_ACTION_PANEL_ICON_BACKGROUND = '#1677FF';
+const ANTD_PRESET_BUTTON_COLOR_SET = new Set([
+  'blue',
+  'purple',
+  'cyan',
+  'green',
+  'magenta',
+  'pink',
+  'red',
+  'orange',
+  'yellow',
+  'volcano',
+  'geekblue',
+  'lime',
+  'gold',
+]);
+
+type ActionPanelColorToken = {
+  colorBgContainer: string;
+  colorBorder: string;
+  colorPrimary: string;
+  colorError: string;
+  colorText: string;
+  colorTextLightSolid: string;
+  colorTextDisabled: string;
+  colorFillTertiary: string;
+};
+
+const normalizeColorValue = (value: unknown) => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value && typeof value === 'object' && typeof (value as any).value === 'string') {
+    return (value as any).value;
+  }
+  return undefined;
+};
+
+const resolveActionPanelColor = (value: unknown, token: ActionPanelColorToken) => {
+  const color = normalizeColorValue(value);
+  if (!color) {
+    return undefined;
+  }
+  if (color === 'default') {
+    return token.colorBgContainer;
+  }
+  if (color === 'primary') {
+    return ANTD_DEFAULT_SEED.colorPrimary || token.colorPrimary;
+  }
+  if (color === 'danger') {
+    return ANTD_DEFAULT_SEED.colorError || token.colorError;
+  }
+  if (ANTD_PRESET_BUTTON_COLOR_SET.has(color)) {
+    return ANTD_DEFAULT_SEED[color] || token.colorPrimary;
+  }
+  return color;
+};
+
+export const resolveActionPanelAvatarStyle = (
+  value: unknown,
+  disabled: unknown,
+  token: ActionPanelColorToken,
+): React.CSSProperties => {
+  if (disabled === true) {
+    return {
+      backgroundColor: token.colorFillTertiary,
+      color: token.colorTextDisabled,
+      border: `1px solid ${token.colorBorder}`,
+    };
+  }
+
+  const normalized = normalizeColorValue(value);
+  const backgroundColor = resolveActionPanelColor(value, token) || DEFAULT_ACTION_PANEL_ICON_BACKGROUND;
+
+  if (normalized === 'default') {
+    return {
+      backgroundColor,
+      color: token.colorText,
+      border: `1px solid ${token.colorBorder}`,
+    };
+  }
+
+  return {
+    backgroundColor,
+    color: token.colorTextLightSolid || '#fff',
+    border: '1px solid transparent',
+  };
 };
 
 const ResponsiveSpace = (props) => {
@@ -83,7 +173,8 @@ export class ActionPanelBlockModel extends BlockModel {
                     if (action.hidden && !isConfigMode) {
                       return;
                     }
-                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
+                    const { icon = 'SettingOutlined', color, title, disabled } = action.props;
+                    const avatarStyle = resolveActionPanelAvatarStyle(color, disabled, token as ActionPanelColorToken);
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
@@ -94,7 +185,7 @@ export class ActionPanelBlockModel extends BlockModel {
                         >
                           <Button onClick={action.onClick.bind(action)}>
                             <div style={{ width: '5em', opacity: '0.3' }}>
-                              <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
+                              <Avatar style={avatarStyle} size={48} icon={<Icon type={icon as any} />} />
                               <div
                                 style={
                                   ellipsis
@@ -118,7 +209,7 @@ export class ActionPanelBlockModel extends BlockModel {
                     };
                     action.props.children = (
                       <div style={{ width: '5em' }}>
-                        <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
+                        <Avatar style={avatarStyle} size={48} icon={<Icon type={icon as any} />} />
                         <div
                           style={
                             ellipsis
@@ -145,9 +236,22 @@ export class ActionPanelBlockModel extends BlockModel {
                             padding: 10px 0px;
                             margin-bottom: 15px;
                             .ant-btn {
-                              background: none;
+                              background: none !important;
                               border: none !important;
-                              box-shadow: none;
+                              box-shadow: none !important;
+                              &,
+                              &:hover,
+                              &:focus,
+                              &:active {
+                                color: ${token.colorText} !important;
+                              }
+                              &:disabled,
+                              &.ant-btn-disabled {
+                                background: none !important;
+                                border: none !important;
+                                box-shadow: none !important;
+                                color: ${token.colorTextDisabled} !important;
+                              }
                               .ant-btn-icon {
                                 display: none;
                               }
@@ -183,7 +287,8 @@ export class ActionPanelBlockModel extends BlockModel {
                   }
                 >
                   {this.mapSubModels('actions', (action: ActionModel) => {
-                    const { icon = 'SettingOutlined', color = '#1677FF', title } = action.props;
+                    const { icon = 'SettingOutlined', color, title, disabled } = action.props;
+                    const avatarStyle = resolveActionPanelAvatarStyle(color, disabled, token as ActionPanelColorToken);
                     action.enableEditDanger = false;
                     action.enableEditType = false;
                     action.renderHiddenInConfig = () => {
@@ -193,11 +298,7 @@ export class ActionPanelBlockModel extends BlockModel {
                         >
                           <Button style={{ opacity: '0.3' }} onClick={action.onClick.bind(action)}>
                             <List.Item
-                              prefix={
-                                (
-                                  <Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />
-                                ) as any
-                              }
+                              prefix={(<Avatar style={avatarStyle} icon={<Icon type={icon as any} />} />) as any}
                             >
                               <div
                                 style={
@@ -221,11 +322,7 @@ export class ActionPanelBlockModel extends BlockModel {
                       );
                     };
                     action.props.children = (
-                      <List.Item
-                        prefix={
-                          (<Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />) as any
-                        }
-                      >
+                      <List.Item prefix={(<Avatar style={avatarStyle} icon={<Icon type={icon as any} />} />) as any}>
                         <div
                           style={
                             ellipsis
@@ -251,13 +348,26 @@ export class ActionPanelBlockModel extends BlockModel {
                         <div
                           className={css`
                             .ant-btn {
-                              box-shadow: none;
-                              border: none;
-                              background: none;
+                              box-shadow: none !important;
+                              border: none !important;
+                              background: none !important;
+                              &,
+                              &:hover,
+                              &:focus,
+                              &:active {
+                                color: ${token.colorText} !important;
+                              }
                               display: block;
                               width: 100%;
                               text-align: justify;
                               height: 100%;
+                              &:disabled,
+                              &.ant-btn-disabled {
+                                background: none !important;
+                                border: none !important;
+                                box-shadow: none !important;
+                                color: ${token.colorTextDisabled} !important;
+                              }
                               .ant-btn-icon {
                                 display: ${action.hidden ? 'block' : ' none'};
                               }
