@@ -16,29 +16,31 @@ import FlowRoute from '../flow/components/FlowRoute';
 import { useApp } from '../hooks/useApp';
 
 export interface LayoutContentRouteProps {
-  layoutName: string;
+  layoutRouteName: string;
 }
 
 export const LayoutContentRoute = (props: LayoutContentRouteProps) => {
-  const { layoutName } = props;
+  const { layoutRouteName } = props;
   const app = useApp();
   const flowEngine = useFlowEngine();
-  const layout = app.layoutManager.getLayout(layoutName);
+  const layout = app.layoutManager.getLayout(layoutRouteName);
   const location = useLocation();
   const matches = useMatches();
   const model = getLayoutModel<BaseLayoutModel>(flowEngine, layout.uid, { required: true });
-  const legacyPageBehavior = layout.name === 'admin' ? 'redirect' : 'notFound';
+  const legacyPageBehavior = layout.routeName === 'admin' ? 'redirect' : 'notFound';
   const routeLike = useMemo<LayoutRouteLike>(() => {
     const lastMatch = matches[matches.length - 1];
+    const layoutMatch = matches.find((match) => match.id === layout.routeName);
     return {
       id: lastMatch?.id,
       name: lastMatch?.id,
       pathname: location.pathname,
       params: (lastMatch?.params || {}) as Record<string, string | undefined>,
+      layoutBasePathname: layoutMatch?.pathname,
     };
-  }, [location.pathname, matches]);
+  }, [layout.routeName, location.pathname, matches]);
   if (!model) {
-    throw new Error(`[NocoBase] Layout '${layout.name}' model '${layout.uid}' is not mounted.`);
+    throw new Error(`[NocoBase] Layout '${layout.routeName}' model '${layout.uid}' is not mounted.`);
   }
 
   const layoutRoute = model.resolveLayoutRoute(routeLike);

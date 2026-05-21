@@ -11,7 +11,7 @@ import React, { type FC } from 'react';
 import { LayoutRoute } from '../../layout-manager/LayoutRoute';
 
 const AdminLayout: FC = () => {
-  return <LayoutRoute layoutName="admin" />;
+  return <LayoutRoute layoutRouteName="admin" />;
 };
 
 export default AdminLayout;

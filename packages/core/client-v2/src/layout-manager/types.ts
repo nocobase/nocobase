@@ -8,8 +8,8 @@
  */
 
 export interface LayoutRegisterOptions {
-  name: string;
-  basePath: string;
+  routeName: string;
+  routePath: string;
   uid: string;
   layoutModelClass: string;
   rootPageModelClass?: string;
@@ -18,5 +18,5 @@ export interface LayoutRegisterOptions {
 }
 
 export interface LayoutDefinition extends Required<LayoutRegisterOptions> {
-  normalizedBasePath: string;
+  rootRouteName: string;
 }

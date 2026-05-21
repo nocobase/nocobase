@@ -49,7 +49,7 @@ const getDefaultLayoutModel = (flowEngine: FlowEngine, contextLayout?: any) => {
 const getDefaultLegacyPageBehavior = (flowEngine: FlowEngine, contextLayout?: any): LegacyPageBehavior => {
   const layout = contextLayout || flowEngine.context.layout;
 
-  if (layout?.name && layout.name !== 'admin') {
+  if (layout?.routeName && layout.routeName !== 'admin') {
     return 'notFound';
   }
 

@@ -8,7 +8,9 @@
  */
 
 import React from 'react';
+import { matchRoutes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
+import { RouterManager } from '../../RouterManager';
 import { LayoutManager } from '../LayoutManager';
 
 function createManager() {
@@ -29,20 +31,20 @@ function createManager() {
 }
 
 describe('LayoutManager', () => {
-  it('registers layout with defaults and catch-all content route', () => {
+  it('registers layout with defaults and standard page routes', () => {
     const { manager, routes } = createManager();
 
     const layout = manager.registerLayout({
-      name: 'mobile',
-      basePath: 'mobile/',
+      routeName: 'mobile',
+      routePath: 'mobile/',
       uid: 'mobile-layout-model',
       layoutModelClass: 'MobileLayoutModel',
     });
 
     expect(layout).toMatchObject({
-      name: 'mobile',
-      basePath: '/mobile',
-      normalizedBasePath: 'mobile',
+      routeName: 'mobile',
+      routePath: '/mobile',
+      rootRouteName: 'mobile',
       uid: 'mobile-layout-model',
       layoutModelClass: 'MobileLayoutModel',
       rootPageModelClass: 'RootPageModel',
@@ -54,11 +56,83 @@ describe('LayoutManager', () => {
       authCheck: true,
     });
     expect(React.isValidElement(routes.mobile.element)).toBe(true);
-    expect(routes['mobile.__layoutContent']).toMatchObject({
-      path: '*',
+    expect(routes['mobile.__page']).toMatchObject({
+      path: ':name',
       authCheck: true,
     });
-    expect(routes['mobile.page']).toBeUndefined();
+    expect(routes['mobile.__pageTab']).toMatchObject({
+      path: ':name/tab/:tabUid',
+      authCheck: true,
+    });
+    expect(routes['mobile.__pageView']).toMatchObject({
+      path: ':name/view/*',
+      authCheck: true,
+    });
+    expect(routes['mobile.__pageTabView']).toMatchObject({
+      path: ':name/tab/:tabUid/view/*',
+      authCheck: true,
+    });
+  });
+
+  it('registers nested layout route by dotted routeName and relative routePath', () => {
+    const { manager, routes } = createManager();
+
+    const layout = manager.registerLayout({
+      routeName: 'admin.settings.publicForms',
+      routePath: 'public-forms/',
+      uid: 'public-form-layout-model',
+      layoutModelClass: 'PublicFormLayoutModel',
+    });
+
+    expect(layout).toMatchObject({
+      routeName: 'admin.settings.publicForms',
+      routePath: 'public-forms',
+      rootRouteName: 'admin',
+    });
+    expect(routes['admin.settings.publicForms']).toMatchObject({
+      path: 'public-forms',
+      authCheck: true,
+    });
+    expect(routes['admin.settings.publicForms.__pageView']).toMatchObject({
+      path: ':name/view/*',
+      authCheck: true,
+    });
+  });
+
+  it('matches nested layout under existing parent route tree', () => {
+    const app: any = {
+      renderComponent: vi.fn(),
+    };
+    app.router = new RouterManager({}, app);
+    const manager = new LayoutManager(app);
+
+    app.router.add('admin', {
+      path: '/admin',
+      element: <div />,
+    });
+    app.router.add('admin.settings', {
+      path: '/admin/settings',
+      element: <div />,
+    });
+    app.router.add('admin.settings.route-empty', {
+      path: '*',
+      element: <div />,
+    });
+    manager.registerLayout({
+      routeName: 'admin.settings.publicForms',
+      routePath: 'public-forms',
+      uid: 'public-form-layout-model',
+      layoutModelClass: 'PublicFormLayoutModel',
+    });
+
+    const matches = matchRoutes(app.router.getRoutesTree(), '/admin/settings/public-forms/form-1/view/popup');
+
+    expect(matches?.map((match) => match.route.id)).toEqual([
+      'admin',
+      'admin.settings',
+      'admin.settings.publicForms',
+      'admin.settings.publicForms.__pageView',
+    ]);
   });
 
   it('allows explicit page model classes and authCheck', () => {
@@ -66,8 +140,8 @@ describe('LayoutManager', () => {
 
     expect(
       manager.registerLayout({
-        name: 'embed',
-        basePath: '/embed',
+        routeName: 'embed',
+        routePath: '/embed',
         uid: 'embed-layout-model',
         layoutModelClass: 'EmbedLayoutModelV2',
         rootPageModelClass: 'EmbedRootPageModel',
@@ -86,32 +160,40 @@ describe('LayoutManager', () => {
 
     expect(() =>
       manager.registerLayout({
-        name: 'bad.name',
-        basePath: '/bad',
+        routeName: '.bad',
+        routePath: '/bad',
         uid: 'bad-layout-model',
         layoutModelClass: 'BadLayoutModel',
       }),
-    ).toThrowError(/does not allow '\.'/);
+    ).toThrowError(/invalid routeName/);
     expect(() =>
       manager.registerLayout({
-        name: 'root',
-        basePath: '/',
+        routeName: 'root',
+        routePath: '/',
         uid: 'root-layout-model',
         layoutModelClass: 'RootLayoutModel',
       }),
-    ).toThrowError(/root basePath/);
+    ).toThrowError(/root routePath/);
     expect(() =>
       manager.registerLayout({
-        name: '',
-        basePath: '/empty',
+        routeName: 'admin.settings.bad',
+        routePath: '/bad',
+        uid: 'bad-nested-layout-model',
+        layoutModelClass: 'BadNestedLayoutModel',
+      }),
+    ).toThrowError(/must be relative/);
+    expect(() =>
+      manager.registerLayout({
+        routeName: '',
+        routePath: '/empty',
         uid: 'empty-layout-model',
         layoutModelClass: 'EmptyLayoutModel',
       }),
-    ).toThrowError(/name/);
+    ).toThrowError(/routeName/);
     expect(() =>
       manager.registerLayout({
-        name: 'badRootModel',
-        basePath: '/bad-root-model',
+        routeName: 'badRootModel',
+        routePath: '/bad-root-model',
         uid: 'bad-root-model-layout-model',
         layoutModelClass: 'BadRootModelLayoutModel',
         rootPageModelClass: '' as any,
@@ -119,8 +201,8 @@ describe('LayoutManager', () => {
     ).toThrowError(/rootPageModelClass/);
     expect(() =>
       manager.registerLayout({
-        name: 'badChildModel',
-        basePath: '/bad-child-model',
+        routeName: 'badChildModel',
+        routePath: '/bad-child-model',
         uid: 'bad-child-model-layout-model',
         layoutModelClass: 'BadChildModelLayoutModel',
         childPageModelClass: {} as any,
@@ -128,8 +210,8 @@ describe('LayoutManager', () => {
     ).toThrowError(/childPageModelClass/);
     expect(() =>
       manager.registerLayout({
-        name: 'badAuthCheck',
-        basePath: '/bad-auth-check',
+        routeName: 'badAuthCheck',
+        routePath: '/bad-auth-check',
         uid: 'bad-auth-check-layout-model',
         layoutModelClass: 'BadAuthCheckLayoutModel',
         authCheck: 'false' as any,
@@ -137,36 +219,28 @@ describe('LayoutManager', () => {
     ).toThrowError(/authCheck/);
   });
 
-  it('rejects duplicate name or basePath', () => {
+  it('rejects duplicate routeName or uid', () => {
     const { manager } = createManager();
 
     manager.registerLayout({
-      name: 'admin',
-      basePath: '/admin',
+      routeName: 'admin',
+      routePath: '/admin',
       uid: 'admin-layout-model',
       layoutModelClass: 'AdminLayoutModel',
     });
 
     expect(() =>
       manager.registerLayout({
-        name: 'admin',
-        basePath: '/admin2',
+        routeName: 'admin',
+        routePath: '/admin2',
         uid: 'admin-layout-model-2',
         layoutModelClass: 'AdminLayoutModel2',
       }),
     ).toThrowError(/already been registered/);
     expect(() =>
       manager.registerLayout({
-        name: 'admin2',
-        basePath: 'admin/',
-        uid: 'admin-layout-model-3',
-        layoutModelClass: 'AdminLayoutModel3',
-      }),
-    ).toThrowError(/basePath '\/admin'/);
-    expect(() =>
-      manager.registerLayout({
-        name: 'admin3',
-        basePath: '/admin3',
+        routeName: 'admin3',
+        routePath: '/admin3',
         uid: 'admin-layout-model',
         layoutModelClass: 'AdminLayoutModel3',
       }),

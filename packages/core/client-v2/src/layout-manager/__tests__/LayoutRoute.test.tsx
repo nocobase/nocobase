@@ -10,24 +10,29 @@
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { createMemoryRouter, Outlet, RouterProvider } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { BaseLayoutModel } from '../../flow/admin-shell/BaseLayoutModel';
 import { LayoutContentRoute } from '../LayoutContentRoute';
 import { LayoutRoute } from '../LayoutRoute';
 import type { LayoutDefinition } from '../types';
-import { getLayoutContentRouteName } from '../utils';
+import {
+  getLayoutPageRouteName,
+  getLayoutPageTabRouteName,
+  getLayoutPageTabViewRouteName,
+  getLayoutPageViewRouteName,
+} from '../utils';
 
 class TestLayoutModel extends BaseLayoutModel {
   render() {
-    return <div data-testid="layout-route">{this.layout.name}</div>;
+    return <div data-testid="layout-route">{this.layout.routeName}</div>;
   }
 }
 
 const layout: LayoutDefinition = {
-  name: 'test',
-  basePath: '/test',
-  normalizedBasePath: 'test',
+  routeName: 'test',
+  routePath: '/test',
+  rootRouteName: 'test',
   uid: 'test-layout-model',
   layoutModelClass: 'TestLayoutModel',
   rootPageModelClass: 'TestRootPageModel',
@@ -49,7 +54,7 @@ describe('LayoutRoute', () => {
 
     render(
       <FlowEngineProvider engine={engine}>
-        <LayoutRoute layoutName="test" />
+        <LayoutRoute layoutRouteName="test" />
       </FlowEngineProvider>,
     );
 
@@ -57,8 +62,9 @@ describe('LayoutRoute', () => {
     const model = engine.getModel<TestLayoutModel>('test-layout-model');
     expect(model).toBeInstanceOf(TestLayoutModel);
     expect(model.layout).toMatchObject({
-      name: 'test',
-      normalizedBasePath: 'test',
+      routeName: 'test',
+      routePath: '/test',
+      rootRouteName: 'test',
       rootPageModelClass: 'TestRootPageModel',
       childPageModelClass: 'TestChildPageModel',
     });
@@ -66,7 +72,7 @@ describe('LayoutRoute', () => {
 });
 
 describe('LayoutContentRoute', () => {
-  function setup(initialEntry: string) {
+  function setup(initialEntry: string, currentLayout: LayoutDefinition = layout) {
     const engine = new FlowEngine();
     engine.registerModels({ TestLayoutModel });
     engine.context.defineProperty('routeRepository', {
@@ -81,7 +87,7 @@ describe('LayoutContentRoute', () => {
       value: {
         getPublicPath: () => '/',
         layoutManager: {
-          getLayout: () => layout,
+          getLayout: () => currentLayout,
         },
         router: {
           getBasename: () => '',
@@ -92,21 +98,49 @@ describe('LayoutContentRoute', () => {
       uid: layout.uid,
       use: TestLayoutModel,
       props: {
-        layout,
+        layout: currentLayout,
       },
     });
-    const router = createMemoryRouter(
-      [
+    const layoutRoute = {
+      id: currentLayout.routeName,
+      path: currentLayout.routePath,
+      element: <Outlet />,
+      children: [
         {
-          id: getLayoutContentRouteName(layout.name),
-          path: '/test/*',
-          element: <LayoutContentRoute layoutName="test" />,
+          id: getLayoutPageRouteName(currentLayout.routeName),
+          path: ':name',
+          element: <LayoutContentRoute layoutRouteName={currentLayout.routeName} />,
+        },
+        {
+          id: getLayoutPageTabRouteName(currentLayout.routeName),
+          path: ':name/tab/:tabUid',
+          element: <LayoutContentRoute layoutRouteName={currentLayout.routeName} />,
+        },
+        {
+          id: getLayoutPageViewRouteName(currentLayout.routeName),
+          path: ':name/view/*',
+          element: <LayoutContentRoute layoutRouteName={currentLayout.routeName} />,
+        },
+        {
+          id: getLayoutPageTabViewRouteName(currentLayout.routeName),
+          path: ':name/tab/:tabUid/view/*',
+          element: <LayoutContentRoute layoutRouteName={currentLayout.routeName} />,
         },
       ],
-      {
-        initialEntries: [initialEntry],
-      },
-    );
+    };
+    const routes = currentLayout.routeName.includes('.')
+      ? [
+          {
+            id: 'admin.settings',
+            path: '/admin/settings',
+            element: <Outlet />,
+            children: [layoutRoute],
+          },
+        ]
+      : [layoutRoute];
+    const router = createMemoryRouter(routes, {
+      initialEntries: [initialEntry],
+    });
 
     render(
       <FlowEngineProvider engine={engine}>
@@ -117,24 +151,13 @@ describe('LayoutContentRoute', () => {
     return { model };
   }
 
-  it('syncs root layout route without rendering page content', async () => {
-    const { model } = setup('/test');
-
-    await waitFor(() => {
-      expect(model.currentLayoutRoute).toMatchObject({
-        type: 'root',
-        pathname: '/test',
-        relativePath: '',
-      });
-    });
-  });
-
-  it('parses page route from catch-all pathname', async () => {
+  it('parses page route from standard layout route', async () => {
     const { model } = setup('/test/page-1/tab/tab-1/view/popup');
 
     await waitFor(() => {
       expect(model.currentLayoutRoute).toMatchObject({
         type: 'page',
+        basePathname: '/test',
         pageUid: 'page-1',
         tabUid: 'tab-1',
         viewStack: [{ viewUid: 'page-1', tabUid: 'tab-1' }, { viewUid: 'popup' }],
@@ -142,13 +165,22 @@ describe('LayoutContentRoute', () => {
     });
   });
 
-  it('renders not found for unsupported content path', async () => {
-    const { model } = setup('/test/page-1/unknown/value');
+  it('parses nested layout route by matched layout pathname', async () => {
+    const nestedLayout: LayoutDefinition = {
+      ...layout,
+      routeName: 'admin.settings.publicForms',
+      routePath: 'public-forms',
+      rootRouteName: 'admin',
+    };
+    const { model } = setup('/admin/settings/public-forms/form-1/view/popup', nestedLayout);
 
-    expect(await screen.findByText('404')).toBeInTheDocument();
-    expect(model.currentLayoutRoute).toMatchObject({
-      type: 'notFound',
-      relativePath: 'page-1/unknown/value',
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        basePathname: '/admin/settings/public-forms',
+        pageUid: 'form-1',
+        viewStack: [{ viewUid: 'form-1' }, { viewUid: 'popup' }],
+      });
     });
   });
 });

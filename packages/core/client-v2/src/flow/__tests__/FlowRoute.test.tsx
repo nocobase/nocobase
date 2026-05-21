@@ -189,9 +189,9 @@ describe('FlowRoute', () => {
     });
     routeModel.context.defineProperty('layout', {
       value: {
-        name: 'embed',
-        basePath: '/embed',
-        normalizedBasePath: 'embed',
+        routeName: 'embed',
+        routePath: '/embed',
+        rootRouteName: 'embed',
         uid: 'embed-layout-model',
         layoutModelClass: 'EmbedLayoutModelV2',
         rootPageModelClass: 'RootPageModel',

@@ -9,6 +9,7 @@
 
 import {
   FlowEngine,
+  type FlowContext,
   FlowModel,
   observable,
   parsePathnameToViewParams,
@@ -29,7 +30,8 @@ export interface RoutePageMeta {
 
 export interface BaseLayoutRouteCoordinatorOptions {
   layout?: LayoutDefinition;
-  basePath?: string;
+  layoutContext?: FlowContext;
+  basePathname?: string;
 }
 
 interface ViewRuntimeState {
@@ -52,35 +54,49 @@ interface RouteLike {
   params?: { name?: string };
   pathname?: string;
   pageUid?: string;
+  layoutBasePathname?: string;
   layoutRoute?: {
     type: string;
     pageUid?: string;
+    basePathname?: string;
   } | null;
 }
 
 const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
 
-const normalizeBasePath = (basePath?: string) => {
-  return `/${(basePath || '/admin').replace(/^\/+/, '').replace(/\/+$/, '')}`;
+const normalizeBasePathname = (basePathname?: string) => {
+  return `/${(basePathname || '/admin').replace(/^\/+/, '').replace(/\/+$/, '')}`;
+};
+
+const getDefaultBasePathnameFromRoutePath = (routePath?: string) => {
+  if (routePath?.startsWith('/')) {
+    return normalizeBasePathname(routePath);
+  }
+  return '';
 };
 
 /**
  * 通用 Layout 路由协调器。
  *
  * 负责把当前路由路径解析为 v2 view stack，并驱动 RouteModel 上的弹窗、抽屉和 page tab 状态。
- * Admin、Embed 等布局只需要提供不同的路径前缀，即可复用同一套 view 编排逻辑。
+ * Admin、Embed 等布局只需要提供当前 Layout 的基准路径，即可复用同一套 view 编排逻辑。
  */
 export class BaseLayoutRouteCoordinator {
   protected readonly flowEngine: FlowEngine;
   protected readonly layout: LayoutDefinition | undefined;
-  protected readonly basePath: string;
+  private readonly layoutContext?: FlowContext;
+  private basePathname: string;
   private readonly runtimes = new Map<string, RoutePageRuntime>();
   private layoutContentElement: HTMLElement | null = null;
 
   constructor(flowEngine: FlowEngine, options: BaseLayoutRouteCoordinatorOptions = {}) {
     this.flowEngine = flowEngine;
     this.layout = options.layout;
-    this.basePath = options.layout?.basePath || normalizeBasePath(options.basePath);
+    this.layoutContext = options.layoutContext;
+    this.basePathname =
+      options.basePathname ||
+      getDefaultBasePathnameFromRoutePath(options.layout?.routePath) ||
+      (options.layout ? '' : normalizeBasePathname());
   }
 
   setLayoutContentElement(element: HTMLElement | null) {
@@ -135,6 +151,11 @@ export class BaseLayoutRouteCoordinator {
   syncRoute(routeLike: RouteLike) {
     const activePageUid = routeLike?.pageUid || routeLike?.layoutRoute?.pageUid || routeLike?.params?.name;
     const pathname = routeLike?.pathname;
+    const nextBasePathname = routeLike?.layoutBasePathname || routeLike?.layoutRoute?.basePathname;
+
+    if (nextBasePathname) {
+      this.basePathname = normalizeBasePathname(nextBasePathname);
+    }
 
     this.runtimes.forEach((runtime) => {
       this.setRuntimeActive(runtime, runtime.pageUid === activePageUid);
@@ -195,7 +216,11 @@ export class BaseLayoutRouteCoordinator {
 
   private syncRuntimeWithPathname(runtime: RoutePageRuntime, pathname: string) {
     try {
-      const viewStack = parsePathnameToViewParams(pathname, { basePath: this.basePath });
+      if (!this.basePathname) {
+        return;
+      }
+
+      const viewStack = parsePathnameToViewParams(pathname, { basePath: this.basePathname });
       const viewList = resolveViewParamsToViewList(this.flowEngine, viewStack, runtime.routeModel);
 
       if (this.shouldStepNavigate(runtime, viewList)) {
@@ -241,14 +266,17 @@ export class BaseLayoutRouteCoordinator {
     }
 
     if (index === 0) {
-      new ViewNavigation(this.flowEngine.context, [], { basePath: this.basePath }).navigateTo(viewList[index].params, {
-        replace: true,
-      });
+      new ViewNavigation(this.flowEngine.context, [], { basePath: this.basePathname }).navigateTo(
+        viewList[index].params,
+        {
+          replace: true,
+        },
+      );
     } else {
       new ViewNavigation(
         this.flowEngine.context,
         viewList.slice(0, index).map((item) => item.params),
-        { basePath: this.basePath },
+        { basePath: this.basePathname },
       ).navigateTo(viewList[index].params);
     }
 
@@ -298,7 +326,7 @@ export class BaseLayoutRouteCoordinator {
     const navigation = new ViewNavigation(
       this.flowEngine.context,
       viewList.slice(0, viewItem.index + 1).map((item) => item.params),
-      { basePath: this.basePath },
+      { basePath: this.basePathname },
     );
 
     viewItem.model.dispatchEvent('click', {
@@ -315,7 +343,7 @@ export class BaseLayoutRouteCoordinator {
         this.openViews(runtime, viewList, viewsToOpen, index + 1);
       },
       hidden: viewItem.hidden,
-      isMobileLayout: !!this.flowEngine.context.isMobileLayout,
+      isMobileLayout: !!this.layoutContext?.isMobileLayout,
       triggerByRouter: true,
     });
 
@@ -327,6 +355,10 @@ export class BaseLayoutRouteCoordinator {
   }
 
   private ensureRouteModelContext(runtime: RoutePageRuntime) {
+    if (this.layoutContext) {
+      runtime.routeModel.context.addDelegate(this.layoutContext);
+    }
+
     if (!runtime.routeModel.context.pageActive) {
       runtime.routeModel.context.defineProperty('pageActive', {
         value: observable.ref(false),
@@ -350,8 +382,16 @@ export class BaseLayoutRouteCoordinator {
       cache: false,
     });
     runtime.routeModel.context.defineProperty('layout', {
-      get: () => this.layout || this.flowEngine.context.layout,
+      get: () => this.layout || this.layoutContext?.layout,
       // RouteModel 是打开根页面的入口，根页面及其内部 schema 需要读取当前 Layout 定义。
+      cache: false,
+    });
+    runtime.routeModel.context.defineProperty('layoutRoute', {
+      get: () => this.layoutContext?.layoutRoute,
+      cache: false,
+    });
+    runtime.routeModel.context.defineProperty('layoutContext', {
+      get: () => this.layoutContext,
       cache: false,
     });
   }
@@ -371,7 +411,12 @@ export class BaseLayoutRouteCoordinator {
  * 将 pathname 解析结果和 pageUid 对齐，便于测试里复用。
  */
 export function toViewStack(pathname: string, options: BaseLayoutRouteCoordinatorOptions = {}): ViewParam[] {
+  const basePath = options.basePathname || getDefaultBasePathnameFromRoutePath(options.layout?.routePath);
+  if (!basePath) {
+    return [];
+  }
+
   return parsePathnameToViewParams(pathname, {
-    basePath: options.layout?.basePath || normalizeBasePath(options.basePath),
+    basePath,
   });
 }

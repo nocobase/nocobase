@@ -28,6 +28,7 @@ describe('openView action - subModelKey behavior', () => {
         flowEngine: { context: { themeToken: { colorBgLayout: '#fff' } } },
       },
       layoutContentElement: {},
+      layoutContext: { source: 'layout-context' },
       view: {},
       viewer: {
         open: vi.fn(async (_opts: any) => undefined),
@@ -90,6 +91,7 @@ describe('openView action - subModelKey behavior', () => {
     // FlowPage should receive parent model uid
     expect(capturedElement?.type).toBe(FlowPage);
     expect(capturedElement?.props?.parentId).toBe('parent-model-uid');
+    expect(capturedElement?.props?.layoutContext).toBe(ctx.layoutContext);
     expect(capturedElement?.props?.pageModelClass).toBe('ChildPageModel');
   });
 

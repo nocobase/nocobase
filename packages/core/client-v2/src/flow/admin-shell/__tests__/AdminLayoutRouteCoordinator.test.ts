@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowContext, FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getViewDiffAndUpdateHidden } from '../../getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from '../../flows/openViewFlow';
@@ -137,7 +137,7 @@ describe('AdminLayoutRouteCoordinator', () => {
       viewsToOpen: [],
     });
 
-    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePath: '/embed' });
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/embed' });
     coordinator.registerPage('test-route', {
       active: true,
       layoutContentElement: document.createElement('div'),
@@ -168,7 +168,7 @@ describe('AdminLayoutRouteCoordinator', () => {
       viewsToOpen: [],
     });
 
-    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePath: '/embed' });
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/embed' });
     coordinator.registerPage('test-route', {
       active: false,
       layoutContentElement: document.createElement('div'),
@@ -187,8 +187,27 @@ describe('AdminLayoutRouteCoordinator', () => {
 
   it('parses view stack with nested basePath', () => {
     expect(
-      toViewStack('/admin/settings/public-forms/form-1/view/popup', { basePath: '/admin/settings/public-forms' }),
+      toViewStack('/admin/settings/public-forms/form-1/view/popup', {
+        basePathname: '/admin/settings/public-forms',
+      }),
     ).toEqual([{ viewUid: 'form-1' }, { viewUid: 'popup' }]);
+  });
+
+  it('does not parse relative layout routePath without runtime basePathname', () => {
+    expect(
+      toViewStack('/admin/settings/public-forms/form-1/view/popup', {
+        layout: {
+          routeName: 'admin.settings.publicForms',
+          routePath: 'public-forms',
+          rootRouteName: 'admin',
+          uid: 'public-form-layout-model',
+          layoutModelClass: 'PublicFormLayoutModel',
+          rootPageModelClass: 'RootPageModel',
+          childPageModelClass: 'ChildPageModel',
+          authCheck: true,
+        },
+      }),
+    ).toEqual([]);
   });
 
   it('exposes current layout on route model context', () => {
@@ -213,21 +232,26 @@ describe('AdminLayoutRouteCoordinator', () => {
     });
 
     const layout = {
-      name: 'embed',
-      basePath: '/embed',
-      normalizedBasePath: 'embed',
+      routeName: 'embed',
+      routePath: '/embed',
+      rootRouteName: 'embed',
       uid: 'embed-layout-model',
       layoutModelClass: 'EmbedLayoutModelV2',
       rootPageModelClass: 'RootPageModel',
       childPageModelClass: 'ChildPageModel',
       authCheck: true,
     };
-    const coordinator = new BaseLayoutRouteCoordinator(engine, { layout });
+    const layoutContext = new FlowContext();
+    layoutContext.defineProperty('layoutMarker', { value: 'layout-context' });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { layout, layoutContext });
     coordinator.registerPage('test-route', {
       active: true,
       layoutContentElement: document.createElement('div'),
     });
 
     expect(engine.getModel('test-route')?.context.layout).toBe(layout);
+    expect(engine.getModel('test-route')?.context.layoutContext).toBe(layoutContext);
+    expect(engine.getModel('test-route')?.context.layoutMarker).toBe('layout-context');
   });
 });

@@ -155,15 +155,37 @@ describe('ViewNavigation', () => {
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/embed', { replace: true });
     });
 
-    it('should use layout context basePath when explicit basePath is absent', () => {
-      mockCtx.layout = {
-        basePath: '/mobile',
+    it('should use layout route basePathname when explicit basePath is absent', () => {
+      mockCtx.layoutRoute = {
+        basePathname: '/mobile',
       };
       viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
 
       viewNavigation.back();
 
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/mobile', { replace: true });
+    });
+
+    it('should fall back to layout routePath when explicit basePath is absent', () => {
+      mockCtx.layout = {
+        routePath: '/mobile',
+      };
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/mobile', { replace: true });
+    });
+
+    it('should ignore relative layout routePath when runtime basePathname is absent', () => {
+      mockCtx.layout = {
+        routePath: 'public-forms',
+      };
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin', { replace: true });
     });
   });
 });

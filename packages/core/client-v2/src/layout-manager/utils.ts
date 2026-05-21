@@ -7,6 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export function getLayoutContentRouteName(layoutName: string) {
-  return `${layoutName}.__layoutContent`;
+export function getLayoutPageRouteName(routeName: string) {
+  return `${routeName}.__page`;
+}
+
+export function getLayoutPageTabRouteName(routeName: string) {
+  return `${routeName}.__pageTab`;
+}
+
+export function getLayoutPageViewRouteName(routeName: string) {
+  return `${routeName}.__pageView`;
+}
+
+export function getLayoutPageTabViewRouteName(routeName: string) {
+  return `${routeName}.__pageTabView`;
+}
+
+export function getLayoutContentRouteNames(routeName: string) {
+  return [
+    getLayoutPageRouteName(routeName),
+    getLayoutPageTabRouteName(routeName),
+    getLayoutPageViewRouteName(routeName),
+    getLayoutPageTabViewRouteName(routeName),
+  ];
+}
+
+export function isLayoutContentRouteName(routeName: string, targetRouteName?: string) {
+  return !!targetRouteName && getLayoutContentRouteNames(routeName).includes(targetRouteName);
 }

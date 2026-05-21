@@ -12,7 +12,12 @@ import type { BaseApplication } from '../BaseApplication';
 import { LayoutContentRoute } from './LayoutContentRoute';
 import { LayoutRoute } from './LayoutRoute';
 import type { LayoutDefinition, LayoutRegisterOptions } from './types';
-import { getLayoutContentRouteName } from './utils';
+import {
+  getLayoutPageRouteName,
+  getLayoutPageTabRouteName,
+  getLayoutPageTabViewRouteName,
+  getLayoutPageViewRouteName,
+} from './utils';
 
 const DEFAULT_ROOT_PAGE_MODEL_CLASS = 'RootPageModel';
 const DEFAULT_CHILD_PAGE_MODEL_CLASS = 'ChildPageModel';
@@ -35,36 +40,50 @@ const assertOptionalBoolean = (value: unknown, fieldName: string) => {
   }
 };
 
-export function normalizeLayoutBasePath(basePath: string) {
-  const normalized = `/${basePath.replace(/^\/+/, '').replace(/\/+$/, '')}`;
-  if (normalized === '/') {
-    throw new Error(`[NocoBase] layoutManager.registerLayout() does not support root basePath '/'.`);
+function assertValidRouteName(routeName: string) {
+  if (routeName.includes('..') || routeName.startsWith('.') || routeName.endsWith('.')) {
+    throw new Error(`[NocoBase] layoutManager.registerLayout() received invalid routeName '${routeName}'.`);
   }
-  return {
-    basePath: normalized,
-    normalizedBasePath: normalized.replace(/^\/+/, ''),
-  };
+}
+
+export function normalizeLayoutRoutePath(routeName: string, routePath: string) {
+  const trimmed = routePath.trim();
+  const isNestedRoute = routeName.includes('.');
+  if (isNestedRoute && trimmed.startsWith('/')) {
+    throw new Error(`[NocoBase] nested layout routePath '${routePath}' must be relative.`);
+  }
+
+  const normalized = isNestedRoute
+    ? trimmed.replace(/^\/+/, '').replace(/\/+$/, '')
+    : `/${trimmed.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+
+  if (!normalized || normalized === '/') {
+    throw new Error(`[NocoBase] layoutManager.registerLayout() does not support root routePath '/'.`);
+  }
+
+  if (normalized.includes('*')) {
+    throw new Error(`[NocoBase] layoutManager.registerLayout() does not support wildcard routePath '${routePath}'.`);
+  }
+
+  return normalized;
 }
 
 function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefinition {
-  assertNonEmptyString(options.name, 'name');
-  assertNonEmptyString(options.basePath, 'basePath');
+  assertNonEmptyString(options.routeName, 'routeName');
+  assertNonEmptyString(options.routePath, 'routePath');
   assertNonEmptyString(options.uid, 'uid');
   assertNonEmptyString(options.layoutModelClass, 'layoutModelClass');
   assertOptionalNonEmptyString(options.rootPageModelClass, 'rootPageModelClass');
   assertOptionalNonEmptyString(options.childPageModelClass, 'childPageModelClass');
   assertOptionalBoolean(options.authCheck, 'authCheck');
+  assertValidRouteName(options.routeName);
 
-  if (options.name.includes('.')) {
-    throw new Error(`[NocoBase] layoutManager.registerLayout() does not allow '.' in layout name '${options.name}'.`);
-  }
-
-  const { basePath, normalizedBasePath } = normalizeLayoutBasePath(options.basePath);
+  const routePath = normalizeLayoutRoutePath(options.routeName, options.routePath);
 
   return {
-    name: options.name,
-    basePath,
-    normalizedBasePath,
+    routeName: options.routeName,
+    rootRouteName: options.routeName.split('.')[0],
+    routePath,
     uid: options.uid,
     layoutModelClass: options.layoutModelClass,
     rootPageModelClass: options.rootPageModelClass || DEFAULT_ROOT_PAGE_MODEL_CLASS,
@@ -76,7 +95,6 @@ function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefini
 export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   private readonly app: TApp;
   private readonly layouts = new Map<string, LayoutDefinition>();
-  private readonly basePathIndex = new Map<string, string>();
   private readonly uidIndex = new Map<string, string>();
 
   constructor(app: TApp) {
@@ -86,15 +104,8 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
   registerLayout(options: LayoutRegisterOptions) {
     const layout = normalizeLayoutDefinition(options);
 
-    if (this.layouts.has(layout.name)) {
-      throw new Error(`[NocoBase] Layout '${layout.name}' has already been registered.`);
-    }
-
-    const existingName = this.basePathIndex.get(layout.basePath);
-    if (existingName) {
-      throw new Error(
-        `[NocoBase] Layout basePath '${layout.basePath}' has already been registered by '${existingName}'.`,
-      );
+    if (this.layouts.has(layout.routeName)) {
+      throw new Error(`[NocoBase] Layout '${layout.routeName}' has already been registered.`);
     }
 
     const existingUidName = this.uidIndex.get(layout.uid);
@@ -102,24 +113,23 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
       throw new Error(`[NocoBase] Layout uid '${layout.uid}' has already been registered by '${existingUidName}'.`);
     }
 
-    this.layouts.set(layout.name, layout);
-    this.basePathIndex.set(layout.basePath, layout.name);
-    this.uidIndex.set(layout.uid, layout.name);
+    this.layouts.set(layout.routeName, layout);
+    this.uidIndex.set(layout.uid, layout.routeName);
     this.addStandardRoutes(layout);
 
     return layout;
   }
 
-  getLayout(name: string) {
-    const layout = this.layouts.get(name);
+  getLayout(routeName: string) {
+    const layout = this.layouts.get(routeName);
     if (!layout) {
-      throw new Error(`[NocoBase] Layout '${name}' is not registered.`);
+      throw new Error(`[NocoBase] Layout '${routeName}' is not registered.`);
     }
     return layout;
   }
 
-  hasLayout(name: string) {
-    return this.layouts.has(name);
+  hasLayout(routeName: string) {
+    return this.layouts.has(routeName);
   }
 
   listLayouts() {
@@ -127,19 +137,37 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
   }
 
   private addStandardRoutes(layout: LayoutDefinition) {
-    const routeBaseName = layout.name;
+    const routeBaseName = layout.routeName;
     const authCheck = layout.authCheck;
 
     this.app.router.add(routeBaseName, {
-      path: layout.basePath,
+      path: layout.routePath,
       authCheck,
-      element: <LayoutRoute layoutName={layout.name} />,
+      element: <LayoutRoute layoutRouteName={layout.routeName} />,
     });
 
-    this.app.router.add(getLayoutContentRouteName(routeBaseName), {
-      path: '*',
+    this.app.router.add(getLayoutPageRouteName(routeBaseName), {
+      path: ':name',
       authCheck,
-      element: <LayoutContentRoute layoutName={layout.name} />,
+      element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
+    });
+
+    this.app.router.add(getLayoutPageTabRouteName(routeBaseName), {
+      path: ':name/tab/:tabUid',
+      authCheck,
+      element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
+    });
+
+    this.app.router.add(getLayoutPageViewRouteName(routeBaseName), {
+      path: ':name/view/*',
+      authCheck,
+      element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
+    });
+
+    this.app.router.add(getLayoutPageTabViewRouteName(routeBaseName), {
+      path: ':name/tab/:tabUid/view/*',
+      authCheck,
+      element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
     });
   }
 }

@@ -12,7 +12,7 @@ import React, { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { NocoBaseDesktopRouteType } from '../../../flow-compat';
 import { useApp } from '../../../hooks/useApp';
-import { getLayoutContentRouteName } from '../../../layout-manager/utils';
+import { isLayoutContentRouteName } from '../../../layout-manager/utils';
 import {
   findFirstV2LandingRoute,
   resolveAdminRouteRuntimeTarget,
@@ -34,10 +34,17 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
   }, [app, location.pathname]);
   const pageUid = useMemo(() => {
     const lastMatch = matches[matches.length - 1];
-    if (lastMatch?.id !== getLayoutContentRouteName('admin')) {
+    if (!isLayoutContentRouteName('admin', lastMatch?.id)) {
       return '';
     }
-    return parsePathnameToViewParams(location.pathname, { basePath: '/admin' })[0]?.viewUid || '';
+    const adminMatch = matches.find((match) => match.id === 'admin');
+    return (
+      (lastMatch.params?.name as string) ||
+      parsePathnameToViewParams(location.pathname, {
+        basePath: adminMatch?.pathname || '/admin',
+      })[0]?.viewUid ||
+      ''
+    );
   }, [location.pathname, matches]);
 
   useEffect(() => {

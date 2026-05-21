@@ -128,10 +128,12 @@ AdminLayoutModel.registerFlow({
       handler: async (ctx, params) => {
         const topbarActionModels = await ctx.engine.getSubclassesOfAsync('TopbarActionModel');
         const actions = [...topbarActionModels.keys()].map<TopbarActionModel>((name) => {
-          return ctx.engine.createModel({
+          const action = ctx.engine.createModel<TopbarActionModel>({
             use: name,
             uid: `topbar-action-${name}`,
           });
+          action.setParent(ctx.model);
+          return action;
         });
         ctx.model.props.actionsRender = (props) => {
           return [<TopbarActionsBar key="topbar-actions" actions={actions} isMobile={props?.isMobile} />];

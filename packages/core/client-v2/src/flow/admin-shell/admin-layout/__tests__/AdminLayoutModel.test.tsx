@@ -43,7 +43,7 @@ import {
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { AdminLayoutModel, getAdminLayoutModel } from '..';
-import { getLayoutContentRouteName } from '../../../../layout-manager/utils';
+import { getLayoutPageViewRouteName } from '../../../../layout-manager/utils';
 import { TopbarActionModel } from '../../../models/topbar/TopbarActionModel';
 import { UserCenterTopbarActionModel } from '../../../models/topbar/UserCenterTopbarActionModel';
 import { TopbarActionsBar } from '../TopbarActionsBar';
@@ -114,7 +114,7 @@ describe('AdminLayoutModel runtime', () => {
     }).toThrowError(/admin-layout-model/);
   });
 
-  it('should expose live layoutContentElement on engine context', async () => {
+  it('should expose live layoutContentElement on layout context', async () => {
     const engine = new FlowEngine();
 
     render(
@@ -132,13 +132,13 @@ describe('AdminLayoutModel runtime', () => {
       model.setLayoutContentElement(element);
     });
 
-    expect(engine.context.layoutContentElement).toBe(element);
+    expect(model.context.layoutContentElement).toBe(element);
 
     act(() => {
       model.setLayoutContentElement(null);
     });
 
-    expect(engine.context.layoutContentElement).toBeNull();
+    expect(model.context.layoutContentElement).toBeNull();
   });
 
   it('should expose layout definition only while mounted', async () => {
@@ -148,27 +148,31 @@ describe('AdminLayoutModel runtime', () => {
         <TestAdminLayoutHost />
       </FlowEngineProvider>,
     );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
 
-    expect(engine.context.layout).toMatchObject({
-      name: 'admin',
-      basePath: '/admin',
-      normalizedBasePath: 'admin',
+    expect(model.context.layout).toMatchObject({
+      routeName: 'admin',
+      routePath: '/admin',
+      rootRouteName: 'admin',
       rootPageModelClass: 'RootPageModel',
       childPageModelClass: 'ChildPageModel',
     });
+    expect(engine.context.layout).toBeUndefined();
 
     unmount();
 
-    expect(engine.context.layout).toBeUndefined();
-    expect(engine.context.currentRoute).toEqual({});
-    expect(engine.context.layoutContentElement).toBeNull();
+    expect(model.context.layout).toBeUndefined();
+    expect(model.context.currentRoute).toEqual({});
+    expect(model.context.layoutContentElement).toBeNull();
   });
 
   it('should expose layoutRoute and ignore non-content child routes', async () => {
     const engine = new FlowEngine();
     const routeRef = observable.ref({
-      name: getLayoutContentRouteName('admin'),
+      name: getLayoutPageViewRouteName('admin'),
       pathname: '/admin/page-1/view/popup',
+      layoutBasePathname: '/admin',
     });
     engine.context.defineProperty('routeRepository', {
       value: {
@@ -185,14 +189,16 @@ describe('AdminLayoutModel runtime', () => {
         <TestAdminLayoutHost />
       </FlowEngineProvider>,
     );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
 
     await waitFor(() => {
-      expect(engine.context.layoutRoute).toMatchObject({
+      expect(model.context.layoutRoute).toMatchObject({
         type: 'page',
         pageUid: 'page-1',
         viewStack: [{ viewUid: 'page-1' }, { viewUid: 'popup' }],
       });
-      expect(engine.context.currentRoute.title).toBe('page-1');
+      expect(model.context.currentRoute.title).toBe('page-1');
     });
 
     act(() => {
@@ -203,12 +209,12 @@ describe('AdminLayoutModel runtime', () => {
     });
 
     await waitFor(() => {
-      expect(engine.context.layoutRoute).toBeNull();
-      expect(engine.context.currentRoute).toEqual({});
+      expect(model.context.layoutRoute).toBeNull();
+      expect(model.context.currentRoute).toEqual({});
     });
   });
 
-  it('should expose live engine currentRoute when active page changes', async () => {
+  it('should expose live layout currentRoute when active page changes', async () => {
     const engine = new FlowEngine();
     const routeMap = {
       'page-1': { title: 'Page 1' },
@@ -245,7 +251,7 @@ describe('AdminLayoutModel runtime', () => {
     });
 
     await waitFor(() => {
-      expect(engine.context.currentRoute.title).toBe('Page 1');
+      expect(model.context.currentRoute.title).toBe('Page 1');
     });
 
     act(() => {
@@ -256,7 +262,7 @@ describe('AdminLayoutModel runtime', () => {
     });
 
     await waitFor(() => {
-      expect(engine.context.currentRoute.title).toBe('Page 2');
+      expect(model.context.currentRoute.title).toBe('Page 2');
     });
   });
 

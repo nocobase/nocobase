@@ -17,7 +17,7 @@ import { BaseLayoutModel } from '../flow/admin-shell/BaseLayoutModel';
 import type { LayoutDefinition } from './types';
 
 export interface LayoutRouteProps {
-  layoutName: string;
+  layoutRouteName: string;
 }
 
 function isBaseLayoutModelClass(ModelClass: ModelConstructor) {
@@ -27,7 +27,7 @@ function isBaseLayoutModelClass(ModelClass: ModelConstructor) {
 function assertLayoutModelInstance(model: FlowModel, layout: LayoutDefinition) {
   if (!(model instanceof BaseLayoutModel)) {
     throw new Error(
-      `[NocoBase] Layout '${layout.name}' requires model '${layout.uid}' to be an instance of BaseLayoutModel.`,
+      `[NocoBase] Layout '${layout.routeName}' requires model '${layout.uid}' to be an instance of BaseLayoutModel.`,
     );
   }
 }
@@ -36,21 +36,23 @@ async function assertLayoutModelClass(flowEngine: FlowEngine, layout: LayoutDefi
   const ModelClass = await flowEngine.getModelClassAsync(layout.layoutModelClass);
 
   if (!ModelClass) {
-    throw new Error(`[NocoBase] Layout '${layout.name}' model class '${layout.layoutModelClass}' is not registered.`);
+    throw new Error(
+      `[NocoBase] Layout '${layout.routeName}' model class '${layout.layoutModelClass}' is not registered.`,
+    );
   }
 
   if (!isBaseLayoutModelClass(ModelClass)) {
     throw new Error(
-      `[NocoBase] Layout '${layout.name}' model class '${layout.layoutModelClass}' must extend BaseLayoutModel.`,
+      `[NocoBase] Layout '${layout.routeName}' model class '${layout.layoutModelClass}' must extend BaseLayoutModel.`,
     );
   }
 }
 
 export const LayoutRoute = (props: LayoutRouteProps) => {
-  const { layoutName } = props;
+  const { layoutRouteName } = props;
   const app = useApp();
   const flowEngine = useFlowEngine();
-  const layout = app.layoutManager.getLayout(layoutName);
+  const layout = app.layoutManager.getLayout(layoutRouteName);
   const { loading, data, error } = useRequest(
     async () => {
       const existingModel = flowEngine.getModel<BaseLayoutModel>(layout.uid);

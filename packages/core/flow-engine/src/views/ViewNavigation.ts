@@ -155,6 +155,11 @@ export class ViewNavigation {
   }
 
   private getLayoutBasePath() {
-    return this.basePath || (this.ctx as any).layout?.basePath || '/admin';
+    const routePath = (this.ctx as any).layout?.routePath;
+    return (
+      this.basePath ||
+      (this.ctx as any).layoutRoute?.basePathname ||
+      (routePath?.startsWith('/') ? routePath : '/admin')
+    );
   }
 }

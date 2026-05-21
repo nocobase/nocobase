@@ -39,8 +39,8 @@ export class PluginEmbedClientV2 extends Plugin<any, Application> {
       },
     });
     this.app.layoutManager.registerLayout({
-      name: 'embed',
-      basePath: EMBED_ROUTE_PREFIX,
+      routeName: 'embed',
+      routePath: EMBED_ROUTE_PREFIX,
       uid: EMBED_LAYOUT_MODEL_UID,
       layoutModelClass: EMBED_LAYOUT_MODEL_CLASS,
     });
