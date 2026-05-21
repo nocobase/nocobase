@@ -45,7 +45,11 @@ export function getUpgradeLicenseErrorMessage({
     ? `The license has expired and cannot be upgraded. Upgrade expiration date: ${upgradeExpirationDate}.`
     : 'The license is invalid and cannot be upgraded.';
 
-  return `${reason} Please roll back to version ${installedVersion}. Current package version is ${pkgVersion}, but the installed application version is ${installedVersion}.`;
+  return [
+    reason,
+    `Please roll back to version ${installedVersion}.`,
+    `Current core version is ${pkgVersion}, but the installed application version is ${installedVersion}.`,
+  ].join('\n');
 }
 
 export class PluginLicenseServer extends Plugin {

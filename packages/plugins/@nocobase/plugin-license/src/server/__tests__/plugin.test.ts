@@ -50,7 +50,7 @@ describe('getUpgradeLicenseErrorMessage', () => {
         upgradeExpirationDate: '2026-05-20T00:00:00.000Z',
       }),
     ).toBe(
-      'The license has expired and cannot be upgraded. Upgrade expiration date: 2026-05-20T00:00:00.000Z. Please roll back to version 2.0.0-beta.10. Current package version is 2.1.0-beta.35, but the installed application version is 2.0.0-beta.10.',
+      'The license has expired and cannot be upgraded. Upgrade expiration date: 2026-05-20T00:00:00.000Z.\nPlease roll back to version 2.0.0-beta.10.\nCurrent core version is 2.1.0-beta.35, but the installed application version is 2.0.0-beta.10.',
     );
   });
 
@@ -62,7 +62,7 @@ describe('getUpgradeLicenseErrorMessage', () => {
         licenseStatus: 'invalid',
       }),
     ).toBe(
-      'The license is invalid and cannot be upgraded. Please roll back to version 2.0.0-beta.10. Current package version is 2.1.0-beta.35, but the installed application version is 2.0.0-beta.10.',
+      'The license is invalid and cannot be upgraded.\nPlease roll back to version 2.0.0-beta.10.\nCurrent core version is 2.1.0-beta.35, but the installed application version is 2.0.0-beta.10.',
     );
   });
 });
