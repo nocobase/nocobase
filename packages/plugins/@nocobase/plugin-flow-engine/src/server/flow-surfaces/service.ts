@@ -6482,24 +6482,20 @@ export class FlowSurfacesService {
     hostNode: any,
     mode: 'local' | 'copy' | 'reference' = 'local',
     transaction?: any,
-    options: { allowDatabaseLookup?: boolean } = {},
   ) {
     if (!hostNode?.uid) {
       return undefined;
     }
-    const allowDatabaseLookup = options.allowDatabaseLookup !== false;
     const popupPage =
       hostNode?.subModels?.page ||
-      (allowDatabaseLookup
-        ? await this.repository.findModelByParentId(hostNode.uid, {
-            transaction,
-            subKey: 'page',
-            includeAsyncNode: true,
-          })
-        : undefined);
+      (await this.repository.findModelByParentId(hostNode.uid, {
+        transaction,
+        subKey: 'page',
+        includeAsyncNode: true,
+      }));
     const popupTab =
       _.castArray(popupPage?.subModels?.tabs || [])[0] ||
-      (allowDatabaseLookup && popupPage?.uid
+      (popupPage?.uid
         ? await this.repository.findModelByParentId(popupPage.uid, {
             transaction,
             subKey: 'tabs',
@@ -6508,7 +6504,7 @@ export class FlowSurfacesService {
         : undefined);
     const popupGrid =
       popupTab?.subModels?.grid ||
-      (allowDatabaseLookup && popupTab?.uid
+      (popupTab?.uid
         ? await this.repository.findModelByParentId(popupTab.uid, {
             transaction,
             subKey: 'grid',
@@ -6521,7 +6517,7 @@ export class FlowSurfacesService {
       tabUid: popupTab?.uid,
       gridUid: popupGrid?.uid,
     });
-    return summary.pageUid || summary.tabUid || summary.gridUid ? summary : undefined;
+    return Object.keys(summary).length ? summary : undefined;
   }
 
   private async decorateTemplateReadbackTree(node: any, transaction?: any): Promise<any> {
@@ -6556,9 +6552,7 @@ export class FlowSurfacesService {
       ['popupSettings', _.get(node, ['stepParams', 'popupSettings'])],
       ['selectExitRecordSettings', _.get(node, ['stepParams', 'selectExitRecordSettings'])],
     ];
-    let popupSummary = await this.buildPopupSurfaceSummaryFromHost(node, 'local', transaction, {
-      allowDatabaseLookup: false,
-    });
+    let popupSummary = await this.buildPopupSurfaceSummaryFromHost(node, 'local', transaction);
     for (const [groupKey, popupSettings] of popupGroups) {
       if (!popupSettings || typeof popupSettings !== 'object') {
         continue;
@@ -6580,9 +6574,7 @@ export class FlowSurfacesService {
             transaction,
             includeAsyncNode: true,
           });
-          popupSummary = (await this.buildPopupSurfaceSummaryFromHost(copiedPopupHost, 'copy', transaction, {
-            allowDatabaseLookup: false,
-          })) || {
+          popupSummary = (await this.buildPopupSurfaceSummaryFromHost(copiedPopupHost, 'copy', transaction)) || {
             mode: 'copy',
           };
         }

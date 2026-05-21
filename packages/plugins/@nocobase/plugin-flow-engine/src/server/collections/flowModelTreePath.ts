@@ -19,12 +19,6 @@ export default {
     {
       fields: ['descendant'],
     },
-    {
-      fields: ['ancestor', 'depth'],
-    },
-    {
-      fields: ['descendant', 'depth'],
-    },
   ],
   fields: [
     {

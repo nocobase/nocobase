@@ -46,10 +46,6 @@ interface InsertAdjacentOptions extends removeParentOptions {
   wrap?: any;
 }
 
-interface InsertSingleNodeOptions extends removeParentOptions {
-  createdNodeUids?: Set<string>;
-}
-
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
 
 export function transaction(transactionAbleArgPosition?: number) {
@@ -245,17 +241,6 @@ export class FlowModelRepository extends Repository {
   }
 
   nodesToSchema(nodes, rootUid) {
-    const childrenByParent = new Map<string, any[]>();
-    for (const node of nodes) {
-      const parent = node?.parent;
-      if (!parent) {
-        continue;
-      }
-      const children = childrenByParent.get(parent) || [];
-      children.push(node);
-      childrenByParent.set(parent, children);
-    }
-
     const nodeAttributeSanitize = (node) => {
       const schema = {
         ...this.ignoreSchemaProperties(lodash.isPlainObject(node.options) ? node.options : JSON.parse(node.options)),
@@ -275,7 +260,7 @@ export class FlowModelRepository extends Repository {
       if (!rootNode) {
         return null;
       }
-      const children = childrenByParent.get(rootNode['uid']) || [];
+      const children = nodes.filter((node) => node.parent == rootNode['uid']);
 
       if (children.length > 0) {
         const childrenGroupByType = lodash.groupBy(children, 'type');
@@ -283,7 +268,6 @@ export class FlowModelRepository extends Repository {
         for (const childType of Object.keys(childrenGroupByType)) {
           const properties = childrenGroupByType[childType]
             .map((child) => buildTree(child))
-            .filter(Boolean)
             .sort((a, b) => a['x-index'] - b['x-index']) as any;
 
           rootNode[childType] =
@@ -805,7 +789,7 @@ export class FlowModelRepository extends Repository {
     return result;
   }
 
-  async insertSingleNode(schema: SchemaNode, options: InsertSingleNodeOptions) {
+  async insertSingleNode(schema: SchemaNode, options: Transactionable & removeParentOptions) {
     const { transaction } = options;
 
     const db = this.database;
@@ -827,13 +811,15 @@ export class FlowModelRepository extends Repository {
       savedNode = existsNode;
     } else {
       savedNode = await this.insertSchemaRecord(name, uid, schema, transaction);
-      options.createdNodeUids?.add(uid);
     }
 
     if (childOptions) {
+      const oldParentUid = await this.findParentUid(uid, transaction);
       const parentUid = childOptions.parentUid;
-      const oldParentUid = existsNode ? await this.findParentUid(uid, transaction) : null;
-      const isTree = existsNode ? (await this.childrenCount(uid, transaction)) > 0 : false;
+
+      const childrenCount = await this.childrenCount(uid, transaction);
+
+      const isTree = childrenCount > 0;
 
       // if node is a tree root move tree to new path
       if (isTree) {
@@ -947,28 +933,24 @@ export class FlowModelRepository extends Repository {
       }
 
       if (nodePosition === 'last') {
-        if (!existsNode && lodash.isNumber(childOptions.sort) && options.createdNodeUids?.has(parentUid)) {
-          sort = childOptions.sort;
-        } else {
-          const maxSort = await db.sequelize.query(
-            `SELECT ${
-              this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
-            }(MAX(TreeTable.sort), 0) as maxsort FROM ${treeTable} as TreeTable
-                                                          LEFT JOIN ${treeTable} as NodeInfo
-                                                                    ON NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0
-             WHERE TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`,
-            {
-              type: 'SELECT',
-              replacements: {
-                ancestor: childOptions.parentUid,
-                type: childOptions.type,
-              },
-              transaction,
+        const maxSort = await db.sequelize.query(
+          `SELECT ${
+            this.database.sequelize.getDialect() === 'postgres' ? 'coalesce' : 'ifnull'
+          }(MAX(TreeTable.sort), 0) as maxsort FROM ${treeTable} as TreeTable
+                                                        LEFT JOIN ${treeTable} as NodeInfo
+                                                                  ON NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0
+           WHERE TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`,
+          {
+            type: 'SELECT',
+            replacements: {
+              ancestor: childOptions.parentUid,
+              type: childOptions.type,
             },
-          );
+            transaction,
+          },
+        );
 
-          sort = parseInt(maxSort[0]['maxsort']) + 1;
-        }
+        sort = parseInt(maxSort[0]['maxsort']) + 1;
       }
 
       if (lodash.isPlainObject(nodePosition)) {
@@ -1260,14 +1242,12 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const { transaction } = options;
 
     const insertedNodes = [];
-    const createdNodeUids = new Set<string>();
 
     for (const node of nodes) {
       insertedNodes.push(
         await this.insertSingleNode(node, {
           ...options,
           transaction,
-          createdNodeUids,
         }),
       );
     }
@@ -1464,67 +1444,64 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   static nodesToModel(nodes: any[], rootUid: string) {
+    // 1. 建立 uid 到 node 的映射
     const nodeMap = new Map<string, any>();
-    const nodeOptions = new Map<string, any>();
-    const childrenByParent = new Map<string, any[]>();
     for (const node of nodes) {
       nodeMap.set(node['uid'], node);
-      nodeOptions.set(node['uid'], this.optionsToJson(node.options));
-      if (node.parent) {
-        const children = childrenByParent.get(node.parent) || [];
-        children.push(node);
-        childrenByParent.set(node.parent, children);
+    }
+
+    // 2. 找到 root 节点
+    const rootNode = nodeMap.get(rootUid);
+    if (!rootNode) return null;
+
+    // 3. 找到所有子节点
+    const children = nodes.filter((n) => n.parent === rootUid);
+
+    // 4. 按 subKey 分组并递归
+    const subModels: Record<string, any> = {};
+
+    for (const child of children) {
+      const { subKey, subType } = this.optionsToJson(child.options);
+      if (!subKey) continue;
+      // 递归处理子节点
+      const model = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
+        uid: child['uid'],
+        ...this.optionsToJson(child.options),
+        sortIndex: child.sort,
+      };
+      // 保证 sortIndex
+      model.sortIndex = child.sort;
+      if (subType === 'array') {
+        if (!subModels[subKey]) subModels[subKey] = [];
+        subModels[subKey].push(model);
+      } else {
+        subModels[subKey] = model;
       }
     }
 
-    const buildModel = (uid: string) => {
-      const rootNode = nodeMap.get(uid);
-      if (!rootNode) return null;
-
-      const children = childrenByParent.get(uid) || [];
-      const subModels: Record<string, any> = {};
-
-      for (const child of children) {
-        const childOptions = nodeOptions.get(child['uid']) || {};
-        const { subKey, subType } = childOptions;
-        if (!subKey) continue;
-        const model = buildModel(child['uid']) || {
-          uid: child['uid'],
-          ...childOptions,
-          sortIndex: child.sort,
-        };
-        model.sortIndex = child.sort;
-        if (subType === 'array') {
-          if (!subModels[subKey]) subModels[subKey] = [];
-          subModels[subKey].push(model);
-        } else {
-          subModels[subKey] = model;
-        }
+    // 5. 对数组类型的 subModels 排序
+    for (const key in subModels) {
+      if (Array.isArray(subModels[key])) {
+        subModels[key].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
       }
+    }
 
-      for (const key in subModels) {
-        if (Array.isArray(subModels[key])) {
-          subModels[key].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
-        }
-      }
+    // 6. 过滤掉空对象 subModels
+    const filteredSubModels: Record<string, any> = {};
+    for (const key in subModels) {
+      const value = subModels[key];
+      if (Array.isArray(value) && value.length === 0) continue;
+      if (!Array.isArray(value) && typeof value === 'object' && value !== null && Object.keys(value).length === 0)
+        continue;
+      filteredSubModels[key] = value;
+    }
 
-      const filteredSubModels: Record<string, any> = {};
-      for (const key in subModels) {
-        const value = subModels[key];
-        if (Array.isArray(value) && value.length === 0) continue;
-        if (!Array.isArray(value) && typeof value === 'object' && value !== null && Object.keys(value).length === 0)
-          continue;
-        filteredSubModels[key] = value;
-      }
-
-      return {
-        uid: rootNode['uid'],
-        ...(nodeOptions.get(rootNode['uid']) || {}),
-        ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
-      };
+    // 7. 返回最终 model
+    return {
+      uid: rootNode['uid'],
+      ...this.optionsToJson(rootNode.options),
+      ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
-
-    return buildModel(rootUid);
   }
 
   @transaction()
