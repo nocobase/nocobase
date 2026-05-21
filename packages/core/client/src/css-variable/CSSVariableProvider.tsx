@@ -42,6 +42,10 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorWarningBg', token.colorWarningBg);
     document.body.style.setProperty('--colorWarningBorder', token.colorWarningBorder);
     document.body.style.setProperty('--colorText', token.colorText);
+    document.body.style.setProperty('--colorTextDescription', token.colorTextDescription);
+    document.body.style.setProperty('--colorBgTextHover', token.colorBgTextHover);
+    document.body.style.setProperty('--colorSplit', token.colorSplit);
+    document.body.style.setProperty('--borderRadiusOuter', `${token.borderRadiusOuter}px`);
     document.body.style.setProperty('--colorTextHeaderMenu', token.colorTextHeaderMenu);
     document.body.style.setProperty('--colorPrimaryText', token.colorPrimaryText);
     document.body.style.setProperty('--colorPrimaryTextActive', token.colorPrimaryTextActive);
@@ -81,9 +85,13 @@ export const CSSVariableProvider = ({ children }) => {
     token.colorPrimaryTextActive,
     token.colorPrimaryTextHover,
     token.colorSettings,
+    token.colorBgTextHover,
+    token.colorSplit,
     token.colorText,
+    token.colorTextDescription,
     token.colorWarningBg,
     token.colorWarningBorder,
+    token.borderRadiusOuter,
     token.controlHeightLG,
     token.marginLG,
     token.marginSM,

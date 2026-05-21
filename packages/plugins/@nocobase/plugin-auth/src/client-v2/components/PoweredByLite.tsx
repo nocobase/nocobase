@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { getAppVersionHTML, useCurrentAppInfo, usePlugin } from '@nocobase/client-v2';
+import { parseHTML } from '@nocobase/utils/client';
 import React from 'react';
 import { theme as antdTheme } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +16,23 @@ import { useTranslation } from 'react-i18next';
 export default function PoweredByLite() {
   const { token } = antdTheme.useToken();
   const { i18n } = useTranslation();
+  const customBrandPlugin: any = usePlugin('@nocobase/plugin-custom-brand');
+  const appInfo = useCurrentAppInfo();
   const homePage = i18n.language === 'zh-CN' ? 'https://www.nocobase.com/cn/' : 'https://www.nocobase.com';
+  const customBrand = customBrandPlugin?.options?.options?.brand;
+
+  if (customBrand) {
+    const appVersion = getAppVersionHTML(appInfo?.version);
+
+    return (
+      <div
+        className="nb-brand"
+        dangerouslySetInnerHTML={{
+          __html: parseHTML(customBrand, { appVersion }),
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ color: token.colorTextDescription }}>
