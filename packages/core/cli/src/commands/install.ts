@@ -20,6 +20,7 @@ import {
   type PromptsCatalog,
   type PromptValue,
   type RunPromptCatalogOptions,
+  type TextPromptBlock,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
 import {
@@ -185,6 +186,21 @@ const INSTALL_LANGUAGE_OPTIONS = Object.entries(INSTALL_LANGUAGE_CODES).map(([va
 
 const installText = (key: string, values?: Record<string, unknown>) =>
   localeText(`commands.install.${key}`, values);
+
+function formatDeferredAuthMessage(envName: string, authType: unknown): string {
+  const normalizedAuthType = String(authType ?? '').trim();
+  const nextStep = `Authentication was skipped for env "${envName}". Run \`nb env auth ${envName}\` to finish setup.`;
+
+  if (normalizedAuthType === 'token') {
+    return `${nextStep} You will be prompted for an access token.`;
+  }
+
+  if (normalizedAuthType === 'oauth') {
+    return `${nextStep} A browser sign-in flow will be started.`;
+  }
+
+  return nextStep;
+}
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((t) => argv.includes(t));
@@ -411,6 +427,7 @@ type InstallParsedFlags = {
   'auth-type'?: string;
   'access-token'?: string;
   token?: string;
+  'skip-auth'?: boolean;
   lang?: string;
   force: boolean;
   'app-root-path'?: string;
@@ -586,6 +603,10 @@ export default class Install extends Command {
       aliases: ['token'],
       description:
         'API key or access token when using --auth-type token',
+    }),
+    'skip-auth': Flags.boolean({
+      description: 'Save the env auth mode now and finish authentication later with `nb env auth`',
+      default: false,
     }),
     lang: Flags.string({ description: 'Language for the installed NocoBase app', char: 'l', required: false }),
     force: Flags.boolean({
@@ -920,6 +941,10 @@ export default class Install extends Command {
       }
     }
 
+    if (flags['skip-auth']) {
+      preset.skipAuth = true;
+    }
+
     if (flags['access-token'] !== undefined || flags.token !== undefined) {
       preset.accessToken = String(flags['access-token'] ?? flags.token ?? '');
     }
@@ -1079,6 +1104,31 @@ export default class Install extends Command {
       'authType',
       'accessToken',
     ]);
+  }
+
+  private buildEnvAddPromptsForInstall(parsed: InstallParsedFlags): PromptsCatalog {
+    const apiBaseUrlPrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.apiBaseUrl as TextPromptBlock),
+      validate: undefined,
+    };
+    const prompts: PromptsCatalog = {
+      ...EnvAdd.prompts,
+      apiBaseUrl: apiBaseUrlPrompt,
+    };
+
+    if (!parsed['skip-auth']) {
+      return prompts;
+    }
+
+    const accessTokenPrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+      hidden: () => true,
+    };
+
+    return {
+      ...prompts,
+      accessToken: accessTokenPrompt,
+    };
   }
 
   private static toOptionalPromptString(value: unknown): string | undefined {
@@ -1339,6 +1389,7 @@ export default class Install extends Command {
     const rootPassword = Install.toOptionalPromptString(config.rootPassword);
     const rootNickname = Install.toOptionalPromptString(config.rootNickname);
     const auth = config.auth as { type?: string; accessToken?: string } | undefined;
+    const savedAuthType = Install.toOptionalPromptString(config.authType) ?? Install.toOptionalPromptString(auth?.type);
 
     const appPreset: PromptInitialValues = {
       ...(appRootPath ? { appRootPath } : {}),
@@ -1396,12 +1447,12 @@ export default class Install extends Command {
     };
 
     const envAddPreset: PromptInitialValues = {};
-    if (auth?.type === 'token') {
+    if (savedAuthType === 'token') {
       envAddPreset.authType = 'token';
       if (Install.toOptionalPromptString(auth.accessToken)) {
         envAddPreset.accessToken = String(auth.accessToken);
       }
-    } else if (auth?.type === 'oauth') {
+    } else if (savedAuthType === 'oauth') {
       envAddPreset.authType = 'oauth';
     }
 
@@ -2769,6 +2820,7 @@ export default class Install extends Command {
     envName: string;
     envAddResults: Record<string, PromptValue>;
     appReady: boolean;
+    skipAuth?: boolean;
   }): Promise<void> {
     if (!params.appReady) {
       return;
@@ -2777,6 +2829,11 @@ export default class Install extends Command {
     const authType =
       String(params.envAddResults.authType ?? 'oauth').trim()
       || 'oauth';
+    if (params.skipAuth) {
+      printInfo(formatDeferredAuthMessage(params.envName, authType));
+      return;
+    }
+
     if (authType === 'oauth') {
       await this.config.runCommand('env:auth', [params.envName]);
     }
@@ -2941,13 +2998,7 @@ export default class Install extends Command {
       yes,
     });
 
-    const envAddPromptsForInstall = {
-      ...EnvAdd.prompts,
-      apiBaseUrl: {
-        ...EnvAdd.prompts.apiBaseUrl,
-        validate: undefined,
-      },
-    };
+    const envAddPromptsForInstall = this.buildEnvAddPromptsForInstall(parsed);
 
     const envAddResults = await runPromptCatalog(envAddPromptsForInstall, {
       initialValues: {
@@ -2955,6 +3006,7 @@ export default class Install extends Command {
       },
       values: {
         name: envName,
+        ...(parsed['skip-auth'] ? { skipAuth: true } : {}),
         ...(resumePreset?.envAddPreset ?? {}),
         ...Install.buildEnvAddPresetValuesFromFlags(parsed),
       },
@@ -2980,6 +3032,9 @@ export default class Install extends Command {
     const parsed = {
       ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
     } as InstallParsedFlags & DownloadParsedFlags;
+    if (parsed['skip-auth'] && (parsed['access-token'] !== undefined || parsed.token !== undefined)) {
+      this.error('--skip-auth cannot be used with --access-token or --token.');
+    }
     setVerboseMode(Boolean(parsed.verbose));
     const commandStdio = this.commandStdio(parsed.verbose);
     if (!parsed['no-intro']) {
@@ -3131,6 +3186,7 @@ export default class Install extends Command {
       envName,
       envAddResults,
       appReady: Boolean(dockerAppPlan || localAppPlan),
+      skipAuth: Boolean(parsed['skip-auth']),
     });
 
     if (!dockerAppPlan && !localAppPlan) {

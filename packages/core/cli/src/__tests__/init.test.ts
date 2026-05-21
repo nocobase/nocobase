@@ -357,6 +357,7 @@ test('nb init forwards download options to nb install for a new app flow', async
     'demoapp',
     {
       apiBaseUrl: 'http://127.0.0.1:13080/api',
+      authType: 'oauth',
       source: 'git',
       downloadVersion: 'beta',
       gitUrl: 'https://github.com/nocobase/nocobase.git',
@@ -1637,6 +1638,7 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
   expect(Init.flags['api-base-url']).toBeDefined();
   expect(Init.flags['auth-type']).toBeDefined();
   expect(Init.flags['access-token']).toBeDefined();
+  expect(Init.flags['skip-auth']).toBeDefined();
   expect(Init.flags.locale).toBeDefined();
   expect(Init.flags['skip-skills']).toBeDefined();
   expect(Init.flags['skip-skills'].hidden).not.toBe(true);
@@ -1695,4 +1697,98 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
       'secret-token',
     ],
   ]);
+});
+
+test('nb init forwards --skip-auth to env add for an existing app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'yes',
+    appName: 'staging',
+    authType: 'token',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+  mocks.getEnv.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        env: 'staging',
+        'api-base-url': 'http://demo.example.com/api',
+        'auth-type': 'token',
+        'skip-auth': true,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    hasAgentsDirInCwd: () => false,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.runPromptCatalog).toHaveBeenCalledTimes(1);
+  const promptCatalog = mocks.runPromptCatalog.mock.calls[0]?.[0];
+  expect(promptCatalog?.accessToken?.hidden?.({
+    hasNocobase: 'yes',
+    authType: 'token',
+  })).toBe(true);
+  expect(runCommand.mock.calls[0]).toEqual([
+    'env:add',
+    [
+      'staging',
+      '--no-intro',
+      '--api-base-url',
+      'http://demo.example.com/api',
+      '--auth-type',
+      'token',
+      '--skip-auth',
+    ],
+  ]);
+});
+
+test('nb init forwards --skip-auth to install for a new app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'no',
+    appName: 'demoapp',
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    fetchSource: false,
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        env: 'demoapp',
+        'skip-auth': true,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--skip-auth');
 });

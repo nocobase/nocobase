@@ -489,6 +489,7 @@ test('updateEnvConnection updates only the token and preserves the current base 
 
     const env = await getEnv('test', { scope: 'global' });
     expect(env?.baseUrl).toBe('http://localhost:13000/api');
+    expect(env?.authType).toBe('token');
     expect(env?.auth?.accessToken).toBe('new-token');
     expect(env?.runtime).toBe(undefined);
   });
@@ -520,6 +521,7 @@ test('updateEnvConnection preserves runtime metadata when connection settings ar
     await updateEnvConnection('test', { accessToken: 'same-token' }, { scope: 'global' });
 
     const env = await getEnv('test', { scope: 'global' });
+    expect(env?.authType).toBe('token');
     expect(env?.runtime).toEqual({
       version: 'v1',
       schemaHash: 'hash',
@@ -573,6 +575,7 @@ test('setEnvOauthSession can preserve runtime metadata during token refresh', as
     );
 
     const env = await getEnv('test', { scope: 'global' });
+    expect(env?.authType).toBe('oauth');
     expect(env?.auth?.type).toBe('oauth');
     expect(env?.auth?.accessToken).toBe('new-access-token');
     expect(env?.runtime).toEqual({
@@ -580,6 +583,40 @@ test('setEnvOauthSession can preserve runtime metadata during token refresh', as
       schemaHash: 'hash',
       generatedAt: '2026-04-13T00:00:00.000Z',
     });
+  });
+});
+
+test('updateEnvConnection can switch an env to token auth without preserving an oauth session', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+            authType: 'oauth',
+            auth: {
+              type: 'oauth',
+              accessToken: 'oauth-access-token',
+              refreshToken: 'refresh-token',
+            },
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await updateEnvConnection('test', { authType: 'token' }, { scope: 'global' });
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.authType).toBe('token');
+    expect(env?.auth).toBe(undefined);
+    expect(env?.runtime).toBe(undefined);
   });
 });
 
@@ -684,6 +721,7 @@ test('write operations only affect global config and ignore legacy project envs'
       const globalConfig = await loadAuthConfig({ scope: 'global' });
       expect(globalConfig.lastEnv).toBe('legacy');
       expect(globalConfig.envs.legacy).toEqual({
+        authType: 'token',
         auth: {
           type: 'token',
           accessToken: 'new-token',

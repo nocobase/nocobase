@@ -170,6 +170,59 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
   expect(envAddCatalog.apiBaseUrl.validate).toBe(undefined);
 });
 
+test('install hides the deferred accessToken prompt when --skip-auth is used with token auth', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi.fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      fetchSource: false,
+    })
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      name: 'app7593',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'token',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as any);
+
+  const parsed = {
+    resume: false,
+    'skip-auth': true,
+    'auth-type': 'token',
+  } as any;
+
+  try {
+    await (Install.prototype as any).collectPromptResults.call(command, parsed, true);
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
+
+  const envAddCatalog = runPromptCatalogMock.mock.calls[4]?.[0];
+  expect(envAddCatalog.accessToken).toBeDefined();
+  expect(envAddCatalog.accessToken.hidden?.({ authType: 'token' })).toBe(true);
+});
+
 test('builtin postgres db plan uses a custom built-in database image when provided', () => {
   const plan = Install.buildBuiltinDbPlan({
     envName: 'demo',
@@ -405,6 +458,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
   expect(envConfig).toEqual({
     kind: 'local',
     apiBaseUrl: 'http://127.0.0.1:13080/api',
+    authType: 'token',
     source: 'git',
     downloadVersion: 'alpha',
     gitUrl: 'https://github.com/nocobase/nocobase.git',
