@@ -11,7 +11,7 @@ import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useMemo } from 'react';
-import { MutableTheme } from '../../../types';
+import { MutableTheme } from '../interface';
 import TokenInput from '../TokenInput';
 import type { TokenValue } from '../interface';
 import { useLocale } from '../locale';

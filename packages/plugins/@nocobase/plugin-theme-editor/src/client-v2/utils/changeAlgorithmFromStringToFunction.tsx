@@ -9,7 +9,7 @@
 
 import { theme } from 'antd';
 import _ from 'lodash';
-import { ThemeItem } from '../../types';
+import { ThemeItem } from '../types';
 
 /**
  * 把算法函数由字符串转换为函数

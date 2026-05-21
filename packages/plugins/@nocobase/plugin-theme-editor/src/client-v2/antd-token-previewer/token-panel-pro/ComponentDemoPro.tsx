@@ -10,7 +10,7 @@
 import { ConfigProvider, Segmented, Space, theme as antdTheme } from 'antd';
 import type { FC } from 'react';
 import React from 'react';
-import { MutableTheme } from '../../../types';
+import { MutableTheme } from '../interface';
 import ComponentDemoGroup from '../component-panel/ComponentDemoGroup';
 import { useLocale } from '../locale';
 import { Error, Primary, Success, Warning } from '../overviews';

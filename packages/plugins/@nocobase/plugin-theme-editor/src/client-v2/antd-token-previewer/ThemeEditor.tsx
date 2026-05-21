@@ -50,10 +50,11 @@ export type ThemeEditorProps = {
   style?: React.CSSProperties;
   darkAlgorithm?: DerivativeFunc<any, any>;
   locale?: any;
+  embedded?: boolean;
 };
 
 const ThemeEditor = forwardRef<ThemeEditorRef, ThemeEditorProps>(
-  ({ theme: customTheme, onThemeChange, className, style, darkAlgorithm, locale = zhCN }, ref) => {
+  ({ theme: customTheme, onThemeChange, className, style, darkAlgorithm, locale = zhCN, embedded }, ref) => {
     const [wrapSSR, hashId] = useStyle();
     const [selectedTokens, setSelectedTokens] = useState<SelectedToken>({
       seed: ['colorPrimary'],
@@ -127,7 +128,9 @@ const ThemeEditor = forwardRef<ThemeEditorRef, ThemeEditorProps>(
         <div className={classNames(hashId, 'antd-theme-editor', className)} style={style}>
           <div
             style={{
-              flex: aliasOpen ? '0 0 860px' : `0 0 ${860 - 320}px`,
+              flex: embedded ? '1 1 0' : aliasOpen ? '0 0 860px' : `0 0 ${860 - 320}px`,
+              minWidth: embedded ? 0 : undefined,
+              width: embedded ? '100%' : undefined,
               height: '100%',
               backgroundColor: '#F7F8FA',
               backgroundImage: 'linear-gradient(180deg, #FFFFFF 0%, rgba(246,247,249,0.00) 100%)',
@@ -139,21 +142,24 @@ const ThemeEditor = forwardRef<ThemeEditorRef, ThemeEditorProps>(
               aliasOpen={aliasOpen}
               onAliasOpenChange={(open) => setAliasOpen(open)}
               theme={theme}
-              style={{ flex: 1 }}
+              style={{ flex: 1, minWidth: embedded ? 0 : undefined }}
+              embedded={embedded}
               selectedTokens={selectedTokens}
               onTokenSelect={handleTokenSelect}
               infoFollowPrimary={infoFollowPrimary}
               onInfoFollowPrimaryChange={onInfoFollowPrimaryChange}
             />
           </div>
-          <ComponentDemoPro
-            theme={theme}
-            components={antdComponents}
-            activeComponents={relatedComponents}
-            selectedTokens={computedSelectedTokens}
-            style={{ flex: 1, overflow: 'auto', height: '100%' }}
-            componentDrawer
-          />
+          {!embedded && (
+            <ComponentDemoPro
+              theme={theme}
+              components={antdComponents}
+              activeComponents={relatedComponents}
+              selectedTokens={computedSelectedTokens}
+              style={{ flex: 1, overflow: 'auto', height: '100%' }}
+              componentDrawer
+            />
+          )}
         </div>
       </LocaleContext.Provider>,
     );
