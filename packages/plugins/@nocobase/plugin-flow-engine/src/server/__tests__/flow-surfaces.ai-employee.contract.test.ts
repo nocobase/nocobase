@@ -739,6 +739,44 @@ describe('flowSurfaces AI employee action contract', () => {
       }
     }
 
+    const rawStepParamsValidRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: configurableAction.uid },
+        stepParams: {
+          shortcutSettings: {
+            editTasks: {
+              tasks: [
+                {
+                  message: {
+                    user: 'Raw step params task.',
+                    workContext: [{ type: 'flow-model', target: 'self' }],
+                  },
+                  skillSettings: {
+                    skills: [],
+                    tools: [],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(rawStepParamsValidRes.status, readErrorMessage(rawStepParamsValidRes)).toBe(200);
+    const rawStepParamsAction = await readAction(configurableAction.uid);
+    expect(getPersistedTasks(rawStepParamsAction)?.[0]).toMatchObject({
+      message: {
+        user: 'Raw step params task.',
+        workContext: [{ type: 'flow-model', uid: table.uid }],
+      },
+      skillSettings: {
+        skills: [],
+        tools: [],
+        skillsVersion: 2,
+        toolsVersion: 2,
+      },
+    });
+
     const rawStepParamsRes = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: { uid: configurableAction.uid },
@@ -813,7 +851,7 @@ describe('flowSurfaces AI employee action contract', () => {
               workContext: [{ type: 'flow-model', uid: table.uid }],
             },
             autoSend: false,
-            skillSettings: { skills: ['legacy-skill'], tools: [], skillsVersion: 2, toolsVersion: 2 },
+            skillSettings: { skills: ['legacy-skill'], tools: [] },
             webSearch: false,
           },
         ],
@@ -880,7 +918,7 @@ describe('flowSurfaces AI employee action contract', () => {
               workContext: [{ type: 'flow-model', uid: table.uid }],
             },
             autoSend: false,
-            skillSettings: { skills: ['legacy-skill'], tools: [], skillsVersion: 2, toolsVersion: 2 },
+            skillSettings: { skills: ['legacy-skill'], tools: [] },
             webSearch: false,
           },
         ],
@@ -1091,6 +1129,38 @@ describe('flowSurfaces AI employee action contract', () => {
       expect(res.status, item.label).toBe(400);
       expect(readErrorMessage(res)).toContain(item.message);
     }
+
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings(),
+        },
+      }),
+    );
+    const rawStepParamsMalformedRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: action.uid },
+        stepParams: {
+          shortcutSettings: {
+            editTasks: {
+              tasks: [
+                {
+                  message: {
+                    workContext: [{ type: 'flow-model', target: '   ' }],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(rawStepParamsMalformedRes.status).toBe(400);
+    expect(readErrorMessage(rawStepParamsMalformedRes)).toContain(
+      "stepParams.shortcutSettings.editTasks.tasks[0].message.workContext[0].target must be 'self' or a string block key",
+    );
   });
 
   it('rejects raw internal AI employee prop writes through updateSettings', async () => {

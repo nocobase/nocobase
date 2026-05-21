@@ -13783,6 +13783,7 @@ export class FlowSurfacesService {
       options.replaceRecordHistorySettings === true,
     );
     this.syncAIEmployeeTaskStepParamsForUpdateSettings(current, nextPayload);
+    await this.normalizeAIEmployeeStepParamTasksForUpdateSettings(current, nextPayload, writeTarget, options);
     await this.assertAIEmployeeStepParamTaskPromptVariablesAllowedForUpdateSettings(
       current,
       nextPayload,
@@ -21562,6 +21563,38 @@ export class FlowSurfacesService {
       }),
       'stepParams.shortcutSettings.editTasks.tasks',
     );
+  }
+
+  private async normalizeAIEmployeeStepParamTasksForUpdateSettings(
+    current: any,
+    nextPayload: Record<string, any>,
+    writeTarget: FlowSurfaceWriteTarget,
+    options: {
+      transaction?: any;
+      openViewActionName?: string;
+    },
+  ) {
+    if (
+      !this.isAIEmployeeActionUse(current?.use) ||
+      !_.has(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH])
+    ) {
+      return;
+    }
+    const tasks = _.get(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
+    if (!Array.isArray(tasks)) {
+      return;
+    }
+    const actionName = options.openViewActionName || 'updateSettings';
+    const normalizedTasks = this.normalizeAIEmployeeTasks(
+      actionName,
+      tasks,
+      this.readAIEmployeePersistedTasks(current),
+      {
+        selfUid: await this.resolveAIEmployeeActionSelfUid(current || { uid: writeTarget.uid }, options.transaction),
+        path: 'stepParams.shortcutSettings.editTasks.tasks',
+      },
+    );
+    _.set(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH], normalizedTasks);
   }
 
   private normalizeAIEmployeeTaskMessage(
