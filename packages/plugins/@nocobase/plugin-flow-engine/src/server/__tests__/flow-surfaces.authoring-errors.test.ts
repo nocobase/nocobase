@@ -2579,6 +2579,14 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(apiCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
       'switch-to-resource-api',
     );
+    const positionalCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.request('/api/tasks:list', { params: { pageSize: 1 } });",
+      path: '$.positionalCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(positionalCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
     const absoluteApiCollectionRequestErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.request({ url: '/api/tasks:list?pageSize=1', skipNotify: true });",
       path: '$.absoluteApiCollectionRequest.code',

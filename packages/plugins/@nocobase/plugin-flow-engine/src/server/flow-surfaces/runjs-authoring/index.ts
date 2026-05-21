@@ -7132,19 +7132,24 @@ function isResourceLikeCtxRequest(source: string, masked: string, index: number)
   if (!args) {
     return false;
   }
+  const firstArg = getCallFirstArgumentSource(source, masked, index);
+  const firstArgLiteral = firstArg ? readLeadingStringLiteral(firstArg) : undefined;
+  if (firstArgLiteral) {
+    return isResourceLikeCtxRequestUrl(firstArgLiteral.value.trim());
+  }
   const urlMatch = args.match(/\burl\s*:\s*(['"`])([^'"`]+)\1/i) || args.match(/^\s*(['"`])([^'"`]+)\1\s*$/);
   if (urlMatch) {
-    const url = urlMatch[2].trim();
-    if (/^(?:https?:)?\/\//i.test(url)) {
-      return false;
-    }
-    const resourceUrl = url.replace(/^\/api\//i, '').replace(/^\//, '');
-    if (isResourceLikeRequestUrl(resourceUrl)) {
-      return true;
-    }
-    return false;
+    return isResourceLikeCtxRequestUrl(urlMatch[2].trim());
   }
   return /\b(?:resource|collectionName|collection)\s*:/i.test(args);
+}
+
+function isResourceLikeCtxRequestUrl(url: string) {
+  if (/^(?:https?:)?\/\//i.test(url)) {
+    return false;
+  }
+  const resourceUrl = url.replace(/^\/api\//i, '').replace(/^\//, '');
+  return isResourceLikeRequestUrl(resourceUrl);
 }
 
 function isResourceLikeRequestUrl(url: string) {
