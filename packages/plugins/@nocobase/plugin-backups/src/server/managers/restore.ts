@@ -25,6 +25,7 @@ import {
   getDBVersion,
   PLUGIN_BACKUPS_NAME,
   RESTORE_TASKS_CACHE_NAME,
+  RESTORE_TASKS_CACHE_TTL,
   resolvePathWithinBase,
   toMajorVersion,
 } from '../utils';
@@ -185,7 +186,7 @@ export class RestoreManager {
       return await this.ctx.app.cacheManager.createCache({
         name: RESTORE_TASKS_CACHE_NAME,
         store: 'memory',
-        ttl: 60 * 1000,
+        ttl: RESTORE_TASKS_CACHE_TTL,
         max: 10,
       });
     }

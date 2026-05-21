@@ -11,9 +11,9 @@ import { DatePicker, useRequest, useAPIClient, useCurrentAppInfo } from '@nocoba
 import type { TableColumnsType } from 'antd';
 import { App, Divider, message, Space, Table } from 'antd';
 import { saveAs } from 'file-saver';
-import React, { useContext } from 'react';
+import React from 'react';
 import { NAMESPACE } from '../constants';
-import { BackupsContext } from '../contexts';
+import { useBackupsContext } from '../contexts';
 import { useT } from '../locale';
 import { RestoreFromBackup } from './RestoreFromBackup';
 
@@ -29,7 +29,7 @@ export const BackupsTable = () => {
   const api = useAPIClient();
   const currentAppInfo = useCurrentAppInfo();
   const { modal } = App.useApp();
-  const { data, loading, refreshAsync: refresh } = useContext(BackupsContext);
+  const { data, loading, refreshAsync: refresh } = useBackupsContext();
   const { runAsync: destroy } = useRequest<{ data: BackupFile[] }>(
     {
       url: `${NAMESPACE}:destroy`,

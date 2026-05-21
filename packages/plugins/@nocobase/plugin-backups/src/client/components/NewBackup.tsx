@@ -1,11 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { App, Button } from 'antd';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { useT } from '../locale';
 import { useRequest } from '@nocobase/client';
 import { BackupFile } from './BackupsTable';
 import { NAMESPACE } from '../constants';
-import { BackupsContext } from '../contexts';
+import { useBackupsContext } from '../contexts';
 
 interface BackupTaskStatus {
   inProgress: boolean;
@@ -16,7 +25,7 @@ export const NewBackup = () => {
   const [inProgressBackups, setInProgressBackups] = useState<string[]>([]);
   const t = useT();
   const { message, notification, modal } = App.useApp();
-  const { refreshAsync: refresh } = useContext(BackupsContext);
+  const { refreshAsync: refresh } = useBackupsContext();
   const { runAsync: create, loading: creating } = useRequest<{ data: BackupFile }>(
     {
       url: `${NAMESPACE}:create`,
@@ -68,7 +77,7 @@ export const NewBackup = () => {
     return () => {
       clearInterval(interval);
     };
-  }, [inProgressBackups]);
+  }, [inProgressBackups, message, notification, queryStatus, refresh, t]);
 
   const Icon = creating ? LoadingOutlined : PlusOutlined;
   const createBackup = async () => {

@@ -63,7 +63,7 @@ export class BackupManager {
   #uploadDir: string;
   #aesKeyPath: string;
 
-  constructor(app: Application, ctx: ResourcerContext, settings: BackupSettings) {
+  constructor(app: Application, ctx: ResourcerContext | null, settings: BackupSettings) {
     this.app = app;
     this.ctx = ctx;
     this.#settings = settings;
@@ -97,7 +97,7 @@ export class BackupManager {
     const completedBackups = await this.#listCompletedBackups(inProgressBackups);
     // clean up the lock files if the backup process done.
     // These files can be left behind if the backup process is interrupted for some reason
-    const cleanStaleLockFiless = async () => {
+    const cleanStaleLockFiles = async () => {
       const statusCache = this.app.cacheManager.getCache(BACKUP_TASKS_CACHE_NAME);
       for (const backup of inProgressBackups) {
         if (!(await statusCache.get(backup.name))) {
@@ -106,7 +106,7 @@ export class BackupManager {
         }
       }
     };
-    cleanStaleLockFiless().catch(() => {}); // don't block the response
+    cleanStaleLockFiles().catch(() => {}); // don't block the response
     return [...inProgressBackups, ...completedBackups];
   }
 

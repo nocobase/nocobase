@@ -1,7 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '@nocobase/cache';
 import { ResourceOptions } from '@nocobase/resourcer';
 import { koaMulter as multer } from '@nocobase/utils';
 import crypto from 'crypto';
+import fsPromises from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { BackupManager, BackupSettings, BackupTaskResult } from '../managers/backup';
@@ -158,9 +168,16 @@ export default {
       await statusCache.set(taskId, {
         inProgress: true,
       });
-      await restoreManager.restore(getBackupFilePath(ctx, name), taskId, getPassword(ctx), true, getSkipRevertOnError(ctx), {
-        forceSchemaRestore: getForceSchemaRestore(ctx),
-      });
+      await restoreManager.restore(
+        getBackupFilePath(ctx, name),
+        taskId,
+        getPassword(ctx),
+        true,
+        getSkipRevertOnError(ctx),
+        {
+          forceSchemaRestore: getForceSchemaRestore(ctx),
+        },
+      );
       ctx.body = {
         status: 'ok',
         task: taskId,
@@ -172,17 +189,24 @@ export default {
       const restoreManager = new RestoreManager(ctx);
       const taskId = crypto.randomUUID();
       const statusCache: Cache = ctx.app.cacheManager.getCache(RESTORE_TASKS_CACHE_NAME);
+      const uploadedFilePath = ctx.request.file?.path;
       await statusCache.set(taskId, {
         inProgress: true,
       });
-      await restoreManager.restore(ctx.request.file.path, taskId, getPassword(ctx), true, getSkipRevertOnError(ctx), {
-        forceSchemaRestore: getForceSchemaRestore(ctx),
-      });
-      ctx.body = {
-        status: 'ok',
-        task: taskId,
-      };
-      await next();
+      try {
+        await restoreManager.restore(ctx.request.file.path, taskId, getPassword(ctx), true, getSkipRevertOnError(ctx), {
+          forceSchemaRestore: getForceSchemaRestore(ctx),
+        });
+        ctx.body = {
+          status: 'ok',
+          task: taskId,
+        };
+        await next();
+      } finally {
+        if (uploadedFilePath) {
+          await fsPromises.unlink(uploadedFilePath).catch(() => {});
+        }
+      }
     },
 
     async restoreStatus(ctx, next) {

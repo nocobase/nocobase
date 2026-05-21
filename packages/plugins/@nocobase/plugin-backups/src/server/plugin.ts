@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '@nocobase/cache';
 import { LockAcquireError, Releaser } from '@nocobase/lock-manager';
 import { Application, InstallOptions, Plugin } from '@nocobase/server';
@@ -8,7 +17,13 @@ import { BackupManager, BackupSettings } from './managers/backup';
 import { RestoreManager } from './managers/restore';
 import backupCliResource from './resourcers/backup-cli';
 import backupsResource from './resourcers/backups';
-import { BACKUP_EXTENSION, BACKUP_TASKS_CACHE_NAME, RESTORE_TASKS_CACHE_NAME, SETTINGS } from './utils';
+import {
+  BACKUP_EXTENSION,
+  BACKUP_TASKS_CACHE_NAME,
+  RESTORE_TASKS_CACHE_NAME,
+  RESTORE_TASKS_CACHE_TTL,
+  SETTINGS,
+} from './utils';
 
 const MAX_TIMEOUT_VALUE = 2147483647;
 
@@ -54,7 +69,7 @@ export class PluginBackupsServer extends Plugin {
     await this.app.cacheManager.createCache({
       name: RESTORE_TASKS_CACHE_NAME,
       store: 'memory',
-      ttl: 60 * 1000,
+      ttl: RESTORE_TASKS_CACHE_TTL,
       max: 10,
     });
 

@@ -1,5 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ResourceOptions } from '@nocobase/resourcer';
 import { koaMulter as multer } from '@nocobase/utils';
+import fsPromises from 'fs/promises';
 import os from 'os';
 import { BackupManager, BackupSettings, BackupTaskResult } from '../managers/backup';
 import { BACKUP_EXTENSION, BACKUP_TASKS_CACHE_NAME, isQsTruly, RESTORE_TASKS_CACHE_NAME, SETTINGS } from '../utils';
@@ -38,15 +48,22 @@ export default {
       const restoreManager = new RestoreManager(ctx);
       const taskId = crypto.randomUUID();
       const statusCache: Cache = ctx.app.cacheManager.getCache(RESTORE_TASKS_CACHE_NAME);
+      const uploadedFilePath = ctx.request.file?.path;
       await statusCache.set(taskId, {
         inProgress: true,
       });
-      await restoreManager.restoreFromUpload(ctx.request.file, taskId, ctx.request.body.password, true);
-      ctx.body = {
-        status: 'ok',
-        task: taskId,
-      };
-      await next();
+      try {
+        await restoreManager.restoreFromUpload(ctx.request.file, taskId, ctx.request.body.password, true);
+        ctx.body = {
+          status: 'ok',
+          task: taskId,
+        };
+        await next();
+      } finally {
+        if (uploadedFilePath) {
+          await fsPromises.unlink(uploadedFilePath).catch(() => {});
+        }
+      }
     },
     async create(ctx, next) {
       const backupSettings: BackupSettings = await ctx.db.getRepository(SETTINGS).findOne();
