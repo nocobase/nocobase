@@ -414,6 +414,7 @@ import type {
   FlowSurfaceApplySpec,
   FlowSurfaceApplyValues,
   FlowSurfaceAtomicFlag,
+  FlowSurfaceActionScope,
   FlowSurfaceBindKey,
   FlowSurfaceCatalogItem,
   FlowSurfaceCatalogResponse,
@@ -441,6 +442,7 @@ import type {
   FlowSurfaceSemanticResourceInput,
   FlowSurfaceWriteTarget,
 } from './types';
+import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
 
 type FlowSurfaceChartHint = {
   key: string;
@@ -943,17 +945,42 @@ type FlowSurfacePopupTemplateTreeInfo = {
   semanticSignature?: string;
 };
 
+type AIEmployeeActionSettingsPayload = {
+  props: Record<string, any>;
+  stepParams: Record<string, any>;
+};
+
+type AIEmployeePromptContextOptions =
+  | {
+      kind: 'target';
+      targetUid?: string;
+    }
+  | {
+      kind: 'container';
+      ownerUid?: string;
+      scope?: FlowSurfaceActionScope;
+    };
+
+type AIEmployeePromptValidationContext = {
+  targetUid?: string;
+  semantic: FlowSurfaceContextSemantic;
+  contextPaths: Map<string, FlowSurfaceContextVarInfo>;
+};
+
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
 const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
 const AI_EMPLOYEE_OWNER_PLUGIN = '@nocobase/plugin-ai';
 const AI_EMPLOYEE_PUBLIC_SETTING_KEYS = ['username', 'auto', 'workContext', 'tasks', 'style'];
 const AI_EMPLOYEE_INTERNAL_PROP_KEYS = ['aiEmployee', 'context', 'auto', 'tasks', 'style'];
+const AI_EMPLOYEE_TASK_STEP_PARAMS_PATH = ['shortcutSettings', 'editTasks', 'tasks'];
 const AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS = ['type', 'uid', 'target'];
 const AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS = ['title', 'message', 'autoSend', 'skillSettings', 'model', 'webSearch'];
 const AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS = ['system', 'user', 'workContext'];
 const AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS = ['llmService', 'model'];
 const AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS = ['skills', 'tools', 'skillsVersion', 'toolsVersion'];
 const AI_EMPLOYEE_STYLE_PUBLIC_KEYS = ['size', 'mask'];
+const AI_EMPLOYEE_PROMPT_CONTEXT_MAX_DEPTH = 8;
+const AI_EMPLOYEE_PROMPT_VARIABLE_INVALID = 'FLOW_SURFACE_AI_EMPLOYEE_PROMPT_VARIABLE_INVALID';
 const AI_EMPLOYEE_DEFAULT_STYLE = {
   size: 40,
   mask: false,
@@ -9139,22 +9166,38 @@ export class FlowSurfacesService {
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
       : null;
-    const aiEmployeeProps = this.isAIEmployeeActionUse(actionCatalogItem.use)
+    const aiEmployeeSettingsPayload = this.isAIEmployeeActionUse(actionCatalogItem.use)
       ? await this.normalizeAIEmployeeActionPublicSettings('addAction', inlineSettings || {}, {
           transaction: options.transaction,
           enabledPackages,
           requireUsername: true,
           currentRoles: options.currentRoles,
           selfUid: container.ownerUid,
+          promptContext: {
+            kind: 'container',
+            ownerUid: container.ownerUid,
+            scope: resolvedScope,
+          },
         })
       : undefined;
+    const actionSettingsPayload = {
+      props: values.props,
+      stepParams: values.stepParams,
+    };
+    if (aiEmployeeSettingsPayload) {
+      this.mergeAIEmployeeActionSettingsPayload(
+        { use: actionCatalogItem.use },
+        actionSettingsPayload,
+        aiEmployeeSettingsPayload,
+      );
+    }
     const action = buildActionTree({
       use: actionCatalogItem.use,
       containerUse: container.ownerUse,
       resourceInit: values.resourceInit || resourceContext?.resourceInit,
-      props: aiEmployeeProps || values.props,
+      props: actionSettingsPayload.props,
       decoratorProps: values.decoratorProps,
-      stepParams: values.stepParams,
+      stepParams: actionSettingsPayload.stepParams,
       flowRegistry: values.flowRegistry,
     });
     this.contractGuard.validateNodeTreeAgainstContract(action);
@@ -9256,22 +9299,38 @@ export class FlowSurfacesService {
     const resourceInit = this.isAddChildCatalogItem(actionCatalogItem)
       ? await this.resolveAddChildResourceInitForOwnerNode(container.ownerNode, options.transaction)
       : values.resourceInit || resourceContext?.resourceInit;
-    const aiEmployeeProps = this.isAIEmployeeActionUse(actionCatalogItem.use)
+    const aiEmployeeSettingsPayload = this.isAIEmployeeActionUse(actionCatalogItem.use)
       ? await this.normalizeAIEmployeeActionPublicSettings('addRecordAction', inlineSettings || {}, {
           transaction: options.transaction,
           enabledPackages,
           requireUsername: true,
           currentRoles: options.currentRoles,
           selfUid: container.ownerUid,
+          promptContext: {
+            kind: 'container',
+            ownerUid: container.ownerUid,
+            scope: resolvedScope,
+          },
         })
       : undefined;
+    const actionSettingsPayload = {
+      props: values.props,
+      stepParams: values.stepParams,
+    };
+    if (aiEmployeeSettingsPayload) {
+      this.mergeAIEmployeeActionSettingsPayload(
+        { use: actionCatalogItem.use },
+        actionSettingsPayload,
+        aiEmployeeSettingsPayload,
+      );
+    }
     const action = buildActionTree({
       use: actionCatalogItem.use,
       containerUse: container.containerUse,
       resourceInit,
-      props: aiEmployeeProps || values.props,
+      props: actionSettingsPayload.props,
       decoratorProps: values.decoratorProps,
-      stepParams: values.stepParams,
+      stepParams: actionSettingsPayload.stepParams,
       flowRegistry: values.flowRegistry,
     });
     this.contractGuard.validateNodeTreeAgainstContract(action);
@@ -13655,7 +13714,7 @@ export class FlowSurfacesService {
     }
     if (this.isAIEmployeeActionUse(current?.use) && this.hasAIEmployeePublicSettings(normalizedValues)) {
       const enabledPackages = await this.resolveEnabledPluginPackages(options);
-      const aiEmployeeProps = await this.normalizeAIEmployeeActionPublicSettings(
+      const aiEmployeeSettingsPayload = await this.normalizeAIEmployeeActionPublicSettings(
         'updateSettings',
         _.pick(normalizedValues, AI_EMPLOYEE_PUBLIC_SETTING_KEYS),
         {
@@ -13664,12 +13723,16 @@ export class FlowSurfacesService {
           current,
           currentRoles: options.currentRoles,
           selfUid: await this.resolveAIEmployeeActionSelfUid(current, options.transaction),
+          promptContext: {
+            kind: 'target',
+            targetUid: current?.uid || writeTarget.uid,
+          },
         },
       );
       AI_EMPLOYEE_PUBLIC_SETTING_KEYS.forEach((key) => {
         delete normalizedValues[key];
       });
-      normalizedValues.props = _.merge({}, normalizedValues.props || {}, aiEmployeeProps);
+      this.mergeAIEmployeeActionSettingsPayload(current, normalizedValues, aiEmployeeSettingsPayload);
     }
     assertNoFlowSurfaceIdTitleFieldSettings(normalizedValues, {
       action: 'updateSettings',
@@ -13718,6 +13781,13 @@ export class FlowSurfacesService {
       normalizedValues,
       nextPayload,
       options.replaceRecordHistorySettings === true,
+    );
+    this.syncAIEmployeeTaskStepParamsForUpdateSettings(current, nextPayload);
+    await this.assertAIEmployeeStepParamTaskPromptVariablesAllowedForUpdateSettings(
+      current,
+      nextPayload,
+      writeTarget,
+      options,
     );
     this.syncCalendarPopupPropsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncKanbanPopupPropsForUpdateSettings(current, normalizedValues, nextPayload);
@@ -20891,6 +20961,75 @@ export class FlowSurfacesService {
     );
   }
 
+  private readAIEmployeePersistedTasks(current: any) {
+    const stepTasks = _.get(current, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
+    if (Array.isArray(stepTasks)) {
+      return stepTasks;
+    }
+    const legacyPropsTasks = current?.props?.tasks;
+    return Array.isArray(legacyPropsTasks) ? legacyPropsTasks : [];
+  }
+
+  private buildAIEmployeeTaskStepParams(tasks: any[]) {
+    const stepParams: Record<string, any> = {};
+    _.set(stepParams, AI_EMPLOYEE_TASK_STEP_PARAMS_PATH, _.cloneDeep(tasks));
+    return stepParams;
+  }
+
+  private mergeAIEmployeeActionSettingsPayload(
+    current: any,
+    values: Record<string, any>,
+    payload: AIEmployeeActionSettingsPayload,
+  ) {
+    if (Object.keys(payload.props).length) {
+      values.props = _.merge({}, values.props || {}, payload.props);
+    }
+    if (Object.keys(payload.stepParams).length) {
+      values.stepParams = _.mergeWith({}, values.stepParams || {}, payload.stepParams, (_currentValue, nextValue) => {
+        if (Array.isArray(nextValue)) {
+          return _.cloneDeep(nextValue);
+        }
+        return undefined;
+      });
+    }
+    if (_.has(payload.stepParams, AI_EMPLOYEE_TASK_STEP_PARAMS_PATH) && this.isAIEmployeeActionUse(current?.use)) {
+      if (_.isPlainObject(values.props)) {
+        delete values.props.tasks;
+      }
+    }
+  }
+
+  private syncAIEmployeeTaskStepParamsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    if (!this.isAIEmployeeActionUse(current?.use)) {
+      return;
+    }
+    const legacyPropsTasks = current?.props?.tasks;
+    const hasLegacyPropsTasks = Array.isArray(legacyPropsTasks);
+    const hasNextStepTasks = _.has(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
+    const currentStepTasks = _.get(current, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
+
+    if (!hasNextStepTasks && hasLegacyPropsTasks && !Array.isArray(currentStepTasks)) {
+      nextPayload.stepParams = _.mergeWith(
+        {},
+        current?.stepParams || {},
+        this.buildAIEmployeeTaskStepParams(legacyPropsTasks),
+        (_currentValue, nextValue) => {
+          if (Array.isArray(nextValue)) {
+            return _.cloneDeep(nextValue);
+          }
+          return undefined;
+        },
+      );
+    }
+
+    if (!hasLegacyPropsTasks && !_.has(nextPayload, ['props', 'tasks'])) {
+      return;
+    }
+    const nextProps = _.cloneDeep(nextPayload.props ?? current?.props ?? {});
+    delete nextProps.tasks;
+    nextPayload.props = nextProps;
+  }
+
   private assertAIEmployeePluginEnabled(actionName: string, enabledPackages: ReadonlySet<string>) {
     if (!enabledPackages.has(AI_EMPLOYEE_OWNER_PLUGIN)) {
       throwBadRequest(
@@ -21117,7 +21256,312 @@ export class FlowSurfacesService {
     if (Object.prototype.hasOwnProperty.call(next, 'toolsVersion') && typeof next.toolsVersion !== 'number') {
       throwBadRequest(`flowSurfaces ${actionName} ${path}.toolsVersion must be a number`);
     }
+    if (
+      Object.prototype.hasOwnProperty.call(next, 'skills') &&
+      !Object.prototype.hasOwnProperty.call(next, 'skillsVersion')
+    ) {
+      next.skillsVersion = 2;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(next, 'tools') &&
+      !Object.prototype.hasOwnProperty.call(next, 'toolsVersion')
+    ) {
+      next.toolsVersion = 2;
+    }
     return next;
+  }
+
+  private collectAIEmployeePromptVariables(value: string) {
+    if (!value.includes('{{')) {
+      return [];
+    }
+    return [...value.matchAll(/\{\{\s*([\s\S]+?)\s*\}\}/g)].map(([raw, inner]) => ({
+      raw,
+      inner: String(inner || '').trim(),
+    }));
+  }
+
+  private hasAIEmployeePromptVariables(tasks: any[]) {
+    return _.castArray(tasks || []).some((task) => {
+      const message = task?.message;
+      return (
+        (typeof message?.system === 'string' && this.collectAIEmployeePromptVariables(message.system).length > 0) ||
+        (typeof message?.user === 'string' && this.collectAIEmployeePromptVariables(message.user).length > 0)
+      );
+    });
+  }
+
+  private collectAIEmployeeContextPathEntries(context: FlowSurfaceContextResponse) {
+    const result = new Map<string, FlowSurfaceContextVarInfo>();
+    const visit = (prefix: string, info: FlowSurfaceContextVarInfo | undefined) => {
+      if (!prefix || !info) {
+        return;
+      }
+      result.set(prefix, info);
+      if (info.dynamicProperties) {
+        result.set(`${prefix}.*`, info.dynamicProperties);
+      }
+      for (const [childKey, childInfo] of Object.entries(info.properties || {})) {
+        visit(`${prefix}.${childKey}`, childInfo);
+      }
+    };
+
+    for (const [key, info] of Object.entries(context?.vars || {})) {
+      visit(key, info);
+    }
+    return result;
+  }
+
+  private isAIEmployeeContextInfoPathAllowed(info: FlowSurfaceContextVarInfo | undefined, segments: string[]): boolean {
+    if (!info) {
+      return false;
+    }
+    if (!segments.length) {
+      return true;
+    }
+    const [segment, ...rest] = segments;
+    const staticChild = info.properties?.[segment];
+    if (staticChild) {
+      return this.isAIEmployeeContextInfoPathAllowed(staticChild, rest);
+    }
+    if (info.dynamicProperties) {
+      return this.isAIEmployeeContextInfoPathAllowed(info.dynamicProperties, rest);
+    }
+    return false;
+  }
+
+  private canResolveAIEmployeeContextPath(path: string, semantic: FlowSurfaceContextSemantic) {
+    return !!buildFlowSurfaceContextResponse({
+      semantic,
+      path,
+      maxDepth: 1,
+    }).vars?.[path];
+  }
+
+  private isAIEmployeeContextPathAllowed(path: string, validation: AIEmployeePromptValidationContext) {
+    if (validation.contextPaths.has(path)) {
+      return true;
+    }
+    for (const [allowedPath, info] of validation.contextPaths) {
+      if (!allowedPath.endsWith('.*')) {
+        continue;
+      }
+      const prefix = allowedPath.slice(0, -2);
+      if (!path.startsWith(`${prefix}.`)) {
+        continue;
+      }
+      const dynamicSegments = path
+        .slice(prefix.length + 1)
+        .split('.')
+        .filter(Boolean);
+      if (dynamicSegments.length && this.isAIEmployeeContextInfoPathAllowed(info, dynamicSegments.slice(1))) {
+        return true;
+      }
+    }
+    return this.canResolveAIEmployeeContextPath(path, validation.semantic);
+  }
+
+  private extractAIEmployeePromptContextPath(expression: string) {
+    const normalized = String(expression || '').trim();
+    if (normalized === 'ctx') {
+      return '';
+    }
+    if (!normalized.startsWith('ctx.')) {
+      return null;
+    }
+    const path = normalized.slice(4).trim();
+    return isBareFlowContextPath(path) ? path : null;
+  }
+
+  private buildAIEmployeePromptVariableHint(targetUid?: string) {
+    return `Call flowSurfaces:context${
+      targetUid ? ` with target.uid "${targetUid}"` : ''
+    } to inspect available ctx paths before writing prompt variables.`;
+  }
+
+  private throwAIEmployeePromptVariableInvalid(input: {
+    actionName: string;
+    fieldPath: string;
+    variable: string;
+    targetUid?: string;
+    reason: string;
+    path?: string;
+  }): never {
+    throwBadRequest(
+      `flowSurfaces ${input.actionName} ${input.fieldPath} variable "${input.variable}" is not allowed: ${
+        input.reason
+      }. Use a concrete ctx path such as "{{ ctx.record.id }}" only when that path is available. ${this.buildAIEmployeePromptVariableHint(
+        input.targetUid,
+      )}`,
+      AI_EMPLOYEE_PROMPT_VARIABLE_INVALID,
+      {
+        path: input.fieldPath,
+        details: buildDefinedPayload({
+          variable: input.variable,
+          contextPath: input.path,
+          targetUid: input.targetUid,
+        }),
+      },
+    );
+  }
+
+  private assertAIEmployeePromptVariablesAllowed(
+    actionName: string,
+    fieldPath: string,
+    value: string,
+    validation: AIEmployeePromptValidationContext,
+  ) {
+    for (const variable of this.collectAIEmployeePromptVariables(value)) {
+      const path = this.extractAIEmployeePromptContextPath(variable.inner);
+      if (path === '') {
+        this.throwAIEmployeePromptVariableInvalid({
+          actionName,
+          fieldPath,
+          variable: variable.raw,
+          targetUid: validation.targetUid,
+          reason: 'the whole ctx object is not a valid prompt variable; use a concrete ctx path',
+        });
+      }
+      if (!path) {
+        this.throwAIEmployeePromptVariableInvalid({
+          actionName,
+          fieldPath,
+          variable: variable.raw,
+          targetUid: validation.targetUid,
+          reason: 'only simple ctx dot paths like "{{ ctx.record.id }}" are supported',
+        });
+      }
+      if (!this.isAIEmployeeContextPathAllowed(path, validation)) {
+        this.throwAIEmployeePromptVariableInvalid({
+          actionName,
+          fieldPath,
+          variable: variable.raw,
+          targetUid: validation.targetUid,
+          path,
+          reason: `path "${path}" is not available in the current Flow Surface context`,
+        });
+      }
+    }
+  }
+
+  private assertAIEmployeeTaskPromptVariablesAllowed(
+    actionName: string,
+    tasks: any[],
+    validation?: AIEmployeePromptValidationContext,
+    path = 'settings.tasks',
+  ) {
+    if (!validation) {
+      return;
+    }
+    tasks.forEach((task, index) => {
+      const message = task?.message;
+      if (typeof message?.system === 'string') {
+        this.assertAIEmployeePromptVariablesAllowed(
+          actionName,
+          `${path}[${index}].message.system`,
+          message.system,
+          validation,
+        );
+      }
+      if (typeof message?.user === 'string') {
+        this.assertAIEmployeePromptVariablesAllowed(
+          actionName,
+          `${path}[${index}].message.user`,
+          message.user,
+          validation,
+        );
+      }
+    });
+  }
+
+  private async resolveAIEmployeePromptActionTargetUid(
+    context: AIEmployeePromptContextOptions | undefined,
+    transaction?: any,
+  ) {
+    if (!context) {
+      return undefined;
+    }
+    if (context.kind === 'target') {
+      return String(context.targetUid || '').trim() || undefined;
+    }
+    return String(context.ownerUid || '').trim() || undefined;
+  }
+
+  private async buildAIEmployeePromptValidationContext(
+    actionName: string,
+    tasks: any[],
+    options: {
+      transaction?: any;
+      promptContext?: AIEmployeePromptContextOptions;
+    },
+  ): Promise<AIEmployeePromptValidationContext | undefined> {
+    if (!this.hasAIEmployeePromptVariables(tasks)) {
+      return undefined;
+    }
+
+    const targetUid = await this.resolveAIEmployeePromptActionTargetUid(options.promptContext, options.transaction);
+    if (!targetUid) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} AI employee prompt variables require a resolvable Flow Surface context. ${this.buildAIEmployeePromptVariableHint()}`,
+        AI_EMPLOYEE_PROMPT_VARIABLE_INVALID,
+      );
+    }
+
+    const target = { uid: targetUid };
+    const resolved = await this.locator.resolve(target, { transaction: options.transaction });
+    let semantic = await this.resolveContextSemantic(resolved?.node?.uid || target.uid, resolved, options.transaction);
+    if (options.promptContext?.kind === 'container' && options.promptContext.scope === 'record') {
+      semantic = {
+        ...semantic,
+        recordCollection:
+          semantic.recordCollection ||
+          semantic.collection ||
+          (await this.resolveContextOwnerCollection(targetUid, options.transaction).catch(() => null)),
+      };
+    }
+    const context = buildFlowSurfaceContextResponse({
+      semantic,
+      maxDepth: AI_EMPLOYEE_PROMPT_CONTEXT_MAX_DEPTH,
+    });
+    return {
+      targetUid,
+      semantic,
+      contextPaths: this.collectAIEmployeeContextPathEntries(context),
+    };
+  }
+
+  private async assertAIEmployeeStepParamTaskPromptVariablesAllowedForUpdateSettings(
+    current: any,
+    nextPayload: Record<string, any>,
+    writeTarget: FlowSurfaceWriteTarget,
+    options: {
+      transaction?: any;
+      openViewActionName?: string;
+    },
+  ) {
+    if (
+      !this.isAIEmployeeActionUse(current?.use) ||
+      !_.has(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH])
+    ) {
+      return;
+    }
+    const tasks = _.get(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
+    if (!Array.isArray(tasks)) {
+      return;
+    }
+    const actionName = options.openViewActionName || 'updateSettings';
+    this.assertAIEmployeeTaskPromptVariablesAllowed(
+      actionName,
+      tasks,
+      await this.buildAIEmployeePromptValidationContext(actionName, tasks, {
+        transaction: options.transaction,
+        promptContext: {
+          kind: 'target',
+          targetUid: current?.uid || writeTarget.uid,
+        },
+      }),
+      'stepParams.shortcutSettings.editTasks.tasks',
+    );
   }
 
   private normalizeAIEmployeeTaskMessage(
@@ -21227,6 +21671,20 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(next.message)) {
       next.message = {};
     }
+    if (_.isPlainObject(next.skillSettings)) {
+      if (
+        Array.isArray(next.skillSettings.skills) &&
+        !Object.prototype.hasOwnProperty.call(next.skillSettings, 'skillsVersion')
+      ) {
+        next.skillSettings.skillsVersion = 2;
+      }
+      if (
+        Array.isArray(next.skillSettings.tools) &&
+        !Object.prototype.hasOwnProperty.call(next.skillSettings, 'toolsVersion')
+      ) {
+        next.skillSettings.toolsVersion = 2;
+      }
+    }
     return next;
   }
 
@@ -21298,6 +21756,7 @@ export class FlowSurfacesService {
       current?: any;
       requireUsername?: boolean;
       selfUid?: string;
+      promptContext?: AIEmployeePromptContextOptions;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
       currentRoles?: FlowSurfaceRequestRoles;
     },
@@ -21323,6 +21782,7 @@ export class FlowSurfacesService {
     }
 
     const props: Record<string, any> = {};
+    const stepParams: Record<string, any> = {};
     if (effectiveUsername && (hasUsername || options.requireUsername)) {
       props.aiEmployee = {
         ...(_.isPlainObject(currentProps.aiEmployee) ? _.cloneDeep(currentProps.aiEmployee) : {}),
@@ -21354,11 +21814,25 @@ export class FlowSurfacesService {
       };
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'tasks')) {
-      props.tasks = this.normalizeAIEmployeeTasks(actionName, settings.tasks, currentProps.tasks, {
-        selfUid: options.selfUid,
-        keyMap: options.keyMap,
-        path: 'settings.tasks',
-      });
+      const tasks = this.normalizeAIEmployeeTasks(
+        actionName,
+        settings.tasks,
+        this.readAIEmployeePersistedTasks(options.current),
+        {
+          selfUid: options.selfUid,
+          keyMap: options.keyMap,
+          path: 'settings.tasks',
+        },
+      );
+      this.assertAIEmployeeTaskPromptVariablesAllowed(
+        actionName,
+        tasks,
+        await this.buildAIEmployeePromptValidationContext(actionName, tasks, {
+          transaction: options.transaction,
+          promptContext: options.promptContext,
+        }),
+      );
+      _.merge(stepParams, this.buildAIEmployeeTaskStepParams(tasks));
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'style') || options.requireUsername) {
       const style = Object.prototype.hasOwnProperty.call(settings, 'style') ? settings.style : {};
@@ -21388,7 +21862,10 @@ export class FlowSurfacesService {
         _.isPlainObject(style) ? _.pick(_.cloneDeep(style), AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {},
       );
     }
-    return props;
+    return {
+      props,
+      stepParams,
+    };
   }
 
   private async resolveAIEmployeeActionSelfUid(actionNode: any, transaction?: any) {
@@ -21437,25 +21914,34 @@ export class FlowSurfacesService {
     const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('action', changes, allowedKeys);
     if (this.isAIEmployeeActionUse(use)) {
-      const props = await this.normalizeAIEmployeeActionPublicSettings('configure action', changes, {
-        transaction: options.transaction,
-        enabledPackages: options.enabledPackages || (await this.resolveEnabledPluginPackages(options)),
-        current: currentNode,
-        currentRoles: options.currentRoles,
-        selfUid: await this.resolveAIEmployeeActionSelfUid(currentNode, options.transaction),
-      });
-      return this.updateSettings(
+      const aiEmployeeSettingsPayload = await this.normalizeAIEmployeeActionPublicSettings(
+        'configure action',
+        changes,
         {
-          target,
-          props,
-        },
-        {
-          ...options,
-          openViewActionName: options.openViewActionName || 'configure action',
-          popupTemplateHostUid: target.uid,
-          allowAIEmployeeInternalProps: true,
+          transaction: options.transaction,
+          enabledPackages: options.enabledPackages || (await this.resolveEnabledPluginPackages(options)),
+          current: currentNode,
+          currentRoles: options.currentRoles,
+          selfUid: await this.resolveAIEmployeeActionSelfUid(currentNode, options.transaction),
+          promptContext: {
+            kind: 'target',
+            targetUid: currentNode?.uid || target.uid,
+          },
         },
       );
+      const settingsValues: Record<string, any> = { target };
+      if (Object.keys(aiEmployeeSettingsPayload.props).length) {
+        settingsValues.props = aiEmployeeSettingsPayload.props;
+      }
+      if (Object.keys(aiEmployeeSettingsPayload.stepParams).length) {
+        settingsValues.stepParams = aiEmployeeSettingsPayload.stepParams;
+      }
+      return this.updateSettings(settingsValues, {
+        ...options,
+        openViewActionName: options.openViewActionName || 'configure action',
+        popupTemplateHostUid: target.uid,
+        allowAIEmployeeInternalProps: true,
+      });
     }
     const normalizedDefaultFilter = hasOwnDefined(changes, 'defaultFilter')
       ? this.normalizeFilterActionDefaultFilterValue(changes.defaultFilter)
@@ -23048,7 +23534,8 @@ export class FlowSurfacesService {
 
   private resolveRecordActionContextOwner(ancestors: any[]) {
     const currentNode = ancestors[0];
-    if (!String(currentNode?.use || '').endsWith('ActionModel')) {
+    const currentUse = String(currentNode?.use || '').trim();
+    if (!currentUse.endsWith('ActionModel') && !ACTION_BUTTON_USES.has(currentUse)) {
       return null;
     }
     return ancestors.slice(1).find((node) => getActionContainerScope(node?.use) === 'record') || null;

@@ -174,6 +174,14 @@ describe('flowSurfaces AI employee action contract', () => {
     return await flowRepo.findModelById(uid, { includeAsyncNode: true });
   }
 
+  function getPersistedTasks(action: any) {
+    return _.get(action, ['stepParams', 'shortcutSettings', 'editTasks', 'tasks']);
+  }
+
+  function expectNoPersistedPropsTasks(action: any) {
+    expect(action?.props || {}).not.toHaveProperty('tasks');
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
       enabledPluginAliases: FLOW_SURFACES_AI_TEST_PLUGINS,
@@ -206,10 +214,16 @@ describe('flowSurfaces AI employee action contract', () => {
       },
       settingsContract: {
         props: expect.objectContaining({
-          allowedKeys: expect.arrayContaining(['aiEmployee', 'context', 'auto', 'tasks', 'style']),
+          allowedKeys: expect.arrayContaining(['aiEmployee', 'context', 'auto', 'style']),
+        }),
+        stepParams: expect.objectContaining({
+          allowedKeys: expect.arrayContaining(['shortcutSettings']),
         }),
       },
     });
+    const aiEmployeeContract = enabledCatalog.actions.find((item: any) => item.key === 'aiEmployee').settingsContract;
+    expect(aiEmployeeContract.props.allowedKeys).not.toContain('tasks');
+    expect(aiEmployeeContract.stepParams.groups.shortcutSettings.allowedPaths).toEqual(['editTasks.tasks']);
     expect(enabledCatalog.recordActions.find((item: any) => item.key === 'aiEmployee')).toMatchObject({
       use: 'AIEmployeeButtonModel',
     });
@@ -272,13 +286,15 @@ describe('flowSurfaces AI employee action contract', () => {
       expect(persisted?.props?.aiEmployee?.username).toBe('dex');
       expect(persisted?.props?.auto).toBe(false);
       expectResolvedFlowModelContext(persisted?.props?.context?.workContext, table.uid);
-      expectResolvedFlowModelContext(persisted?.props?.tasks?.[0]?.message?.workContext, table.uid);
-      expect(persisted?.props?.tasks?.[0]).toMatchObject({
+      const persistedTasks = getPersistedTasks(persisted);
+      expectResolvedFlowModelContext(persistedTasks?.[0]?.message?.workContext, table.uid);
+      expect(persistedTasks?.[0]).toMatchObject({
         title: 'Analyze current record',
         autoSend: false,
-        skillSettings: { skills: ['crm'], tools: [] },
+        skillSettings: { skills: ['crm'], tools: [], skillsVersion: 2, toolsVersion: 2 },
         webSearch: false,
       });
+      expectNoPersistedPropsTasks(persisted);
     }
     expect((await readAction(collectionAction.uid))?.props?.style).toEqual({ size: 40, mask: false });
     expect((await readAction(recordAction.uid))?.props?.style).toEqual({ size: 36, mask: false });
@@ -322,6 +338,10 @@ describe('flowSurfaces AI employee action contract', () => {
     );
     expectResolvedFlowModelContext(collectionAction?.props?.context?.workContext, tableBlock.uid);
     expectResolvedFlowModelContext(recordAction?.props?.context?.workContext, tableBlock.uid);
+    expectResolvedFlowModelContext(getPersistedTasks(collectionAction)?.[0]?.message?.workContext, tableBlock.uid);
+    expectResolvedFlowModelContext(getPersistedTasks(recordAction)?.[0]?.message?.workContext, tableBlock.uid);
+    expectNoPersistedPropsTasks(collectionAction);
+    expectNoPersistedPropsTasks(recordAction);
   });
 
   it('resolves AI employee work contexts in applyBlueprint block, record, and form actions', async () => {
@@ -390,9 +410,14 @@ describe('flowSurfaces AI employee action contract', () => {
     );
 
     expectResolvedFlowModelContext(formAction?.props?.context?.workContext, formBlock.uid);
+    expectResolvedFlowModelContext(getPersistedTasks(formAction)?.[0]?.message?.workContext, formBlock.uid);
     expectResolvedFlowModelContext(tableAction?.props?.context?.workContext, formBlock.uid);
-    expectResolvedFlowModelContext(tableAction?.props?.tasks?.[0]?.message?.workContext, tableBlock.uid);
+    expectResolvedFlowModelContext(getPersistedTasks(tableAction)?.[0]?.message?.workContext, tableBlock.uid);
     expectResolvedFlowModelContext(recordAction?.props?.context?.workContext, tableBlock.uid);
+    expectResolvedFlowModelContext(getPersistedTasks(recordAction)?.[0]?.message?.workContext, tableBlock.uid);
+    expectNoPersistedPropsTasks(formAction);
+    expectNoPersistedPropsTasks(tableAction);
+    expectNoPersistedPropsTasks(recordAction);
   });
 
   it('rejects invalid AI employee usernames and block-key references', async () => {
@@ -518,7 +543,7 @@ describe('flowSurfaces AI employee action contract', () => {
 
     let persisted = await readAction(action.uid);
     expect(persisted?.props?.auto).toBe(true);
-    expect(persisted?.props?.tasks?.[0]).toMatchObject({
+    expect(getPersistedTasks(persisted)?.[0]).toMatchObject({
       title: 'Generate insight',
       message: {
         system: 'Use the current UI context.',
@@ -528,11 +553,14 @@ describe('flowSurfaces AI employee action contract', () => {
       skillSettings: {
         skills: ['crm'],
         tools: ['web'],
+        skillsVersion: 2,
+        toolsVersion: 2,
       },
       model: { llmService: 'openai', model: 'gpt-4.1' },
       webSearch: false,
     });
-    expectResolvedFlowModelContext(persisted?.props?.tasks?.[0]?.message?.workContext, table.uid);
+    expectResolvedFlowModelContext(getPersistedTasks(persisted)?.[0]?.message?.workContext, table.uid);
+    expectNoPersistedPropsTasks(persisted);
 
     const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -556,7 +584,7 @@ describe('flowSurfaces AI employee action contract', () => {
     expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
 
     persisted = await readAction(action.uid);
-    expect(persisted?.props?.tasks?.[0]).toMatchObject({
+    expect(getPersistedTasks(persisted)?.[0]).toMatchObject({
       title: 'Generate insight',
       message: {
         system: 'Updated system background.',
@@ -566,11 +594,327 @@ describe('flowSurfaces AI employee action contract', () => {
       skillSettings: {
         skills: [],
         tools: [],
+        skillsVersion: 2,
+        toolsVersion: 2,
       },
       model: { llmService: 'openai', model: 'gpt-4.1' },
       webSearch: false,
     });
     expect(persisted?.props?.style).toEqual({ size: 40, mask: true });
+    expectNoPersistedPropsTasks(persisted);
+  });
+
+  it('validates AI employee task prompt variables against the current flow context', async () => {
+    const { table } = await createTable();
+    const recordTaskSettings = aiEmployeeSettings({
+      tasks: [
+        {
+          title: 'Analyze record',
+          message: {
+            system: 'Use the current record.',
+            user: 'Analyze {{ ctx.record.nickname }}.',
+            workContext: [{ type: 'flow-model', target: 'self' }],
+          },
+          autoSend: false,
+          skillSettings: { skills: [], tools: [] },
+          webSearch: false,
+        },
+      ],
+    });
+
+    const validRecordActionRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'aiEmployee',
+        settings: recordTaskSettings,
+      },
+    });
+    expect(validRecordActionRes.status, readErrorMessage(validRecordActionRes)).toBe(200);
+    const validRecordAction = await readAction(getData(validRecordActionRes).uid);
+    expect(getPersistedTasks(validRecordAction)?.[0]?.message?.user).toBe('Analyze {{ ctx.record.nickname }}.');
+
+    const blockActionWithRecordVarRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'aiEmployee',
+        settings: recordTaskSettings,
+      },
+    });
+    expect(blockActionWithRecordVarRes.status).toBe(400);
+    expect(readErrorMessage(blockActionWithRecordVarRes)).toContain('settings.tasks[0].message.user');
+    expect(readErrorMessage(blockActionWithRecordVarRes)).toContain('path "record.nickname" is not available');
+    expect(readErrorMessage(blockActionWithRecordVarRes)).toContain('flowSurfaces:context');
+
+    const configurableAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings(),
+        },
+      }),
+    );
+    const validDynamicPathRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: configurableAction.uid },
+        changes: {
+          tasks: [
+            {
+              message: {
+                user: 'Analyze {{ ctx.urlSearchParams.keyword }}.',
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validDynamicPathRes.status, readErrorMessage(validDynamicPathRes)).toBe(200);
+
+    const validDeepContextPathRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: configurableAction.uid },
+        changes: {
+          tasks: [
+            {
+              message: {
+                user: 'Analyze {{ ctx.record.manager.nickname }}.',
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(validDeepContextPathRes.status, readErrorMessage(validDeepContextPathRes)).toBe(200);
+
+    const invalidCases = [
+      {
+        label: 'whole ctx object',
+        user: 'Analyze {{ctx}}.',
+        expected: ['settings.tasks[0].message.user', '{{ctx}}', 'concrete ctx path', 'flowSurfaces:context'],
+      },
+      {
+        label: 'multiline whole ctx object',
+        user: 'Analyze {{\nctx\n}}.',
+        expected: ['settings.tasks[0].message.user', 'whole ctx object', 'concrete ctx path', 'flowSurfaces:context'],
+      },
+      {
+        label: 'missing ctx path',
+        user: 'Analyze {{ ctx.missing.value }}.',
+        expected: ['settings.tasks[0].message.user', 'path "missing.value" is not available', 'flowSurfaces:context'],
+      },
+      {
+        label: 'non ctx expression',
+        user: 'Analyze {{ foo }}.',
+        expected: ['settings.tasks[0].message.user', '{{ foo }}', 'concrete ctx path', 'flowSurfaces:context'],
+      },
+      {
+        label: 'nested dynamic ctx path',
+        user: 'Analyze {{ ctx.urlSearchParams.keyword.extra }}.',
+        expected: [
+          'settings.tasks[0].message.user',
+          'path "urlSearchParams.keyword.extra" is not available',
+          'flowSurfaces:context',
+        ],
+      },
+    ];
+
+    for (const item of invalidCases) {
+      const res = await rootAgent.resource('flowSurfaces').configure({
+        values: {
+          target: { uid: configurableAction.uid },
+          changes: {
+            tasks: [
+              {
+                message: {
+                  user: item.user,
+                },
+              },
+            ],
+          },
+        },
+      });
+      expect(res.status, item.label).toBe(400);
+      for (const expected of item.expected) {
+        expect(readErrorMessage(res)).toContain(expected);
+      }
+    }
+
+    const rawStepParamsRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: configurableAction.uid },
+        stepParams: {
+          shortcutSettings: {
+            editTasks: {
+              tasks: [
+                {
+                  message: {
+                    user: 'Analyze {{ctx}}.',
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(rawStepParamsRes.status).toBe(400);
+    expect(readErrorMessage(rawStepParamsRes)).toContain('stepParams.shortcutSettings.editTasks.tasks[0].message.user');
+    expect(readErrorMessage(rawStepParamsRes)).toContain('{{ctx}}');
+    expect(readErrorMessage(rawStepParamsRes)).toContain('flowSurfaces:context');
+  });
+
+  it('clears AI employee tasks through public updateSettings', async () => {
+    const { table } = await createTable();
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings(),
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: action.uid },
+        tasks: [],
+      },
+    });
+    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
+
+    const persisted = await readAction(action.uid);
+    expect(getPersistedTasks(persisted)).toEqual([]);
+    expectNoPersistedPropsTasks(persisted);
+  });
+
+  it('migrates legacy props.tasks when public tasks are updated', async () => {
+    const { table } = await createTable();
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings(),
+        },
+      }),
+    );
+    const persisted = await readAction(action.uid);
+    await flowRepo.patch({
+      uid: action.uid,
+      props: {
+        ...persisted.props,
+        tasks: [
+          {
+            title: 'Legacy persisted task',
+            message: {
+              system: 'Legacy system.',
+              user: 'Legacy user.',
+              workContext: [{ type: 'flow-model', uid: table.uid }],
+            },
+            autoSend: false,
+            skillSettings: { skills: ['legacy-skill'], tools: [], skillsVersion: 2, toolsVersion: 2 },
+            webSearch: false,
+          },
+        ],
+      },
+      stepParams: {},
+    });
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: action.uid },
+        tasks: [
+          {
+            title: 'Migrated task',
+            skillSettings: {
+              tools: ['migrated-tool'],
+            },
+          },
+        ],
+      },
+    });
+    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
+
+    const migrated = await readAction(action.uid);
+    expect(getPersistedTasks(migrated)?.[0]).toMatchObject({
+      title: 'Migrated task',
+      message: {
+        system: 'Legacy system.',
+        user: 'Legacy user.',
+      },
+      skillSettings: {
+        skills: ['legacy-skill'],
+        tools: ['migrated-tool'],
+        skillsVersion: 2,
+        toolsVersion: 2,
+      },
+      webSearch: false,
+    });
+    expectResolvedFlowModelContext(getPersistedTasks(migrated)?.[0]?.message?.workContext, table.uid);
+    expectNoPersistedPropsTasks(migrated);
+  });
+
+  it('migrates legacy props.tasks during unrelated public AI employee settings updates', async () => {
+    const { table } = await createTable();
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings(),
+        },
+      }),
+    );
+    const persisted = await readAction(action.uid);
+    await flowRepo.patch({
+      uid: action.uid,
+      props: {
+        ...persisted.props,
+        tasks: [
+          {
+            title: 'Legacy preserved task',
+            message: {
+              system: 'Legacy system.',
+              user: 'Legacy user.',
+              workContext: [{ type: 'flow-model', uid: table.uid }],
+            },
+            autoSend: false,
+            skillSettings: { skills: ['legacy-skill'], tools: [], skillsVersion: 2, toolsVersion: 2 },
+            webSearch: false,
+          },
+        ],
+      },
+      stepParams: {},
+    });
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: action.uid },
+        style: {
+          mask: true,
+        },
+      },
+    });
+    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
+
+    const migrated = await readAction(action.uid);
+    expect(getPersistedTasks(migrated)?.[0]).toMatchObject({
+      title: 'Legacy preserved task',
+      message: {
+        system: 'Legacy system.',
+        user: 'Legacy user.',
+      },
+      skillSettings: {
+        skills: ['legacy-skill'],
+        tools: [],
+        skillsVersion: 2,
+        toolsVersion: 2,
+      },
+      webSearch: false,
+    });
+    expect(migrated?.props?.style).toEqual({ size: 40, mask: true });
+    expectNoPersistedPropsTasks(migrated);
   });
 
   it('rejects malformed AI employee work context and task payloads', async () => {
