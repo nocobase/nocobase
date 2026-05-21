@@ -24,6 +24,7 @@ import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';
 import { Tooltip } from 'antd';
 import { coerceForToOneField } from '../../../internal/utils/associationValueCoercion';
+import { getFormItemFieldPathCandidates } from '../../../internal/utils/modelUtils';
 import { buildDynamicNamePath } from './dynamicNamePath';
 
 const interfacesOfUnsupportedDefaultValue = [
@@ -57,10 +58,9 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
           key: fullName,
           label: field.title,
           // 同步刷新 JS 字段菜单的切换状态（兼容旧路径与新路径）
-          refreshTargets: ['FormItemModel/FormJSFieldItemModel'],
+          refreshTargets: ['FormJSFieldItemModel', 'FormItemModel/FormJSFieldItemModel'],
           toggleable: (subModel) => {
-            const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
-            return fieldPath === fullName;
+            return getFormItemFieldPathCandidates(subModel).some((fieldPath) => fieldPath === fullName);
           },
           useModel: 'FormItemModel',
           createModelOptions: () => ({
@@ -183,6 +183,8 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
 
 FormItemModel.define({
   label: tExpr('Display fields'),
+  searchable: true,
+  searchPlaceholder: tExpr('Search fields'),
   sort: 100,
 });
 

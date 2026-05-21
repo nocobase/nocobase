@@ -37,6 +37,14 @@ function pathExists(candidate: string): boolean {
   }
 }
 
+function isDirectory(candidate: string): boolean {
+  try {
+    return Boolean(candidate) && fs.statSync(candidate).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function hasLocalNocoBaseBinary(candidate: string): boolean {
   return (
     pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1'))
@@ -55,21 +63,25 @@ export function resolveCwd(cwd?: string): string {
 export function resolveProjectCwd(cwd?: string): string {
   const normalizedCwd = typeof cwd === 'string' && cwd.trim() === '' ? undefined : cwd;
   const fallback = resolveCwd(normalizedCwd);
-  const isAbsoluteInput = typeof normalizedCwd === 'string' && path.isAbsolute(normalizedCwd);
-  let current = isAbsoluteInput ? fallback : process.cwd();
+  const hasExplicitInput = normalizedCwd !== undefined;
+  if (hasExplicitInput && !pathExists(fallback)) {
+    throw new Error(`The specified --cwd does not exist: ${fallback}`);
+  }
+  if (hasExplicitInput && !isDirectory(fallback)) {
+    throw new Error(`The specified --cwd is not a directory: ${fallback}`);
+  }
+  let current = hasExplicitInput ? fallback : process.cwd();
 
   while (true) {
-    const candidate = isAbsoluteInput
-      ? current
-      : normalizedCwd
-        ? path.resolve(current, normalizedCwd)
-        : current;
-    if (hasLocalNocoBaseBinary(candidate)) {
-      return candidate;
+    if (hasLocalNocoBaseBinary(current)) {
+      return current;
     }
 
     const parent = path.dirname(current);
     if (parent === current) {
+      if (hasExplicitInput) {
+        throw new Error(`Couldn't find a NocoBase source project from --cwd: ${fallback}`);
+      }
       return fallback;
     }
     current = parent;
@@ -79,7 +91,14 @@ export function resolveProjectCwd(cwd?: string): string {
 export function run(
   name: string,
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string>; errorName?: string },
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    cwd?: string;
+    env?: Record<string, string>;
+    errorName?: string;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
 ): Promise<void> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
@@ -94,6 +113,20 @@ export function run(
       },
       windowsHide: process.platform === 'win32',
     });
+    if (options?.stdio === 'pipe') {
+      child.stdout?.setEncoding('utf8');
+      child.stderr?.setEncoding('utf8');
+      if (options.onStdout) {
+        child.stdout?.on('data', (chunk) => {
+          options.onStdout?.(String(chunk));
+        });
+      }
+      if (options.onStderr) {
+        child.stderr?.on('data', (chunk) => {
+          options.onStderr?.(String(chunk));
+        });
+      }
+    }
     const cleanupSignalForwarding = forwardSignalsToChild(child);
     child.once('error', (error) => {
       cleanupSignalForwarding();
@@ -279,14 +312,26 @@ export async function commandOutputViaFile(
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */
 export function runNpm(
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    cwd?: string;
+    env?: Record<string, string>;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
 ): Promise<void> {
   return run('yarn', [...args], { ...options, errorName: 'npm' });
 }
 
 export function runNocoBaseCommand(
   args: string[],
-  options?: { stdio?: 'inherit' | 'pipe' | 'ignore'; cwd?: string; env?: Record<string, string> },
+  options?: {
+    stdio?: 'inherit' | 'pipe' | 'ignore';
+    cwd?: string;
+    env?: Record<string, string>;
+    onStdout?: (chunk: string) => void;
+    onStderr?: (chunk: string) => void;
+  },
 ): Promise<void> {
   const cwd = resolveProjectCwd(options?.cwd);
   const localBin = path.join(cwd, 'node_modules', '.bin');

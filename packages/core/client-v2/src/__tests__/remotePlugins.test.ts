@@ -32,6 +32,61 @@ describe('client-v2 remotePlugins', () => {
     expect(mockDefine).toHaveBeenCalledWith('@nocobase/demo/client-v2', expect.any(Function));
   });
 
+  it('should preserve named exports from dev plugin modules', () => {
+    class DemoPlugin extends Plugin {}
+    class DemoActionModel {}
+
+    const mockDefine: any = vi.fn();
+    window.define = mockDefine;
+
+    const pluginModule = {
+      default: DemoPlugin,
+      DemoActionModel,
+    };
+    defineDevPlugins({
+      '@nocobase/demo': pluginModule,
+    });
+
+    const moduleFactory = mockDefine.mock.calls[0]?.[1];
+    expect(mockDefine).toHaveBeenCalledWith('@nocobase/demo/client-v2', expect.any(Function));
+    expect(moduleFactory()).toBe(pluginModule);
+    expect(window.__nocobase_app_dev_plugins__['@nocobase/demo/client-v2']).toBe(pluginModule);
+  });
+
+  it('should expose named exports from devDynamicImport modules to RequireJS consumers', async () => {
+    class DemoPlugin extends Plugin {}
+    class DemoActionModel {}
+
+    const requirejs: any = {
+      requirejs: vi.fn(),
+    };
+    requirejs.requirejs.config = vi.fn();
+
+    const mockDefine: any = vi.fn();
+    window.define = mockDefine;
+
+    const plugins = await getPlugins({
+      requirejs,
+      pluginData: [
+        {
+          name: '@nocobase/demo',
+          packageName: '@nocobase/demo',
+          url: 'https://demo.com/dist/client-v2/index.js',
+        },
+      ] as any,
+      devDynamicImport: vi.fn().mockResolvedValue({ default: DemoPlugin, DemoActionModel }) as any,
+    });
+
+    const moduleFactory = mockDefine.mock.calls.find((call) => call[0] === '@nocobase/demo/client-v2')?.[1];
+
+    expect(plugins).toEqual([['@nocobase/demo', DemoPlugin]]);
+    expect(moduleFactory()).toEqual({ default: DemoPlugin, DemoActionModel });
+    expect(window.__nocobase_app_dev_plugins__['@nocobase/demo/client-v2']).toEqual({
+      default: DemoPlugin,
+      DemoActionModel,
+    });
+  });
+
   it('should not define /client aliases when loading v2 plugins', async () => {
     class DemoPlugin extends Plugin {}
 
