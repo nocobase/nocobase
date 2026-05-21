@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { getApp } from '..';
 import { BackupManager, BackupSettings } from '../../managers/backup';
 import { MockServer } from '@nocobase/test';
@@ -176,7 +185,9 @@ describe('BackupManager', async () => {
           expect.anything(),
         );
         expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining(`collection "${fileCollection.name}" id=5: Invalid path`),
+          expect.stringMatching(
+            new RegExp(`collection "${fileCollection.name}" id=5: (Invalid path|Path traversal is not allowed)`),
+          ),
           expect.objectContaining({ module: expect.any(String) }),
         );
         expect(warnSpy).not.toHaveBeenCalledWith(
