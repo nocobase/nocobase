@@ -52,6 +52,10 @@ function shouldSkipConsent(clientId: string) {
   return clientId.startsWith('app:');
 }
 
+function getClientId(details: Interaction) {
+  return String(details.params.client_id || '');
+}
+
 async function getInteractionRedirect(
   ctx: InteractionContext,
   provider: Provider,
@@ -79,15 +83,9 @@ async function completeLogin(ctx: InteractionContext, provider: Provider, servic
   );
 }
 
-async function completeConsent(
-  ctx: InteractionContext,
-  provider: Provider,
-  service: IdpOauthService,
-  details: Interaction,
-  accountId: string,
-) {
+async function createConsentGrant(provider: Provider, details: Interaction, accountId: string) {
   const promptDetails = getPromptDetails(details);
-  const clientId = String(details.params.client_id || '');
+  const clientId = getClientId(details);
   let grant;
   if (details.grantId) {
     grant = await provider.Grant.find(details.grantId);
@@ -99,9 +97,13 @@ async function completeConsent(
   }
 
   const missingOIDCScope = asStringArray(promptDetails.missingOIDCScope);
-  if (missingOIDCScope.length) {
-    grant.addOIDCScope(missingOIDCScope.join(' '));
+  const requestedScope =
+    typeof details.params.scope === 'string' ? details.params.scope.split(/\s+/).filter(Boolean) : [];
+  const oidcScope = missingOIDCScope.length ? missingOIDCScope : requestedScope;
+  if (oidcScope.length) {
+    grant.addOIDCScope(oidcScope.join(' '));
   }
+
   const missingOIDCClaims = asStringArray(promptDetails.missingOIDCClaims);
   if (missingOIDCClaims.length) {
     grant.addOIDCClaims(missingOIDCClaims);
@@ -113,13 +115,46 @@ async function completeConsent(
     }
   }
 
+  return grant.save();
+}
+
+async function completeTrustedAppLogin(
+  ctx: InteractionContext,
+  provider: Provider,
+  service: IdpOauthService,
+  details: Interaction,
+  accountId: string,
+) {
+  return getInteractionRedirect(
+    ctx,
+    provider,
+    service,
+    {
+      login: {
+        accountId,
+      },
+      consent: {
+        grantId: await createConsentGrant(provider, details, accountId),
+      },
+    },
+    false,
+  );
+}
+
+async function completeConsent(
+  ctx: InteractionContext,
+  provider: Provider,
+  service: IdpOauthService,
+  details: Interaction,
+  accountId: string,
+) {
   return getInteractionRedirect(
     ctx,
     provider,
     service,
     {
       consent: {
-        grantId: await grant.save(),
+        grantId: await createConsentGrant(provider, details, accountId),
       },
     },
     true,
@@ -143,14 +178,17 @@ export async function handleInteractionGet(
       return;
     }
 
+    const clientId = getClientId(details);
     ctx.body = {
-      redirectTo: await completeLogin(ctx, provider, service, String(interactionUser.id)),
+      redirectTo: shouldSkipConsent(clientId)
+        ? await completeTrustedAppLogin(ctx, provider, service, details, String(interactionUser.id))
+        : await completeLogin(ctx, provider, service, String(interactionUser.id)),
     };
     return;
   }
 
   if (details.prompt.name === 'consent') {
-    const clientId = String(details.params.client_id || '');
+    const clientId = getClientId(details);
     const client = await provider.Client.find(clientId);
     if (interactionUser && shouldSkipConsent(clientId)) {
       ctx.body = {

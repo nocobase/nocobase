@@ -87,6 +87,57 @@ describe('plugin-idp-oauth > interaction', () => {
     });
   });
 
+  test('auto completes login with consent grant for reserved app clients', async () => {
+    const ctx = createCtx();
+    const grant = {
+      addOIDCScope: vi.fn(),
+      addOIDCClaims: vi.fn(),
+      addResourceScope: vi.fn(),
+      save: vi.fn().mockResolvedValue('grant-1'),
+    };
+    const provider = {
+      interactionDetails: vi.fn().mockResolvedValue({
+        prompt: {
+          name: 'login',
+          details: {},
+        },
+        params: {
+          client_id: 'app:alpha',
+          scope: 'openid profile email',
+        },
+      }),
+      interactionResult: vi.fn().mockResolvedValue('/idpOAuth/auth/redirect'),
+      Grant: vi.fn(() => grant),
+    } as any;
+    const service = createService();
+
+    await handleInteractionGet(ctx, provider, { id: 1 }, service);
+
+    expect(provider.Grant).toHaveBeenCalledWith({
+      accountId: '1',
+      clientId: 'app:alpha',
+    });
+    expect(grant.addOIDCScope).toHaveBeenCalledWith('openid profile email');
+    expect(provider.interactionResult).toHaveBeenCalledWith(
+      ctx.req,
+      ctx.res,
+      {
+        login: {
+          accountId: '1',
+        },
+        consent: {
+          grantId: 'grant-1',
+        },
+      },
+      {
+        mergeWithLastSubmission: false,
+      },
+    );
+    expect(ctx.body).toEqual({
+      redirectTo: '/api/idpOAuth/auth/redirect',
+    });
+  });
+
   test('keeps consent prompt for regular clients', async () => {
     const ctx = createCtx();
     const provider = {
