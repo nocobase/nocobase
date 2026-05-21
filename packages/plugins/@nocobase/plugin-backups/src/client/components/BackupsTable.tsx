@@ -1,6 +1,16 @@
-import { DatePicker, useRequest, useAPIClient, useCurrentAppInfo, useApp } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { DatePicker, useRequest, useAPIClient, useCurrentAppInfo } from '@nocobase/client';
 import type { TableColumnsType } from 'antd';
 import { App, Divider, message, Space, Table } from 'antd';
+import { saveAs } from 'file-saver';
 import React, { useContext } from 'react';
 import { NAMESPACE } from '../constants';
 import { BackupsContext } from '../contexts';
@@ -18,7 +28,6 @@ export const BackupsTable = () => {
   const t = useT();
   const api = useAPIClient();
   const currentAppInfo = useCurrentAppInfo();
-  const app = useApp();
   const { modal } = App.useApp();
   const { data, loading, refreshAsync: refresh } = useContext(BackupsContext);
   const { runAsync: destroy } = useRequest<{ data: BackupFile[] }>(
@@ -43,16 +52,20 @@ export const BackupsTable = () => {
 
   const handleDownload = async (fileData: BackupFile) => {
     const appName = currentAppInfo?.data?.['name'];
-    let url = `${app.getApiUrl('backups:download')}?filterByTk=${fileData.name}&token=${api.auth.token}`;
+    const params: Record<string, string> = {
+      filterByTk: fileData.name,
+    };
     if (appName) {
-      url += `&__appName=${appName}`;
+      params.__appName = appName;
     }
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileData.name);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    const response = await api.request({
+      url: 'backups:download',
+      method: 'get',
+      params,
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data]);
+    saveAs(blob, fileData.name);
   };
 
   const hideCellWhenInProgress = (data: BackupFile) => (data.inProgress ? { colSpan: 0 } : {});

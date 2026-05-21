@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import * as nocobaseClient from '@nocobase/client';
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { App } from 'antd';
 import MockAdapter from 'axios-mock-adapter';
-import saveAs from 'file-saver';
+import { saveAs } from 'file-saver';
 import React from 'react';
 import { describe, vi } from 'vitest';
 import { BackupFile, BackupsTable } from '../components/BackupsTable';
@@ -30,15 +39,16 @@ vi.mock('@nocobase/client', async () => {
     ...actual,
     useApp: () => ({
       i18n: {
-        t: vi.fn().mockImplementation((key) => key), // Mock translation function, return the key directly
+        t: vi.fn().mockImplementation((key) => key),
       },
     }),
+    useCurrentAppInfo: () => undefined,
   };
 });
 
 vi.mock('file-saver', async () => {
   return {
-    default: vi.fn(),
+    saveAs: vi.fn(),
   };
 });
 
@@ -49,6 +59,7 @@ describe('BackupsTable', () => {
     const api = nocobaseClient.useAPIClient();
     mocked = new MockAdapter(api.axios);
     mocked.onGet('backups:list').reply(200, mockedData);
+    mocked.onGet('backups:download').reply(200, 'mocked-backup-content');
     mocked.onPost('backups:destroy').reply(200, {});
 
     const useRequestValues = nocobaseClient.useRequest<{ data: BackupFile[] }>({
@@ -74,17 +85,26 @@ describe('BackupsTable', () => {
   test('should handle download action', async () => {
     const user = userEvent.setup();
     render(<MockedTable />);
-    const createElementSpy = vi.spyOn(document, 'createElement');
-
-    await waitFor(async () => {
-      await user.click(screen.getAllByText('Download')[0]);
+    await waitFor(() => {
+      expect(screen.getAllByText('Download')[0]).toBeInTheDocument();
     });
-    expect(createElementSpy).toHaveBeenCalledWith('a');
-    const results = createElementSpy.mock.results;
-    const linkElement = results[results.length - 1].value;
-    expect(linkElement.href).toContain('/api/backups:download');
-    expect(linkElement.download).toBeTruthy();
-    createElementSpy.mockRestore();
+
+    await user.click(screen.getAllByText('Download')[0]);
+
+    await waitFor(() => {
+      expect(mocked.history.get).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            url: 'backups:download',
+            responseType: 'blob',
+            params: {
+              filterByTk: 'backup_20240818_182301_9056.nbdata',
+            },
+          }),
+        ]),
+      );
+      expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'backup_20240818_182301_9056.nbdata');
+    });
   });
 
   test('should handle delete action', async () => {
