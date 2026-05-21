@@ -113,7 +113,10 @@ function VerifierFormView(props: {
     try {
       if (props.mode === 'create') {
         await resource.create({ values: { ...raw, options: trimmedOptions } });
-      } else if (props.record?.id != null) {
+      } else if (props.record?.name != null) {
+        // `verifiers` collection uses `name` as its primary key (autoGenId: false),
+        // so `filterByTk` must be the name string — there is no numeric `id`.
+        //
         // antd Form.validateFields only returns DECLARED paths, so any
         // options sub-keys the current admin-settings form doesn't render
         // would silently disappear on update. Merge the original record's
@@ -124,7 +127,7 @@ function VerifierFormView(props: {
           ...raw,
           options: { ...(props.record.options || {}), ...trimmedOptions },
         };
-        await resource.update({ filterByTk: props.record.id, values: merged });
+        await resource.update({ filterByTk: props.record.name, values: merged });
       }
       props.onSubmitted();
     } finally {
@@ -279,7 +282,7 @@ export default function VerifiersPage() {
             >
               {t('Edit')}
             </a>
-            <a onClick={() => record.id != null && handleDelete(record.id)}>{t('Delete')}</a>
+            <a onClick={() => record.name != null && handleDelete(record.name)}>{t('Delete')}</a>
           </Space>
         ),
       },
