@@ -9,6 +9,9 @@
 
 import { PluginManager } from '@nocobase/server';
 import { mockServer, MockServer, type MockServerOptions } from '@nocobase/test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import mariadb from 'mariadb';
 import mysql from 'mysql2/promise';
 import pg from 'pg';
@@ -268,6 +271,20 @@ async function createFlowSurfacesDatabaseIsolation(
     };
   }
 
+  if (shouldUseFlowSurfacesIsolatedSqliteDatabase(database, dialect)) {
+    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-flow-surfaces-'));
+    return {
+      database: {
+        ...(database || {}),
+        dialect,
+        storage: path.join(root, 'db.sqlite'),
+      },
+      shouldCleanDbOnDestroy: true,
+      selfManagedDatabase: true,
+      cleanup: () => fs.promises.rm(root, { recursive: true, force: true }),
+    };
+  }
+
   if (!shouldUseFlowSurfacesIsolatedMySqlDatabase(dialect)) {
     return { database };
   }
@@ -295,6 +312,13 @@ function getFlowSurfacesDatabaseDialect(database: MockServerOptions['database'] 
 
 function shouldUseFlowSurfacesIsolatedSchema(database: MockServerOptions['database'] | undefined, dialect: string) {
   return dialect === 'postgres' && !database?.schema;
+}
+
+function shouldUseFlowSurfacesIsolatedSqliteDatabase(
+  database: MockServerOptions['database'] | undefined,
+  dialect: string,
+) {
+  return dialect === 'sqlite' && !database?.storage;
 }
 
 function shouldUseFlowSurfacesIsolatedMySqlDatabase(dialect: string) {
