@@ -13,6 +13,27 @@ import { Alert, Button, Form, Input, Typography } from 'antd';
 import React, { useState } from 'react';
 import { useAuthSMSTranslation } from '../locale';
 
+export type SmsPublicOptions = {
+  verifier?: string;
+  autoSignup: boolean;
+};
+
+/**
+ * Extract sign-in–facing options from an authenticator returned by
+ * `/authenticators:publicList`. That endpoint already flattens server-side
+ * `options.public.*` into `options.*` (see plugin-auth server
+ * actions/authenticators.ts `publicList`), so reading
+ * `authenticator.options.public.verifier` always yields `undefined` and silently
+ * sends `verifier: ''` to `smsOTP:publicCreate`. Centralising the unpacking
+ * here lets tests pin the contract.
+ */
+export function pickSmsPublicOptions(authenticator: Authenticator | null | undefined): SmsPublicOptions {
+  return {
+    verifier: authenticator?.options?.verifier,
+    autoSignup: !!authenticator?.options?.autoSignup,
+  };
+}
+
 /**
  * SMS sign-in form rendered on the v2 `/signin` page when the user picks
  * an SMS authenticator tab. Two fields — phone number + OTP code — paired
@@ -31,8 +52,7 @@ export default function SmsSignInForm({ authenticator }: { authenticator: Authen
   const [loading, setLoading] = useState(false);
   const signIn = useSignIn(authenticator.name);
 
-  const autoSignup = !!authenticator?.options?.public?.autoSignup;
-  const verifier: string | undefined = authenticator?.options?.public?.verifier;
+  const { autoSignup, verifier } = pickSmsPublicOptions(authenticator);
   const phone = Form.useWatch('uuid', form);
 
   return (
