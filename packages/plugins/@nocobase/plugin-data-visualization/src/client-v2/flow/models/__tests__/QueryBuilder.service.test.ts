@@ -13,7 +13,7 @@ import {
   getFieldOptions,
   getFormatterOptionsByField,
   validateQuery,
-} from '../../client-v2/flow/models/QueryBuilder.service';
+} from '../QueryBuilder.service';
 
 describe('query builder service', () => {
   test('should build options from flow data source manager', () => {
