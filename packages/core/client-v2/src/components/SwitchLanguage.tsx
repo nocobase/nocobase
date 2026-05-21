@@ -8,41 +8,41 @@
  */
 
 import { TranslationOutlined } from '@ant-design/icons';
-import { Dropdown } from 'antd';
+import { Dropdown, theme } from 'antd';
 import React from 'react';
-import { useApp } from '@nocobase/client-v2';
-import { useSystemSettings } from '@nocobase/client-v2';
+import { useApp } from '../hooks/useApp';
+import { useSystemSettings } from '../flow/system-settings';
+import languageCodes from '../locale/languageCodes';
 
-const languageLabels: Record<string, string> = {
-  'en-US': 'English',
-  'zh-CN': '简体中文',
-};
-
-export default function SwitchLanguage() {
+export function SwitchLanguage() {
   const app = useApp();
+  const { token } = theme.useToken();
   const { data } = useSystemSettings() || {};
-  const enabledLanguages = data?.data?.enabledLanguages || [];
+  const enabledLanguages: string[] = data?.data?.enabledLanguages || [];
 
   if (enabledLanguages.length <= 1) {
     return null;
   }
+
+  const items = enabledLanguages
+    .filter((code) => languageCodes[code])
+    .map((code) => ({ key: code, label: languageCodes[code].label }));
 
   return (
     <Dropdown
       menu={{
         selectable: true,
         defaultSelectedKeys: [app.apiClient.auth.locale],
-        items: enabledLanguages.map((code: string) => ({
-          key: code,
-          label: languageLabels[code] || code,
-        })),
+        items,
         onClick: ({ key }) => {
           app.apiClient.auth.setLocale(String(key));
           window.location.reload();
         },
       }}
     >
-      <TranslationOutlined style={{ fontSize: 20, color: 'inherit' }} />
+      <TranslationOutlined style={{ fontSize: token.fontSizeXL, color: 'inherit' }} />
     </Dropdown>
   );
 }
+
+export default SwitchLanguage;

@@ -7,26 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient, Plugin } from '@nocobase/client-v2';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { createMockClient } from '../MockApplication';
+import { Plugin } from '../Plugin';
+import PoweredBy from '../components/PoweredBy';
 
-import PoweredByLite from '../components/PoweredByLite';
-
-class PoweredByLiteRoutePlugin extends Plugin {
+class PoweredByRoutePlugin extends Plugin {
   async load() {
     this.router.add('root', {
       path: '/',
-      Component: PoweredByLite,
+      Component: PoweredBy,
     });
   }
 }
 
 class MockCustomBrandPlugin extends Plugin {}
 
-const renderPoweredByLite = async (plugins: any[] = [], appInfoData: Record<string, any> = { version: '1.2.3' }) => {
+const renderPoweredBy = async (plugins: any[] = [], appInfoData: Record<string, any> = { version: '1.2.3' }) => {
   const app = createMockClient({
-    plugins: [PoweredByLiteRoutePlugin as any, ...plugins],
+    plugins: [PoweredByRoutePlugin as any, ...plugins],
   });
 
   app.apiMock.onGet('app:getInfo').reply(200, {
@@ -43,21 +43,24 @@ const renderPoweredByLite = async (plugins: any[] = [], appInfoData: Record<stri
   return result;
 };
 
-describe('PoweredByLite', () => {
+describe('PoweredBy', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
   it('should render the default brand when custom-brand is not installed', async () => {
-    const { container } = await renderPoweredByLite();
+    const { container } = await renderPoweredBy();
 
     expect(screen.getByRole('link', { name: 'NocoBase' })).toHaveAttribute('href', 'https://www.nocobase.com');
     expect(container).toHaveTextContent('Powered by NocoBase');
+    // The `.nb-brand` className is reserved for the custom-brand HTML branch
+    // so downstream stylesheets can selectively target customised content
+    // without leaking onto the default footer.
     expect(container.querySelector('.nb-brand')).not.toBeInTheDocument();
   });
 
   it('should render custom-brand HTML and replace appVersion', async () => {
-    const { container } = await renderPoweredByLite([
+    const { container } = await renderPoweredBy([
       [
         MockCustomBrandPlugin,
         {
@@ -77,7 +80,7 @@ describe('PoweredByLite', () => {
   });
 
   it('should not render undefined appVersion when app version is unavailable', async () => {
-    const { container } = await renderPoweredByLite(
+    const { container } = await renderPoweredBy(
       [
         [
           MockCustomBrandPlugin,
@@ -98,7 +101,11 @@ describe('PoweredByLite', () => {
   });
 
   it('should escape custom-brand appVersion placeholder', async () => {
-    const { container } = await renderPoweredByLite(
+    // Defence in depth: even if the back-end ever returns a tampered
+    // `app:getInfo` payload, the version string must be HTML-escaped
+    // before being interpolated into the custom-brand template — never
+    // produce a live `<script>` node in the DOM.
+    const { container } = await renderPoweredBy(
       [
         [
           MockCustomBrandPlugin,
