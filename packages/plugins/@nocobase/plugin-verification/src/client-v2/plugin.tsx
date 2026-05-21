@@ -58,7 +58,7 @@ export class PluginVerificationClientV2 extends Plugin {
     });
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
-      key: 'verifiers',
+      key: 'index',
       title: t('Verifiers'),
       icon: 'CheckCircleOutlined',
       aclSnippet: 'pm.verification.verifiers',
