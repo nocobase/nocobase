@@ -10,6 +10,8 @@
 import React, { ComponentType, FC } from 'react';
 import { BlankComponent } from '../components';
 
+export * from './appVersionHTML';
+
 export function normalizeContainer(container: Element | ShadowRoot | string): Element | null {
   if (!container) {
     console.warn(`Failed to mount app: mount target should not be null or undefined.`);

@@ -96,4 +96,28 @@ describe('PoweredByLite', () => {
     expect(container.querySelector('.nb-brand')).not.toHaveTextContent('undefined');
     expect(container.querySelector('.nb-app-version')).not.toBeInTheDocument();
   });
+
+  it('should escape custom-brand appVersion placeholder', async () => {
+    const { container } = await renderPoweredByLite(
+      [
+        [
+          MockCustomBrandPlugin,
+          {
+            packageName: '@nocobase/plugin-custom-brand',
+            options: {
+              brand: '<span>Custom Brand</span>{{appVersion}}',
+            },
+          },
+        ],
+      ],
+      {
+        version: '<script>alert(1)</script>&"',
+      },
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('.nb-app-version')).toHaveTextContent('v<script>alert(1)</script>&"');
+    });
+    expect(container.querySelector('.nb-brand script')).not.toBeInTheDocument();
+  });
 });
