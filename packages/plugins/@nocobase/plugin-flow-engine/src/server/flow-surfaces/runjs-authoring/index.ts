@@ -4436,6 +4436,12 @@ function collectAstInvalidResourceFilterCalls(
     },
   });
 
+  // Candidate discovery can touch state through getResourceCallTarget().
+  // Replay from a clean state so nested functions inherit the outer ctx.resource
+  // configuration that is in effect when they are called.
+  ctxResourceStates.clear();
+  aliasStates.clear();
+
   const resourceFilterScopes = Array.from(
     new Map(events.map((event) => [scopeKey(event.executionScope), event.executionScope])).values(),
   );
@@ -4549,15 +4555,17 @@ function collectAstResourceFilterObjectErrors(input: {
   if (!input.dataSourceKey || !input.collectionName || !input.context.getCollection) {
     return [];
   }
-  const collection = input.context.getCollection(input.dataSourceKey, input.collectionName);
+  const dataSourceKey = input.dataSourceKey;
+  const collectionName = input.collectionName;
+  const collection = input.context.getCollection(dataSourceKey, collectionName);
   if (!collection) {
     return [
       {
         capability: input.capability,
-        collectionName: input.collectionName,
-        dataSourceKey: input.dataSourceKey,
+        collectionName,
+        dataSourceKey,
         index: input.index,
-        message: `flowSurfaces authoring ${input.capability}(...) references unknown collection '${input.dataSourceKey}.${input.collectionName}' while validating setFilter(...)`,
+        message: `flowSurfaces authoring ${input.capability}(...) references unknown collection '${dataSourceKey}.${collectionName}' while validating setFilter(...)`,
         resourceType: input.resourceType,
         ruleId: 'runjs-resource-collection-unknown',
       },
@@ -4565,6 +4573,8 @@ function collectAstResourceFilterObjectErrors(input: {
   }
   return collectAstResourceFilterProperties({
     ...input,
+    collectionName,
+    dataSourceKey,
     collection,
     rootCollection: collection,
   });
