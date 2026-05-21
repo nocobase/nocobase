@@ -1068,6 +1068,12 @@ type FlowSurfaceApplyBlueprintKanbanCreatedSortField = {
   fieldName: string;
 };
 
+type FlowSurfaceApplyBlueprintMutationResult = {
+  version: '1';
+  mode: FlowSurfaceApplyBlueprintDocument['mode'];
+  pageLocator: FlowSurfaceReadLocator;
+};
+
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
 
@@ -4579,21 +4585,42 @@ export class FlowSurfacesService {
     }
     if (!options.transaction) {
       const createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
-      try {
-        return await this.transaction((transaction) =>
-          this.applyBlueprintWithTransaction(
-            values,
-            {
-              ...options,
-              transaction,
-            },
-            createdKanbanSortFields,
-          ),
-        );
-      } catch (error) {
-        await this.cleanupApplyBlueprintKanbanSortFields(createdKanbanSortFields);
-        throw error;
+      const mutationResult = await this.applyBlueprintMutationWithoutExternalTransaction(
+        values,
+        options,
+        createdKanbanSortFields,
+      );
+      const surface = await this.get(mutationResult.pageLocator, { currentRoles: options.currentRoles });
+      return this.buildApplyBlueprintResponse(mutationResult.mode, mutationResult.pageLocator, surface);
+    }
+  }
+
+  private async applyBlueprintMutationWithoutExternalTransaction(
+    values: Record<string, any>,
+    options: { currentRoles?: FlowSurfaceRequestRoles } = {},
+    createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+  ): Promise<FlowSurfaceApplyBlueprintMutationResult> {
+    try {
+      const document = prepareFlowSurfaceApplyBlueprintDocument(values);
+      if (document.mode === 'create') {
+        return await this.applyBlueprintWithTransaction(values, options, createdKanbanSortFields, {
+          readSurface: false,
+        });
       }
+      return await this.transaction((transaction) =>
+        this.applyBlueprintWithTransaction(
+          values,
+          {
+            ...options,
+            transaction,
+          },
+          createdKanbanSortFields,
+          { readSurface: false },
+        ),
+      );
+    } catch (error) {
+      await this.cleanupApplyBlueprintKanbanSortFields(createdKanbanSortFields);
+      throw error;
     }
   }
 
@@ -4601,6 +4628,7 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
     createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    resultOptions: { readSurface?: boolean } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
@@ -4630,11 +4658,26 @@ export class FlowSurfacesService {
       options,
     );
     const pageLocator = resolveApplyBlueprintPageLocator(prepared, result);
+    if (resultOptions.readSurface === false) {
+      return {
+        version: '1',
+        mode: prepared.document.mode,
+        pageLocator,
+      };
+    }
     const surface = await this.get(pageLocator, options);
 
+    return this.buildApplyBlueprintResponse(prepared.document.mode, pageLocator, surface);
+  }
+
+  private buildApplyBlueprintResponse(
+    mode: FlowSurfaceApplyBlueprintDocument['mode'],
+    pageLocator: FlowSurfaceReadLocator,
+    surface: any,
+  ) {
     return {
       version: '1',
-      mode: prepared.document.mode,
+      mode,
       target: buildDefinedPayload({
         pageSchemaUid: pageLocator.pageSchemaUid,
         pageUid: surface?.target?.uid,
