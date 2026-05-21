@@ -158,7 +158,6 @@ const ApiKeysPage: React.FC = () => {
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <Alert
                     type="warning"
-                    showIcon
                     message={t(
                       'Make sure to copy your personal access key now as you will not be able to see this again.',
                     )}
