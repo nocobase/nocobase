@@ -71,6 +71,20 @@ export type VerifierResource = {
   update(params: { filterByTk: string; values: VerifierFormValues }): Promise<unknown>;
 };
 
+/**
+ * Wider shape consumed by the page (list + destroy + listTypes). Kept
+ * separate from `VerifierResource` so the test surface for `submitVerifierForm`
+ * stays minimal — tests only mock `create`/`update`.
+ */
+type VerifiersResource = VerifierResource & {
+  list(params?: Record<string, unknown>): Promise<{ data?: { data?: VerifierRecord[]; meta?: ListMeta } }>;
+  // `filterByTk` accepts a single PK or a bulk-delete batch. Use React.Key
+  // here so the antd Table's `selectedRowKeys` (Key[] = (string|number)[])
+  // assigns without a cast — server-side it is still the verifier's `name`.
+  destroy(params: { filterByTk: React.Key | React.Key[] }): Promise<unknown>;
+  listTypes(): Promise<{ data?: { data?: VerificationTypeOption[] } | VerificationTypeOption[] }>;
+};
+
 export async function submitVerifierForm(args: {
   raw: VerifierFormValues;
   mode: 'create' | 'edit';
@@ -102,9 +116,13 @@ export async function submitVerifierForm(args: {
   throw new Error(`Edit mode requires record.name; got ${JSON.stringify(args.record)}`);
 }
 
-function useVerifiersResource() {
+function useVerifiersResource(): VerifiersResource {
   const ctx = useFlowContext();
-  return ctx.api.resource('verifiers');
+  // `IResource` from the SDK is `{ [key: string]: ResourceAction }` — every
+  // action is typed as possibly-undefined under `tsc -d`. The `verifiers`
+  // resource is known to expose create/update/list/destroy/listTypes
+  // server-side, so we narrow once here instead of casting at every call site.
+  return ctx.api.resource('verifiers') as unknown as VerifiersResource;
 }
 
 function useVerificationTypesFromServer() {
@@ -112,8 +130,13 @@ function useVerificationTypesFromServer() {
   return useRequest(
     async () => {
       const response = await resource.listTypes();
-      const data = response?.data?.data ?? response?.data;
-      return Array.isArray(data) ? (data as VerificationTypeOption[]) : [];
+      // Server has shipped two response shapes over time: the modern
+      // `{ data: [...] }` envelope and an older bare-array body. Narrow via
+      // `Array.isArray` so TS can index `.data` only when the body is the
+      // object form.
+      const body = response?.data;
+      const list = Array.isArray(body) ? body : body?.data;
+      return Array.isArray(list) ? list : [];
     },
     {
       cacheKey: '@nocobase/plugin-verification:verifiers:listTypes',
