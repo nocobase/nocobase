@@ -13,6 +13,7 @@ import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';
 import { FieldModel } from '../models/base/FieldModel';
 import { normalizeDataScopeFilter } from './dataScopeFilter';
+import { ensureFormValueDrivenDataScopeClear } from './dataScopeFormValueClear';
 
 export const dataScope = defineAction({
   name: 'dataScope',
@@ -53,6 +54,8 @@ export const dataScope = defineAction({
 
     const resolvedFilter = await ctx.resolveJsonTemplate(params.filter);
     const filter = normalizeDataScopeFilter(params.filter, resolvedFilter);
+
+    ensureFormValueDrivenDataScopeClear(ctx as any, params.filter);
 
     if (isEmptyFilter(filter)) {
       resource.removeFilterGroup(ctx.model.uid);
