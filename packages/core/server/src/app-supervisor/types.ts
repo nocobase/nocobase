@@ -176,6 +176,7 @@ export interface AppProcessAdapter {
   stopApp?(appName: string, context?: { requestId: string }): Promise<void>;
   removeApp?(appName: string, context?: { requestId: string }): Promise<void>;
   upgradeApp?(appName: string, context?: { requestId: string }): Promise<void>;
+  dispatchAppEvent?(appName: string, event: string, payload?: any, context?: { requestId: string }): Promise<void>;
   // remove all apps in supervisor
   removeAllApps?(): Promise<void>;
 

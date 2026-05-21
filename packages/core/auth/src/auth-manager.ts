@@ -23,6 +23,11 @@ export interface Authenticator {
   [key: string]: any;
 }
 
+export type BuiltinAuthenticator = Authenticator & {
+  name: string;
+  enabled?: boolean;
+};
+
 export interface Storer {
   get: (name: string) => Promise<Authenticator>;
 }
@@ -36,6 +41,7 @@ export type AuthManagerOptions = {
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
   title?: string; // The display name of the authentication type.
+  hidden?: boolean; // Whether to hide from the authenticator type list.
   getPublicOptions?: (options: Record<string, any>) => Record<string, any>; // Get the public options.
 };
 
@@ -50,6 +56,7 @@ export class AuthManager {
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
+  protected builtinAuthenticators = new Map<string, BuiltinAuthenticator>();
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
@@ -62,6 +69,26 @@ export class AuthManager {
 
   setStorer(storer: Storer) {
     this.storer = storer;
+  }
+
+  registerBuiltinAuthenticator(authenticator: BuiltinAuthenticator) {
+    this.builtinAuthenticators.set(authenticator.name, {
+      enabled: true,
+      options: {},
+      ...authenticator,
+    });
+  }
+
+  unregisterBuiltinAuthenticator(name: string) {
+    this.builtinAuthenticators.delete(name);
+  }
+
+  getBuiltinAuthenticator(name: string) {
+    const authenticator = this.builtinAuthenticators.get(name);
+    if (!authenticator?.enabled) {
+      return null;
+    }
+    return authenticator;
   }
 
   setTokenBlacklistService(service: ITokenBlacklistService) {
@@ -85,10 +112,12 @@ export class AuthManager {
   }
 
   listTypes() {
-    return Array.from(this.authTypes.getEntities()).map(([authType, authConfig]) => ({
-      name: authType,
-      title: authConfig.title,
-    }));
+    return Array.from(this.authTypes.getEntities())
+      .filter(([, authConfig]) => !authConfig.hidden)
+      .map(([authType, authConfig]) => ({
+        name: authType,
+        title: authConfig.title,
+      }));
   }
 
   getAuthConfig(authType: string) {
@@ -102,10 +131,19 @@ export class AuthManager {
    * @return authenticator instance.
    */
   async get(name: string, ctx: Context) {
+    let authenticator = this.getBuiltinAuthenticator(name);
+    if (authenticator) {
+      const { auth } = this.authTypes.get(authenticator.authType) || {};
+      if (!auth) {
+        throw new Error(`AuthType [${authenticator.authType}] is not found.`);
+      }
+      return new auth({ authenticator, options: authenticator.options, ctx });
+    }
+
     if (!this.storer) {
       throw new Error('AuthManager.storer is not set.');
     }
-    const authenticator = await this.storer.get(name);
+    authenticator = await this.storer.get(name);
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }

@@ -12,11 +12,12 @@ import { defaultTokenPolicyConfig } from '@nocobase/plugin-auth';
 import Application, { AppSupervisor } from '@nocobase/server';
 import fs from 'node:fs';
 import inject from 'light-my-request';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { storagePathJoin } from '@nocobase/utils';
 import ms from 'ms';
-import { createDbAdapter } from './db-adapter';
+import { createOidcAdapter } from './adapter';
 import { normalizeBasePath } from './utils';
 
 type OidcModule = typeof import('oidc-provider');
@@ -52,11 +53,20 @@ export type ResourceServerConfig = {
   jwt?: ResourceServer['jwt'];
 };
 
-type ProviderContext = {
+export type ProviderContext = {
   appName: string;
   issuer: string;
   issuerPath: string;
   origin: string;
+};
+
+export type OidcClientMetadata = import('oidc-provider').ClientMetadata;
+
+export type OidcClientResolver = {
+  resolveClient(
+    clientId: string,
+    providerContext?: ProviderContext,
+  ): Promise<OidcClientMetadata | null | undefined> | OidcClientMetadata | null | undefined;
 };
 
 const defaultSupportedScopes = ['openid', 'offline_access', 'profile', 'email'] as const;
@@ -81,6 +91,8 @@ export class IdpOauthService {
   private pendingProviders = new Map<string, Promise<ProviderInstance>>();
   private resourceServers = new Map<string, ResourceServerConfig>();
   private resourceJwks = new Map<string, unknown>();
+  private clientResolvers = new Map<string, OidcClientResolver>();
+  private providerContextStorage = new AsyncLocalStorage<ProviderContext>();
 
   constructor(
     private readonly app: Application,
@@ -187,12 +199,40 @@ export class IdpOauthService {
     };
   }
 
+  getCurrentProviderContext() {
+    return this.providerContextStorage.getStore();
+  }
+
+  runWithProviderContext<T>(ctx: any, callback: () => T) {
+    return this.providerContextStorage.run(this.getProviderContext(ctx), callback);
+  }
+
   registerResourceServer(name: string, config: ResourceServerConfig) {
     this.resourceServers.set(name, config);
   }
 
   unregisterResourceServer(name: string) {
     this.resourceServers.delete(name);
+  }
+
+  registerClientResolver(name: string, resolver: OidcClientResolver) {
+    this.clientResolvers.set(name, resolver);
+  }
+
+  unregisterClientResolver(name: string) {
+    this.clientResolvers.delete(name);
+  }
+
+  async resolveClient(clientId: string) {
+    const providerContext = this.getCurrentProviderContext();
+    for (const resolver of this.clientResolvers.values()) {
+      const client = await resolver.resolveClient(clientId, providerContext);
+      if (client) {
+        return client;
+      }
+    }
+
+    return undefined;
   }
 
   getSupportedScopes() {
@@ -417,6 +457,20 @@ export class IdpOauthService {
     return this.findUserById(accountId);
   }
 
+  async destroyProviderSession(ctx: any) {
+    const provider = await this.ensureProviderForContext(ctx);
+    const session = await provider.Session.get(ctx);
+    if (session && !session.new) {
+      await session.destroy();
+    }
+
+    ctx.cookies?.set?.(provider.cookieName('session'), null, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: (ctx.headers?.['x-forwarded-proto'] || ctx.protocol) === 'https',
+    });
+  }
+
   async resolveInteractionBridgeUser(ctx: any) {
     const token = ctx.getBearerToken?.();
     if (!token || typeof token !== 'string') {
@@ -592,7 +646,7 @@ export class IdpOauthService {
     const sessionTtl = policyMillisecondsToSeconds(tokenPolicy?.sessionExpirationTime, DEFAULT_SESSION_TTL_SECONDS);
 
     return {
-      adapter: createDbAdapter(this.app, 'oidcStates'),
+      adapter: createOidcAdapter(this.app, this, 'oidcStates'),
       clients: [],
       scopes: this.getSupportedScopes(),
       jwks,

@@ -11,11 +11,22 @@ import { Plugin } from '@nocobase/server';
 import { handleInteractionGet, handleInteractionPost } from './interaction';
 import { createIdpOauthPaths } from './paths';
 import { dispatchCurrentRequestToProvider } from './provider-dispatch';
-import { IdpOauthService } from './service';
+import { IdpOauthService, OidcClientResolver } from './service';
 import { resolveCurrentUser } from './utils';
 
 export class PluginIdpOauthServer extends Plugin {
   service: IdpOauthService;
+  private readonly clientResolvers = new Map<string, OidcClientResolver>();
+
+  registerClientResolver(name: string, resolver: OidcClientResolver) {
+    this.clientResolvers.set(name, resolver);
+    this.service?.registerClientResolver(name, resolver);
+  }
+
+  unregisterClientResolver(name: string) {
+    this.clientResolvers.delete(name);
+    this.service?.unregisterClientResolver(name);
+  }
 
   private registerDefaultApiResource() {
     this.service.registerResourceServer('api', {
@@ -35,6 +46,18 @@ export class PluginIdpOauthServer extends Plugin {
       store: 'memory',
     });
     this.service = new IdpOauthService(this.app, bridgeTokenCache);
+    for (const [name, resolver] of this.clientResolvers) {
+      this.service.registerClientResolver(name, resolver);
+    }
+    this.app.on('auth:signOut', async ({ ctx }) => {
+      try {
+        await this.service.destroyProviderSession(ctx);
+      } catch (error) {
+        ctx.logger?.warn?.('failed to destroy idp-oauth provider session', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
     this.registerDefaultApiResource();
     const paths = createIdpOauthPaths();
 

@@ -593,6 +593,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     await this.processAdapter.upgradeApp(appName, context);
   }
 
+  async dispatchAppEvent(appName: string, event: string, payload?: any, context?: { requestId: string }) {
+    return this.processAdapter.dispatchAppEvent?.(appName, event, payload, context);
+  }
+
   /**
    * @deprecated
    * use {#getApps} instead

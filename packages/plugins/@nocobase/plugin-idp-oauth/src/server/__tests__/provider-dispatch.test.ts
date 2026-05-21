@@ -77,4 +77,24 @@ describe('plugin-idp-oauth > provider dispatch', () => {
     });
     expect(provider.callback).toHaveBeenCalledTimes(1);
   });
+
+  test('should reject dynamic registration with reserved app client id prefix', async () => {
+    const provider = {
+      issuer: 'http://127.0.0.1:13000/api',
+      callback: vi.fn(),
+    } as any;
+    const ctx = createContext({
+      client_id: 'app:alpha',
+      redirect_uris: ['http://127.0.0.1:53950/callback'],
+    });
+
+    await dispatchToProvider(ctx, provider, '/idpOAuth/register', service);
+
+    expect(ctx.status).toBe(400);
+    expect(ctx.body).toMatchObject({
+      error: 'invalid_client_metadata',
+      error_description: 'client_id prefix app: is reserved',
+    });
+    expect(provider.callback).not.toHaveBeenCalled();
+  });
 });

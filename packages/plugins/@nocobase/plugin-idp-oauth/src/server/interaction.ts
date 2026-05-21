@@ -48,6 +48,10 @@ function getInteractionPromptDetails(details: Interaction) {
   return [missingScope, missingClaims, missingResourceScopes].filter(Boolean).join(' | ');
 }
 
+function shouldSkipConsent(clientId: string) {
+  return clientId.startsWith('app:');
+}
+
 async function getInteractionRedirect(
   ctx: InteractionContext,
   provider: Provider,
@@ -72,6 +76,53 @@ async function completeLogin(ctx: InteractionContext, provider: Provider, servic
       },
     },
     false,
+  );
+}
+
+async function completeConsent(
+  ctx: InteractionContext,
+  provider: Provider,
+  service: IdpOauthService,
+  details: Interaction,
+  accountId: string,
+) {
+  const promptDetails = getPromptDetails(details);
+  const clientId = String(details.params.client_id || '');
+  let grant;
+  if (details.grantId) {
+    grant = await provider.Grant.find(details.grantId);
+  } else {
+    grant = new provider.Grant({
+      accountId,
+      clientId,
+    });
+  }
+
+  const missingOIDCScope = asStringArray(promptDetails.missingOIDCScope);
+  if (missingOIDCScope.length) {
+    grant.addOIDCScope(missingOIDCScope.join(' '));
+  }
+  const missingOIDCClaims = asStringArray(promptDetails.missingOIDCClaims);
+  if (missingOIDCClaims.length) {
+    grant.addOIDCClaims(missingOIDCClaims);
+  }
+  const missingResourceScopes = (promptDetails.missingResourceScopes as Record<string, unknown>) || {};
+  if (Object.keys(missingResourceScopes).length) {
+    for (const [indicator, scopes] of Object.entries(missingResourceScopes)) {
+      grant.addResourceScope(indicator, asStringArray(scopes).join(' '));
+    }
+  }
+
+  return getInteractionRedirect(
+    ctx,
+    provider,
+    service,
+    {
+      consent: {
+        grantId: await grant.save(),
+      },
+    },
+    true,
   );
 }
 
@@ -101,6 +152,13 @@ export async function handleInteractionGet(
   if (details.prompt.name === 'consent') {
     const clientId = String(details.params.client_id || '');
     const client = await provider.Client.find(clientId);
+    if (interactionUser && shouldSkipConsent(clientId)) {
+      ctx.body = {
+        redirectTo: await completeConsent(ctx, provider, service, details, String(interactionUser.id)),
+      };
+      return;
+    }
+
     ctx.body = {
       prompt: 'consent',
       clientName: client?.clientName || client?.clientId || clientId,
@@ -152,45 +210,8 @@ export async function handleInteractionPost(
   }
 
   if (details.prompt.name === 'consent') {
-    const promptDetails = getPromptDetails(details);
-    const clientId = String(details.params.client_id || '');
-    let grant;
-    if (details.grantId) {
-      grant = await provider.Grant.find(details.grantId);
-    } else {
-      grant = new provider.Grant({
-        accountId: String(interactionUser.id),
-        clientId,
-      });
-    }
-
-    const missingOIDCScope = asStringArray(promptDetails.missingOIDCScope);
-    if (missingOIDCScope.length) {
-      grant.addOIDCScope(missingOIDCScope.join(' '));
-    }
-    const missingOIDCClaims = asStringArray(promptDetails.missingOIDCClaims);
-    if (missingOIDCClaims.length) {
-      grant.addOIDCClaims(missingOIDCClaims);
-    }
-    const missingResourceScopes = (promptDetails.missingResourceScopes as Record<string, unknown>) || {};
-    if (Object.keys(missingResourceScopes).length) {
-      for (const [indicator, scopes] of Object.entries(missingResourceScopes)) {
-        grant.addResourceScope(indicator, asStringArray(scopes).join(' '));
-      }
-    }
-
     ctx.body = {
-      redirectTo: await getInteractionRedirect(
-        ctx,
-        provider,
-        service,
-        {
-          consent: {
-            grantId: await grant.save(),
-          },
-        },
-        true,
-      ),
+      redirectTo: await completeConsent(ctx, provider, service, details, String(interactionUser.id)),
     };
     return;
   }
