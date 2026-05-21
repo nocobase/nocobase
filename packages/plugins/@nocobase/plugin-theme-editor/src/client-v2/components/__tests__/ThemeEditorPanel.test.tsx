@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   setCurrentEditingTheme: vi.fn(),
   setCurrentSettingTheme: vi.fn(),
   setGlobalTheme: vi.fn(),
+  themeEditorProps: [] as any[],
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -55,24 +56,28 @@ vi.mock('@nocobase/utils/client', () => ({
 vi.mock('../../antd-token-previewer', () => ({
   enUS: {},
   zhCN: {},
-  ThemeEditor: ({ onThemeChange }: { onThemeChange: (theme: { config: ThemeConfig }) => void }) => (
-    <button
-      type="button"
-      data-testid="change-theme"
-      onClick={() =>
-        onThemeChange({
-          config: {
-            name: 'Preview theme',
-            token: {
-              colorPrimary: '#00b96b',
+  ThemeEditor: (props: { onThemeChange: (theme: { config: ThemeConfig }) => void; embedded?: boolean }) => {
+    mocks.themeEditorProps.push(props);
+
+    return (
+      <button
+        type="button"
+        data-testid="change-theme"
+        onClick={() =>
+          props.onThemeChange({
+            config: {
+              name: 'Preview theme',
+              token: {
+                colorPrimary: '#00b96b',
+              },
             },
-          },
-        })
-      }
-    >
-      Change theme
-    </button>
-  ),
+          })
+        }
+      >
+        Change theme
+      </button>
+    );
+  },
 }));
 
 vi.mock('../../locale', () => ({
@@ -102,6 +107,7 @@ describe('ThemeEditorPanel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.themeEditorProps.length = 0;
     mocks.request.mockImplementation(async ({ url }: { url: string }) => {
       if (url === 'themeConfig:list') {
         return {
@@ -117,6 +123,21 @@ describe('ThemeEditorPanel', () => {
 
       throw new Error(`Unexpected request: ${url}`);
     });
+  });
+
+  it('uses the embedded theme editor layout inside the right panel', () => {
+    render(
+      <App>
+        <ThemeEditorPanel
+          view={{ Header, close: vi.fn() }}
+          editingTheme={editingTheme}
+          initialTheme={editingTheme.config}
+          settingTheme={settingTheme}
+        />
+      </App>,
+    );
+
+    expect(mocks.themeEditorProps.at(-1)?.embedded).toBe(true);
   });
 
   it('clears the restore baseline after saving the active theme', async () => {

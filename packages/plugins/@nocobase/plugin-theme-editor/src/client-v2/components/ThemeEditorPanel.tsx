@@ -29,10 +29,6 @@ import {
 
 const editorClassName = css({
   height: '100%',
-
-  '& > div:nth-child(2)': {
-    display: 'none',
-  },
 });
 
 interface ThemeEditorPanelProps {
@@ -210,6 +206,7 @@ const ThemeEditorPanel = (props: ThemeEditorPanelProps) => {
         className={editorClassName}
         theme={{ name: 'Custom Theme', key: 'custom', config: theme }}
         style={{ height: '100%', width: '100%' }}
+        embedded
         onThemeChange={(nextTheme) => {
           setTheme(nextTheme.config);
           setGlobalTheme(nextTheme.config);
