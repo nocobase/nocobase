@@ -358,6 +358,22 @@ const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) 
 
 const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
 
+const getLabelSearchText = (label: React.ReactNode): string => {
+  if (label === null || label === undefined || typeof label === 'boolean') {
+    return '';
+  }
+  if (typeof label === 'string' || typeof label === 'number') {
+    return String(label);
+  }
+  if (Array.isArray(label)) {
+    return label.map(getLabelSearchText).join(' ');
+  }
+  if (React.isValidElement(label)) {
+    return getLabelSearchText(label.props.children);
+  }
+  return '';
+};
+
 const createSearchItem = (
   item: Item,
   searchKey: string,
@@ -498,15 +514,10 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     const filteredChildren = currentSearchValue
       ? (function deepFilter(items: Item[]): Item[] {
           const searchText = currentSearchValue.toLowerCase();
-          const tryString = (v: any) => {
-            if (!v) return '';
-            return typeof v === 'string' ? v : String(v);
-          };
           return items
             .map((child) => {
-              const labelStr = tryString(child.label).toLowerCase();
-              const selfMatch =
-                labelStr.includes(searchText) || (child.key && String(child.key).toLowerCase().includes(searchText));
+              const labelStr = getLabelSearchText(child.label).toLowerCase();
+              const selfMatch = labelStr.includes(searchText);
               if (child.type === 'group' && Array.isArray(child.children)) {
                 const nested = deepFilter(child.children);
                 if (selfMatch || nested.length > 0) {
