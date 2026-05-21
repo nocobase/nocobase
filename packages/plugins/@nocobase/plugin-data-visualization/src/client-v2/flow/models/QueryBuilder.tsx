@@ -51,7 +51,21 @@ const createEmptyFilter = () => ({
 });
 
 const renderLabel = (label: string, lang?: string) => {
-  return appendColon(label, lang);
+  return (
+    <div
+      style={{
+        width: '100%',
+        whiteSpace: 'normal',
+        wordBreak: 'break-word',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        fontWeight: 500,
+      }}
+    >
+      <span>{appendColon(label, lang)}</span>
+    </div>
+  );
 };
 
 const QueryFilter: FC<{
@@ -198,7 +212,7 @@ const QueryBuilderInner: FC<{
 
   return (
     <Form form={form} layout="vertical" colon component="div" initialValues={query} onValuesChange={handleValuesChange}>
-      <Form.Item label={renderLabel(t('Collection'), lang)}>
+      <Form.Item label={renderLabel(t('Collection'), lang)} style={{ marginBottom: 16, paddingTop: 8 }}>
         <Form.Item name="collectionPath" noStyle>
           <Cascader
             showSearch
@@ -206,27 +220,30 @@ const QueryBuilderInner: FC<{
             options={collectionOptions}
             value={collectionPath}
             onChange={handleCollectionChange}
+            style={{ width: 222 }}
           />
         </Form.Item>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Measures'), lang)}>
+      <Form.Item label={renderLabel(t('Measures'), lang)} style={{ marginBottom: 16 }}>
         <Form.List name="measures">
           {(fields, { add, remove }) => (
             <>
-              <Space direction="vertical">
+              <div style={{ overflow: 'auto' }}>
                 {fields.map((field, idx) => (
-                  <Space align="center" wrap key={field.key}>
-                    <Form.Item name={[field.name, 'field']}>
+                  <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
+                    <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
                       <Cascader
+                        style={{ minWidth: 114 }}
                         placeholder={t('Select Field')}
                         fieldNames={{ label: 'title', value: 'name', children: 'children' }}
                         options={fieldOptions}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'aggregation']}>
+                    <Form.Item name={[field.name, 'aggregation']} style={{ marginBottom: 0 }}>
                       <Select
                         allowClear
+                        style={{ minWidth: 75 }}
                         placeholder={t('Aggregation')}
                         options={[
                           { label: t('Sum'), value: 'sum' },
@@ -237,11 +254,11 @@ const QueryBuilderInner: FC<{
                         ]}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'alias']}>
-                      <Input placeholder={t('Alias')} />
+                    <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
+                      <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'distinct']} valuePropName="checked">
-                      <Checkbox>{t('Distinct')}</Checkbox>
+                    <Form.Item name={[field.name, 'distinct']} valuePropName="checked" style={{ marginBottom: 0 }}>
+                      <Checkbox style={{ minWidth: 60 }}>{t('Distinct')}</Checkbox>
                     </Form.Item>
                     <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
                     {fields.length > 1 && (
@@ -264,8 +281,8 @@ const QueryBuilderInner: FC<{
                     )}
                   </Space>
                 ))}
-              </Space>
-              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})}>
+              </div>
+              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginTop: -8, padding: 0 }}>
                 {t('Add field')}
               </Button>
             </>
@@ -273,25 +290,26 @@ const QueryBuilderInner: FC<{
         </Form.List>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Dimensions'), lang)}>
+      <Form.Item label={renderLabel(t('Dimensions'), lang)} style={{ marginBottom: 16 }}>
         <Form.List name="dimensions">
           {(fields, { add, remove }) => (
             <>
-              <Space direction="vertical">
+              <div style={{ overflow: 'auto' }}>
                 {fields.map((field, idx) => {
                   const dimField = form.getFieldValue(['dimensions', field.name, 'field']);
                   const fmtOptions = getFormatterOptionsByField(dm, collectionPath, dimField);
                   return (
-                    <Space align="center" wrap key={field.key}>
-                      <Form.Item name={[field.name, 'field']}>
+                    <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
+                      <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
                         <Cascader
+                          style={{ minWidth: 114 }}
                           placeholder={t('Select Field')}
                           fieldNames={{ label: 'title', value: 'name', children: 'children' }}
                           options={fieldOptions}
                         />
                       </Form.Item>
                       {fmtOptions?.length ? (
-                        <Form.Item name={[field.name, 'format']}>
+                        <Form.Item name={[field.name, 'format']} style={{ marginBottom: 0 }}>
                           <Select
                             placeholder={t('Format')}
                             popupMatchSelectWidth={false}
@@ -299,8 +317,8 @@ const QueryBuilderInner: FC<{
                           />
                         </Form.Item>
                       ) : null}
-                      <Form.Item name={[field.name, 'alias']}>
-                        <Input placeholder={t('Alias')} />
+                      <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
+                        <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
                       </Form.Item>
                       <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
                       <Button
@@ -320,8 +338,8 @@ const QueryBuilderInner: FC<{
                     </Space>
                   );
                 })}
-              </Space>
-              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})}>
+              </div>
+              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginTop: -8, padding: 0 }}>
                 {t('Add field')}
               </Button>
             </>
@@ -329,7 +347,7 @@ const QueryBuilderInner: FC<{
         </Form.List>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Filter'), lang)}>
+      <Form.Item label={renderLabel(t('Filter'), lang)} style={{ marginBottom: 16 }}>
         <QueryFilter
           value={query.filter}
           onChange={(value) => setQueryValue('filter', value)}
@@ -337,30 +355,33 @@ const QueryBuilderInner: FC<{
         />
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Sort'), lang)}>
+      <Form.Item label={renderLabel(t('Sort'), lang)} style={{ marginBottom: 16 }}>
         <Form.List name="orders">
           {(fields, { add, remove }) => (
             <>
-              <Space direction="vertical">
+              <div style={{ overflow: 'auto' }}>
                 {fields.map((field, idx) => (
-                  <Space wrap align="center" key={field.key}>
-                    <Form.Item name={[field.name, 'field']}>
+                  <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }} key={field.key}>
+                    <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
                       <Cascader
                         placeholder={t('Select Field')}
                         fieldNames={{ label: 'title', value: 'name', children: 'children' }}
                         options={orderFieldOptions}
+                        style={{ minWidth: 114 }}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'order']}>
+                    <Form.Item name={[field.name, 'order']} style={{ marginBottom: 0 }}>
                       <Select
+                        style={{ minWidth: 100 }}
                         options={[
                           { label: 'ASC', value: 'ASC' },
                           { label: 'DESC', value: 'DESC' },
                         ]}
                       />
                     </Form.Item>
-                    <Form.Item name={[field.name, 'nulls']}>
+                    <Form.Item name={[field.name, 'nulls']} style={{ marginBottom: 0 }}>
                       <Select
+                        style={{ minWidth: 110 }}
                         options={[
                           { label: t('Default'), value: 'default' },
                           { label: t('NULLS first'), value: 'first' },
@@ -385,8 +406,8 @@ const QueryBuilderInner: FC<{
                     />
                   </Space>
                 ))}
-              </Space>
-              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})}>
+              </div>
+              <Button type="link" icon={<PlusOutlined />} onClick={() => add({})} style={{ marginTop: -8, padding: 0 }}>
                 {t('Add field')}
               </Button>
             </>
@@ -394,15 +415,15 @@ const QueryBuilderInner: FC<{
         </Form.List>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Limit'), lang)}>
+      <Form.Item label={renderLabel(t('Limit'), lang)} style={{ marginBottom: 16 }}>
         <Form.Item name="limit" noStyle>
-          <InputNumber min={0} />
+          <InputNumber min={0} style={{ width: 120 }} />
         </Form.Item>
       </Form.Item>
 
-      <Form.Item label={renderLabel(t('Offset'), lang)}>
+      <Form.Item label={renderLabel(t('Offset'), lang)} style={{ marginBottom: 16 }}>
         <Form.Item name="offset" noStyle>
-          <InputNumber min={0} />
+          <InputNumber min={0} style={{ width: 120 }} />
         </Form.Item>
       </Form.Item>
     </Form>

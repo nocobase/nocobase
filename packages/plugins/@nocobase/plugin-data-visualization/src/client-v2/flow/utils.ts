@@ -52,17 +52,6 @@ export function convertDatasetFormats(data: Record<string, any>[]) {
 export function normalizeEChartsOption(option: any) {
   if (!option) return option;
 
-  if (!option.grid && (option.xAxis || option.yAxis)) {
-    const hasBottomLegend = option.legend?.show !== false && !option.legend?.top && !option.legend?.right;
-    option.grid = {
-      top: option.legend?.show === false ? 12 : 32,
-      right: 24,
-      bottom: hasBottomLegend ? 48 : 24,
-      left: 24,
-      containLabel: true,
-    };
-  }
-
   const dataset = option.dataset;
   const source = Array.isArray(dataset) ? dataset[0]?.source : dataset?.source;
   const seriesRaw = option.series;

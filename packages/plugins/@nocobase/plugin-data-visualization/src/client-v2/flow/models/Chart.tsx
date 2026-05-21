@@ -9,7 +9,7 @@
 
 import React, { forwardRef, useState } from 'react';
 import ECharts from './ECharts';
-import { Empty, Result, Typography, Spin, Flex, theme } from 'antd';
+import { Empty, Result, Typography, Spin } from 'antd';
 import { EChartsOption, EChartsType } from 'echarts';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useT } from '../../locale';
@@ -26,13 +26,14 @@ export interface ChartOptions {
 
 const ErrorFallback = ({ error }) => {
   const t = useT();
-  const { token } = theme.useToken();
 
   return (
-    <div style={{ backgroundColor: token.colorBgContainer }}>
+    <div style={{ backgroundColor: 'white' }}>
       <Result status="error" title={t('Render Failed')} subTitle={t('Please check the configuration.')}>
         <Paragraph copyable>
-          <Text type="danger">{error.message}</Text>
+          <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>
+            {error.message}
+          </Text>
         </Paragraph>
       </Result>
     </div>
@@ -47,9 +48,9 @@ export const Chart = forwardRef<EChartsType, ChartOptions>(
 
     if (loading) {
       return (
-        <Flex justify="center" align="center">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: 400 }}>
           <Spin />
-        </Flex>
+        </div>
       );
     }
 

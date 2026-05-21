@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Button, Radio, Space } from 'antd';
+import { Button, Radio } from 'antd';
 import EventsEditor from './EventsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined } from '@ant-design/icons';
@@ -83,7 +83,15 @@ export const EventsPanel: React.FC = observer(() => {
 
   return (
     <>
-      <Space align="center">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '8px',
+          padding: 1,
+        }}
+      >
         <OptionsMode value={mode} onChange={(value) => updateEventValue(['chart', 'events', 'mode'], value)} />
         {mode === 'custom' ? (
           <Button
@@ -95,7 +103,7 @@ export const EventsPanel: React.FC = observer(() => {
             {t('Preview')}
           </Button>
         ) : null}
-      </Space>
+      </div>
 
       <EventsEditor value={rawValue} onChange={(value) => updateEventValue(['chart', 'events', 'raw'], value)} />
     </>

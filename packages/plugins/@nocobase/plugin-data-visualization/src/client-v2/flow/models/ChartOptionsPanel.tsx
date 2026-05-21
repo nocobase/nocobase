@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Alert, Button, Radio, Space } from 'antd';
+import { Alert, Button, Radio } from 'antd';
 import { ChartOptionsEditor } from './ChartOptionsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
@@ -149,13 +149,22 @@ export const ChartOptionsPanel: React.FC = observer(() => {
           type="warning"
           showIcon
           closable
+          style={{ marginBottom: 8, paddingLeft: 8 }}
           onClose={() => {
             localStorage.setItem(TIP_KEY, '1');
             setShowFirstVisitTip(false);
           }}
         />
       )}
-      <Space align="center">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '8px',
+          padding: 1,
+        }}
+      >
         <Radio.Group
           value={mode}
           onChange={(e) => {
@@ -174,6 +183,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
         {mode === 'custom' ? (
           <Button
             type="link"
+            style={{ marginRight: '8px' }}
             onClick={async () => {
               await ctx.model.onPreview(getFormValues(ctx));
             }}
@@ -181,7 +191,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
             {t('Preview')}
           </Button>
         ) : null}
-      </Space>
+      </div>
 
       {mode === 'basic' ? (
         <ChartOptionsBuilder

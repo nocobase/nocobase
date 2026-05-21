@@ -106,10 +106,8 @@ export class EChart extends Chart {
   };
 
   getBasicOptions({ general }) {
-    const { size, lightTheme, darkTheme, padding, showLegend, legendOrient = 'horizontal', legendPosition } = general;
+    const { size, lightTheme, darkTheme, padding } = general;
     const { left, right, bottom, top } = padding || {};
-    const isBottomLegend =
-      showLegend !== false && legendOrient === 'horizontal' && (legendPosition?.bottom || !legendPosition?.top);
     const grid: any = {
       containLabel: true,
     };
@@ -117,7 +115,7 @@ export class EChart extends Chart {
     if (right) {
       grid.right = right;
     }
-    grid.bottom = bottom || (isBottomLegend ? 48 : 10);
+    grid.bottom = bottom || 10;
     if (top) {
       grid.top = top;
     }

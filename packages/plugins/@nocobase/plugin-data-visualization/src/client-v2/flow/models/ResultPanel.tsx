@@ -34,13 +34,13 @@ export const ResultPanel: React.FC = () => {
       items={[
         {
           key: 'table',
-          label: t('Table'),
+          label: <span style={{ fontSize: 12 }}>{t('Table')}</span>,
           icon: <TableOutlined />,
           children: <TableResult data={data || []} />,
         },
         {
           key: 'json',
-          label: t('JSON'),
+          label: <span style={{ fontSize: 12 }}>{t('JSON')}</span>,
           icon: <CodeOutlined />,
           children: <JSONResult data={data || []} />,
         },

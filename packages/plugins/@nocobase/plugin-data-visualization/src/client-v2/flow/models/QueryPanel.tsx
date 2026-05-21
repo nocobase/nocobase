@@ -119,8 +119,17 @@ export const QueryPanel: React.FC = observer(() => {
 
   return (
     <>
-      <Space direction="vertical">
-        <Space align="center">
+      <>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '8px',
+            paddingTop: 1,
+            paddingLeft: 1,
+          }}
+        >
           <QueryMode
             value={mode}
             onClick={() => setShowResult(false)}
@@ -131,15 +140,22 @@ export const QueryPanel: React.FC = observer(() => {
               <RightSquareOutlined />
               {t('Run query')}
             </Button>
-            <Button type="link" aria-expanded={showResult} onClick={() => setShowResult((v) => !v)}>
+            <Button
+              type="link"
+              aria-expanded={showResult}
+              onClick={() => setShowResult((v) => !v)}
+              style={{ padding: 0 }}
+            >
               {showResult ? t('Hide data') : t('View data')}
-              {showResult ? <DownOutlined /> : <RightOutlined />}
+              {showResult ? <DownOutlined style={{ fontSize: 12 }} /> : <RightOutlined style={{ fontSize: 12 }} />}
             </Button>
           </Space>
-        </Space>
+        </div>
 
         {showResult ? (
-          <ResultPanel />
+          <div style={{ marginTop: 8 }}>
+            <ResultPanel />
+          </div>
         ) : mode === 'builder' ? (
           <QueryBuilder ref={qbRef} value={query} onChange={updateQuery} />
         ) : (
@@ -150,7 +166,7 @@ export const QueryPanel: React.FC = observer(() => {
             onDataSourceChange={(sqlDatasource) => updateQuery({ sqlDatasource })}
           />
         )}
-      </Space>
+      </>
     </>
   );
 });

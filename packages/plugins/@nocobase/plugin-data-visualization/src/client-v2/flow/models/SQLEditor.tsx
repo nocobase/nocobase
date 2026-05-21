@@ -48,8 +48,18 @@ export const SQLEditor: React.FC<{
 
   return (
     <div>
-      <Form.Item label={t('Data source')} rules={[{ required: true }]}>
-        <Select placeholder={t('Data source')} options={dsOptions} value={sqlDsKey} onChange={onDsChange} />
+      <Form.Item
+        label={<span style={{ fontWeight: 500 }}>{t('Data source')}</span>}
+        rules={[{ required: true }]}
+        style={{ marginTop: 8 }}
+      >
+        <Select
+          style={{ width: 222 }}
+          placeholder={t('Data source')}
+          options={dsOptions}
+          value={sqlDsKey}
+          onChange={onDsChange}
+        />
       </Form.Item>
 
       <CodeEditor

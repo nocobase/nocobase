@@ -9,7 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useT } from '../../locale';
-import { Collapse } from 'antd';
+import { Collapse, Card } from 'antd';
 import { QueryPanel } from './QueryPanel';
 import { ChartOptionsPanel } from './ChartOptionsPanel';
 import { EventsPanel } from './EventsPanel';
@@ -31,6 +31,18 @@ export const ConfigPanel: React.FC = () => {
   const t = useT();
   const ctx = useFlowSettingsContext<any>();
   const [activeKeys, setActiveKeys] = useState<string | string[]>(['query', 'chartOption']);
+
+  const getCardStyle = (panelKey: string) => {
+    const keys = Array.isArray(activeKeys) ? activeKeys : [activeKeys];
+    const isOpen = keys.includes(panelKey);
+    const openedCount = Math.max(keys.length, 1);
+    const height = openedCount > 0 ? `calc((100vh - 288px) / ${openedCount})` : 'calc(100vh - 288px)';
+    return {
+      height: isOpen ? height : undefined,
+      overflow: 'auto',
+      border: 'none',
+    } as React.CSSProperties;
+  };
 
   useEffect(() => {
     ctx?.defineMethod?.('writeSql', async (sql: string, dataSource?: string) => {
@@ -65,18 +77,30 @@ export const ConfigPanel: React.FC = () => {
         items={[
           {
             key: 'query',
-            label: t('Data query'),
-            children: <QueryPanel />,
+            label: <span style={{ fontWeight: 500 }}>{t('Data query')}</span>,
+            children: (
+              <Card style={getCardStyle('query')} styles={{ body: { padding: 0 } }}>
+                <QueryPanel />
+              </Card>
+            ),
           },
           {
             key: 'chartOption',
-            label: t('Chart options'),
-            children: <ChartOptionsPanel />,
+            label: <span style={{ fontWeight: 500 }}>{t('Chart options')}</span>,
+            children: (
+              <Card style={getCardStyle('chartOption')} styles={{ body: { padding: 0 } }}>
+                <ChartOptionsPanel />
+              </Card>
+            ),
           },
           {
             key: 'events',
-            label: t('Events'),
-            children: <EventsPanel />,
+            label: <span style={{ fontWeight: 500 }}>{t('Events')}</span>,
+            children: (
+              <Card style={getCardStyle('events')} styles={{ body: { padding: 0 } }}>
+                <EventsPanel />
+              </Card>
+            ),
           },
         ]}
       />
