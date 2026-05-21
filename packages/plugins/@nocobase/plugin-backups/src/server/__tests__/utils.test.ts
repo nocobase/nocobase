@@ -1,5 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { describe, it, expect } from 'vitest';
-import { humanFileSize, isQsTruly, toMajorVersion, EscapeQuoteTransform } from '../utils';
+import fs from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import {
+  humanFileSize,
+  isQsTruly,
+  toMajorVersion,
+  EscapeQuoteTransform,
+  Extractor,
+  resolvePathWithinBase,
+} from '../utils';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
 
@@ -67,6 +86,37 @@ describe('toMajorVersion', () => {
   it('should return undefined for strings without a valid version number', () => {
     expect(toMajorVersion('No version here')).toBeUndefined();
     expect(toMajorVersion('')).toBeUndefined();
+  });
+});
+
+describe('resolvePathWithinBase', () => {
+  const basePath = path.join(path.sep, 'tmp', 'backup-tests');
+
+  it('should resolve files within the base path', () => {
+    expect(resolvePathWithinBase(basePath, 'data/file.txt')).toBe(path.resolve(basePath, 'data/file.txt'));
+  });
+
+  it('should reject path traversal attempts', () => {
+    expect(resolvePathWithinBase(basePath, '../evil.txt')).toBeUndefined();
+  });
+
+  it('should reject absolute paths', () => {
+    expect(resolvePathWithinBase(basePath, path.join(path.sep, 'etc', 'passwd'))).toBeUndefined();
+  });
+});
+
+describe('Extractor', () => {
+  const pipelineAsync = promisify(pipeline);
+
+  it('should finish when no chunks are written', async () => {
+    const extractDir = await fs.mkdtemp(path.join(os.tmpdir(), 'backups-extractor-'));
+
+    try {
+      const extractor = new Extractor({ path: extractDir });
+      await expect(pipelineAsync(Readable.from([]), extractor)).resolves.toBeUndefined();
+    } finally {
+      await fs.rm(extractDir, { recursive: true, force: true });
+    }
   });
 });
 

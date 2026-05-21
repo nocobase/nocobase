@@ -16,6 +16,7 @@ import { BACKUP_EXTENSION } from '../../utils';
 import fs from 'fs';
 import * as cp from 'child_process';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
+import yauzl from 'yauzl';
 
 vi.mock('child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof cp>();
@@ -36,6 +37,24 @@ vi.mock('child_process', async (importOriginal) => {
 const backupFileBaseName = 'backup_for_unit_tests';
 const backupFilesFolder = storagePathJoin('backups', 'main');
 const finalBackupFilePath = path.join(backupFilesFolder, `${backupFileBaseName}.${BACKUP_EXTENSION}`);
+
+async function listZipEntries(filePath: string) {
+  return await new Promise<string[]>((resolve, reject) => {
+    yauzl.open(filePath, { lazyEntries: true }, (err, zipfile) => {
+      if (err) return reject(err);
+      if (!zipfile) return reject(new Error('Failed to open zip file'));
+
+      const entries: string[] = [];
+      zipfile.on('error', reject);
+      zipfile.on('entry', (entry) => {
+        entries.push(entry.fileName);
+        zipfile.readEntry();
+      });
+      zipfile.on('end', () => resolve(entries));
+      zipfile.readEntry();
+    });
+  });
+}
 
 describe('BackupManager', async () => {
   let app: MockServer;
@@ -81,6 +100,48 @@ describe('BackupManager', async () => {
       await backupManager.backup(backupFileBaseName);
       const files = await fs.promises.readdir(backupFilesFolder);
       expect(files).toContain(`${backupFileBaseName}.nbdata`);
+    });
+
+    it('should honor enableFilesBackup from backup options', async () => {
+      const backupManager = new BackupManager(app, null, defaultBackupSettings);
+      const fileCollection = {
+        name: 'override_file_records',
+        options: {
+          template: 'file',
+        },
+      } as any;
+      const uploadsDir = path.join(process.cwd(), 'storage/uploads');
+      const validFileName = 'override-file-for-backup.txt';
+      const validFilePath = path.join(uploadsDir, validFileName);
+      const getRepository = app.db.getRepository.bind(app.db);
+      const findSpy = vi.fn().mockResolvedValue([{ id: 1, path: null, filename: validFileName }]);
+
+      app.db.collections.set(fileCollection.name, fileCollection);
+      const getRepositorySpy = vi.spyOn(app.db, 'getRepository').mockImplementation((name: string) => {
+        if (name === fileCollection.name) {
+          return {
+            find: findSpy,
+          } as any;
+        }
+        return getRepository(name);
+      });
+
+      try {
+        await fs.promises.mkdir(uploadsDir, { recursive: true });
+        await fs.promises.writeFile(validFilePath, 'valid file');
+
+        await backupManager.backup(backupFileBaseName, {
+          ...defaultBackupSettings,
+          enableFilesBackup: true,
+        });
+
+        const entries = await listZipEntries(finalBackupFilePath);
+        expect(entries).toContain(`uploads/${validFileName}`);
+      } finally {
+        app.db.collections.delete(fileCollection.name);
+        await fs.promises.unlink(validFilePath).catch(() => {});
+        getRepositorySpy.mockRestore();
+      }
     });
 
     it('should warn and continue when a file collection query fails', async () => {
@@ -255,6 +316,26 @@ describe('BackupManager', async () => {
 
       await expect(backupManager.destroy('non_existent_backup.nbdata')).rejects.toThrow(/(FILE_NOT_FOUND|not found)/);
     });
+
+    it('should reject sibling files that only match the backup directory prefix', async () => {
+      const backupManager = new BackupManager(app, null, defaultBackupSettings);
+      const siblingDir = path.join(path.dirname(backupFilesFolder), 'main_evil');
+      const siblingFileName = 'prefix-collision.nbdata';
+      const siblingFilePath = path.join(siblingDir, siblingFileName);
+
+      try {
+        await fs.promises.mkdir(siblingDir, { recursive: true });
+        await fs.promises.writeFile(siblingFilePath, 'malicious sibling file');
+
+        await expect(backupManager.destroy(`../main_evil/${siblingFileName}`)).rejects.toThrow(
+          /(FILE_NOT_FOUND|not found)/,
+        );
+        await expect(fs.promises.readFile(siblingFilePath, 'utf8')).resolves.toBe('malicious sibling file');
+      } finally {
+        await fs.promises.unlink(siblingFilePath).catch(() => {});
+        await fs.promises.rm(siblingDir, { recursive: true, force: true }).catch(() => {});
+      }
+    });
   });
 
   describe('createReadStream', async () => {
@@ -296,6 +377,25 @@ describe('BackupManager', async () => {
 
       for (const invalidFilename of invalidFilenames) {
         await expect(backupManager.createReadStream(invalidFilename)).rejects.toThrow(/(FILE_NOT_FOUND|not found)/);
+      }
+    });
+
+    it('should reject sibling files that only match the backup directory prefix', async () => {
+      const backupManager = new BackupManager(app, null, defaultBackupSettings);
+      const siblingDir = path.join(path.dirname(backupFilesFolder), 'main_evil');
+      const siblingFileName = 'prefix-collision.nbdata';
+      const siblingFilePath = path.join(siblingDir, siblingFileName);
+
+      try {
+        await fs.promises.mkdir(siblingDir, { recursive: true });
+        await fs.promises.writeFile(siblingFilePath, 'malicious sibling file');
+
+        await expect(backupManager.createReadStream(`../main_evil/${siblingFileName}`)).rejects.toThrow(
+          /(FILE_NOT_FOUND|not found)/,
+        );
+      } finally {
+        await fs.promises.unlink(siblingFilePath).catch(() => {});
+        await fs.promises.rm(siblingDir, { recursive: true, force: true }).catch(() => {});
       }
     });
   });

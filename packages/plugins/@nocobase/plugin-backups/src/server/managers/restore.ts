@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ResourcerContext } from '@nocobase/resourcer';
 import * as crypto from 'crypto';
 import fs from 'fs-extra';
@@ -16,6 +25,7 @@ import {
   getDBVersion,
   PLUGIN_BACKUPS_NAME,
   RESTORE_TASKS_CACHE_NAME,
+  resolvePathWithinBase,
   toMajorVersion,
 } from '../utils';
 interface Metadata {
@@ -70,7 +80,7 @@ export class RestoreManager {
     tolerentMode?: boolean,
     options?: RestoreOptions,
   ): Promise<void> {
-    const backupFilePath = path.resolve(this.#backupDir, `${backupFileName}`);
+    const backupFilePath = this.#getValidatedBackupFilePath(backupFileName);
     await this.restore(backupFilePath, taskId, password, tolerentMode, undefined, options);
   }
 
@@ -128,6 +138,20 @@ export class RestoreManager {
         await this.#revertDbRestore();
       }
     }
+  }
+
+  #getValidatedBackupFilePath(backupFileName: string): string {
+    const filePath = resolvePathWithinBase(this.#backupDir, backupFileName);
+    if (
+      path.basename(backupFileName) !== backupFileName ||
+      !backupFileName.endsWith(`.${BACKUP_EXTENSION}`) ||
+      !filePath ||
+      !fs.existsSync(filePath)
+    ) {
+      throw new Error(this.#t('FILE_NOT_FOUND', backupFileName));
+    }
+
+    return filePath;
   }
 
   async #restoreDataCLI(
@@ -297,7 +321,10 @@ export class RestoreManager {
       }
     });
     if (missingPlugins.length) {
-      const missingPluginsMsg = this.#t('WARN_RESTORING_BACKUP_MISSING_PLUGINS', missingPlugins.map((plugin) => plugin.name).join(', '));
+      const missingPluginsMsg = this.#t(
+        'WARN_RESTORING_BACKUP_MISSING_PLUGINS',
+        missingPlugins.map((plugin) => plugin.name).join(', '),
+      );
       this.ctx.logger.warn(missingPluginsMsg, {
         module: BACKUPS,
       });
@@ -322,7 +349,6 @@ export class RestoreManager {
       await pipeline(inputStream, extractor);
 
       this.ctx.logger.info(`Backup file extracted to: ${outputDir}`, { module: BACKUPS });
-
     } catch (error) {
       this.ctx.logger.error(`Error decrypting file: ${error.message}. Please confirm your password.`, {
         module: BACKUPS,
@@ -372,7 +398,9 @@ export class RestoreManager {
         input.once('end', () => {
           input.removeListener('readable', onReadable); // Clean up listener
           if (ivBuffer.length < 16) {
-            reject(new Error('Failed to read complete 16-byte IV from stream. File may be too short or not encrypted.'));
+            reject(
+              new Error('Failed to read complete 16-byte IV from stream. File may be too short or not encrypted.'),
+            );
           }
         });
         input.on('readable', onReadable);
@@ -388,7 +416,6 @@ export class RestoreManager {
       });
 
       return input.pipe(decipher);
-
     } catch (error) {
       this.ctx.logger.error(`Error setting up decryption stream: ${error.message}`, { module: BACKUPS });
       // Re-throw the error to be caught by #decompressFiles

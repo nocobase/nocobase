@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export const BACKUP_EXTENSION = 'nbdata';
 export const STORAGE_PATH = 'storage/uploads';
 export const SETTINGS = 'backupSettings';
@@ -18,6 +27,24 @@ import { name } from '../../package.json';
 
 export const PLUGIN_BACKUPS_NAME = name;
 
+export function resolvePathWithinBase(basePath: string, unsafePath: string): string | undefined {
+  const resolvedBasePath = path.resolve(basePath);
+  const resolvedTargetPath = path.resolve(resolvedBasePath, unsafePath);
+  const relativePath = path.relative(resolvedBasePath, resolvedTargetPath);
+
+  if (
+    relativePath === '' ||
+    relativePath === '.' ||
+    relativePath === '..' ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    return undefined;
+  }
+
+  return resolvedTargetPath;
+}
+
 export class Extractor extends Writable {
   private tempFile: string;
   private extractPath: string;
@@ -31,69 +58,116 @@ export class Extractor extends Writable {
 
   _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
     if (!this.tempWriteStream) {
-      fs.mkdirp(path.dirname(this.tempFile))
-        .then(() => {
-          this.tempWriteStream = fs.createWriteStream(this.tempFile);
-          this.tempWriteStream.write(chunk, encoding, callback);
-        })
-        .catch(callback);
+      fs.mkdirp(path.dirname(this.tempFile), (error) => {
+        if (error) {
+          callback(error);
+          return;
+        }
+
+        this.tempWriteStream = fs.createWriteStream(this.tempFile);
+        this.tempWriteStream.write(chunk, encoding, callback);
+      });
     } else {
       this.tempWriteStream.write(chunk, encoding, callback);
     }
   }
 
   _final(callback: (error?: Error | null) => void): void {
-    if (this.tempWriteStream) {
-      this.tempWriteStream.end(async () => {
-        try {
-          await this.extract();
-          await fs.unlink(this.tempFile);
-          callback();
-        } catch (error) {
-          callback(error as Error);
-        }
-      });
+    if (!this.tempWriteStream) {
+      callback();
+      return;
     }
+
+    this.tempWriteStream.end(() => {
+      this.extract((error) => {
+        if (error) {
+          callback(error);
+          return;
+        }
+
+        fs.unlink(this.tempFile, callback);
+      });
+    });
   }
 
-  private async extract(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      yauzl.open(this.tempFile, { lazyEntries: true }, (err, zipfile) => {
-        if (err) return reject(err);
-        if (!zipfile) return reject(new Error('Failed to open zip file'));
+  private extract(callback: (error?: Error | null) => void): void {
+    yauzl.open(this.tempFile, { lazyEntries: true }, (error, zipfile) => {
+      if (error) {
+        callback(error);
+        return;
+      }
 
-        zipfile.on('error', reject);
-        zipfile.on('end', resolve);
+      if (!zipfile) {
+        callback(new Error('Failed to open zip file'));
+        return;
+      }
 
-        zipfile.readEntry();
-        zipfile.on('entry', (entry) => {
-          const fullPath = path.join(this.extractPath, entry.fileName);
+      let settled = false;
+      const done = (err?: Error | null) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        zipfile.removeAllListeners();
+        if (err) {
+          zipfile.close();
+        }
+        callback(err);
+      };
 
-          if (entry.fileName.endsWith('/')) {
-            fs.mkdirp(fullPath)
-              .then(() => zipfile.readEntry())
-              .catch(reject);
+      zipfile.on('error', done);
+      zipfile.on('end', () => done());
+
+      zipfile.on('entry', (entry) => {
+        const fullPath = resolvePathWithinBase(this.extractPath, entry.fileName);
+        if (!fullPath) {
+          done(new Error(`Invalid zip entry path: ${entry.fileName}`));
+          return;
+        }
+
+        if (entry.fileName.endsWith('/')) {
+          fs.mkdirp(fullPath, (mkdirError) => {
+            if (mkdirError) {
+              done(mkdirError);
+              return;
+            }
+            if (!settled) {
+              zipfile.readEntry();
+            }
+          });
+          return;
+        }
+
+        fs.mkdirp(path.dirname(fullPath), (mkdirError) => {
+          if (mkdirError) {
+            done(mkdirError);
             return;
           }
 
-          fs.mkdirp(path.dirname(fullPath))
-            .then(() => {
-              zipfile.openReadStream(entry, (err, readStream) => {
-                if (err) return reject(err);
-                if (!readStream) return reject(new Error('Failed to open read stream'));
+          zipfile.openReadStream(entry, (readError, readStream) => {
+            if (readError) {
+              done(readError);
+              return;
+            }
+            if (!readStream) {
+              done(new Error('Failed to open read stream'));
+              return;
+            }
 
-                const writeStream = fs.createWriteStream(fullPath);
-                readStream.pipe(writeStream);
-
-                writeStream.on('finish', () => {
-                  zipfile.readEntry();
-                });
-                writeStream.on('error', reject);
-              });
-            })
-            .catch(reject);
+            const writeStream = fs.createWriteStream(fullPath);
+            readStream.on('error', done);
+            writeStream.on('error', done);
+            writeStream.on('finish', () => {
+              if (!settled) {
+                zipfile.readEntry();
+              }
+            });
+            readStream.pipe(writeStream);
+          });
         });
       });
+
+      zipfile.readEntry();
     });
   }
 
@@ -145,11 +219,12 @@ export async function getDBVersion(db: Database): Promise<string> {
 export function isQsTruly(value?: string | boolean) {
   try {
     return !!value && JSON.parse(`${value}`.toLowerCase());
-  } catch (_e) {}
-  return false;
+  } catch (_e) {
+    return false;
+  }
 }
 
-export function toMajorVersion(raw: string): string {
+export function toMajorVersion(raw: string): string | undefined {
   const m = /([\d+.]+)/.exec(raw);
   return m != null ? m[0].replace(/\..+$/, '') : undefined;
 }

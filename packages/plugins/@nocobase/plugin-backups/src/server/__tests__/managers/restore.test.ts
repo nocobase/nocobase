@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import * as cp from 'child_process';
 import archiver from 'archiver';
 import path from 'path';
@@ -137,6 +146,30 @@ describe('RestoreManager', () => {
     const restoreSpy = vi.spyOn(restoreManager, 'restore');
     await restoreManager.restoreFromBackup(`${backupFileBaseName}.${BACKUP_EXTENSION}`, 'task_id');
     expect(restoreSpy).toHaveBeenCalled();
+  });
+
+  it('restoreFromBackup should reject sibling files that only match the backup directory prefix', async () => {
+    const ctx = {
+      app,
+      logger: app.logger,
+      i18n: app.i18n,
+    };
+    const restoreManager = new RestoreManager(ctx);
+    const siblingDir = path.join(path.dirname(backupFilesFolder), 'main_evil');
+    const siblingFileName = `prefix-collision.${BACKUP_EXTENSION}`;
+    const siblingFilePath = path.join(siblingDir, siblingFileName);
+
+    try {
+      await fs.promises.mkdir(siblingDir, { recursive: true });
+      await fs.promises.writeFile(siblingFilePath, 'malicious sibling file');
+
+      await expect(restoreManager.restoreFromBackup(`../main_evil/${siblingFileName}`, 'task_id')).rejects.toThrow(
+        /(FILE_NOT_FOUND|not found)/,
+      );
+    } finally {
+      await fs.promises.unlink(siblingFilePath).catch(() => {});
+      await fs.promises.rm(siblingDir, { recursive: true, force: true }).catch(() => {});
+    }
   });
 
   it('restoreFromUpload', async () => {

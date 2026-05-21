@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { ResourcerContext } from '@nocobase/resourcer';
 import Application from '@nocobase/server';
@@ -20,6 +29,7 @@ import {
   PLUGIN_BACKUPS_NAME,
   getDBVersion,
   humanFileSize,
+  resolvePathWithinBase,
 } from '../utils';
 
 export interface BackupSettings {
@@ -106,10 +116,11 @@ export class BackupManager {
   }
 
   #getValidatedFilePath(fileName: string): string {
-    const filePath = path.resolve(path.join(this.#backupDir, fileName));
+    const filePath = resolvePathWithinBase(this.#backupDir, fileName);
     if (
+      path.basename(fileName) !== fileName ||
       !fileName.endsWith(`.${BACKUP_EXTENSION}`) ||
-      !filePath.startsWith(this.#backupDir) ||
+      !filePath ||
       !fs.existsSync(filePath)
     ) {
       throw new Error(this.#t('FILE_NOT_FOUND', fileName));
@@ -129,9 +140,9 @@ export class BackupManager {
       await this.#metadataBackup(opts, contentPath);
       // 3. compress the backup files
       const password = opts.encryptionPassword || undefined;
-      const filePath = await this.#compressFiles(contentPath, fileBaseName, password);
+      const filePath = await this.#compressFiles(contentPath, fileBaseName, password, opts);
       // upload files first, if success, then do the cleanup
-      await this.#uploadFiles(filePath);
+      await this.#uploadFiles(filePath, opts.storageId);
       return filePath;
     } catch (error) {
       this.app.logger.error(`Error running backup task: ${error.message}`, { module: BACKUPS });
@@ -145,8 +156,8 @@ export class BackupManager {
         .catch(() => {})
         .finally(() => {
           // drop old backups
-          if (this.#settings.keep > 0) {
-            this.#dropOldBackups(this.#settings.keep).catch(() => {});
+          if (opts.keep > 0) {
+            this.#dropOldBackups(opts.keep).catch(() => {});
           }
         });
     }
@@ -198,7 +209,7 @@ export class BackupManager {
     }
   }
 
-  async #compressFiles(dir: string, fileBaseName: string, password?: string) {
+  async #compressFiles(dir: string, fileBaseName: string, password: string | undefined, opts: BackupSettings) {
     const archive = archiver('zip', {
       zlib: { level: 9 },
     });
@@ -240,7 +251,7 @@ export class BackupManager {
       // Add the directory to the archive
       archive.directory(dir, false);
 
-      if (this.#settings.enableFilesBackup) {
+      if (opts.enableFilesBackup) {
         const fileCollections = [...this.app.db.collections.values()].filter((item) => {
           return item.options.template === 'file';
         });
@@ -343,9 +354,12 @@ export class BackupManager {
 
   #warnSkipFileBackup(collectionName: string, file: any, reason: string) {
     const recordId = file.id == null ? '' : ` id=${file.id}`;
-    this.app.logger.warn(`Skip backing up invalid local file record from collection "${collectionName}"${recordId}: ${reason}`, {
-      module: BACKUPS,
-    });
+    this.app.logger.warn(
+      `Skip backing up invalid local file record from collection "${collectionName}"${recordId}: ${reason}`,
+      {
+        module: BACKUPS,
+      },
+    );
   }
 
   async #createEncryptedStream(output: fs.WriteStream, password?: string): Promise<Writable> {
@@ -378,13 +392,13 @@ export class BackupManager {
     return output;
   }
 
-  async #uploadFiles(filePath: string) {
-    if (!this.#settings.storageId) {
+  async #uploadFiles(filePath: string, storageId?: string) {
+    if (!storageId) {
       return;
     }
     try {
       const storage: StorageModel = await this.app.db.getRepository('storages').findOne({
-        filterByTk: this.#settings.storageId,
+        filterByTk: storageId,
       });
       if (!storage || storage.type === 'local') {
         this.app.logger.info(`Has not set cloud storage, skip backup file upload process`, { module: BACKUPS });
