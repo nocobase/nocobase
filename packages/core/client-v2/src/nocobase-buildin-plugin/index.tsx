@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createCollectionContextMeta } from '@nocobase/flow-engine';
-import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
+import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
+import React, { createContext, type FC, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useACLRoleContext } from '../acl';
 import type { Application } from '../Application';
 import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath } from '../authRedirect';
 import { AppNotFound } from '../components';
@@ -20,11 +21,16 @@ import { Plugin } from '../Plugin';
 import { AdminSettingsLayoutModel } from '../settings-center';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
-type CurrentUserState = {
+export type CurrentUserState = {
   data?: {
     data?: any;
   };
   loading: boolean;
+};
+
+export type CurrentRoleOption = {
+  name: string;
+  title: string;
 };
 
 const AUTH_ROUTE_PREFIXES = ['/signin', '/signup', '/forgot-password', '/reset-password'];
@@ -50,8 +56,41 @@ function isAdminRuntimeRoute(pathname: string, basename?: string) {
   return normalizedPathname === '/admin' || normalizedPathname.startsWith('/admin/');
 }
 
-const CurrentUserContext = createContext<CurrentUserState | null>(null);
+export const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
+
+export function useCurrentUserContext() {
+  return useContext(CurrentUserContext);
+}
+
+/**
+ * 返回当前用户在 v2 应用上下文中可选的角色列表，等价于 v1 `useCurrentRoles`：
+ * 从 FlowEngine 全局上下文 `engine.context.user.roles` 派生（CurrentUserProvider 在
+ * `/auth:check` 成功后通过 `defineProperty('user', { value })` 写入），按需追加匿名角色，
+ * 并去掉合并角色 `__union__`。v2 中角色 title 可能含有 `{{t('...')}}` 模板，因此用
+ * flowEngine.context.t 解析。
+ *
+ * 不读 React `CurrentUserContext`：FlowEngine 的 dialog/drawer/popover 内容通过 `ctx.viewer`
+ * 渲染到独立的 ElementsHolder，部分场景会脱离原 Provider 树；FlowEngine 全局上下文是同一份
+ * 数据但不受 React 树位置影响。
+ */
+export function useCurrentRoles(): CurrentRoleOption[] {
+  const { allowAnonymous } = useACLRoleContext();
+  const engine = useFlowEngine();
+  const rolesRaw = engine?.context?.user?.roles as Array<{ name: string; title?: string }> | undefined;
+
+  return useMemo(() => {
+    const compile = (value: string | undefined): string =>
+      value == null ? '' : engine?.context?.t ? engine.context.t(value) : value;
+    const roles: CurrentRoleOption[] = (rolesRaw || [])
+      .filter((role) => role?.name !== '__union__')
+      .map((role) => ({ name: role.name, title: compile(role.title) }));
+    if (allowAnonymous) {
+      roles.push({ name: 'anonymous', title: 'Anonymous' });
+    }
+    return roles;
+  }, [allowAnonymous, engine, rolesRaw]);
+}
 
 const DataSourceBootstrapProvider: FC = ({ children }) => {
   const app = useApp();
