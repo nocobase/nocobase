@@ -10,7 +10,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 ## Verwendungshinweise
 
-http://localhost:13000/admin/settings/api-keys/configuration
+https://example.com/admin/settings/api-keys
 
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
 
