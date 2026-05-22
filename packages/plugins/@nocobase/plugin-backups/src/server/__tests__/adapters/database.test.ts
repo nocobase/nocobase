@@ -105,6 +105,25 @@ describe('DatabaseAdapter', () => {
       expect(mockedExec.mock.lastCall[0]).toContain('pg_dump');
     });
 
+    it('backup function with included and excluded tables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+      await adapter.backup({
+        dir,
+        includeTables: ['users', 'posts'],
+        excludeTables: ['logs', 'audit_logs'],
+      });
+      const command = mockedExec.mock.lastCall[0];
+      expect(command).toContain('pg_dump');
+      expect(command).toContain('-t users -t posts');
+      expect(command).toContain('-T logs -T audit_logs');
+    });
+
     it('restore function', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockImplementation((_command, _options, callback) => {
@@ -114,6 +133,24 @@ describe('DatabaseAdapter', () => {
       const filePath = os.tmpdir();
       await adapter.restore({ filePath });
       expect(mockedExec.mock.lastCall[0]).toContain('pg_restore');
+    });
+
+    it('restore function should skip dropping all tables when skipDropAllTables is true', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, skipDropAllTables: true });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(1);
+      expect(commands[0]).toContain('pg_restore');
+      expect(commands.some((command) => command.includes('DROP TABLE IF EXISTS'))).toBe(false);
+      expect(commands.some((command) => command.includes('DROP VIEW IF EXISTS'))).toBe(false);
+      expect(commands.some((command) => command.includes('DROP TRIGGER IF EXISTS'))).toBe(false);
     });
 
     it('restore function should sync collection schema metadata when schema is renamed', async () => {
@@ -200,6 +237,30 @@ describe('DatabaseAdapter', () => {
       expect(mockedSpawn).toHaveBeenCalledWith('mysqldump', expect.anything(), expect.anything());
     });
 
+    it('backup function with included and excluded tables', async () => {
+      const mockedSpawn = cp.spawn as unknown as Mock;
+      mockedSpawn.mockClear();
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+      await adapter.backup({
+        dir,
+        includeTables: ['users', 'posts'],
+        excludeTables: ['logs', 'audit_logs'],
+      });
+      fs.promises.unlink(`${dir}/data`).catch(() => {});
+      expect(mockedSpawn).toHaveBeenCalledWith(
+        'mysqldump',
+        expect.arrayContaining([
+          'test',
+          '--ignore-table=test.logs',
+          '--ignore-table=test.audit_logs',
+          'users',
+          'posts',
+        ]),
+        expect.anything(),
+      );
+    });
+
     it('restore function', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockImplementation((_command, _options, callback) => {
@@ -209,6 +270,23 @@ describe('DatabaseAdapter', () => {
       const filePath = os.tmpdir();
       await adapter.restore({ filePath });
       expect(mockedExec.mock.lastCall[0]).toContain('mysql');
+    });
+
+    it('restore function should skip dropping all tables when skipDropAllTables is true', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, skipDropAllTables: true });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(1);
+      expect(commands[0]).toContain('mysql');
+      expect(commands[0]).toContain(` < ${filePath}`);
+      expect(commands.some((command) => command.includes('drop_all_tables_and_triggers'))).toBe(false);
     });
   });
 
@@ -259,6 +337,33 @@ describe('DatabaseAdapter', () => {
       expect(mockedSpawn).toHaveBeenCalledWith('mysqldump', expect.anything(), expect.anything());
     });
 
+    it('backup function with included and excluded tables', async () => {
+      const mockedSpawn = cp.spawn as unknown as Mock;
+      mockedSpawn.mockClear();
+      (cp.execSync as Mock).mockImplementation((_command, _callback) => {
+        return 'MySQL 8.0';
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+      await adapter.backup({
+        dir,
+        includeTables: ['users', 'posts'],
+        excludeTables: ['logs', 'audit_logs'],
+      });
+      fs.promises.unlink(`${dir}/data`).catch(() => {});
+      expect(mockedSpawn).toHaveBeenCalledWith(
+        'mysqldump',
+        expect.arrayContaining([
+          'test',
+          '--ignore-table=test.logs',
+          '--ignore-table=test.audit_logs',
+          'users',
+          'posts',
+        ]),
+        expect.anything(),
+      );
+    });
+
     it('restore function', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockImplementation((_command, _options, callback) => {
@@ -268,6 +373,23 @@ describe('DatabaseAdapter', () => {
       const filePath = os.tmpdir();
       await adapter.restore({ filePath });
       expect(mockedExec.mock.lastCall[0]).toContain('mysql');
+    });
+
+    it('restore function should skip dropping all tables when skipDropAllTables is true', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, skipDropAllTables: true });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(1);
+      expect(commands[0]).toContain('mysql');
+      expect(commands[0]).toContain(` < ${filePath}`);
+      expect(commands.some((command) => command.includes('drop_all_tables_and_triggers'))).toBe(false);
     });
   });
 
