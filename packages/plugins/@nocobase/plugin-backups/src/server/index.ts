@@ -9,6 +9,6 @@
 
 export { BackupManager } from './managers/backup';
 export type { BackupSettings, BackupTaskResult } from './managers/backup';
-export { RestoreManager } from './managers/restore';
+export { RestoreManager, RestoreOptions } from './managers/restore';
 export { BACKUP_EXTENSION } from './utils';
 export { default } from './plugin';

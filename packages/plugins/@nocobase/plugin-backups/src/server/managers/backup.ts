@@ -39,6 +39,8 @@ export interface BackupSettings {
   keep?: number;
   scheduled: boolean;
   cron: string;
+  includeTables?: string[];
+  excludeTables?: string[];
 }
 
 export interface BackupFile {
@@ -82,9 +84,9 @@ export class BackupManager {
     return this.#generateFileBaseName();
   }
 
-  async backup(fileBaseName: string, opts: BackupSettings = this.#settings) {
+  async backup(fileBaseName: string, opts?: Partial<BackupSettings>) {
     const contentPath = path.join(this.#tempDir, fileBaseName);
-    return this.#runBackupTask(opts, fileBaseName, contentPath);
+    return this.#runBackupTask({ ...this.#settings, ...(opts ?? {}) }, fileBaseName, contentPath);
   }
 
   async destroy(fileName: string) {
@@ -135,7 +137,12 @@ export class BackupManager {
       // create content path to store the uncompressed backup files
       await this.#createContentPath(contentPath);
       // Backup the database
-      await this.#dbAdapter.backup({ dir: contentPath, skipFdw: !this.app.pm.has('collection-fdw') });
+      await this.#dbAdapter.backup({
+        dir: contentPath,
+        skipFdw: !this.app.pm.has('collection-fdw'),
+        includeTables: opts.includeTables,
+        excludeTables: opts.excludeTables,
+      });
       // save the metadata
       await this.#metadataBackup(opts, contentPath);
       // 3. compress the backup files

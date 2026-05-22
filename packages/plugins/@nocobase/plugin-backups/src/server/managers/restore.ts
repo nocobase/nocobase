@@ -47,8 +47,9 @@ interface Metadata {
   }>;
 }
 
-interface RestoreOptions {
+export interface RestoreOptions {
   forceSchemaRestore?: boolean;
+  skipDropAllTables?: boolean;
 }
 
 const RESTORE_STEPS = {
@@ -116,7 +117,7 @@ export class RestoreManager {
     // check the metadata file
     const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
     try {
-      await this.#restoreDataCLI(extractedDir, dbFile, uploadsExist, metadata);
+      await this.#restoreDataCLI(extractedDir, dbFile, uploadsExist, metadata, options);
     } catch (error) {
       const dbVersion = await getDBVersion(this.ctx.app.db);
       const restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
@@ -160,6 +161,7 @@ export class RestoreManager {
     dbFile: string,
     restoreUploads: boolean,
     metadata: Metadata,
+    options?: RestoreOptions,
   ): Promise<void> {
     const tmpBackupDir = path.join(this.#tempDir, 'before-restore');
     try {
@@ -167,7 +169,11 @@ export class RestoreManager {
       // ensure the app cleaned before restoring the database
       await this.ctx.app.emitAsync('beforeStop');
       await this.ctx.app.emitAsync('afterStop');
-      await this.#dbAdapter.restore({ filePath: path.join(extractedDir, dbFile), schema: metadata.database.schema });
+      await this.#dbAdapter.restore({
+        filePath: path.join(extractedDir, dbFile),
+        schema: metadata.database.schema,
+        skipDropAllTables: options?.skipDropAllTables === true,
+      });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
       // copy the uploads directory
       await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
@@ -212,7 +218,7 @@ export class RestoreManager {
     }
     // check the metadata file
     const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
-    this.#restoreData(extractedDir, dbFile, uploadsExist, taskId, metadata).catch(async (error) => {
+    this.#restoreData(extractedDir, dbFile, uploadsExist, taskId, metadata, options).catch(async (error) => {
       try {
         const dbVersion = await getDBVersion(this.ctx.app.db);
         const restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
@@ -430,6 +436,7 @@ export class RestoreManager {
     restoreUploads: boolean,
     taskId: string,
     metadata: Metadata,
+    options?: RestoreOptions,
   ): Promise<void> {
     this.#notify(RESTORE_STEPS.BEGIN);
     // restore the database
@@ -444,7 +451,11 @@ export class RestoreManager {
       await this.ctx.app.emitAsync('beforeStop');
       await this.ctx.app.emitAsync('afterStop');
 
-      await this.#dbAdapter.restore({ filePath: path.join(extractedDir, dbFile), schema: metadata.database.schema });
+      await this.#dbAdapter.restore({
+        filePath: path.join(extractedDir, dbFile),
+        schema: metadata.database.schema,
+        skipDropAllTables: options?.skipDropAllTables === true,
+      });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
       // copy the uploads directory
       if (restoreUploads) {
