@@ -7,16 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { InputNumber } from 'antd';
 import React from 'react';
-import { EditableItemModel, DisplayItemModel } from '@nocobase/flow-engine';
-import { FieldModel } from '@nocobase/client';
+import { InputNumber } from 'antd';
+import { DisplayItemModel, EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
+import { FieldModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class SortFieldModel extends FieldModel {
   render() {
-    return <InputNumber {...this.props} style={{ width: '100%' }} />;
+    return <InputNumber {...this.props} style={{ width: '100%', ...this.props?.style }} />;
   }
 }
 
+SortFieldModel.define({
+  label: tExpr('Sort'),
+});
+
 EditableItemModel.bindModelToInterface('SortFieldModel', ['sort'], { isDefault: true });
 DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['sort'], { isDefault: true });
+FilterableItemModel.bindModelToInterface('NumberFieldModel', ['sort'], { isDefault: true });
