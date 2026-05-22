@@ -46,14 +46,11 @@ function getTitleFieldComponentProps(collectionField?: CollectionField) {
     return props;
   }
 
-  const dateFormat = props.dateFormat || 'YYYY-MM-DD';
-  const timeFormat = props.timeFormat || 'HH:mm:ss';
+  const dateFormat = props.dateFormat;
+  const timeFormat = props.timeFormat;
   const showTime = props.dateOnly ? false : props.showTime;
-
   return {
     ...props,
-    dateFormat,
-    timeFormat,
     showTime,
     format: props.format || (showTime ? `${dateFormat} ${timeFormat}` : dateFormat),
   };
