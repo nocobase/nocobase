@@ -8,12 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import {
-  getCurrentEnvName,
-  getEnv,
-  resolveConfiguredAuthType,
-  updateEnvConnection,
-} from '../../lib/auth-store.js';
+import { getCurrentEnvName, getEnv, resolveConfiguredAuthType, updateEnvConnection } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { authenticateEnvWithBasic, authenticateEnvWithOauth } from '../../lib/env-auth.js';
 import { runPromptCatalog, type PromptsCatalog } from '../../lib/prompt-catalog.js';
@@ -32,10 +27,9 @@ function resolveExplicitAuthType(value: unknown): 'basic' | 'token' | 'oauth' | 
 }
 
 function formatMissingEnvMessage(envName: string): string {
-  return [
-    `Env "${envName}" is not configured.`,
-    `Run \`nb env add ${envName} --api-base-url <url>\` first.`,
-  ].join('\n');
+  return [`Env "${envName}" is not configured.`, `Run \`nb env add ${envName} --api-base-url <url>\` first.`].join(
+    '\n',
+  );
 }
 
 export default class EnvAuth extends Command {
@@ -97,7 +91,8 @@ export default class EnvAuth extends Command {
 
     const tokenFromFlags = flags['access-token'];
     const tokenFlagProvided = tokenFromFlags !== undefined;
-    const tokenProvided = typeof tokenFromFlags === 'string' && tokenFromFlags !== '';
+    const tokenValue = typeof tokenFromFlags === 'string' ? tokenFromFlags.trim() : '';
+    const tokenProvided = tokenValue !== '';
     if (tokenFlagProvided && !tokenProvided) {
       this.error('--access-token cannot be empty.');
     }
@@ -109,7 +104,7 @@ export default class EnvAuth extends Command {
     }
     const passwordFromFlags = flags.password;
     const passwordFlagProvided = passwordFromFlags !== undefined;
-    const passwordProvided = typeof passwordFromFlags === 'string' && passwordFromFlags !== '';
+    const passwordProvided = typeof passwordFromFlags === 'string' && passwordFromFlags.trim() !== '';
     if (passwordFlagProvided && !passwordProvided) {
       this.error('--password cannot be empty.');
     }
@@ -127,24 +122,27 @@ export default class EnvAuth extends Command {
       this.error('--auth-type basic cannot be used with --access-token.');
     }
     const savedAuthType = resolveConfiguredAuthType(env.config);
-    const resolvedAuthType = explicitAuthType
-      ?? (tokenProvided ? 'token' : (usernameFlagProvided || passwordFlagProvided) ? 'basic' : savedAuthType);
+    const resolvedAuthType =
+      explicitAuthType ??
+      (tokenProvided ? 'token' : usernameFlagProvided || passwordFlagProvided ? 'basic' : savedAuthType);
     if (resolvedAuthType === 'basic' && !usernameProvided && !isInteractiveTerminal()) {
       this.error('--username is required when using basic authentication in non-interactive mode.');
     }
-    const prompted = (
-      resolvedAuthType === 'oauth'
+    if (resolvedAuthType === 'basic' && !passwordProvided && !isInteractiveTerminal()) {
+      this.error('--password is required when using basic authentication in non-interactive mode.');
+    }
+    const prompted =
+      (resolvedAuthType === 'oauth'
         ? { authType: 'oauth' }
         : await runPromptCatalog(envAuthPrompts, {
             values: {
               ...(resolvedAuthType ? { authType: resolvedAuthType } : {}),
               ...(usernameFlagProvided ? { username: String(usernameFromFlags ?? '').trim() } : {}),
               ...(passwordFlagProvided ? { password: String(passwordFromFlags ?? '') } : {}),
-              ...(tokenFlagProvided ? { accessToken: String(tokenFromFlags ?? '') } : {}),
+              ...(tokenFlagProvided ? { accessToken: tokenValue } : {}),
             },
             command: this,
-          })
-    ) ?? {};
+          })) ?? {};
     const authType = resolveExplicitAuthType(prompted.authType ?? resolvedAuthType);
     if (!authType) {
       this.error('Choose an authentication type before continuing.');
@@ -179,8 +177,8 @@ export default class EnvAuth extends Command {
         );
         stopTask();
       } else if (authType === 'token') {
-        const accessToken = String(prompted.accessToken ?? tokenFromFlags ?? '');
-        if (accessToken.trim() === '') {
+        const accessToken = String(prompted.accessToken ?? tokenFromFlags ?? '').trim();
+        if (accessToken === '') {
           this.error('--access-token cannot be empty.');
         }
         startTask(`Saving access token for "${envName}"...`);

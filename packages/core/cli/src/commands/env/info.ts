@@ -17,6 +17,7 @@ type EnvInfoValue = string | boolean | number | null | undefined;
 
 type EnvInfoGroup = Record<string, EnvInfoValue>;
 const MISSING_FIELD = Symbol('missingField');
+const FORBIDDEN_FIELD_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 function normalizeJsonValue(value: EnvInfoValue): string | boolean | number {
   if (value === undefined || value === null || value === '') {
@@ -57,20 +58,26 @@ function createGroupTable(title: string, values: EnvInfoGroup): string {
 }
 
 function serializeGroup(values: EnvInfoGroup): Record<string, string | boolean | number> {
-  return Object.fromEntries(
-    Object.entries(values).map(([field, value]) => [field, normalizeJsonValue(value)]),
-  );
+  return Object.fromEntries(Object.entries(values).map(([field, value]) => [field, normalizeJsonValue(value)]));
 }
 
 function resolveFieldPath(value: unknown, path: string): unknown | typeof MISSING_FIELD {
-  const segments = path.split('.').map((segment) => segment.trim()).filter(Boolean);
+  const segments = path
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
   if (segments.length === 0) {
     return MISSING_FIELD;
   }
 
   let current: unknown = value;
   for (const segment of segments) {
-    if (!current || typeof current !== 'object' || !(segment in current)) {
+    if (
+      !current ||
+      typeof current !== 'object' ||
+      FORBIDDEN_FIELD_PATH_SEGMENTS.has(segment) ||
+      !Object.prototype.hasOwnProperty.call(current, segment)
+    ) {
       return MISSING_FIELD;
     }
     current = (current as Record<string, unknown>)[segment];
@@ -226,10 +233,10 @@ export default class EnvInfo extends Command {
       return;
     }
 
-    this.log([
-      createGroupTable('App', appGroup),
-      createGroupTable('DB', dbGroup),
-      createGroupTable('API', apiGroup),
-    ].join('\n\n'));
+    this.log(
+      [createGroupTable('App', appGroup), createGroupTable('DB', dbGroup), createGroupTable('API', apiGroup)].join(
+        '\n\n',
+      ),
+    );
   }
 }
