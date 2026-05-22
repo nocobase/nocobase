@@ -14,7 +14,7 @@ import debounce from 'lodash/debounce';
 import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
 import AuthProvider from './providers/AuthProvider';
-import { authLocaleResources, NAMESPACE } from './locale';
+import { NAMESPACE } from './locale';
 
 class UserCenterLanguageItemModel extends UserCenterSelectItemModel {
   static itemId = 'language';
@@ -97,9 +97,8 @@ export class PluginAuthClientV2 extends Plugin {
   }
 
   async load() {
-    Object.entries(authLocaleResources).forEach(([lang, resource]) => {
-      this.app.i18n.addResources(lang, NAMESPACE, resource);
-    });
+    // i18n resources are auto-loaded by v2 buildin `LocalePlugin.afterAdd`;
+    // see plugin-password-policy/locale.ts for the full rationale.
 
     // `unshift` (not `app.use`/`push`) so AuthProvider becomes the outermost
     // wrap — same as v1. Otherwise CurrentUserProvider mounts first, renders

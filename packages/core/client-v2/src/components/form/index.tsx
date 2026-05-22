@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './CollectionFilterItem';
 export * from './createFormRegistry';
 export * from './DialogFormLayout';
 export * from './DrawerFormLayout';

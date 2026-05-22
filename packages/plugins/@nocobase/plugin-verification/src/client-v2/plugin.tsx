@@ -9,7 +9,7 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT, SMS_OTP_VERIFICATION_TYPE } from '../constants';
-import { NAMESPACE, verificationLocaleResources } from './locale';
+import { NAMESPACE } from './locale';
 import { smsAliyunProviderOptions, smsOTPVerificationOptions, smsTencentProviderOptions } from './otp-verification/sms';
 import { SMSOTPProviderManager } from './otp-sms-provider-manager';
 import { VerificationUserCenterItemModel } from './user-center/VerificationUserCenterItemModel';
@@ -32,10 +32,8 @@ export class PluginVerificationClientV2 extends Plugin {
   smsOTPProviderManager = new SMSOTPProviderManager();
 
   async load() {
-    Object.entries(verificationLocaleResources).forEach(([lang, resource]) => {
-      this.app.i18n.addResources(lang, NAMESPACE, resource);
-    });
-
+    // i18n resources are auto-loaded by v2 buildin `LocalePlugin.afterAdd`;
+    // see plugin-password-policy/locale.ts for the full rationale.
     this.app.flowEngine.registerModels({ VerificationUserCenterItemModel });
 
     this.registerSettingsPages();

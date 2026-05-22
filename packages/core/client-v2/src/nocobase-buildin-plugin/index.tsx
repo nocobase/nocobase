@@ -317,6 +317,16 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       aclSnippet: 'pm.system-settings.system-settings',
       sort: -100,
     });
+    // Parent menu for security-related plugin settings (password policy,
+    // locked users, etc.). Registered here in the buildin plugin so any
+    // pro plugin can attach page tabs to `menuKey: 'security'` without
+    // each one re-registering the same parent.
+    this.app.pluginSettingsManager.addMenuItem({
+      key: 'security',
+      title: this.app.i18n.t('Security'),
+      icon: 'SafetyOutlined',
+      aclSnippet: 'pm.security',
+    });
   }
 
   addRoutes() {

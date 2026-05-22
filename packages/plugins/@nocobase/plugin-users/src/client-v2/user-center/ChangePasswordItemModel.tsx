@@ -14,6 +14,7 @@ import { Alert, Form } from 'antd';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUsersTranslation } from '../locale';
+import { PluginUsersClientV2 } from '../plugin';
 
 /**
  * Drawer body for "Change password". Three antd `Form.Item`s, with
@@ -32,6 +33,24 @@ function ChangePasswordDrawerContent() {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Async client-side validator that fans out to every PasswordValidator
+  // registered on PluginUsersClientV2 (typically contributed by
+  // plugin-password-policy). `username: undefined` matches v1's
+  // ChangePassword flow — the policy's `cantIncludeUsername` rule is
+  // intentionally skipped here, because the user-center form has no
+  // username field to feed it.
+  const validateNewPassword = useMemoizedFn(async (_rule: unknown, value: unknown) => {
+    if (typeof value !== 'string' || !value) return;
+    const plugin = ctx.app?.pm?.get?.(PluginUsersClientV2) as PluginUsersClientV2 | undefined;
+    const validators = plugin?.getPasswordValidators?.() || [];
+    for (const validator of validators) {
+      const message = await validator(value, { username: undefined });
+      if (message) {
+        throw new Error(message);
+      }
+    }
+  });
 
   const handleSubmit = useMemoizedFn(async () => {
     const values = await form.validateFields();
@@ -70,7 +89,7 @@ function ChangePasswordDrawerContent() {
         <Form.Item
           name="newPassword"
           label={t('New password')}
-          rules={[{ required: true, message: t('Please enter the new password') }]}
+          rules={[{ required: true, message: t('Please enter the new password') }, { validator: validateNewPassword }]}
         >
           <PasswordInput autoComplete="new-password" checkStrength />
         </Form.Item>
