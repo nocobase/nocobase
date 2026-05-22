@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DatabaseOptions } from '@nocobase/database';
 import { exec as execCallback, execSync, spawn } from 'child_process';
 import { createReadStream, createWriteStream } from 'fs';
@@ -13,10 +22,20 @@ const D$$ = os.platform() === 'win32' ? '$$' : '\\$\\$';
 
 const STREAM_BUFFER_SIZE = 2 * 1024 * 1024; // 2MB buffer for better IO performance
 
+export type DBBackupOptions = {
+  dir: string;
+  skipFdw?: boolean;
+};
+
+export type DBRestoreOptions = {
+  filePath: string;
+  schema?: string;
+};
+
 export interface DBAdapter {
   dbOpts: DatabaseOptions;
-  backup(dir: string, skipFdw?: boolean): Promise<void>;
-  restore(filePath: string, schema?: string): Promise<void>;
+  backup(options: DBBackupOptions): Promise<void>;
+  restore(options: DBRestoreOptions): Promise<void>;
   check(op: 'backup' | 'restore'): Promise<void>;
   clientVersion(op: 'backup' | 'restore'): Promise<string | void>;
 }
@@ -41,8 +60,8 @@ const escapeStringLiteral = (value: string) => String(value).replace(/'/g, "''")
 abstract class BaseDBAdapter implements DBAdapter {
   constructor(public dbOpts: DatabaseOptions) {}
 
-  abstract backup(dir: string, skipFdw?: boolean): Promise<void>;
-  abstract restore(filePath: string): Promise<void>;
+  abstract backup(options: DBBackupOptions): Promise<void>;
+  abstract restore(options: DBRestoreOptions): Promise<void>;
 
   async check(_: 'backup' | 'restore') {}
   async clientVersion(_: 'backup' | 'restore'): Promise<string | void> {}
@@ -82,7 +101,7 @@ class MySQLAdapter extends BaseDBAdapter {
     }
   }
 
-  async backup(dir: string, skipFdw = false): Promise<void> {
+  async backup({ dir, skipFdw = false }: DBBackupOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
     const filePath = `${dir}/data`;
     const versionStr = await this.clientVersion('backup');
@@ -226,7 +245,7 @@ class MySQLAdapter extends BaseDBAdapter {
     }
   }
 
-  async restore(filePath: string): Promise<void> {
+  async restore({ filePath }: DBRestoreOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
 
     const dropDataCommand = `mysql -u ${username} -h ${host} ${
@@ -349,7 +368,7 @@ class PostgresAdapter extends BaseDBAdapter {
     }
   }
 
-  async backup(dir: string): Promise<void> {
+  async backup({ dir }: DBBackupOptions): Promise<void> {
     const { username, host, port, database, password, schema: backupSchema } = this.dbOpts;
     const filePath = `${dir}/data`;
     const schemaOption = backupSchema ? `--schema=${backupSchema}` : '';
@@ -360,7 +379,7 @@ class PostgresAdapter extends BaseDBAdapter {
     await run(command, { PGPASSWORD: password });
   }
 
-  async restore(filePath: string, schema?: string): Promise<void> {
+  async restore({ filePath, schema }: DBRestoreOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
     let schemaOption = this.dbOpts.schema;
     if (schema && !schemaOption) {
@@ -497,7 +516,7 @@ class PostgresAdapter extends BaseDBAdapter {
 }
 
 class SQLiteAdapter extends BaseDBAdapter {
-  async backup(dir: string): Promise<void> {
+  async backup({ dir }: DBBackupOptions): Promise<void> {
     const { storage } = this.dbOpts;
     const filePath = `${dir}/data`;
     const dbFilePath = path.resolve(storage);
@@ -505,7 +524,7 @@ class SQLiteAdapter extends BaseDBAdapter {
     await fsPromises.copyFile(dbFilePath, filePath);
   }
 
-  async restore(filePath: string): Promise<void> {
+  async restore({ filePath }: DBRestoreOptions): Promise<void> {
     const { storage } = this.dbOpts;
     const dbFilePath = path.resolve(storage);
     await fsPromises.copyFile(filePath, dbFilePath, fsPromises.constants.COPYFILE_FICLONE);

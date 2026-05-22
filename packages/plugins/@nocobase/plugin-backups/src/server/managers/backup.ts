@@ -135,7 +135,7 @@ export class BackupManager {
       // create content path to store the uncompressed backup files
       await this.#createContentPath(contentPath);
       // Backup the database
-      await this.#dbAdapter.backup(contentPath, !this.app.pm.has('collection-fdw'));
+      await this.#dbAdapter.backup({ dir: contentPath, skipFdw: !this.app.pm.has('collection-fdw') });
       // save the metadata
       await this.#metadataBackup(opts, contentPath);
       // 3. compress the backup files

@@ -167,7 +167,7 @@ export class RestoreManager {
       // ensure the app cleaned before restoring the database
       await this.ctx.app.emitAsync('beforeStop');
       await this.ctx.app.emitAsync('afterStop');
-      await this.#dbAdapter.restore(path.join(extractedDir, dbFile), metadata.database.schema);
+      await this.#dbAdapter.restore({ filePath: path.join(extractedDir, dbFile), schema: metadata.database.schema });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
       // copy the uploads directory
       await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
@@ -438,13 +438,13 @@ export class RestoreManager {
     const tmpBackupDir = path.join(this.#tempDir, 'before-restore');
     try {
       await fsPromises.mkdir(tmpBackupDir, { recursive: true });
-      await this.#dbAdapter.backup(tmpBackupDir);
+      await this.#dbAdapter.backup({ dir: tmpBackupDir });
 
       // ensure the app cleaned before restoring the database
       await this.ctx.app.emitAsync('beforeStop');
       await this.ctx.app.emitAsync('afterStop');
 
-      await this.#dbAdapter.restore(path.join(extractedDir, dbFile), metadata.database.schema);
+      await this.#dbAdapter.restore({ filePath: path.join(extractedDir, dbFile), schema: metadata.database.schema });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
       // copy the uploads directory
       if (restoreUploads) {
@@ -492,7 +492,7 @@ export class RestoreManager {
     const dbFile = path.join(this.#tempDir, 'before-restore', 'data');
     if (await fs.pathExists(dbFile)) {
       try {
-        await this.#dbAdapter.restore(dbFile, this.#dbAdapter.dbOpts.schema);
+        await this.#dbAdapter.restore({ filePath: dbFile, schema: this.#dbAdapter.dbOpts.schema });
       } catch (error) {
         this.ctx.logger.error('Error reverting the database restore process', { module: BACKUPS });
       }

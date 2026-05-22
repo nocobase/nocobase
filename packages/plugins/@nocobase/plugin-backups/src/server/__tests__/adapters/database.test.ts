@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import * as cp from 'child_process';
 import os from 'os';
 import { getDBAdapter } from '../../adapters/database';
@@ -92,7 +101,7 @@ describe('DatabaseAdapter', () => {
       });
       const adapter = getDBAdapter(dbOpts);
       const dir = os.tmpdir();
-      await adapter.backup(dir);
+      await adapter.backup({ dir });
       expect(mockedExec.mock.lastCall[0]).toContain('pg_dump');
     });
 
@@ -103,7 +112,7 @@ describe('DatabaseAdapter', () => {
       });
       const adapter = getDBAdapter(dbOpts);
       const filePath = os.tmpdir();
-      await adapter.restore(filePath);
+      await adapter.restore({ filePath });
       expect(mockedExec.mock.lastCall[0]).toContain('pg_restore');
     });
 
@@ -119,7 +128,7 @@ describe('DatabaseAdapter', () => {
         tablePrefix: 'nb_',
       });
 
-      await adapter.restore(os.tmpdir(), 'source_schema');
+      await adapter.restore({ filePath: os.tmpdir(), schema: 'source_schema' });
 
       const commands = mockedExec.mock.calls.map(([command]) => command);
       expect(commands.some((command) => command.includes('jsonb_set') && command.includes('nb_collections'))).toBe(
@@ -141,7 +150,7 @@ describe('DatabaseAdapter', () => {
         schema: 'public',
       });
 
-      await adapter.restore(os.tmpdir(), 'public');
+      await adapter.restore({ filePath: os.tmpdir(), schema: 'public' });
 
       const commands = mockedExec.mock.calls.map(([command]) => command);
       expect(commands.some((command) => command.includes('jsonb_set'))).toBe(false);
@@ -186,7 +195,7 @@ describe('DatabaseAdapter', () => {
       const mockedSpawn = cp.spawn as unknown as Mock;
       const adapter = getDBAdapter(dbOpts);
       const dir = os.tmpdir();
-      await adapter.backup(dir);
+      await adapter.backup({ dir });
       fs.promises.unlink(`${dir}/data`).catch(() => {});
       expect(mockedSpawn).toHaveBeenCalledWith('mysqldump', expect.anything(), expect.anything());
     });
@@ -198,7 +207,7 @@ describe('DatabaseAdapter', () => {
       });
       const adapter = getDBAdapter(dbOpts);
       const filePath = os.tmpdir();
-      await adapter.restore(filePath);
+      await adapter.restore({ filePath });
       expect(mockedExec.mock.lastCall[0]).toContain('mysql');
     });
   });
@@ -245,7 +254,7 @@ describe('DatabaseAdapter', () => {
       });
       const adapter = getDBAdapter(dbOpts);
       const dir = os.tmpdir();
-      await adapter.backup(dir);
+      await adapter.backup({ dir });
       fs.promises.unlink(`${dir}/data`).catch(() => {});
       expect(mockedSpawn).toHaveBeenCalledWith('mysqldump', expect.anything(), expect.anything());
     });
@@ -257,7 +266,7 @@ describe('DatabaseAdapter', () => {
       });
       const adapter = getDBAdapter(dbOpts);
       const filePath = os.tmpdir();
-      await adapter.restore(filePath);
+      await adapter.restore({ filePath });
       expect(mockedExec.mock.lastCall[0]).toContain('mysql');
     });
   });
@@ -279,7 +288,7 @@ describe('DatabaseAdapter', () => {
       mockedCopyFile.mockImplementation((_src, _dest) => {});
       const adapter = getDBAdapter(dbOpts);
       const dir = os.tmpdir();
-      await adapter.backup(dir);
+      await adapter.backup({ dir });
       expect(mockedCopyFile.mock.lastCall[0]).toContain('database.sqlite');
     });
 
@@ -288,7 +297,7 @@ describe('DatabaseAdapter', () => {
       mockedCopyFile.mockImplementation((_src, _dest) => {});
       const adapter = getDBAdapter(dbOpts);
       const dir = os.tmpdir();
-      await adapter.restore(dir);
+      await adapter.restore({ filePath: dir });
       expect(mockedCopyFile.mock.lastCall[0]).toContain(dir);
     });
   });
