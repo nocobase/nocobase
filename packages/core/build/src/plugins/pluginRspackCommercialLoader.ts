@@ -17,7 +17,11 @@ export default function myLoader(
   if (!options?.isCommercial) {
     return source;
   }
-  const isEntry = this.resourcePath.match(/client\/index\.(ts|tsx)/) && !this.resourcePath.includes('plugin-commercial');
+  const isClientV2Entry =
+    this.resourcePath.match(/client-v2\/index\.(ts|tsx)/) && !this.resourcePath.includes('plugin-commercial');
+  const isEntry =
+    (this.resourcePath.match(/client\/index\.(ts|tsx)/) || isClientV2Entry) &&
+    !this.resourcePath.includes('plugin-commercial');
 
   if (isEntry) {
     const regex = /export\s+default\s+([a-zA-Z_0-9]+)\s*;?/; // match: export default xxx;
@@ -27,7 +31,7 @@ export default function myLoader(
       const moduleName = match[1];
       source =
         `
-        import { withCommercial } from '@nocobase/plugin-commercial/client';
+        import { withCommercial } from '@nocobase/plugin-commercial/${isClientV2Entry ? 'client-v2' : 'client'}';
         ${source}
         export default withCommercial(${moduleName});
         `;
