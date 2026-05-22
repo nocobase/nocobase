@@ -1,31 +1,37 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import * as nocobaseClient from '@nocobase/client';
-import MockAdapter from 'axios-mock-adapter';
 import { NAMESPACE } from '../constants';
 import { BackupFile } from '../components/BackupsTable';
 import React from 'react';
 import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { RestoreFromBackup } from '../components/RestoreFromBackup';
-
-vi.mock('@nocobase/client', async () => {
-  const actual = await vi.importActual<typeof nocobaseClient>('@nocobase/client');
-  return {
-    ...actual,
-    useApp: () => ({
-      i18n: {
-        t: vi.fn().mockImplementation((key) => key), // Mock translation function, return the key directly
-      },
-    }),
-  };
-});
+import { createMockAppWrapper } from './testUtils';
 
 describe('RestoreFromBackup', () => {
-  let axioMocked: MockAdapter;
+  const { Wrapper, mockRequest } = createMockAppWrapper();
   const mockedRestore = vi.fn().mockReturnValue({ data: { status: 'ok' } });
 
+  beforeEach(() => {
+    mockRequest.reset();
+    mockRequest.onGet(`${NAMESPACE}:appInfo`).reply(200, {
+      data: {
+        database: {
+          dialect: 'sqlite',
+        },
+      },
+    });
+  });
+
   const MockedRestoreFromBackup = () => {
-    const api = nocobaseClient.useAPIClient();
-    axioMocked = new MockAdapter(api.axios);
-    axioMocked.onPost(`${NAMESPACE}:restore`).reply(() => {
+    mockRequest.onPost(`${NAMESPACE}:restore`).reply(() => {
       return [200, mockedRestore()];
     });
 
@@ -40,21 +46,21 @@ describe('RestoreFromBackup', () => {
   };
 
   test('should render restore from backup button', async () => {
-    render(<MockedRestoreFromBackup />);
+    render(<MockedRestoreFromBackup />, { wrapper: Wrapper });
     expect(screen.getByText('Restore')).toBeInTheDocument();
   });
 
   test('should trigger restore api', async () => {
     const user = userEvent.setup();
-    render(<MockedRestoreFromBackup />);
+    render(<MockedRestoreFromBackup />, { wrapper: Wrapper });
     await act(async () => {
-      user.click(screen.getByText('Restore'));
+      await user.click(screen.getByText('Restore'));
     });
     await waitFor(() => {
       expect(screen.getByText('Submit')).toBeInTheDocument();
     });
     await act(async () => {
-      user.click(screen.getByText('Submit'));
+      await user.click(screen.getByText('Submit'));
     });
     await waitFor(() => {
       expect(mockedRestore).toHaveBeenCalled();
