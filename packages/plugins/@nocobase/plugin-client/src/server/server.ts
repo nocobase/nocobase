@@ -69,7 +69,7 @@ export class PluginClientServer extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:restart', 'app:refresh', 'app:clearCache'],
+      actions: ['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent'],
     });
     const dialect = this.app.db.sequelize.getDialect();
 
@@ -132,10 +132,31 @@ export class PluginClientServer extends Plugin {
           ctx.app.runCommand('refresh');
           await next();
         },
+        async publishEvent(ctx, next) {
+          const { plugin, command, payload } = ctx.action?.params?.values ?? {};
+
+          if (!plugin || typeof plugin !== 'string') {
+            ctx.throw(400, 'Plugin is required');
+            return;
+          }
+
+          if (!command || typeof command !== 'string') {
+            ctx.throw(400, 'Command is required');
+            return;
+          }
+
+          const eventName = `${command}@${plugin}`;
+          await ctx.app.eventQueue.publish(eventName, {
+            plugin,
+            command,
+            payload: payload ?? {},
+          });
+          await next();
+        },
       },
     });
 
-    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache']);
+    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent']);
 
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
