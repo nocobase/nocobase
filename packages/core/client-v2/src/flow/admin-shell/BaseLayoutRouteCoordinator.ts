@@ -37,6 +37,8 @@ export interface BaseLayoutRouteCoordinatorOptions {
 interface ViewRuntimeState {
   destroy: (force?: boolean) => void;
   update: (value: any) => void;
+  activate?: (forceRefresh?: boolean) => void;
+  deactivate?: () => void;
   navigation: ViewNavigation;
 }
 
@@ -133,14 +135,17 @@ export class BaseLayoutRouteCoordinator {
       return;
     }
 
+    const nextActive = typeof meta.active === 'boolean' ? meta.active : undefined;
     runtime.meta = {
       ...runtime.meta,
       ...meta,
-      active: typeof meta.active === 'boolean' ? meta.active : runtime.meta.active,
+      active: runtime.meta.active,
       layoutContentElement: meta.layoutContentElement ?? runtime.meta.layoutContentElement,
     };
 
-    this.setRuntimeActive(runtime, runtime.meta.active);
+    if (typeof nextActive === 'boolean') {
+      this.setRuntimeActive(runtime, nextActive);
+    }
   }
 
   unregisterPage(pageUid: string) {
@@ -215,10 +220,31 @@ export class BaseLayoutRouteCoordinator {
   }
 
   private setRuntimeActive(runtime: RoutePageRuntime, active: boolean) {
+    const wasActive = !!runtime.meta.active;
     runtime.meta.active = active;
     if (runtime.routeModel.context.pageActive?.value !== active) {
       runtime.routeModel.context.pageActive.value = active;
     }
+    if (wasActive === active) {
+      return;
+    }
+
+    this.notifyRuntimeActiveChange(runtime, active);
+  }
+
+  private notifyRuntimeActiveChange(runtime: RoutePageRuntime, active: boolean) {
+    const rootViewItem = runtime.prevViewList[0];
+    if (!rootViewItem) {
+      return;
+    }
+
+    const viewState = runtime.viewState[getKey(rootViewItem)];
+    if (active) {
+      viewState?.activate?.(true);
+      return;
+    }
+
+    viewState?.deactivate?.();
   }
 
   private syncRuntimeWithPathname(runtime: RoutePageRuntime, pathname: string) {
@@ -233,6 +259,7 @@ export class BaseLayoutRouteCoordinator {
       if (this.shouldStepNavigate(runtime, viewList)) {
         this.stepNavigate(viewList, 0);
         runtime.hasStepNavigated = true;
+        this.scheduleInitialDeepLinkReplay(runtime, pathname);
         return;
       }
 
@@ -265,6 +292,20 @@ export class BaseLayoutRouteCoordinator {
 
   private shouldStepNavigate(runtime: RoutePageRuntime, viewList: ViewItem[]) {
     return runtime.prevViewList.length === 0 && viewList.length > 1 && !runtime.hasStepNavigated;
+  }
+
+  private scheduleInitialDeepLinkReplay(runtime: RoutePageRuntime, pathname: string) {
+    Promise.resolve()
+      .then(() => {
+        if (runtime.forceStop || runtime.prevViewList.length > 0) {
+          return;
+        }
+
+        this.syncRuntimeWithPathname(runtime, pathname);
+      })
+      .catch(() => {
+        // ignore
+      });
   }
 
   private stepNavigate(viewList: ViewItem[], index: number) {
@@ -324,6 +365,8 @@ export class BaseLayoutRouteCoordinator {
 
     const destroyRef = React.createRef<(result?: any, force?: boolean) => void>();
     const updateRef = React.createRef<(value: any) => void>();
+    const activateRef = React.createRef<(forceRefresh?: boolean) => void>();
+    const deactivateRef = React.createRef<() => void>();
     const openViewParams = getOpenViewStepParams(viewItem.model);
     const associationName =
       openViewParams?.associationName && !hasUsableSourceId(viewItem.params.sourceId)
@@ -343,8 +386,12 @@ export class BaseLayoutRouteCoordinator {
       dataSourceKey: openViewParams?.dataSourceKey,
       destroyRef,
       updateRef,
+      activateRef,
+      deactivateRef,
       openerUids,
       ...viewItem.params,
+      pageActive: runtime.meta.active,
+      activationControlledByLayout: true,
       navigation,
       onOpen: () => {
         this.openViews(runtime, viewList, viewsToOpen, index + 1);
@@ -357,6 +404,8 @@ export class BaseLayoutRouteCoordinator {
     runtime.viewState[getKey(viewItem)] = {
       destroy: (_force?: boolean) => destroyRef.current?.(),
       update: (value: any) => updateRef.current?.(value),
+      activate: (forceRefresh?: boolean) => activateRef.current?.(forceRefresh),
+      deactivate: () => deactivateRef.current?.(),
       navigation,
     };
   }

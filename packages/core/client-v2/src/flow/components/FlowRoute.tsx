@@ -18,6 +18,7 @@ import { getAdminLayoutModel, type AdminLayoutModel } from '../admin-shell/admin
 import { getLayoutModel, type BaseLayoutModel } from '../admin-shell/BaseLayoutModel';
 import { useLayoutRoutePage } from '../admin-shell/useLayoutRoutePage';
 import { AppNotFound } from '../../components';
+import { useKeepAlive } from '../../components/KeepAlive';
 
 type FlowRouteGuardState = {
   pending: boolean;
@@ -29,6 +30,7 @@ export type LegacyPageBehavior = 'redirect' | 'notFound' | 'bridge';
 
 export type FlowRouteProps = {
   pageUid?: string;
+  active?: boolean;
   getLayoutModel?: (flowEngine: FlowEngine) => BaseLayoutModel | undefined;
   legacyPageBehavior?: LegacyPageBehavior;
 };
@@ -58,12 +60,15 @@ const getDefaultLegacyPageBehavior = (flowEngine: FlowEngine, contextLayout?: an
 
 const BridgeFlowRoute = ({
   pageUid,
+  active,
   getLayoutModel,
 }: {
   pageUid: string;
+  active?: boolean;
   getLayoutModel: (flowEngine: FlowEngine) => BaseLayoutModel | undefined;
 }) => {
   const flowEngine = useFlowEngine();
+  const { active: keepAliveActive } = useKeepAlive();
   const routeRepository = flowEngine.context.routeRepository;
   const refreshDesktopRoutes = React.useMemo(
     () => routeRepository?.refreshAccessible.bind(routeRepository),
@@ -102,6 +107,7 @@ const BridgeFlowRoute = ({
   useLayoutRoutePage({
     flowEngine,
     pageUid,
+    active: active ?? keepAliveActive,
     refreshDesktopRoutes,
     layoutContentRef,
     getLayoutModel,
@@ -238,8 +244,8 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
       return null;
     }
 
-    return <BridgeFlowRoute pageUid={pageUid} getLayoutModel={getLayoutModel} />;
-  }, [getLayoutModel, guardState.allowBridge, guardState.notFound, guardState.pending, pageUid]);
+    return <BridgeFlowRoute pageUid={pageUid} active={props.active} getLayoutModel={getLayoutModel} />;
+  }, [getLayoutModel, guardState.allowBridge, guardState.notFound, guardState.pending, pageUid, props.active]);
 
   return content;
 };

@@ -193,6 +193,179 @@ describe('AdminLayoutRouteCoordinator', () => {
     );
   });
 
+  it('notifies cached route page activation when switching pages', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const dispatchEvent = vi.fn((_eventName: string, payload: any) => {
+      payload.activateRef.current = vi.fn();
+      payload.deactivateRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const viewItem = {
+      params: { viewUid: 'test-route' },
+      modelUid: 'test-route',
+      model: { uid: 'test-route', dispatchEvent } as any,
+      hidden: { value: false },
+      index: 0,
+    };
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValueOnce({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: false,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    const payload = dispatchEvent.mock.calls[0][1];
+    expect(payload.pageActive).toBe(true);
+    expect(payload.activationControlledByLayout).toBe(true);
+
+    coordinator.syncRoute({
+      pageUid: 'other-route',
+      pathname: '/admin/other-route',
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    expect(payload.deactivateRef.current).toHaveBeenCalledTimes(1);
+    expect(payload.activateRef.current).toHaveBeenCalledWith(true);
+  });
+
+  it('notifies cached route page activation when page meta active changes', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const dispatchEvent = vi.fn((_eventName: string, payload: any) => {
+      payload.activateRef.current = vi.fn();
+      payload.deactivateRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const viewItem = {
+      params: { viewUid: 'test-route' },
+      modelUid: 'test-route',
+      model: { uid: 'test-route', dispatchEvent } as any,
+      hidden: { value: false },
+      index: 0,
+    };
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValueOnce({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    const payload = dispatchEvent.mock.calls[0][1];
+
+    coordinator.syncPageMeta('test-route', { active: false });
+    coordinator.syncPageMeta('test-route', { active: true });
+
+    expect(payload.deactivateRef.current).toHaveBeenCalledTimes(1);
+    expect(payload.activateRef.current).toHaveBeenCalledWith(true);
+  });
+
+  it('replays an initial deep link when step navigation does not trigger another route sync', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const navigate = vi.fn();
+    engine.context.defineProperty('router', {
+      value: {
+        navigate,
+      },
+    });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const popupViewItem = {
+      params: { viewUid: 'popup', filterByTk: '1' },
+      modelUid: 'popup',
+      model: { uid: 'popup', dispatchEvent: vi.fn() } as any,
+      hidden: { value: false },
+      index: 1,
+    };
+    mockResolveViewParamsToViewList.mockImplementation((_engine, viewParams, routeModel) => [
+      {
+        params: viewParams[0],
+        modelUid: routeModel.uid,
+        model: routeModel,
+        hidden: { value: false },
+        index: 0,
+      },
+      popupViewItem,
+    ]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: false,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup/filterbytk/1',
+    });
+
+    expect(navigate).toHaveBeenCalledWith('/admin/test-route', { replace: true });
+    expect(mockGetViewDiffAndUpdateHidden).not.toHaveBeenCalled();
+
+    await Promise.resolve();
+
+    expect(mockResolveViewParamsToViewList).toHaveBeenCalledTimes(2);
+    expect(mockGetViewDiffAndUpdateHidden).toHaveBeenCalledTimes(1);
+  });
+
   it('does not replay global route when a route page registers', () => {
     const engine = new FlowEngine();
     engine.registerModels({ RouteModel });

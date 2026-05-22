@@ -86,7 +86,7 @@ describe('FlowRoute', () => {
       expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
-          active: false,
+          active: true,
           refreshDesktopRoutes: expect.any(Function),
           layoutContentElement: expect.any(HTMLDivElement),
         }),
@@ -118,6 +118,76 @@ describe('FlowRoute', () => {
 
     unmount();
     expect(adminLayoutModel.unregisterRoutePage).toHaveBeenCalledWith('test-page');
+  });
+
+  it('should sync explicit active state to layout route page', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => ({ type: 'flowPage', schemaUid: 'test-page' })),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({
+        uid: 'admin-layout-model',
+        use: 'FlowModel',
+      }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    const result = render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow/test-page']}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute active={false} />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith(
+        'test-page',
+        expect.objectContaining({
+          active: false,
+        }),
+      );
+    });
+
+    result.rerender(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow/test-page']}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute active={true} />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith(
+        'test-page',
+        expect.objectContaining({
+          active: true,
+        }),
+      );
+    });
   });
 
   it('should bridge page lifecycle with explicit pageUid', async () => {
@@ -236,7 +306,7 @@ describe('FlowRoute', () => {
       expect(embedLayoutModel.registerRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
-          active: false,
+          active: true,
           refreshDesktopRoutes: expect.any(Function),
           layoutContentElement: expect.any(HTMLDivElement),
         }),

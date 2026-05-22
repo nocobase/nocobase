@@ -77,14 +77,25 @@ export class PageModel extends FlowModel<PageModelStructure> {
         if (this.unmounted) return;
         // Only skip when explicitly inactive; treat "unknown" (undefined) as active for backward compatibility.
         if (getPageActive(this.context) === false) return;
-        const activeKey = this.getActiveTabKey();
-        if (activeKey) {
-          this.invokeTabModelLifecycleMethod(activeKey, 'onActive', forceRefresh);
-        }
+        this.activateCurrentTab(forceRefresh);
       })
       .catch(() => {
         // ignore
       });
+  }
+
+  activateCurrentTab(forceRefresh = false) {
+    const activeKey = this.getActiveTabKey();
+    if (activeKey) {
+      this.invokeTabModelLifecycleMethod(activeKey, 'onActive', forceRefresh);
+    }
+  }
+
+  deactivateCurrentTab() {
+    const activeKey = this.props.tabActiveKey || this.getFirstTab()?.uid;
+    if (activeKey) {
+      this.invokeTabModelLifecycleMethod(activeKey, 'onInactive');
+    }
   }
 
   onMount(): void {
@@ -98,10 +109,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     // We align this with the existing tab lifecycle by invoking `onActive` for the current tab blocks.
     if (!this.viewActivatedListener) {
       this.viewActivatedListener = (_payload?: unknown) => {
-        const activeKey = this.getActiveTabKey();
-        if (activeKey) {
-          this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-        }
+        this.activateCurrentTab();
       };
       this.flowEngine?.emitter?.on?.(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
     }
@@ -113,10 +121,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
       emitterActivatedVersion > 0 && emitterActivatedVersion !== this.lastSeenEmitterViewActivatedVersion;
     this.lastSeenEmitterViewActivatedVersion = emitterActivatedVersion;
     if (shouldCatchUp && getPageActive(this.context) !== false) {
-      const activeKey = this.getActiveTabKey();
-      if (activeKey) {
-        this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-      }
+      this.activateCurrentTab();
     }
 
     // When data is written within the same view, trigger an "active" lifecycle pass so blocks can refresh based on dirty.
@@ -141,11 +146,21 @@ export class PageModel extends FlowModel<PageModelStructure> {
     super.onUnmount();
   }
 
-  invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive', forceRefresh = false) {
+  invokeTabModelLifecycleMethod(
+    tabActiveKey: string | undefined,
+    method: 'onActive' | 'onInactive',
+    forceRefresh = false,
+  ) {
+    if (!tabActiveKey) {
+      return;
+    }
+
     if (method === 'onActive' && this.context?.pageInfo) {
       this.context.pageInfo.version = 'v2';
     }
-    const tabModel = this.flowEngine.getModel(tabActiveKey) as BasePageTabModel | undefined;
+    const tabModel =
+      this.findSubModel('tabs', (model) => model.uid === tabActiveKey) ||
+      (this.flowEngine.getModel(tabActiveKey) as BasePageTabModel | undefined);
 
     if (tabModel) {
       if (tabModel.context.tabActive) {

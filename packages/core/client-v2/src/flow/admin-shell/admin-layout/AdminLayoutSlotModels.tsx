@@ -13,7 +13,8 @@ import { observer, useFlowEngine } from '@nocobase/flow-engine';
 import { Result, theme as antdTheme } from 'antd';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useParams } from 'react-router-dom';
+import { KeepAlive } from '../../../components/KeepAlive';
 import { isV2AdminRuntime, isV2MenuRoute } from './resolveAdminRouteRuntimeTarget';
 
 type AdminLayoutContentProps = {
@@ -93,6 +94,8 @@ const ShowTipWhenNoPages = observer(() => {
  */
 export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentElementChange }) => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+  const params = useParams();
+  const pageUid = params.name;
   const bindLayoutContentRef = useCallback(
     (node: HTMLDivElement | null) => {
       // shell 直接渲染内容区时，仍需把挂载目标同步给 root model。
@@ -108,7 +111,7 @@ export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentEleme
       style={style}
     >
       <div style={pageContentStyle}>
-        <Outlet />
+        {pageUid ? <KeepAlive uid={pageUid}>{() => <Outlet />}</KeepAlive> : <Outlet />}
         <ShowTipWhenNoPages />
       </div>
     </div>

@@ -14,6 +14,7 @@ import type { BaseLayoutModel } from './BaseLayoutModel';
 export type UseLayoutRoutePageOptions<TModel extends BaseLayoutModel = BaseLayoutModel> = {
   flowEngine: FlowEngine;
   pageUid: string;
+  active?: boolean;
   refreshDesktopRoutes?: () => Promise<unknown>;
   layoutContentRef: RefObject<HTMLElement>;
   getLayoutModel: (flowEngine: FlowEngine) => TModel | undefined;
@@ -25,19 +26,21 @@ export type UseLayoutRoutePageOptions<TModel extends BaseLayoutModel = BaseLayou
 export function useLayoutRoutePage<TModel extends BaseLayoutModel = BaseLayoutModel>(
   options: UseLayoutRoutePageOptions<TModel>,
 ) {
-  const { flowEngine, pageUid, refreshDesktopRoutes, layoutContentRef, getLayoutModel } = options;
+  const { flowEngine, pageUid, active, refreshDesktopRoutes, layoutContentRef, getLayoutModel } = options;
   const layoutModel = getLayoutModel(flowEngine);
+  const activeRef = useRef(active);
   const refreshRef = useRef(refreshDesktopRoutes);
 
   if (!layoutModel) {
     throw new Error('[NocoBase] FlowRoute requires layout model. Please render FlowRoute under Layout.');
   }
 
+  activeRef.current = active;
   refreshRef.current = refreshDesktopRoutes;
 
   useEffect(() => {
     layoutModel.registerRoutePage(pageUid, {
-      active: false,
+      active: activeRef.current ?? false,
       refreshDesktopRoutes: refreshRef.current,
       layoutContentElement: layoutContentRef.current,
     });
@@ -48,10 +51,11 @@ export function useLayoutRoutePage<TModel extends BaseLayoutModel = BaseLayoutMo
 
   useEffect(() => {
     layoutModel.updateRoutePage(pageUid, {
+      active,
       refreshDesktopRoutes,
       layoutContentElement: layoutContentRef.current,
     });
-  }, [layoutModel, pageUid, refreshDesktopRoutes, layoutContentRef]);
+  }, [active, layoutModel, pageUid, refreshDesktopRoutes, layoutContentRef]);
 
   return layoutModel;
 }
