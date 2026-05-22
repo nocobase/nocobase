@@ -32,6 +32,8 @@ const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   return clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 60;
 };
 
+const ROW_SELECTION_COLUMN_WIDTH = 50;
+
 const getGanttRowKey = (model: GanttBlockModel, record: any) => {
   const filterByTk = model.collection?.getFilterByTK?.(record);
   if (filterByTk !== undefined && filterByTk !== null) {
@@ -148,9 +150,11 @@ export const GanttBlock = observer(
       __ganttTaskId: task.id,
       __ganttTaskIndex: index,
     }));
-    const tableWidth =
-      tableColumns.reduce((total, column: any) => total + (typeof column?.width === 'number' ? column.width : 0), 0) ||
-      150;
+    const dataColumnWidth = tableColumns.reduce(
+      (total, column: any) => total + (typeof column?.width === 'number' ? column.width : 0),
+      0,
+    );
+    const tableWidth = (dataColumnWidth || 150) + ROW_SELECTION_COLUMN_WIDTH;
 
     const syncHorizontalScroll = useCallback((nextScrollX: number, source?: 'chart' | 'scrollbar') => {
       const normalizedScrollX = Math.max(0, nextScrollX);
@@ -350,6 +354,7 @@ export const GanttBlock = observer(
               prevStateTask.progress !== changedTask.progress)
           ) {
             setBarTasks(barTasks.map((t) => (t.id === changedTask.id ? changedTask : t)));
+            setTasks((prevTasks) => prevTasks.map((task) => (task.id === changedTask.id ? changedTask : task)));
           }
         }
       }
@@ -589,10 +594,6 @@ export const GanttBlock = observer(
       .ant-table {
         background: ${token.colorBgContainer};
       }
-      .ant-table-thead > tr > th.ant-table-selection-column,
-      .ant-table-tbody > tr > td.ant-table-selection-column {
-        padding-inline-start: ${token.padding}px !important;
-      }
       .ant-table-cell {
         border-color: ${token.colorSplit};
       }
@@ -616,7 +617,8 @@ export const GanttBlock = observer(
                   pagination={false}
                   rowKey={(record) => record.__ganttTaskId}
                   rowSelection={{
-                    columnWidth: 50,
+                    columnWidth: ROW_SELECTION_COLUMN_WIDTH,
+                    type: 'checkbox',
                     selectedRowKeys: model.resource.getSelectedRows().map((row) => getGanttRowKey(model, row)),
                     onChange: (_selectedRowKeys, selectedRows) => {
                       model.resource.setSelectedRows(selectedRows);

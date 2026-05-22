@@ -11,7 +11,7 @@ import { ActionModel, ActionSceneEnum, DataBlockModel, TableActionsColumnModel }
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, test, vi } from 'vitest';
 import { GanttBlockModel } from '../models/GanttBlockModel';
-import { GanttCollectionActionGroupModel } from '../models/actions/GanttActionModels';
+import { ALLOWED_GANTT_COLLECTION_ACTIONS, GanttCollectionActionGroupModel } from '../models/actions/GanttActionModels';
 import { GanttEventViewActionModel } from '../models/actions/GanttPopupModels';
 import PluginGanttClient from '../plugin';
 
@@ -99,6 +99,32 @@ describe('GanttBlockModel row actions column', () => {
     });
 
     expect(model.mapSubModels('actions', (action) => action.uid)).toEqual([]);
+  });
+
+  test('does not render expand collapse actions in the top toolbar', () => {
+    class ExpandCollapseActionModel extends ActionModel {
+      static scene = ActionSceneEnum.collection;
+    }
+
+    class RefreshActionModel extends ActionModel {
+      static scene = ActionSceneEnum.collection;
+    }
+
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel, ExpandCollapseActionModel, RefreshActionModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      subModels: {
+        actions: [{ use: 'ExpandCollapseActionModel' }, { use: 'RefreshActionModel' }],
+      },
+    });
+
+    expect(model.mapSubModels('actions', (action) => action.use)).toEqual([
+      'ExpandCollapseActionModel',
+      'RefreshActionModel',
+    ]);
+    expect(model.getVisibleActionModels().map((action) => action.use)).toEqual(['RefreshActionModel']);
   });
 
   test('creates a default table actions column for record operations', () => {
@@ -260,7 +286,24 @@ describe('GanttBlockModel settings', () => {
 });
 
 describe('GanttCollectionActionGroupModel', () => {
-  test('offers registered collection actions in top toolbar configuration', async () => {
+  test('only offers supported collection actions in top toolbar configuration', async () => {
+    const flowEngine = new FlowEngine();
+    const actionModels = ALLOWED_GANTT_COLLECTION_ACTIONS.reduce<Record<string, typeof ActionModel>>(
+      (models, modelName) => {
+        class AllowedActionModel extends ActionModel {
+          static scene = ActionSceneEnum.collection;
+        }
+
+        AllowedActionModel.define({
+          label: modelName,
+        });
+
+        models[modelName] = AllowedActionModel;
+        return models;
+      },
+      {},
+    );
+
     class GanttExpandCollapseActionModel extends ActionModel {
       static scene = ActionSceneEnum.collection;
     }
@@ -269,8 +312,20 @@ describe('GanttCollectionActionGroupModel', () => {
       label: 'Expand/Collapse',
     });
 
-    const flowEngine = new FlowEngine();
-    flowEngine.registerModels({ GanttCollectionActionGroupModel, GanttExpandCollapseActionModel });
+    class DuplicateActionModel extends ActionModel {
+      static scene = ActionSceneEnum.collection;
+    }
+
+    DuplicateActionModel.define({
+      label: 'Duplicate',
+    });
+
+    flowEngine.registerModels({
+      GanttCollectionActionGroupModel,
+      ...actionModels,
+      GanttExpandCollapseActionModel,
+      DuplicateActionModel,
+    });
 
     const items = await GanttCollectionActionGroupModel.defineChildren({
       engine: flowEngine,
@@ -278,6 +333,6 @@ describe('GanttCollectionActionGroupModel', () => {
       model: { uid: 'gantt-1' },
     } as any);
 
-    expect(items.map((item) => item.useModel)).toContain('GanttExpandCollapseActionModel');
+    expect(items.map((item) => item.useModel)).toEqual(ALLOWED_GANTT_COLLECTION_ACTIONS);
   });
 });

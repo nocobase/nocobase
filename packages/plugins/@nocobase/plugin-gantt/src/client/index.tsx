@@ -18,12 +18,7 @@ import { Event } from './components/gantt/Event';
 import { Gantt } from './components/gantt/gantt';
 import { ViewMode } from './types/public-types';
 import { useCreateAssociationGanttBlock, useCreateGanttBlock } from './GanttBlockInitializer';
-import {
-  GanttBlockModel,
-  GanttCollectionActionGroupModel,
-  GanttEventViewActionModel,
-  GanttExpandCollapseActionModel,
-} from '../client-v2/models';
+import { GanttBlockModel, GanttCollectionActionGroupModel, GanttEventViewActionModel } from '../client-v2/models';
 import { ganttLocaleResources, LEGACY_NAMESPACE, NAMESPACE } from '../client-v2/locale';
 
 Gantt.ActionBar = ActionBar;
@@ -58,7 +53,6 @@ export class PluginGanttClient extends Plugin {
     this.flowEngine.registerModels({
       GanttBlockModel,
       GanttCollectionActionGroupModel,
-      GanttExpandCollapseActionModel,
       GanttEventViewActionModel,
     });
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');

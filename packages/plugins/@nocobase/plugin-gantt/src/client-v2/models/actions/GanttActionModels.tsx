@@ -7,57 +7,59 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel, ActionSceneEnum, CollectionActionGroupModel } from '@nocobase/client-v2';
-import { MultiRecordResource } from '@nocobase/flow-engine';
-import type { ButtonProps } from 'antd';
+import { ActionGroupModel, ActionModel, ActionSceneEnum, CollectionActionGroupModel } from '@nocobase/client-v2';
+import { buildSubModelItem, type FlowModelContext } from '@nocobase/flow-engine';
 import { tExpr } from '../../locale';
 
-export class GanttCollectionActionGroupModel extends CollectionActionGroupModel {}
+export const ALLOWED_GANTT_COLLECTION_ACTIONS = [
+  'FilterActionModel',
+  'AddNewActionModel',
+  'PopupCollectionActionModel',
+  'BulkDeleteActionModel',
+  'LinkActionModel',
+  'RefreshActionModel',
+  'BulkEditActionModel',
+  'BulkUpdateActionModel',
+  'ExportActionModel',
+  'ImportActionModel',
+  'CollectionTriggerWorkflowActionModel',
+  'CustomRequestActionModel',
+  'AIEmployeeActionModel',
+  'JSItemActionModel',
+  'JSCollectionActionModel',
+];
 
-GanttCollectionActionGroupModel.define({
-  label: tExpr('Gantt action'),
-});
+const getGanttActionModelClass = (modelName: string, ctx: FlowModelContext) =>
+  (ctx.engine.getModelClass(modelName) || CollectionActionGroupModel.models.get(modelName)) as
+    | typeof ActionModel
+    | undefined;
 
-export class GanttExpandCollapseActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+export class GanttCollectionActionGroupModel extends ActionGroupModel {
+  static async defineChildren(ctx: FlowModelContext) {
+    const items = [];
 
-  defaultProps: ButtonProps = {
-    title: tExpr('Expand/Collapse'),
-    icon: 'NodeExpandOutlined',
-  };
+    for (const modelName of ALLOWED_GANTT_COLLECTION_ACTIONS) {
+      const ModelClass = getGanttActionModelClass(modelName, ctx);
+      if (!ModelClass) {
+        continue;
+      }
+      if (!this.isActionModelVisible(ModelClass, ctx)) {
+        continue;
+      }
+      if (!ModelClass._isScene?.(ActionSceneEnum.collection)) {
+        continue;
+      }
 
-  getTitle() {
-    return this.context.blockModel?.props?.hideChildren ? this.context.t('Expand all') : this.context.t('Collapse all');
-  }
+      const item = await buildSubModelItem(ModelClass, ctx);
+      if (item) {
+        items.push(item);
+      }
+    }
 
-  getIcon() {
-    return this.context.blockModel?.props?.hideChildren ? 'NodeExpandOutlined' : 'NodeCollapseOutlined';
+    return items;
   }
 }
 
-GanttExpandCollapseActionModel.define({
-  label: tExpr('Expand/Collapse'),
-  toggleable: true,
-  sort: 50,
-});
-
-GanttExpandCollapseActionModel.registerFlow({
-  key: 'expandCollapse',
-  title: tExpr('Expand/Collapse'),
-  on: 'click',
-  steps: {
-    toggle: {
-      async handler(ctx) {
-        const blockModel = ctx.blockModel as any;
-        if (!blockModel) {
-          return;
-        }
-        blockModel.setProps('hideChildren', !blockModel.props?.hideChildren);
-        const resource = blockModel.resource as MultiRecordResource;
-        if (resource) {
-          resource.setSelectedRows([]);
-        }
-      },
-    },
-  },
+GanttCollectionActionGroupModel.define({
+  label: tExpr('Gantt action'),
 });

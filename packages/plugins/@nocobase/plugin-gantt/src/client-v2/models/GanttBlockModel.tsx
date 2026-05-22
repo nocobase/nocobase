@@ -74,6 +74,8 @@ const HIDDEN_GANTT_TABLE_SETTING_STEPS = [
   'dragSortBy',
 ];
 
+const HIDDEN_GANTT_TOP_ACTION_MODELS = new Set(['ExpandCollapseActionModel', 'GanttExpandCollapseActionModel']);
+
 type GanttBlockStructure = {
   subModels: {
     actions: ActionModel[];
@@ -459,13 +461,21 @@ export class GanttBlockModel extends TableBlockModel {
     );
   }
 
+  getVisibleActionModels() {
+    return this.mapSubModels('actions', (action) => action).filter((action) => {
+      const use = typeof action.use === 'string' ? action.use : action.constructor?.name;
+      return !HIDDEN_GANTT_TOP_ACTION_MODELS.has(use);
+    });
+  }
+
   renderActionBar() {
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const actions = this.getVisibleActionModels();
 
     return (
       <DndProvider>
         <Space wrap style={{ width: '100%', justifyContent: 'flex-end' }}>
-          {this.mapSubModels('actions', (action) => {
+          {actions.map((action) => {
             if (action.hidden && !isConfigMode) {
               return;
             }
