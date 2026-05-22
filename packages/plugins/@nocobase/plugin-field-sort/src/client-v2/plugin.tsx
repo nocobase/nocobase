@@ -7,14 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { Application, Plugin } from '@nocobase/client-v2';
 import { SortFieldInterface } from './sort-interface';
-import { SortFieldModel } from '../client-v2/models/SortFieldModel';
 
-export class PluginFieldSortClient extends Plugin {
+export class PluginFieldSortClient extends Plugin<any, Application> {
   async load() {
     this.app.addFieldInterfaces([SortFieldInterface]);
-    this.flowEngine.registerModels({ SortFieldModel });
+    this.flowEngine.registerModelLoaders({
+      SortFieldModel: {
+        loader: () => import('./models/SortFieldModel'),
+      },
+    });
   }
 }
 
