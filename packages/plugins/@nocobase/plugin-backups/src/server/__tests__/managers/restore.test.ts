@@ -19,9 +19,30 @@ import { BackupManager, BackupSettings } from '../../managers/backup';
 import { RestoreManager } from '../../managers/restore';
 import backupCliResource from '../../resourcers/backup-cli';
 import backupsResource from '../../resourcers/backups';
+import { EventEmitter } from 'events';
+import { Readable, Writable } from 'stream';
 
 let mockExecImplementation = (command, _options, callback) => {
   callback(null, 'done');
+};
+
+let mockSpawnImplementation = () => {
+  const stdout = Readable.from(['mocked database backup']);
+  const stderr = Readable.from([]);
+  const stdin = new Writable({
+    write(_chunk, _encoding, callback) {
+      callback();
+    },
+  });
+  const childProcess = new EventEmitter() as any;
+  childProcess.stdout = stdout;
+  childProcess.stderr = stderr;
+  childProcess.stdin = stdin;
+  setImmediate(() => {
+    childProcess.emit('exit', 0);
+    childProcess.emit('close', 0);
+  });
+  return childProcess;
 };
 
 vi.mock('child_process', async (importOriginal) => {
@@ -32,6 +53,7 @@ vi.mock('child_process', async (importOriginal) => {
     exec: vi
       .fn()
       .mockImplementation((command, options, callback) => mockExecImplementation(command, options, callback)),
+    spawn: vi.fn().mockImplementation((command, args, options) => mockSpawnImplementation(command, args, options)),
   };
 });
 
@@ -71,6 +93,8 @@ describe('RestoreManager', () => {
   beforeEach(async () => {
     app = await getApp();
     await fs.promises.mkdir(backupFilesFolder, { recursive: true });
+    await fs.promises.unlink(finalBackupFilePath).catch(() => {});
+    await fs.promises.unlink(schemaMismatchBackupFilePath).catch(() => {});
 
     mockExecImplementation = (command, _options, callback) => {
       if (command.includes('-f')) {
@@ -93,6 +117,25 @@ describe('RestoreManager', () => {
           .catch(() => {});
       }
       callback(null, 'done');
+    };
+
+    mockSpawnImplementation = () => {
+      const stdout = Readable.from(['mocked database backup']);
+      const stderr = Readable.from([]);
+      const stdin = new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      });
+      const childProcess = new EventEmitter() as any;
+      childProcess.stdout = stdout;
+      childProcess.stderr = stderr;
+      childProcess.stdin = stdin;
+      setImmediate(() => {
+        childProcess.emit('exit', 0);
+        childProcess.emit('close', 0);
+      });
+      return childProcess;
     };
   });
 
