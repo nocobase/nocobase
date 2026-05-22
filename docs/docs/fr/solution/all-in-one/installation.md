@@ -256,12 +256,6 @@ Détails dans la section [Moteur de stockage de fichiers](#1-moteur-de-stockage-
 
 La solution tout-en-un est localisée dans plus de 20 langues (espace de noms `nb_demo`). Après restauration, le chinois est la langue par défaut ; pour basculer : **Paramètres système / activer la langue souhaitée**.
 
-:::warning Attention
-
-N'activez pas `ar-SA`, cela provoque actuellement des anomalies de rendu dans NocoBase.
-
-:::
-
 ### Et les mises à jour incrémentales ?
 
 Pour le moment, les mises à jour sont en mode remplacement intégral et les personnalisations sont écrasées. Sauvegardez impérativement avant toute mise à jour. Une solution de migration incrémentale est en cours de planification ; elle sera disponible en priorité pour les éditions Pro/Enterprise. L'édition Community, dépourvue du plugin Gestionnaire de migrations, est plus difficile à prendre en charge pour l'instant.

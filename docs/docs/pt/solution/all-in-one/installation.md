@@ -256,12 +256,6 @@ Detalhes na seção [Motor de armazenamento](#1-motor-de-armazenamento-oss--loca
 
 A solução integrada já conta com localização em mais de 20 idiomas (namespace `nb_demo`). Por padrão o idioma é chinês; para trocar: **Configurações do sistema / ative o idioma desejado**.
 
-:::warning Atenção
-
-Não ative `ar-SA`, pois atualmente causa problemas de renderização no NocoBase.
-
-:::
-
 ### E quanto às atualizações incrementais?
 
 A atualização atual substitui o conteúdo por completo, então personalizações são sobrescritas. Faça sempre um backup antes da atualização. A migração incremental está em planejamento, com prioridade para as edições Profissional/Enterprise. Na edição Community, a ausência do plug-in de migração dificulta o suporte por enquanto.

@@ -256,12 +256,6 @@ Untuk penanganan detail lihat bagian [Engine penyimpanan file](#1-engine-penyimp
 
 Solusi terintegrasi sudah dilokalkan ke 20+ bahasa (namespace `nb_demo`). Setelah restore default-nya bahasa Tionghoa, untuk beralih ke bahasa lain: **Pengaturan Sistem / aktifkan bahasa yang sesuai**.
 
-:::warning Perhatian
-
-Jangan aktifkan `ar-SA`, saat ini akan menyebabkan NocoBase mengalami anomali rendering.
-
-:::
-
 ### Bagaimana dengan upgrade inkremental?
 
 Upgrade versi saat ini berbentuk penggantian penuh, modifikasi kustom akan tertimpa. Pastikan backup sebelum upgrade. Solusi migrasi inkremental sedang direncanakan dan akan didukung lebih dulu untuk versi Pro/Enterprise. Versi Community sementara sulit didukung karena tidak memiliki plugin Migration Manager.

@@ -256,12 +256,6 @@ See the [File storage engine](#1-file-storage-engine-oss--local) section above f
 
 The All-in-One solution ships with localization for 20+ languages (under the `nb_demo` namespace). After restore, the default language is Chinese; switch via **System Settings / enable the target language**.
 
-:::warning Note
-
-Do not enable `ar-SA`; it currently causes a NocoBase rendering issue.
-
-:::
-
 ### What about incremental upgrades?
 
 Today the upgrade path is a full replacement, which means custom changes are overwritten. Always back up before upgrading. An incremental migration plan is in the works and will be supported first on Pro/Enterprise. Community Edition is harder to support for now because the migration management plugin is unavailable there.

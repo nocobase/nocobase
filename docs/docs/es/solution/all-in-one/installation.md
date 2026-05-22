@@ -256,12 +256,6 @@ Para más detalle consulta la sección [Motor de almacenamiento](#1-motor-de-alm
 
 La solución integral ya está localizada a más de 20 idiomas (namespace `nb_demo`). Tras restaurar, el idioma por defecto es chino; para cambiar a otro: **Configuración del sistema / activar el idioma correspondiente**.
 
-:::warning Atención
-
-No actives `ar-SA`: actualmente provoca problemas de renderizado en NocoBase.
-
-:::
-
 ### ¿Y las actualizaciones incrementales?
 
 La versión actual se actualiza por reemplazo total y las personalizaciones se sobrescriben. Haz siempre una copia de seguridad antes de actualizar. Está en planificación un esquema de migración incremental que soportará primero las versiones Pro/Enterprise. La versión Community, al carecer del plugin de gestión de migraciones, será más difícil de soportar por ahora.

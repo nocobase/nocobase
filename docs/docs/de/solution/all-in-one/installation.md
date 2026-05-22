@@ -256,12 +256,6 @@ Eine detaillierte Anleitung finden Sie oben im Abschnitt [Datei-Speicher-Engine]
 
 Die All-in-One-Lösung wurde in mehr als 20 Sprachen lokalisiert (Namespace `nb_demo`). Nach dem Restore ist Chinesisch voreingestellt; wechseln Sie unter **Systemeinstellungen / entsprechende Sprache aktivieren**.
 
-:::warning Hinweis
-
-Aktivieren Sie nicht `ar-SA` — dies führt aktuell zu Renderingfehlern in NocoBase.
-
-:::
-
 ### Wie funktioniert ein inkrementelles Upgrade?
 
 Aktuell ist das Upgrade ein vollständiger Austausch — eigene Anpassungen werden überschrieben. Vor dem Upgrade unbedingt sichern. Eine inkrementelle Migration ist in Planung und wird zuerst Professional / Enterprise unterstützen. Für die Community Edition ist eine Unterstützung wegen des fehlenden Migration-Manager-Plug-ins vorerst schwierig.
