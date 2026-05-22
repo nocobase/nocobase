@@ -102,7 +102,10 @@ export class BackupManager {
 
   async destroy(fileName: string) {
     const filePath = this.#getValidatedFilePath(fileName);
+    const fileBaseName = path.basename(filePath, `.${BACKUP_EXTENSION}`);
+    const metadataFilePath = path.join(this.#backupDir, `${fileBaseName}${METADATA_EXTENSION}`);
     await fsPromises.unlink(filePath);
+    await fsPromises.rm(metadataFilePath, { force: true });
   }
 
   async list() {
