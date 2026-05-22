@@ -11,6 +11,7 @@ import { RootPageModel } from '@nocobase/client-v2';
 import type { FlowModel } from '@nocobase/flow-engine';
 import copy from 'copy-to-clipboard';
 import { NAMESPACE } from './locale';
+import { getEmbedRoutePath } from './route';
 
 const COPY_EMBED_LINK_KEY = 'embed.copyEmbeddedLink';
 
@@ -28,7 +29,7 @@ function getRoutePageUid(model: FlowModel) {
 export function buildEmbedLink(model: FlowModel) {
   const pageUid = getRoutePageUid(model);
   const app = (model.context as any).app;
-  const pathname = app?.getRouteUrl ? app.getRouteUrl(`/embed/${pageUid}`) : `/embed/${pageUid}`;
+  const pathname = getEmbedRoutePath(app, `/embed/${pageUid}`);
   return new URL(pathname, window.location.origin).toString();
 }
 

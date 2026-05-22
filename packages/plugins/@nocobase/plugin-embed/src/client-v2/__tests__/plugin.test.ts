@@ -21,6 +21,7 @@ vi.mock('../copyEmbedLinkFlow', () => ({
 describe('PluginEmbedClientV2', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.pushState({}, '', '/');
   });
 
   it('registers embed layout through layoutManager instead of manual page routes', async () => {
@@ -55,5 +56,58 @@ describe('PluginEmbedClientV2', () => {
     });
     expect(app.router.add).not.toHaveBeenCalled();
     expect(registerCopyEmbedLinkFlow).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets token for embed route under router basename', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const storage = {};
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      getRouteUrl: (pathname: string) => `/v2/${pathname.replace(/^\/+/, '')}`,
+      apiClient: {
+        storagePrefix: '',
+        storage: null,
+        createStorage: vi.fn(() => storage),
+        auth: {
+          setToken: vi.fn(),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid?token=test-token');
+
+    await plugin.beforeLoad();
+
+    expect(app.apiClient.createStorage).toHaveBeenCalledWith('sessionStorage');
+    expect(app.apiClient.storage).toBe(storage);
+    expect(app.apiClient.auth.setToken).toHaveBeenCalledWith('test-token');
+  });
+
+  it('does not set token for non-embed route under router basename', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        createStorage: vi.fn(),
+        auth: {
+          setToken: vi.fn(),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/embed/page-uid?token=test-token');
+
+    await plugin.beforeLoad();
+
+    expect(app.apiClient.createStorage).not.toHaveBeenCalled();
+    expect(app.apiClient.auth.setToken).not.toHaveBeenCalled();
   });
 });
