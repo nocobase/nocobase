@@ -51,10 +51,7 @@ const resolveSchema = (field?: FilterOption, operator?: FilterOperator): Effecti
 };
 
 /**
- * Interface-aware value renderer for filter rows. Returns `null` for
- * `noValue` operators (`$empty`, `$notEmpty`). Otherwise dispatches the
- * effective `x-component` (operator schema > field uiSchema > Input)
- * to a small registry of antd controls.
+ * Interface-aware value renderer for filter rows. Returns `null` for `noValue` operators (`$empty`, `$notEmpty`). Otherwise dispatches the effective `x-component` (operator schema > field uiSchema > Input) to a small registry of antd controls.
  */
 export const FilterValueInput: React.FC<FilterValueInputProps> = (props) => {
   const { field, operator, value, onChange, t = identity, placeholder } = props;

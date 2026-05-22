@@ -15,10 +15,7 @@ import { FilterOption, useFilterOptions } from '../../../flow/components/filter/
 import { FilterValueInput } from './FilterValueInput';
 
 /**
- * Lift the Cascader sub-menu height so a target collection with many
- * fields (e.g. `users` → id / nickname / username / email / phone /
- * password / createdAt / updatedAt / roles / createdBy / updatedBy)
- * doesn't get truncated below the default antd menu viewport.
+ * Lift the Cascader sub-menu height so a target collection with many fields (e.g. `users` → id / nickname / username / email / phone / password / createdAt / updatedAt / roles / createdBy / updatedBy) doesn't get truncated below the default antd menu viewport.
  */
 const cascaderPopupClass = css`
   .ant-cascader-menu {
@@ -56,9 +53,7 @@ export interface CollectionFilterItemProps {
 const identity = (s: string) => s;
 
 /**
- * Walk a tree of field options by name path, returning the leaf option
- * (or undefined when the path doesn't resolve). Used to look up operators
- * for the currently selected field.
+ * Walk a tree of field options by name path, returning the leaf option (or undefined when the path doesn't resolve). Used to look up operators for the currently selected field.
  */
 const findOptionByPath = (options: FilterOption[], path: string[]): FilterOption | undefined => {
   if (!path.length) return undefined;
@@ -70,12 +65,7 @@ const findOptionByPath = (options: FilterOption[], path: string[]): FilterOption
 };
 
 /**
- * Convert the field-option tree (as produced by `useFilterOptions`) into
- * antd `Cascader`'s expected `{ value, label, children }` shape. With
- * `changeOnSelect={false}` (see the render below), antd already requires
- * selection at a leaf — we don't need to mark association parents as
- * `disabled`, and doing so would also block `expandTrigger="hover"` from
- * descending into them.
+ * Convert the field-option tree (as produced by `useFilterOptions`) into antd `Cascader`'s expected `{ value, label, children }` shape. With `changeOnSelect={false}` (see the render below), antd already requires selection at a leaf — we don't need to mark association parents as `disabled`, and doing so would also block `expandTrigger="hover"` from descending into them.
  */
 const toCascaderOptions = (options: FilterOption[]): CascaderOption[] =>
   options.map((option) => {
@@ -88,19 +78,9 @@ const toCascaderOptions = (options: FilterOption[]): CascaderOption[] =>
   });
 
 /**
- * Filter row bound directly to a `Collection`, with no `FlowModel`
- * dependency. Use this from settings pages or other surfaces that need
- * a filter UI but don't have (and shouldn't synthesise) a block model
- * just to satisfy `FilterItem`. Pair with `FilterContainer` via either
- * an inline wrapper or `createCollectionFilterItem(collection)`.
+ * Filter row bound directly to a `Collection`, with no `FlowModel` dependency. Use this from settings pages or other surfaces that need a filter UI but don't have (and shouldn't synthesise) a block model just to satisfy `FilterItem`. Pair with `FilterContainer` via either an inline wrapper or `createCollectionFilterItem(collection)`.
  *
- * The field selector is an antd `Cascader`, mirroring v1's
- * `Filter.Action` so association fields (belongsTo / m2o / etc.) can be
- * drilled into — picking `user.username` is a first-class action. The
- * value renderer is delegated to `FilterValueInput`, which dispatches
- * to interface-specific controls (the smart date picker for `$date*`
- * operators, tag-mode Select for array/enum, etc.) the same way v1's
- * `DynamicComponent` did.
+ * The field selector is an antd `Cascader`, mirroring v1's `Filter.Action` so association fields (belongsTo / m2o / etc.) can be drilled into — picking `user.username` is a first-class action. The value renderer is delegated to `FilterValueInput`, which dispatches to interface-specific controls (the smart date picker for `$date*` operators, tag-mode Select for array/enum, etc.) the same way v1's `DynamicComponent` did.
  */
 export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
   (props) => {
@@ -127,26 +107,19 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
       props.value.path = path.join('.');
       const leaf = findOptionByPath(options, path);
       props.value.operator = leaf?.operators?.[0]?.value || '';
-      // The value's shape is operator-dependent (e.g. string for `$eq`,
-      // `{ type, number, unit }` for `$dateInPast`); reset on every
-      // field change so stale shapes don't leak across interfaces.
+      // The value's shape is operator-dependent (e.g. string for `$eq`, `{ type, number, unit }` for `$dateInPast`); reset on every field change so stale shapes don't leak across interfaces.
       props.value.value = undefined;
     };
     const handleOperatorChange = (next: string) => {
       props.value.operator = next;
-      // Same rationale as above — switching from `$eq` (string) to
-      // `$dateOn` (date descriptor) makes the previous value
-      // structurally incompatible. v1 handled this by remounting the
-      // DynamicComponent on operator change; we explicitly clear.
+      // Same rationale as above — switching from `$eq` (string) to `$dateOn` (date descriptor) makes the previous value structurally incompatible. v1 handled this by remounting the DynamicComponent on operator change; we explicitly clear.
       props.value.value = undefined;
     };
     const handleValueChange = (next: any) => {
       props.value.value = next;
     };
 
-    // Widths mirror the long-standing `FilterItem` row (200 / 120) so a
-    // settings page mixing CollectionFilterItem and FilterContainer doesn't
-    // visually drift from existing block-bound filter rows.
+    // Widths mirror the long-standing `FilterItem` row (200 / 120) so a settings page mixing CollectionFilterItem and FilterContainer doesn't visually drift from existing block-bound filter rows.
     return (
       <Space wrap>
         <Cascader
@@ -187,10 +160,7 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
 );
 
 /**
- * Convenience factory returning a `FilterContainer`-compatible
- * `FilterItem` component bound to a specific collection. Avoids creating
- * an inline closure on every parent render, which would otherwise reset
- * any focused inner antd control.
+ * Convenience factory returning a `FilterContainer`-compatible `FilterItem` component bound to a specific collection. Avoids creating an inline closure on every parent render, which would otherwise reset any focused inner antd control.
  */
 export function createCollectionFilterItem(
   collection: Collection,

@@ -39,11 +39,7 @@ const opOf = (overrides: Partial<FilterOperator> = {}): FilterOperator => ({
   ...overrides,
 });
 
-// One row per v1 field interface → expected v2 antd control. Detection is
-// kept to a single CSS selector per case so the table reads as
-// "interface ↔ selector"; interactive assertions are added only where
-// the value-onChange contract is non-trivial (e.g. Checkbox.target.checked,
-// ColorPicker hex extraction).
+// One row per v1 field interface → expected v2 antd control. Detection is kept to a single CSS selector per case so the table reads as "interface ↔ selector"; interactive assertions are added only where the value-onChange contract is non-trivial (e.g. Checkbox.target.checked, ColorPicker hex extraction).
 const CASES: Case[] = [
   // string / email / phone / uuid / nanoid / url all default to Input
   { name: 'input → antd Input', fieldComponent: 'Input', selector: 'input[type="text"]' },
@@ -154,8 +150,7 @@ describe('FilterValueInput dispatch table', () => {
 });
 
 describe('FilterValueInput interaction wiring', () => {
-  // Spot-check a handful of write-through paths that have non-trivial event
-  // shapes (target.checked, event vs raw value, hex extraction from ColorPicker).
+  // Spot-check a handful of write-through paths that have non-trivial event shapes (target.checked, event vs raw value, hex extraction from ColorPicker).
   it('Checkbox emits the boolean from target.checked', () => {
     const onChange = vi.fn();
     const { container } = render(

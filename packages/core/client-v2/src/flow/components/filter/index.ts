@@ -17,8 +17,4 @@ export { LinkageFilterItem } from './LinkageFilterItem';
 export type { LinkageFilterItemProps, LinkageFilterItemValue } from './LinkageFilterItem';
 export { useFilterOptions } from './useFilterOptions';
 export type { FilterOption, UseFilterOptionsArgs } from './useFilterOptions';
-// Higher-level filter compositions (`CollectionFilterItem`,
-// `useFilterActionProps`, `createCollectionFilterItem`) live under
-// `src/components/form/filter/`. They compose these flow primitives on
-// top of a `Collection` binding — the dependency direction is form/filter
-// → flow/components/filter, never the reverse.
+// Higher-level filter compositions (`CollectionFilterItem`, `useFilterActionProps`, `createCollectionFilterItem`) live under `src/components/form/filter/`. They compose these flow primitives on top of a `Collection` binding — the dependency direction is form/filter → flow/components/filter, never the reverse.

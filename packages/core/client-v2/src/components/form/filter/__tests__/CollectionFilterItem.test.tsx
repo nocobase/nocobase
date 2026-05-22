@@ -18,12 +18,7 @@ type StubField = {
   children?: StubField[];
 };
 
-// `fieldsToOptions` walks the live data-source registry to build option
-// trees with operator lists per field interface. For a focused unit test
-// we stub it so the test isn't coupled to interface registration. The
-// stub returns the same nested shape `fieldsToOptions` would produce so
-// `CollectionFilterItem`'s Cascader sees children for association-like
-// fields.
+// `fieldsToOptions` walks the live data-source registry to build option trees with operator lists per field interface. For a focused unit test we stub it so the test isn't coupled to interface registration. The stub returns the same nested shape `fieldsToOptions` would produce so `CollectionFilterItem`'s Cascader sees children for association-like fields.
 vi.mock('../../../../flow/components/filter/fieldsToOptions', () => {
   const toOption = (field: StubField): any => ({
     name: field.name,
@@ -53,9 +48,7 @@ function buildStubCollection(fieldDefs: StubField[]) {
         type: 'string',
         interface: 'input',
         target: undefined as string | undefined,
-        // Mirror the stub's children so any downstream call that
-        // descends through the field tree behaves the same as
-        // `fieldsToOptions` does.
+        // Mirror the stub's children so any downstream call that descends through the field tree behaves the same as `fieldsToOptions` does.
         children: f.children,
       })),
   } as any;
@@ -64,14 +57,12 @@ function buildStubCollection(fieldDefs: StubField[]) {
 function openFieldCascader(container: HTMLElement) {
   const selector = container.querySelector('.ant-select-selector');
   if (!selector) throw new Error('expected Cascader trigger to be rendered');
-  // antd Cascader renders an internal Select-style selector; mouseDown
-  // opens its popup just like a plain Select.
+  // antd Cascader renders an internal Select-style selector; mouseDown opens its popup just like a plain Select.
   fireEvent.mouseDown(selector);
 }
 
 function openOperatorSelect(container: HTMLElement) {
-  // Operator dropdown is the second `.ant-select-selector` on the row;
-  // the first one is the Cascader's internal selector.
+  // Operator dropdown is the second `.ant-select-selector` on the row; the first one is the Cascader's internal selector.
   const selectors = container.querySelectorAll('.ant-select-selector');
   if (selectors.length < 2) throw new Error('expected operator Select to be rendered');
   fireEvent.mouseDown(selectors[1]);
@@ -106,12 +97,9 @@ describe('CollectionFilterItem', () => {
 
     await waitFor(() => {
       expect(value.path).toBe('username');
-      // First operator from the stubbed options must be seeded automatically
-      // so the row is immediately usable without an extra click.
+      // First operator from the stubbed options must be seeded automatically so the row is immediately usable without an extra click.
       expect(value.operator).toBe('$eq');
-      // Field change clears the value — its shape is operator/field
-      // dependent (string for `$eq`, descriptor for `$dateOn`, etc.),
-      // so we don't carry the old value across field switches.
+      // Field change clears the value — its shape is operator/field dependent (string for `$eq`, descriptor for `$dateOn`, etc.), so we don't carry the old value across field switches.
       expect(value.value).toBeUndefined();
     });
   });
@@ -127,9 +115,7 @@ describe('CollectionFilterItem', () => {
 
     await waitFor(() => {
       expect(value.operator).toBe('$ne');
-      // Same rationale as the field-change branch — a stale string from
-      // `$eq` would be structurally incompatible with e.g. a `$dateOn`
-      // descriptor if the user picks a date operator next.
+      // Same rationale as the field-change branch — a stale string from `$eq` would be structurally incompatible with e.g. a `$dateOn` descriptor if the user picks a date operator next.
       expect(value.value).toBeUndefined();
     });
   });
@@ -180,8 +166,7 @@ describe('CollectionFilterItem', () => {
       {
         name: 'user',
         title: 'User',
-        // Association parent — no operators of its own; should appear
-        // disabled in the Cascader so users have to drill into a leaf.
+        // Association parent — no operators of its own; should appear disabled in the Cascader so users have to drill into a leaf.
         children: [
           { name: 'username', title: 'Username' },
           { name: 'nickname', title: 'Nickname' },
@@ -193,14 +178,12 @@ describe('CollectionFilterItem', () => {
     const { container } = render(<CollectionFilterItem value={value} collection={collection} />);
 
     openFieldCascader(container);
-    // Click the association parent to reveal its children. Cascader
-    // is configured with `expandTrigger="click"`.
+    // Click the association parent to reveal its children. Cascader is configured with `expandTrigger="click"`.
     fireEvent.click(await screen.findByText('User'));
     fireEvent.click(await screen.findByText('Username'));
 
     await waitFor(() => {
-      // The selected leaf path is dot-joined so callers can use it
-      // directly as a filter path (e.g. `user.username`).
+      // The selected leaf path is dot-joined so callers can use it directly as a filter path (e.g. `user.username`).
       expect(value.path).toBe('user.username');
       expect(value.operator).toBe('$eq');
     });

@@ -42,12 +42,7 @@ export function useFlowView() {
 }
 
 /**
- * Access the `FlowViewer` that opens new drawers / modals / pages
- * (`viewer.drawer({...})`, `viewer.modal({...})`, etc.). This is the
- * counterpart to `useFlowView()`: `useFlowView()` returns the *current*
- * mounted view (use it to close yourself, render Header/Footer slots,
- * etc.), while `useFlowViewer()` returns the surface that lets you
- * open a *new* view from inside any flow-context subtree.
+ * Access the `FlowViewer` that opens new drawers / modals / pages (`viewer.drawer({...})`, `viewer.modal({...})`, etc.). This is the counterpart to `useFlowView()`: `useFlowView()` returns the *current* mounted view (use it to close yourself, render Header/Footer slots, etc.), while `useFlowViewer()` returns the surface that lets you open a *new* view from inside any flow-context subtree.
  */
 export function useFlowViewer() {
   const ctx = useFlowContext();

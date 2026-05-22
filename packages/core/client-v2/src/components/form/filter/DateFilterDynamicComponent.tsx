@@ -14,15 +14,8 @@ import React, { useMemo, useState } from 'react';
 /**
  * Value shape used by NocoBase's `$date*` filter operators. Two flavours:
  *
- * - For "Exact day" mode: a **formatted string** at the granularity of the
- *   picker — `"2026-02-15"` (date), `"2026-02"` (month), `"2026"` (year),
- *   `"2026-Q1"` (quarter). For `$dateBetween` (`isRange`), a
- *   `[string, string]` tuple. Strings (not Dayjs) so the value
- *   serializes verbatim into the query string the same way v1 does
- *   (`filter=%7B%22$and%22:[%7B%22lockedTs%22:%7B%22$dateOn%22:%222026-02%22%7D%7D]%7D`).
- * - For relative modes (Today / Past 3 days / This Week / …): a
- *   `{ type, number?, unit? }` descriptor that the server resolves to a
- *   concrete range at query time.
+ * - For "Exact day" mode: a **formatted string** at the granularity of the picker — `"2026-02-15"` (date), `"2026-02"` (month), `"2026"` (year), `"2026-Q1"` (quarter). For `$dateBetween` (`isRange`), a `[string, string]` tuple. Strings (not Dayjs) so the value serializes verbatim into the query string the same way v1 does (`filter=%7B%22$and%22:[%7B%22lockedTs%22:%7B%22$dateOn%22:%222026-02%22%7D%7D]%7D`).
+ * - For relative modes (Today / Past 3 days / This Week / …): a `{ type, number?, unit? }` descriptor that the server resolves to a concrete range at query time.
  */
 export type DateFilterValue =
   | string
@@ -37,8 +30,7 @@ export interface DateFilterDynamicComponentProps {
   /** `true` for `$dateBetween`; renders a `DatePicker.RangePicker`. */
   isRange?: boolean;
   /**
-   * Translator. Defaults to identity so callers can omit it when running
-   * outside a translation context (tests, storybook).
+   * Translator. Defaults to identity so callers can omit it when running outside a translation context (tests, storybook).
    */
   t?: (key: string) => string;
 }
@@ -89,12 +81,9 @@ const isRelativeDescriptor = (value: DateFilterValue): value is { type: string; 
 type PickerMode = 'date' | 'month' | 'quarter' | 'year';
 
 /**
- * The exact format strings NocoBase's `$date*` server operators expect
- * per picker granularity. Mirrors v1's `getPickerFormat` output under
- * `underFilter=true`, so the URL-encoded query stays identical.
+ * The exact format strings NocoBase's `$date*` server operators expect per picker granularity. Mirrors v1's `getPickerFormat` output under `underFilter=true`, so the URL-encoded query stays identical.
  *
- * Exported for unit tests and for downstream callers that need to
- * parse / format `$date*` values outside this component.
+ * Exported for unit tests and for downstream callers that need to parse / format `$date*` values outside this component.
  */
 export const FORMAT_BY_PICKER: Record<PickerMode, string> = {
   date: 'YYYY-MM-DD',
@@ -104,9 +93,7 @@ export const FORMAT_BY_PICKER: Record<PickerMode, string> = {
 };
 
 /**
- * Parse a granularity-formatted string back into a `Dayjs`. Returns
- * `null` on missing or unparseable input so the DatePicker's
- * controlled-value contract stays clean.
+ * Parse a granularity-formatted string back into a `Dayjs`. Returns `null` on missing or unparseable input so the DatePicker's controlled-value contract stays clean.
  */
 export const parseDateFilterValue = (value: string | undefined, picker: PickerMode): Dayjs | null => {
   if (!value) return null;
@@ -115,9 +102,7 @@ export const parseDateFilterValue = (value: string | undefined, picker: PickerMo
 };
 
 /**
- * Format a `Dayjs` (typically from `DatePicker.onChange`) into the
- * server-facing string at the active picker's granularity. Returns
- * `undefined` for empty input so callers can drop the value entirely.
+ * Format a `Dayjs` (typically from `DatePicker.onChange`) into the server-facing string at the active picker's granularity. Returns `undefined` for empty input so callers can drop the value entirely.
  */
 export const formatDateFilterValue = (value: Dayjs | null | undefined, picker: PickerMode): string | undefined => {
   if (!value || !dayjs.isDayjs(value)) return undefined;
@@ -125,26 +110,13 @@ export const formatDateFilterValue = (value: Dayjs | null | undefined, picker: P
 };
 
 /**
- * v2 port of v1's `DateFilterDynamicComponent` — a multi-mode value
- * input for the `$date*` operator family. Three sub-controls glued in a
- * `Space.Compact` row:
+ * v2 port of v1's `DateFilterDynamicComponent` — a multi-mode value input for the `$date*` operator family. Three sub-controls glued in a `Space.Compact` row:
  *
- * 1. Mode select — `Exact day` / `Past` / `Next` / `Today` / `This Week` / …
- *    Picking a relative mode emits a `{ type, number?, unit? }` descriptor
- *    that the server resolves at query time; picking `Exact day` emits
- *    a raw `Dayjs` instead.
- * 2. Picker granularity — only when mode is `Exact day`: `Date` /
- *    `Month` / `Quarter` / `Year`. Controls the antd `DatePicker`'s
- *    `picker` mode so admins can filter to e.g. "any day in 2026-03".
- * 3. Date input — antd `DatePicker` for single dates, or
- *    `DatePicker.RangePicker` when `isRange` is true (used by
- *    `$dateBetween`).
+ * 1. Mode select — `Exact day` / `Past` / `Next` / `Today` / `This Week` / … Picking a relative mode emits a `{ type, number?, unit? }` descriptor that the server resolves at query time; picking `Exact day` emits a raw `Dayjs` instead.
+ * 2. Picker granularity — only when mode is `Exact day`: `Date` / `Month` / `Quarter` / `Year`. Controls the antd `DatePicker`'s `picker` mode so admins can filter to e.g. "any day in 2026-03".
+ * 3. Date input — antd `DatePicker` for single dates, or `DatePicker.RangePicker` when `isRange` is true (used by `$dateBetween`).
  *
- * v1 wired its own `<DatePicker.FilterWithPicker>` for the third slot;
- * v2 inlines the picker-granularity selector here so we don't have to
- * fork antd's DatePicker. Drops v1's `@emotion/css` (uses antd token
- * spacing) and the `useCompile` schema-template chain (call sites pass
- * a plain `t` translator).
+ * v1 wired its own `<DatePicker.FilterWithPicker>` for the third slot; v2 inlines the picker-granularity selector here so we don't have to fork antd's DatePicker. Drops v1's `@emotion/css` (uses antd token spacing) and the `useCompile` schema-template chain (call sites pass a plain `t` translator).
  */
 export const DateFilterDynamicComponent: React.FC<DateFilterDynamicComponentProps> = (props) => {
   const { value, onChange, isRange, t = identity } = props;
@@ -211,10 +183,7 @@ export const DateFilterDynamicComponent: React.FC<DateFilterDynamicComponentProp
     </div>
   );
 
-  // Mode select compresses when the chosen mode is "Exact day / Past /
-  // Next" (room is needed for the secondary picker / number+unit row
-  // beside it). For named ranges (Today, This Week, etc.) it stretches
-  // since no sub-control follows.
+  // Mode select compresses when the chosen mode is "Exact day / Past / Next" (room is needed for the secondary picker / number+unit row beside it). For named ranges (Today, This Week, etc.) it stretches since no sub-control follows.
   const compactModes = new Set(['exact', 'past', 'next']);
   const isCompact = compactModes.has(mode);
 
@@ -266,9 +235,7 @@ export const DateFilterDynamicComponent: React.FC<DateFilterDynamicComponentProp
             value={picker}
             onChange={(next) => {
               setPicker(next);
-              // Picker change means the previously selected date is now
-              // expressed at a different granularity; clear it so the
-              // user doesn't carry a stale value into the new picker.
+              // Picker change means the previously selected date is now expressed at a different granularity; clear it so the user doesn't carry a stale value into the new picker.
               onChange?.(undefined);
             }}
             options={pickerOptions}
@@ -276,13 +243,7 @@ export const DateFilterDynamicComponent: React.FC<DateFilterDynamicComponentProp
             popupMatchSelectWidth={false}
           />
           <DatePicker
-            // Stored value is a granularity-formatted string (e.g.
-            // `"2026-02"` for month picker). Hydrate it back to a Dayjs
-            // for antd's controlled-value contract, then re-emit a
-            // formatted string on change so the URL serialization
-            // matches v1 exactly. Without the format step, antd's
-            // Dayjs would JSON.stringify to a full ISO timestamp and
-            // the server's `$dateOn` would never match.
+            // Stored value is a granularity-formatted string (e.g. `"2026-02"` for month picker). Hydrate it back to a Dayjs for antd's controlled-value contract, then re-emit a formatted string on change so the URL serialization matches v1 exactly. Without the format step, antd's Dayjs would JSON.stringify to a full ISO timestamp and the server's `$dateOn` would never match.
             value={parseDateFilterValue(typeof value === 'string' ? value : undefined, picker)}
             onChange={(next) => onChange?.(formatDateFilterValue(next, picker))}
             picker={picker}
@@ -294,8 +255,7 @@ export const DateFilterDynamicComponent: React.FC<DateFilterDynamicComponentProp
 
       {mode === 'exact' && isRange && (
         <DatePicker.RangePicker
-          // `$dateBetween` always operates at day granularity in v1's
-          // URL output, so we pin the range format to `YYYY-MM-DD`.
+          // `$dateBetween` always operates at day granularity in v1's URL output, so we pin the range format to `YYYY-MM-DD`.
           value={
             Array.isArray(value)
               ? ([parseDateFilterValue(value[0], 'date'), parseDateFilterValue(value[1], 'date')] as [

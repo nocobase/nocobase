@@ -28,8 +28,7 @@ describe('plugin-users client-v2 password validator registry', () => {
     plugin.registerPasswordValidator('no-username', containsUserValidator);
     expect(plugin.getPasswordValidators()).toHaveLength(2);
 
-    // Re-registering the same name overwrites — the registry is keyed by name
-    // so HMR / tests can swap implementations without ever doubling them up.
+    // Re-registering the same name overwrites — the registry is keyed by name so HMR / tests can swap implementations without ever doubling them up.
     const replacement: PasswordValidator = async () => 'replaced';
     plugin.registerPasswordValidator('min-length', replacement);
     expect(plugin.getPasswordValidators()).toHaveLength(2);

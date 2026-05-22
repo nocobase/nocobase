@@ -20,11 +20,7 @@ import {
   parseDateFilterValue,
 } from '../DateFilterDynamicComponent';
 
-// `formatDateFilterValue` needs the quarter plugin to format `[Q]Q`,
-// and `parseDateFilterValue` needs customParseFormat to parse non-ISO
-// strings like `2026-02`. The component itself imports `dayjs` directly
-// and relies on plugins being registered at app boot; in tests we
-// register them locally so the unit-style helpers can run standalone.
+// `formatDateFilterValue` needs the quarter plugin to format `[Q]Q`, and `parseDateFilterValue` needs customParseFormat to parse non-ISO strings like `2026-02`. The component itself imports `dayjs` directly and relies on plugins being registered at app boot; in tests we register them locally so the unit-style helpers can run standalone.
 dayjs.extend(customParseFormat);
 dayjs.extend(quarterOfYear);
 
@@ -37,8 +33,7 @@ function openModeDropdown(container: HTMLElement) {
 describe('DateFilterDynamicComponent', () => {
   it('defaults to Exact day mode and shows the picker-granularity + DatePicker controls', () => {
     const { container } = render(<DateFilterDynamicComponent value={undefined} onChange={() => undefined} />);
-    // Three controls in the compact row: mode select, granularity select, DatePicker.
-    // antd renders Select via `.ant-select`, DatePicker via `.ant-picker`.
+    // Three controls in the compact row: mode select, granularity select, DatePicker. antd renders Select via `.ant-select`, DatePicker via `.ant-picker`.
     expect(container.querySelectorAll('.ant-select').length).toBeGreaterThanOrEqual(2);
     expect(container.querySelector('.ant-picker')).not.toBeNull();
     // Mode display reads "Exact day" with no value yet.
@@ -50,8 +45,7 @@ describe('DateFilterDynamicComponent', () => {
     const { container } = render(<DateFilterDynamicComponent value={undefined} onChange={onChange} />);
 
     openModeDropdown(container);
-    // "Past" appears in the dropdown's primary list (rendered via dropdownRender,
-    // so options have role="option" instead of antd's stock list).
+    // "Past" appears in the dropdown's primary list (rendered via dropdownRender, so options have role="option" instead of antd's stock list).
     const option = screen.getAllByRole('option').find((el) => el.textContent === 'Past');
     if (!option) throw new Error('expected a Past option in the dropdown');
     fireEvent.click(option);
@@ -80,8 +74,7 @@ describe('DateFilterDynamicComponent', () => {
     if (!option) throw new Error('expected an Exact day option in the dropdown');
     fireEvent.click(option);
 
-    // Exact mode owns its value via the DatePicker, so the descriptor
-    // is cleared first; the picker emits its own value on user pick.
+    // Exact mode owns its value via the DatePicker, so the descriptor is cleared first; the picker emits its own value on user pick.
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
@@ -91,8 +84,7 @@ describe('DateFilterDynamicComponent', () => {
       <DateFilterDynamicComponent value={{ type: 'past', number: 3, unit: 'week' }} onChange={onChange} />,
     );
 
-    // InputNumber present (antd renders `.ant-input-number`); unit Select is
-    // the second `.ant-select` in the row (mode is first).
+    // InputNumber present (antd renders `.ant-input-number`); unit Select is the second `.ant-select` in the row (mode is first).
     expect(container.querySelector('.ant-input-number')).not.toBeNull();
     expect(container.querySelectorAll('.ant-select').length).toBeGreaterThanOrEqual(2);
     // DatePicker should NOT be rendered in relative-number mode.
@@ -101,24 +93,14 @@ describe('DateFilterDynamicComponent', () => {
 
   it('renders the RangePicker when isRange is true', () => {
     const { container } = render(<DateFilterDynamicComponent value={undefined} onChange={() => undefined} isRange />);
-    // RangePicker carries the `.ant-picker-range` class; the granularity
-    // Select is suppressed in range mode (only mode select + range picker).
+    // RangePicker carries the `.ant-picker-range` class; the granularity Select is suppressed in range mode (only mode select + range picker).
     expect(container.querySelector('.ant-picker-range')).not.toBeNull();
   });
 
   it('hydrates a stored granularity-formatted string back into the DatePicker', () => {
-    // `2026-02-15` is the canonical Date-picker shape NocoBase's
-    // `$dateOn` operator emits when the user picks an exact day. The
-    // DatePicker must hydrate from it (so reopening the popover or
-    // re-rendering keeps the value) instead of treating it as an
-    // opaque blob.
+    // `2026-02-15` is the canonical Date-picker shape NocoBase's `$dateOn` operator emits when the user picks an exact day. The DatePicker must hydrate from it (so reopening the popover or re-rendering keeps the value) instead of treating it as an opaque blob.
     //
-    // Note: the picker-mode state is local to the component and
-    // defaults to `date` on every mount, so values stored at other
-    // granularities (`2026-02` for month, `2026` for year) won't
-    // pre-fill on remount — only when the user is still in the same
-    // session. This matches v1's behaviour, where reopening a filter
-    // popover also re-derives the picker mode from the input shape.
+    // Note: the picker-mode state is local to the component and defaults to `date` on every mount, so values stored at other granularities (`2026-02` for month, `2026` for year) won't pre-fill on remount — only when the user is still in the same session. This matches v1's behaviour, where reopening a filter popover also re-derives the picker mode from the input shape.
     const { container } = render(<DateFilterDynamicComponent value="2026-02-15" onChange={() => undefined} />);
     const dateInput = container.querySelector('.ant-picker input') as HTMLInputElement;
     if (!dateInput) throw new Error('expected antd DatePicker input to be rendered');
@@ -126,12 +108,7 @@ describe('DateFilterDynamicComponent', () => {
   });
 
   describe('format helpers (parseDateFilterValue / formatDateFilterValue)', () => {
-    // These two helpers are the heart of the v1-compatible URL output:
-    // `formatDateFilterValue` converts a Dayjs into the picker-shaped
-    // string the server expects, and `parseDateFilterValue` round-trips
-    // back so the controlled DatePicker can hydrate. Driving them
-    // directly is more reliable than poking antd's picker panel under
-    // jsdom.
+    // These two helpers are the heart of the v1-compatible URL output: `formatDateFilterValue` converts a Dayjs into the picker-shaped string the server expects, and `parseDateFilterValue` round-trips back so the controlled DatePicker can hydrate. Driving them directly is more reliable than poking antd's picker panel under jsdom.
 
     it('formats Dayjs values per picker granularity (date / month / quarter / year)', () => {
       const sample = dayjs('2026-02-15');

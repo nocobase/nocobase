@@ -17,9 +17,7 @@ import { CollectionFilterItemValue, createCollectionFilterItem } from './Collect
 export type FilterGroupItem = CollectionFilterItemValue | FilterGroupValue;
 
 /**
- * Reactive shape consumed by `FilterContainer` / `FilterGroup`. `logic`
- * is the join (`$and` / `$or`) and `items` is a heterogeneous list of
- * leaf conditions and nested groups.
+ * Reactive shape consumed by `FilterContainer` / `FilterGroup`. `logic` is the join (`$and` / `$or`) and `items` is a heterogeneous list of leaf conditions and nested groups.
  */
 export type FilterGroupValue = {
   logic: '$and' | '$or';
@@ -46,29 +44,20 @@ const isCondition = (item: FilterGroupItem): item is CollectionFilterItemValue =
   Object.prototype.hasOwnProperty.call(item, 'operator');
 
 /**
- * `true` when the rhs of a condition is "no real value yet" — covers
- * `undefined` / `null` / empty string / empty array / empty plain object.
- * Mirrors v1's `removeNullCondition` `isEmpty` predicate so half-filled
- * rows ("Locked time → is → (no date picked yet)") get dropped on Submit
- * instead of being sent to the server as `{lockedTs:{}}` and triggering
- * a 500.
+ * `true` when the rhs of a condition is "no real value yet" — covers `undefined` / `null` / empty string / empty array / empty plain object. Mirrors v1's `removeNullCondition` `isEmpty` predicate so half-filled rows ("Locked time → is → (no date picked yet)") get dropped on Submit instead of being sent to the server as `{lockedTs:{}}` and triggering a 500.
  */
 const isEmptyFilterValue = (value: unknown): boolean => {
   if (value === undefined || value === null || value === '') return true;
   if (Array.isArray(value)) return value.length === 0;
   if (typeof value === 'object') {
-    // Plain `{}` only — descriptor shapes like `{ type: 'today' }` have
-    // own keys and survive this check.
+    // Plain `{}` only — descriptor shapes like `{ type: 'today' }` have own keys and survive this check.
     return Object.keys(value as Record<string, unknown>).length === 0;
   }
   return false;
 };
 
 /**
- * Build a nested object from a dotted path. `'user.createdBy.password'` +
- * `{ $includes: '123' }` becomes `{ user: { createdBy: { password: { $includes: '123' } } } }`.
- * Matches v1's filter payload shape so server-side filter resolution sees
- * the same association chain whether the request came from a v1 or v2 page.
+ * Build a nested object from a dotted path. `'user.createdBy.password'` + `{ $includes: '123' }` becomes `{ user: { createdBy: { password: { $includes: '123' } } } }`. Matches v1's filter payload shape so server-side filter resolution sees the same association chain whether the request came from a v1 or v2 page.
  */
 const nestPath = (path: string, leaf: unknown): Record<string, unknown> => {
   const segments = path.split('.');
@@ -80,24 +69,14 @@ const nestPath = (path: string, leaf: unknown): Record<string, unknown> => {
 };
 
 /**
- * Compile a reactive filter group into the `{ $and: [{ path: { op: val } }] }`
- * envelope accepted by NocoBase's resource `list` filter param. Returns
- * `undefined` when the group is empty so callers can drop the param.
+ * Compile a reactive filter group into the `{ $and: [{ path: { op: val } }] }` envelope accepted by NocoBase's resource `list` filter param. Returns `undefined` when the group is empty so callers can drop the param.
  *
- * Mirrors v1's `removeNullCondition` + filter compile path, but works on
- * the v2 `{ logic, items }` group structure rather than v1's
- * Formily-bracketed `$and.0.path.$eq` shape:
+ * Mirrors v1's `removeNullCondition` + filter compile path, but works on the v2 `{ logic, items }` group structure rather than v1's Formily-bracketed `$and.0.path.$eq` shape:
  *
  * - Rows missing `path` or `operator` are dropped (still mid-edit).
- * - Rows whose `value` is empty (`undefined`, `''`, `[]`, `{}`) are
- *   dropped — matches v1, which sends `filter={}` for a row with only
- *   a field/operator picked. Sending `{lockedTs:{}}` would 500.
- * - Dotted association paths (`user.createdBy.password`) are expanded
- *   into nested objects — matches v1's payload shape, which the server
- *   resolves along the association chain rather than treating the
- *   dotted string as a single key.
- * - Empty groups (after pruning) propagate as `undefined` so the
- *   outermost caller can drop the whole `filter` param.
+ * - Rows whose `value` is empty (`undefined`, `''`, `[]`, `{}`) are dropped — matches v1, which sends `filter={}` for a row with only a field/operator picked. Sending `{lockedTs:{}}` would 500.
+ * - Dotted association paths (`user.createdBy.password`) are expanded into nested objects — matches v1's payload shape, which the server resolves along the association chain rather than treating the dotted string as a single key.
+ * - Empty groups (after pruning) propagate as `undefined` so the outermost caller can drop the whole `filter` param.
  */
 export function compileFilterGroup(group: FilterGroupValue | undefined): CompiledFilter {
   if (!group?.items?.length) return undefined;
@@ -122,18 +101,14 @@ export interface UseFilterActionPropsArgs extends UseFilterOptionsArgs {
   /** Collection whose fields populate the filter row's field picker. */
   collection: Collection | undefined;
   /**
-   * Called when the user submits or resets the filter popover.
-   * Receives the compiled filter param (`undefined` when cleared) and
-   * which footer button triggered the call. Typical implementation:
-   * `(filter, action) => { listRequest.run(filter); if (action === 'submit') closePopover(); }`.
+   * Called when the user submits or resets the filter popover. Receives the compiled filter param (`undefined` when cleared) and which footer button triggered the call. Typical implementation: `(filter, action) => { listRequest.run(filter); if (action === 'submit') closePopover(); }`.
    */
   onApply: (filter: CompiledFilter, action: FilterApplyAction) => void;
 }
 
 export interface UseFilterActionPropsResult {
   /**
-   * Reactive filter group state. Pass directly to `<FilterContent value={...}>`.
-   * Stable across renders.
+   * Reactive filter group state. Pass directly to `<FilterContent value={...}>`. Stable across renders.
    */
   value: FilterGroupValue;
   /** Field-option tree (for inspection or custom badges). */
@@ -141,8 +116,7 @@ export interface UseFilterActionPropsResult {
   /** Bound `FilterItem` component to plug into `<FilterContent FilterItem={...}>`. */
   FilterItem: ReturnType<typeof createCollectionFilterItem> | undefined;
   /**
-   * Ready-to-use `ctx` for `<FilterContent ctx={...}>`. Wires Submit /
-   * Reset buttons to `onSubmit` / `onReset` below.
+   * Ready-to-use `ctx` for `<FilterContent ctx={...}>`. Wires Submit / Reset buttons to `onSubmit` / `onReset` below.
    */
   ctx: FilterCtx;
   /** Imperative trigger — submit current group as a compiled filter. */
@@ -150,22 +124,17 @@ export interface UseFilterActionPropsResult {
   /** Imperative trigger — clear the group and emit an empty filter. */
   onReset: () => void;
   /**
-   * Count of top-level condition rows. Useful for showing a badge like
-   * `Filter (3)` on the trigger button — matches v1's
-   * `field.title = t('{{count}} filter items', { count })`.
+   * Count of top-level condition rows. Useful for showing a badge like `Filter (3)` on the trigger button — matches v1's `field.title = t('{{count}} filter items', { count })`.
    */
   conditionCount: number;
 }
 
 /**
- * v2 equivalent of v1's `useFilterActionProps` for non-schema surfaces
- * (settings pages, panels, side drawers). Bundles three things v1's
- * hook returned implicitly through schema:
+ * v2 equivalent of v1's `useFilterActionProps` for non-schema surfaces (settings pages, panels, side drawers). Bundles three things v1's hook returned implicitly through schema:
  *
  * - A reactive `{ logic, items }` group state that `<FilterContent>` reads.
  * - A bound `FilterItem` component (driven by `createCollectionFilterItem`).
- * - A `ctx` object that turns `<FilterContent>`'s `dispatchEvent('submit' | 'reset')`
- *   into a compiled filter param passed to `onApply`.
+ * - A `ctx` object that turns `<FilterContent>`'s `dispatchEvent('submit' | 'reset')` into a compiled filter param passed to `onApply`.
  *
  * Pair with antd `Popover` to recreate the legacy `Filter.Action` UX:
  *
@@ -185,10 +154,7 @@ export interface UseFilterActionPropsResult {
 export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterActionPropsResult {
   const { collection, onApply, filterableFieldNames, noIgnore, t } = args;
 
-  // Held in a ref so the group object identity is stable for the
-  // lifetime of the host component — `<FilterContent>` mutates this
-  // object directly (push/splice on `items`, swap `logic`), and a fresh
-  // observable on every render would reset that internal state.
+  // Held in a ref so the group object identity is stable for the lifetime of the host component — `<FilterContent>` mutates this object directly (push/splice on `items`, swap `logic`), and a fresh observable on every render would reset that internal state.
   const valueRef = useRef<FilterGroupValue>();
   if (!valueRef.current) {
     valueRef.current = observable(createEmptyGroup()) as FilterGroupValue;
@@ -227,12 +193,7 @@ export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterA
     [translate, onSubmit, onReset],
   );
 
-  // Re-read on each render so `observer`-wrapped hosts re-render when
-  // the reactive `items` array length changes. No useMemo needed — the
-  // `value` object's identity is stable (held in a ref), but its
-  // observable `items.length` is what we actually care about, and the
-  // eslint exhaustive-deps rule rightly complains about depending on a
-  // mutable property of a stable ref.
+  // Re-read on each render so `observer`-wrapped hosts re-render when the reactive `items` array length changes. No useMemo needed — the `value` object's identity is stable (held in a ref), but its observable `items.length` is what we actually care about, and the eslint exhaustive-deps rule rightly complains about depending on a mutable property of a stable ref.
   const conditionCount = value.items.length;
 
   return { value, options, FilterItem, ctx, onSubmit, onReset, conditionCount };

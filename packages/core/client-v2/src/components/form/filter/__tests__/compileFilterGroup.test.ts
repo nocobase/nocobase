@@ -62,10 +62,7 @@ describe('compileFilterGroup', () => {
   });
 
   it('drops items with empty values (undefined / "" / [] / {}) so half-edited rows do not 500 the server', () => {
-    // Mirrors v1's `removeNullCondition` behaviour. A user who selected
-    // a field + operator but hasn't typed a value yet must NOT cause
-    // `{path:{operator:undefined}}` to fly out — the server rejects
-    // empty operator bodies on `$dateOn` etc.
+    // Mirrors v1's `removeNullCondition` behaviour. A user who selected a field + operator but hasn't typed a value yet must NOT cause `{path:{operator:undefined}}` to fly out — the server rejects empty operator bodies on `$dateOn` etc.
     const out = compileFilterGroup({
       logic: '$and',
       items: [
@@ -80,10 +77,7 @@ describe('compileFilterGroup', () => {
   });
 
   it('expands dotted association paths into nested objects (matches v1 payload shape)', () => {
-    // `user.createdBy.password` must reach the server as a nested
-    // object so the filter resolver walks the association chain.
-    // Flattened-key form (`{ "user.createdBy.password": ... }`) leaves
-    // the server treating the whole string as one column name.
+    // `user.createdBy.password` must reach the server as a nested object so the filter resolver walks the association chain. Flattened-key form (`{ "user.createdBy.password": ... }`) leaves the server treating the whole string as one column name.
     const out = compileFilterGroup({
       logic: '$and',
       items: [{ path: 'user.createdBy.password', operator: '$includes', value: '123' }],
@@ -94,9 +88,7 @@ describe('compileFilterGroup', () => {
   });
 
   it('keeps relative date descriptors (non-empty plain objects) intact', () => {
-    // `{ type: 'today' }` is an empty-keys-only check away from being
-    // pruned by accident. Confirm it survives — that's the
-    // server-readable shape for relative-date filters.
+    // `{ type: 'today' }` is an empty-keys-only check away from being pruned by accident. Confirm it survives — that's the server-readable shape for relative-date filters.
     const out = compileFilterGroup({
       logic: '$and',
       items: [{ path: 'lockedTs', operator: '$dateOn', value: { type: 'today' } }],

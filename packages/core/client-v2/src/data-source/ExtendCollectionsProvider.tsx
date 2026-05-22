@@ -20,14 +20,9 @@ export interface ExtendCollectionsProviderProps {
 }
 
 /**
- * Mount-scoped collection injector. Adds the given `collections` to the
- * target data source on mount and removes them on unmount. Survives
- * mid-session reloads via `dataSource:loaded` events.
+ * Mount-scoped collection injector. Adds the given `collections` to the target data source on mount and removes them on unmount. Survives mid-session reloads via `dataSource:loaded` events.
  *
- * Use this for client-only collections — e.g. a `schema-only` server
- * collection that isn't auto-published to the v2 data source, or a
- * pure UI-side mirror — so downstream components (like
- * `<CollectionFilter>`) can resolve the collection by name.
+ * Use this for client-only collections — e.g. a `schema-only` server collection that isn't auto-published to the v2 data source, or a pure UI-side mirror — so downstream components (like `<CollectionFilter>`) can resolve the collection by name.
  */
 export const ExtendCollectionsProvider: FC<ExtendCollectionsProviderProps> = ({
   dataSource = 'main',

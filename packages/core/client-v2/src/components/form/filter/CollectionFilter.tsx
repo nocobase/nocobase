@@ -40,15 +40,9 @@ export interface CollectionFilterProps {
 }
 
 /**
- * Filter button bound to a collection. Renders an antd `<Popover>` over a
- * `<Button>`; the popover hosts a multi-condition filter form (field
- * picker, operator, value). Submit dismisses the popover and emits the
- * compiled filter via `onChange`; Reset keeps the popover open and emits
- * `undefined`.
+ * Filter button bound to a collection. Renders an antd `<Popover>` over a `<Button>`; the popover hosts a multi-condition filter form (field picker, operator, value). Submit dismisses the popover and emits the compiled filter via `onChange`; Reset keeps the popover open and emits `undefined`.
  *
- * Pair with `<ExtendCollectionsProvider>` when the target collection is
- * client-only (e.g. a `schema-only` server collection that isn't
- * auto-published to the v2 data source).
+ * Pair with `<ExtendCollectionsProvider>` when the target collection is client-only (e.g. a `schema-only` server collection that isn't auto-published to the v2 data source).
  */
 export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
   const {
