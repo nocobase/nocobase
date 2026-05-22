@@ -85,9 +85,10 @@ export async function submit(context: Context, next) {
   task.set({
     status: actionItem.status,
     result: actionItem.status
-      ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
-      : Object.assign(task.result ?? {}, values.result),
+      ? { [formKey]: { ...values.result[formKey], ...presetValues }, _: actionKey }
+      : { ...(task.result ?? {}), ...values.result },
   });
+  task.changed('result', true);
 
   const handler = instruction.formTypes.get(forms[formKey].type);
   if (handler && task.status) {
