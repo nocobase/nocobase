@@ -1,6 +1,7 @@
 {
   "Actions": "Actions",
   "Collapse all": "Collapse all",
+  "Color field": "Color field",
   "Day": "Day",
   "Enable drag to reschedule": "Enable drag to reschedule",
   "End date field": "End date field",
@@ -17,6 +18,7 @@
   "Progress field": "Progress field",
   "Quarter of day": "Quarter of day",
   "QuarterYear": "QuarterYear",
+  "Show table": "Show table",
   "Start date field": "Start date field",
   "Time scale": "Time scale",
   "Title field": "Title field",

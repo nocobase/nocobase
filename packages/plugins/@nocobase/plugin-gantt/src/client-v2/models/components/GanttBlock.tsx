@@ -144,7 +144,9 @@ export const GanttBlock = observer(
     const fieldNamesProp = model.props?.fieldNames;
     const hideChildren = model.props?.hideChildren;
     const dragEnabled = model.props?.enableDragToReschedule;
+    const showTable = model.props?.showTable !== false;
     const tableColumns = model.getColumns().filter((column: any) => column?.key !== 'empty');
+    const showActionsTable = showTable && tableColumns.length > 0;
     const tableRecords = barTasks.map((task, index) => ({
       ...(task as any).record,
       __ganttTaskId: task.id,
@@ -608,7 +610,7 @@ export const GanttBlock = observer(
       <div className={tableClass} ref={ganttRef}>
         <div onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
           <div className={contentClass}>
-            {tableColumns.length > 0 && (
+            {showActionsTable && (
               <div className={actionsColumnClass} ref={actionsTableRef}>
                 <Table
                   className={actionsTableClass}

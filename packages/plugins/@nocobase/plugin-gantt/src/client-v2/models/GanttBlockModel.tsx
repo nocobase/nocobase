@@ -25,7 +25,7 @@ import {
   FlowSettingsButton,
   MultiRecordResource,
 } from '@nocobase/flow-engine';
-import { Space } from 'antd';
+import { Space, theme } from 'antd';
 import React from 'react';
 import { Task } from '../../shared/types/public-types';
 import { createGanttEventViewActionOptions } from './actions/GanttPopupModels';
@@ -36,6 +36,8 @@ import { getLabelFormatValue, toPlainLabel } from './components/getLabelFormatVa
 const DATE_FIELD_TYPES = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
 const TITLE_FIELD_TYPES = ['string'];
 const PROGRESS_FIELD_TYPES = ['float'];
+const COLOR_FIELD_TYPES = ['select', 'color'];
+const DEFAULT_PRESET_COLOR = '#d9d9d9';
 
 const TIME_SCALE_OPTION_DEFS = [
   { label: 'Hour', value: 'hour' },
@@ -96,6 +98,7 @@ const applyGanttFieldNames = (model: GanttBlockModel, params: Record<string, any
       ...(Object.prototype.hasOwnProperty.call(params, 'start') ? { start: params.start } : {}),
       ...(Object.prototype.hasOwnProperty.call(params, 'end') ? { end: params.end } : {}),
       ...(Object.prototype.hasOwnProperty.call(params, 'progress') ? { progress: params.progress } : {}),
+      ...(Object.prototype.hasOwnProperty.call(params, 'color') ? { color: params.color || undefined } : {}),
       ...(Object.prototype.hasOwnProperty.call(params, 'range') ? { range: params.range || 'day' } : {}),
     },
   });
@@ -127,6 +130,37 @@ const getProgress = (record: any, progressFieldName?: string) => {
   }
   const percent = Number((value * 100).toFixed(2));
   return percent > 100 ? 100 : percent || 0;
+};
+
+const normalizeColorValue = (value: any) => {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  if (typeof value === 'object') {
+    return value.hex || value.hexString || value.color || value.value;
+  }
+
+  const color = String(value);
+  if (color === 'default') {
+    return DEFAULT_PRESET_COLOR;
+  }
+
+  return theme.defaultSeed[color] || color;
+};
+
+const getFieldEnumColor = (field: any, value: any) => {
+  const normalizedValue = normalizeColorValue(value);
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  const enumOptions = Array.isArray(field?.uiSchema?.enum) ? field.uiSchema.enum : [];
+  const option = enumOptions.find((item: any) => {
+    return String(item?.value ?? item?.name ?? item?.id ?? '') === String(normalizedValue);
+  });
+
+  return normalizeColorValue(option?.color);
 };
 
 const normalizeEventOpenMode = (value?: string) => {
@@ -223,6 +257,7 @@ export class GanttBlockModel extends TableBlockModel {
       start: fieldNames.start || this.getDefaultStartFieldName(),
       end: fieldNames.end || this.getDefaultEndFieldName(),
       progress: fieldNames.progress,
+      color: fieldNames.color,
       range: fieldNames.range || 'day',
     };
   }
@@ -252,6 +287,22 @@ export class GanttBlockModel extends TableBlockModel {
     return toPlainLabel(getLabelFormatValue(titleField?.uiSchema, record?.[titleFieldName]));
   }
 
+  private getRecordColor(record: any, colorFieldName?: string) {
+    if (!colorFieldName) {
+      return normalizeColorValue(record?.color);
+    }
+
+    const colorField = this.collection?.getField?.(colorFieldName);
+    const value = record?.[colorFieldName];
+    const fallbackColor = normalizeColorValue(record?.color);
+
+    if (isSupportedByValues(colorField?.interface, ['select']) || isSupportedByValues(colorField?.type, ['select'])) {
+      return getFieldEnumColor(colorField, value) || fallbackColor;
+    }
+
+    return normalizeColorValue(value) || fallbackColor;
+  }
+
   private formatData(
     data: any[] = [],
     tasks: Array<Task & { record?: any }> = [],
@@ -265,6 +316,7 @@ export class GanttBlockModel extends TableBlockModel {
       const children = Array.isArray(record.children) ? record.children : [];
       const start = record[fieldNames.start] ? new Date(record[fieldNames.start]) : undefined;
       const end = record[fieldNames.end] ? new Date(record[fieldNames.end]) : start;
+      const color = this.getRecordColor(record, fieldNames.color);
 
       if (children.length) {
         tasks.push({
@@ -276,7 +328,7 @@ export class GanttBlockModel extends TableBlockModel {
           progress: getProgress(record, fieldNames.progress),
           hideChildren: !!this.props?.hideChildren,
           project: projectId,
-          color: record.color,
+          color,
           isDisabled: false,
           record,
         } as any);
@@ -290,7 +342,7 @@ export class GanttBlockModel extends TableBlockModel {
           type: fieldNames.end ? 'task' : 'milestone',
           progress: getProgress(record, fieldNames.progress),
           project: projectId,
-          color: record.color,
+          color,
           isDisabled: false,
           record,
         } as any);
@@ -529,6 +581,7 @@ GanttBlockModel.registerFlow({
         const titleFieldOptions = model.getFieldOptions(TITLE_FIELD_TYPES);
         const dateFieldOptions = model.getFieldOptions(DATE_FIELD_TYPES);
         const progressFieldOptions = model.getFieldOptions(PROGRESS_FIELD_TYPES);
+        const colorFieldOptions = model.getFieldOptions(COLOR_FIELD_TYPES);
         const timeScaleOptions = getTimeScaleOptions(ctx.t);
 
         return {
@@ -573,6 +626,17 @@ GanttBlockModel.registerFlow({
             'x-decorator': 'FormItem',
             'x-component-props': {
               options: progressFieldOptions,
+              allowClear: true,
+            },
+          },
+          color: {
+            type: 'string',
+            title: tExpr('Color field'),
+            enum: colorFieldOptions,
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              options: colorFieldOptions,
               allowClear: true,
             },
           },
@@ -715,6 +779,45 @@ GanttBlockModel.registerFlow({
         applyGanttFieldNames(ctx.model as GanttBlockModel, params);
       },
     },
+    colorField: {
+      title: tExpr('Color field'),
+      uiMode(ctx) {
+        return {
+          type: 'select',
+          key: 'color',
+          props: {
+            options: (ctx.model as GanttBlockModel).getFieldOptions(COLOR_FIELD_TYPES),
+            allowClear: true,
+          },
+        };
+      },
+      defaultParams(ctx) {
+        return {
+          color: (ctx.model as GanttBlockModel).getFieldNames().color,
+        };
+      },
+      handler(ctx, params) {
+        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
+      },
+      beforeParamsSave(ctx, params) {
+        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
+      },
+    },
+    showTable: {
+      title: tExpr('Show table'),
+      uiMode: { type: 'switch', key: 'showTable' },
+      defaultParams(ctx) {
+        return {
+          showTable: (ctx.model as GanttBlockModel).props?.showTable !== false,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('showTable', params.showTable !== false);
+      },
+      beforeParamsSave(ctx, params) {
+        ctx.model.setProps('showTable', params.showTable !== false);
+      },
+    },
     enableDragToReschedule: {
       title: tExpr('Enable drag to reschedule'),
       uiMode: { type: 'switch', key: 'enableDragToReschedule' },
@@ -766,6 +869,7 @@ GanttBlockModel.define({
     use: 'GanttBlockModel',
     props: {
       enableDragToReschedule: true,
+      showTable: true,
     },
     subModels: {
       actions: [],

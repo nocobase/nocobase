@@ -75,6 +75,7 @@ describe('PluginGanttClient model discovery', () => {
         Day: '天',
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
+        'Show table': '表格显示',
       }),
     );
     expect(i18n.addResources).toHaveBeenCalledWith(
@@ -84,6 +85,7 @@ describe('PluginGanttClient model discovery', () => {
         Day: '天',
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
+        'Show table': '表格显示',
       }),
     );
   });
@@ -192,6 +194,26 @@ describe('GanttBlockModel settings', () => {
     expect(model.getFlow('tableSettings')?.steps?.defaultSorting).toBeDefined();
   });
 
+  test('shows the left table by default and persists the table visibility setting', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+    });
+    const step = model.getFlow('ganttSettings')?.steps?.showTable;
+
+    const defaultParams =
+      typeof step?.defaultParams === 'function' ? step.defaultParams({ model } as any) : step?.defaultParams;
+    expect(defaultParams).toEqual({ showTable: true });
+
+    step?.handler?.({ model } as any, { showTable: false });
+    expect(model.props?.showTable).toBe(false);
+
+    step?.beforeParamsSave?.({ model } as any, { showTable: true });
+    expect(model.props?.showTable).toBe(true);
+  });
+
   test('translates time scale options at settings render time', () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({ GanttBlockModel });
@@ -210,6 +232,133 @@ describe('GanttBlockModel settings', () => {
         expect.objectContaining({ label: 'zh:Month', value: 'month' }),
       ]),
     );
+  });
+
+  test('only exposes single select and color fields as gantt color field candidates', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input', uiSchema: { title: 'Title' } },
+        { name: 'status', type: 'string', interface: 'select', uiSchema: { title: 'Status' } },
+        { name: 'taskColor', type: 'string', interface: 'color', uiSchema: { title: 'Task color' } },
+        { name: 'progress', type: 'float', interface: 'number', uiSchema: { title: 'Progress' } },
+      ],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar',
+          },
+        },
+      },
+    });
+    const step = model.getFlow('ganttSettings')?.steps?.colorField;
+    const uiMode = typeof step?.uiMode === 'function' ? (step.uiMode({ model } as any) as any) : null;
+
+    expect(uiMode?.props?.options).toEqual([
+      { label: 'Status', value: 'status' },
+      { label: 'Task color', value: 'taskColor' },
+    ]);
+  });
+
+  test('formats task color from the selected single select field option', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'startAt', type: 'datetime', interface: 'datetime' },
+        { name: 'endAt', type: 'datetime', interface: 'datetime' },
+        {
+          name: 'status',
+          type: 'string',
+          interface: 'select',
+          uiSchema: {
+            enum: [
+              { label: 'Todo', value: 'todo', color: 'blue' },
+              { label: 'Done', value: 'done', color: '#52c41a' },
+            ],
+          },
+        },
+      ],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+          color: 'status',
+        },
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar',
+          },
+        },
+      },
+    });
+
+    model.resource.setData([
+      { id: 1, title: 'Task 1', startAt: '2026-05-01', endAt: '2026-05-02', status: 'todo' },
+      { id: 2, title: 'Task 2', startAt: '2026-05-03', endAt: '2026-05-04', status: 'done' },
+    ]);
+
+    expect(model.getTasks().map((task) => task.color)).toEqual(['#1677FF', '#52c41a']);
+  });
+
+  test('formats task color from the selected color field value', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'startAt', type: 'datetime', interface: 'datetime' },
+        { name: 'endAt', type: 'datetime', interface: 'datetime' },
+        { name: 'taskColor', type: 'string', interface: 'color' },
+      ],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+          color: 'taskColor',
+        },
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar',
+          },
+        },
+      },
+    });
+
+    model.resource.setData([
+      { id: 1, title: 'Task 1', startAt: '2026-05-01', endAt: '2026-05-02', taskColor: '#722ed1' },
+    ]);
+
+    expect(model.getTasks()[0].color).toBe('#722ed1');
   });
 
   test('exposes event popup settings through openView', async () => {

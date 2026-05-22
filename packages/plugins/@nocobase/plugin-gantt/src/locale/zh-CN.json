@@ -1,6 +1,7 @@
 {
   "Actions": "操作",
   "Collapse all": "全部折叠",
+  "Color field": "颜色字段",
   "Day": "天",
   "Details": "详情",
   "Enable drag to reschedule": "启用拖动重新排期",
@@ -17,6 +18,7 @@
   "Progress field": "进度字段",
   "Quarter of day": "一天的四分之一",
   "QuarterYear": "季度",
+  "Show table": "表格显示",
   "Start date field": "开始日期字段",
   "Time scale": "时间缩放等级",
   "Title field": "标题字段",
