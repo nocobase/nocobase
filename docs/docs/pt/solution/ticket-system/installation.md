@@ -2,6 +2,8 @@
 
 > A versão atual utiliza o formato de **backup e restauração** para implantação. Em versões futuras, poderemos mudar para o formato de **migração incremental**, a fim de facilitar a integração da solução em seus sistemas existentes.
 
+> **Aviso de manutenção**: Para uma manutenção unificada, esta solução foi consolidada no [Sistema de Gestão Empresarial Integrado](../all-in-one/installation.md). Os links de download apontam para os backups do novo sistema.
+
 Para que você possa implantar a solução de chamados em seu próprio ambiente NocoBase de forma rápida e suave, oferecemos dois métodos de restauração. Escolha o mais adequado para você com base na sua versão de usuário e conhecimento técnico.
 
 Antes de começar, certifique-se de que:
@@ -9,8 +11,8 @@ Antes de começar, certifique-se de que:
 - Você já possui um ambiente de execução básico do NocoBase. Para a instalação do sistema principal, consulte a [documentação oficial de instalação](https://docs-cn.nocobase.com/welcome/getting-started/installation) detalhada.
 - Versão do NocoBase **2.0.0-beta.5 ou superior**
 - Você já baixou os arquivos correspondentes do sistema de chamados:
-  - **Arquivo de backup**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - Aplicável ao Método 1
-  - **Arquivo SQL**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - Aplicável ao Método 2
+  - **Arquivo de backup**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - Aplicável ao Método 1
+  - **Arquivo SQL**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - Aplicável ao Método 2
 
 **Instruções importantes**:
 - Esta solução foi criada com base no banco de dados **PostgreSQL 16**, certifique-se de que seu ambiente utilize o PostgreSQL 16.

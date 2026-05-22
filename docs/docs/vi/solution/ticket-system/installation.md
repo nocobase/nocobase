@@ -8,6 +8,8 @@ keywords: "Cài đặt Ticket,Khôi phục backup,Backup Manager,Nhập SQL,Post
 
 > Phiên bản hiện tại sử dụng hình thức **khôi phục backup** để triển khai. Trong các phiên bản sau, chúng tôi có thể chuyển sang hình thức **migration tăng dần**, để dễ dàng tích hợp giải pháp vào hệ thống đã có của bạn.
 
+> **Thông báo bảo trì**: Để hợp nhất bảo trì, giải pháp này đã được tích hợp vào [Hệ thống quản lý kinh doanh tích hợp](../all-in-one/installation.md). Các liên kết tải xuống bên dưới trỏ đến bản sao lưu của hệ thống mới.
+
 Để bạn có thể nhanh chóng và thuận lợi triển khai giải pháp Ticket vào môi trường NocoBase của riêng mình, chúng tôi cung cấp hai cách khôi phục. Vui lòng chọn cách phù hợp nhất tùy theo phiên bản người dùng và nền tảng kỹ thuật của bạn.
 
 Trước khi bắt đầu, vui lòng đảm bảo:
@@ -15,8 +17,8 @@ Trước khi bắt đầu, vui lòng đảm bảo:
 - Bạn đã có một môi trường NocoBase cơ bản đang chạy. Về việc cài đặt hệ thống chính, vui lòng tham khảo [tài liệu cài đặt chính thức](https://docs-cn.nocobase.com/welcome/getting-started/installation) chi tiết hơn.
 - Phiên bản NocoBase **2.0.0-beta.5 trở lên**
 - Bạn đã tải xuống các file tương ứng của hệ thống Ticket:
-  - **File backup**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - Áp dụng cho phương pháp một
-  - **File SQL**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - Áp dụng cho phương pháp hai
+  - **File backup**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - Áp dụng cho phương pháp một
+  - **File SQL**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - Áp dụng cho phương pháp hai
 
 **Lưu ý quan trọng**:
 - Giải pháp này được tạo dựa trên cơ sở dữ liệu **PostgreSQL 16**, vui lòng đảm bảo môi trường của bạn sử dụng PostgreSQL 16.

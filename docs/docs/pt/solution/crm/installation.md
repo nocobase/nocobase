@@ -2,6 +2,8 @@
 
 > A versão atual adota a forma de **backup e restauração** para a implantação. Em versões posteriores, poderemos mudar para a forma de **migração incremental**, a fim de facilitar a integração da solução aos seus sistemas existentes.
 
+> **Aviso de manutenção**: Para uma manutenção unificada, esta solução foi consolidada no [Sistema de Gestão Empresarial Integrado](../all-in-one/installation.md). Os links de download apontam para os backups do novo sistema.
+
 Para que você possa implantar a solução CRM 2.0 de forma rápida e suave em seu próprio ambiente NocoBase, fornecemos dois métodos de restauração. Escolha o mais adequado para você com base na sua versão de usuário e conhecimento técnico.
 
 Antes de começar, certifique-se de que:
@@ -9,8 +11,8 @@ Antes de começar, certifique-se de que:
 - Você já possui um ambiente de execução básico do NocoBase. Para a instalação do sistema principal, consulte a [documentação oficial de instalação](https://docs-cn.nocobase.com/welcome/getting-started/installation) mais detalhada.
 - Versão do NocoBase **v2.1.0-beta.2 e superior**
 - Você já baixou os arquivos correspondentes do sistema CRM:
-  - **Arquivo de backup**: [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata) - Aplicável ao Método Um
-  - **Arquivo SQL**: [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip) - Aplicável ao Método Dois
+  - **Arquivo de backup**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - Aplicável ao Método Um
+  - **Arquivo SQL**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - Aplicável ao Método Dois
 
 **Instruções Importantes**:
 - Esta solução foi criada com base no banco de dados **PostgreSQL 16**, certifique-se de que seu ambiente utilize o PostgreSQL 16.
@@ -94,13 +96,13 @@ Prepare um banco de dados novo e vazio para os dados que você está prestes a i
 Obtenha o arquivo de banco de dados baixado (geralmente no formato `.sql`) e importe seu conteúdo para o banco de dados preparado no passo anterior. Existem várias formas de execução, dependendo do seu ambiente:
 
 * **Opção A: Via linha de comando do servidor (exemplo com Docker)**
-  Se você usa Docker para instalar o NocoBase e o banco de dados, pode enviar o arquivo `.sql` para o servidor e usar o comando `docker exec` para realizar a importação. Supondo que o nome do seu contêiner PostgreSQL seja `my-nocobase-db` e o nome do arquivo seja `nocobase_crm_v2_sql_260327.sql`:
+  Se você usa Docker para instalar o NocoBase e o banco de dados, pode enviar o arquivo `.sql` para o servidor e usar o comando `docker exec` para realizar a importação. Supondo que o nome do seu contêiner PostgreSQL seja `my-nocobase-db` e o nome do arquivo seja `nocobase_all_in_one_sql_260521.sql`:
 
   ```bash
   # Copiar o arquivo sql para dentro do contêiner
-  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
+  docker cp nocobase_all_in_one_sql_260521.sql my-nocobase-db:/tmp/
   # Entrar no contêiner e executar o comando de importação
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_all_in_one_sql_260521.sql
   ```
 * **Opção B: Via cliente de banco de dados remoto (Navicat, etc.)**
   Se a porta do seu banco de dados estiver exposta, você pode usar qualquer cliente gráfico de banco de dados (como Navicat, DBeaver, pgAdmin, etc.) para se conectar ao banco de dados e então:

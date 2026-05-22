@@ -2,6 +2,8 @@
 
 > The current version uses **backup and restoration** for deployment. In future versions, we may switch to **incremental migration** to facilitate the integration of the solution into your existing systems.
 
+> **Maintenance notice**: For unified maintenance, this solution has been consolidated into the [All-in-One Business Suite](../all-in-one/installation.md). The download links below point to the new system's backups.
+
 To ensure you can deploy the ticketing solution to your own NocoBase environment quickly and smoothly, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
 
 Before you begin, please ensure:
@@ -9,8 +11,8 @@ Before you begin, please ensure:
 - You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs.nocobase.com/welcome/getting-started/installation).
 - NocoBase version **2.0.0-beta.5 and above**.
 - You have downloaded the corresponding files for the ticketing system:
-  - **Backup file**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - For Method 2
+  - **Backup file**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - For Method 1
+  - **SQL file**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - For Method 2
 
 **Important Notes**:
 - This solution is built on **PostgreSQL 16**. Please ensure your environment uses PostgreSQL 16.
