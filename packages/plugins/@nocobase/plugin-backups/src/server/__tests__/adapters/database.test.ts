@@ -120,8 +120,27 @@ describe('DatabaseAdapter', () => {
       });
       const command = mockedExec.mock.lastCall[0];
       expect(command).toContain('pg_dump');
-      expect(command).toContain('-t users -t posts');
-      expect(command).toContain('-T logs -T audit_logs');
+      expect(command).toContain(`-t '"users"' -t '"posts"'`);
+      expect(command).toContain(`-T '"logs"' -T '"audit_logs"'`);
+    });
+
+    it('backup function should quote mixed-case included and excluded tables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+      await adapter.backup({
+        dir,
+        includeTables: ['applicationPlugins', 'public.rolesUsers'],
+        excludeTables: ['dataSourcesCollections'],
+      });
+      const command = mockedExec.mock.lastCall[0];
+      expect(command).toContain(`-t '"applicationPlugins"'`);
+      expect(command).toContain(`-t '"public"."rolesUsers"'`);
+      expect(command).toContain(`-T '"dataSourcesCollections"'`);
     });
 
     it('restore function', async () => {
