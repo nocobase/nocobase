@@ -12,6 +12,7 @@ import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { escapeHTML, getAppVersionHTML } from '../utils';
 
 const waitForAppReady = async () => {
   await waitFor(() => {
@@ -48,6 +49,14 @@ describe('app', () => {
       expect(app.getHref('/test')).toBe('/test');
     });
 
+    it('should initialize shared jsonLogic operators', () => {
+      const app = new Application({ router });
+
+      expect(app.jsonLogic.apply({ $eq: [1, '1'] })).toBe(true);
+      app.jsonLogic.addOperation('$testAlwaysTrue', () => true);
+      expect(app.jsonLogic.apply({ $testAlwaysTrue: [] })).toBe(true);
+    });
+
     it('should apply the provided favicon immediately', () => {
       const app = new Application({ router });
 
@@ -56,6 +65,36 @@ describe('app', () => {
       const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
       expect(favicon).toBeInTheDocument();
       expect(favicon.getAttribute('href')).toBe('/custom-favicon.ico');
+    });
+
+    it('should reset favicon to default when favicon is cleared', () => {
+      const app = new Application({ router });
+
+      app.updateFavicon('/custom-favicon.ico');
+      app.updateFavicon(null);
+
+      const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
+      expect(favicon).toBeInTheDocument();
+      expect(favicon.getAttribute('href')).toBe('/favicon/favicon.ico');
+    });
+
+    it('should reset favicon to default when favicon is explicitly undefined', () => {
+      const app = new Application({ router });
+
+      app.updateFavicon('/custom-favicon.ico');
+      app.updateFavicon(undefined);
+
+      const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
+      expect(favicon).toBeInTheDocument();
+      expect(favicon.getAttribute('href')).toBe('/favicon/favicon.ico');
+    });
+
+    it('should escape app version html placeholder content', () => {
+      expect(getAppVersionHTML('<script>alert(1)</script>&"')).toBe(
+        '<span class="nb-app-version">v&lt;script&gt;alert(1)&lt;/script&gt;&amp;&quot;</span>',
+      );
+      expect(getAppVersionHTML(undefined)).toBe('');
+      expect(escapeHTML("NocoBase <v2> & 'beta'")).toBe('NocoBase &lt;v2&gt; &amp; &#39;beta&#39;');
     });
 
     it('should reject invalid component objects but keep valid exotic components', () => {

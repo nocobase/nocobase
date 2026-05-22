@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type MapEditorType = 'point' | 'polygon' | 'lineString' | 'circle';
+export type { MapEditorType } from '../shared/types';

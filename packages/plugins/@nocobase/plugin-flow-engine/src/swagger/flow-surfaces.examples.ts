@@ -23,10 +23,36 @@ const makePublicBlockDefaultFilter = (
       operator: '$eq',
       value: '',
     },
+    {
+      path: 'phone',
+      operator: '$includes',
+      value: '',
+    },
   ],
 ) => ({
   logic: '$and',
   items,
+});
+
+const makeAIEmployeeActionSettings = (target = 'self') => ({
+  username: 'dex',
+  auto: false,
+  workContext: [{ type: 'flow-model', target }],
+  tasks: [
+    {
+      title: 'Analyze current context',
+      message: {
+        system: 'Use the current UI context.',
+        user: 'Analyze the current record and suggest next steps.',
+        workContext: [{ type: 'flow-model', target }],
+      },
+      autoSend: false,
+      skillSettings: { skills: [], tools: [] },
+      model: null,
+      webSearch: false,
+    },
+  ],
+  style: { size: 40, mask: false },
 });
 
 export const flowSurfaceExamples = {
@@ -107,7 +133,14 @@ export const flowSurfaceExamples = {
                 ['total'],
               ],
             },
-            actions: ['submit'],
+            actions: [
+              'submit',
+              {
+                key: 'formAssistantAction',
+                type: 'aiEmployee',
+                settings: makeAIEmployeeActionSettings(),
+              },
+            ],
           },
           {
             key: 'employeesTable',
@@ -120,8 +153,18 @@ export const flowSurfaceExamples = {
                 value: '',
               },
               {
+                path: 'email',
+                operator: '$includes',
+                value: '',
+              },
+              {
                 path: 'status',
                 operator: '$eq',
+                value: '',
+              },
+              {
+                path: 'phone',
+                operator: '$includes',
                 value: '',
               },
             ]),
@@ -133,9 +176,24 @@ export const flowSurfaceExamples = {
                 settings: {
                   defaultFilter: makePublicBlockDefaultFilter([
                     {
+                      path: 'nickname',
+                      operator: '$includes',
+                      value: '',
+                    },
+                    {
+                      path: 'email',
+                      operator: '$includes',
+                      value: '',
+                    },
+                    {
                       path: 'status',
                       operator: '$eq',
                       value: 'active',
+                    },
+                    {
+                      path: 'phone',
+                      operator: '$includes',
+                      value: '',
                     },
                   ]),
                 },
@@ -143,6 +201,18 @@ export const flowSurfaceExamples = {
               {
                 key: 'refreshAction',
                 type: 'refresh',
+              },
+              {
+                key: 'tableInsightAction',
+                type: 'aiEmployee',
+                settings: makeAIEmployeeActionSettings('employeeForm'),
+              },
+            ],
+            recordActions: [
+              {
+                key: 'recordInsightAction',
+                type: 'aiEmployee',
+                settings: makeAIEmployeeActionSettings(),
               },
             ],
           },
@@ -308,6 +378,16 @@ export const flowSurfaceExamples = {
                 path: 'status',
                 operator: '$eq',
                 value: 'planned',
+              },
+              {
+                path: 'category',
+                operator: '$eq',
+                value: '',
+              },
+              {
+                path: 'scope',
+                operator: '$includes',
+                value: '',
               },
             ]),
             settings: {
@@ -553,9 +633,24 @@ export const flowSurfaceExamples = {
             settings: {
               defaultFilter: makePublicBlockDefaultFilter([
                 {
+                  path: 'username',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
+                  path: 'email',
+                  operator: '$includes',
+                  value: '',
+                },
+                {
                   path: 'status',
                   operator: '$eq',
                   value: 'active',
+                },
+                {
+                  path: 'phone',
+                  operator: '$includes',
+                  value: '',
                 },
               ]),
             },
@@ -657,6 +752,21 @@ export const flowSurfaceExamples = {
             operator: '$includes',
             value: '',
           },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
+            operator: '$includes',
+            value: '',
+          },
         ]),
         fields: [
           'nickname',
@@ -709,6 +819,21 @@ export const flowSurfaceExamples = {
         defaultFilter: makePublicBlockDefaultFilter([
           {
             path: 'nickname',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
             operator: '$includes',
             value: '',
           },
@@ -828,6 +953,12 @@ export const flowSurfaceExamples = {
       assignValues: {
         status: 'active',
       },
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_status_changed',
+          context: 'department',
+        },
+      ],
     },
   },
   configureJsBlock: {
@@ -850,7 +981,7 @@ export const flowSurfaceExamples = {
       title: 'Run diagnostics',
       type: 'primary',
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+      code: 'ctx.console.log("diagnostics");',
     },
   },
   configureJsItemAction: {
@@ -861,7 +992,7 @@ export const flowSurfaceExamples = {
       title: 'Run item diagnostics',
       type: 'default',
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("item diagnostics")\');',
+      code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item diagnostics complete")}>Run item diagnostics</Button>;\n}\n\nctx.render(<JsItemAction />);',
     },
   },
   configureJsField: {
@@ -1103,6 +1234,21 @@ export const flowSurfaceExamples = {
         operator: '$includes',
         value: 'staff',
       },
+      {
+        path: 'email',
+        operator: '$includes',
+        value: '',
+      },
+      {
+        path: 'status',
+        operator: '$eq',
+        value: '',
+      },
+      {
+        path: 'phone',
+        operator: '$includes',
+        value: '',
+      },
     ]),
     resourceInit: {
       dataSourceKey: 'main',
@@ -1110,7 +1256,7 @@ export const flowSurfaceExamples = {
     },
     defaultActionSettings: {
       filter: {
-        filterableFieldNames: ['username', 'email', 'status'],
+        filterableFieldNames: ['username', 'email', 'status', 'phone'],
         defaultFilter: {
           logic: '$and',
           items: [
@@ -1127,6 +1273,11 @@ export const flowSurfaceExamples = {
             {
               path: 'status',
               operator: '$eq',
+              value: '',
+            },
+            {
+              path: 'phone',
+              operator: '$includes',
               value: '',
             },
           ],
@@ -1281,12 +1432,17 @@ export const flowSurfaceExamples = {
   },
   addAction: {
     target: {
-      uid: 'filter-form-block-uid',
+      uid: 'create-form-block-uid',
     },
     type: 'submit',
     settings: {
-      title: 'Apply filters',
+      title: 'Submit user',
       confirm: false,
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_created',
+        },
+      ],
     },
   },
   addLinkAction: {
@@ -1338,7 +1494,7 @@ export const flowSurfaceExamples = {
       title: 'Run JS',
       type: 'primary',
       version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("hello")\');',
+      code: 'ctx.console.log("hello");',
     },
   },
   addJsItemAction: {
@@ -1350,8 +1506,15 @@ export const flowSurfaceExamples = {
       title: 'Run item JS',
       type: 'default',
       version: '1.0.0',
-      code: 'await ctx.runjs(\'console.log("item")\');',
+      code: 'const { Button } = ctx.antd;\n\nfunction JsItemAction() {\n  return <Button onClick={() => ctx.message.success("Item JS complete")}>Run item JS</Button>;\n}\n\nctx.render(<JsItemAction />);',
     },
+  },
+  addAIEmployeeAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'aiEmployee',
+    settings: makeAIEmployeeActionSettings(),
   },
   addRecordAction: {
     target: {
@@ -1377,6 +1540,24 @@ export const flowSurfaceExamples = {
             collectionName: 'users',
           },
           fields: ['username', 'nickname'],
+        },
+      ],
+    },
+  },
+  addRecordUpdateAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'updateRecord',
+    settings: {
+      title: 'Mark active',
+      assignValues: {
+        status: 'active',
+      },
+      triggerWorkflows: [
+        {
+          workflowKey: 'employee_status_changed',
+          context: 'department',
         },
       ],
     },
@@ -1438,6 +1619,13 @@ export const flowSurfaceExamples = {
       code: 'return currentRecord?.id;',
     },
   },
+  addRecordAIEmployeeAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'aiEmployee',
+    settings: makeAIEmployeeActionSettings(),
+  },
   addBlocks: {
     target: {
       uid: 'page-grid-uid',
@@ -1452,6 +1640,21 @@ export const flowSurfaceExamples = {
             operator: '$includes',
             value: 'staff',
           },
+          {
+            path: 'email',
+            operator: '$includes',
+            value: '',
+          },
+          {
+            path: 'status',
+            operator: '$eq',
+            value: '',
+          },
+          {
+            path: 'phone',
+            operator: '$includes',
+            value: '',
+          },
         ]),
         resourceInit: {
           dataSourceKey: 'main',
@@ -1463,7 +1666,7 @@ export const flowSurfaceExamples = {
         },
         defaultActionSettings: {
           filter: {
-            filterableFieldNames: ['username', 'email', 'status'],
+            filterableFieldNames: ['username', 'email', 'status', 'phone'],
             defaultFilter: {
               logic: '$and',
               items: [
@@ -1480,6 +1683,11 @@ export const flowSurfaceExamples = {
                 {
                   path: 'status',
                   operator: '$eq',
+                  value: '',
+                },
+                {
+                  path: 'phone',
+                  operator: '$includes',
                   value: '',
                 },
               ],
@@ -1654,6 +1862,76 @@ export const flowSurfaceExamples = {
         steps: {},
       },
     },
+  },
+  updateAIEmployeeSettings: {
+    target: {
+      uid: 'ai-employee-action-uid',
+    },
+    tasks: [
+      {
+        title: 'Generate table insights',
+        message: {
+          user: 'Summarize the current table and identify risks.',
+          workContext: [{ type: 'flow-model', target: 'self' }],
+        },
+        autoSend: true,
+        webSearch: false,
+      },
+    ],
+    style: {
+      mask: true,
+    },
+  },
+  getEventFlowMeta: {
+    target: {
+      uid: 'submit-action-uid',
+    },
+  },
+  addEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
+    eventName: 'submit',
+    steps: {
+      runGuard: {
+        use: 'runjs',
+        defaultParams: {
+          code: 'ctx.message.info("Submitting");',
+        },
+      },
+    },
+    condition: {
+      logic: '$and',
+      items: [],
+    },
+  },
+  setEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
+    flow: {
+      key: 'submitGuard',
+      on: {
+        eventName: 'submit',
+        phase: 'beforeAllFlows',
+      },
+      steps: {
+        runGuard: {
+          use: 'runjs',
+          defaultParams: {
+            code: 'ctx.message.success("Updated");',
+          },
+        },
+      },
+    },
+  },
+  removeEventFlow: {
+    target: {
+      uid: 'employee-form-uid',
+    },
+    key: 'submitGuard',
   },
   setEventFlows: {
     target: {

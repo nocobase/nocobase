@@ -10,8 +10,8 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { keyDecrypt } = require('@nocobase/license-kit');
-const path = require('path');
 const fs = require('fs');
+const { storagePathJoin } = require('../util');
 
 /**
  *
@@ -22,8 +22,7 @@ module.exports = (cli) => {
     .command('view-license-key')
     .description('View License Key')
     .action(async (options) => {
-      const dir = path.resolve(process.cwd(), 'storage/.license');
-      const filePath = path.resolve(dir, 'license-key');
+      const filePath = storagePathJoin('.license', 'license-key');
       if (!fs.existsSync(filePath)) {
         console.log('License key not found at ' + filePath);
         return;

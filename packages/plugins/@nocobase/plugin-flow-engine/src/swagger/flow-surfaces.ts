@@ -27,14 +27,14 @@ const ANY_OBJECT_SCHEMA = {
 };
 const FILTER_GROUP_EXAMPLE = {
   logic: '$and',
-  items: [],
+  items: [{ path: 'nickname', operator: '$notEmpty' }],
 };
 const PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION =
-  'Supported only on direct `table`, `list`, `gridCard`, `calendar`, or `kanban` blocks. The backend runtime keeps this input optional and compatibility-tolerant: omitted, `{}`, `null`, or `{ logic: "$and", items: [] }` normalize to the empty filter group. When a non-empty value is provided, it backfills the default `filter` action `settings.defaultFilter` when that action exists or is auto-created. If the filter action already provides `settings.defaultFilter`, the action-level value wins.';
+  'Supported only on direct `table`, `list`, `gridCard`, `calendar`, or `kanban` blocks. When omitted, backend authoring generates a default filter from live collection metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count; values with more than 4 fields are truncated to the first 4 before persistence. Invalid operators, unknown paths, and relation fields used directly fail authoring validation. Use scalar fields or relation child paths such as `department.title`, not the relation field itself. A valid explicit or generated value backfills the default `filter` action `settings.defaultFilter` when that action exists or is auto-created. If the filter action already provides `settings.defaultFilter`, the action-level value wins.';
 const APPLY_BLUEPRINT_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION =
-  'Supported only on direct `table`, `list`, `gridCard`, `calendar`, or `kanban` blocks, and must contain at least one concrete filter item. Backfills the default `filter` action `settings.defaultFilter` when that action exists or is auto-created. If the filter action already provides `settings.defaultFilter`, the action-level value wins.';
+  'Supported only on direct `table`, `list`, `gridCard`, `calendar`, or `kanban` blocks. When omitted, applyBlueprint generates a default filter from live collection metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count; values with more than 4 fields are truncated to the first 4 before persistence. Invalid operators, unknown paths, and relation fields used directly fail authoring validation. Use scalar fields or relation child paths such as `department.title`, not the relation field itself. A valid explicit or generated value backfills the default `filter` action `settings.defaultFilter` when that action exists or is auto-created. If the filter action already provides `settings.defaultFilter`, the action-level value wins.';
 const DIRECT_ADD_DEFAULT_FILTER_COMPAT_DESCRIPTION =
-  'Public block-level `defaultFilter` is supported on direct `table` / `list` / `gridCard` / `calendar` / `kanban` creates. Backend runtime compatibility is preserved: omitted or empty values remain accepted and normalize to the empty filter group. Legacy `defaultActionSettings.filter.defaultFilter` remains supported for compatibility and wins when both are provided.';
+  'Public block-level `defaultFilter` is optional on direct non-template `table` / `list` / `gridCard` / `calendar` / `kanban` authoring creates. When no effective filter action or `defaultActionSettings.filter.defaultFilter` override is supplied, the backend auto-materializes one from live collection metadata with up to 4 scalar/filterable fields. Explicit values with fewer fields than the smaller of 3 and the collection eligible-field count, empty values, invalid operators, unknown paths, and relation-field-leaf payloads are reported through aggregate `errors[]`; values with more than 4 fields are truncated to the first 4 before persistence.';
 const STRING_OR_INTEGER_SCHEMA = {
   oneOf: [{ type: 'string' }, { type: 'integer' }],
 };
@@ -54,6 +54,7 @@ const BASE_ACTION_TYPE_ENUM = [
   'upload',
   'js',
   'jsItem',
+  'aiEmployee',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -86,6 +87,7 @@ const BASE_NON_RECORD_ACTION_TYPE_ENUM = [
   'upload',
   'js',
   'jsItem',
+  'aiEmployee',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -97,6 +99,8 @@ const NON_RECORD_ACTION_TYPE_ENUM = [...BASE_NON_RECORD_ACTION_TYPE_ENUM, ...APP
 const RECORD_ACTION_TYPE_ENUM = [
   'popup',
   'js',
+  'jsItem',
+  'aiEmployee',
   'composeEmail',
   'templatePrint',
   'triggerWorkflow',
@@ -120,6 +124,8 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'markdown',
   'iframe',
   'chart',
+  'comments',
+  'recordHistory',
   'actionPanel',
   'jsBlock',
   'tree',
@@ -149,9 +155,13 @@ const RELATION_TARGET_FIELDS_SCHEMA = {
     'Relation target record fields. For picker fields, these become selector table columns; for nested relation fields, these become sub-table columns or embedded sub-form/detail fields.',
 };
 const ADD_CHILD_TREE_TABLE_NOTE =
-  '`addChild` is only valid when the live target `catalog.recordActions` exposes it, which normally means a table bound to a tree collection with `treeTable` enabled.';
+  '`addChild` is only valid when the live target `catalog.recordActions` exposes it, which normally means a table bound to a tree collection with `treeTable` enabled. Tree collection tables with `treeTable` enabled receive one default `addChild` record action when supported.';
 const APPLY_BLUEPRINT_ADD_CHILD_NOTE =
-  '`addChild` is not auto-promoted from `actions`; author it only under `recordActions`, and only when the live target `catalog.recordActions` exposes it for a tree table.';
+  '`addChild` is not auto-promoted from `actions`; author it only under `recordActions`, and only when the live target `catalog.recordActions` exposes it for a tree table. Tree collection tables with `settings.treeTable=true` receive one default `addChild` record action when supported.';
+const TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE =
+  'Ordinary table `recordActions` still complete partial or omitted lists to `view` / `edit` / `delete`. Tree collection tables with `treeTable` enabled do not complete `view` / `edit` / `delete`; they only receive one default `addChild` when supported, while explicit `edit` / `delete` remain allowed.';
+const APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE =
+  'For applyBlueprint tree tables, explicit `fields[]` must be self-contained: the explicit first `fields[0]` column must be a readable business display field, or an existing later readable field is moved first. Missing `title` / `name` fields are not injected into explicit lists, and explicit lists with no readable direct field are rejected. Only omitted `fields[]` uses default priority `titleField`, `name`, `code`, `title`, or another direct readable field. Do not put `id`, `uid`, `uuid`, `parentId`, primary keys, foreign keys, `xxxId`, `xxxUID`, `_id`, or `_uid` first.';
 const REACTION_FINGERPRINT_DESCRIPTION =
   'Optional optimistic-concurrency fingerprint from `getReactionMeta.capabilities[].fingerprint`. When provided, the write fails with HTTP 409 if the current slot fingerprint no longer matches.';
 const REACTION_RULES_REPLACE_DESCRIPTION =
@@ -310,7 +320,9 @@ function buildFlowSurfaceRequestPopupSchema() {
       },
       mode: {
         type: 'string',
-        enum: ['append', 'replace'],
+        enum: ['append', 'replace', 'drawer', 'dialog', 'page', 'modal', 'embed'],
+        description:
+          '`replace` and `append` control popup compose behavior. Legacy display modes `drawer`, `dialog`, `modal`, and `page` are accepted for compatibility; `page`/`modal` are normalized into popup openView display settings.',
       },
       blocks: {
         type: 'array',
@@ -399,7 +411,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -516,7 +528,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
     description: valuesCompatibilityNote(
-      'Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (`create` or `replace`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level `reaction.items[]` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. `rules: []` clears the targeted slot. Repeating the same `(type, target)` reaction slot in one blueprint is invalid. In `replace`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use `getReactionMeta` + `set*Rules` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: `{ "requestBody": "{\\"version\\":\\"1\\"}" }`. Internal planning details stay hidden. In `create`, `navigation.group.routeId` has the highest priority when targeting an existing menu group. If `routeId` is present, applyBlueprint ignores `title`, `icon`, `tooltip`, and `hideInMenu` on `navigation.group`; applyBlueprint create mode does not mutate existing group metadata, so callers should use `updateMenu` separately when that is required. When `routeId` is omitted and `navigation.group.title` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as `icon`, `tooltip`, and `hideInMenu` is used only when a new group is created and is ignored when an existing group is reused. `replace` uses `target.pageSchemaUid`, updates only the explicit page-level fields provided in `page`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. `layout` is only allowed on tabs and inline popup documents; blocks themselves do not accept a `layout` property. Public applyBlueprint blocks do not support generic `form`; use `editForm` or `createForm`. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` blocks may also provide non-empty block-level `defaultFilter`, which backfills the default `filter` action `settings.defaultFilter`; explicit filter-action `settings.defaultFilter` still wins. Inline popup documents may set `popup.tryTemplate=true` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine `popup.tryTemplate` with `popup.saveAsTemplate={ name, description, local? }`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through `popup.template={ local, mode }`, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved and reused. Custom `edit` popups that provide `popup.blocks` must include exactly one `editForm` block; that `editForm` may omit `resource` and then inherits the opener\'s current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a `replace` run expands a page to multiple tabs while the current page still has `enableTabs=false`, callers must set `page.enableTabs=true` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.',
+      `Accepts one simplified JSON page blueprint and compiles it to internal flow-surface operations. The public blueprint describes page structure (\`create\` or \`replace\`, page metadata, ordered tabs, blocks, fields, actions, inline popups, optional reusable assets) and optional top-level \`reaction.items[]\` for whole-page interaction authoring. Each reaction item targets an explicit local key / bind key produced by the same blueprint run. Only explicitly listed reaction items are written. \`rules: []\` clears the targeted slot. Repeating the same \`(type, target)\` reaction slot in one blueprint is invalid. In \`replace\`, reaction targets always bind to the newly produced blueprint result, not historical nodes from the previous page version; if a slot must exist in the resulting surface, include it explicitly instead of relying on omission. Localized reaction edits on an existing surface should use \`getReactionMeta\` + \`set*Rules\` instead of applying a whole page blueprint again. The request body is that page-document JSON object itself and must not be JSON-stringified. Wrong: \`{ "requestBody": "{\\"version\\":\\"1\\"}" }\`. Internal planning details stay hidden. In \`create\`, \`navigation.group.routeId\` has the highest priority when targeting an existing menu group. If \`routeId\` is present, applyBlueprint ignores \`title\`, \`icon\`, \`tooltip\`, and \`hideInMenu\` on \`navigation.group\`; applyBlueprint create mode does not mutate existing group metadata, so callers should use \`updateMenu\` separately when that is required. When \`routeId\` is omitted and \`navigation.group.title\` is provided, applyBlueprint reuses one existing same-title group when it is unique, creates a new group when none exists, and rejects ambiguous multi-match cases. Metadata such as \`icon\`, \`tooltip\`, and \`hideInMenu\` is used only when a new group is created and is ignored when an existing group is reused. \`replace\` uses \`target.pageSchemaUid\`, updates only the explicit page-level fields provided in \`page\`, maps blueprint tabs to existing route-backed tab slots by index, rewrites each slot in order, removes trailing old tabs, and appends extra new tabs when needed. Tab and block keys are optional in the public blueprint; omit them unless custom layout or cross-block targeting needs a stable in-document identifier. \`layout\` is only allowed on tabs and inline popup documents; blocks themselves do not accept a \`layout\` property. Public applyBlueprint blocks do not support generic \`form\`; use \`editForm\` or \`createForm\`. AI employee actions use \`type: "aiEmployee"\` plus public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`; work context may target \`self\` or a same-blueprint block key and is persisted as real Flow Model \`uid\` values. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`; put inline JS in \`settings.code\` and \`settings.version\`. Direct \`table\` / \`list\` / \`gridCard\` / \`calendar\` / \`kanban\` blocks may omit \`defaultFilter\`; the backend generates one from live metadata with up to 4 scalar/filterable fields. Explicit values must contain at least the smaller of 3 and the collection eligible-field count, and values with more than 4 fields are truncated before persistence. A valid explicit or generated block-level value backfills the default \`filter\` action \`settings.defaultFilter\`; explicit filter-action \`settings.defaultFilter\` still wins. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} Inline popup documents may set \`popup.tryTemplate=true\` to ask the backend for the best compatible popup template before falling back to local popup content. Inline popup documents may also combine \`popup.tryTemplate\` with \`popup.saveAsTemplate={ name, description, local? }\`: a hit binds the matched template immediately and lets later inline popups in the same blueprint reuse that final bound template through \`popup.template={ local, mode }\`, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved and reused. Custom \`edit\` popups that provide \`popup.blocks\` must include exactly one \`editForm\` block; that \`editForm\` may omit \`resource\` and then inherits the opener's current-record context. When layout is omitted, applyBlueprint auto-generates a simple top-to-bottom layout. When a \`replace\` run expands a page to multiple tabs while the current page still has \`enableTabs=false\`, callers must set \`page.enableTabs=true\` explicitly. The response hides execution internals and returns only the resolved page target and final surface readback.`,
     ),
     requestBody: {
       required: true,
@@ -535,7 +547,7 @@ const actionDocs: Record<string, any> = {
               value: examples.applyBlueprintReplace,
             },
             calendarPage: {
-              summary: 'Create a direct calendar block with block-level defaultFilter',
+              summary: 'Create a direct calendar block with generated/default filter support',
               value: examples.applyBlueprintCalendar,
             },
           },
@@ -579,7 +591,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` blocks may provide block-level `defaultFilter`; backend runtime compatibility remains compatibility-tolerant for omitted or empty values, and any provided value backfills the default `filter` action `settings.defaultFilter`. Explicit filter-action `settings.defaultFilter` still wins. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`, set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior, or combine `popup.tryTemplate` with `popup.saveAsTemplate={ name, description, local? }`: a hit binds the matched template immediately and lets later popup-capable fields/actions in the same compose call reuse that final bound template through `popup.template={ local, mode }`, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved and reused. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. For approval surfaces, use `applyApprovalBlueprint` first to bootstrap or replace the bound approval root; use `compose` only after that root already exists.',
+      'Organizes content under an existing page/tab/grid/popup using the public block/action/field semantics as a compatibility-tolerant low-level building primitive. The caller does not need to pass raw `use`, `fieldUse`, or `stepParams`. Blocks, fields, and actions can declare stable `key` values, and the compose result returns the same keys so later orchestration can reference nested popup or form nodes deterministically. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` blocks may omit block-level `defaultFilter`; backend authoring auto-generates one from live metadata with up to 4 scalar/filterable fields. Explicit values with fewer fields than the smaller of 3 and the collection eligible-field count, empty values, invalid operators, unknown paths, and relation-field-leaf payloads fail through aggregate `errors[]`; values with more than 4 fields are truncated before persistence. Generated default popups for collections with more than 10 business fields require `defaults.collections.<collection>.fieldGroups` or `defaults.dataSources.<dataSourceKey>.collections.<collection>.fieldGroups`; otherwise authoring returns aggregate `errors[]` with ruleId `missing-default-field-groups`. A valid explicit or generated block-level value backfills the default `filter` action `settings.defaultFilter`. Explicit filter-action `settings.defaultFilter` still wins. Blocks may be created from `template`, and form templates can set `template.usage="fields"` to import only their grid fields. Popup-capable actions and fields may reuse `popup.template`, set `popup.tryTemplate=true` to ask the backend for one compatible popup template before falling back to local/default popup behavior, or combine `popup.tryTemplate` with `popup.saveAsTemplate={ name, description, local? }`: a hit binds the matched template immediately and lets later popup-capable fields/actions in the same compose call reuse that final bound template through `popup.template={ local, mode }`, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved and reused. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. For approval surfaces, use `applyApprovalBlueprint` first to bootstrap or replace the bound approval root; use `compose` only after that root already exists.',
     ),
     requestBody: {
       required: true,
@@ -625,7 +637,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action. On approval action nodes, this route also accepts approval-specific keys such as `confirm`, `assignValues`, `commentFormUid`, `approvalReturn`, and `assigneesScope`, and flowSurfaces persists the matching approval runtime config. It does not replace `applyApprovalBlueprint` for whole-surface approval bootstrap.',
+      'Uses simple `changes` to update high-frequency settings such as page/tab titles, table pageSize, field clickToOpen, and action openView/confirm without requiring the caller to know internal paths. Submit and update-record actions may bind workflows with `triggerWorkflows: [{ workflowKey, context? }]`; use `[]` to clear bindings. Generated default popups for collections with more than 10 business fields require `defaults.collections.<collection>.fieldGroups` or `defaults.dataSources.<dataSourceKey>.collections.<collection>.fieldGroups`; otherwise authoring returns aggregate `errors[]` with ruleId `missing-default-field-groups`. For advanced reaction authoring, prefer `getReactionMeta` + `set*Rules`; the raw `assignRules` / `linkageRules` examples here are compatibility-only. Check `catalog.node.configureOptions` together with the relevant catalog item `configureOptions` before calling this action. On approval action nodes, this route also accepts approval-specific keys such as `confirm`, `assignValues`, `commentFormUid`, `approvalReturn`, and `assigneesScope`, and flowSurfaces persists the matching approval runtime config. It does not replace `applyApprovalBlueprint` for whole-surface approval bootstrap.',
     ),
     requestBody: {
       required: true,
@@ -646,7 +658,8 @@ const actionDocs: Record<string, any> = {
               value: examples.configureBlock,
             },
             actionSettings: {
-              summary: 'Configure an action with button appearance, confirm dialog and assign values',
+              summary:
+                'Configure an action with button appearance, confirm dialog, assign values and workflow bindings',
               value: examples.configureAction,
             },
             jsBlockSettings: {
@@ -820,7 +833,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` creation may also provide block-level `defaultFilter`; backend runtime compatibility remains tolerant of omitted or empty values, and any provided value backfills the auto-created default filter action. Legacy `defaultActionSettings.filter.defaultFilter` is still supported for compatibility and wins when both are provided. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Approval block keys are only exposed under approval grids and do not auto-create an approval root; bootstrap approval surfaces with `applyApprovalBlueprint` first.',
+      'Creates a block by catalog key or an explicitly supported block use. It can also create from `template`, using `mode="reference"` or `mode="copy"`. Form templates may set `template.usage="fields"` to create a fresh host block and import only its grid fields. Popup-capable host nodes automatically receive the popup shell. For collection blocks under a popup, check `catalog.blocks[].resourceBindings` first, then pass the semantic `resource.binding`. The lower-level `resourceInit` is still accepted for compatibility, but the server validates it against popup semantics. `resource` and `resourceInit` are mutually exclusive. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` creation may omit `defaultFilter`; backend authoring auto-generates one from live metadata with up to 4 scalar/filterable fields. Explicit values with fewer fields than the smaller of 3 and the collection eligible-field count, empty values, invalid operators, unknown paths, and relation-field-leaf payloads fail through aggregate `errors[]`; values with more than 4 fields are truncated before persistence. Generated default popups for collections with more than 10 business fields require `defaults.collections.<collection>.fieldGroups` or `defaults.dataSources.<dataSourceKey>.collections.<collection>.fieldGroups`; otherwise authoring returns aggregate `errors[]` with ruleId `missing-default-field-groups`. A valid explicit or generated block-level value backfills the auto-created default filter action. `defaultActionSettings.filter.defaultFilter` remains supported for compatibility and wins over block-level `defaultFilter`. Default action groups merge with explicit actions. Ordinary table `recordActions` still complete partial or omitted lists to `view` / `edit` / `delete`; tree collection tables with `treeTable` enabled do not complete `view` / `edit` / `delete` and only receive one default `addChild` when supported. The `select / subForm / bulkEditForm` scene is currently recognized only, and popup collection block creation is not supported in that scene. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse the public configuration semantics from `configure.changes` plus the catalog item/node `configureOptions`. Approval block keys are only exposed under approval grids and do not auto-create an approval root; bootstrap approval surfaces with `applyApprovalBlueprint` first.',
     ),
     requestBody: {
       required: true,
@@ -909,7 +922,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, and action-panel actions. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Approval action keys are singleton within one approval form or process form, and flowSurfaces reconciles the related workflow/node runtime config after successful writes.',
+      'Only non-record actions that are public in the catalog and visible in the current container may be created. Typical cases include table block actions, form submit, filter-form reset, action-panel actions, and AI employee shortcuts. Use `addRecordAction` for record actions. Direct add does not accept raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`. Use `settings` and reuse `configure.changes` plus the catalog item/node `configureOptions`; AI employee actions use public `settings.username`, `workContext`, `tasks`, `auto`, and `style`. Popup-capable actions may also include `popup` directly to append a popup subtree or `popup.template` to reuse a saved popup template in `reference` / `copy` mode. `popup.tryTemplate=true` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with `popup.saveAsTemplate={ name, description }`: a hit reuses the matched template directly, while a miss requires explicit local `popup.blocks` so the fallback popup can be saved as a template reference. When `popup.template` is present, `popup.title` still applies, while local `popup.mode` / `popup.blocks` / `popup.layout` are accepted but ignored. Approval action keys are singleton within one approval form or process form, and flowSurfaces reconciles the related workflow/node runtime config after successful writes.',
     ),
     requestBody: {
       required: true,
@@ -918,7 +931,7 @@ const actionDocs: Record<string, any> = {
           schema: ref('FlowSurfaceAddActionRequest'),
           examples: {
             submit: {
-              summary: 'Create a submit action under a filter-form action container',
+              summary: 'Create a submit action under a form action container',
               value: examples.addAction,
             },
             link: {
@@ -932,6 +945,10 @@ const actionDocs: Record<string, any> = {
             jsItem: {
               summary: 'Create a form JS item action under a create/edit/form action container',
               value: examples.addJsItemAction,
+            },
+            aiEmployee: {
+              summary: 'Create an AI employee shortcut action with public task settings',
+              value: examples.addAIEmployeeAction,
             },
             autoPopupTemplate: {
               summary: 'Create a popup-capable action and let the backend auto-select a compatible popup template',
@@ -952,7 +969,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with \`popup.saveAsTemplate={ name, description }\`: a hit reuses the matched template directly, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved as a template reference. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored.`,
+      `Only record actions that are public in the catalog and visible in the current container may be created. The public target must be a record-capable owner target such as table/details/list/gridCard. Do not pass internal container uids such as a table actions column or a list/gridCard item. ${ADD_CHILD_TREE_TABLE_NOTE} Direct add does not accept raw \`props\` / \`decoratorProps\` / \`stepParams\` / \`flowRegistry\`. Use \`settings\` and reuse \`configure.changes\` plus the catalog item/node \`configureOptions\`; AI employee record actions use public \`settings.username\`, \`workContext\`, \`tasks\`, \`auto\`, and \`style\`. Popup-capable actions may also include \`popup\` directly to append a popup subtree or \`popup.template\` to reuse a saved popup template in \`reference\` / \`copy\` mode. \`popup.tryTemplate=true\` asks the backend to auto-select a compatible popup template first, preferring the same relation when one exists and otherwise falling back to a compatible non-relation template. It may be combined with \`popup.saveAsTemplate={ name, description }\`: a hit reuses the matched template directly, while a miss requires explicit local \`popup.blocks\` so the fallback popup can be saved as a template reference. When \`popup.template\` is present, \`popup.title\` still applies, while local \`popup.mode\` / \`popup.blocks\` / \`popup.layout\` are accepted but ignored.`,
     ),
     requestBody: {
       required: true,
@@ -968,9 +985,17 @@ const actionDocs: Record<string, any> = {
               summary: 'Create an addChild record action on a tree table target',
               value: examples.addRecordAddChildAction,
             },
+            updateRecord: {
+              summary: 'Create an update-record action with assigned values and workflow bindings',
+              value: examples.addRecordUpdateAction,
+            },
             js: {
               summary: 'Create a JS record action under a details block owner target',
               value: examples.addRecordJsAction,
+            },
+            aiEmployee: {
+              summary: 'Create an AI employee record shortcut with public task settings',
+              value: examples.addRecordAIEmployeeAction,
             },
             autoPopupTemplate: {
               summary:
@@ -992,7 +1017,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, `defaultFilter`, `defaultActionSettings`, `template`, or inline `fields` / `fieldsLayout`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Inline fields use the same public field semantics as compose/addField, including relation `fieldType`. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` items may use block-level `defaultFilter` to backfill the auto-created default filter action; backend runtime compatibility remains tolerant of omitted or empty values. Legacy `defaultActionSettings.filter.defaultFilter` is still supported for compatibility and wins when both are provided. Partial-success semantics apply: a failure in one item does not roll back the others. Results are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
+      'Creates multiple blocks sequentially under the same target. Each item may include `settings`, `defaultFilter`, `defaultActionSettings`, `template`, or inline `fields` / `fieldsLayout`, but raw `props` / `decoratorProps` / `stepParams` / `flowRegistry` are not accepted. Inline fields use the same public field semantics as compose/addField, including relation `fieldType`. Direct `table` / `list` / `gridCard` / `calendar` / `kanban` items may omit `defaultFilter`; backend authoring auto-generates one from live metadata with up to 4 scalar/filterable fields. Explicit values with fewer fields than the smaller of 3 and the collection eligible-field count, empty values, invalid operators, unknown paths, and relation-field-leaf payloads fail through aggregate `errors[]`; values with more than 4 fields are truncated before persistence. Generated default popups for collections with more than 10 business fields require top-level `defaults.collections.<collection>.fieldGroups` or `defaults.dataSources.<dataSourceKey>.collections.<collection>.fieldGroups`; otherwise authoring returns aggregate `errors[]` with ruleId `missing-default-field-groups`. A valid explicit or generated block-level value backfills the auto-created default filter action. `defaultActionSettings.filter.defaultFilter` remains supported for compatibility and wins over block-level `defaultFilter`. Default action groups merge with explicit actions. Ordinary table `recordActions` still complete partial or omitted lists to `view` / `edit` / `delete`; tree collection tables with `treeTable` enabled do not complete `view` / `edit` / `delete` and only receive one default `addChild` when supported. Authoring validation is all-or-none before the batch starts: any aggregate `errors[]` response rejects the whole request before item creation begins. Once validation passes, runtime item failures are returned in input order as `index/key/ok/result/error`, and each `error` always includes `message/type/code/status`.',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -1043,18 +1068,71 @@ const actionDocs: Record<string, any> = {
   },
   updateSettings: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Update controlled props, decoratorProps, stepParams or flowRegistry',
+    summary: 'Update controlled settings or AI employee public task fields',
     description: valuesCompatibilityNote(
-      'Updates the specified domain according to the path-level contract exposed by the catalog. Arbitrary raw tree-field patches are not accepted.',
+      'Updates the specified domain according to the path-level contract exposed by the catalog. For an existing `AIEmployeeButtonModel`, use top-level `username`, `auto`, `workContext`, `tasks`, or `style`; raw `props.aiEmployee`, `props.context`, `props.auto`, `props.tasks`, and `props.style` are internal and are not the public contract. Arbitrary raw tree-field patches are not accepted.',
     ),
-    requestBody: requestBody('FlowSurfaceUpdateSettingsRequest', examples.updateSettings),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceUpdateSettingsRequest'),
+          examples: {
+            settings: {
+              summary: 'Update controlled table settings by contract path',
+              value: examples.updateSettings,
+            },
+            aiEmployee: {
+              summary: 'Update an AI employee shortcut through public task/style fields',
+              value: examples.updateAIEmployeeSettings,
+            },
+          },
+        },
+      },
+    },
     responses: responses('FlowSurfaceUpdateSettingsResult'),
+  },
+  getEventFlowMeta: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read event-flow capabilities, registry, variables, step actions and fingerprint',
+    description: valuesCompatibilityNote(
+      'Returns Event Flow discovery metadata for the target, including the current `flowRegistry`, supported direct/object events, supported phases, step-action schemas, raw context variables, and an optimistic `fingerprint`. New RunJS event steps should use `use: "runjs"` and `defaultParams.code`; legacy `params.code` is not the new write path. For localized edits, prefer `getEventFlowMeta` + `addEventFlow` / `setEventFlow` / `removeEventFlow` over full `setEventFlows` replacement.',
+    ),
+    requestBody: requestBody('FlowSurfaceEventFlowMetaRequest', examples.getEventFlowMeta),
+    responses: responses('FlowSurfaceEventFlowMetaResult'),
+  },
+  addEventFlow: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add one Event Flow without replacing neighboring flows',
+    description: valuesCompatibilityNote(
+      'Adds one Event Flow key and preserves the rest of the current `flowRegistry`. MVP creation supports only the `beforeAllFlows` phase, defaulting to it when omitted. Use `condition` for `on.defaultParams.condition`, and write RunJS steps with `use: "runjs"` plus `defaultParams.code`. `expectedFingerprint` should usually come from `getEventFlowMeta.fingerprint`.',
+    ),
+    requestBody: requestBody('FlowSurfaceAddEventFlowRequest', examples.addEventFlow),
+    responses: responses('FlowSurfaceEventFlowWriteResult'),
+  },
+  setEventFlow: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Replace one Event Flow without replacing neighboring flows',
+    description: valuesCompatibilityNote(
+      'Replaces one Event Flow key and preserves the rest of the current `flowRegistry`. This is the precise single-flow escape hatch when a caller needs to write a full flow object. RunJS steps should use `use: "runjs"` and `defaultParams.code`. `expectedFingerprint` should usually come from `getEventFlowMeta.fingerprint`.',
+    ),
+    requestBody: requestBody('FlowSurfaceSetEventFlowRequest', examples.setEventFlow),
+    responses: responses('FlowSurfaceEventFlowWriteResult'),
+  },
+  removeEventFlow: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Remove one Event Flow without replacing neighboring flows',
+    description: valuesCompatibilityNote(
+      'Removes one Event Flow key and preserves the rest of the current `flowRegistry`. `expectedFingerprint` should usually come from `getEventFlowMeta.fingerprint`.',
+    ),
+    requestBody: requestBody('FlowSurfaceRemoveEventFlowRequest', examples.removeEventFlow),
+    responses: responses('FlowSurfaceEventFlowWriteResult'),
   },
   setEventFlows: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Replace instance-level event flow definitions on a node',
     description: valuesCompatibilityNote(
-      'Fully replaces the instance-level event flows on the current node. The server validates whether eventName, flowKey, stepKey, and the node context are all valid.',
+      'Fully replaces the instance-level event flows on the current node. This compatibility/high-control endpoint remains available, but localized authoring should prefer `getEventFlowMeta` + `addEventFlow` / `setEventFlow` / `removeEventFlow`. New RunJS steps should use `use: "runjs"` and `defaultParams.code`. The server validates whether eventName, flowKey, stepKey, and the node context are all valid.',
     ),
     requestBody: requestBody('FlowSurfaceSetEventFlowsRequest', examples.setEventFlows),
     responses: responses('FlowSurfaceSetEventFlowsResult'),
@@ -2009,8 +2087,7 @@ const schemas = {
       },
       recordActions: {
         type: 'array',
-        description:
-          'Public record/item-level actions exposed for record-capable targets such as table/details/list/gridCard.',
+        description: `Public record/item-level actions exposed for record-capable targets such as table/details/list/gridCard. ${ADD_CHILD_TREE_TABLE_NOTE}`,
         items: ref('FlowSurfaceCatalogItem'),
       },
       node: ref('FlowSurfaceCatalogNodeInfo'),
@@ -2042,6 +2119,7 @@ const schemas = {
         type: 'object',
         additionalProperties: ref('FlowSurfaceContextVarInfo'),
       },
+      dynamicProperties: ref('FlowSurfaceContextVarInfo'),
     },
     additionalProperties: false,
   },
@@ -2513,8 +2591,7 @@ const schemas = {
       },
       recordActions: {
         type: 'array',
-        description:
-          'Public semantic group for record/item-level actions on record-capable blocks such as table/details/list/gridCard.',
+        description: `Public semantic group for record/item-level actions on record-capable blocks such as table/details/list/gridCard. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE}`,
         items: ref('FlowSurfaceComposeRecordActionSpec'),
       },
     },
@@ -2561,6 +2638,7 @@ const schemas = {
         items: ref('FlowSurfaceComposeBlockSpec'),
       },
       layout: ref('FlowSurfaceComposeLayout'),
+      defaults: ref('FlowSurfaceApplyBlueprintDefaults'),
     },
     additionalProperties: false,
   },
@@ -3238,6 +3316,215 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceEventFlowStepAction: {
+    type: 'object',
+    required: ['use', 'defaultParamsSchema'],
+    properties: {
+      use: {
+        type: 'string',
+        enum: ['runjs'],
+      },
+      defaultParamsSchema: {
+        type: 'object',
+        required: ['properties'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['object'],
+          },
+          properties: {
+            type: 'object',
+            properties: {
+              code: {
+                type: 'object',
+                properties: {
+                  type: {
+                    type: 'string',
+                    enum: ['string'],
+                  },
+                },
+                additionalProperties: true,
+              },
+            },
+            additionalProperties: true,
+          },
+          required: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          additionalProperties: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceEventFlowMetaRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceEventFlowMetaResult: {
+    type: 'object',
+    required: ['target', 'flowRegistry', 'events', 'phases', 'stepActions', 'vars', 'fingerprint', 'writeCapabilities'],
+    properties: {
+      target: ref('FlowSurfaceResolvedTarget'),
+      flowRegistry: ANY_OBJECT_SCHEMA,
+      events: {
+        type: 'object',
+        required: ['direct', 'object'],
+        properties: {
+          direct: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          object: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+      phases: {
+        type: 'object',
+        required: ['supported', 'defaultAdd'],
+        properties: {
+          supported: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['beforeAllFlows', 'afterAllFlows', 'beforeFlow', 'afterFlow', 'beforeStep', 'afterStep'],
+            },
+          },
+          defaultAdd: {
+            type: 'string',
+            enum: ['beforeAllFlows'],
+          },
+        },
+        additionalProperties: false,
+      },
+      eventBindings: ANY_OBJECT_SCHEMA,
+      stepActions: {
+        type: 'array',
+        items: ref('FlowSurfaceEventFlowStepAction'),
+      },
+      vars: ANY_OBJECT_SCHEMA,
+      fingerprint: {
+        type: 'string',
+      },
+      writeCapabilities: {
+        type: 'object',
+        required: ['defaultAddPhase', 'fineGrainedActions', 'fullReplaceAction'],
+        properties: {
+          defaultAddPhase: {
+            type: 'string',
+            enum: ['beforeAllFlows'],
+          },
+          fineGrainedActions: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['addEventFlow', 'setEventFlow', 'removeEventFlow'],
+            },
+          },
+          fullReplaceAction: {
+            type: 'string',
+            enum: ['setEventFlows'],
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddEventFlowRequest: {
+    type: 'object',
+    required: ['target', 'key', 'eventName'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      key: {
+        type: 'string',
+      },
+      eventName: {
+        type: 'string',
+      },
+      phase: {
+        type: 'string',
+        enum: ['beforeAllFlows'],
+        default: 'beforeAllFlows',
+      },
+      steps: ANY_OBJECT_SCHEMA,
+      condition: {
+        allOf: [ANY_OBJECT_SCHEMA],
+        description: 'Optional condition persisted to `on.defaultParams.condition`.',
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description: 'Optional optimistic concurrency token from `getEventFlowMeta.fingerprint`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceSetEventFlowRequest: {
+    type: 'object',
+    required: ['target', 'key', 'flow'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      key: {
+        type: 'string',
+      },
+      flow: ANY_OBJECT_SCHEMA,
+      expectedFingerprint: {
+        type: 'string',
+        description: 'Optional optimistic concurrency token from `getEventFlowMeta.fingerprint`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRemoveEventFlowRequest: {
+    type: 'object',
+    required: ['target', 'key'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      key: {
+        type: 'string',
+      },
+      expectedFingerprint: {
+        type: 'string',
+        description: 'Optional optimistic concurrency token from `getEventFlowMeta.fingerprint`.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceEventFlowWriteResult: {
+    type: 'object',
+    required: ['uid', 'key', 'flowRegistry', 'fingerprint'],
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      key: {
+        type: 'string',
+      },
+      flow: ANY_OBJECT_SCHEMA,
+      flowRegistry: ANY_OBJECT_SCHEMA,
+      fingerprint: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceSetFieldValueRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceFieldValueRule'),
   FlowSurfaceSetFieldValueRulesResult: buildReactionWriteResultSchema('FlowSurfaceFieldValueRule'),
   FlowSurfaceSetBlockLinkageRulesRequest: buildReactionWriteRequestSchema('FlowSurfaceBlockLinkageRule'),
@@ -3372,6 +3659,8 @@ const schemas = {
     properties: {
       scripts: {
         type: 'object',
+        description:
+          'Reusable JS settings keyed by asset name. Referenced script assets must provide non-empty `code`. Reference with block/field/action `script: "<key>"`; use `settings.code` and `settings.version` for inline JS code.',
         additionalProperties: ANY_OBJECT_SCHEMA,
       },
       charts: {
@@ -3487,7 +3776,10 @@ const schemas = {
           },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
-          script: { type: 'string' },
+          script: {
+            type: 'string',
+            description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+          },
           chart: { type: 'string' },
         },
         additionalProperties: false,
@@ -3513,7 +3805,10 @@ const schemas = {
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
-          script: { type: 'string' },
+          script: {
+            type: 'string',
+            description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+          },
           chart: { type: 'string' },
         },
         additionalProperties: false,
@@ -3539,7 +3834,10 @@ const schemas = {
           title: { type: 'string' },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceApplyBlueprintPopup'),
-          script: { type: 'string' },
+          script: {
+            type: 'string',
+            description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+          },
           chart: { type: 'string' },
         },
         additionalProperties: false,
@@ -3589,6 +3887,7 @@ const schemas = {
       },
       fields: {
         type: 'array',
+        description: APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE,
         items: ref('FlowSurfaceApplyBlueprintFieldSpec'),
       },
       fieldsLayout: {
@@ -3603,10 +3902,43 @@ const schemas = {
       },
       recordActions: {
         type: 'array',
+        description: TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE,
         items: ref('FlowSurfaceApplyBlueprintRecordActionSpec'),
       },
-      script: { type: 'string' },
+      script: {
+        type: 'string',
+        description: 'Non-empty string asset key in `assets.scripts`; use `settings.code` for inline JS code.',
+      },
       chart: { type: 'string' },
+      pageSize: {
+        type: 'number',
+        description:
+          'Legacy top-level compatibility key accepted by applyBlueprint and stripped during compile; use settings.pageSize for new payloads.',
+      },
+      sort: {
+        description:
+          'Legacy top-level sorting compatibility key accepted by applyBlueprint and stripped during compile; use settings.sorting for new payloads.',
+      },
+      sorting: {
+        description:
+          'Legacy top-level sorting compatibility key accepted by applyBlueprint and stripped during compile; use settings.sorting for new payloads.',
+      },
+      titleField: {
+        type: 'string',
+        description: 'Legacy calendar top-level event title field alias; normalized into calendar settings.',
+      },
+      colorField: {
+        type: 'string',
+        description: 'Legacy calendar top-level color field alias; normalized into calendar settings.',
+      },
+      startField: {
+        type: 'string',
+        description: 'Legacy calendar top-level start field alias; normalized into calendar settings.',
+      },
+      endField: {
+        type: 'string',
+        description: 'Legacy calendar top-level end field alias; normalized into calendar settings.',
+      },
     },
     additionalProperties: false,
   },
@@ -3702,6 +4034,25 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceApplyBlueprintDefaultFieldSpec: {
+    oneOf: [
+      { type: 'string' },
+      {
+        type: 'object',
+        required: ['field'],
+        properties: {
+          field: { type: 'string' },
+          titleField: {
+            type: 'string',
+            description: 'Explicit display field for relation fields when the generated default popup adds this field.',
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    description:
+      'Collection-level default popup field candidate. Use string shorthand for ordinary fields or `{ field, titleField }` for relation fields that need an explicit display field.',
+  },
   FlowSurfaceApplyBlueprintDefaultFieldGroup: {
     type: 'object',
     required: ['title', 'fields'],
@@ -3713,7 +4064,7 @@ const schemas = {
       fields: {
         type: 'array',
         minItems: 1,
-        items: { type: 'string' },
+        items: ref('FlowSurfaceApplyBlueprintDefaultFieldSpec'),
       },
     },
     additionalProperties: false,
@@ -3753,10 +4104,83 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorField: {
+    type: 'object',
+    description: 'Generated default form field behavior for one field path.',
+    properties: {
+      settings: {
+        type: 'object',
+        description: 'Public form field settings merged into backend-generated add/edit popup fields.',
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorScene: {
+    type: 'object',
+    description:
+      'Generated default add/edit form behavior. `fields` applies field settings and `fieldLinkageRules` applies form linkage rules after backend filters them to fields present in the generated form.',
+    properties: {
+      fields: {
+        type: 'object',
+        additionalProperties: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorField'),
+      },
+      fieldLinkageRules: {
+        type: 'array',
+        items: ref('FlowSurfaceFieldLinkageRule'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultFormBehavior: {
+    type: 'object',
+    description: 'Collection-level default behavior for backend-generated add/edit popup forms.',
+    properties: {
+      addNew: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorScene'),
+      edit: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorScene'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview: {
+    type: 'object',
+    description:
+      'Per-field review decisions for described generated add/edit candidate fields. Non-empty descriptions require a non-null review object; empty descriptions may be omitted or set to null.',
+    required: ['fields'],
+    properties: {
+      fields: {
+        type: 'object',
+        minProperties: 1,
+        additionalProperties: {
+          type: 'object',
+          nullable: true,
+          required: ['decision'],
+          properties: {
+            decision: {
+              type: 'string',
+              enum: ['implemented', 'noUiBehavior', 'unsupported'],
+            },
+            reasonCode: {
+              type: 'string',
+              enum: [
+                'no-ui-behavior',
+                'ambiguous-description',
+                'unsupported-cross-field-validation',
+                'unsupported-association-filter',
+                'workflow-or-ai-generation-out-of-scope',
+                'ai-generated-content-out-of-scope',
+              ],
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceApplyBlueprintDefaultCollection: {
     type: 'object',
     description:
-      'v1 collection-level defaults. Only `fieldGroups` and `popups` with required `name` and `description` metadata are supported; block-specific defaults are not supported.',
+      'v1 collection-level defaults. Supports `fieldGroups`, `popups` with required `name` and `description` metadata, `formBehavior` for backend-generated add/edit popup forms, and `formBehaviorDescriptionReview` for per-field review decisions. When generated add/edit form candidate fields have non-empty description metadata, each described field must have a review entry: `implemented` must match structured `formBehavior` or linkage coverage, while `noUiBehavior` / `unsupported` require a valid `reasonCode` and no conflicting coverage. Block-specific defaults are not supported.',
     properties: {
       fieldGroups: {
         type: 'array',
@@ -3764,16 +4188,34 @@ const schemas = {
         items: ref('FlowSurfaceApplyBlueprintDefaultFieldGroup'),
       },
       popups: ref('FlowSurfaceApplyBlueprintDefaultPopups'),
+      formBehavior: {
+        allOf: [ref('FlowSurfaceApplyBlueprintDefaultFormBehavior')],
+      },
+      formBehaviorDescriptionReview: ref('FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview'),
     },
     additionalProperties: false,
   },
   FlowSurfaceApplyBlueprintDefaults: {
     type: 'object',
-    description: 'Optional v1 applyBlueprint defaults. Supports only `collections`; do not send `defaults.blocks`.',
+    description:
+      'Optional v1 applyBlueprint defaults. `collections` is the legacy alias for the main data source. `dataSources.<dataSourceKey>.collections` provides datasource-aware collection defaults; do not send `defaults.blocks`.',
     properties: {
       collections: {
         type: 'object',
         additionalProperties: ref('FlowSurfaceApplyBlueprintDefaultCollection'),
+      },
+      dataSources: {
+        type: 'object',
+        additionalProperties: {
+          type: 'object',
+          properties: {
+            collections: {
+              type: 'object',
+              additionalProperties: ref('FlowSurfaceApplyBlueprintDefaultCollection'),
+            },
+          },
+          additionalProperties: false,
+        },
       },
     },
     additionalProperties: false,
@@ -3781,8 +4223,7 @@ const schemas = {
   FlowSurfaceApplyBlueprintRequest: {
     type: 'object',
     required: ['mode', 'tabs'],
-    description:
-      "Simplified page-structure request object for applyBlueprint. `version` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. `defaults.collections` may provide collection-level fieldGroups and popup metadata with required `name` and `description` for generated default popups; v1 does not support `defaults.blocks`.",
+    description: `Simplified page-structure request object for applyBlueprint. \`version\` may be omitted and defaults to '1'. Runtime validation enforces mode-specific rules: create does not accept target, while replace requires target.pageSchemaUid and does not use navigation. For JS blocks/fields/actions, \`script\` is a non-empty string asset key into \`assets.scripts\`, and referenced script assets must provide non-empty \`code\`; put inline JS in \`settings.code\` and \`settings.version\`. ${TREE_TABLE_RECORD_ACTION_DEFAULTS_NOTE} ${APPLY_BLUEPRINT_TREE_TABLE_TITLE_FIELD_NOTE} \`defaults.collections\` may provide main data-source collection-level fieldGroups, popup metadata with required \`name\` and \`description\`, and formBehavior for generated default add/edit popup forms; use \`defaults.dataSources.<dataSourceKey>.collections\` for external data sources. v1 does not support \`defaults.blocks\`.`,
     properties: {
       version: {
         type: 'string',
@@ -3923,6 +4364,7 @@ const schemas = {
     properties: {
       target: ref('FlowSurfaceWriteTarget'),
       changes: ANY_OBJECT_SCHEMA,
+      defaults: ref('FlowSurfaceApplyBlueprintDefaults'),
     },
     additionalProperties: false,
   },
@@ -4409,6 +4851,7 @@ const schemas = {
         description: PUBLIC_DATA_SURFACE_BLOCK_DEFAULT_FILTER_DESCRIPTION,
       },
       defaultActionSettings: ref('FlowSurfaceDefaultActionSettings'),
+      defaults: ref('FlowSurfaceApplyBlueprintDefaults'),
     },
     additionalProperties: false,
   },
@@ -4792,6 +5235,7 @@ const schemas = {
         type: 'array',
         items: ref('FlowSurfaceAddBlockItem'),
       },
+      defaults: ref('FlowSurfaceApplyBlueprintDefaults'),
     },
     additionalProperties: false,
   },
@@ -4985,6 +5429,154 @@ const schemas = {
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
       flowRegistry: ANY_OBJECT_SCHEMA,
+      username: {
+        type: 'string',
+        description:
+          'AIEmployeeButtonModel only. Public AI employee username update; validated against visible, enabled AI employees.',
+      },
+      auto: {
+        type: 'boolean',
+        description: 'AIEmployeeButtonModel only. Whether the AI employee task picker/chat should run automatically.',
+      },
+      workContext: {
+        type: 'array',
+        description:
+          'AIEmployeeButtonModel only. Public work context entries. Use `target: "self"` for the owning block/action context, or pass existing resolved Flow Model `uid` values in localized writes.',
+        items: {
+          type: 'object',
+          required: ['type'],
+          anyOf: [{ required: ['uid'] }, { required: ['target'] }],
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['flow-model'],
+              example: 'flow-model',
+            },
+            uid: {
+              type: 'string',
+              minLength: 1,
+              description: 'Existing Flow Model uid for localized writes.',
+            },
+            target: {
+              type: 'string',
+              minLength: 1,
+              description:
+                '`self` in localized updateSettings writes. Use `uid` for other existing Flow Model context targets.',
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+      tasks: {
+        type: 'array',
+        description:
+          'AIEmployeeButtonModel only. Public task patches by index. Partial task patches preserve existing task fields unless explicitly cleared.',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+            },
+            message: {
+              type: 'object',
+              properties: {
+                system: {
+                  type: 'string',
+                },
+                user: {
+                  type: 'string',
+                },
+                workContext: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['type'],
+                    anyOf: [{ required: ['uid'] }, { required: ['target'] }],
+                    properties: {
+                      type: {
+                        type: 'string',
+                        enum: ['flow-model'],
+                        example: 'flow-model',
+                      },
+                      uid: {
+                        type: 'string',
+                        minLength: 1,
+                      },
+                      target: {
+                        type: 'string',
+                        minLength: 1,
+                      },
+                    },
+                    additionalProperties: false,
+                  },
+                },
+              },
+              additionalProperties: false,
+            },
+            autoSend: {
+              type: 'boolean',
+            },
+            skillSettings: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                skills: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                },
+                tools: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                  },
+                },
+                skillsVersion: {
+                  type: 'number',
+                },
+                toolsVersion: {
+                  type: 'number',
+                },
+              },
+              additionalProperties: false,
+            },
+            model: {
+              type: 'object',
+              nullable: true,
+              required: ['llmService', 'model'],
+              description: 'Explicit model selection or null.',
+              properties: {
+                llmService: {
+                  type: 'string',
+                },
+                model: {
+                  type: 'string',
+                },
+              },
+              additionalProperties: false,
+            },
+            webSearch: {
+              type: 'boolean',
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+      style: {
+        type: 'object',
+        description:
+          'AIEmployeeButtonModel only. Public avatar style patch, for example `{ "size": 40, "mask": true }`.',
+        properties: {
+          size: {
+            type: 'number',
+          },
+          mask: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: false,
+      },
     },
     additionalProperties: false,
   },
@@ -5003,6 +5595,42 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceMutateAddEventFlowValues: {
+    type: 'object',
+    required: ['target', 'key', 'flow'],
+    properties: {
+      target: ref('FlowSurfaceMutateWriteTarget'),
+      key: ref('FlowSurfaceResolvableString'),
+      flow: ANY_OBJECT_SCHEMA,
+      eventName: ref('FlowSurfaceResolvableString'),
+      phase: ref('FlowSurfaceResolvableString'),
+      steps: ANY_OBJECT_SCHEMA,
+      condition: ANY_OBJECT_SCHEMA,
+      expectedFingerprint: ref('FlowSurfaceResolvableString'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceMutateSetEventFlowValues: {
+    type: 'object',
+    required: ['target', 'key', 'flow'],
+    properties: {
+      target: ref('FlowSurfaceMutateWriteTarget'),
+      key: ref('FlowSurfaceResolvableString'),
+      flow: ANY_OBJECT_SCHEMA,
+      expectedFingerprint: ref('FlowSurfaceResolvableString'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceMutateRemoveEventFlowValues: {
+    type: 'object',
+    required: ['target', 'key'],
+    properties: {
+      target: ref('FlowSurfaceMutateWriteTarget'),
+      key: ref('FlowSurfaceResolvableString'),
+      expectedFingerprint: ref('FlowSurfaceResolvableString'),
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceSetEventFlowsRequest: {
     type: 'object',
     required: ['target'],
@@ -5015,11 +5643,15 @@ const schemas = {
   },
   FlowSurfaceSetEventFlowsResult: {
     type: 'object',
+    required: ['uid', 'flowRegistry', 'fingerprint'],
     properties: {
       uid: {
         type: 'string',
       },
       flowRegistry: ANY_OBJECT_SCHEMA,
+      fingerprint: {
+        type: 'string',
+      },
     },
     additionalProperties: false,
   },
@@ -5354,6 +5986,7 @@ const schemas = {
       ref('FlowSurfaceAddActionResult'),
       ref('FlowSurfaceAddRecordActionResult'),
       ref('FlowSurfaceUpdateSettingsResult'),
+      ref('FlowSurfaceEventFlowWriteResult'),
       ref('FlowSurfaceSetEventFlowsResult'),
       ref('FlowSurfaceSetLayoutResult'),
       ref('FlowSurfaceMoveNodeResult'),
@@ -5420,6 +6053,30 @@ const schemas = {
               description: 'Error category such as bad_request, forbidden, conflict or internal_error',
               example: 'bad_request',
               enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
+            },
+            path: {
+              type: 'string',
+              description: 'Optional JSON-path-like request location for validation errors',
+              example: '$.changes.titleField',
+            },
+            ruleId: {
+              type: 'string',
+              description: 'Optional stable machine-readable validation rule id',
+              example: 'relation-titleField-unreadable',
+            },
+            details: {
+              type: 'object',
+              description: 'Optional structured context that helps callers repair the request',
+              additionalProperties: true,
+              example: {
+                action: 'configure',
+                fieldPath: 'manager',
+                titleField: 'id',
+                targetCollection: 'employees',
+                invalidReason: 'id',
+                availableFields: ['nickname', 'title'],
+                suggestion: 'Use one of: nickname, title.',
+              },
             },
           },
           required: ['message', 'type', 'code', 'status'],

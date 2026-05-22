@@ -168,8 +168,13 @@ Buka `System Management -> Localization Management`.
    - `Selected translation`: menerjemahkan entri yang dipilih di tabel.
    - `Full translation`: menerjemahkan semua entri pada bahasa saat ini.
 5. Periksa jumlah entri, provider, dan model di dialog konfirmasi.
-6. Konfirmasi untuk membuat tugas asinkron.
-7. Tunggu selesai, tinjau terjemahan, lalu publikasikan.
+6. Jika memilih terjemahan incremental atau penuh, pilih cakupan terjemahan:
+   - `All`
+   - `Built-in entries`: entri sistem dan plugin.
+   - `Custom entries`: nama route, nama collection dan field, serta konten UI.
+7. Sesuaikan bahasa terjemahan referensi jika diperlukan. Terjemahan incremental dan penuh mengatur bahasa referensi secara terpisah untuk entri bawaan dan entri kustom; terjemahan item terpilih hanya menampilkan satu konfigurasi bahasa referensi umum.
+8. Konfirmasi untuk membuat tugas asinkron.
+9. Tunggu selesai, tinjau terjemahan, lalu publikasikan.
 
 Mulai dari `Selected translation` untuk beberapa entri guna memeriksa gaya keluaran dan kecepatan sebelum menjalankan terjemahan incremental atau penuh.
 
@@ -177,9 +182,10 @@ Mulai dari `Selected translation` untuk beberapa entri guna memeriksa gaya kelua
 
 Lina membangun permintaan dari entri dan terjemahan referensi. Untuk entri pendek, referensi yang ada digunakan untuk meningkatkan konsistensi:
 
-- Entri bawaan lebih mengutamakan terjemahan bahasa Tionghoa sebagai referensi.
-- Entri non-bawaan lebih mengutamakan bahasa default sistem sebagai referensi.
-- Jika ada referensi bahasa Inggris, bahasa Inggris digunakan sebagai teks sumber.
+- Entri bawaan menggunakan terjemahan bahasa Tionghoa sebagai referensi default dan bahasa Jepang sebagai referensi cadangan.
+- Entri kustom menggunakan bahasa default sistem sebagai referensi default dan bahasa Tionghoa sebagai referensi cadangan.
+- Pengguna dapat menyesuaikan bahasa default dan bahasa cadangan di dialog konfirmasi tugas.
+- Sistem terlebih dahulu menggunakan terjemahan referensi dalam bahasa default. Jika tidak tersedia, sistem mencoba bahasa cadangan.
 - Hasil terjemahan ditulis ke bahasa target, tetapi tidak dipublikasikan otomatis.
 
 Semantik prompt kira-kira seperti:

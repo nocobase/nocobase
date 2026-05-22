@@ -37,9 +37,9 @@ RUN set -eux; \
   apt-get install -y --no-install-recommends "nginx=${NGINX_VERSION}" libaio1; \
   nginx -v; \
   apt-get purge -y --auto-remove wget gnupg; \
+  rm -rf /etc/nginx/conf.d/default.conf; \
   rm -rf \
     /etc/apt/sources.list.d/nginx.list \
-    /etc/nginx/sites-enabled/default \
     /tmp/nginx_signing.key \
     /usr/share/keyrings/nginx-archive-keyring.gpg \
     /var/lib/apt/lists/*

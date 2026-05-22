@@ -9,8 +9,12 @@
 
 import { PluginManager } from '@nocobase/server';
 import { mockServer, MockServer, type MockServerOptions } from '@nocobase/test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import mariadb from 'mariadb';
 import mysql from 'mysql2/promise';
+import pg from 'pg';
 import qs from 'qs';
 import { FLOW_SURFACES_TEST_PLUGINS, FLOW_SURFACES_TEST_PLUGIN_INSTALLS } from './flow-surfaces.test-plugins';
 
@@ -23,6 +27,7 @@ type FlowSurfacesDatabaseIsolation = {
   database?: MockServerOptions['database'];
   shouldCleanDbOnDestroy?: boolean;
   cleanup?: () => Promise<void>;
+  selfManagedDatabase?: boolean;
 };
 
 const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
@@ -63,7 +68,8 @@ export async function createFlowSurfacesMockServer(options: FlowSurfacesMockServ
   let lastError: any;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const isolation = await createFlowSurfacesDatabaseIsolation(database, attempt);
-    const app = mockServer({
+    const app = createFlowSurfacesIsolatedMockServer(isolation, {
+      skipSupervisor: true,
       registerActions: true,
       acl: true,
       plugins,
@@ -253,12 +259,29 @@ async function createFlowSurfacesDatabaseIsolation(
 ): Promise<FlowSurfacesDatabaseIsolation> {
   const dialect = getFlowSurfacesDatabaseDialect(database);
   if (shouldUseFlowSurfacesIsolatedSchema(database, dialect)) {
+    const schema = buildFlowSurfacesSchemaName(attempt);
     return {
       database: {
         ...(database || {}),
-        schema: buildFlowSurfacesSchemaName(attempt),
+        schema,
       },
       shouldCleanDbOnDestroy: true,
+      selfManagedDatabase: true,
+      cleanup: () => dropFlowSurfacesPostgresSchema(database, schema),
+    };
+  }
+
+  if (shouldUseFlowSurfacesIsolatedSqliteDatabase(database, dialect)) {
+    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-flow-surfaces-'));
+    return {
+      database: {
+        ...(database || {}),
+        dialect,
+        storage: path.join(root, 'db.sqlite'),
+      },
+      shouldCleanDbOnDestroy: true,
+      selfManagedDatabase: true,
+      cleanup: () => fs.promises.rm(root, { recursive: true, force: true }),
     };
   }
 
@@ -278,6 +301,7 @@ async function createFlowSurfacesDatabaseIsolation(
       password: getFlowSurfacesMySqlAdminPassword(database),
     },
     shouldCleanDbOnDestroy: true,
+    selfManagedDatabase: true,
     cleanup: () => dropFlowSurfacesMySqlDatabase(database, databaseName, dialect),
   };
 }
@@ -290,6 +314,13 @@ function shouldUseFlowSurfacesIsolatedSchema(database: MockServerOptions['databa
   return dialect === 'postgres' && !database?.schema;
 }
 
+function shouldUseFlowSurfacesIsolatedSqliteDatabase(
+  database: MockServerOptions['database'] | undefined,
+  dialect: string,
+) {
+  return dialect === 'sqlite' && !database?.storage;
+}
+
 function shouldUseFlowSurfacesIsolatedMySqlDatabase(dialect: string) {
   return dialect === 'mysql' || dialect === 'mariadb';
 }
@@ -300,8 +331,40 @@ function buildFlowSurfacesSchemaName(attempt: number) {
 }
 
 function buildFlowSurfacesMySqlDatabaseName(attempt: number) {
-  const prefix = process.env.DB_TEST_PREFIX || '';
-  return `${prefix}${buildFlowSurfacesSchemaName(attempt)}`.slice(0, 64);
+  return buildFlowSurfacesSchemaName(attempt).slice(0, 64);
+}
+
+function createFlowSurfacesIsolatedMockServer(isolation: FlowSurfacesDatabaseIsolation, options: MockServerOptions) {
+  if (!isolation.selfManagedDatabase) {
+    return mockServer(options);
+  }
+
+  // Flow-surfaces tests own their isolated schema/database. The shared CI DB
+  // distributor owns DB_TEST_PREFIX databases and removes them after 3 minutes,
+  // so do not let mockDatabase acquire these databases.
+  return withoutFlowSurfacesTestDatabaseDistributor(() => mockServer(options));
+}
+
+function withoutFlowSurfacesTestDatabaseDistributor<T>(fn: () => T): T {
+  const originalPrefix = process.env.DB_TEST_PREFIX;
+  const originalDistributorPort = process.env.DB_TEST_DISTRIBUTOR_PORT;
+  delete process.env.DB_TEST_PREFIX;
+  delete process.env.DB_TEST_DISTRIBUTOR_PORT;
+
+  try {
+    return fn();
+  } finally {
+    restoreFlowSurfacesEnv('DB_TEST_PREFIX', originalPrefix);
+    restoreFlowSurfacesEnv('DB_TEST_DISTRIBUTOR_PORT', originalDistributorPort);
+  }
+}
+
+function restoreFlowSurfacesEnv(key: 'DB_TEST_PREFIX' | 'DB_TEST_DISTRIBUTOR_PORT', value: string | undefined) {
+  if (typeof value === 'undefined') {
+    delete process.env[key];
+    return;
+  }
+  process.env[key] = value;
 }
 
 async function createFlowSurfacesMySqlDatabase(
@@ -329,6 +392,23 @@ async function dropFlowSurfacesMySqlDatabase(
   await withFlowSurfacesMySqlConnection(database, dialect, async (connection) => {
     await connection.query(`DROP DATABASE IF EXISTS \`${assertFlowSurfacesMySqlIdentifier(databaseName)}\``);
   });
+}
+
+async function dropFlowSurfacesPostgresSchema(database: MockServerOptions['database'] | undefined, schema: string) {
+  const client = new pg.Client({
+    host: String(database?.host || process.env.DB_HOST || '127.0.0.1'),
+    port: Number(database?.port || process.env.DB_PORT || 5432),
+    user: String(database?.username || process.env.DB_USER || process.env.DB_USERNAME || 'postgres'),
+    password: String(database?.password || process.env.DB_PASSWORD || ''),
+    database: String(database?.database || process.env.DB_DATABASE || 'postgres'),
+  });
+
+  await client.connect();
+  try {
+    await client.query(`DROP SCHEMA IF EXISTS "${assertFlowSurfacesPostgresIdentifier(schema)}" CASCADE`);
+  } finally {
+    await client.end();
+  }
 }
 
 async function withFlowSurfacesMySqlConnection(
@@ -365,6 +445,13 @@ function getFlowSurfacesMySqlAdminPassword(database: MockServerOptions['database
 function assertFlowSurfacesMySqlIdentifier(identifier: string) {
   if (!/^[a-zA-Z0-9_]+$/.test(identifier)) {
     throw new Error(`Invalid isolated MySQL database identifier: ${identifier}`);
+  }
+  return identifier;
+}
+
+function assertFlowSurfacesPostgresIdentifier(identifier: string) {
+  if (!/^[a-zA-Z0-9_]+$/.test(identifier)) {
+    throw new Error(`Invalid isolated Postgres schema identifier: ${identifier}`);
   }
   return identifier;
 }

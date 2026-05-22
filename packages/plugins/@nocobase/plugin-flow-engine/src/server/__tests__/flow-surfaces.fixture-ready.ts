@@ -9,18 +9,38 @@
 
 import type { Database } from '@nocobase/database';
 
-function resolveFixtureTableName(db: Database, collectionName: string) {
+function getFixtureTableCandidateKey(candidate: any) {
+  return typeof candidate === 'string' ? candidate : `${candidate.schema || ''}.${candidate.tableName || ''}`;
+}
+
+function pushFixtureTableCandidate(candidates: any[], candidate: any) {
+  if (!candidate) {
+    return;
+  }
+
+  const candidateKey = getFixtureTableCandidateKey(candidate);
+  const hasCandidate = candidates.some((item) => getFixtureTableCandidateKey(item) === candidateKey);
+  if (!hasCandidate) {
+    candidates.push(candidate);
+  }
+}
+
+function resolveFixtureTableNameCandidates(db: Database, collectionName: string) {
   const collection = db.getCollection(collectionName);
 
   if (collection?.getTableNameWithSchema) {
-    return collection.getTableNameWithSchema() as any;
+    return [collection.getTableNameWithSchema() as any];
   }
 
   if (db.inDialect('postgres')) {
-    return db.utils.addSchema(collectionName, db.options.schema || 'public');
+    const candidates = [];
+    pushFixtureTableCandidate(candidates, db.utils.addSchema(collectionName, process.env.COLLECTION_MANAGER_SCHEMA));
+    pushFixtureTableCandidate(candidates, db.utils.addSchema(collectionName, db.options.schema || 'public'));
+    pushFixtureTableCandidate(candidates, db.utils.addSchema(collectionName, 'public'));
+    return candidates;
   }
 
-  return collectionName;
+  return [collectionName];
 }
 
 function toUnderscoredColumnName(columnName: string) {
@@ -64,13 +84,13 @@ export async function waitForFixtureCollectionsReady(
         return envTimeoutMs;
       }
 
-      // MySQL can take noticeably longer to expose freshly synced tables when the
-      // full flow-surfaces suite is creating many temporary collections back-to-back.
+      // Fresh association columns can lag behind collection field writes while
+      // the full flow-surfaces suite creates many temporary collections back-to-back.
       if (db.inDialect('mysql')) {
         return process.env.CI ? 120000 : 60000;
       }
 
-      return process.env.CI ? 60000 : 30000;
+      return 60000;
     })();
   const deadline = Date.now() + resolvedTimeoutMs;
   const queryInterface = db.sequelize.getQueryInterface();
@@ -81,17 +101,32 @@ export async function waitForFixtureCollectionsReady(
     pendingCollections = [];
 
     for (const [collectionName, requiredColumns] of Object.entries(requiredCollections)) {
-      const tableName = resolveFixtureTableName(db, collectionName);
+      const tableNames = resolveFixtureTableNameCandidates(db, collectionName);
 
       try {
-        const columns = await queryInterface.describeTable(tableName as any);
-        const missingColumns = requiredColumns.filter((column) => {
-          const candidates = resolveFixtureColumnCandidates(db, collectionName, column);
-          return !candidates.some((candidate) => columns?.[candidate]);
-        });
-        if (missingColumns.length) {
+        let ready = false;
+        const pendingReasons: string[] = [];
+
+        for (const tableName of tableNames) {
+          try {
+            const columns = await queryInterface.describeTable(tableName as any);
+            const missingColumns = requiredColumns.filter((column) => {
+              const candidates = resolveFixtureColumnCandidates(db, collectionName, column);
+              return !candidates.some((candidate) => columns?.[candidate]);
+            });
+            if (!missingColumns.length) {
+              ready = true;
+              break;
+            }
+            pendingReasons.push(`${getFixtureTableCandidateKey(tableName)} missing ${missingColumns.join(', ')}`);
+          } catch (error) {
+            pendingReasons.push(error instanceof Error ? error.message : 'describeTable failed');
+          }
+        }
+
+        if (!ready) {
           allReady = false;
-          pendingCollections.push(`${collectionName}(${missingColumns.join(', ')})`);
+          pendingCollections.push(`${collectionName}(${pendingReasons.join('; ') || 'describeTable failed'})`);
           break;
         }
       } catch (error) {

@@ -12,9 +12,115 @@ import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import { Cascader } from 'antd';
+import React from 'react';
 import type { ButtonProps } from 'antd/es/button';
-import { getOptionFields } from './getOptionFields';
+import { createLazyOptionFieldsCache } from './getOptionFields';
 import { NAMESPACE } from './locale';
+import { createExportFieldsOptionsSnapshot, normalizeExportFieldValue } from './exportFieldValue';
+
+const exportFieldNames = {
+  label: 'title',
+  value: 'name',
+  children: 'children',
+};
+
+const ExportFieldsCascader = (props) => {
+  const { optionsCache, value, onChange, onDropdownVisibleChange, ...others } = props;
+  const [cascaderOptions, setCascaderOptions] = React.useState(() => createExportFieldsOptionsSnapshot(optionsCache));
+  const lastPreloadedValueRef = React.useRef<string | null>(null);
+  const cascaderValue = React.useMemo(() => normalizeExportFieldValue(value) || undefined, [value]);
+
+  const refreshOptions = React.useCallback(() => {
+    setCascaderOptions(createExportFieldsOptionsSnapshot(optionsCache));
+  }, [optionsCache]);
+
+  React.useEffect(() => {
+    refreshOptions();
+  }, [refreshOptions]);
+
+  const getValueKey = React.useCallback((path) => {
+    if (!Array.isArray(path)) {
+      return '';
+    }
+    return path.map((item) => item?.name ?? item).join('.');
+  }, []);
+
+  const loadData = React.useCallback(
+    (selectedOptions) => {
+      const targetOption = selectedOptions?.[selectedOptions.length - 1];
+      if (!targetOption || targetOption.isLeaf || targetOption.children) {
+        return;
+      }
+
+      targetOption.loading = true;
+      optionsCache.loadChildren(targetOption);
+      targetOption.loading = false;
+      refreshOptions();
+    },
+    [optionsCache, refreshOptions],
+  );
+
+  const preloadSelectedPath = React.useCallback(() => {
+    const valueKey = getValueKey(value);
+    if (!valueKey || lastPreloadedValueRef.current === valueKey) {
+      return;
+    }
+    lastPreloadedValueRef.current = valueKey;
+    const changed = optionsCache.preloadPath(value);
+    if (changed) {
+      refreshOptions();
+    }
+  }, [getValueKey, optionsCache, refreshOptions, value]);
+
+  const handleDropdownVisibleChange = React.useCallback(
+    (open) => {
+      if (open) {
+        preloadSelectedPath();
+      }
+      onDropdownVisibleChange?.(open);
+    },
+    [onDropdownVisibleChange, preloadSelectedPath],
+  );
+
+  const handleChange = React.useCallback(
+    (value) => {
+      onChange?.(normalizeExportFieldValue(value));
+    },
+    [onChange],
+  );
+
+  const displayRender = React.useCallback(
+    (labels, selectedOptions) => {
+      const valueKey = getValueKey(value);
+      const valueDepth = valueKey ? valueKey.split('.').length : 0;
+      if (labels?.length && (!valueDepth || labels.length >= valueDepth)) {
+        return labels.join(' / ');
+      }
+      if (valueKey) {
+        return valueKey.replace(/\./g, ' / ');
+      }
+      return selectedOptions?.map((option) => option?.title || option?.name).join(' / ');
+    },
+    [getValueKey, value],
+  );
+
+  return (
+    <Cascader
+      {...others}
+      value={cascaderValue}
+      fieldNames={exportFieldNames}
+      options={cascaderOptions}
+      loadData={loadData}
+      onChange={handleChange}
+      onDropdownVisibleChange={handleDropdownVisibleChange}
+      displayRender={displayRender}
+    />
+  );
+};
+
+const createExportFieldsCascaderCache = (rootFields, t) => {
+  return createLazyOptionFieldsCache(rootFields, t);
+};
 
 const initExportSettings = (fields) => {
   const exportSettings = fields
@@ -113,7 +219,7 @@ ExportActionModel.registerFlow({
       title: escapeT('Exportable fields'),
       uiSchema: (ctx) => {
         const currentBlock = ctx.model.context.blockModel;
-        const data = getOptionFields(currentBlock.collection.getFields(), ctx.t);
+        const exportFieldsCache = createExportFieldsCascaderCache(currentBlock.collection.getFields(), ctx.t);
         return {
           exportSettings: {
             type: 'array',
@@ -143,16 +249,11 @@ ExportActionModel.registerFlow({
                     dataIndex: {
                       type: 'array',
                       'x-decorator': 'FormItem',
-                      'x-component': Cascader,
+                      'x-component': ExportFieldsCascader,
                       required: true,
                       'x-component-props': {
-                        fieldNames: {
-                          label: 'title',
-                          value: 'name',
-                          children: 'children',
-                        },
                         changeOnSelect: false,
-                        options: data,
+                        optionsCache: exportFieldsCache,
                       },
                     },
                     title: {

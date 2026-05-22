@@ -37,53 +37,69 @@ import * as dndKitCore from '@dnd-kit/core';
 import * as dndKitSortable from '@dnd-kit/sortable';
 import type { RequireJS } from './requirejs';
 
+declare global {
+  interface Window {
+    __nocobase_app_dev__?: boolean;
+    __nocobase_app_dev_deps__?: Record<string, unknown>;
+    __nocobase_app_dev_plugins__?: Record<string, unknown>;
+  }
+}
+
+function defineGlobalDep(requirejs: RequireJS, name: string, value: unknown) {
+  requirejs.define(name, () => value);
+  if (window.__nocobase_app_dev__) {
+    window.__nocobase_app_dev_deps__ = window.__nocobase_app_dev_deps__ || {};
+    window.__nocobase_app_dev_deps__[name] = value;
+  }
+}
+
 /**
  * @internal
  */
 export function defineGlobalDeps(requirejs: RequireJS) {
   // react
-  requirejs.define('react', () => React);
-  requirejs.define('react-dom', () => ReactDOM);
-  requirejs.define('react/jsx-runtime', () => jsxRuntime);
+  defineGlobalDep(requirejs, 'react', React);
+  defineGlobalDep(requirejs, 'react-dom', ReactDOM);
+  defineGlobalDep(requirejs, 'react/jsx-runtime', jsxRuntime);
 
   // react-router
-  requirejs.define('react-router', () => ReactRouter);
-  requirejs.define('react-router-dom', () => ReactRouterDom);
+  defineGlobalDep(requirejs, 'react-router', ReactRouter);
+  defineGlobalDep(requirejs, 'react-router-dom', ReactRouterDom);
 
   // antd
-  requirejs.define('antd', () => antd);
-  requirejs.define('@ant-design/icons', () => antdIcons);
-  requirejs.define('@ant-design/cssinjs', () => antdCssinjs);
-  requirejs.define('antd-style', () => antdStyle);
+  defineGlobalDep(requirejs, 'antd', antd);
+  defineGlobalDep(requirejs, '@ant-design/icons', antdIcons);
+  defineGlobalDep(requirejs, '@ant-design/cssinjs', antdCssinjs);
+  defineGlobalDep(requirejs, 'antd-style', antdStyle);
 
   // i18next
-  requirejs.define('i18next', () => i18next);
-  requirejs.define('react-i18next', () => reactI18next);
+  defineGlobalDep(requirejs, 'i18next', i18next);
+  defineGlobalDep(requirejs, 'react-i18next', reactI18next);
 
   // formily
-  requirejs.define('@formily/antd-v5', () => formilyAntdV5);
-  requirejs.define('@formily/core', () => formilyCore);
-  requirejs.define('@formily/react', () => formilyReact);
-  requirejs.define('@formily/reactive', () => formilyReactive);
-  requirejs.define('@formily/shared', () => formilyShared);
+  defineGlobalDep(requirejs, '@formily/antd-v5', formilyAntdV5);
+  defineGlobalDep(requirejs, '@formily/core', formilyCore);
+  defineGlobalDep(requirejs, '@formily/react', formilyReact);
+  defineGlobalDep(requirejs, '@formily/reactive', formilyReactive);
+  defineGlobalDep(requirejs, '@formily/shared', formilyShared);
 
   // nocobase
-  requirejs.define('@nocobase/utils', () => nocobaseClientUtils);
-  requirejs.define('@nocobase/utils/client', () => nocobaseClientUtils);
-  requirejs.define('@nocobase/client-v2', () => nocobaseClientV2);
-  requirejs.define('@nocobase/client-v2/client-v2', () => nocobaseClientV2);
-  requirejs.define('@nocobase/flow-engine', () => nocobaseFlowEngine);
-  requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
-  requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
+  defineGlobalDep(requirejs, '@nocobase/utils', nocobaseClientUtils);
+  defineGlobalDep(requirejs, '@nocobase/utils/client', nocobaseClientUtils);
+  defineGlobalDep(requirejs, '@nocobase/client-v2', nocobaseClientV2);
+  defineGlobalDep(requirejs, '@nocobase/client-v2/client-v2', nocobaseClientV2);
+  defineGlobalDep(requirejs, '@nocobase/flow-engine', nocobaseFlowEngine);
+  defineGlobalDep(requirejs, '@nocobase/evaluators', nocobaseEvaluators);
+  defineGlobalDep(requirejs, '@nocobase/evaluators/client', nocobaseEvaluators);
 
-  requirejs.define('@dnd-kit/core', () => dndKitCore);
-  requirejs.define('@dnd-kit/sortable', () => dndKitSortable);
+  defineGlobalDep(requirejs, '@dnd-kit/core', dndKitCore);
+  defineGlobalDep(requirejs, '@dnd-kit/sortable', dndKitSortable);
 
   // utils
-  requirejs.define('ahooks', () => ahooks);
-  requirejs.define('axios', () => axios);
-  requirejs.define('dayjs', () => dayjs);
-  requirejs.define('lodash', () => lodash);
-  requirejs.define('@emotion/css', () => emotionCss);
-  requirejs.define('file-saver', () => FileSaver);
+  defineGlobalDep(requirejs, 'ahooks', ahooks);
+  defineGlobalDep(requirejs, 'axios', axios);
+  defineGlobalDep(requirejs, 'dayjs', dayjs);
+  defineGlobalDep(requirejs, 'lodash', lodash);
+  defineGlobalDep(requirejs, '@emotion/css', emotionCss);
+  defineGlobalDep(requirejs, 'file-saver', FileSaver);
 }

@@ -15,6 +15,7 @@ const _ = require('lodash');
 const deepmerge = require('deepmerge');
 const { getCronstrueLocale } = require('./locale/cronstrue');
 const { getReactJsCron } = require('./locale/react-js-cron');
+const { storagePathJoin } = require('../util');
 
 function sortJSON(json) {
   if (Array.isArray(json)) {
@@ -41,8 +42,9 @@ module.exports = (cli) => {
     const files = await fg('./*/src/locale/*.json', {
       cwd,
     });
+    const localeDir = storagePathJoin('locales');
     let locales = {};
-    await fs.mkdirp(path.resolve(process.cwd(), 'storage/locales'));
+    await fs.mkdirp(localeDir);
     for (const file of files) {
       const locale = path.basename(file, '.json');
       const pkg = path.basename(path.dirname(path.dirname(path.dirname(file))));
@@ -70,10 +72,7 @@ module.exports = (cli) => {
     }
     locales = sortJSON(locales);
     for (const locale of Object.keys(locales)) {
-      await fs.writeFile(
-        path.resolve(process.cwd(), 'storage/locales', `${locale}.json`),
-        JSON.stringify(sortJSON(locales[locale]), null, 2),
-      );
+      await fs.writeFile(path.resolve(localeDir, `${locale}.json`), JSON.stringify(sortJSON(locales[locale]), null, 2));
     }
   });
 

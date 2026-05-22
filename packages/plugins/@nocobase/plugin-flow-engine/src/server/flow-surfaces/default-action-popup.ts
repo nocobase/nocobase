@@ -42,10 +42,18 @@ export type FlowSurfaceDefaultActionPopupFieldCandidate = {
   fieldPath?: string;
 };
 
+export type FlowSurfaceDefaultActionPopupFieldGroupField =
+  | string
+  | {
+      field: string;
+      titleField?: string;
+      settings?: Record<string, any>;
+    };
+
 export type FlowSurfaceDefaultActionPopupFieldGroupCandidate = {
   key?: string;
   title: string;
-  fields: string[];
+  fields: FlowSurfaceDefaultActionPopupFieldGroupField[];
 };
 
 type FlowSurfaceDefaultActionPopupFieldFilterOptions = {
@@ -54,9 +62,9 @@ type FlowSurfaceDefaultActionPopupFieldFilterOptions = {
 };
 
 type FlowSurfaceDefaultActionPopupFieldsInput =
-  | string[]
+  | any[]
   | {
-      fieldPaths?: string[];
+      fieldPaths?: any[];
       fieldGroups?: FlowSurfaceDefaultActionPopupFieldGroupCandidate[];
     };
 
@@ -204,6 +212,15 @@ export function resolveFlowSurfaceDefaultActionPopupTabTitle(use?: string, curre
   return actionConfig.defaultPopupTabTitle;
 }
 
+export function isFlowSurfaceDefaultActionPopupBusinessField(field: any) {
+  const fieldInterface = String(getFieldInterface(field) || '').trim();
+  const fieldType = String(getFieldType(field) || '').trim();
+  if (!fieldInterface || field?.hidden || field?.options?.hidden) {
+    return false;
+  }
+  return fieldType !== 'sort' && fieldInterface !== 'sort';
+}
+
 function isFlowSurfaceDefaultActionPopupSystemField(field: any) {
   const fieldName = String(getFieldName(field) || '').trim();
   const fieldInterface = String(getFieldInterface(field) || '').trim();
@@ -306,6 +323,35 @@ function filterFlowSurfaceDefaultActionPopupFieldCandidates(
   return baseCandidates.filter((candidate) => String(candidate?.fieldPath || '').trim());
 }
 
+function getFlowSurfaceDefaultActionPopupFieldGroupFieldPath(field: any) {
+  if (typeof field === 'string') {
+    return field.trim();
+  }
+  if (!_.isPlainObject(field)) {
+    return '';
+  }
+  return String(field.field || field.fieldPath || '').trim();
+}
+
+function normalizeFlowSurfaceDefaultActionPopupFieldGroupField(
+  field: FlowSurfaceDefaultActionPopupFieldGroupField,
+  fieldPath: string,
+) {
+  if (!_.isPlainObject(field)) {
+    return fieldPath;
+  }
+  const fieldSpec = field as Extract<FlowSurfaceDefaultActionPopupFieldGroupField, Record<string, any>>;
+  const titleField = String(fieldSpec.titleField || '').trim();
+  return _.pickBy(
+    {
+      field: fieldPath,
+      titleField: titleField || undefined,
+      settings: _.isPlainObject(fieldSpec.settings) ? _.cloneDeep(fieldSpec.settings) : undefined,
+    },
+    (value) => !_.isUndefined(value),
+  ) as FlowSurfaceDefaultActionPopupFieldGroupField;
+}
+
 export function pickFlowSurfaceDefaultActionPopupFieldGroups(
   candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
   fieldGroups: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] | undefined,
@@ -323,12 +369,18 @@ export function pickFlowSurfaceDefaultActionPopupFieldGroups(
       return [];
     }
     const fields = _.castArray(group?.fields || [])
-      .map((field) => String(field || '').trim())
-      .filter((field) => {
-        if (!field || !allowedFieldPaths.has(field) || usedFieldPaths.has(field)) {
+      .map((field) => {
+        const fieldPath = getFlowSurfaceDefaultActionPopupFieldGroupFieldPath(field);
+        if (!fieldPath || !allowedFieldPaths.has(fieldPath) || usedFieldPaths.has(fieldPath)) {
+          return null;
+        }
+        usedFieldPaths.add(fieldPath);
+        return normalizeFlowSurfaceDefaultActionPopupFieldGroupField(field, fieldPath);
+      })
+      .filter((field): field is FlowSurfaceDefaultActionPopupFieldGroupField => {
+        if (!field) {
           return false;
         }
-        usedFieldPaths.add(field);
         return true;
       });
     if (!fields.length) {
@@ -356,8 +408,8 @@ function normalizeDefaultActionPopupFieldsInput(input: FlowSurfaceDefaultActionP
   }
   return {
     fieldPaths: _.castArray(input?.fieldPaths || [])
-      .map((field) => String(field || '').trim())
-      .filter(Boolean),
+      .map((field) => (_.isPlainObject(field) ? _.cloneDeep(field) : String(field || '').trim()))
+      .filter((field) => (_.isPlainObject(field) ? true : !!field)),
     fieldGroups: _.castArray(input?.fieldGroups || []).filter((group) => _.isPlainObject(group)),
   };
 }
@@ -391,7 +443,7 @@ export function buildFlowSurfaceDefaultActionPopupBlocks(
 }
 
 export function hasFlowSurfaceInlinePopupTemplate(popup?: Record<string, any>) {
-  return typeof popup !== 'undefined' && typeof popup?.template !== 'undefined';
+  return _.isPlainObject(popup?.template) && !!String(popup.template.uid || popup.template.local || '').trim();
 }
 
 export function hasFlowSurfaceInlinePopupBlocks(popup?: Record<string, any>) {

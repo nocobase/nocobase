@@ -16,6 +16,7 @@ import {
   UserCenterTextItemModel,
 } from '@nocobase/client-v2';
 import { usersLocaleResources } from './locale';
+import { ChangePasswordItemModel } from './user-center/ChangePasswordItemModel';
 
 class CurrentUserSummaryItemModel extends UserCenterTextItemModel {
   static itemId = 'current-user-summary';
@@ -61,6 +62,7 @@ export class PluginUsersClientV2 extends Plugin {
     });
 
     this.app.flowEngine.registerModels({
+      ChangePasswordItemModel,
       CurrentUserSummaryItemModel,
       SignOutItemModel,
     });

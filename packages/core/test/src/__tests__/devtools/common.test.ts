@@ -70,6 +70,7 @@ describe('IndexGenerator', () => {
 
     const manifest = fs.readFileSync(path.join(outputPath, 'packages', 'nocobase_plugin_acl.ts'), 'utf8');
     expect(manifest).toContain('src/client-v2');
+    expect(manifest).toContain("export * from '../../../../../../plugins/@nocobase/plugin-acl/src/client-v2';");
   });
 
   it('should keep client manifests using client.js and src/client', () => {
@@ -101,6 +102,7 @@ describe('IndexGenerator', () => {
 
     const manifest = fs.readFileSync(path.join(outputPath, 'packages', 'nocobase_plugin_v1_only.ts'), 'utf8');
     expect(manifest).toContain('src/client');
+    expect(manifest).toContain("export * from '../../../../../../plugins/@nocobase/plugin-v1-only/src/client';");
     expect(manifest).not.toContain('src/client-v2');
   });
 

@@ -35,10 +35,10 @@ export function storagePathJoin(...segments: string[]): string {
 /**
  * Resolve plugin storage path: `PLUGIN_STORAGE_PATH` first, else `<STORAGE_PATH>/plugins`.
  */
-export function resolvePluginStoragePath() {
+export function resolvePluginStoragePath(): string {
   if (process.env.PLUGIN_STORAGE_PATH) {
-    const p = process.env.PLUGIN_STORAGE_PATH;
-    return path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+    const pluginStoragePath = process.env.PLUGIN_STORAGE_PATH;
+    return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.resolve(process.cwd(), pluginStoragePath);
   }
   return storagePathJoin('plugins');
 }

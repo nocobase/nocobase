@@ -35,6 +35,31 @@ Sebelum menggunakan Lina, selesaikan konfigurasi berikut:
 Lina membuat tugas terjemahan untuk locale saat ini.
 :::
 
+## Konfigurasi prompt
+
+Buka dialog edit Lina dari `System Settings -> AI Employees -> AI employees`, lalu sesuaikan prompt di `Role setting`. Prompt biasanya digunakan untuk mendefinisikan informasi domain bisnis, aturan terminologi, dan batasan output. Prompt sebaiknya tidak terlalu panjang, karena mungkin tidak cocok untuk model terjemahan khusus.
+
+![](https://static-docs.nocobase.com/202605191351816.png)
+
+Contoh prompt default:
+
+```text
+# Role
+You are Lina, a professional localization translator for NocoBase.
+
+# Task
+Translate NocoBase localization text into the requested target language.
+
+# Translation requirements
+1. Keep the translation faithful, concise, and natural for product UI.
+2. Use consistent NocoBase and software terminology.
+3. Preserve placeholders, variables, HTML tags, ICU syntax, line breaks, and code-like tokens.
+4. Return only the translated text. Do not explain, quote, or use Markdown.
+5. If the text should not be translated, return it unchanged.
+```
+
+Terjemahan referensi dan teks yang akan diterjemahkan tidak perlu ditulis ke prompt Lina. Saat membuat tugas, sistem akan menambahkannya secara otomatis berdasarkan konten entry, bahasa target, dan konfigurasi bahasa referensi di dialog konfirmasi.
+
 ## Penggunaan
 
 Di halaman Manajemen Lokalisasi, klik avatar Lina dan pilih cakupan tugas terjemahan AI.
@@ -42,6 +67,8 @@ Di halaman Manajemen Lokalisasi, klik avatar Lina dan pilih cakupan tugas terjem
 ### Terjemahan incremental
 
 Hanya menerjemahkan entry yang belum memiliki terjemahan pada bahasa saat ini.
+
+Untuk entry bawaan, jika terjemahan sudah ada di paket bahasa sistem atau plugin untuk bahasa target, entry tersebut dianggap sudah diterjemahkan meskipun belum ada record terkait di tabel terjemahan lokalisasi, dan tidak dihitung dalam terjemahan incremental.
 
 ### Terjemahan item terpilih
 
@@ -61,28 +88,32 @@ Terjemahan penuh dapat menimpa terjemahan yang sudah ada. Pastikan bahasa target
 
 Sebelum membuat tugas, sistem menampilkan dialog konfirmasi berisi:
 
+- Deskripsi tugas.
 - Jumlah entry yang akan diterjemahkan.
 - Provider yang digunakan.
 - Model yang digunakan.
+- Konfigurasi bahasa terjemahan referensi.
 
-Setelah dikonfirmasi, sistem membuat background task. Progres dapat dilihat di async tasks. Setelah selesai, terjemahan ditulis ke bahasa terkait.
+Terjemahan penuh dan terjemahan incremental juga dapat memilih cakupan terjemahan di dialog konfirmasi:
 
-![](https://static-docs.nocobase.com/202605121233608.png)
+- **Semua**: memproses semua entry yang sesuai dengan kondisi tugas saat ini.
+- **Entry bawaan**: entry sistem dan plugin.
+- **Entry kustom**: nama route, nama collection dan field, serta konten UI.
 
-## Strategi terjemahan
+Terjemahan item terpilih hanya memproses record yang sudah dipilih di tabel, sehingga tidak menampilkan cakupan terjemahan. Opsi ini juga hanya menampilkan satu konfigurasi bahasa referensi umum, tanpa memisahkan entry bawaan dan entry kustom.
 
-Lina mengikuti aturan berikut saat menerjemahkan:
+Jika jumlah entry yang akan diterjemahkan adalah 0, sistem menampilkan pesan dan tidak membuat background task. Setelah dikonfirmasi, sistem membuat background task. Progres dapat dilihat di async tasks. Setelah selesai, terjemahan ditulis ke bahasa terkait.
 
-- Hanya mengembalikan teks terjemahan tanpa penjelasan atau konten tambahan.
-- Mempertahankan variabel, placeholder, tag HTML, sintaks ICU, dan format.
-- Menjaga teks UI tetap ringkas dan natural.
+![](https://static-docs.nocobase.com/202605191341968.png)
 
 ## Terjemahan referensi
 
 Entry pendek seperti nama field, tombol, dan status menggunakan terjemahan referensi untuk meningkatkan konsistensi.
 
-- Entry bawaan mengutamakan terjemahan bahasa Mandarin sebagai referensi.
-- Entry non-bawaan mengutamakan bahasa default sistem.
+- Entry bawaan menggunakan terjemahan bahasa Mandarin sebagai referensi default dan bahasa Jepang sebagai referensi cadangan.
+- Entry kustom menggunakan bahasa default sistem sebagai referensi default dan bahasa Mandarin sebagai referensi cadangan.
+- Pengguna dapat menyesuaikan bahasa default dan bahasa cadangan di dialog konfirmasi tugas.
+- Sistem terlebih dahulu menggunakan terjemahan referensi dalam bahasa default. Jika tidak tersedia, sistem mencoba bahasa cadangan.
 
 Jika referensi tersedia, Lina menggunakan prompt dengan semantik seperti berikut:
 
@@ -99,7 +130,7 @@ Translate the following text into {target_language}. Output only the translated 
 
 Terjemahan lokalisasi biasanya memproses banyak entry. Jika memungkinkan, gunakan model kecil khusus terjemahan yang di-deploy lokal karena model online sering memiliki limit rate, concurrency, atau token.
 
-Jika tidak bisa deploy lokal, pilih model khusus terjemahan daripada model chat umum.
+Jika tidak bisa deploy lokal, pilih model khusus terjemahan daripada model chat umum. Model terjemahan biasanya lebih sesuai untuk entry pendek, teks UI, dan terjemahan batch. Lina menyusun prompt employee, terjemahan referensi, dan teks yang akan diterjemahkan menjadi prompt yang dikirim ke model. Pengguna dapat menyesuaikan prompt Lina untuk mengontrol gaya dan aturan terjemahan.
 
 Concurrency dapat disesuaikan dengan kemampuan model untuk mengontrol throughput, waktu respons, dan biaya.
 

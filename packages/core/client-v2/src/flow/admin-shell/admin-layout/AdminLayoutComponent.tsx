@@ -371,15 +371,12 @@ export const AdminLayoutComponent = observer((props: any) => {
   const [allAccessRoutes, setAllAccessRoutes] = useState<NocoBaseDesktopRoute[]>(
     () => flowEngine.context.routeRepository?.listAccessible?.() || [],
   );
-  const screens = Grid.useBreakpoint();
-  const isMobileViewport =
-    screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
   const location = useLocation();
   const { token } = antdTheme.useToken();
   const customToken = token as CustomToken;
   const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
   const menuRouteRefreshVersion = adminLayoutModel?.menuRouteRefreshVersion || 0;
-  const isMobileSider = isMobileLayout || isMobileViewport;
+  const isMobileSider = isMobileLayout;
   const [collapsed, setCollapsed] = useState(isMobileSider);
   const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() => readFlowSettingsPreference());
   const [route, setRoute] = useState<{ path: string; children: AdminLayoutMenuNode[] }>({

@@ -8,10 +8,12 @@
  */
 
 import _ from 'lodash';
+import { hasFlowSurfaceInlinePopupBlocks } from './default-action-popup';
 import { buildDefinedPayload, getSingleNodeSubModel } from './service-utils';
 import {
   buildHiddenPopupActionStepParams,
   buildHiddenPopupOpenView,
+  buildImplicitHiddenPopupDefaultContent,
   buildHiddenPopupResourceMismatchDisplayFallbackOpenView,
   buildPersistedHiddenPopupSettingsFromOpenView,
   HIDDEN_POPUP_DISPLAY_KEYS,
@@ -57,6 +59,7 @@ const KANBAN_POPUP_PATCH_PATH_BY_ACTION: Record<KanbanPopupActionKey, string[]> 
   quickCreateAction: ['kanbanSettings', 'popup'],
   cardViewAction: ['cardSettings', 'popup'],
 };
+const KANBAN_POPUP_LOCAL_CONTENT_KEYS = ['blocks', 'layout', 'saveAsTemplate', 'defaultType'] as const;
 
 export function normalizeKanbanPopupSettings(
   actionKey: KanbanPopupActionKey,
@@ -66,6 +69,38 @@ export function normalizeKanbanPopupSettings(
   const actionUid = blockUid && actionKey ? getKanbanPopupActionUid(blockUid, actionKey) : undefined;
   return normalizeHiddenPopupSettings(popupSettings, {
     invalidUids: [blockUid, actionUid],
+    preserveApplyBlueprintDefaults: true,
+  });
+}
+
+function stripKanbanPopupLocalContentSettings(popupSettings?: Record<string, any>) {
+  if (!_.isPlainObject(popupSettings)) {
+    return popupSettings;
+  }
+  return _.omit(_.cloneDeep(popupSettings), KANBAN_POPUP_LOCAL_CONTENT_KEYS);
+}
+
+function hasKanbanPopupLocalContent(popupSettings?: Record<string, any>) {
+  return hasFlowSurfaceInlinePopupBlocks(popupSettings) || !_.isUndefined(popupSettings?.layout);
+}
+
+async function removeKanbanPopupHostLocalContent(
+  runtime: HiddenPopupHostRuntime,
+  actionUid: string,
+  transaction?: any,
+) {
+  const actionNode = await runtime.repository.findModelById(actionUid, {
+    transaction,
+    includeAsyncNode: true,
+  });
+  const popupPageUid = String(getSingleNodeSubModel(actionNode?.subModels?.page)?.uid || '').trim();
+  if (!popupPageUid) {
+    return actionNode;
+  }
+  await runtime.removeNodeTreeWithBindings(popupPageUid, transaction);
+  return runtime.repository.findModelById(actionUid, {
+    transaction,
+    includeAsyncNode: true,
   });
 }
 
@@ -85,7 +120,8 @@ export function getKanbanInitialPopupSettings(
     return undefined;
   }
   const normalized = normalizeKanbanPopupSettings(actionKey, popupSettings, blockUid);
-  return Object.keys(normalized).length ? normalized : undefined;
+  const persistable = stripKanbanPopupLocalContentSettings(normalized);
+  return Object.keys(persistable || {}).length ? persistable : undefined;
 }
 
 export function getKanbanInitialPopupSettingsFromProps(
@@ -113,7 +149,8 @@ export function getKanbanInitialPopupSettingsFromProps(
           uid: props.cardPopupTargetUid,
         });
   const normalized = normalizeKanbanPopupSettings(actionKey, rawSettings, blockUid);
-  return Object.keys(normalized).length ? normalized : undefined;
+  const persistable = stripKanbanPopupLocalContentSettings(normalized);
+  return Object.keys(persistable || {}).length ? persistable : undefined;
 }
 
 export function getKanbanPopupActionUse(actionKey: KanbanPopupActionKey) {
@@ -582,19 +619,56 @@ export async function ensureKanbanBlockPopupHosts(
       changed = true;
     }
 
-    const completedDefaultContent = await ensureKanbanPopupHostDefaultContent(runtime, {
-      actionKey,
-      actionUid: expectedUid,
-      popupSettings,
-      transaction,
-    });
+    let completedLocalContent = false;
+    if (
+      explicitPopupSettingsProvided &&
+      hasKanbanPopupLocalContent(popupSettings) &&
+      runtime.applyPopupHostLocalContent
+    ) {
+      await runtime.applyPopupHostLocalContent({
+        actionName: `kanban ${actionKey}`,
+        actionUid: expectedUid,
+        popupSettings,
+        transaction,
+        hasCurrentRecord: actionKey === 'cardViewAction',
+      });
+      existing = await runtime.repository.findModelById(expectedUid, {
+        transaction,
+        includeAsyncNode: true,
+      });
+      completedLocalContent = true;
+    } else if (
+      explicitPopupSettingsProvided &&
+      !hasKanbanPopupLocalContent(popupSettings) &&
+      buildImplicitHiddenPopupDefaultContent(popupSettings)
+    ) {
+      const localContentHost = await runtime.repository.findModelById(expectedUid, {
+        transaction,
+        includeAsyncNode: true,
+      });
+      if (hiddenPopupHostHasLocalContent(localContentHost)) {
+        existing = await removeKanbanPopupHostLocalContent(runtime, expectedUid, transaction);
+        changed = true;
+      } else {
+        existing = localContentHost;
+      }
+    }
+    const completedDefaultContent = completedLocalContent
+      ? false
+      : await ensureKanbanPopupHostDefaultContent(runtime, {
+          actionKey,
+          actionUid: expectedUid,
+          popupSettings,
+          transaction,
+        });
     if (completedDefaultContent) {
       existing = await runtime.repository.findModelById(expectedUid, {
         transaction,
         includeAsyncNode: true,
       });
     }
-    const finalOpenView = completedDefaultContent ? resolveHiddenPopupHostOpenView(existing) : openView;
+    const finalOpenView =
+      completedDefaultContent || completedLocalContent ? resolveHiddenPopupHostOpenView(existing) : openView;
     await persistKanbanPopupSettingsFromOpenView(
       runtime,
       blockNode,
@@ -609,7 +683,7 @@ export async function ensureKanbanBlockPopupHosts(
         [actionKey]: existing,
       };
     }
-    changed = completedDefaultContent || changed;
+    changed = completedDefaultContent || completedLocalContent || changed;
   }
 
   if (!changed) {

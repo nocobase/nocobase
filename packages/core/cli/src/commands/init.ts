@@ -51,6 +51,7 @@ const INIT_ENV_ADD_FLAG_NAMES = [
   'auth-type',
   'access-token',
   'token',
+  'skip-auth',
 ] as const;
 
 const initText = (key: string, values?: Record<string, unknown>) =>
@@ -350,6 +351,24 @@ Prompt modes:
     rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
   };
 
+  private buildPromptCatalog(flags: {
+    'skip-auth'?: boolean;
+  }): PromptsCatalog {
+    if (!flags['skip-auth']) {
+      return Init.prompts;
+    }
+
+    const accessTokenPrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+      hidden: () => true,
+    };
+
+    return {
+      ...Init.prompts,
+      accessToken: existingAppOnly(accessTokenPrompt),
+    };
+  }
+
   private parsedFlagsForPromptSeeds?:
     | {
       resume?: boolean;
@@ -406,6 +425,13 @@ Prompt modes:
       this.error('--ui cannot be used with --yes.');
     }
 
+    if (
+      normalizedFlags['skip-auth']
+      && (normalizedFlags['access-token'] !== undefined || normalizedFlags.token !== undefined)
+    ) {
+      this.error('--skip-auth cannot be used with --access-token or --token.');
+    }
+
     if (normalizedFlags.ui && normalizedFlags.resume) {
       this.error('--ui cannot be used with --resume.');
     }
@@ -455,6 +481,9 @@ Prompt modes:
               'db-database'?: string;
               'db-user'?: string;
               'db-password'?: string;
+              'db-schema'?: string;
+              'db-table-prefix'?: string;
+              'db-underscored'?: boolean;
               'fetch-source'?: boolean;
               source?: string;
               version?: string;
@@ -502,6 +531,9 @@ Prompt modes:
         'db-database'?: string;
         'db-user'?: string;
         'db-password'?: string;
+        'db-schema'?: string;
+        'db-table-prefix'?: string;
+        'db-underscored'?: boolean;
         'fetch-source'?: boolean;
         source?: string;
         version?: string;
@@ -566,9 +598,10 @@ Prompt modes:
       },
       presetValues,
     );
+    const promptCatalog = this.buildPromptCatalog(normalizedFlags);
     if (useBrowserUi) {
       presetValues = await runPromptCatalogWebUI({
-        stages: Init.buildWebUiStages(),
+        stages: Init.buildWebUiStages(promptCatalog),
         values: {
           ...dynamicInitialValues,
           ...presetValues,
@@ -588,7 +621,7 @@ Prompt modes:
       });
     }
 
-    const results = await runPromptCatalog(Init.prompts, {
+    const results = await runPromptCatalog(promptCatalog, {
       initialValues: dynamicInitialValues,
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
@@ -604,10 +637,14 @@ Prompt modes:
       },
       command: this,
     });
+    const normalizedResults: Record<string, string | number | boolean> = {
+      ...results,
+      ...pickKeys(presetValues, ['dbSchema', 'dbTablePrefix', 'dbUnderscored', 'skipAuth']),
+    };
 
-    const hasNocobase = results.hasNocobase === 'yes';
+    const hasNocobase = normalizedResults.hasNocobase === 'yes';
     const existingEnv = !hasNocobase
-      ? await getEnv(String(results.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
+      ? await getEnv(String(normalizedResults.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
       : undefined;
 
     if (existingEnv && Boolean(normalizedFlags.force)) {
@@ -627,14 +664,14 @@ Prompt modes:
       if (hasNocobase) {
         logInitStage('Connecting to the env');
         printVerbose('Running nb env add');
-        await this.config.runCommand('env:add', this.buildEnvAddArgv(results));
+        await this.config.runCommand('env:add', this.buildEnvAddArgv(normalizedResults));
       } else {
         logInitStage('Saving env config');
-        await this.persistManagedEnvConfig(results, normalizedFlags);
-        managedInstallResults = results;
-        printInfo(`Saved env config for "${String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME}".`);
+        await this.persistManagedEnvConfig(normalizedResults, normalizedFlags);
+        managedInstallResults = normalizedResults;
+        printInfo(`Saved env config for "${String(normalizedResults.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME}".`);
         printVerbose('Running nb init');
-        await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
+        await this.config.runCommand('install', this.buildInstallArgv(normalizedResults, normalizedFlags));
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -698,8 +735,7 @@ Prompt modes:
     return out;
   }
 
-  private static buildWebUiStages(): RunPromptCatalogWebUIStage[] {
-    const c = Init.prompts;
+  private static buildWebUiStages(c: PromptsCatalog = Init.prompts): RunPromptCatalogWebUIStage[] {
 
     return [
       {
@@ -800,6 +836,9 @@ Prompt modes:
     'db-database'?: string;
     'db-user'?: string;
     'db-password'?: string;
+    'db-schema'?: string;
+    'db-table-prefix'?: string;
+    'db-underscored'?: boolean;
     'fetch-source'?: boolean;
     source?: string;
     version?: string;
@@ -813,6 +852,7 @@ Prompt modes:
     'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
+    'skip-auth'?: boolean;
   }): PromptInitialValues {
     const preset: PromptInitialValues = {};
     const argv = process.argv.slice(2);
@@ -832,6 +872,9 @@ Prompt modes:
     }
     if (flags['auth-type'] !== undefined && String(flags['auth-type']).trim() !== '') {
       preset.authType = String(flags['auth-type']).trim();
+    }
+    if (flags['skip-auth']) {
+      preset.skipAuth = true;
     }
     const accessToken = String(flags['access-token'] ?? flags.token ?? '');
     if (flags['access-token'] !== undefined || flags.token !== undefined) {
@@ -882,6 +925,15 @@ Prompt modes:
     }
     if (flags['db-password'] !== undefined) {
       preset.dbPassword = String(flags['db-password'] ?? '');
+    }
+    if (flags['db-schema'] !== undefined && String(flags['db-schema']).trim() !== '') {
+      preset.dbSchema = String(flags['db-schema']).trim();
+    }
+    if (flags['db-table-prefix'] !== undefined && String(flags['db-table-prefix']).trim() !== '') {
+      preset.dbTablePrefix = String(flags['db-table-prefix']).trim();
+    }
+    if (argvHasToken(argv, ['--db-underscored', '--no-db-underscored'])) {
+      preset.dbUnderscored = Boolean(flags['db-underscored']);
     }
     if (argvHasToken(argv, ['--fetch-source'])) {
       preset.fetchSource = Boolean(flags['fetch-source']);
@@ -971,7 +1023,12 @@ Prompt modes:
 
   private async persistManagedEnvConfig(
     results: Record<string, string | number | boolean>,
-    flags: { 'db-host'?: string } = {},
+    flags: {
+      'db-host'?: string;
+      'db-schema'?: string;
+      'db-table-prefix'?: string;
+      'db-underscored'?: boolean;
+    } = {},
   ): Promise<void> {
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const appPort = String(results.appPort ?? '').trim();
@@ -990,6 +1047,8 @@ Prompt modes:
     const dbDatabase = String(results.dbDatabase ?? '').trim();
     const dbUser = String(results.dbUser ?? '').trim();
     const dbPassword = String(results.dbPassword ?? '');
+    const dbSchema = String(results.dbSchema ?? '').trim();
+    const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim() || 'oauth';
     const accessToken = String(results.accessToken ?? '');
@@ -1011,6 +1070,7 @@ Prompt modes:
               ? { kind: 'http' }
               : {}),
         ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+        ...(authType ? { authType } : {}),
         ...(authType === 'token' && accessToken ? { accessToken } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),
@@ -1032,6 +1092,9 @@ Prompt modes:
         ...(dbDatabase ? { dbDatabase } : {}),
         ...(dbUser ? { dbUser } : {}),
         ...(dbPassword ? { dbPassword } : {}),
+        ...(dbSchema ? { dbSchema } : {}),
+        ...(dbTablePrefix ? { dbTablePrefix } : {}),
+        ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
       },
       { scope: resolveDefaultConfigScope() },
     );
@@ -1042,9 +1105,11 @@ Prompt modes:
     argv.push('--no-intro');
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
-
-    if (results.authType === 'token') {
-      argv.push('--access-token', String(results.accessToken ?? ''));
+    const accessToken = String(results.accessToken ?? '');
+    if (results.skipAuth === true) {
+      argv.push('--skip-auth');
+    } else if (results.authType === 'token' && accessToken) {
+      argv.push('--access-token', accessToken);
     }
 
     return argv;
@@ -1052,7 +1117,17 @@ Prompt modes:
 
   private buildInstallArgv(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'db-host'?: string },
+    flags: {
+      yes?: boolean;
+      force?: boolean;
+      build?: boolean;
+      verbose?: boolean;
+      'skip-auth'?: boolean;
+      'db-host'?: string;
+      'db-schema'?: string;
+      'db-table-prefix'?: string;
+      'db-underscored'?: boolean;
+    },
     options?: {
       nonInteractive?: boolean;
       resume?: boolean;
@@ -1086,6 +1161,10 @@ Prompt modes:
 
     if (authType) {
       argv.push('--auth-type', authType);
+    }
+
+    if (Boolean(flags['skip-auth']) || results.skipAuth === true) {
+      argv.push('--skip-auth');
     }
 
     if (authType === 'token' && accessToken) {
@@ -1221,6 +1300,17 @@ Prompt modes:
     if (dbPassword) {
       argv.push('--db-password', dbPassword);
     }
+    const dbSchema = String(results.dbSchema ?? '').trim();
+    if (dbSchema) {
+      argv.push('--db-schema', dbSchema);
+    }
+    const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
+    if (dbTablePrefix) {
+      argv.push('--db-table-prefix', dbTablePrefix);
+    }
+    if (results.dbUnderscored !== undefined) {
+      argv.push(Boolean(results.dbUnderscored) ? '--db-underscored' : '--no-db-underscored');
+    }
 
     const rootUsername = String(results.rootUsername ?? '').trim();
     if (rootUsername) {
@@ -1345,6 +1435,9 @@ Prompt modes:
     'db-database'?: string;
     'db-user'?: string;
     'db-password'?: string;
+    'db-schema'?: string;
+    'db-table-prefix'?: string;
+    'db-underscored'?: boolean;
     'fetch-source'?: boolean;
     source?: string;
     version?: string;
@@ -1357,6 +1450,7 @@ Prompt modes:
     'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
+    'skip-auth'?: boolean;
   }): string[] {
     const preset = this.buildPresetValuesFromFlags(flags) as Record<string, string | number | boolean>;
     if (flags.yes) {
