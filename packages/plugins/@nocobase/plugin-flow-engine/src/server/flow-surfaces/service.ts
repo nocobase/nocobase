@@ -1295,10 +1295,15 @@ export class FlowSurfacesService {
   }
 
   private async loadEnabledPluginPackages(transaction?: any): Promise<ReadonlySet<string>> {
-    if (!this.db.getCollection('applicationPlugins')) {
+    const db = this.db;
+    if (!db?.getCollection?.('applicationPlugins') || !db?.getRepository) {
       return new Set<string>();
     }
-    const plugins = await this.db.getRepository('applicationPlugins').find({
+    const repository = db.getRepository('applicationPlugins');
+    if (!repository?.find) {
+      return new Set<string>();
+    }
+    const plugins = await repository.find({
       fields: ['packageName'],
       filter: {
         enabled: true,
@@ -4627,12 +4632,18 @@ export class FlowSurfacesService {
     createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
   ): Promise<FlowSurfaceApplyBlueprintMutationResult> {
     try {
+      await this.assertApplyBlueprintAuthoringPayload(values, options);
       const document = prepareFlowSurfaceApplyBlueprintDocument(values);
       await this.prevalidateApplyBlueprintChartAssets(document);
       if (document.mode === 'create') {
-        return await this.applyBlueprintWithTransaction(values, options, createdKanbanSortFields, {
-          readSurface: false,
-        });
+        return await this.applyBlueprintWithTransaction(
+          values,
+          { ...options, skipAuthoringValidation: true },
+          createdKanbanSortFields,
+          {
+            readSurface: false,
+          },
+        );
       }
       return await this.transaction((transaction) =>
         this.applyBlueprintWithTransaction(
@@ -4640,6 +4651,7 @@ export class FlowSurfacesService {
           {
             ...options,
             transaction,
+            skipAuthoringValidation: true,
           },
           createdKanbanSortFields,
           { readSurface: false },
@@ -4651,24 +4663,10 @@ export class FlowSurfacesService {
     }
   }
 
-  private async applyBlueprintWithTransaction(
+  private async assertApplyBlueprintAuthoringPayload(
     values: Record<string, any>,
-    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles },
-    createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] | undefined,
-    resultOptions: { readSurface: false },
-  ): Promise<FlowSurfaceApplyBlueprintMutationResult>;
-  private async applyBlueprintWithTransaction(
-    values: Record<string, any>,
-    options?: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles },
-    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
-    resultOptions?: { readSurface?: true },
-  ): Promise<FlowSurfaceApplyBlueprintResponse>;
-  private async applyBlueprintWithTransaction(
-    values: Record<string, any>,
-    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
-    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
-    resultOptions: { readSurface?: boolean } = {},
-  ): Promise<FlowSurfaceApplyBlueprintMutationResult | FlowSurfaceApplyBlueprintResponse> {
+    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; enabledPackages?: ReadonlySet<string> } = {},
+  ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
       transaction: options.transaction,
@@ -4677,6 +4675,29 @@ export class FlowSurfacesService {
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
+  }
+
+  private async applyBlueprintWithTransaction(
+    values: Record<string, any>,
+    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; skipAuthoringValidation?: boolean },
+    createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] | undefined,
+    resultOptions: { readSurface: false },
+  ): Promise<FlowSurfaceApplyBlueprintMutationResult>;
+  private async applyBlueprintWithTransaction(
+    values: Record<string, any>,
+    options?: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; skipAuthoringValidation?: boolean },
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    resultOptions?: { readSurface?: true },
+  ): Promise<FlowSurfaceApplyBlueprintResponse>;
+  private async applyBlueprintWithTransaction(
+    values: Record<string, any>,
+    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; skipAuthoringValidation?: boolean } = {},
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    resultOptions: { readSurface?: boolean } = {},
+  ): Promise<FlowSurfaceApplyBlueprintMutationResult | FlowSurfaceApplyBlueprintResponse> {
+    if (options.skipAuthoringValidation !== true) {
+      await this.assertApplyBlueprintAuthoringPayload(values, options);
+    }
     const prepared = await this.prepareApplyBlueprintRequest(values, options.transaction, createdKanbanSortFields);
     const popupTemplateAliasSession = this.createPopupTemplateAliasSession();
     const popupTemplateTreeCache: FlowSurfacePopupTemplateTreeCache = new Map();
@@ -24087,11 +24108,13 @@ export class FlowSurfacesService {
 
   private getCollection(dataSourceKey: string, collectionName: string) {
     const normalizedDataSourceKey = dataSourceKey || 'main';
-    const dataSourceManager = this.plugin.app.dataSourceManager;
+    const app = this.plugin?.app;
+    const dataSourceManager = app?.dataSourceManager;
     const dataSource = dataSourceManager?.get?.(normalizedDataSourceKey);
     return (
       dataSource?.collectionManager?.getCollection?.(collectionName) ||
-      this.plugin.app.db?.getCollection?.(collectionName)
+      app?.db?.getCollection?.(collectionName) ||
+      this.db?.getCollection?.(collectionName)
     );
   }
 
