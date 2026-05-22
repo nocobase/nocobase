@@ -82,6 +82,10 @@ function setupRouteReplay(viewParams: Record<string, any>) {
     active: true,
     layoutContentElement: document.createElement('div'),
   });
+  coordinator.syncRoute({
+    params: { name: 'test-route' },
+    pathname: '/admin/popup/filterbytk/member',
+  });
 
   return { dispatchEvent };
 }
@@ -142,6 +146,10 @@ describe('AdminLayoutRouteCoordinator', () => {
       active: true,
       layoutContentElement: document.createElement('div'),
     });
+    coordinator.syncRoute({
+      params: { name: 'test-route' },
+      pathname: '/embed/test-route/view/popup/filterbytk/member',
+    });
 
     expect(mockResolveViewParamsToViewList).toHaveBeenCalledWith(
       engine,
@@ -183,6 +191,37 @@ describe('AdminLayoutRouteCoordinator', () => {
       [{ viewUid: 'test-route' }, { viewUid: 'popup', filterByTk: 'member' }],
       expect.anything(),
     );
+  });
+
+  it('does not replay global route when a route page registers', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: 'test-route' },
+        pathname: '/embed/test-route/view/popup',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    mockResolveViewParamsToViewList.mockReturnValue([]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/embed' });
+    coordinator.registerPage('test-route', {
+      active: false,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    expect(mockResolveViewParamsToViewList).not.toHaveBeenCalled();
+    expect(engine.getModel('test-route')?.context.pageActive.value).toBe(false);
   });
 
   it('parses view stack with nested basePath', () => {

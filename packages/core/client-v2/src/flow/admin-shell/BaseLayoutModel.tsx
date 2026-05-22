@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { define, observable, reaction } from '@formily/reactive';
+import { define, observable } from '@formily/reactive';
 import { parsePathnameToViewParams, type FlowEngine, FlowModel, type ViewParam } from '@nocobase/flow-engine';
 import {
   BaseLayoutRouteCoordinator,
@@ -67,6 +67,7 @@ export interface LayoutRouteLike {
   name?: string;
   pathname?: string;
   params?: Record<string, string | undefined>;
+  layoutRouteName?: string;
   layoutBasePathname?: string;
 }
 
@@ -146,7 +147,6 @@ export class BaseLayoutModel<
   isMobileLayout = false;
   currentLayoutRoute: LayoutRouteMatch | null = null;
   protected routeCoordinator?: BaseLayoutRouteCoordinator;
-  private routeDisposer?: () => void;
   private activePageUid = '';
   private layoutContentElement: HTMLElement | null = null;
   private readonly routePageMetaMap = new Map<string, RoutePageMeta>();
@@ -237,6 +237,10 @@ export class BaseLayoutModel<
   }
 
   isLayoutContentRoute(routeLike: LayoutRouteLike) {
+    if (routeLike?.layoutRouteName) {
+      return routeLike.layoutRouteName === this.layout.routeName;
+    }
+
     const routeName = routeLike?.name || routeLike?.id;
     return isLayoutContentRouteName(this.layout.routeName, routeName);
   }
@@ -312,9 +316,7 @@ export class BaseLayoutModel<
 
   syncLayoutRoute(routeLike: LayoutRouteLike) {
     if (!this.isLayoutContentRoute(routeLike)) {
-      this.currentLayoutRoute = null;
-      this.activePageUid = '';
-      this.getCoordinator().syncRoute({});
+      this.clearLayoutRoute();
       return null;
     }
 
@@ -323,6 +325,7 @@ export class BaseLayoutModel<
     this.activePageUid = this.getPageUidFromLayoutRoute(layoutRoute);
     this.getCoordinator().syncRoute({
       ...routeLike,
+      layoutRouteName: this.layout.routeName,
       pageUid: this.activePageUid,
       pathname: layoutRoute.pathname,
       layoutBasePathname: layoutRoute.basePathname,
@@ -332,10 +335,20 @@ export class BaseLayoutModel<
     return layoutRoute;
   }
 
+  clearLayoutRoute(routeLike?: LayoutRouteLike) {
+    const pathname = routeLike?.pathname ? normalizePathname(routeLike.pathname) : '';
+    if (pathname && this.currentLayoutRoute?.pathname && pathname !== this.currentLayoutRoute.pathname) {
+      return;
+    }
+
+    this.currentLayoutRoute = null;
+    this.activePageUid = '';
+    this.routeCoordinator?.syncRoute({});
+  }
+
   protected onMount(): void {
     super.onMount();
     this.setupContextBindings();
-    this.setupRouteReaction();
   }
 
   protected onUnmount(): void {
@@ -375,33 +388,8 @@ export class BaseLayoutModel<
     });
   }
 
-  private setupRouteReaction() {
-    if (this.routeDisposer) {
-      return;
-    }
-
-    this.routeDisposer = reaction(
-      () => this.flowEngine.context.route,
-      (route) => {
-        if (this.isLayoutContentRoute(route || {})) {
-          this.syncLayoutRoute(route || {});
-          return;
-        }
-
-        this.currentLayoutRoute = null;
-        this.activePageUid = this.getPageUidFromRoute(route);
-        this.getCoordinator().syncRoute(route || {});
-      },
-      {
-        fireImmediately: true,
-      },
-    );
-  }
-
   private teardownRuntime() {
     this.contextBindingsActive = false;
-    this.routeDisposer?.();
-    this.routeDisposer = undefined;
     this.routeCoordinator?.destroy();
     this.routeCoordinator = undefined;
     this.routePageMetaMap.clear();
@@ -418,17 +406,16 @@ export class BaseLayoutModel<
   }
 
   private getCurrentCoordinatorRouteLike() {
-    const route = this.flowEngine.context.route || {};
     if (this.currentLayoutRoute?.type === 'page') {
       return {
-        ...route,
+        layoutRouteName: this.layout.routeName,
         pageUid: this.currentLayoutRoute.pageUid,
         pathname: this.currentLayoutRoute.pathname,
         layoutBasePathname: this.currentLayoutRoute.basePathname,
         layoutRoute: this.currentLayoutRoute,
       };
     }
-    return route;
+    return {};
   }
 }
 

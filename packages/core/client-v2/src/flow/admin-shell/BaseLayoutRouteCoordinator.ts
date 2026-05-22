@@ -51,6 +51,7 @@ interface RoutePageRuntime {
 }
 
 interface RouteLike {
+  layoutRouteName?: string;
   params?: { name?: string };
   pathname?: string;
   pageUid?: string;
@@ -122,7 +123,6 @@ export class BaseLayoutRouteCoordinator {
     this.ensureRouteModelContext(runtime);
     this.runtimes.set(pageUid, runtime);
     this.syncPageMeta(pageUid, meta);
-    this.syncRoute(this.flowEngine.context.route || {});
 
     return runtime.routeModel;
   }
@@ -149,6 +149,13 @@ export class BaseLayoutRouteCoordinator {
   }
 
   syncRoute(routeLike: RouteLike) {
+    if (routeLike?.layoutRouteName && this.layout?.routeName && routeLike.layoutRouteName !== this.layout.routeName) {
+      this.runtimes.forEach((runtime) => {
+        this.setRuntimeActive(runtime, false);
+      });
+      return;
+    }
+
     const activePageUid = routeLike?.pageUid || routeLike?.layoutRoute?.pageUid || routeLike?.params?.name;
     const pathname = routeLike?.pathname;
     const nextBasePathname = routeLike?.layoutBasePathname || routeLike?.layoutRoute?.basePathname;

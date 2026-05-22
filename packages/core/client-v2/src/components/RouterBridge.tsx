@@ -47,6 +47,7 @@ export function useRouterSync(app: Application) {
       pathname: last.pathname,
       path: last.handle?.['path'] || null,
       params,
+      layoutRouteName: layoutMatch?.id,
       layoutBasePathname: layoutMatch?.pathname,
     };
   }, [app, engine.context, params, matches]);

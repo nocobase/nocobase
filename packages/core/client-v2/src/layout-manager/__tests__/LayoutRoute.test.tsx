@@ -148,7 +148,7 @@ describe('LayoutContentRoute', () => {
       </FlowEngineProvider>,
     );
 
-    return { model };
+    return { model, router };
   }
 
   it('parses page route from standard layout route', async () => {
@@ -181,6 +181,23 @@ describe('LayoutContentRoute', () => {
         pageUid: 'form-1',
         viewStack: [{ viewUid: 'form-1' }, { viewUid: 'popup' }],
       });
+    });
+  });
+
+  it('clears local layout route when the content route unmounts', async () => {
+    const { model, router } = setup('/test/page-1/view/popup');
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+      });
+    });
+
+    await router.navigate('/test');
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toBeNull();
     });
   });
 });

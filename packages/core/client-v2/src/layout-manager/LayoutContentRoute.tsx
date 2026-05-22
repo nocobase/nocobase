@@ -36,6 +36,7 @@ export const LayoutContentRoute = (props: LayoutContentRouteProps) => {
       name: lastMatch?.id,
       pathname: location.pathname,
       params: (lastMatch?.params || {}) as Record<string, string | undefined>,
+      layoutRouteName: layout.routeName,
       layoutBasePathname: layoutMatch?.pathname,
     };
   }, [layout.routeName, location.pathname, matches]);
@@ -51,6 +52,9 @@ export const LayoutContentRoute = (props: LayoutContentRouteProps) => {
 
   useEffect(() => {
     model.syncLayoutRoute(routeLike);
+    return () => {
+      model.clearLayoutRoute(routeLike);
+    };
   }, [model, routeLike]);
 
   if (layoutRoute.type === 'root') {
