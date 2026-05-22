@@ -117,6 +117,17 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
       },
     },
   ],
+  comments: [
+    { type: 'edit', scope: 'recordActions' },
+    { type: 'delete', scope: 'recordActions' },
+    { type: 'quoteReply', scope: 'recordActions' },
+  ],
+  recordHistory: [
+    { type: 'filter', scope: 'actions' },
+    { type: 'refresh', scope: 'actions' },
+    { type: 'expandAll', scope: 'actions' },
+    { type: 'collapseAll', scope: 'actions' },
+  ],
 };
 
 function cloneDefaultActionDescriptor(

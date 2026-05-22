@@ -23,6 +23,7 @@ export const COLLECTION_BLOCK_USES = new Set([
   'GridCardBlockModel',
   'MapBlockModel',
   'CommentsBlockModel',
+  'RecordHistoryBlockModel',
   ...APPROVAL_FORM_BLOCK_USES,
   ...APPROVAL_DETAILS_BLOCK_USES,
 ]);
@@ -85,6 +86,7 @@ export const ACTION_BUTTON_USES = new Set([
   'JSItemActionModel',
   'FilterFormJSActionModel',
   'JSActionModel',
+  'AIEmployeeButtonModel',
   'CalendarTodayActionModel',
   'CalendarNavActionModel',
   'CalendarTitleActionModel',

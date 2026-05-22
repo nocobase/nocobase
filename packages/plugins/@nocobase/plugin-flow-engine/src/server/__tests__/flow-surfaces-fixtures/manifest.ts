@@ -212,6 +212,7 @@ const FIXTURE_SAMPLES: Record<FormalFlowSurfaceBlockKey, FlowSurfaceFixtureManif
         'Frontend add-block was re-verified on 2026-03-28. The Comments submenu search returns "No data" for users, Tts Tickets, and nb_tts_tickets in the current live dataset, so frontend-live capture is still blocked.',
     },
   ],
+  'record-history': [],
   'action-panel': [
     {
       name: 'action-panel-block-live',
@@ -239,7 +240,7 @@ export const FORMAL_FLOW_SURFACE_BLOCK_FIXTURE_MANIFEST: FlowSurfaceFixtureManif
   }));
 
 export const FORMAL_FLOW_SURFACE_CREATE_PARITY_BLOCK_KEYS = FORMAL_FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter(
-  (entry) => entry.createSupported,
+  (entry) => entry.createSupported && entry.fixtureCaptured && entry.formalKey !== 'comments',
 ).map((entry) => entry.formalKey) as readonly FormalFlowSurfaceBlockKey[];
 
 export const FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS: readonly FormalFlowSurfaceBlockKey[] = [

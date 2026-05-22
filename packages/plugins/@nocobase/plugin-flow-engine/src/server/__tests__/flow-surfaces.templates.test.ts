@@ -64,7 +64,7 @@ function departmentDefaultFilter() {
   return defaultFilterFor(['title', 'code', 'status', 'scope']);
 }
 
-describe.skip('flowSurfaces templates', () => {
+describe('flowSurfaces templates', () => {
   let app: MockServer;
   let rootAgent: any;
 

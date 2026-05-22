@@ -226,11 +226,19 @@ function invokeFlowSurfaceServiceAction(
   service: FlowSurfacesService,
   actionName: FlowSurfacesActionName,
   values: Record<string, any>,
-  options: { transaction?: any; t?: (key: string, options?: Record<string, any>) => string } = {},
+  options: {
+    transaction?: any;
+    currentRoles?: readonly string[] | string;
+    t?: (key: string, options?: Record<string, any>) => string;
+  } = {},
 ) {
   const handler = service[actionName] as unknown as (
     values: Record<string, any>,
-    options?: { transaction?: any; t?: (key: string, options?: Record<string, any>) => string },
+    options?: {
+      transaction?: any;
+      currentRoles?: readonly string[] | string;
+      t?: (key: string, options?: Record<string, any>) => string;
+    },
   ) => Promise<any>;
   return handler.call(service, values, options);
 }
@@ -296,14 +304,15 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
           const definition = FLOW_SURFACE_ACTION_DEFINITIONS[actionName];
           const values = definition.valueSource === 'read' ? getReadValues(ctx) : getValues(ctx);
           const t = getFlowSurfaceTranslate(ctx);
+          const currentRoles = ctx.state?.currentRoles;
 
           if (definition.transaction) {
             return service.transaction((transaction) =>
-              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction, t }),
+              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction, currentRoles, t }),
             );
           }
 
-          return invokeFlowSurfaceServiceAction(service, actionName, values, { t });
+          return invokeFlowSurfaceServiceAction(service, actionName, values, { currentRoles, t });
         });
       },
     ]),

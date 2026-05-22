@@ -432,7 +432,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
       return null;
     }
 
-    const { title, aclSnippet, key, menuKey, name, ...others } = page;
+    const { title, aclSnippet, key, menuKey, name, icon, ...others } = page;
 
     return {
       ...others,
@@ -443,6 +443,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
       name,
       title,
       label: title,
+      icon: this.renderIcon(icon),
       path: this.getRoutePath(name),
       sort: page.sort,
       isAllow,

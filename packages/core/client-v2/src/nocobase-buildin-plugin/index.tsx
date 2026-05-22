@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createCollectionContextMeta } from '@nocobase/flow-engine';
-import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
+import React, { createContext, type FC, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useACLRoleContext } from '../acl';
 import type { Application } from '../Application';
-import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath, redirectToV2Signin } from '../authRedirect';
+import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
@@ -20,11 +21,16 @@ import { Plugin } from '../Plugin';
 import { AdminSettingsLayoutModel } from '../settings-center';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
-type CurrentUserState = {
+export type CurrentUserState = {
   data?: {
     data?: any;
   };
   loading: boolean;
+};
+
+export type CurrentRoleOption = {
+  name: string;
+  title: string;
 };
 
 const AUTH_ROUTE_PREFIXES = ['/signin', '/signup', '/forgot-password', '/reset-password'];
@@ -50,8 +56,41 @@ function isAdminRuntimeRoute(pathname: string, basename?: string) {
   return normalizedPathname === '/admin' || normalizedPathname.startsWith('/admin/');
 }
 
-const CurrentUserContext = createContext<CurrentUserState | null>(null);
+export const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
+
+export function useCurrentUserContext() {
+  return useContext(CurrentUserContext);
+}
+
+/**
+ * 返回当前用户在 v2 应用上下文中可选的角色列表，等价于 v1 `useCurrentRoles`：
+ * 从 FlowEngine 全局上下文 `engine.context.user.roles` 派生（CurrentUserProvider 在
+ * `/auth:check` 成功后通过 `defineProperty('user', { value })` 写入），按需追加匿名角色，
+ * 并去掉合并角色 `__union__`。v2 中角色 title 可能含有 `{{t('...')}}` 模板，因此用
+ * flowEngine.context.t 解析。
+ *
+ * 不读 React `CurrentUserContext`：FlowEngine 的 dialog/drawer/popover 内容通过 `ctx.viewer`
+ * 渲染到独立的 ElementsHolder，部分场景会脱离原 Provider 树；FlowEngine 全局上下文是同一份
+ * 数据但不受 React 树位置影响。
+ */
+export function useCurrentRoles(): CurrentRoleOption[] {
+  const { allowAnonymous } = useACLRoleContext();
+  const engine = useFlowEngine();
+  const rolesRaw = engine?.context?.user?.roles as Array<{ name: string; title?: string }> | undefined;
+
+  return useMemo(() => {
+    const compile = (value: string | undefined): string =>
+      value == null ? '' : engine?.context?.t ? engine.context.t(value) : value;
+    const roles: CurrentRoleOption[] = (rolesRaw || [])
+      .filter((role) => role?.name !== '__union__')
+      .map((role) => ({ name: role.name, title: compile(role.title) }));
+    if (allowAnonymous) {
+      roles.push({ name: 'anonymous', title: 'Anonymous' });
+    }
+    return roles;
+  }, [allowAnonymous, engine, rolesRaw]);
+}
 
 const DataSourceBootstrapProvider: FC = ({ children }) => {
   const app = useApp();
@@ -115,6 +154,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
 const CurrentUserProvider: FC = ({ children }) => {
   const app = useApp();
   const location = useLocation();
+  const navigate = useNavigate();
   const [state, setState] = useState<CurrentUserState>({ loading: true });
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
@@ -143,8 +183,23 @@ const CurrentUserProvider: FC = ({ children }) => {
         });
 
         const user = res?.data?.data;
+        // 服务端通过 `{ code: 302, redirect }` 通知客户端先去某个中间页(例如 2FA 验证页)。
+        // 这类响应没有 user.id,但也不能视为未登录——否则会和处理 302 的全局响应拦截器
+        // (例如 plugin-two-factor-authentication 注册的那一个)竞态,而 `window.location.replace`
+        // 会覆盖更早发出的 `window.location.href`,把用户错误地弹回登录页。让响应拦截器接管跳转。
+        if (user?.code === 302) {
+          if (mounted) {
+            setState({ loading: false });
+          }
+          return;
+        }
         if (user?.id == null) {
-          redirectToV2Signin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
+          // 用 react-router navigate (虚拟跳转)而不是 location.replace, 这样如果有其他响应拦截器
+          // 已经发起了 window.location.href 整页跳转(例如 2FA 插件接收到服务端 302 重定向),
+          // 真实跳转可以胜出 navigate, 不会被这里的 signin 重定向覆盖。
+          navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
+            replace: true,
+          });
           return;
         }
 
@@ -169,7 +224,9 @@ const CurrentUserProvider: FC = ({ children }) => {
       } catch (error: any) {
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (isAuthError) {
-          redirectToV2Signin(app, getCurrentV2RedirectPath(app, locationRef.current), { replace: true });
+          navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
+            replace: true,
+          });
           return;
         }
         if (mounted) {
@@ -184,7 +241,7 @@ const CurrentUserProvider: FC = ({ children }) => {
     return () => {
       mounted = false;
     };
-  }, [app]);
+  }, [app, navigate]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
@@ -196,15 +253,12 @@ const CurrentUserProvider: FC = ({ children }) => {
 const RootRedirect: FC = () => {
   const app = useApp();
   const hasToken = !!app?.apiClient?.auth?.token;
-
-  useEffect(() => {
-    if (!hasToken) {
-      redirectToV2Signin(app, getDefaultV2AdminRedirectPath(app), { replace: true });
-    }
-  }, [app, hasToken]);
+  const targetPath = getDefaultV2AdminRedirectPath(app);
 
   if (!hasToken) {
-    return app.renderComponent('AppSpin');
+    // 用 react-router <Navigate /> 而非 location.replace, 避免覆盖同时段其它响应拦截器
+    // 触发的 window.location.href (例如 2FA 接收到服务端 302 时设置的整页跳转)。
+    return <Navigate replace to={`/signin?redirect=${encodeURIComponent(targetPath)}`} />;
   }
 
   return <Navigate replace to="/admin" />;

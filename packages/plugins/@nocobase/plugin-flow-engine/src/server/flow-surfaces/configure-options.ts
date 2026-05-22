@@ -428,8 +428,19 @@ const MAP_OPTIONS: FlowSurfaceConfigureOptions = {
 const COMMENTS_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_HEADER_OPTIONS,
   resource: COMMON_RESOURCE,
-  pageSize: numberOption('Page size', { example: 20 }),
+  pageSize: numberOption('Page size', { enum: [5, 10, 20, 50, 100, 200], example: 20 }),
   dataScope: FILTER_GROUP,
+};
+
+const RECORD_HISTORY_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...COMMON_BLOCK_HEADER_OPTIONS,
+  resource: COMMON_RESOURCE,
+  sortOrder: objectOption('History sort order', { example: { order: 'desc' } }),
+  dataScope: FILTER_GROUP,
+  expand: objectOption('Expansion state', { example: { expand: true } }),
+  template: objectOption('Record-history template binding. Only { apply: "current" } is public.', {
+    example: { apply: 'current' },
+  }),
 };
 
 const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -680,6 +691,31 @@ const ACTION_EMAIL_OPTIONS: FlowSurfaceConfigureOptions = {
   defaultSelectAllRecords: booleanOption('Whether all records are selected by default', { example: false }),
 };
 
+const ACTION_AI_EMPLOYEE_OPTIONS: FlowSurfaceConfigureOptions = {
+  username: stringOption('AI employee username', { example: 'dex' }),
+  auto: booleanOption('Whether the single configured task is prepared automatically', { example: false }),
+  workContext: arrayOption('Top-level AI work context. Use target=self or a same-blueprint block key before write.', {
+    example: [{ type: 'flow-model', target: 'self' }],
+  }),
+  tasks: arrayOption('AI employee task definitions', {
+    example: [
+      {
+        title: 'Analyze current record',
+        message: {
+          system: 'Use the current UI context.',
+          user: 'Analyze the current record and suggest next steps.',
+          workContext: [{ type: 'flow-model', target: 'self' }],
+        },
+        autoSend: false,
+        skillSettings: { skills: [], tools: [] },
+        model: null,
+        webSearch: false,
+      },
+    ],
+  }),
+  style: objectOption('Avatar style', { example: { size: 40, mask: false } }),
+};
+
 const CALENDAR_ACTION_POSITION_OPTIONS: FlowSurfaceConfigureOptions = {
   position: stringOption('Position', { enum: ['left', 'right'], example: 'left' }),
 };
@@ -744,6 +780,8 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
   const merged = (...extra: FlowSurfaceConfigureOptions[]) => mergeOptions(...base, ...extra);
 
   switch (normalized) {
+    case 'AIEmployeeButtonModel':
+      return mergeOptions(ACTION_AI_EMPLOYEE_OPTIONS);
     case 'CalendarTodayActionModel':
       return merged(CALENDAR_ACTION_POSITION_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'CalendarNavActionModel':
@@ -910,6 +948,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       break;
     case 'CommentsBlockModel':
       options = cloneOptions(COMMENTS_OPTIONS);
+      break;
+    case 'RecordHistoryBlockModel':
+      options = cloneOptions(RECORD_HISTORY_OPTIONS);
       break;
     case 'JSBlockModel':
       options = cloneOptions(JS_BLOCK_OPTIONS);

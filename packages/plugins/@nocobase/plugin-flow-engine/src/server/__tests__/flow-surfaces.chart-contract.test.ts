@@ -13,7 +13,7 @@ import { getConfigureOptionsForUse } from '../flow-surfaces/configure-options';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { buildBlockTree } from '../flow-surfaces/builder';
 
-describe.skip('flowSurfaces chart contract helpers', () => {
+describe('flowSurfaces chart contract helpers', () => {
   it('should expose chart editable contract on stepParams only', () => {
     const contract = getNodeContract('ChartBlockModel');
     expect(contract.editableDomains).toContain('stepParams');

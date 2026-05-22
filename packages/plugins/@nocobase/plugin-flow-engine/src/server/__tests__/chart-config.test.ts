@@ -138,7 +138,7 @@ describe('chart-config semantic helpers', () => {
     expect(next).toMatchObject({
       query: {
         collectionPath: ['main', 'employees'],
-        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
         dimensions: [{ field: 'department.title' }],
         orders: [],
         filter: {
@@ -147,6 +147,45 @@ describe('chart-config semantic helpers', () => {
         },
         limit: 10,
         offset: 5,
+      },
+    });
+  });
+
+  it('should normalize count(id) to the grouping dimension for builder chart runtime data', () => {
+    const next = canonicalizeChartConfigure({
+      query: {
+        mode: 'builder',
+        collectionPath: ['main', 'claims'],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'count' }],
+        dimensions: [{ field: 'claim_category' }],
+      },
+      chart: {
+        option: {
+          mode: 'basic',
+          builder: {
+            type: 'doughnut',
+            doughnutCategory: 'claim_category',
+            doughnutValue: 'count',
+          },
+        },
+      },
+    });
+
+    expect(next).toMatchObject({
+      query: {
+        collectionPath: ['main', 'claims'],
+        measures: [{ field: 'claim_category', aggregation: 'count', alias: 'count' }],
+        dimensions: [{ field: 'claim_category' }],
+      },
+      chart: {
+        option: {
+          mode: 'basic',
+          builder: {
+            type: 'doughnut',
+            doughnutCategory: 'claim_category',
+            doughnutValue: 'count',
+          },
+        },
       },
     });
   });
@@ -447,7 +486,7 @@ describe('chart-config semantic helpers', () => {
       query: {
         mode: 'builder',
         collectionPath: ['main', 'employees'],
-        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
         dimensions: [{ field: 'department.title' }],
       },
       chart: {

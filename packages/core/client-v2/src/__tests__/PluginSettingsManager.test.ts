@@ -76,6 +76,25 @@ describe('PluginSettingsManager v2', () => {
     expect(app.router.get('admin.settings.demo.advanced')).toMatchObject({ path: 'advanced' });
   });
 
+  it('should render string icon on both menu and page tab via renderIcon', () => {
+    // Previously `renderPage` spread the raw `icon` string straight to the antd
+    // Menu item, which displayed "LockOutlinedTitle" as text. Both `renderMenuItem`
+    // and `renderPage` must coerce string icon names to React elements.
+    const app = createMockClient();
+
+    app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo', icon: 'TeamOutlined' });
+    app.pluginSettingsManager.addPageTabItem({
+      menuKey: 'demo',
+      key: 'index',
+      title: 'Overview',
+      icon: 'LockOutlined',
+    });
+
+    const list = app.pluginSettingsManager.getList();
+    expect(React.isValidElement(list[0].icon)).toBe(true);
+    expect(React.isValidElement(list[0].children?.[0].icon)).toBe(true);
+  });
+
   it('should support componentLoader on page item', () => {
     const app = createMockClient();
     const componentLoader = async () => ({
