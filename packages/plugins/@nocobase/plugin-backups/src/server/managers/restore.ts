@@ -62,6 +62,7 @@ const RESTORE_STEPS = {
 export class RestoreManager {
   ctx: ResourcerContext;
   #dbAdapter: DBAdapter;
+  #restoreTasksCacheName: string;
   #backupDir: string;
   #tempDir: string;
   #uploadDir: string;
@@ -69,10 +70,27 @@ export class RestoreManager {
   constructor(ctx: ResourcerContext, dbOptions?: any) {
     this.ctx = ctx;
     this.#dbAdapter = getDBAdapter(dbOptions || ctx.app.db.options);
+    this.#restoreTasksCacheName = RESTORE_TASKS_CACHE_NAME;
     this.#backupDir = storagePathJoin('backups', ctx.app.name);
     this.#tempDir = storagePathJoin('tmp', 'backups', ctx.app.name);
     this.#uploadDir = storagePathJoin('uploads');
     this.#aesKeyPath = storagePathJoin('apps', ctx.app.name, 'aes_key.dat');
+  }
+
+  protected set backupDir(backupDir: string) {
+    this.#backupDir = backupDir;
+  }
+
+  protected set tempDir(tempDir: string) {
+    this.#tempDir = tempDir;
+  }
+
+  protected set uploadDir(uploadDir: string) {
+    this.#uploadDir = uploadDir;
+  }
+
+  protected set restoreTasksCacheName(restoreTasksCacheName: string) {
+    this.#restoreTasksCacheName = restoreTasksCacheName;
   }
 
   async restoreFromBackup(
@@ -185,12 +203,12 @@ export class RestoreManager {
     }
   }
 
-  private async getStatusCache() {
+  protected async getStatusCache() {
     try {
-      return this.ctx.app.cacheManager.getCache(RESTORE_TASKS_CACHE_NAME);
+      return this.ctx.app.cacheManager.getCache(this.#restoreTasksCacheName);
     } catch (e) {
       return await this.ctx.app.cacheManager.createCache({
-        name: RESTORE_TASKS_CACHE_NAME,
+        name: this.#restoreTasksCacheName,
         store: 'memory',
         ttl: RESTORE_TASKS_CACHE_TTL,
         max: 10,
