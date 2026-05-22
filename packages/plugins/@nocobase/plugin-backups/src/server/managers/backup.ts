@@ -26,11 +26,14 @@ import {
   BACKUP_EXTENSION,
   BACKUP_TASKS_CACHE_NAME,
   FILE_ENCRYPTION_SALT,
+  METADATA_EXTENSION,
   PLUGIN_BACKUPS_NAME,
   getDBVersion,
   humanFileSize,
   resolvePathWithinBase,
 } from '../utils';
+
+const BACKUP_METADATA_VERSION = 1;
 
 export interface BackupSettings {
   storageId?: string;
@@ -41,12 +44,14 @@ export interface BackupSettings {
   cron: string;
   includeTables?: string[];
   excludeTables?: string[];
+  description?: string;
 }
 
 export interface BackupFile {
   name: string;
   fileSize?: string;
   createdAt?: Date;
+  description?: string;
   inProgress: boolean;
 }
 
@@ -201,8 +206,10 @@ export class BackupManager {
       });
 
     const metadata = {
+      metadataVersion: BACKUP_METADATA_VERSION,
       enableFilesBackup: opts.enableFilesBackup,
       version: await this.app.version.get(),
+      description: opts.description,
       database: {
         dialect,
         underscored,
@@ -213,8 +220,7 @@ export class BackupManager {
       },
       plugins,
     };
-    // save the metadata to file _metadata.json
-    const metadataFilePath = path.join(dir, '_metadata.json');
+    const metadataFilePath = path.join(dir, METADATA_EXTENSION);
     try {
       await fsPromises.writeFile(metadataFilePath, JSON.stringify(metadata, null, 2));
     } catch (error) {
@@ -227,6 +233,8 @@ export class BackupManager {
       zlib: { level: 9 },
     });
     const filePath = path.join(this.#backupDir, `${fileBaseName}.${BACKUP_EXTENSION}`);
+    const sourceMetadataFilePath = path.join(dir, METADATA_EXTENSION);
+    const metadataFilePath = path.join(this.#backupDir, `${fileBaseName}${METADATA_EXTENSION}`);
     const outputFileStream = fs.createWriteStream(filePath);
 
     try {
@@ -315,6 +323,7 @@ export class BackupManager {
 
       // Wait for the 'close' event
       await onClose;
+      await fsPromises.copyFile(sourceMetadataFilePath, metadataFilePath);
     } catch (error) {
       this.app.logger.error(`Error compressing files: ${error.message}`, { module: BACKUPS });
       throw new Error(this.#t('ERROR_COMPRESSING_FILES', error.message));
@@ -489,16 +498,31 @@ export class BackupManager {
     const backupPromises = files
       .filter((file) => file.endsWith(`.${BACKUP_EXTENSION}`) && !inProgressFileNames.includes(file))
       .map(async (file): Promise<BackupFile> => {
-        const stats = await fsPromises.stat(path.join(this.#backupDir, file));
+        const fileBaseName = path.basename(file, `.${BACKUP_EXTENSION}`);
+        const metadataFilePath = path.join(this.#backupDir, `${fileBaseName}${METADATA_EXTENSION}`);
+        const [stats, description] = await Promise.all([
+          fsPromises.stat(path.join(this.#backupDir, file)),
+          this.#readBackupDescription(metadataFilePath),
+        ]);
         return {
           name: file,
           fileSize: humanFileSize(stats.size),
           createdAt: stats.ctime,
+          description,
           inProgress: false,
         };
       });
     const backups = await Promise.all(backupPromises);
     return backups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async #readBackupDescription(metadataFilePath: string): Promise<string | undefined> {
+    try {
+      const metadata = JSON.parse(await fsPromises.readFile(metadataFilePath, 'utf8'));
+      return typeof metadata?.description === 'string' ? metadata.description : undefined;
+    } catch (_error) {
+      return undefined;
+    }
   }
 
   async #listProgressBackups(): Promise<BackupFile[]> {
