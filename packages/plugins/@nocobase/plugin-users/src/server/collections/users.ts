@@ -16,6 +16,7 @@ export default defineCollection({
   },
   migrationRules: ['schema-only', 'overwrite'],
   name: 'users',
+  tags: 'business',
   title: '{{t("Users")}}',
   sortable: 'sort',
   model: 'UserModel',

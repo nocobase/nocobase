@@ -13,6 +13,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'uiSchemaTreePath',
+  tags: 'basic',
   autoGenId: false,
   timestamps: false,
   indexes: [

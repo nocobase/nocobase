@@ -12,6 +12,7 @@ import type { FilterGroupType } from '@nocobase/utils';
 
 export default {
   name: 'aiContextDatasources',
+  tags: 'business',
   migrationRules: ['schema-only'],
   fields: [
     {

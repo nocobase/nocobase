@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'dataSourcesCollections',
+  tags: 'basic',
   model: 'DataSourcesCollectionModel',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],

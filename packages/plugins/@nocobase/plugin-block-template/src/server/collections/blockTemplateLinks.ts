@@ -12,6 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'blockTemplateLinks',
+  tags: 'basic',
   migrationRules: ['overwrite', 'schema-only'],
   fields: [
     {

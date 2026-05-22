@@ -17,6 +17,7 @@ export default {
   migrationRules: ['schema-only'],
   shared: true,
   name: 'apiKeys',
+  tags: 'business',
   sortable: 'sort',
   createdBy: true,
   updatedAt: false,

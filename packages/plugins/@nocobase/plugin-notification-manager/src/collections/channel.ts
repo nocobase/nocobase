@@ -11,6 +11,7 @@ import { COLLECTION_NAME } from '../constant';
 
 export default {
   name: COLLECTION_NAME.channels,
+  tags: 'basic',
   migrationRules: ['overwrite', 'schema-only'],
   filterTargetKey: 'name',
   autoGenId: false,

@@ -16,6 +16,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   migrationRules: ['schema-only', 'overwrite', 'skip'],
   name: 'usersVerifiers',
+  tags: 'business',
   createdBy: true,
   updatedBy: true,
   logging: true,

@@ -13,6 +13,7 @@ export default defineCollection({
   migrationRules: ['schema-only'],
   autoGenId: false,
   name: 'aiConversations',
+  tags: 'business',
   fields: [
     {
       name: 'sessionId',

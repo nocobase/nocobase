@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineCollection } from '@nocobase/database';
+import { defineCollection, TAG } from '@nocobase/database';
 
 export default defineCollection({
+  tags: TAG.business,
   migrationRules: ['schema-only'],
   autoGenId: false,
   name: 'aiMessages',

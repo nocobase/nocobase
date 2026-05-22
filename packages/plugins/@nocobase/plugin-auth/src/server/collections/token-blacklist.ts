@@ -16,6 +16,7 @@ export default defineCollection({
   migrationRules: ['schema-only'],
   shared: true,
   name: 'tokenBlacklist',
+  tags: 'business',
   model: 'TokenBlacklistModel',
   fields: [
     {

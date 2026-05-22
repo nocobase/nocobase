@@ -67,6 +67,7 @@ export default defineCollection({
   },
   migrationRules: ['overwrite', 'schema-only'],
   name: 'sequences',
+  tags: 'basic',
   shared: true,
   fields: [
     {

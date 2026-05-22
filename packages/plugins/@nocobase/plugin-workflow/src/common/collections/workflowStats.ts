@@ -15,6 +15,7 @@ export default {
   },
   migrationRules: ['schema-only'],
   name: 'workflowStats',
+  tags: 'business',
   shared: true,
   autoGenId: false,
   fields: [

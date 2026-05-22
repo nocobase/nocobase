@@ -13,6 +13,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'workflows',
+  tags: 'basic',
   shared: true,
   repository: 'WorkflowRepository',
   createdBy: true,

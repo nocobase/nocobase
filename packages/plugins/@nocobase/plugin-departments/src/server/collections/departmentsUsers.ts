@@ -20,6 +20,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'departmentsUsers',
+  tags: 'business',
   dumpRules: 'required',
   migrationRules: ['schema-only'],
   fields: [

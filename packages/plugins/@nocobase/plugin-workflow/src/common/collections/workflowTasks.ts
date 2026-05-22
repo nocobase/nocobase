@@ -14,6 +14,7 @@ export default function () {
     dumpRules: 'required',
     migrationRules: ['overwrite', 'schema-only'],
     name: 'workflowTasks',
+    tags: 'business',
     shared: true,
     repository: 'WorkflowTasksRepository',
     fields: [
