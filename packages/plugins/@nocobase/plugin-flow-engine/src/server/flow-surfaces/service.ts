@@ -471,6 +471,7 @@ type FlowSurfacePopupTemplateAliasSession = Map<string, string>;
 type FlowSurfaceDefaultActionSettings = Record<string, any>;
 type FlowSurfaceRequestRoles = readonly string[] | string;
 type FlowSurfaceModelPatchOptions = { transaction?: any };
+type FlowSurfaceReadOptions = { transaction?: any; currentRoles?: FlowSurfaceRequestRoles };
 type FlowSurfaceRuntimeOptions = {
   transaction?: any;
   currentRoles?: FlowSurfaceRequestRoles;
@@ -981,6 +982,8 @@ const AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS = ['skills', 'tools', 'skillsVersio
 const AI_EMPLOYEE_STYLE_PUBLIC_KEYS = ['size', 'mask'];
 const AI_EMPLOYEE_PROMPT_CONTEXT_MAX_DEPTH = 8;
 const AI_EMPLOYEE_PROMPT_VARIABLE_INVALID = 'FLOW_SURFACE_AI_EMPLOYEE_PROMPT_VARIABLE_INVALID';
+const AI_EMPLOYEE_CURRENT_RECORD_PROMPT_VARIABLE = '{{ ctx.record }}';
+const AI_EMPLOYEE_CURRENT_RECORD_PROMPT_VARIABLE_RE = /\{\{\s*ctx\.record\s*\}\}/;
 const AI_EMPLOYEE_DEFAULT_STYLE = {
   size: 40,
   mask: false,
@@ -1072,6 +1075,13 @@ type FlowSurfaceApplyBlueprintMutationResult = {
   version: '1';
   mode: FlowSurfaceApplyBlueprintDocument['mode'];
   pageLocator: FlowSurfaceReadLocator;
+};
+
+type FlowSurfaceApplyBlueprintResponse = {
+  version: '1';
+  mode: FlowSurfaceApplyBlueprintDocument['mode'];
+  target: Record<string, any>;
+  surface: any;
 };
 
 export class FlowSurfacesService {
@@ -3740,7 +3750,7 @@ export class FlowSurfacesService {
     target: FlowSurfaceReadLocator,
     resolved: FlowSurfaceResolvedTarget,
     node: any,
-    options: { transaction?: any } = {},
+    options: FlowSurfaceReadOptions = {},
   ) {
     const nodeMap = flattenModel(node);
     const result: Record<string, any> = {
@@ -3770,7 +3780,7 @@ export class FlowSurfacesService {
     });
   }
 
-  async get(input: Record<string, any>, options: { transaction?: any } = {}) {
+  async get(input: Record<string, any>, options: FlowSurfaceReadOptions = {}) {
     const target = this.normalizeGetTarget(input);
     const resolved = await this.locator.resolve(target, options);
     const rawNode = await this.decorateTemplateReadbackTree(
@@ -4643,10 +4653,22 @@ export class FlowSurfacesService {
 
   private async applyBlueprintWithTransaction(
     values: Record<string, any>,
+    options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles },
+    createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] | undefined,
+    resultOptions: { readSurface: false },
+  ): Promise<FlowSurfaceApplyBlueprintMutationResult>;
+  private async applyBlueprintWithTransaction(
+    values: Record<string, any>,
+    options?: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles },
+    createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
+    resultOptions?: { readSurface?: true },
+  ): Promise<FlowSurfaceApplyBlueprintResponse>;
+  private async applyBlueprintWithTransaction(
+    values: Record<string, any>,
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
     createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
     resultOptions: { readSurface?: boolean } = {},
-  ) {
+  ): Promise<FlowSurfaceApplyBlueprintMutationResult | FlowSurfaceApplyBlueprintResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
       transaction: options.transaction,
@@ -4691,7 +4713,7 @@ export class FlowSurfacesService {
     mode: FlowSurfaceApplyBlueprintDocument['mode'],
     pageLocator: FlowSurfaceReadLocator,
     surface: any,
-  ) {
+  ): FlowSurfaceApplyBlueprintResponse {
     return {
       version: '1',
       mode,
@@ -21581,6 +21603,15 @@ export class FlowSurfacesService {
     });
   }
 
+  private appendAIEmployeeCurrentRecordPromptVariable(value: string) {
+    if (AI_EMPLOYEE_CURRENT_RECORD_PROMPT_VARIABLE_RE.test(value)) {
+      return value;
+    }
+    return value
+      ? `${value}\n${AI_EMPLOYEE_CURRENT_RECORD_PROMPT_VARIABLE}`
+      : AI_EMPLOYEE_CURRENT_RECORD_PROMPT_VARIABLE;
+  }
+
   private async resolveAIEmployeePromptActionTargetUid(
     context: AIEmployeePromptContextOptions | undefined,
     transaction?: any,
@@ -21635,6 +21666,23 @@ export class FlowSurfacesService {
       semantic,
       contextPaths: this.collectAIEmployeeContextPathEntries(context),
     };
+  }
+
+  private appendAIEmployeeCurrentRecordPromptVariableToTasks(
+    tasks: any[],
+    validation?: AIEmployeePromptValidationContext,
+  ) {
+    if (!tasks.length || !validation || !this.isAIEmployeeContextPathAllowed('record', validation)) {
+      return tasks;
+    }
+    return tasks.map((task) => {
+      if (typeof task?.message?.user !== 'string') {
+        return task;
+      }
+      const next = _.cloneDeep(task);
+      next.message.user = this.appendAIEmployeeCurrentRecordPromptVariable(next.message.user);
+      return next;
+    });
   }
 
   private async assertAIEmployeeStepParamTaskPromptVariablesAllowedForUpdateSettings(
@@ -21953,7 +22001,7 @@ export class FlowSurfacesService {
       };
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'tasks')) {
-      const tasks = this.normalizeAIEmployeeTasks(
+      const normalizedTasks = this.normalizeAIEmployeeTasks(
         actionName,
         settings.tasks,
         this.readAIEmployeePersistedTasks(options.current),
@@ -21963,14 +22011,28 @@ export class FlowSurfacesService {
           path: 'settings.tasks',
         },
       );
-      this.assertAIEmployeeTaskPromptVariablesAllowed(
-        actionName,
-        tasks,
-        await this.buildAIEmployeePromptValidationContext(actionName, tasks, {
-          transaction: options.transaction,
-          promptContext: options.promptContext,
-        }),
-      );
+      const validation =
+        options.promptContext && normalizedTasks.length
+          ? await this.buildAIEmployeePromptValidationContext(
+              actionName,
+              [
+                {
+                  message: {
+                    user: AI_EMPLOYEE_CURRENT_RECORD_PROMPT_VARIABLE,
+                  },
+                },
+              ],
+              {
+                transaction: options.transaction,
+                promptContext: options.promptContext,
+              },
+            )
+          : await this.buildAIEmployeePromptValidationContext(actionName, normalizedTasks, {
+              transaction: options.transaction,
+              promptContext: options.promptContext,
+            });
+      const tasks = this.appendAIEmployeeCurrentRecordPromptVariableToTasks(normalizedTasks, validation);
+      this.assertAIEmployeeTaskPromptVariablesAllowed(actionName, tasks, validation);
       _.merge(stepParams, this.buildAIEmployeeTaskStepParams(tasks));
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'style') || options.requireUsername) {

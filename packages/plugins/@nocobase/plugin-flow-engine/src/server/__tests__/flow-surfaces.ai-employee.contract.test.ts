@@ -33,6 +33,9 @@ import {
 } from './flow-surfaces.test-plugins';
 
 describe('flowSurfaces AI employee action contract', () => {
+  const DEFAULT_AI_EMPLOYEE_USER_MESSAGE = 'Analyze the current record and suggest next steps.';
+  const DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE = `${DEFAULT_AI_EMPLOYEE_USER_MESSAGE}\n{{ ctx.record }}`;
+
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
@@ -127,7 +130,7 @@ describe('flowSurfaces AI employee action contract', () => {
             title: 'Analyze current record',
             message: {
               system: 'Use the current UI context.',
-              user: 'Analyze the current record and suggest next steps.',
+              user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
               workContext: [{ type: 'flow-model', target: 'self' }],
             },
             autoSend: false,
@@ -296,8 +299,28 @@ describe('flowSurfaces AI employee action contract', () => {
       });
       expectNoPersistedPropsTasks(persisted);
     }
-    expect((await readAction(collectionAction.uid))?.props?.style).toEqual({ size: 40, mask: false });
-    expect((await readAction(recordAction.uid))?.props?.style).toEqual({ size: 36, mask: false });
+    const persistedCollectionAction = await readAction(collectionAction.uid);
+    const persistedRecordAction = await readAction(recordAction.uid);
+    expect(persistedCollectionAction?.props?.style).toEqual({ size: 40, mask: false });
+    expect(persistedRecordAction?.props?.style).toEqual({ size: 36, mask: false });
+    expect(getPersistedTasks(persistedCollectionAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_USER_MESSAGE);
+    expect(getPersistedTasks(persistedRecordAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE);
+
+    const updateRecordActionRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: recordAction.uid },
+        tasks: [
+          {
+            title: 'Analyze current record again',
+          },
+        ],
+      },
+    });
+    expect(updateRecordActionRes.status, readErrorMessage(updateRecordActionRes)).toBe(200);
+    const updatedRecordAction = await readAction(recordAction.uid);
+    const updatedRecordUserMessage = getPersistedTasks(updatedRecordAction)?.[0]?.message?.user;
+    expect(updatedRecordUserMessage).toBe(DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE);
+    expect(updatedRecordUserMessage.match(/\{\{\s*ctx\.record\s*\}\}/g) || []).toHaveLength(1);
   });
 
   it('treats unversioned empty AI employee task skills and tools as preset on create', async () => {
@@ -313,7 +336,7 @@ describe('flowSurfaces AI employee action contract', () => {
                 title: 'Analyze current record',
                 message: {
                   system: 'Use the current UI context.',
-                  user: 'Analyze the current record and suggest next steps.',
+                  user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
                   workContext: [{ type: 'flow-model', target: 'self' }],
                 },
                 autoSend: false,
@@ -373,6 +396,8 @@ describe('flowSurfaces AI employee action contract', () => {
     expectResolvedFlowModelContext(recordAction?.props?.context?.workContext, tableBlock.uid);
     expectResolvedFlowModelContext(getPersistedTasks(collectionAction)?.[0]?.message?.workContext, tableBlock.uid);
     expectResolvedFlowModelContext(getPersistedTasks(recordAction)?.[0]?.message?.workContext, tableBlock.uid);
+    expect(getPersistedTasks(collectionAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_USER_MESSAGE);
+    expect(getPersistedTasks(recordAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE);
     expectNoPersistedPropsTasks(collectionAction);
     expectNoPersistedPropsTasks(recordAction);
   });
@@ -448,6 +473,9 @@ describe('flowSurfaces AI employee action contract', () => {
     expectResolvedFlowModelContext(getPersistedTasks(tableAction)?.[0]?.message?.workContext, tableBlock.uid);
     expectResolvedFlowModelContext(recordAction?.props?.context?.workContext, tableBlock.uid);
     expectResolvedFlowModelContext(getPersistedTasks(recordAction)?.[0]?.message?.workContext, tableBlock.uid);
+    expect(getPersistedTasks(formAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_USER_MESSAGE);
+    expect(getPersistedTasks(tableAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_USER_MESSAGE);
+    expect(getPersistedTasks(recordAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE);
     expectNoPersistedPropsTasks(formAction);
     expectNoPersistedPropsTasks(tableAction);
     expectNoPersistedPropsTasks(recordAction);
@@ -691,7 +719,36 @@ describe('flowSurfaces AI employee action contract', () => {
     });
     expect(validRecordActionRes.status, readErrorMessage(validRecordActionRes)).toBe(200);
     const validRecordAction = await readAction(getData(validRecordActionRes).uid);
-    expect(getPersistedTasks(validRecordAction)?.[0]?.message?.user).toBe('Analyze {{ ctx.record.nickname }}.');
+    expect(getPersistedTasks(validRecordAction)?.[0]?.message?.user).toBe(
+      'Analyze {{ ctx.record.nickname }}.\n{{ ctx.record }}',
+    );
+
+    const alreadyRecordActionRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'aiEmployee',
+        settings: aiEmployeeSettings({
+          tasks: [
+            {
+              title: 'Analyze record',
+              message: {
+                system: 'Use the current record.',
+                user: DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE,
+                workContext: [{ type: 'flow-model', target: 'self' }],
+              },
+              autoSend: false,
+              skillSettings: { skills: [], tools: [] },
+              webSearch: false,
+            },
+          ],
+        }),
+      },
+    });
+    expect(alreadyRecordActionRes.status, readErrorMessage(alreadyRecordActionRes)).toBe(200);
+    const alreadyRecordAction = await readAction(getData(alreadyRecordActionRes).uid);
+    const alreadyRecordUserMessage = getPersistedTasks(alreadyRecordAction)?.[0]?.message?.user;
+    expect(alreadyRecordUserMessage).toBe(DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE);
+    expect(alreadyRecordUserMessage.match(/\{\{\s*ctx\.record\s*\}\}/g) || []).toHaveLength(1);
 
     const blockActionWithRecordVarRes = await rootAgent.resource('flowSurfaces').addAction({
       values: {
