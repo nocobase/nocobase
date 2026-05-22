@@ -24,6 +24,7 @@ import {
   ADMIN_LAYOUT_MODEL_UID,
   AdminLayoutContent,
   useApplications,
+  useAppListRender,
   useGlobalTheme,
   type CustomToken,
   useSystemSettings,
@@ -414,7 +415,8 @@ export const AdminLayoutComponent = observer((props: any) => {
   );
   const designable = !isMobileSider && !!flowEngine.context.flowSettingsEnabled;
   const { styles } = useHeaderStyle();
-  const { Component: AppsComponent } = useApplications();
+  const { appList } = useApplications();
+  const appListRender = useAppListRender();
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
   const handleLayoutContentElementChange = useCallback(
@@ -606,6 +608,31 @@ export const AdminLayoutComponent = observer((props: any) => {
       overflowedIndicatorPopupClassName: styles.headerPopup,
     };
   }, [styles.headerPopup]);
+  const appSwitcherStyle = useMemo(
+    () => css`
+      .ant-layout-header.ant-pro-layout-header,
+      .ant-pro-top-nav-header {
+        z-index: 101 !important;
+      }
+
+      .ant-pro-layout-apps-popover {
+        z-index: 2000 !important;
+      }
+
+      .ant-pro-layout-apps-icon {
+        color: ${customToken.colorTextHeaderMenu || 'rgba(255, 255, 255, 0.85)'};
+      }
+
+      .ant-pro-layout-apps-icon:hover,
+      .ant-pro-layout-apps-icon-active {
+        color: ${customToken.colorTextHeaderMenuHover ||
+        customToken.colorTextHeaderMenu ||
+        'rgba(255, 255, 255, 0.85)'};
+        background: ${customToken.colorBgHeaderMenuHover || 'rgba(255, 255, 255, 0.12)'};
+      }
+    `,
+    [customToken.colorBgHeaderMenuHover, customToken.colorTextHeaderMenu, customToken.colorTextHeaderMenuHover],
+  );
 
   const closeMobileMenu = useCallback(() => {
     if (!isMobileSider) {
@@ -639,16 +666,17 @@ export const AdminLayoutComponent = observer((props: any) => {
               {...props}
               contentStyle={contentStyle}
               siderWidth={customToken.siderWidth || 200}
-              className={resetStyle}
+              className={`${resetStyle} ${appSwitcherStyle}`}
               location={location}
               route={route}
               actionsRender={actionsRender}
               logo={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {AppsComponent && <AppsComponent />}
                   <NocoBaseLogo />
                 </div>
               }
+              appList={appList}
+              appListRender={appListRender}
               title={''}
               layout="mix"
               splitMenus

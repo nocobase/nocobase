@@ -16,5 +16,6 @@ export * from './resolveAdminRouteRuntimeTarget';
 export * from './constants';
 export * from './ResetThemeTokenAndKeepAlgorithm';
 export * from './useApplications';
+export * from './AppListRender';
 export * from './PinnedPluginListLite';
 export * from './mobile-layout';
