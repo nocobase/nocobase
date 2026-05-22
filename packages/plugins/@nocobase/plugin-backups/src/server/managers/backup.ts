@@ -60,6 +60,7 @@ export class BackupManager {
   ctx: ResourcerContext | null; // when triggered by cron job, ctx is null
   #settings: BackupSettings;
   #dbAdapter: DBAdapter;
+  #backupPrefix: string;
   #backupDir: string;
   #tempDir: string;
   #uploadDir: string;
@@ -70,10 +71,15 @@ export class BackupManager {
     this.ctx = ctx;
     this.#settings = settings;
     this.#dbAdapter = getDBAdapter(app.db.options);
+    this.#backupPrefix = 'backup_';
     this.#backupDir = storagePathJoin('backups', app.name);
     this.#tempDir = storagePathJoin('tmp', 'backups', app.name);
     this.#uploadDir = storagePathJoin('uploads');
     this.#aesKeyPath = storagePathJoin('apps', app.name, 'aes_key.dat');
+  }
+
+  protected set backupPrefix(backupPrefix: string) {
+    this.#backupPrefix = backupPrefix;
   }
 
   async createBackupName() {
@@ -464,7 +470,7 @@ export class BackupManager {
   }
 
   #generateFileBaseName() {
-    return `backup_${dayjs().format(`YYYYMMDD_HHmmss_${Math.floor(1000 + Math.random() * 9000)}`)}`;
+    return `${this.#backupPrefix}${dayjs().format(`YYYYMMDD_HHmmss_${Math.floor(1000 + Math.random() * 9000)}`)}`;
   }
 
   async #listCompletedBackups(inProgressFiles: BackupFile[] = []): Promise<BackupFile[]> {
