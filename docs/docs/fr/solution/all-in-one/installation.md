@@ -1,96 +1,108 @@
 ---
 title: "Système de gestion tout-en-un - Installation"
-description: "Installation et déploiement du système de gestion tout-en-un : restauration via le Backup Manager (édition Pro/Enterprise) ou import du fichier SQL (édition Community), nécessite PostgreSQL 16, DB_UNDERSCORED ne doit pas être à true."
-keywords: "installation système tout-en-un, All-in-One, restauration de sauvegarde, Backup Manager, import SQL, PostgreSQL, NocoBase"
+description: "Installation et déploiement du système de gestion tout-en-un : restauration via le Gestionnaire de sauvegardes (édition Pro/Enterprise) ou import du fichier SQL (édition Community), nécessite PostgreSQL 16, DB_UNDERSCORED ne doit pas être à true."
+keywords: "installation système tout-en-un, All-in-One, restauration de sauvegarde, Gestionnaire de sauvegardes, import SQL, PostgreSQL, NocoBase"
 ---
 
-# Comment l'installer
+# Installation
 
-> La version actuelle est déployée par **restauration de sauvegarde**. Les versions futures pourraient passer à une **migration incrémentale** afin d'intégrer plus facilement la solution dans un système NocoBase existant.
+Le système de gestion tout-en-un couvre six modules : **CRM (gestion clients), gestion commerciale, help desk (tickets), gestion de projet, gestion d'actifs et RH**. Deux modes de restauration sont proposés ; choisissez celui qui correspond à votre édition de NocoBase et à votre profil technique.
 
-Le système de gestion tout-en-un couvre les six modules : **CRM (gestion clients), gestion commerciale, help desk (tickets), gestion de projet, gestion d'actifs et RH**. Pour vous permettre de déployer la solution rapidement dans votre propre environnement NocoBase, nous proposons deux modes de restauration ; choisissez celui qui correspond le mieux à votre édition et à votre profil technique.
+:::tip Prérequis
 
-Avant de commencer, assurez-vous que :
+- Un environnement NocoBase fonctionnel. Pour l'installation du système principal, voir la [documentation d'installation officielle](https://docs-cn.nocobase.com/welcome/getting-started/installation)
+- NocoBase en version **v2.1.0-alpha.34 ou supérieure**
+- Un des fichiers de la solution tout-en-un téléchargé :
+  - **Sauvegarde nbdata** : [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) — pour la méthode 1
+  - **Archive SQL** : [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) — pour la méthode 2
 
-- Vous disposez d'un environnement NocoBase fonctionnel. Pour l'installation du système principal, consultez la [documentation d'installation officielle](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase est en version **v2.1.0-alpha.34 ou supérieure**.
-- Vous avez téléchargé les fichiers nécessaires de la solution tout-en-un :
-  - **Fichier de sauvegarde** : [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) — pour la méthode 1
-  - **Fichier SQL** : [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) — pour la méthode 2
+:::
 
-**Points importants** :
+:::warning Attention
 
-- Cette solution a été conçue sur **PostgreSQL 16** ; assurez-vous que votre environnement utilise PostgreSQL 16.
-- **DB_UNDERSCORED ne doit pas être à true** : vérifiez votre `docker-compose.yml` et confirmez que la variable d'environnement `DB_UNDERSCORED` n'est pas définie sur `true`, sinon elle entrera en conflit avec la sauvegarde et fera échouer la restauration.
+- Cette solution est conçue sur **PostgreSQL 16**, l'environnement doit utiliser PostgreSQL 16
+- **`DB_UNDERSCORED` ne doit pas être à `true`** — vérifiez `docker-compose.yml`, si la variable est à `true` la restauration échouera
+
+:::
+
+En règle générale, si vous disposez du plugin Gestionnaire de sauvegardes, choisissez la méthode 1 ; sinon, la méthode 2. La version actuelle est déployée par **restauration de sauvegarde** ; les versions futures passeront à la migration incrémentale pour faciliter l'intégration dans un système NocoBase existant.
 
 ---
 
-## Méthode 1 : Restauration via le Backup Manager (recommandée pour Pro/Enterprise)
+## Méthode 1 : Restauration avec le Gestionnaire de sauvegardes (recommandé pour Pro/Enterprise)
 
-Cette méthode passe par le plugin « [Backup Manager](https://docs-cn.nocobase.com/handbook/backups) » intégré à NocoBase (édition Pro/Enterprise) et permet une restauration en un clic. Elle est la plus simple, mais a des prérequis sur l'environnement et l'édition.
+Cette méthode utilise le plugin « [Gestionnaire de sauvegardes](https://docs-cn.nocobase.com/handbook/backups) » intégré à NocoBase pour une restauration en un clic. C'est l'option la plus simple, mais elle impose des contraintes strictes sur l'environnement et les plugins.
 
 ### Caractéristiques
 
-* **Avantages** :
-  1. **Simplicité d'utilisation** : tout se fait dans l'interface, avec restauration complète de la configuration y compris les plugins.
-  2. **Restauration intégrale** : **tous les fichiers système sont restaurés**, y compris les modèles d'impression, les fichiers téléchargés dans les champs de type fichier, les avatars des employés AI, etc.
-* **Limites** :
-  1. **Réservée à Pro/Enterprise** : le « Backup Manager » est un plugin d'entreprise, disponible uniquement pour les éditions Pro/Enterprise.
-  2. **Exigences environnementales strictes** : votre environnement de base de données (version, sensibilité à la casse, etc.) doit être très compatible avec celui de la sauvegarde.
-  3. **Dépendance aux plugins** : si la solution contient des plugins commerciaux absents de votre environnement local, la restauration échouera.
+**Avantages :**
 
-### Étapes opérationnelles
+- **Simplicité** — tout se fait dans l'UI, y compris la restauration de la configuration des plugins
+- **Restauration intégrale** — tous les fichiers système sont restaurés : modèles d'impression, fichiers des champs pièces jointes, avatars des AI Employees, etc.
 
-**Étape 1 : [fortement recommandé] Démarrer l'application avec l'image `full`**
+**Limites :**
 
-Pour éviter les échecs de restauration liés à l'absence d'un client de base de données, nous recommandons fortement l'image Docker en version `full`. Elle embarque tous les outils nécessaires, sans configuration supplémentaire.
+- **Réservé à Pro/Enterprise** — le Gestionnaire de sauvegardes est un plugin entreprise, non disponible en Community
+- **Exigences strictes sur l'environnement** — version de base de données, sensibilité à la casse et autres paramètres doivent être très compatibles avec la source
+- **Forte dépendance aux plugins** — les plugins commerciaux de la sauvegarde doivent être présents en local, sinon la restauration échoue
 
-Exemple de commande pour récupérer l'image :
+### Étapes
+
+**Étape 1 : Démarrer l'application avec l'image `full`**
+
+Utilisez fortement l'image Docker en version `full`, qui embarque le client de base de données et tous les outils nécessaires sans configuration supplémentaire :
 
 ```bash
 docker pull nocobase/nocobase:alpha-full
 ```
 
-Démarrez ensuite votre service NocoBase avec cette image.
+Démarrez ensuite le service NocoBase avec cette image.
 
-> **Note** : sans l'image `full`, vous devrez installer manuellement le client `pg_dump` dans le conteneur, ce qui est laborieux et instable.
+:::tip
 
-**Étape 2 : Activer le plugin « Backup Manager »**
+Sans l'image `full`, vous devrez installer manuellement le client `pg_dump` dans le conteneur, ce qui est laborieux et instable.
 
-1. Connectez-vous à votre système NocoBase.
-2. Allez dans **`Gestion des plugins`**.
-3. Localisez et activez le plugin **`Backup Manager`**.
+:::
 
-**Étape 3 : Restauration depuis un fichier de sauvegarde local**
+**Étape 2 : Activer le plugin « Gestionnaire de sauvegardes »**
 
-1. Après activation du plugin, rafraîchissez la page.
-2. Allez dans le menu **`Administration`** → **`Backup Manager`**.
-3. Cliquez sur le bouton **`Restaurer depuis une sauvegarde locale`** en haut à droite.
-4. Glissez-déposez le fichier `nocobase_all_in_one_backup_260521.nbdata` dans la zone d'upload.
-5. Cliquez sur **`Soumettre`** et attendez la fin de la restauration ; l'opération peut prendre de quelques dizaines de secondes à quelques minutes.
+1. Connectez-vous à NocoBase
+2. Allez dans **Gestionnaire de plugins**
+3. Localisez et activez le plugin **Gestionnaire de sauvegardes**
 
-### Points d'attention
+**Étape 3 : Restaurer depuis un fichier de sauvegarde local**
 
-* **Compatibilité de la base de données** : c'est le point le plus critique de cette méthode. La **version, le jeu de caractères et la sensibilité à la casse** de votre PostgreSQL doivent correspondre à ceux du fichier source, et le nom du `schema` doit notamment être identique.
-* **Correspondance des plugins commerciaux** : assurez-vous d'avoir installé et activé tous les plugins commerciaux requis par la solution, sinon la restauration sera interrompue. Les plugins commerciaux impliqués dans la solution tout-en-un incluent : Backup Manager, Email Manager, Audit Log, Employés AI, etc.
+1. Après activation, rafraîchissez la page
+2. Allez dans le menu **Administration système / Gestionnaire de sauvegardes**
+3. Cliquez sur **Restaurer depuis une sauvegarde locale** en haut à droite
+4. Glissez-déposez le fichier `nocobase_all_in_one_backup_260521.nbdata` dans la zone d'upload
+5. Cliquez sur **Soumettre** et attendez la fin de la restauration, généralement de quelques dizaines de secondes à quelques minutes
+
+### Remarques
+
+- **Compatibilité de la base de données** — version PostgreSQL, jeu de caractères et sensibilité à la casse doivent correspondre à la source, le nom du `schema` notamment doit être identique
+- **Correspondance des plugins commerciaux** — tous les plugins commerciaux utilisés par la sauvegarde doivent être activés localement, sinon la restauration s'interrompt. La solution tout-en-un implique : Gestionnaire de sauvegardes, Gestionnaire d'e-mails, Journal d'audit, AI Employees, etc.
 
 ---
 
-## Méthode 2 : Import direct d'un fichier SQL (universelle, recommandée pour Community)
+## Méthode 2 : Import direct du fichier SQL (universel)
 
-Cette méthode manipule directement la base de données pour restaurer les données, en contournant le plugin « Backup Manager » ; elle n'a donc pas la limitation Pro/Enterprise.
+Cette méthode manipule directement la base de données, contourne le Gestionnaire de sauvegardes et n'a pas de contraintes de version ni de plugins.
 
 ### Caractéristiques
 
-* **Avantages** :
-  1. **Pas de restriction d'édition** : compatible avec tous les utilisateurs NocoBase, y compris Community.
-  2. **Haute compatibilité** : ne dépend pas de l'outil `dump` interne à l'application ; il suffit de pouvoir se connecter à la base de données.
-  3. **Tolérance aux erreurs** : si la solution contient des plugins commerciaux absents, les fonctionnalités associées ne seront simplement pas activées, sans empêcher le reste de fonctionner ni le démarrage de l'application.
-* **Limites** :
-  1. **Compétences en base de données requises** : l'utilisateur doit savoir exécuter un fichier `.sql`.
-  2. **Perte des fichiers système** : **cette méthode entraîne la perte de tous les fichiers système**, y compris les modèles d'impression, les fichiers téléchargés dans les champs fichier, les avatars des employés AI, etc.
+**Avantages :**
 
-### Étapes opérationnelles
+- **Pas de restriction d'édition** — compatible avec tous les utilisateurs NocoBase, Community inclus
+- **Haute compatibilité** — ne dépend pas de l'outil `dump` interne, il suffit de pouvoir se connecter à la base
+- **Tolérance aux erreurs** — les plugins commerciaux absents en local ne sont simplement pas activés, sans empêcher le reste de fonctionner
+
+**Limites :**
+
+- **Compétences en base de données requises** — savoir exécuter un fichier `.sql`
+- **Perte des fichiers système** — cette méthode entraîne la perte de tous les fichiers système : modèles d'impression, fichiers des champs pièces jointes, avatars des AI Employees, etc.
+
+### Étapes
 
 **Étape 1 : Préparer une base de données vide**
 
@@ -98,75 +110,158 @@ Préparez une nouvelle base de données vide (PostgreSQL 16) pour recevoir les d
 
 **Étape 2 : Importer le fichier `.sql` dans la base**
 
-Décompressez `nocobase_all_in_one_sql_260521.zip` pour obtenir le fichier `.sql`, puis importez son contenu dans la base préparée. L'exécution peut se faire de plusieurs façons selon votre environnement :
+Décompressez `nocobase_all_in_one_sql_260521.zip` pour obtenir le fichier `.sql`, puis importez-le dans la base préparée. Deux façons de l'exécuter :
 
-* **Option A : Ligne de commande sur le serveur (exemple Docker)**
+**Option A : Ligne de commande sur le serveur (exemple Docker)**
 
-  Si vous utilisez Docker pour NocoBase et la base de données, vous pouvez transférer le fichier `.sql` sur le serveur et l'importer avec `docker exec`. En supposant que votre conteneur PostgreSQL s'appelle `my-nocobase-db` :
+Si NocoBase et la base de données sont déployés via Docker, transférez le fichier `.sql` sur le serveur et importez-le avec `docker exec`. En supposant que le conteneur PostgreSQL s'appelle `my-nocobase-db` :
 
-  ```bash
-  # Copier le fichier sql dans le conteneur
-  docker cp nocobase_all_in_one_sql_260521.sql my-nocobase-db:/tmp/
-  # Entrer dans le conteneur et exécuter l'import
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_all_in_one_sql_260521.sql
-  ```
+```bash
+# Copier le fichier sql dans le conteneur
+docker cp nocobase_all_in_one_sql_260521.sql my-nocobase-db:/tmp/
+# Exécuter l'import dans le conteneur
+docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_all_in_one_sql_260521.sql
+```
 
-* **Option B : Client de base de données distant (Navicat, etc.)**
+**Option B : Client de base de données distant (Navicat, etc.)**
 
-  Si votre base expose un port, vous pouvez utiliser n'importe quel client graphique (Navicat, DBeaver, pgAdmin, etc.) pour vous y connecter, puis :
+Si la base expose un port, utilisez n'importe quel client graphique (Navicat, DBeaver, pgAdmin, etc.) pour vous y connecter, puis :
 
-  1. Faire un clic droit sur la base de données cible
-  2. Choisir « Exécuter un fichier SQL » ou « Exécuter un script SQL »
-  3. Sélectionner le fichier `.sql` téléchargé et l'exécuter
+1. Faites un clic droit sur la base de données cible
+2. Choisissez **Exécuter un fichier SQL** ou **Exécuter un script SQL**
+3. Sélectionnez le fichier `.sql` décompressé et exécutez-le
 
-**Étape 3 : Se connecter à la base et démarrer l'application**
+**Étape 3 : Connecter la base et démarrer l'application**
 
-Configurez les paramètres de démarrage de NocoBase (variables d'environnement `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) pour pointer vers la base de données dans laquelle vous venez d'importer les données, puis démarrez le service NocoBase normalement.
+Configurez les paramètres de démarrage de NocoBase (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) pour pointer vers la base où les données viennent d'être importées, puis démarrez normalement le service NocoBase.
 
-### Points d'attention
+### Remarques
 
-* **Droits sur la base de données** : cette méthode nécessite un compte avec les droits d'opérer directement sur la base.
-* **État des plugins** : après l'import, les données des plugins commerciaux sont présentes dans le système, mais si vous n'avez pas installé et activé les plugins correspondants en local, les fonctionnalités liées ne seront pas visibles ni utilisables, sans pour autant faire planter l'application.
+- **Droits sur la base de données** — cette méthode requiert un compte avec les droits d'opérer directement sur la base
+- **État des plugins** — après l'import, les données des plugins commerciaux sont présentes mais les fonctionnalités correspondantes sont inutilisables tant que les plugins ne sont pas installés. L'application ne plante pas
 
 ---
 
-## Synthèse comparative
+## Comparaison des deux méthodes
 
-| Caractéristique | Méthode 1 : Backup Manager | Méthode 2 : Import SQL direct |
+| Caractéristique | Méthode 1 : Gestionnaire de sauvegardes | Méthode 2 : Import SQL direct |
 | :--- | :--- | :--- |
-| **Public cible** | Éditions **Pro/Enterprise** | **Tous les utilisateurs** (Community inclus) |
-| **Simplicité** | ⭐⭐⭐⭐⭐ (très simple, opération en UI) | ⭐⭐⭐ (connaissances de base en BDD requises) |
-| **Exigences environnement** | **Strictes**, compatibilité élevée requise sur BDD et système | **Moyennes**, simple compatibilité de la base suffit |
-| **Dépendance aux plugins** | **Forte** : la restauration vérifie les plugins, tout manquant entraîne **l'échec** | **Forte au niveau des fonctionnalités**. Les données s'importent indépendamment et le système conserve ses fonctions de base, mais les fonctionnalités liées aux plugins absents seront **totalement inutilisables** |
-| **Fichiers système** | **Conservation intégrale** (modèles d'impression, fichiers téléchargés, avatars, etc.) | **Perte** (modèles d'impression, fichiers téléchargés, avatars, etc.) |
-| **Scénarios recommandés** | Clients entreprise avec environnement contrôlé et cohérent, qui veulent toutes les fonctionnalités | Utilisateurs sans certains plugins, recherchant compatibilité et flexibilité, ou hors édition Pro/Enterprise, acceptant la perte des fichiers |
+| **Public cible** | Pro/Enterprise | Tous les utilisateurs (Community inclus) |
+| **Simplicité** | ⭐⭐⭐⭐⭐ (opération en UI) | ⭐⭐⭐ (connaissances BDD requises) |
+| **Exigences environnement** | Strictes, compatibilité élevée requise sur BDD et système | Moyennes, simple compatibilité de la base suffit |
+| **Dépendance aux plugins** | Forte, un plugin manquant fait échouer la restauration | Données importables indépendamment, mais fonctionnalités liées aux plugins absents inutilisables |
+| **Fichiers système** | Conservation intégrale (modèles d'impression, fichiers téléchargés, avatars, etc.) | Perte (modèles d'impression, fichiers téléchargés, avatars, etc.) |
+| **Scénarios recommandés** | Clients entreprise, environnement contrôlé | Plugins partiels, recherche de compatibilité, Community |
+
+---
+
+## Configuration nécessaire après l'installation
+
+Une fois la restauration terminée, le système est accessible, mais deux configurations **pointent vers notre environnement de démo** et doivent être remplacées par les vôtres.
+
+### 1. Moteur de stockage de fichiers (OSS / local)
+
+Le moteur de stockage par défaut de la sauvegarde Demo pointe vers notre OSS Alibaba Cloud de démo, dont les Access Keys ne sont pas publiques : tout upload (champs pièces jointes, modèles d'impression, avatars des AI Employees) échouera.
+
+En général, basculer sur le stockage local suffit ; n'utilisez votre propre OSS qu'en cas de besoin de CDN ou de gros fichiers.
+
+**Étapes de bascule :**
+
+1. Allez dans **Gestionnaire de plugins / Gestionnaire de fichiers** (ou directement `/admin/settings/file-manager`)
+
+2. **Option A — Stockage local** (le plus simple, adapté aux déploiements autonomes) :
+
+   - Trouvez l'entrée **Local Storage (stockage local)** créée automatiquement
+   - Cliquez sur **Modifier**, cochez **Définir comme moteur de stockage par défaut** en bas du panneau, puis soumettez
+
+   ![Configuration générique du moteur de stockage (bas « Définir comme moteur de stockage par défaut »)](https://static-docs.nocobase.com/20240529115151.png)
+
+   :::warning Attention
+
+   En déploiement Docker, le stockage local est dans le conteneur ; la suppression du conteneur entraîne la perte des fichiers. En production, montez un volume ou utilisez un stockage cloud.
+
+   :::
+
+3. **Option B — Votre propre OSS / S3 / COS** :
+
+   - Cliquez sur **Ajouter**, choisissez le type correspondant (Alibaba Cloud OSS / Amazon S3 / Tencent Cloud COS / S3 Pro)
+   - Renseignez Access Key, Bucket, Region, domaine, etc., cochez **Définir comme moteur de stockage par défaut** et soumettez
+
+   ![Exemple de configuration du moteur OSS Alibaba Cloud](https://static-docs.nocobase.com/20240712220011.png)
+
+4. Supprimez ou désactivez l'entrée OSS préconfigurée par la Demo pour éviter toute confusion
+
+Voir les paramètres détaillés dans [Aperçu des moteurs de stockage](../../file-manager/storage/index.md).
+
+### 2. Clés de service LLM des AI Employees
+
+La sauvegarde Demo contient plusieurs services LLM préconfigurés (OpenAI, Claude, Gemini, DeepSeek, Qwen, Kimi, etc.) avec nos clés API, **qui ne fonctionnent pas en externe**. Les AI Employees sont inutilisables tant que ces clés ne sont pas remplacées.
+
+**Étapes de configuration :**
+
+1. Allez dans **Paramètres système / AI Employees / LLM service** (ou `/admin/settings/ai/llm-services`)
+
+   ![Accéder à la page de configuration LLM service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
+
+2. Dans la liste préconfigurée, vous pouvez réorganiser par glisser-déposer et activer/désactiver via le bouton `Enabled`
+
+   ![Liste des services LLM (activation et tri)](https://static-docs.nocobase.com/ai-employees/2026-02-14/llm-service-list-enabled-and-sort.png)
+
+3. Pour chaque service à utiliser :
+
+   - Cliquez sur **Modifier**
+   - Remplacez **API Key** par votre propre clé (depuis le compte du fournisseur : OpenAI, Anthropic, Google AI Studio, DeepSeek, Qwen, Kimi, etc.)
+   - Si vous passez par un proxy ou un relais, ajustez la **Base URL**
+   - Dans **Enabled Models**, gardez les modèles à utiliser et retirez les autres
+
+   ![Édition d'un service LLM (API Key, Base URL, Enabled Models)](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
+
+4. Cliquez sur **Test flight** en bas pour vérifier la connectivité, puis sur **Submit** pour sauvegarder
+
+   ![Test flight de la connexion](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
+
+5. Désactivez simplement les services non utilisés, pas besoin de les supprimer
+
+Voir la configuration détaillée dans [Configurer le service LLM](../../ai-employees/features/llm-service.md).
+
+:::tip
+
+Ce sont les deux points à modifier après la restauration de la Demo. Les autres réglages (logo du site, SMTP, plugins Enterprise, etc.) se font à la demande.
+
+:::
 
 ---
 
 ## Questions fréquentes
 
-### Est-ce que l'édition Pro fonctionne ? Y a-t-il des erreurs ?
+### L'édition Pro fonctionne-t-elle ? Y a-t-il des erreurs ?
 
-Oui, vous pouvez utiliser directement l'édition Pro sans erreur. La démo utilise certains plugins Enterprise (Email Manager, Audit Log, Employés AI, etc.) ; si l'édition Pro ne les a pas, les points d'entrée correspondants ne s'afficheront pas, mais **les autres modules ne sont pas affectés**. Par exemple, l'entrée Audit Log disparaîtra, mais le CRM, la gestion commerciale, les tickets, les projets, les actifs, les RH et les autres modules clés fonctionnent normalement.
+Oui, vous pouvez l'utiliser directement sans erreur. La Demo utilise des plugins Enterprise (Gestionnaire d'e-mails, Journal d'audit, AI Employees, etc.) ; en Pro, les points d'entrée correspondants ne s'affichent pas, sans affecter les autres modules. Par exemple, l'entrée Journal d'audit disparaît, mais CRM, gestion commerciale, tickets, projets, actifs et RH fonctionnent normalement.
 
 ### Quelle version utiliser après la restauration ?
 
-Nous recommandons la dernière image `alpha-full` (par exemple `nocobase/nocobase:alpha-full`). L'image `full` intègre le client de base de données et d'autres dépendances, ce qui évite les échecs de restauration dus à l'absence d'outils.
+Utilisez la dernière image `alpha-full` (`nocobase/nocobase:alpha-full`). L'image `full` intègre le client de base de données et les dépendances, ce qui évite les échecs de restauration par manque d'outils.
 
 ### Le logo ne s'affiche pas après la restauration ?
 
-Le logo de la démo officielle est restreint à un domaine et ne se charge pas sur les domaines locaux. Ouvrez les **paramètres système** et téléchargez votre propre logo pour résoudre le problème.
+Le logo de la Demo officielle est restreint à un domaine et ne se charge pas sur les domaines locaux. Allez dans **Paramètres système** et téléversez votre propre logo.
 
-### Erreur lors de l'envoi de fichiers (erreur clé OSS) ?
+### Erreur lors de l'upload de fichiers (erreur clé OSS) ?
 
-Après installation par SQL, l'envoi de fichiers peut provoquer des erreurs liées à OSS. Solution : allez dans **Gestion des plugins → File Manager**, définissez **Local Storage** comme espace de stockage par défaut, sauvegardez, puis l'envoi fonctionnera normalement.
+Après installation par SQL, l'upload de fichiers peut renvoyer des erreurs liées à OSS. Allez dans **Gestionnaire de plugins / Gestionnaire de fichiers**, définissez **Local Storage (stockage local)** comme moteur par défaut et sauvegardez : l'upload fonctionnera normalement.
 
-### Changement de langue ?
+Détails dans la section [Moteur de stockage de fichiers](#1-moteur-de-stockage-de-fichiers-oss--local) ci-dessus.
 
-La solution tout-en-un a déjà été localisée dans plus de 20 langues (espace de noms `nb_demo`). Après la restauration, le chinois est la langue par défaut ; pour basculer dans une autre langue : **Paramètres système → activer la langue souhaitée** (évitez d'activer `ar-SA`, qui provoque actuellement des anomalies de rendu dans NocoBase).
+### Comment changer de langue ?
 
-### Comment faire pour les mises à jour incrémentales ?
+La solution tout-en-un est localisée dans plus de 20 langues (espace de noms `nb_demo`). Après restauration, le chinois est la langue par défaut ; pour basculer : **Paramètres système / activer la langue souhaitée**.
 
-Pour le moment, les mises à jour de version sont en mode remplacement intégral et les personnalisations sont écrasées. Pensez impérativement à sauvegarder avant de mettre à jour. Une solution de migration incrémentale est en cours de réflexion ; elle sera d'abord disponible pour les éditions Pro/Enterprise. L'édition Community, qui ne dispose pas du plugin Migration Manager, est plus difficile à prendre en charge pour le moment.
+:::warning Attention
 
-Nous espérons que ce tutoriel vous aidera à déployer le système de gestion tout-en-un sans difficulté. Pour toute question pendant l'opération, n'hésitez pas à nous contacter.
+N'activez pas `ar-SA`, cela provoque actuellement des anomalies de rendu dans NocoBase.
+
+:::
+
+### Et les mises à jour incrémentales ?
+
+Pour le moment, les mises à jour sont en mode remplacement intégral et les personnalisations sont écrasées. Sauvegardez impérativement avant toute mise à jour. Une solution de migration incrémentale est en cours de planification ; elle sera disponible en priorité pour les éditions Pro/Enterprise. L'édition Community, dépourvue du plugin Gestionnaire de migrations, est plus difficile à prendre en charge pour l'instant.
