@@ -8,6 +8,9 @@
  */
 
 export type RunJsAuthoringRepairClass =
+  | 'syntax-stop'
+  | 'nested-runjs-stop'
+  | 'source-limit-stop'
   | 'switch-to-resource-api'
   | 'missing-top-level-return'
   | 'value-surface-forbids-render'
