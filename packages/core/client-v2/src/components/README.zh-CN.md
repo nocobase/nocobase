@@ -270,6 +270,48 @@ import { Table, DEFAULT_PAGE_SIZE } from '@nocobase/client-v2';
 - `PAGE_SIZE_OPTIONS`：建议的分页选项 `[5, 10, 20, 50, 100, 200]`
 - `SortHandle`：从 `@nocobase/client-v2` 导出的独立手柄组件，可以嵌进自定义列
 
+### 筛选
+
+#### CollectionFilter
+
+绑定 Collection 的筛选按钮。点击展开 Popover，里面是多条件筛选表单（字段选择器 + 操作符 + 取值控件）。Submit 收起 Popover 并通过 `onChange` 发出 NocoBase filter 参数；Reset 保持 Popover 打开并发出 `undefined`。
+
+```tsx
+import { CollectionFilter, ExtendCollectionsProvider } from '@nocobase/client-v2';
+import lockedUsersCollection from '../../collections/locked-users';
+
+function Page() {
+  const main = engine.context.dataSourceManager?.getDataSource?.('main');
+  const collection = main?.getCollection?.(lockedUsersCollection.name);
+
+  const listRequest = useRequest(
+    async (filter) => api.resource('lockedUsers').list({ ...(filter ? { filter } : {}) }),
+    { defaultParams: [undefined] },
+  );
+
+  return (
+    <ExtendCollectionsProvider collections={[lockedUsersCollection]}>
+      <CollectionFilter collection={collection} onChange={listRequest.run} t={t} />
+      {/* table … */}
+    </ExtendCollectionsProvider>
+  );
+}
+```
+
+主要属性：
+
+- `collection`：作为字段来源的 Collection。`undefined` 时按钮 disabled
+- `onChange: (filter) => void`：Submit 或 Reset 时触发，参数是编译好的 NocoBase filter（Reset 时为 `undefined`）。常见做法是直接转给 `listRequest.run`
+- `t`：翻译函数。建议传 `useT()`（来自插件 `locale.ts`），它会自动展开服务端返回的 `{{t("…")}}` 模板，否则字段标签、操作符标签可能显示成字面模板
+- `filterableFieldNames`：白名单，限制顶层可选字段
+- `noIgnore`：忽略白名单
+- `buttonText`：覆盖按钮文字，默认 `t('Filter')`
+- `showCount`：是否在按钮上显示当前条件数 `(N)`，默认 `true`
+- `popoverProps` / `buttonProps`：透传给 antd `Popover` / `Button`
+- `popoverMinWidth`：Popover 内容最小宽度，默认 `520`
+
+要筛选的 Collection 如果是 `schema-only`（服务端没自动发布到客户端 data source），用 `<ExtendCollectionsProvider>` 包一下当前页面，让 `CollectionFilter` 能解析到。
+
 ### 工具
 
 #### createFormRegistry
@@ -299,6 +341,43 @@ storageTypes.unregister('local');
 主要用在：插件需要给「同名 + 同形 + 不同实现」的东西做扩展点（比如 file-manager 的存储类型、verification 的 OTP provider）。比 `Map` 多了 namespace 标识和 HMR 友好的覆盖警告。
 
 `name` 重复注册会用新条目覆盖旧的，同时打 `console.warn`——HMR 时不抛错，开发期能看到意外的重复。
+
+## data-source/
+
+跟数据源 / Collection 注册相关的组件。从 `@nocobase/client-v2` 顶层 export。
+
+### ExtendCollectionsProvider
+
+挂载期 Collection 注入器。在组件挂载时把传入的 collection 注册到目标 data source，卸载时移除；会监听 `dataSource:loaded` 自动重新注入，确保数据源 reload 时不会被清掉。
+
+```tsx
+import { ExtendCollectionsProvider } from '@nocobase/client-v2';
+import lockedUsersCollection from '../../collections/locked-users';
+
+// 模块级常量——保证引用稳定，避免 provider 每次父级重渲染都重跑 effect
+const collections = [lockedUsersCollection];
+
+export function LockedUsersPage() {
+  return (
+    <ExtendCollectionsProvider collections={collections}>
+      <LockedUsersPageInner />
+    </ExtendCollectionsProvider>
+  );
+}
+```
+
+主要属性：
+
+- `collections: CollectionOptions[]`：本次要注入的 Collection。Provider 只会注册当时不存在的那些，卸载时也只移除自己注册过的
+- `dataSource`：目标 data source key，默认 `'main'`
+- `children`：被注入 Collection 覆盖的子树
+
+什么时候用：
+
+- 服务端 collection 是 `schema-only`，不会自动发布到客户端 data source（比如 `lockedUsers`）
+- 需要一个纯客户端的 collection 镜像，只对当前页面有效，不污染全局
+
+常见搭配：跟 `<CollectionFilter>` 一起用——前者把 collection 挂上，后者读取并渲染筛选表单。
 
 ## 怎么决定加不加新组件
 

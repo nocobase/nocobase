@@ -272,6 +272,48 @@ Companion exports:
 - `PAGE_SIZE_OPTIONS`: suggested page-size dropdown values `[5, 10, 20, 50, 100, 200]`
 - `SortHandle`: standalone handle component, exported from `@nocobase/client-v2` for embedding into custom columns
 
+### Filter
+
+#### CollectionFilter
+
+Filter button bound to a Collection. Clicking opens a Popover hosting a multi-condition filter form (field picker + operator + value control). Submit dismisses the Popover and emits the compiled NocoBase filter via `onChange`; Reset keeps the Popover open and emits `undefined`.
+
+```tsx
+import { CollectionFilter, ExtendCollectionsProvider } from '@nocobase/client-v2';
+import lockedUsersCollection from '../../collections/locked-users';
+
+function Page() {
+  const main = engine.context.dataSourceManager?.getDataSource?.('main');
+  const collection = main?.getCollection?.(lockedUsersCollection.name);
+
+  const listRequest = useRequest(
+    async (filter) => api.resource('lockedUsers').list({ ...(filter ? { filter } : {}) }),
+    { defaultParams: [undefined] },
+  );
+
+  return (
+    <ExtendCollectionsProvider collections={[lockedUsersCollection]}>
+      <CollectionFilter collection={collection} onChange={listRequest.run} t={t} />
+      {/* table … */}
+    </ExtendCollectionsProvider>
+  );
+}
+```
+
+Key props:
+
+- `collection`: the Collection that drives the field picker. The button is disabled while it's `undefined`
+- `onChange: (filter) => void`: fired on Submit and Reset with the compiled NocoBase filter (`undefined` on Reset). Most pages forward straight to `listRequest.run`
+- `t`: translator. Pass `useT()` from a plugin's `locale.ts` so server-side `{{t("…")}}` macros in field / operator labels get expanded — plain react-i18next's `t` leaves them as literal template strings
+- `filterableFieldNames`: whitelist of root-level field names to expose
+- `noIgnore`: bypass the whitelist
+- `buttonText`: override the trigger label; defaults to `t('Filter')`
+- `showCount`: show the `(N)` condition-count badge on the trigger; defaults to `true`
+- `popoverProps` / `buttonProps`: pass-through to the antd `Popover` / `Button`
+- `popoverMinWidth`: min-width of the popover body; defaults to `520`
+
+If the target Collection is `schema-only` (not auto-published from the server to the v2 data source), wrap the page in `<ExtendCollectionsProvider>` so `CollectionFilter` can resolve it by name.
+
 ### Utilities
 
 #### createFormRegistry
@@ -301,6 +343,44 @@ storageTypes.unregister('local');
 Use this when a plugin needs an extension point for "same name + same shape + different implementation" things (the file-manager's storage types, the verification plugin's OTP providers, etc.). It's a thin wrapper around `Map` that adds a namespace label and an HMR-friendly overwrite warning.
 
 Re-registering the same `name` overwrites the previous entry and emits a `console.warn` — HMR doesn't throw, and unintended duplicates surface in dev.
+
+## data-source/
+
+Components that wire collections / data sources into the React tree. Exported from the top level of `@nocobase/client-v2`.
+
+### ExtendCollectionsProvider
+
+Mount-scoped collection injector. On mount it registers the given collections into the target data source; on unmount it removes them. A `dataSource:loaded` listener re-applies the registration so mid-session reloads don't wipe injected collections.
+
+```tsx
+import { ExtendCollectionsProvider } from '@nocobase/client-v2';
+import lockedUsersCollection from '../../collections/locked-users';
+
+// Module-level constant — keeps the reference stable so the provider's
+// effect doesn't re-run on every parent re-render.
+const collections = [lockedUsersCollection];
+
+export function LockedUsersPage() {
+  return (
+    <ExtendCollectionsProvider collections={collections}>
+      <LockedUsersPageInner />
+    </ExtendCollectionsProvider>
+  );
+}
+```
+
+Key props:
+
+- `collections: CollectionOptions[]`: collections to inject. The provider only adds names that aren't already present, and on unmount removes only the ones it added
+- `dataSource`: target data source key; defaults to `'main'`
+- `children`: subtree covered by the injection
+
+When to use:
+
+- The server-side collection is `schema-only` and doesn't get auto-published to the client data source (e.g. `lockedUsers`)
+- You need a client-side mirror that should be visible only inside the current page, not registered globally
+
+Typical pairing: use together with `<CollectionFilter>` — the provider makes the collection resolvable; the filter button consumes it.
 
 ## When to add a new component here
 
