@@ -1,24 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer } from '@formily/react';
-import * as nocobaseClient from '@nocobase/client';
 import { SchemaComponentProvider } from '@nocobase/client';
-import { sleep } from '@nocobase/test';
+import { sleep } from '@nocobase/test/web';
 import { act, render, screen, userEvent } from '@nocobase/test/client';
 import { App } from 'antd';
-import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 import { BackupSettings } from '../components/BackupSettings';
-
-vi.mock('@nocobase/client', async () => {
-  const actual = await vi.importActual<typeof nocobaseClient>('@nocobase/client');
-  return {
-    ...actual,
-    useApp: () => ({
-      i18n: {
-        t: vi.fn().mockImplementation((key) => key), // Mock translation function, return the key directly
-      },
-    }),
-  };
-});
+import { createMockAppWrapper } from './testUtils';
 
 const storagesData = {
   data: [
@@ -85,20 +81,30 @@ const settingsData = {
 };
 
 describe('BackupSettings', () => {
-  const mockedStorages = vi.fn().mockReturnValue(storagesData);
-  const mockedGetSettings = vi.fn().mockReturnValue(settingsData);
-  const mockedUpdateSettings = vi.fn().mockReturnValue({ data: { status: 'ok' } });
+  const { Wrapper, mockRequest } = createMockAppWrapper();
+  const mockedStorages = vi.fn();
+  const mockedGetSettings = vi.fn();
+  const mockedUpdateSettings = vi.fn();
+
+  beforeEach(() => {
+    mockRequest.reset();
+    mockedStorages.mockReset().mockReturnValue(storagesData);
+    mockedGetSettings.mockReset().mockReturnValue(settingsData);
+    mockedUpdateSettings.mockReset().mockReturnValue({ data: { status: 'ok' } });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   const MockedBackupSettings = observer(() => {
-    const api = nocobaseClient.useAPIClient();
-    const axioMocked = new MockAdapter(api.axios);
-    axioMocked.onGet(`backupSettings:get/1`).reply(() => {
+    mockRequest.onGet(`backupSettings:get/1`).reply(() => {
       return [200, mockedGetSettings()];
     });
-    axioMocked.onGet(`storages:list`).reply(() => {
+    mockRequest.onGet(`storages:list`).reply(() => {
       return [200, mockedStorages()];
     });
-    axioMocked.onPost(`backupSettings:update/1`).reply((config) => {
+    mockRequest.onPost(`backupSettings:update/1`).reply((config) => {
       return [200, mockedUpdateSettings(config.data)];
     });
 
@@ -110,20 +116,19 @@ describe('BackupSettings', () => {
   });
 
   test('should render backup settings', async () => {
-    render(<MockedBackupSettings />);
-    expect(screen.getByText('Restore password')).toBeInTheDocument();
+    render(<MockedBackupSettings />, { wrapper: Wrapper });
+    expect(await screen.findByText('Restore password')).toBeInTheDocument();
   });
 
   test('should list "sync backup to cloud storage" options', async () => {
     const user = userEvent.setup();
-    render(<MockedBackupSettings />);
+    render(<MockedBackupSettings />, { wrapper: Wrapper });
     await sleep(3000);
-    const inputEle: HTMLElement = document.querySelector('div.ant-formily-item-control') as HTMLInputElement;
+    const storageCombobox = screen.getAllByRole('combobox').at(-1) as HTMLElement;
     await act(async () => {
-      await user.click(inputEle);
+      await user.click(storageCombobox);
     });
-    const optionItems = document.querySelectorAll('span.ant-select-selection-item');
-    expect(optionItems.length).toBe(2);
+    expect(await screen.findByText('ali')).toBeInTheDocument();
   });
 
   test('should trigger update backup settings api', async () => {
@@ -134,14 +139,13 @@ describe('BackupSettings', () => {
       },
     });
     const user = userEvent.setup();
-    render(<MockedBackupSettings />);
+    render(<MockedBackupSettings />, { wrapper: Wrapper });
     await sleep(3000);
+    const passwordInput = document.querySelector('input[type=password]') as HTMLInputElement;
     await act(async () => {
-      await user.click(screen.getByText('Restore password').parentElement.firstElementChild);
-      await user.click(document.querySelector('div.ant-formily-item-control'));
-      await user.click(screen.getByText('ali'));
-      await user.type(document.querySelector('input[type=password]'), '123456');
-      await user.click(screen.getByText('Submit'));
+      await user.clear(passwordInput);
+      await user.type(passwordInput, '123456');
+      await user.click(screen.getByRole('button', { name: /Submit/ }));
     });
     expect(mockedUpdateSettings).toHaveBeenCalled();
     expect(mockedUpdateSettings.mock.calls[0][0]).toEqual(

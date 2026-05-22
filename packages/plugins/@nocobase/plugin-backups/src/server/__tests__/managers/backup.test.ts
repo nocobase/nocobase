@@ -17,6 +17,8 @@ import fs from 'fs';
 import * as cp from 'child_process';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import yauzl from 'yauzl';
+import { EventEmitter } from 'events';
+import { Readable, Writable } from 'stream';
 
 vi.mock('child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof cp>();
@@ -30,6 +32,24 @@ vi.mock('child_process', async (importOriginal) => {
         fs.writeFileSync(fileName, 'mocked database backup');
       }
       callback(null, 'done');
+    }),
+    spawn: vi.fn().mockImplementation(() => {
+      const stdout = Readable.from(['mocked database backup']);
+      const stderr = Readable.from([]);
+      const stdin = new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      });
+      const childProcess = new EventEmitter() as any;
+      childProcess.stdout = stdout;
+      childProcess.stderr = stderr;
+      childProcess.stdin = stdin;
+      setImmediate(() => {
+        childProcess.emit('exit', 0);
+        childProcess.emit('close', 0);
+      });
+      return childProcess;
     }),
   };
 });
@@ -69,6 +89,7 @@ describe('BackupManager', async () => {
   beforeEach(async () => {
     app = await getApp();
     await fs.promises.mkdir(backupFilesFolder, { recursive: true });
+    await fs.promises.unlink(finalBackupFilePath).catch(() => {});
   });
 
   afterEach(async () => {
