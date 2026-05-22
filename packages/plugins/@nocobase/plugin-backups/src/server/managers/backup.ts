@@ -65,6 +65,7 @@ export class BackupManager {
   ctx: ResourcerContext | null; // when triggered by cron job, ctx is null
   #settings: BackupSettings;
   #dbAdapter: DBAdapter;
+  #backupTasksCacheName: string;
   #backupPrefix: string;
   #backupDir: string;
   #tempDir: string;
@@ -76,6 +77,7 @@ export class BackupManager {
     this.ctx = ctx;
     this.#settings = settings;
     this.#dbAdapter = getDBAdapter(app.db.options);
+    this.#backupTasksCacheName = BACKUP_TASKS_CACHE_NAME;
     this.#backupPrefix = 'backup_';
     this.#backupDir = storagePathJoin('backups', app.name);
     this.#tempDir = storagePathJoin('tmp', 'backups', app.name);
@@ -85,6 +87,22 @@ export class BackupManager {
 
   protected set backupPrefix(backupPrefix: string) {
     this.#backupPrefix = backupPrefix;
+  }
+
+  protected set backupDir(backupDir: string) {
+    this.#backupDir = backupDir;
+  }
+
+  protected set tempDir(tempDir: string) {
+    this.#tempDir = tempDir;
+  }
+
+  protected set uploadDir(uploadDir: string) {
+    this.#uploadDir = uploadDir;
+  }
+
+  protected set backupTasksCacheName(backupTasksCacheName: string) {
+    this.#backupTasksCacheName = backupTasksCacheName;
   }
 
   async createBackupName() {
@@ -114,7 +132,7 @@ export class BackupManager {
     // clean up the lock files if the backup process done.
     // These files can be left behind if the backup process is interrupted for some reason
     const cleanStaleLockFiles = async () => {
-      const statusCache = this.app.cacheManager.getCache(BACKUP_TASKS_CACHE_NAME);
+      const statusCache = this.app.cacheManager.getCache(this.#backupTasksCacheName);
       for (const backup of inProgressBackups) {
         if (!(await statusCache.get(backup.name))) {
           await this.#removeLockFile(path.basename(backup.name, `.${BACKUP_EXTENSION}`));
