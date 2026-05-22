@@ -94,9 +94,18 @@
         },
         "authType": {
           "message": "你想使用哪种登录方式？",
+          "basicLabel": "Basic 登录（用户名 + 密码）",
+          "basicHint": "保存后会用用户名和密码换取 Token",
           "oauthLabel": "OAuth（浏览器登录）",
           "oauthHint": "保存后会自动执行 nb env auth",
           "tokenLabel": "API Token / API Key"
+        },
+        "username": {
+          "message": "请输入 Basic 登录用户名",
+          "placeholder": "admin"
+        },
+        "password": {
+          "message": "请输入 Basic 登录密码"
         },
         "accessToken": {
           "message": "请输入 API Token 或 API Key",

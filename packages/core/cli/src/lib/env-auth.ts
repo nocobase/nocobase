@@ -62,6 +62,33 @@ export function getDefaultOauthScope() {
   return DEFAULT_OAUTH_SCOPE;
 }
 
+function formatApiAuthError(prefix: string, data: any, fallbackStatus?: number) {
+  if (typeof data === 'string' && data.trim()) {
+    return `${prefix}: ${data}`;
+  }
+
+  const errors = Array.isArray(data?.errors) ? data.errors : [];
+  if (errors.length > 0) {
+    const details = errors
+      .map((entry) => {
+        const code = entry?.code ? `[${entry.code}] ` : '';
+        return `${code}${entry?.message ?? 'Authentication failed.'}`;
+      })
+      .join('; ');
+    return `${prefix}: ${details}`;
+  }
+
+  if (typeof data?.error?.message === 'string' && data.error.message.trim()) {
+    return `${prefix}: ${data.error.message}`;
+  }
+
+  if (typeof fallbackStatus === 'number') {
+    return `${prefix}: HTTP ${fallbackStatus}`;
+  }
+
+  return prefix;
+}
+
 export function isOauthAccessTokenExpired(auth: OauthAuthConfig, now = Date.now()) {
   if (!auth.expiresAt) {
     return false;
@@ -988,6 +1015,83 @@ export async function resolveServerRequestTarget(options: {
   }
 
   return { baseUrl, token };
+}
+
+export async function authenticateEnvWithBasic(options: {
+  envName?: string;
+  username: string;
+  password: string;
+  scope?: AuthStoreOptions['scope'];
+}) {
+  const envName = options.envName ?? (await getCurrentEnvName({ scope: options.scope }));
+  const env = await getEnv(envName, { scope: options.scope });
+  const baseUrl = env?.baseUrl;
+
+  if (!baseUrl) {
+    throw new Error(
+      [
+        env
+          ? `Environment "${envName}" does not have an API base URL yet.`
+          : `Environment "${envName}" has not been set up yet.`,
+        env
+          ? `Run \`nb env add ${envName} --api-base-url <url>\` to finish setting it up.`
+          : `Run \`nb env add ${envName}\` first.`,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    );
+  }
+
+  const loginUrl = `${normalizeBaseUrl(baseUrl)}/auth:signIn`;
+  let response: Response;
+  try {
+    response = await fetchWithOauthRetry(
+      loginUrl,
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          'x-authenticator': 'basic',
+        },
+        body: JSON.stringify({
+          account: options.username,
+          password: options.password,
+        }),
+      },
+      {
+        operation: 'Signing in with basic credentials',
+        onRetry: (message) => updateTask(message),
+      },
+    );
+  } catch (error: any) {
+    throw new Error(
+      formatOauthFetchFailure('Failed to sign in with basic credentials.', {
+        envName,
+        baseUrl,
+        url: loginUrl,
+        rawMessage: error?.message,
+      }),
+    );
+  }
+
+  const data = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(formatApiAuthError('Basic sign-in failed', data, response.status));
+  }
+
+  const token =
+    typeof data?.data?.token === 'string' && data.data.token.trim()
+      ? data.data.token.trim()
+      : typeof data?.token === 'string' && data.token.trim()
+        ? data.token.trim()
+        : '';
+
+  if (!token) {
+    throw new Error('Basic sign-in succeeded but no token was returned.');
+  }
+
+  return token;
 }
 
 export async function authenticateEnvWithOauth(options: {

@@ -51,6 +51,8 @@ const INIT_ENV_ADD_FLAG_NAMES = [
   'auth-type',
   'access-token',
   'token',
+  'username',
+  'password',
   'skip-auth',
 ] as const;
 
@@ -298,6 +300,8 @@ Prompt modes:
       validate: validateApiBaseUrl,
     }),
     authType: existingAppOnly(EnvAdd.prompts.authType),
+    username: existingAppOnly(EnvAdd.prompts.username),
+    password: existingAppOnly(EnvAdd.prompts.password),
     accessToken: existingAppOnly(EnvAdd.prompts.accessToken),
     lang: newInstallOnly(Install.appPrompts.lang),
     appRootPath: newInstallOnly(Install.appPrompts.appRootPath),
@@ -362,9 +366,19 @@ Prompt modes:
       ...(EnvAdd.prompts.accessToken as TextPromptBlock),
       hidden: () => true,
     };
+    const usernamePrompt: TextPromptBlock = {
+      ...(EnvAdd.prompts.username as TextPromptBlock),
+      hidden: () => true,
+    };
+    const passwordPrompt = {
+      ...EnvAdd.prompts.password,
+      hidden: () => true,
+    };
 
     return {
       ...Init.prompts,
+      username: existingAppOnly(usernamePrompt),
+      password: existingAppOnly(passwordPrompt),
       accessToken: existingAppOnly(accessTokenPrompt),
     };
   }
@@ -639,7 +653,16 @@ Prompt modes:
     });
     const normalizedResults: Record<string, string | number | boolean> = {
       ...results,
-      ...pickKeys(presetValues, ['dbSchema', 'dbTablePrefix', 'dbUnderscored', 'skipAuth']),
+      ...pickKeys(presetValues, [
+        'authType',
+        'accessToken',
+        'dbSchema',
+        'dbTablePrefix',
+        'dbUnderscored',
+        'skipAuth',
+        'username',
+        'password',
+      ]),
     };
 
     const hasNocobase = normalizedResults.hasNocobase === 'yes';
@@ -752,6 +775,8 @@ Prompt modes:
         catalog: {
           apiBaseUrl: c.apiBaseUrl,
           authType: c.authType,
+          username: c.username,
+          password: c.password,
           accessToken: c.accessToken,
         } satisfies PromptsCatalog,
       },
@@ -820,6 +845,8 @@ Prompt modes:
     'auth-type'?: string;
     'access-token'?: string;
     token?: string;
+    username?: string;
+    password?: string;
     lang?: string;
     'app-root-path'?: string;
     'app-port'?: string;
@@ -879,6 +906,12 @@ Prompt modes:
     const accessToken = String(flags['access-token'] ?? flags.token ?? '');
     if (flags['access-token'] !== undefined || flags.token !== undefined) {
       preset.accessToken = accessToken;
+    }
+    if (flags.username !== undefined) {
+      preset.username = String(flags.username ?? '').trim();
+    }
+    if (flags.password !== undefined) {
+      preset.password = String(flags.password ?? '');
     }
     if (flags.lang !== undefined && String(flags.lang).trim() !== '') {
       preset.lang = String(flags.lang).trim();
@@ -1051,6 +1084,10 @@ Prompt modes:
     const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim() || 'oauth';
+    const authUsername =
+      authType === 'basic'
+        ? String(results.username ?? results.rootUsername ?? '').trim()
+        : '';
     const accessToken = String(results.accessToken ?? '');
     const builtinDb =
       explicitDbHostFlag(flags)
@@ -1071,7 +1108,8 @@ Prompt modes:
               : {}),
         ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
         ...(authType ? { authType } : {}),
-        ...(authType === 'token' && accessToken ? { accessToken } : {}),
+        ...(authUsername ? { authUsername } : {}),
+        ...((authType === 'token' || authType === 'basic') && accessToken ? { accessToken } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),
         ...(dockerRegistry ? { dockerRegistry } : {}),
@@ -1106,10 +1144,18 @@ Prompt modes:
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
     const accessToken = String(results.accessToken ?? '');
+    const username = String(results.username ?? '').trim();
+    const password = String(results.password ?? '');
     if (results.skipAuth === true) {
       argv.push('--skip-auth');
     } else if (results.authType === 'token' && accessToken) {
       argv.push('--access-token', accessToken);
+    }
+    if (results.authType === 'basic' && username) {
+      argv.push('--username', username);
+    }
+    if (results.authType === 'basic' && results.skipAuth !== true && password) {
+      argv.push('--password', password);
     }
 
     return argv;
@@ -1122,6 +1168,8 @@ Prompt modes:
       force?: boolean;
       build?: boolean;
       verbose?: boolean;
+      username?: string;
+      password?: string;
       'skip-auth'?: boolean;
       'db-host'?: string;
       'db-schema'?: string;
@@ -1145,6 +1193,8 @@ Prompt modes:
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim();
     const accessToken = String(results.accessToken ?? '');
+    const username = String(results.username ?? flags.username ?? '').trim();
+    const password = String(results.password ?? flags.password ?? '');
 
     argv.push('--env', envName);
     if (options?.resume) {
@@ -1169,6 +1219,12 @@ Prompt modes:
 
     if (authType === 'token' && accessToken) {
       argv.push('--access-token', accessToken);
+    }
+    if (authType === 'basic' && username) {
+      argv.push('--username', username);
+    }
+    if (authType === 'basic' && password) {
+      argv.push('--password', password);
     }
 
     const lang = String(results.lang ?? '').trim();

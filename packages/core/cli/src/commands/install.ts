@@ -191,6 +191,10 @@ function formatDeferredAuthMessage(envName: string, authType: unknown): string {
   const normalizedAuthType = String(authType ?? '').trim();
   const nextStep = `Authentication was skipped for env "${envName}". Run \`nb env auth ${envName}\` to finish setup.`;
 
+  if (normalizedAuthType === 'basic') {
+    return `${nextStep} You will be prompted for a username and password.`;
+  }
+
   if (normalizedAuthType === 'token') {
     return `${nextStep} You will be prompted for an access token.`;
   }
@@ -427,6 +431,8 @@ type InstallParsedFlags = {
   'auth-type'?: string;
   'access-token'?: string;
   token?: string;
+  username?: string;
+  password?: string;
   'skip-auth'?: boolean;
   lang?: string;
   force: boolean;
@@ -595,14 +601,22 @@ export default class Install extends Command {
     'auth-type': Flags.string({
       char: 'a',
       description:
-        'Authentication: token (API key) or oauth (browser login via `nb env auth`)',
-      options: ['token', 'oauth'],
+        'Authentication: basic (username/password login), token (API key), or oauth (browser login via `nb env auth`)',
+      options: ['basic', 'token', 'oauth'],
     }),
     'access-token': Flags.string({
       char: 't',
       aliases: ['token'],
       description:
         'API key or access token when using --auth-type token',
+    }),
+    username: Flags.string({
+      description:
+        'Username when using --auth-type basic',
+    }),
+    password: Flags.string({
+      description:
+        'Password when using --auth-type basic',
     }),
     'skip-auth': Flags.boolean({
       description: 'Save the env auth mode now and finish authentication later with `nb env auth`',
@@ -949,6 +963,14 @@ export default class Install extends Command {
       preset.accessToken = String(flags['access-token'] ?? flags.token ?? '');
     }
 
+    if (flags.username !== undefined) {
+      preset.username = String(flags.username ?? '').trim();
+    }
+
+    if (flags.password !== undefined) {
+      preset.password = String(flags.password ?? '');
+    }
+
     if (flags.lang !== undefined) {
       const v = String(flags.lang).trim();
       if (v) {
@@ -1102,6 +1124,8 @@ export default class Install extends Command {
     return pickPresetKeys(Install.buildPresetValuesFromFlags(flags), [
       'apiBaseUrl',
       'authType',
+      'username',
+      'password',
       'accessToken',
     ]);
   }
@@ -1451,6 +1475,12 @@ export default class Install extends Command {
       envAddPreset.authType = 'token';
       if (Install.toOptionalPromptString(auth.accessToken)) {
         envAddPreset.accessToken = String(auth.accessToken);
+      }
+    } else if (savedAuthType === 'basic') {
+      envAddPreset.authType = 'basic';
+      const authUsername = Install.toOptionalPromptString(config.authUsername) ?? rootUsername;
+      if (authUsername) {
+        envAddPreset.username = authUsername;
       }
     } else if (savedAuthType === 'oauth') {
       envAddPreset.authType = 'oauth';
@@ -2836,6 +2866,17 @@ export default class Install extends Command {
 
     if (authType === 'oauth') {
       await this.config.runCommand('env:auth', [params.envName]);
+    } else if (authType === 'basic') {
+      const authArgv = [params.envName, '--auth-type', 'basic'];
+      const username = String(params.envAddResults.username ?? '').trim();
+      const password = String(params.envAddResults.password ?? '');
+      if (username) {
+        authArgv.push('--username', username);
+      }
+      if (password) {
+        authArgv.push('--password', password);
+      }
+      await this.config.runCommand('env:auth', authArgv);
     }
 
     await this.config.runCommand('env:update', [params.envName]);
@@ -2863,9 +2904,14 @@ export default class Install extends Command {
     const authType =
       String(params.envAddResults.authType ?? 'oauth').trim()
       || 'oauth';
+    const authUsername =
+      authType === 'basic'
+        ? String(params.envAddResults.username ?? params.rootResults.rootUsername ?? '').trim()
+        : '';
     return buildStoredEnvConfig({
       apiBaseUrl,
       authType,
+      ...(authUsername ? { authUsername } : {}),
       accessToken: params.envAddResults.accessToken,
       source: downloadResultsValue(params.downloadResults, 'source'),
       downloadVersion: downloadResultsValue(params.downloadResults, 'version'),
@@ -2999,19 +3045,43 @@ export default class Install extends Command {
     });
 
     const envAddPromptsForInstall = this.buildEnvAddPromptsForInstall(parsed);
+    const envAddPreset = {
+      ...(resumePreset?.envAddPreset ?? {}),
+      ...Install.buildEnvAddPresetValuesFromFlags(parsed),
+    };
+    const resolvedEnvAddAuthType = String(envAddPreset.authType ?? '').trim();
 
-    const envAddResults = await runPromptCatalog(envAddPromptsForInstall, {
+    const promptedEnvAddResults = await runPromptCatalog(envAddPromptsForInstall, {
       initialValues: {
         apiBaseUrl: `http://127.0.0.1:${appResults.appPort ?? DEFAULT_INSTALL_APP_PORT}/api`,
       },
       values: {
         name: envName,
         ...(parsed['skip-auth'] ? { skipAuth: true } : {}),
-        ...(resumePreset?.envAddPreset ?? {}),
-        ...Install.buildEnvAddPresetValuesFromFlags(parsed),
+        ...envAddPreset,
+        ...(
+          !parsed['skip-auth'] && resolvedEnvAddAuthType === 'basic'
+            ? {
+                username: envAddPreset.username ?? rootResults.rootUsername,
+                password: envAddPreset.password ?? rootResults.rootPassword,
+              }
+            : {}
+        ),
       },
       yes,
     });
+    const envAddResults = {
+      ...promptedEnvAddResults,
+      ...pickPresetKeys(envAddPreset, ['username', 'password']),
+      ...(
+        !parsed['skip-auth'] && resolvedEnvAddAuthType === 'basic'
+          ? {
+              username: envAddPreset.username ?? rootResults.rootUsername,
+              password: envAddPreset.password ?? rootResults.rootPassword,
+            }
+          : {}
+      ),
+    };
 
     return {
       envName,

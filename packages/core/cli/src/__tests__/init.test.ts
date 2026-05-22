@@ -1792,3 +1792,63 @@ test('nb init forwards --skip-auth to install for a new app flow', async () => {
   const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
   expect(installArgv).toContain('--skip-auth');
 });
+
+test('nb init --yes preserves hidden basic auth settings for a new app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'no',
+    appName: 'test10',
+    lang: 'zh-CN',
+    appPort: '5000',
+    fetchSource: false,
+    rootUsername: 'nocobase',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Super Admin',
+    ...(options.values?.storagePath ? { storagePath: options.values.storagePath } : {}),
+    ...(options.values?.appRootPath ? { appRootPath: options.values.appRootPath } : {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        ui: false,
+        env: 'test10',
+        locale: 'zh-CN',
+        'app-port': '5000',
+        'auth-type': 'basic',
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]).toEqual([
+    'test10',
+    expect.objectContaining({
+      apiBaseUrl: 'http://127.0.0.1:5000/api',
+      authType: 'basic',
+      authUsername: 'nocobase',
+      appPort: '5000',
+      kind: 'http',
+    }),
+    { scope: 'global' },
+  ]);
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--auth-type');
+  expect(installArgv).toContain('basic');
+  expect(installArgv).toContain('--root-username');
+  expect(installArgv).toContain('nocobase');
+  expect(installArgv).toContain('--root-password');
+  expect(installArgv).toContain('admin123');
+});

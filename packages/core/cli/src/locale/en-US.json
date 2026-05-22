@@ -94,9 +94,18 @@
         },
         "authType": {
           "message": "How would you like to sign in?",
+          "basicLabel": "Basic login (username + password)",
+          "basicHint": "uses your credentials to fetch a token after save",
           "oauthLabel": "OAuth (browser login)",
           "oauthHint": "runs nb env auth after save",
           "tokenLabel": "API token / API key"
+        },
+        "username": {
+          "message": "Enter the username for basic login",
+          "placeholder": "admin"
+        },
+        "password": {
+          "message": "Enter the password for basic login"
         },
         "accessToken": {
           "message": "Enter an API token or API key",

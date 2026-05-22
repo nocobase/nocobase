@@ -11,11 +11,12 @@ import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { resolveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import { renderTable } from '../../lib/ui.js';
-import { appRootPath, dbStatus, runtimeStatus, storagePath } from './shared.js';
+import { appRootPath, appUrl, dbStatus, runtimeStatus, storagePath } from './shared.js';
 
 type EnvInfoValue = string | boolean | number | null | undefined;
 
 type EnvInfoGroup = Record<string, EnvInfoValue>;
+const MISSING_FIELD = Symbol('missingField');
 
 function normalizeJsonValue(value: EnvInfoValue): string | boolean | number {
   if (value === undefined || value === null || value === '') {
@@ -61,6 +62,23 @@ function serializeGroup(values: EnvInfoGroup): Record<string, string | boolean |
   );
 }
 
+function resolveFieldPath(value: unknown, path: string): unknown | typeof MISSING_FIELD {
+  const segments = path.split('.').map((segment) => segment.trim()).filter(Boolean);
+  if (segments.length === 0) {
+    return MISSING_FIELD;
+  }
+
+  let current: unknown = value;
+  for (const segment of segments) {
+    if (!current || typeof current !== 'object' || !(segment in current)) {
+      return MISSING_FIELD;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return current;
+}
+
 export default class EnvInfo extends Command {
   static override hidden = false;
   static override description =
@@ -70,6 +88,7 @@ export default class EnvInfo extends Command {
     '<%= config.bin %> <%= command.id %> app1',
     '<%= config.bin %> <%= command.id %> app1 --json',
     '<%= config.bin %> <%= command.id %> app1 --show-secrets',
+    '<%= config.bin %> <%= command.id %> app1 --field app.url',
   ];
 
   static override args = {
@@ -91,6 +110,9 @@ export default class EnvInfo extends Command {
       description: 'Output the result as JSON',
       default: false,
     }),
+    field: Flags.string({
+      description: 'Return only a single field using dot notation, for example app.url or api.auth.type',
+    }),
     'show-secrets': Flags.boolean({
       description: 'Show secret values in plain text',
       default: false,
@@ -108,6 +130,7 @@ export default class EnvInfo extends Command {
     }
     const requestedEnv = envNameArg || envNameFlag;
     const showSecrets = flags['show-secrets'];
+    const fieldPath = flags.field?.trim() || undefined;
     const runtime = await resolveManagedAppRuntime(requestedEnv);
 
     if (!runtime) {
@@ -120,6 +143,7 @@ export default class EnvInfo extends Command {
         ? await resolveBuiltinDbConnection(runtime)
         : undefined;
     const appGroup: EnvInfoGroup = {
+      url: appUrl(runtime),
       appRootPath: appRootPath(runtime),
       storagePath: storagePath(runtime),
       appPort: runtime.env.config.appPort,
@@ -144,7 +168,9 @@ export default class EnvInfo extends Command {
     };
 
     const authGroup: EnvInfoGroup = {
-      type: auth?.type,
+      type: runtime.env.authType ?? auth?.type,
+      sessionType: auth?.type,
+      username: runtime.env.config.authUsername,
       expiresAt: auth?.type === 'oauth' ? auth.expiresAt : undefined,
       scope: auth?.type === 'oauth' ? auth.scope : undefined,
       issuer: auth?.type === 'oauth' ? auth.issuer : undefined,
@@ -157,6 +183,8 @@ export default class EnvInfo extends Command {
     const apiGroup: EnvInfoGroup = {
       apiBaseUrl: runtime.env.apiBaseUrl,
       'auth.type': authGroup.type,
+      'auth.sessionType': authGroup.sessionType,
+      'auth.username': authGroup.username,
       'auth.expiresAt': authGroup.expiresAt,
       'auth.scope': authGroup.scope,
       'auth.issuer': authGroup.issuer,
@@ -177,6 +205,21 @@ export default class EnvInfo extends Command {
         auth: serializeGroup(authGroup),
       },
     };
+
+    if (fieldPath) {
+      const selected = resolveFieldPath(output, fieldPath);
+      if (selected === MISSING_FIELD) {
+        this.error(`Unknown field "${fieldPath}". Use dot notation like app.url, db.databaseStatus, or api.auth.type.`);
+      }
+
+      if (flags.json) {
+        this.log(JSON.stringify(selected, null, 2));
+        return;
+      }
+
+      this.log(typeof selected === 'object' ? JSON.stringify(selected, null, 2) : String(selected));
+      return;
+    }
 
     if (flags.json) {
       this.log(JSON.stringify(output, null, 2));

@@ -42,7 +42,9 @@ export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
 export interface EnvConfigEntry {
   kind?: EnvKind;
   apiBaseUrl?: string;
-  authType?: 'token' | 'oauth';
+  authType?: 'basic' | 'token' | 'oauth';
+  /** Username to reuse when this env signs in through the CLI basic authenticator. */
+  authUsername?: string;
   /** @deprecated Legacy config key; read-only compatibility for older config.json files. */
   baseUrl?: string;
   /** @deprecated Legacy typo kept for read compatibility with older config.json files. */
@@ -435,7 +437,7 @@ async function writeEnv(
 }
 
 function normalizeConfiguredAuthType(value: unknown): EnvConfigEntry['authType'] {
-  return value === 'token' || value === 'oauth' ? value : undefined;
+  return value === 'basic' || value === 'token' || value === 'oauth' ? value : undefined;
 }
 
 export function resolveConfiguredAuthType(config?: Pick<EnvConfigEntry, 'authType' | 'auth'>): EnvConfigEntry['authType'] {
@@ -456,6 +458,7 @@ export async function upsertEnv(
         apibaseUrl: _legacyApiBaseUrl,
         accessToken,
         authType,
+        authUsername,
         ...rest
       } = config;
       const nextApiBaseUrl = readEnvApiBaseUrl(config);
@@ -464,24 +467,30 @@ export async function upsertEnv(
       const previousAuthType = resolveConfiguredAuthType(previous);
       const requestedAuthType = normalizeConfiguredAuthType(authType);
       const nextAuthType = requestedAuthType ?? (accessToken ? 'token' : previousAuthType);
+      const nextAuthUsername =
+        nextAuthType === 'basic'
+          ? normalizeOptionalString(authUsername) ?? previous?.authUsername
+          : undefined;
       const nextAuth = accessToken
         ? ({
             type: 'token',
             accessToken,
           } satisfies TokenAuthConfig)
-        : nextAuthType === 'token' || baseUrlChanged || previous?.auth?.type === 'token'
-          ? undefined
-          : previous?.auth;
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
       const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
       const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
 
       return {
         ...previous,
         apiBaseUrl: nextApiBaseUrl,
         authType: nextAuthType,
+        authUsername: nextAuthUsername,
         auth: nextAuth,
         ...rest,
-        runtime: baseUrlChanged || authChanged || authTypeChanged ? undefined : previous?.runtime,
+        runtime: baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
       };
     },
     options,
@@ -490,7 +499,13 @@ export async function upsertEnv(
 
 export async function updateEnvConnection(
   envName: string,
-  updates: { apiBaseUrl?: string; baseUrl?: string; authType?: EnvConfigEntry['authType']; accessToken?: string },
+  updates: {
+    apiBaseUrl?: string;
+    baseUrl?: string;
+    authType?: EnvConfigEntry['authType'];
+    authUsername?: string;
+    accessToken?: string;
+  },
   options: AuthStoreOptions = {},
 ) {
   await writeEnv(
@@ -502,23 +517,29 @@ export async function updateEnvConnection(
       const previousAuthType = resolveConfiguredAuthType(previous);
       const requestedAuthType = normalizeConfiguredAuthType(updates.authType);
       const nextAuthType = requestedAuthType ?? (updates.accessToken ? 'token' : previousAuthType);
+      const nextAuthUsername =
+        nextAuthType === 'basic'
+          ? normalizeOptionalString(updates.authUsername) ?? previous?.authUsername
+          : undefined;
       const nextAuth = updates.accessToken
         ? ({
             type: 'token',
             accessToken: updates.accessToken,
           } satisfies TokenAuthConfig)
-        : nextAuthType === 'token' || baseUrlChanged || previous?.auth?.type === 'token'
-          ? undefined
-          : previous?.auth;
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
       const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
       const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
 
       return {
         ...previous,
         ...(nextApiBaseUrl !== undefined ? { apiBaseUrl: nextApiBaseUrl } : {}),
         authType: nextAuthType,
+        authUsername: nextAuthUsername,
         auth: nextAuth,
-        runtime: baseUrlChanged || authChanged || authTypeChanged ? undefined : previous?.runtime,
+        runtime: baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
       };
     },
     options,

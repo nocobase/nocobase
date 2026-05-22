@@ -193,6 +193,7 @@ vi.mock('../lib/auth-store.js', () => ({
   getCurrentEnvName: mocks.getCurrentEnvName,
   getEnv: mocks.getEnv,
   upsertEnv: mocks.upsertEnv,
+  resolveConfiguredAuthType: (config?: { authType?: string; auth?: { type?: string } }) => config?.authType ?? config?.auth?.type,
 }));
 
 vi.mock('../lib/api-client.js', () => ({
@@ -1749,6 +1750,7 @@ test('env info supports the deprecated --env alias with grouped json output', as
     kind: 'http',
     env: 'remote',
     app: {
+      url: 'https://demo.example.com/',
       appRootPath: '-',
       storagePath: '-',
       appPort: '-',
@@ -1774,6 +1776,8 @@ test('env info supports the deprecated --env alias with grouped json output', as
       apiBaseUrl: 'https://demo.example.com/api',
       auth: {
         type: 'token',
+        sessionType: 'token',
+        username: '-',
         expiresAt: '-',
         scope: '-',
         issuer: '-',
@@ -1784,6 +1788,115 @@ test('env info supports the deprecated --env alias with grouped json output', as
       },
     },
   });
+});
+
+test('env info derives app url from api base urls with public paths and subapps', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {
+      apiBaseUrl: 'https://demo.example.com/base/api/__app/analytics',
+      auth: {
+        type: 'token',
+        accessToken: 'secret-token',
+      },
+      config: {
+        kind: 'http',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    args: { name: 'remote' },
+    flags: {
+      json: true,
+      'show-secrets': false,
+    },
+  });
+
+  await EnvInfo.prototype.run.call(command);
+
+  expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toMatchObject({
+    ok: true,
+    kind: 'http',
+    env: 'remote',
+    app: {
+      url: 'https://demo.example.com/base/apps/analytics/',
+    },
+    api: {
+      apiBaseUrl: 'https://demo.example.com/base/api/__app/analytics',
+    },
+  });
+});
+
+test('env info can return only app.url', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {
+      apiBaseUrl: 'https://demo.example.com/base/api/__app/analytics',
+      auth: {
+        type: 'token',
+        accessToken: 'secret-token',
+      },
+      config: {
+        kind: 'http',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    args: { name: 'remote' },
+    flags: {
+      field: 'app.url',
+      json: false,
+      'show-secrets': false,
+    },
+  });
+
+  await EnvInfo.prototype.run.call(command);
+
+  expect(command.log.mock.calls).toEqual([
+    ['https://demo.example.com/base/apps/analytics/'],
+  ]);
+});
+
+test('env info can return a single field as json', async () => {
+  const { default: EnvInfo } = await import('../commands/env/info.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'http',
+    envName: 'remote',
+    source: undefined,
+    env: {
+      apiBaseUrl: 'https://demo.example.com/base/api/__app/analytics',
+      auth: {
+        type: 'token',
+        accessToken: 'secret-token',
+      },
+      config: {
+        kind: 'http',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    args: { name: 'remote' },
+    flags: {
+      field: 'app.url',
+      json: true,
+      'show-secrets': false,
+    },
+  });
+
+  await EnvInfo.prototype.run.call(command);
+
+  expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? 'null'))).toBe(
+    'https://demo.example.com/base/apps/analytics/',
+  );
 });
 
 test('env info rejects conflicting environment names from the argument and deprecated --env', async () => {

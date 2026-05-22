@@ -13,8 +13,10 @@ const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   getEnv: vi.fn(),
   updateEnvConnection: vi.fn(),
+  authenticateEnvWithBasic: vi.fn(),
   authenticateEnvWithOauth: vi.fn(),
   runPromptCatalog: vi.fn(),
+  isInteractiveTerminal: vi.fn(),
   printStage: vi.fn(),
   startTask: vi.fn(),
   stopTask: vi.fn(),
@@ -30,6 +32,7 @@ vi.mock('../lib/auth-store.ts', () => ({
 }));
 
 vi.mock('../lib/env-auth.ts', () => ({
+  authenticateEnvWithBasic: mocks.authenticateEnvWithBasic,
   authenticateEnvWithOauth: mocks.authenticateEnvWithOauth,
 }));
 
@@ -38,6 +41,7 @@ vi.mock('../lib/prompt-catalog.ts', () => ({
 }));
 
 vi.mock('../lib/ui.ts', () => ({
+  isInteractiveTerminal: mocks.isInteractiveTerminal,
   printStage: mocks.printStage,
   startTask: mocks.startTask,
   stopTask: mocks.stopTask,
@@ -47,6 +51,7 @@ vi.mock('../lib/ui.ts', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.isInteractiveTerminal.mockReturnValue(true);
 });
 
 test('env auth falls back to the current env and refreshes oauth envs', async () => {
@@ -133,6 +138,8 @@ test('env auth prompts for a token when the env uses token auth', async () => {
   expect(mocks.runPromptCatalog).toHaveBeenCalledTimes(1);
   expect(Object.keys(mocks.runPromptCatalog.mock.calls[0][0] ?? {})).toEqual([
     'authType',
+    'username',
+    'password',
     'accessToken',
   ]);
   expect(mocks.updateEnvConnection.mock.calls).toEqual([[
@@ -184,6 +191,8 @@ test('env auth prompts for an access token when --auth-type token is provided wi
   expect(mocks.runPromptCatalog).toHaveBeenCalledTimes(1);
   expect(Object.keys(mocks.runPromptCatalog.mock.calls[0][0] ?? {})).toEqual([
     'authType',
+    'username',
+    'password',
     'accessToken',
   ]);
   expect(mocks.updateEnvConnection.mock.calls).toEqual([[
@@ -237,4 +246,147 @@ test('env auth rejects conflicting environment names from arg and --env', async 
   });
 
   await expect((() => EnvAuth.prototype.run.call(command))()).rejects.toThrow(/Please use only one/);
+});
+
+test('env auth prompts for basic credentials when --username is omitted in an interactive terminal', async () => {
+  const { default: EnvAuth } = await import('../commands/env/auth.js');
+  mocks.getEnv.mockResolvedValue({
+    name: 'staging',
+    config: {
+      authType: 'basic',
+      authUsername: 'admin',
+    },
+  });
+  mocks.runPromptCatalog.mockResolvedValue({
+    username: 'new-admin',
+    password: 'admin123',
+  });
+  mocks.authenticateEnvWithBasic.mockResolvedValue('basic-token-123');
+  mocks.updateEnvConnection.mockResolvedValue(undefined);
+  const command = Object.assign(Object.create(EnvAuth.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'staging' },
+      flags: { 'auth-type': 'basic' },
+    })),
+    config: {
+      runCommand: vi.fn(async () => undefined),
+    },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await EnvAuth.prototype.run.call(command);
+
+  expect(Object.keys(mocks.runPromptCatalog.mock.calls[0][0] ?? {})).toEqual([
+    'authType',
+    'username',
+    'password',
+    'accessToken',
+  ]);
+  expect(mocks.authenticateEnvWithBasic.mock.calls).toEqual([[
+    {
+      envName: 'staging',
+      username: 'new-admin',
+      password: 'admin123',
+      scope: 'global',
+    },
+  ]]);
+  expect(mocks.updateEnvConnection.mock.calls).toEqual([[
+    'staging',
+    { authType: 'basic', authUsername: 'new-admin', accessToken: 'basic-token-123' },
+    { scope: 'global' },
+  ]]);
+});
+
+test('env auth requires --username for basic auth in non-interactive mode', async () => {
+  const { default: EnvAuth } = await import('../commands/env/auth.js');
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+  mocks.getEnv.mockResolvedValue({
+    name: 'staging',
+    config: {
+      authType: 'basic',
+      authUsername: 'admin',
+    },
+  });
+
+  const command = Object.assign(Object.create(EnvAuth.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'staging' },
+      flags: { 'auth-type': 'basic' },
+    })),
+    config: {
+      runCommand: vi.fn(async () => undefined),
+    },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await expect((() => EnvAuth.prototype.run.call(command))()).rejects.toThrow(
+    /--username is required when using basic authentication in non-interactive mode\./,
+  );
+  expect(mocks.runPromptCatalog).not.toHaveBeenCalled();
+  expect(mocks.authenticateEnvWithBasic).not.toHaveBeenCalled();
+});
+
+test('env auth signs in with basic credentials and stores the returned token', async () => {
+  const { default: EnvAuth } = await import('../commands/env/auth.js');
+  mocks.getEnv.mockResolvedValue({
+    name: 'staging',
+    config: {
+      authType: 'basic',
+      authUsername: 'admin',
+    },
+  });
+  mocks.runPromptCatalog.mockResolvedValue({
+    password: 'admin123',
+  });
+  mocks.authenticateEnvWithBasic.mockResolvedValue('basic-token-123');
+  mocks.updateEnvConnection.mockResolvedValue(undefined);
+  const runCommand = vi.fn(async () => undefined);
+
+  const command = Object.assign(Object.create(EnvAuth.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'staging' },
+      flags: { 'auth-type': 'basic', username: 'admin' },
+    })),
+    config: {
+      runCommand,
+    },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await EnvAuth.prototype.run.call(command);
+
+  expect(Object.keys(mocks.runPromptCatalog.mock.calls[0][0] ?? {})).toEqual([
+    'authType',
+    'username',
+    'password',
+    'accessToken',
+  ]);
+  expect(mocks.authenticateEnvWithBasic.mock.calls).toEqual([[
+    {
+      envName: 'staging',
+      username: 'admin',
+      password: 'admin123',
+      scope: 'global',
+    },
+  ]]);
+  expect(mocks.updateEnvConnection.mock.calls).toEqual([[
+    'staging',
+    { authType: 'basic', authUsername: 'admin', accessToken: 'basic-token-123' },
+    { scope: 'global' },
+  ]]);
+  expect(runCommand.mock.calls).toEqual([
+    ['env:update', ['staging']],
+  ]);
+  expect(mocks.startTask.mock.calls).toEqual([
+    ['Signing in with username and password for "staging"...'],
+  ]);
+  expect(mocks.succeedTask.mock.calls).toEqual([
+    ['✔ Authenticated "staging".'],
+  ]);
 });
