@@ -21353,16 +21353,26 @@ export class FlowSurfacesService {
     if (Object.prototype.hasOwnProperty.call(next, 'toolsVersion') && typeof next.toolsVersion !== 'number') {
       throwBadRequest(`flowSurfaces ${actionName} ${path}.toolsVersion must be a number`);
     }
+    const hasSkills = Object.prototype.hasOwnProperty.call(next, 'skills');
+    const hasTools = Object.prototype.hasOwnProperty.call(next, 'tools');
+    const hasSkillsVersion = Object.prototype.hasOwnProperty.call(next, 'skillsVersion');
+    const hasToolsVersion = Object.prototype.hasOwnProperty.call(next, 'toolsVersion');
     if (
-      Object.prototype.hasOwnProperty.call(next, 'skills') &&
-      !Object.prototype.hasOwnProperty.call(next, 'skillsVersion')
+      hasSkills &&
+      hasTools &&
+      !hasSkillsVersion &&
+      !hasToolsVersion &&
+      Array.isArray(next.skills) &&
+      Array.isArray(next.tools) &&
+      next.skills.length === 0 &&
+      next.tools.length === 0
     ) {
+      return null;
+    }
+    if (hasSkills && !hasSkillsVersion) {
       next.skillsVersion = 2;
     }
-    if (
-      Object.prototype.hasOwnProperty.call(next, 'tools') &&
-      !Object.prototype.hasOwnProperty.call(next, 'toolsVersion')
-    ) {
+    if (hasTools && !hasToolsVersion) {
       next.toolsVersion = 2;
     }
     return next;

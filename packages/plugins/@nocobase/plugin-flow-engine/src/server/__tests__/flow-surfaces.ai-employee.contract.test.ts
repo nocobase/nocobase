@@ -300,6 +300,39 @@ describe('flowSurfaces AI employee action contract', () => {
     expect((await readAction(recordAction.uid))?.props?.style).toEqual({ size: 36, mask: false });
   });
 
+  it('treats unversioned empty AI employee task skills and tools as preset on create', async () => {
+    const { table } = await createTable();
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings({
+            tasks: [
+              {
+                title: 'Analyze current record',
+                message: {
+                  system: 'Use the current UI context.',
+                  user: 'Analyze the current record and suggest next steps.',
+                  workContext: [{ type: 'flow-model', target: 'self' }],
+                },
+                autoSend: false,
+                skillSettings: { skills: [], tools: [] },
+                model: null,
+                webSearch: false,
+              },
+            ],
+          }),
+        },
+      }),
+    );
+
+    const persisted = await readAction(action.uid);
+    expect(getPersistedTasks(persisted)?.[0]?.skillSettings).toBeNull();
+    expectResolvedFlowModelContext(getPersistedTasks(persisted)?.[0]?.message?.workContext, table.uid);
+    expectNoPersistedPropsTasks(persisted);
+  });
+
   it('resolves AI employee action settings during compose', async () => {
     const page = await createPage(rootAgent, {
       title: `AI employee compose page ${Date.now()}`,
@@ -591,6 +624,33 @@ describe('flowSurfaces AI employee action contract', () => {
         user: 'Summarize risks and next steps.',
       },
       autoSend: true,
+      model: { llmService: 'openai', model: 'gpt-4.1' },
+      webSearch: false,
+    });
+    expect(getPersistedTasks(persisted)?.[0]?.skillSettings).toBeNull();
+    expect(persisted?.props?.style).toEqual({ size: 40, mask: true });
+    expectNoPersistedPropsTasks(persisted);
+
+    const explicitCustomEmptyRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: action.uid },
+        tasks: [
+          {
+            skillSettings: {
+              skills: [],
+              tools: [],
+              skillsVersion: 2,
+              toolsVersion: 2,
+            },
+          },
+        ],
+      },
+    });
+    expect(explicitCustomEmptyRes.status, readErrorMessage(explicitCustomEmptyRes)).toBe(200);
+
+    persisted = await readAction(action.uid);
+    expect(getPersistedTasks(persisted)?.[0]).toMatchObject({
+      title: 'Generate insight',
       skillSettings: {
         skills: [],
         tools: [],
@@ -769,13 +829,8 @@ describe('flowSurfaces AI employee action contract', () => {
         user: 'Raw step params task.',
         workContext: [{ type: 'flow-model', uid: table.uid }],
       },
-      skillSettings: {
-        skills: [],
-        tools: [],
-        skillsVersion: 2,
-        toolsVersion: 2,
-      },
     });
+    expect(getPersistedTasks(rawStepParamsAction)?.[0]?.skillSettings).toBeNull();
 
     const rawStepParamsRes = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {

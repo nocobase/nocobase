@@ -707,7 +707,7 @@ const ACTION_AI_EMPLOYEE_OPTIONS: FlowSurfaceConfigureOptions = {
           workContext: [{ type: 'flow-model', target: 'self' }],
         },
         autoSend: false,
-        skillSettings: { skills: [], tools: [] },
+        skillSettings: null,
         model: null,
         webSearch: false,
       },
