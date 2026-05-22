@@ -22,7 +22,7 @@ export default class VersionCommit extends Command {
   static override args = {
     description: Args.string({
       required: true,
-      description: 'Commit description, up to 200 characters.',
+      description: 'Commit description, up to 2000 characters.',
     }),
   };
 
@@ -58,8 +58,8 @@ export default class VersionCommit extends Command {
     const { args, flags } = await this.parse(VersionCommit);
     const description = args.description;
 
-    if (description.length > 200) {
-      this.error('Description length should not be over 200');
+    if (description.length > 2000) {
+      this.error('Description length should not be over 2000');
     }
 
     const confirmed = await ensureCrossEnvConfirmed({
