@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { EXECUTION_REASON, EXECUTION_STATUS } from '../constants';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import { abortExecution } from '../utils';
 
 describe('workflow > utils', () => {
@@ -163,5 +163,123 @@ describe('workflow > utils', () => {
     );
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(parent.id);
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(child.id);
+  });
+
+  it('should abort pending jobs when aborting execution', async () => {
+    const transaction = {
+      LOCK: {
+        UPDATE: 'UPDATE',
+      },
+      afterCommit: vi.fn((callback) => callback()),
+      commit: vi.fn(),
+      rollback: vi.fn(),
+    };
+    const execution = {
+      id: 1,
+      workflowId: 1,
+      status: EXECUTION_STATUS.STARTED,
+      update: vi.fn(),
+      set: vi.fn(),
+    };
+    const executionRepo = {
+      findOne: vi.fn().mockResolvedValue(execution),
+      find: vi.fn().mockResolvedValue([]),
+    };
+    const jobRepo = {
+      update: vi.fn(),
+    };
+    const plugin = {
+      useDataSourceTransaction: vi.fn().mockResolvedValue(transaction),
+      getLogger: () => ({
+        info: vi.fn(),
+      }),
+      db: {
+        getRepository: vi.fn((name: string) => {
+          if (name === 'executions') {
+            return executionRepo;
+          }
+          return jobRepo;
+        }),
+      },
+      timeoutManager: {
+        clear: vi.fn(),
+      },
+      abortRunningExecution: vi.fn(),
+    };
+
+    await expect(abortExecution(plugin as any, execution as any, { reason: EXECUTION_REASON.TIMEOUT })).resolves.toBe(
+      true,
+    );
+
+    expect(jobRepo.update).toHaveBeenCalledWith({
+      values: {
+        status: JOB_STATUS.ABORTED,
+      },
+      filter: {
+        executionId: execution.id,
+        status: JOB_STATUS.PENDING,
+      },
+      individualHooks: false,
+      transaction,
+    });
+  });
+
+  it('should abort pending jobs when execution abort reason is not timeout', async () => {
+    const transaction = {
+      LOCK: {
+        UPDATE: 'UPDATE',
+      },
+      afterCommit: vi.fn((callback) => callback()),
+      commit: vi.fn(),
+      rollback: vi.fn(),
+    };
+    const execution = {
+      id: 1,
+      workflowId: 1,
+      status: EXECUTION_STATUS.STARTED,
+      update: vi.fn(),
+      set: vi.fn(),
+    };
+    const executionRepo = {
+      findOne: vi.fn().mockResolvedValue(execution),
+      find: vi.fn().mockResolvedValue([]),
+    };
+    const jobRepo = {
+      update: vi.fn(),
+    };
+    const plugin = {
+      useDataSourceTransaction: vi.fn().mockResolvedValue(transaction),
+      getLogger: () => ({
+        info: vi.fn(),
+      }),
+      db: {
+        getRepository: vi.fn((name: string) => {
+          if (name === 'executions') {
+            return executionRepo;
+          }
+          return jobRepo;
+        }),
+      },
+      timeoutManager: {
+        clear: vi.fn(),
+      },
+      abortRunningExecution: vi.fn(),
+    };
+
+    await expect(
+      abortExecution(plugin as any, execution as any, { reason: EXECUTION_REASON.MANUAL_CANCEL }),
+    ).resolves.toBe(true);
+
+    expect(jobRepo.update).toHaveBeenCalledWith({
+      values: {
+        status: JOB_STATUS.ABORTED,
+      },
+      filter: {
+        executionId: execution.id,
+        status: JOB_STATUS.PENDING,
+      },
+      individualHooks: false,
+      transaction,
+    });
   });
 });

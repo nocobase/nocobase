@@ -12,7 +12,7 @@ import { parseCollectionName } from '@nocobase/data-source-manager';
 import type { DataSourceManager } from '@nocobase/data-source-manager';
 import type PluginWorkflowServer from './Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
-import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import type { ExecutionModel, WorkflowModel } from './types';
 import Processor from './Processor';
 
 type AbortOptions = {
@@ -120,26 +120,17 @@ export async function abortExecution(
       },
     );
 
-    const pendingJobs = await JobRepo.find({
+    const updated = await JobRepo.update({
+      values: {
+        status: JOB_STATUS.ABORTED,
+      },
       filter: {
         executionId: execution.id,
         status: JOB_STATUS.PENDING,
       },
+      individualHooks: false,
       transaction,
     });
-
-    if (pendingJobs.length) {
-      await JobRepo.update({
-        values: {
-          status: JOB_STATUS.ABORTED,
-        },
-        filter: {
-          id: pendingJobs.map((job: JobModel) => job.id),
-        },
-        individualHooks: false,
-        transaction,
-      });
-    }
 
     const childExecutions = await plugin.db.getRepository('executions').find({
       filter: {
@@ -162,7 +153,7 @@ export async function abortExecution(
 
     logger.info(`execution (${execution.id}) aborted`, {
       workflowId: execution.workflowId,
-      pendingJobs: pendingJobs.length,
+      pendingJobs: Array.isArray(updated) ? updated.length : updated,
     });
 
     if (ownTransaction) {

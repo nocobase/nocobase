@@ -8,17 +8,19 @@
  */
 
 import Joi from 'joi';
-import { promisify } from 'util';
-import nodemailer from 'nodemailer';
-import { Transporter } from 'nodemailer';
+import nodemailer, { Transporter } from 'nodemailer';
 import {
   FlowNodeModel,
   IJob,
   Instruction,
   InstructionResult,
+  EXECUTION_STATUS,
   JOB_STATUS,
   JobModel,
   Processor,
+  WorkflowModel,
+  ExecutionModel,
+  WorkflowTimeoutError,
 } from '@nocobase/plugin-workflow';
 import get from 'lodash/get';
 
@@ -45,6 +47,155 @@ interface MailerInstructionConfig {
   ignoreFail?: boolean;
 }
 
+const transporterMap = new Map<string, Transporter>();
+const configMap = new Map<string, any>();
+
+function getTransporterKey(provider: Provider) {
+  const { host, port, auth } = provider;
+  return `${host}:${port}:${auth?.user}`;
+}
+
+function isConfigChanged(oldConfig: any, newConfig: any): boolean {
+  const fields = ['host', 'port', 'secure', 'auth.user', 'auth.pass'];
+  return fields.some((key) => get(oldConfig, key) !== get(newConfig, key));
+}
+
+function createNewTransporter(key: string, config: Provider): Transporter {
+  const transporter = nodemailer.createTransport(config);
+
+  transporterMap.set(key, transporter);
+  configMap.set(key, config);
+
+  return transporter;
+}
+
+function getTransporter(provider: Provider): Transporter {
+  const key = getTransporterKey(provider);
+
+  const newConfig = provider;
+  const oldConfig = configMap.get(key);
+
+  if (!oldConfig) {
+    return createNewTransporter(key, newConfig);
+  }
+
+  if (isConfigChanged(oldConfig, newConfig)) {
+    const oldTransporter = transporterMap.get(key);
+
+    if (oldTransporter) {
+      oldTransporter.close();
+    }
+    return createNewTransporter(key, newConfig);
+  }
+
+  return transporterMap.get(key)!;
+}
+
+function discardTransporter(key: string, transporter: Transporter) {
+  transporter.close();
+  if (transporterMap.get(key) === transporter) {
+    transporterMap.delete(key);
+    configMap.delete(key);
+  }
+}
+
+function createAbortSignal(processor: Processor, signal?: AbortSignal, timeout = 0) {
+  const abortController = new AbortController();
+  let timeoutTimer: NodeJS.Timeout | null = null;
+  let abortListener: (() => void) | null = null;
+
+  const abort = (reason?: any) => {
+    if (abortController.signal.aborted) {
+      return;
+    }
+    abortController.abort(reason instanceof Error ? reason : new WorkflowTimeoutError());
+  };
+
+  if (signal?.aborted) {
+    abort(signal.reason);
+  } else {
+    abortListener = () => abort(signal?.reason);
+    signal?.addEventListener('abort', abortListener, { once: true });
+  }
+
+  const executionWorkflow = processor.execution.workflow ?? processor.execution.get?.('workflow');
+  const executionWorkflowOptions = executionWorkflow?.options ?? executionWorkflow?.get?.('options') ?? {};
+  const workflowTimeout = Number(timeout || executionWorkflowOptions.timeout || 0);
+  const expiresAt = processor.execution.expiresAt ?? processor.execution.get?.('expiresAt');
+  const startedAt = processor.execution.startedAt ?? processor.execution.get?.('startedAt');
+  const remaining = expiresAt
+    ? new Date(expiresAt).getTime() - Date.now()
+    : workflowTimeout > 0 && startedAt
+      ? new Date(startedAt).getTime() + workflowTimeout - Date.now()
+      : workflowTimeout > 0
+        ? workflowTimeout
+        : null;
+  if (remaining != null) {
+    if (remaining <= 0) {
+      abort(new WorkflowTimeoutError());
+    } else {
+      timeoutTimer = setTimeout(() => abort(new WorkflowTimeoutError()), remaining);
+    }
+  }
+
+  return {
+    signal: abortController.signal,
+    cleanup: () => {
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+      }
+      if (signal && abortListener) {
+        signal.removeEventListener('abort', abortListener);
+      }
+    },
+  };
+}
+
+function sendMail(
+  transporter: Transporter,
+  transporterKey: string,
+  payload: Record<string, any>,
+  signal?: AbortSignal,
+) {
+  if (signal?.aborted) {
+    discardTransporter(transporterKey, transporter);
+    return Promise.reject(signal.reason);
+  }
+
+  return new Promise((resolve, reject) => {
+    let finished = false;
+    const cleanup = () => {
+      signal?.removeEventListener('abort', onAbort);
+    };
+    const done = (error: Error | null, result?: any) => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      cleanup();
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
+    };
+    const onAbort = () => {
+      if (finished) {
+        return;
+      }
+      discardTransporter(transporterKey, transporter);
+      done(signal?.reason instanceof Error ? signal.reason : new WorkflowTimeoutError());
+    };
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+    try {
+      transporter.sendMail(payload, done);
+    } catch (error) {
+      done(error as Error);
+    }
+  });
+}
+
 export default class MailerInstruction extends Instruction {
   configSchema = Joi.object({
     provider: Joi.object({
@@ -67,50 +218,6 @@ export default class MailerInstruction extends Instruction {
     ignoreFail: Joi.boolean().default(false),
   });
 
-  private static transporterMap = new Map<string, Transporter>();
-  private static configMap = new Map<string, any>();
-
-  private getTransporterKey(provider: Provider) {
-    const { host, port, auth } = provider;
-    return `${host}:${port}:${auth?.user}`;
-  }
-
-  private isConfigChanged(oldConfig: any, newConfig: any): boolean {
-    const fields = ['host', 'port', 'secure', 'auth.user', 'auth.pass'];
-    return fields.some((key) => get(oldConfig, key) !== get(newConfig, key));
-  }
-
-  private createNewTransporter(key: string, config: Provider): Transporter {
-    const transporter = nodemailer.createTransport(config);
-
-    MailerInstruction.transporterMap.set(key, transporter);
-    MailerInstruction.configMap.set(key, config);
-
-    return transporter;
-  }
-
-  private getTransporter(provider: Provider): Transporter {
-    const key = this.getTransporterKey(provider);
-
-    const newConfig = provider;
-    const oldConfig = MailerInstruction.configMap.get(key);
-
-    if (!oldConfig) {
-      return this.createNewTransporter(key, newConfig);
-    }
-
-    if (this.isConfigChanged(oldConfig, newConfig)) {
-      const oldTransporter = MailerInstruction.transporterMap.get(key);
-
-      if (oldTransporter) {
-        oldTransporter.close();
-      }
-      return this.createNewTransporter(key, newConfig);
-    }
-
-    return MailerInstruction.transporterMap.get(key)!;
-  }
-
   async run(
     node: FlowNodeModel,
     prevJob: JobModel,
@@ -130,12 +237,15 @@ export default class MailerInstruction extends Instruction {
       ...others
     }: MailerInstructionConfig = processor.getParsedValue(node.config, node.id);
 
-    const { workflow } = processor.execution;
-    const sync = this.workflow.isWorkflowSync(workflow);
+    const { workflow } = processor.execution as ExecutionModel & { workflow: WorkflowModel };
+    const currentWorkflow = workflow?.options || workflow?.get?.('options') ? workflow : await node.getWorkflow();
+    const sync = this.workflow.isWorkflowSync(currentWorkflow);
+    const workflowOptions = currentWorkflow?.options ?? currentWorkflow?.get?.('options') ?? {};
+    const workflowTimeout = Number(workflowOptions.timeout ?? 0);
 
-    const transporter = this.getTransporter(provider);
-    // const transporter = nodemailer.createTransport(provider);
-    const send = promisify(transporter.sendMail.bind(transporter));
+    const transporterKey = getTransporterKey(provider);
+    const transporter = getTransporter(provider);
+    const mailAbort = createAbortSignal(processor, options?.signal, workflowTimeout);
 
     const payload = {
       ...others,
@@ -163,16 +273,21 @@ export default class MailerInstruction extends Instruction {
 
     if (sync) {
       try {
-        const result = await send(payload);
+        const result = await sendMail(transporter, transporterKey, payload, mailAbort.signal);
         return {
           status: JOB_STATUS.RESOLVED,
           result,
         };
       } catch (error: any) {
+        if (mailAbort.signal.aborted) {
+          throw error;
+        }
         return {
           status: ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
           result: error,
         };
+      } finally {
+        mailAbort.cleanup();
       }
     }
 
@@ -188,23 +303,29 @@ export default class MailerInstruction extends Instruction {
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
 
     try {
-      const response = await send(payload);
+      const response = await sendMail(transporter, transporterKey, payload, mailAbort.signal);
       processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
       jobDone.status = JOB_STATUS.RESOLVED;
       jobDone.result = response;
     } catch (error: any) {
       processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
 
-      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.status = mailAbort.signal.aborted ? JOB_STATUS.ABORTED : JOB_STATUS.FAILED;
       jobDone.result = error;
     } finally {
+      mailAbort.cleanup();
       processor.logger.debug(`smtp-mailer (#${node.id}) sending ended, resume workflow...`);
       // At this point, the job is guaranteed to be in the database.
       const job = await this.workflow.app.db.getRepository('jobs').findOne({
         filterByTk: id,
       });
       const execution = await job.getExecution();
-      if (!execution.status) {
+      const aborted = await this.workflow.abortExecutionIfExpired(execution);
+      if (!aborted) {
+        await execution.reload();
+        await job.reload();
+      }
+      if (!aborted && execution.status === EXECUTION_STATUS.STARTED && job.status === JOB_STATUS.PENDING) {
         job.set(jobDone);
         job.execution = execution;
         this.workflow.resume(job);
@@ -218,7 +339,7 @@ export default class MailerInstruction extends Instruction {
 
   async resume(node: FlowNodeModel, job: JobModel, processor: Processor) {
     const { ignoreFail } = node.config;
-    if (ignoreFail) {
+    if (ignoreFail && job.status !== JOB_STATUS.ABORTED) {
       job.set('status', JOB_STATUS.RESOLVED);
     }
     return job;
