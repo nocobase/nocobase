@@ -10,7 +10,7 @@
 import PluginIdpOauthServer from '../plugin';
 
 describe('plugin-idp-oauth > plugin', () => {
-  test('replays client resolvers registered before service initialization', async () => {
+  test('registers client resolvers on the service', async () => {
     const resolver = {
       resolveClient: vi.fn().mockResolvedValue({
         client_id: 'app:alpha',
@@ -27,7 +27,7 @@ describe('plugin-idp-oauth > plugin', () => {
       name: 'idp-oauth',
     });
 
-    plugin.registerClientResolver('app-supervisor', resolver);
+    plugin.service.registerClientResolver('app-supervisor', resolver);
     await plugin.load();
 
     await expect(plugin.service.resolveClient('app:alpha')).resolves.toEqual({

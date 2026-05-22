@@ -68,9 +68,9 @@ describe('auth-manager', () => {
     await expect(authManager.get('any', {} as Context)).rejects.toThrowError('AuthManager.storer is not set.');
   });
 
-  it('should get builtin authenticator before storer', async () => {
+  it('should get built-in authenticator before storer', async () => {
     authManager.registerTypes('basic', { auth: BasicAuth });
-    authManager.registerBuiltinAuthenticator({
+    authManager.registerBuiltInAuthenticator({
       name: 'builtin-basic',
       authType: 'basic',
       options: {

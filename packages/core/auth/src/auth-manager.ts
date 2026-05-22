@@ -23,7 +23,7 @@ export interface Authenticator {
   [key: string]: any;
 }
 
-export type BuiltinAuthenticator = Authenticator & {
+export type BuiltInAuthenticator = Authenticator & {
   name: string;
   enabled?: boolean;
 };
@@ -56,7 +56,7 @@ export class AuthManager {
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
-  protected builtinAuthenticators = new Map<string, BuiltinAuthenticator>();
+  protected builtInAuthenticators = new Map<string, BuiltInAuthenticator>();
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
@@ -71,24 +71,32 @@ export class AuthManager {
     this.storer = storer;
   }
 
-  registerBuiltinAuthenticator(authenticator: BuiltinAuthenticator) {
-    this.builtinAuthenticators.set(authenticator.name, {
+  registerBuiltInAuthenticator(authenticator: BuiltInAuthenticator) {
+    this.builtInAuthenticators.set(authenticator.name, {
       enabled: true,
       options: {},
       ...authenticator,
     });
   }
 
-  unregisterBuiltinAuthenticator(name: string) {
-    this.builtinAuthenticators.delete(name);
+  unregisterBuiltInAuthenticator(name: string) {
+    this.builtInAuthenticators.delete(name);
   }
 
-  getBuiltinAuthenticator(name: string) {
-    const authenticator = this.builtinAuthenticators.get(name);
+  getBuiltInAuthenticator(name: string) {
+    const authenticator = this.builtInAuthenticators.get(name);
     if (!authenticator?.enabled) {
       return null;
     }
     return authenticator;
+  }
+
+  private createAuth(authenticator: Authenticator, ctx: Context) {
+    const { auth } = this.authTypes.get(authenticator.authType) || {};
+    if (!auth) {
+      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
+    }
+    return new auth({ authenticator, options: authenticator.options, ctx });
   }
 
   setTokenBlacklistService(service: ITokenBlacklistService) {
@@ -131,13 +139,9 @@ export class AuthManager {
    * @return authenticator instance.
    */
   async get(name: string, ctx: Context) {
-    let authenticator = this.getBuiltinAuthenticator(name);
+    let authenticator = this.getBuiltInAuthenticator(name);
     if (authenticator) {
-      const { auth } = this.authTypes.get(authenticator.authType) || {};
-      if (!auth) {
-        throw new Error(`AuthType [${authenticator.authType}] is not found.`);
-      }
-      return new auth({ authenticator, options: authenticator.options, ctx });
+      return this.createAuth(authenticator, ctx);
     }
 
     if (!this.storer) {
@@ -147,11 +151,7 @@ export class AuthManager {
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
-    const { auth } = this.authTypes.get(authenticator.authType) || {};
-    if (!auth) {
-      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
-    }
-    return new auth({ authenticator, options: authenticator.options, ctx });
+    return this.createAuth(authenticator, ctx);
   }
 
   /**

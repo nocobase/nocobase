@@ -96,8 +96,19 @@ export class IdpOauthService {
 
   constructor(
     private readonly app: Application,
-    private readonly bridgeTokenCache: Cache,
+    private bridgeTokenCache?: Cache,
   ) {}
+
+  private async getBridgeTokenCache() {
+    if (!this.bridgeTokenCache) {
+      this.bridgeTokenCache = await this.app.cacheManager.createCache({
+        name: 'idp-oauth-token',
+        prefix: 'idp-oauth:token',
+        store: 'memory',
+      });
+    }
+    return this.bridgeTokenCache;
+  }
 
   getOrigin(ctx: any) {
     const protocol = ctx.headers?.['x-forwarded-proto'] || ctx.protocol || 'http';
@@ -599,10 +610,11 @@ export class IdpOauthService {
       token,
       typeof payload.jti === 'string' ? payload.jti : undefined,
     );
-    const cachedInternalToken = await this.bridgeTokenCache.get<string>(bridgeTokenCacheKey);
+    const bridgeTokenCache = await this.getBridgeTokenCache();
+    const cachedInternalToken = await bridgeTokenCache.get<string>(bridgeTokenCacheKey);
     const internalToken = cachedInternalToken || (await this.issueInternalToken(user.id, oauthExpiresInMs));
     if (!cachedInternalToken && typeof oauthExpiresInMs === 'number' && oauthExpiresInMs > 0) {
-      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, Math.min(oauthExpiresInMs, MAX_CACHE_TTL_MS));
+      await bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, Math.min(oauthExpiresInMs, MAX_CACHE_TTL_MS));
     }
     const authorizationHeader = `Bearer ${internalToken}`;
 

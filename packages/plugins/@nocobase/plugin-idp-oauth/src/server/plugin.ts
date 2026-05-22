@@ -11,21 +11,15 @@ import { Plugin } from '@nocobase/server';
 import { handleInteractionGet, handleInteractionPost } from './interaction';
 import { createIdpOauthPaths } from './paths';
 import { dispatchCurrentRequestToProvider } from './provider-dispatch';
-import { IdpOauthService, OidcClientResolver } from './service';
+import { IdpOauthService } from './service';
 import { resolveCurrentUser } from './utils';
 
 export class PluginIdpOauthServer extends Plugin {
   service: IdpOauthService;
-  private readonly clientResolvers = new Map<string, OidcClientResolver>();
 
-  registerClientResolver(name: string, resolver: OidcClientResolver) {
-    this.clientResolvers.set(name, resolver);
-    this.service?.registerClientResolver(name, resolver);
-  }
-
-  unregisterClientResolver(name: string) {
-    this.clientResolvers.delete(name);
-    this.service?.unregisterClientResolver(name);
+  constructor(...args: ConstructorParameters<typeof Plugin>) {
+    super(...args);
+    this.service = new IdpOauthService(this.app);
   }
 
   private registerDefaultApiResource() {
@@ -40,15 +34,6 @@ export class PluginIdpOauthServer extends Plugin {
   }
 
   async load() {
-    const bridgeTokenCache = await this.app.cacheManager.createCache({
-      name: 'idp-oauth-token',
-      prefix: 'idp-oauth:token',
-      store: 'memory',
-    });
-    this.service = new IdpOauthService(this.app, bridgeTokenCache);
-    for (const [name, resolver] of this.clientResolvers) {
-      this.service.registerClientResolver(name, resolver);
-    }
     this.app.on('auth:signOut', async ({ ctx }) => {
       try {
         await this.service.destroyProviderSession(ctx);
