@@ -13,6 +13,7 @@ import { getStorageUploadSecurityHeaders, hasActiveContentExtension } from '../.
 describe('static file security', () => {
   it('should detect active content file extensions', () => {
     expect(hasActiveContentExtension('/storage/uploads/a.html')).toBe(true);
+    expect(hasActiveContentExtension('/storage/uploads/a.pdf')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.SVG')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.svgz?download=1')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.txt')).toBe(false);
@@ -25,6 +26,11 @@ describe('static file security', () => {
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.pdf')).toEqual({
+      'Content-Disposition': 'attachment',
+      'X-Content-Type-Options': 'nosniff',
+    });
+
+    expect(getStorageUploadSecurityHeaders('/storage/uploads/a.txt')).toEqual({
       'X-Content-Type-Options': 'nosniff',
     });
   });

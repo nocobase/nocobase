@@ -19,10 +19,9 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
-import { Alert, Image, Modal, Space } from 'antd';
+import { Alert, Button, Image, Modal, Space, Spin } from 'antd';
 import { matchMimetype } from '@nocobase/client';
-import { Trans, useTranslation } from 'react-i18next';
-import { NAMESPACE } from '../locale';
+import { useTranslation } from 'react-i18next';
 
 export interface FilePreviewerProps {
   file: any;
@@ -115,8 +114,8 @@ const FALLBACK_ICON_MAP: Record<string, string> = {
   default: '/file-placeholder/unknown-200-200.png',
 };
 
-const ACTIVE_CONTENT_MIMETYPES = new Set(['application/xhtml+xml', 'image/svg+xml', 'text/html']);
-const ACTIVE_CONTENT_EXTENSIONS = new Set(['htm', 'html', 'svg', 'svgz', 'xhtml']);
+const ACTIVE_CONTENT_MIMETYPES = new Set(['application/pdf', 'application/xhtml+xml', 'image/svg+xml', 'text/html']);
+const ACTIVE_CONTENT_EXTENSIONS = new Set(['htm', 'html', 'pdf', 'svg', 'svgz', 'xhtml']);
 
 const stripQueryAndHash = (url: string) => url.split('?')[0].split('#')[0];
 
@@ -135,7 +134,12 @@ const getNameFromUrl = (url?: string) => {
   }
   const clean = stripQueryAndHash(url);
   const index = clean.lastIndexOf('/');
-  return index !== -1 ? clean.slice(index + 1) : clean;
+  const name = index !== -1 ? clean.slice(index + 1) : clean;
+  try {
+    return decodeURIComponent(name);
+  } catch (error) {
+    return name;
+  }
 };
 
 export const getFileExt = (file: any, url?: string) => {
@@ -161,8 +165,16 @@ export const isActiveContentFile = (file: any, url?: string) => {
   return ACTIVE_CONTENT_EXTENSIONS.has(ext);
 };
 
+export const isPdfFile = (file: any, url?: string) => {
+  const mimetype = file?.mimetype || file?.type;
+  if (typeof mimetype === 'string' && mimetype.toLowerCase() === 'application/pdf') {
+    return true;
+  }
+  return getFileExt(file, url) === 'pdf';
+};
+
 export const getFileName = (file: any, url?: string) => {
-  const nameFromUrl = getNameFromUrl(url);
+  const nameFromUrl = getNameFromUrl(url || getFileUrl(file));
   if (!file || typeof file === 'string') {
     return nameFromUrl;
   }
@@ -328,6 +340,122 @@ const IframePreviewer = ({ file }: FilePreviewerProps) => {
   return <iframe src={src} width="100%" height="100%" style={{ border: 'none' }} />;
 };
 
+type PdfJs = typeof import('pdfjs-dist/build/pdf.mjs');
+
+let pdfjsPromise: Promise<PdfJs> | null = null;
+
+const loadPdfJs = async () => {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import('pdfjs-dist/build/pdf.mjs').then((pdfjs) => {
+      pdfjs.GlobalWorkerOptions.workerSrc ||= new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
+      return pdfjs;
+    });
+  }
+  return pdfjsPromise;
+};
+
+const PdfPreviewer = ({ file, onDownload }: FilePreviewerProps) => {
+  const { t } = useTranslation();
+  const src = getFileUrl(file);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!src || !containerRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+    const container = containerRef.current;
+    const canvases: HTMLCanvasElement[] = [];
+    let loadingTask: any;
+    let loadedPdf: any;
+    container.innerHTML = '';
+    setLoading(true);
+    setError(false);
+
+    const render = async () => {
+      const pdfjs = await loadPdfJs();
+      const url = new URL(src, location.href);
+      loadingTask = pdfjs.getDocument({
+        url: src,
+        withCredentials: url.origin === location.origin,
+        isEvalSupported: false,
+        enableXfa: false,
+      });
+      const pdf = await loadingTask.promise;
+      loadedPdf = pdf;
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        if (cancelled) {
+          break;
+        }
+        const page = await pdf.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 1.4 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) {
+          continue;
+        }
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.display = 'block';
+        canvas.style.maxWidth = '100%';
+        canvas.style.height = 'auto';
+        canvas.style.margin = pageNumber === 1 ? '0 auto 16px' : '16px auto';
+        canvases.push(canvas);
+        container.appendChild(canvas);
+        await page.render({ canvasContext: context, viewport }).promise.catch((error) => {
+          throw error;
+        });
+      }
+    };
+
+    const rendering = render()
+      .catch(() => {
+        if (!cancelled) {
+          setError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    void rendering;
+
+    return () => {
+      cancelled = true;
+      loadingTask?.destroy?.();
+      loadedPdf?.destroy?.();
+      canvases.forEach((canvas) => canvas.remove());
+    };
+  }, [src]);
+
+  if (!src) {
+    return null;
+  }
+
+  return (
+    <div style={{ width: '100%', minHeight: '100%', padding: 16 }}>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+          <Spin />
+        </div>
+      ) : null}
+      {error ? (
+        <Alert
+          type="warning"
+          showIcon
+          message={t('File type is not supported for previewing, please download it to preview.')}
+        />
+      ) : null}
+      <div ref={containerRef} />
+    </div>
+  );
+};
+
 const AudioPreviewer = ({ file }: FilePreviewerProps) => {
   const { t } = useTranslation();
   const src = getFileUrl(file);
@@ -358,22 +486,10 @@ const VideoPreviewer = ({ file }: FilePreviewerProps) => {
 
 const UnsupportedPreviewer = (props: FilePreviewerProps) => {
   const { t } = useTranslation();
-  const { file } = props;
   return (
     <Alert
       type="warning"
-      description={
-        <Trans ns={NAMESPACE}>
-          {'File type is not supported for previewing, please '}
-          {props.onDownload ? (
-            <a onClick={() => props.onDownload?.(file)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-              {'download it to preview'}
-            </a>
-          ) : (
-            <span>{'download it to preview'}</span>
-          )}
-        </Trans>
-      }
+      description={t('File type is not supported for previewing, please download it to preview.')}
       showIcon
     />
   );
@@ -398,7 +514,7 @@ filePreviewTypes.add({
 
 filePreviewTypes.add({
   match(file) {
-    return ['text/plain', 'application/pdf', 'application/json'].some((type) => matchMimetype(file, type));
+    return ['text/plain', 'application/json'].some((type) => matchMimetype(file, type));
   },
   Previewer: wrapWithModalPreviewer(IframePreviewer),
 });
@@ -422,6 +538,13 @@ filePreviewTypes.add({
     return isActiveContentFile(file, getFileUrl(file));
   },
   Previewer: wrapWithModalPreviewer(UnsupportedPreviewer),
+});
+
+filePreviewTypes.add({
+  match(file) {
+    return isPdfFile(file, getFileUrl(file));
+  },
+  Previewer: wrapWithModalPreviewer(PdfPreviewer),
 });
 
 export const FilePreviewRenderer = (props: FilePreviewerProps) => {
