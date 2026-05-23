@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   upsertEnv: vi.fn(),
   setCurrentEnv: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
+  validateMysqlLowerCaseTableNamesCompatibility: vi.fn(async () => undefined),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
 }));
@@ -25,6 +26,8 @@ beforeEach(() => {
   mocks.setCurrentEnv.mockResolvedValue(undefined);
   mocks.validateExternalDbConfig.mockReset();
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
+  mocks.validateMysqlLowerCaseTableNamesCompatibility.mockReset();
+  mocks.validateMysqlLowerCaseTableNamesCompatibility.mockResolvedValue(undefined);
 });
 
 vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {
@@ -84,6 +87,7 @@ vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
 
 vi.mock('../lib/db-connection-check.ts', () => ({
   validateExternalDbConfig: mocks.validateExternalDbConfig,
+  validateMysqlLowerCaseTableNamesCompatibility: mocks.validateMysqlLowerCaseTableNamesCompatibility,
 }));
 
 test('install saves env config immediately after collecting prompt results for fresh installs', async () => {

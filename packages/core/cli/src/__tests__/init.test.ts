@@ -455,6 +455,63 @@ test('nb init forwards download options to nb install for a new app flow', async
   ]);
 });
 
+test('nb init keeps prompted dbUnderscored when preset values still contain false', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockResolvedValue({
+    appName: 'demoapp',
+    hasNocobase: 'no',
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    fetchSource: false,
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: '127.0.0.1',
+    dbPort: '5432',
+    dbDatabase: 'demoapp',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    dbUnderscored: true,
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+  });
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    buildPresetValuesFromFlags: vi.fn(() => ({
+      appName: 'demoapp',
+      hasNocobase: 'no',
+      dbUnderscored: false,
+    })),
+    parse: vi.fn(async () => ({
+      flags: {
+        ui: false,
+        yes: false,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: vi.fn((code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    }),
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    dbUnderscored: true,
+  });
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--db-underscored');
+  expect(installArgv).not.toContain('--no-db-underscored');
+});
+
 test('nb init saves env config before install starts so failures still leave the env configured', async () => {
   const { default: Init } = await import('../commands/init.js');
 

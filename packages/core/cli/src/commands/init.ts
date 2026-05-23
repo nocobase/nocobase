@@ -620,7 +620,6 @@ Prompt modes:
       command: this,
     });
     const normalizedResults: Record<string, string | number | boolean> = {
-      ...results,
       ...pickKeys(presetValues, [
         'authType',
         'accessToken',
@@ -631,6 +630,7 @@ Prompt modes:
         'username',
         'password',
       ]),
+      ...results,
     };
 
     const hasNocobase = normalizedResults.hasNocobase === 'yes';

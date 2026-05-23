@@ -1690,6 +1690,9 @@ test('env info shows grouped app details with secrets masked by default', async 
         dbDatabase: 'nocobase',
         dbUser: 'nocobase',
         dbPassword: 'db-secret',
+        dbSchema: 'test',
+        dbTablePrefix: 'nb_',
+        dbUnderscored: true,
       },
     },
   });
@@ -1723,6 +1726,12 @@ test('env info shows grouped app details with secrets masked by default', async 
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('databaseStatus');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('dbPassword');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('********');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('dbSchema');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('test');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('dbTablePrefix');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('nb_');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('dbUnderscored');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('true');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('auth.accessToken');
 });
 
@@ -1788,6 +1797,8 @@ test('env info supports the deprecated --env alias with grouped json output', as
       dbDatabase: '-',
       dbUser: '-',
       dbPassword: '-',
+      dbTablePrefix: '-',
+      dbUnderscored: '-',
     },
     api: {
       apiBaseUrl: 'https://demo.example.com/api',

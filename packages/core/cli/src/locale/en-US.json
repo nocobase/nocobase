@@ -34,6 +34,8 @@
       "back": "Back",
       "next": "Next",
       "submit": "Submit & continue in terminal",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "checking": "Checking...",
       "sending": "Sending...",
       "successTitle": "Success",

@@ -149,6 +149,7 @@ export default class EnvInfo extends Command {
       (runtime.kind === 'local' || runtime.kind === 'docker') && runtime.env.config.builtinDb
         ? await resolveBuiltinDbConnection(runtime)
         : undefined;
+    const dbDialect = builtinDbConnection?.dbDialect ?? runtime.env.config.dbDialect;
     const appGroup: EnvInfoGroup = {
       url: appUrl(runtime),
       appRootPath: appRootPath(runtime),
@@ -165,13 +166,16 @@ export default class EnvInfo extends Command {
     const dbGroup: EnvInfoGroup = {
       databaseStatus: await dbStatus(runtime),
       builtinDb: runtime.env.config.builtinDb,
-      dbDialect: runtime.env.config.dbDialect,
+      dbDialect,
       builtinDbImage: runtime.env.config.builtinDbImage,
       dbHost: builtinDbConnection?.dbHost ?? runtime.env.config.dbHost,
       dbPort: builtinDbConnection?.dbPort ?? runtime.env.config.dbPort,
       dbDatabase: runtime.env.config.dbDatabase,
       dbUser: runtime.env.config.dbUser,
       dbPassword: maskSecret(runtime.env.config.dbPassword, showSecrets),
+      dbTablePrefix: runtime.env.config.dbTablePrefix,
+      dbUnderscored: runtime.env.config.dbUnderscored,
+      ...(dbDialect === 'postgres' ? { dbSchema: runtime.env.config.dbSchema } : {}),
     };
 
     const authGroup: EnvInfoGroup = {

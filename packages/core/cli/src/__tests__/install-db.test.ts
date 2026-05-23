@@ -300,6 +300,166 @@ test('install keeps optional database prompt results for schema, table prefix, a
   }
 });
 
+test('install lets prompted optional database values override saved resume presets', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(
+    command as { resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues },
+    'resolveResumePresetValues',
+  ).mockResolvedValue({
+    dbPreset: {
+      dbSchema: 'saved_schema',
+      dbTablePrefix: 'saved_',
+      dbUnderscored: false,
+    },
+  });
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      fetchSource: false,
+    })
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: false,
+      dbHost: 'db.example.com',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as never);
+
+  try {
+    const result = await (
+      Install.prototype as unknown as {
+        collectPromptResults: (
+          parsed: Record<string, unknown>,
+          yes: boolean,
+        ) => Promise<{
+          dbResults: Record<string, unknown>;
+        }>;
+      }
+    ).collectPromptResults.call(
+      command,
+      {
+        resume: true,
+      },
+      false,
+    );
+
+    expect(result.dbResults).toMatchObject({
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    });
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
+});
+
+test('install preserves forwarded dbUnderscored flags when invoked through nb init in the same process', async () => {
+  const originalArgv = process.argv;
+  process.argv = ['node', 'nb', 'init', '--ui'];
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    argv: ['-y', '--env', 'app7593', '--no-builtin-db', '--db-underscored'],
+  }) as Install & {
+    argv: string[];
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(
+    command as { resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues },
+    'resolveResumePresetValues',
+  ).mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      fetchSource: false,
+    })
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: false,
+      dbHost: 'db.example.com',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as never);
+
+  try {
+    const result = await (
+      Install.prototype as unknown as {
+        collectPromptResults: (
+          parsed: Record<string, unknown>,
+          yes: boolean,
+        ) => Promise<{
+          dbResults: Record<string, unknown>;
+        }>;
+      }
+    ).collectPromptResults.call(
+      command,
+      {
+        env: 'app7593',
+        'builtin-db': false,
+        'db-underscored': true,
+      },
+      true,
+    );
+
+    expect(result.dbResults).toMatchObject({
+      dbUnderscored: true,
+    });
+  } finally {
+    process.argv = originalArgv;
+    runPromptCatalogSpy.mockRestore();
+  }
+});
+
 test('builtin postgres db plan uses a custom built-in database image when provided', () => {
   const plan = Install.buildBuiltinDbPlan({
     envName: 'demo',

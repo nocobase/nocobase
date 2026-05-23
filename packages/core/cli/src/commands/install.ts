@@ -898,9 +898,11 @@ export default class Install extends Command {
    * Booleans with defaults are only preset when the user passed the flag on argv (see `download`).
    * Does not include `env` — use {@link buildEnvPresetValuesFromFlags} for {@link Install.envPrompts}.
    */
-  private static buildPresetValuesFromFlags(flags: InstallParsedFlags): PromptInitialValues {
+  private static buildPresetValuesFromFlags(
+    flags: InstallParsedFlags,
+    argv: string[] = process.argv.slice(2),
+  ): PromptInitialValues {
     const preset: PromptInitialValues = {};
-    const argv = process.argv.slice(2);
 
     const apiBaseUrl = Install.toOptionalPromptString(flags['api-base-url']);
     if (apiBaseUrl) {
@@ -1048,8 +1050,11 @@ export default class Install extends Command {
     return preset;
   }
 
-  private static buildAppPresetValuesFromFlags(flags: InstallParsedFlags): PromptInitialValues {
-    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags), [
+  private static buildAppPresetValuesFromFlags(
+    flags: InstallParsedFlags,
+    argv: string[] = process.argv.slice(2),
+  ): PromptInitialValues {
+    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags, argv), [
       'lang',
       'force',
       'appRootPath',
@@ -1059,8 +1064,11 @@ export default class Install extends Command {
     ]);
   }
 
-  private static buildDbPresetValuesFromFlags(flags: InstallParsedFlags): PromptInitialValues {
-    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags), [
+  private static buildDbPresetValuesFromFlags(
+    flags: InstallParsedFlags,
+    argv: string[] = process.argv.slice(2),
+  ): PromptInitialValues {
+    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags, argv), [
       'builtinDb',
       'dbDialect',
       'builtinDbImage',
@@ -1075,8 +1083,11 @@ export default class Install extends Command {
     ]);
   }
 
-  private static buildRootPresetValuesFromFlags(flags: InstallParsedFlags): PromptInitialValues {
-    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags), [
+  private static buildRootPresetValuesFromFlags(
+    flags: InstallParsedFlags,
+    argv: string[] = process.argv.slice(2),
+  ): PromptInitialValues {
+    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags, argv), [
       'rootUsername',
       'rootEmail',
       'rootPassword',
@@ -1084,8 +1095,11 @@ export default class Install extends Command {
     ]);
   }
 
-  private static buildEnvAddPresetValuesFromFlags(flags: InstallParsedFlags): PromptInitialValues {
-    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags), [
+  private static buildEnvAddPresetValuesFromFlags(
+    flags: InstallParsedFlags,
+    argv: string[] = process.argv.slice(2),
+  ): PromptInitialValues {
+    return pickPresetKeys(Install.buildPresetValuesFromFlags(flags, argv), [
       'apiBaseUrl',
       'authType',
       'username',
@@ -1598,9 +1612,9 @@ export default class Install extends Command {
     appResults: Record<string, PromptValue>,
     envName: string,
     yes: boolean,
+    argv: string[] = process.argv.slice(2),
   ): PromptInitialValues {
     const preset: PromptInitialValues = {};
-    const argv = process.argv.slice(2);
     const appRoot = String(appResults.appRootPath ?? '').trim() || defaultInstallAppRootPath(envName);
     const lang = String(appResults.lang ?? DEFAULT_INSTALL_LANG).trim() || DEFAULT_INSTALL_LANG;
 
@@ -2778,6 +2792,7 @@ export default class Install extends Command {
     parsed: InstallParsedFlags & DownloadParsedFlags,
     yes: boolean,
   ): Promise<InstallPromptResults> {
+    const commandArgv = this.argv ?? process.argv.slice(2);
     const resumePreset = await this.resolveResumePresetValues(parsed, yes);
     const envPreset = {
       ...(resumePreset?.envPreset ?? {}),
@@ -2795,7 +2810,7 @@ export default class Install extends Command {
 
     const appPreset = {
       ...(resumePreset?.appPreset ?? {}),
-      ...Install.buildAppPresetValuesFromFlags(parsed),
+      ...Install.buildAppPresetValuesFromFlags(parsed, commandArgv),
     };
     const appCatalog = Install.buildAppPromptsCatalog(envName, {
       resume: parsed.resume,
@@ -2821,7 +2836,7 @@ export default class Install extends Command {
       downloadOpts.values = {
         ...(resumePreset?.downloadPreset ?? {}),
         ...downloadOpts.values,
-        ...Install.buildDownloadPresetValuesForInstall(parsed, appResults, envName, yes),
+        ...Install.buildDownloadPresetValuesForInstall(parsed, appResults, envName, yes, commandArgv),
       };
       downloadOpts.yes = yes;
       downloadResults = await runPromptCatalog(Download.prompts, downloadOpts);
@@ -2829,7 +2844,7 @@ export default class Install extends Command {
 
     const dbPreset = {
       ...(resumePreset?.dbPreset ?? {}),
-      ...Install.buildDbPresetValuesFromFlags(parsed),
+      ...Install.buildDbPresetValuesFromFlags(parsed, commandArgv),
     };
     const promptedDbResults = await runPromptCatalog(
       Install.buildDbPromptsCatalog(envName, downloadResults, {
@@ -2852,11 +2867,11 @@ export default class Install extends Command {
       },
     );
     const dbResults = {
-      ...promptedDbResults,
       ...pickPresetKeys(dbPreset, ['dbSchema', 'dbTablePrefix', 'dbUnderscored']),
+      ...promptedDbResults,
     };
 
-    const rootPreset = Install.buildRootPresetValuesFromFlags(parsed);
+    const rootPreset = Install.buildRootPresetValuesFromFlags(parsed, commandArgv);
     const rootResults = await runPromptCatalog(Install.rootUserPrompts, {
       initialValues: {},
       values: {
@@ -2868,7 +2883,7 @@ export default class Install extends Command {
 
     const envAddPromptsForInstall = this.buildEnvAddPromptsForInstall(parsed);
     const envAddResumePreset = resumePreset?.envAddPreset ?? {};
-    const envAddFlagValues = Install.buildEnvAddPresetValuesFromFlags(parsed);
+    const envAddFlagValues = Install.buildEnvAddPresetValuesFromFlags(parsed, commandArgv);
     const envAddPreset = {
       ...envAddResumePreset,
       ...envAddFlagValues,

@@ -34,6 +34,8 @@
       "back": "上一步",
       "next": "下一步",
       "submit": "提交并回到终端继续",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码",
       "checking": "检查中...",
       "sending": "提交中...",
       "successTitle": "成功",
