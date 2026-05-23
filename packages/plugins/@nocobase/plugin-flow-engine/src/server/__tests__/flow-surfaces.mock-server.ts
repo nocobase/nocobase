@@ -39,7 +39,14 @@ const FLOW_SURFACES_FIXTURE_TABLE_NAME_LIMIT = 63;
 
 let flowSurfacesFixtureTableScopeSequence = 0;
 
-type FlowSurfacesMockServerWithFixtureTableScope = MockServer & {
+export type FlowSurfacesFixtureCollectionApp = {
+  db: {
+    inDialect?: (dialect: string) => boolean;
+    options?: Record<string, unknown>;
+  };
+};
+
+type FlowSurfacesFixtureScopedApp = FlowSurfacesFixtureCollectionApp & {
   [FLOW_SURFACES_FIXTURE_TABLE_SCOPE]?: string;
 };
 
@@ -588,24 +595,59 @@ function withFlowSurfacesFixtureCollectionTableName(app: MockServer, callArgs: u
     return callArgs;
   }
 
-  const { values } = params;
-  if (values.tableName || values.view || values.viewName || typeof values.name !== 'string' || !values.name.trim()) {
+  const values = prepareFlowSurfacesFixtureCollectionValues(app, params.values);
+  if (values === params.values) {
     return callArgs;
   }
 
   return [
     {
       ...params,
-      values: {
-        ...values,
-        tableName: buildFlowSurfacesFixtureCollectionTableName(app, values.name),
-      },
+      values,
     },
     ...restArgs,
   ];
 }
 
-function buildFlowSurfacesFixtureCollectionTableName(app: MockServer, collectionName: string) {
+export function prepareFlowSurfacesFixtureCollectionValues(
+  app: FlowSurfacesFixtureCollectionApp,
+  values: Record<string, unknown>,
+) {
+  const fixtureValues = {
+    ...values,
+  };
+  let changed = false;
+
+  if (
+    !fixtureValues.tableName &&
+    !fixtureValues.view &&
+    !fixtureValues.viewName &&
+    typeof fixtureValues.name === 'string' &&
+    fixtureValues.name.trim()
+  ) {
+    fixtureValues.tableName = buildFlowSurfacesFixtureCollectionTableName(app, fixtureValues.name);
+    changed = true;
+  }
+
+  const schema = getFlowSurfacesFixtureCollectionSchema(app);
+  if (schema && !fixtureValues.schema) {
+    fixtureValues.schema = schema;
+    changed = true;
+  }
+
+  return changed ? fixtureValues : values;
+}
+
+function getFlowSurfacesFixtureCollectionSchema(app: FlowSurfacesFixtureCollectionApp) {
+  if (!app.db.inDialect?.('postgres')) {
+    return undefined;
+  }
+
+  const schema = app.db.options?.schema;
+  return typeof schema === 'string' && schema.trim() ? schema.trim() : undefined;
+}
+
+function buildFlowSurfacesFixtureCollectionTableName(app: FlowSurfacesFixtureCollectionApp, collectionName: string) {
   const scope = getFlowSurfacesFixtureTableScope(app);
   const normalizedCollectionName = normalizeFlowSurfacesFixtureIdentifierPart(collectionName, 'collection');
   const prefix = `${scope}_`;
@@ -623,11 +665,11 @@ function buildFlowSurfacesFixtureCollectionTableName(app: MockServer, collection
   return `${prefix}${truncatedCollectionName}_${suffix}`;
 }
 
-function getFlowSurfacesFixtureTableScope(app: MockServer) {
-  const appWithScope = app as FlowSurfacesMockServerWithFixtureTableScope;
-  if (!appWithScope[FLOW_SURFACES_FIXTURE_TABLE_SCOPE]) {
+function getFlowSurfacesFixtureTableScope(app: FlowSurfacesFixtureCollectionApp) {
+  const scopedApp = app as FlowSurfacesFixtureScopedApp;
+  if (!scopedApp[FLOW_SURFACES_FIXTURE_TABLE_SCOPE]) {
     flowSurfacesFixtureTableScopeSequence += 1;
-    const options = (app.db as { options?: Record<string, unknown> })?.options || {};
+    const options = app.db.options || {};
     const identity = [
       process.pid,
       flowSurfacesFixtureTableScopeSequence,
@@ -638,9 +680,9 @@ function getFlowSurfacesFixtureTableScope(app: MockServer) {
     ]
       .filter(Boolean)
       .join('_');
-    appWithScope[FLOW_SURFACES_FIXTURE_TABLE_SCOPE] = `fs_${shortFlowSurfacesHash(identity)}`;
+    scopedApp[FLOW_SURFACES_FIXTURE_TABLE_SCOPE] = `fs_${shortFlowSurfacesHash(identity)}`;
   }
-  return appWithScope[FLOW_SURFACES_FIXTURE_TABLE_SCOPE];
+  return scopedApp[FLOW_SURFACES_FIXTURE_TABLE_SCOPE];
 }
 
 function normalizeFlowSurfacesFixtureIdentifierPart(value: unknown, fallback: string) {
