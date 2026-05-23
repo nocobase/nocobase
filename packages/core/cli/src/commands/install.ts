@@ -39,7 +39,7 @@ import {
   validateTcpPort,
   validateEnvKey,
 } from '../lib/prompt-validators.ts';
-import { validateExternalDbConfig } from '../lib/db-connection-check.ts';
+import { validateExternalDbConfig, validateMysqlLowerCaseTableNamesCompatibility } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { printInfo, printStage, printVerbose, printWarning, setVerboseMode } from '../lib/ui.js';
@@ -246,7 +246,16 @@ async function validateExternalDbPromptField(
     return undefined;
   }
 
-  return await validateExternalDbConfig(values);
+  const connectionError = await validateExternalDbConfig(values);
+  if (connectionError) {
+    return connectionError;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(values, 'dbUnderscored')) {
+    return undefined;
+  }
+
+  return await validateMysqlLowerCaseTableNamesCompatibility(values);
 }
 
 function defaultInstallAppRootPath(envName: PromptValue | undefined): string {
@@ -764,6 +773,28 @@ export default class Install extends Command {
       required: true,
       validate: validateExternalDbPromptField,
     },
+    dbSchema: {
+      type: 'text',
+      message: installText('prompts.dbSchema.message'),
+      placeholder: installText('prompts.dbSchema.placeholder'),
+      hidden: (values) => String(values.dbDialect ?? '').trim() !== 'postgres',
+    },
+    dbTablePrefix: {
+      type: 'text',
+      message: installText('prompts.dbTablePrefix.message'),
+      placeholder: installText('prompts.dbTablePrefix.placeholder'),
+    },
+    dbUnderscored: {
+      type: 'boolean',
+      message: installText('prompts.dbUnderscored.message'),
+      initialValue: false,
+      yesInitialValue: false,
+      validate: (value, values) =>
+        validateExternalDbPromptField(value, {
+          ...values,
+          dbUnderscored: Boolean(value),
+        }),
+    },
   };
 
   static rootUserPrompts: PromptsCatalog = {
@@ -1168,6 +1199,11 @@ export default class Install extends Command {
     const validationError = await validateExternalDbConfig(dbResults as PromptCatalogValues);
     if (validationError) {
       throw new Error(validationError);
+    }
+
+    const compatibilityError = await validateMysqlLowerCaseTableNamesCompatibility(dbResults as PromptCatalogValues);
+    if (compatibilityError) {
+      throw new Error(compatibilityError);
     }
   }
 

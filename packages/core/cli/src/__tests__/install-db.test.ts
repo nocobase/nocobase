@@ -125,7 +125,8 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
 
   vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
 
-  const runPromptCatalogMock = vi.fn()
+  const runPromptCatalogMock = vi
+    .fn()
     .mockResolvedValueOnce({ env: 'app7593' })
     .mockResolvedValueOnce({
       appRootPath: './app7593/source/',
@@ -177,7 +178,8 @@ test('install hides the deferred accessToken prompt when --skip-auth is used wit
 
   vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
 
-  const runPromptCatalogMock = vi.fn()
+  const runPromptCatalogMock = vi
+    .fn()
     .mockResolvedValueOnce({ env: 'app7593' })
     .mockResolvedValueOnce({
       appRootPath: './app7593/source/',
@@ -221,6 +223,81 @@ test('install hides the deferred accessToken prompt when --skip-auth is used wit
   const envAddCatalog = runPromptCatalogMock.mock.calls[4]?.[0];
   expect(envAddCatalog.accessToken).toBeDefined();
   expect(envAddCatalog.accessToken.hidden?.({ authType: 'token' })).toBe(true);
+});
+
+test('install keeps optional database prompt results for schema, table prefix, and underscored mode', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(
+    command as { resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues },
+    'resolveResumePresetValues',
+  ).mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      fetchSource: false,
+    })
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: false,
+      dbHost: 'db.example.com',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as never);
+
+  try {
+    const result = await (
+      Install.prototype as unknown as {
+        collectPromptResults: (
+          parsed: Record<string, unknown>,
+          yes: boolean,
+        ) => Promise<{
+          dbResults: Record<string, unknown>;
+        }>;
+      }
+    ).collectPromptResults.call(
+      command,
+      {
+        resume: false,
+      },
+      false,
+    );
+
+    expect(result.dbResults).toMatchObject({
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    });
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
 });
 
 test('builtin postgres db plan uses a custom built-in database image when provided', () => {
@@ -338,7 +415,11 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
   expect(plan.args.includes('DB_MODE=pg')).toBe(true);
   expect(plan.args.includes('NEED_START=yes')).toBe(true);
   expect(plan.args.includes('54321:54321')).toBe(true);
-  expect(plan.args.includes(`${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
+  expect(
+    plan.args.includes(
+      `${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`,
+    ),
+  ).toBe(true);
 });
 
 test('docker app plan wires app, db, network, port, and image settings', async () => {
@@ -656,12 +737,15 @@ test('install resolves an available app port default when the preferred port is 
 test('install seeds app port initial values unless the user provided --app-port', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const resolveAvailableDefaultPort = vi
-    .spyOn(Install as unknown as {
-      resolveAvailableDefaultPort: (
-        defaultPort: string,
-        options?: { label?: string; warn?: boolean },
-      ) => Promise<string>;
-    }, 'resolveAvailableDefaultPort')
+    .spyOn(
+      Install as unknown as {
+        resolveAvailableDefaultPort: (
+          defaultPort: string,
+          options?: { label?: string; warn?: boolean },
+        ) => Promise<string>;
+      },
+      'resolveAvailableDefaultPort',
+    )
     .mockResolvedValueOnce('61522');
 
   try {
@@ -676,10 +760,12 @@ test('install seeds app port initial values unless the user provided --app-port'
       label: 'Default app port',
       warn: true,
     });
-    expect(await installStatics.buildAppPromptInitialValues({
-      envName: 'demo',
-      flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
-    })).toEqual({});
+    expect(
+      await installStatics.buildAppPromptInitialValues({
+        envName: 'demo',
+        flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
+      }),
+    ).toEqual({});
   } finally {
     resolveAvailableDefaultPort.mockRestore();
   }
@@ -688,12 +774,15 @@ test('install seeds app port initial values unless the user provided --app-port'
 test('install seeds built-in database host port for npm/git sources when the default port is busy', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const resolveAvailableDefaultPort = vi
-    .spyOn(Install as unknown as {
-      resolveAvailableDefaultPort: (
-        defaultPort: string,
-        options?: { label?: string; warn?: boolean },
-      ) => Promise<string>;
-    }, 'resolveAvailableDefaultPort')
+    .spyOn(
+      Install as unknown as {
+        resolveAvailableDefaultPort: (
+          defaultPort: string,
+          options?: { label?: string; warn?: boolean },
+        ) => Promise<string>;
+      },
+      'resolveAvailableDefaultPort',
+    )
     .mockResolvedValueOnce('61523');
 
   try {
@@ -720,7 +809,8 @@ test('install seeds built-in database host port for npm/git sources when the def
 test('install does not seed built-in database host port for docker source or explicit --db-port', async () => {
   const installStatics = Install as unknown as InstallStatics;
 
-  expect(await installStatics.buildDbPromptInitialValues({
+  expect(
+    await installStatics.buildDbPromptInitialValues({
       flags: {},
       downloadResults: {
         source: 'docker',
@@ -729,8 +819,10 @@ test('install does not seed built-in database host port for docker source or exp
         builtinDb: true,
         dbDialect: 'postgres',
       },
-    })).toEqual({});
-  expect(await installStatics.buildDbPromptInitialValues({
+    }),
+  ).toEqual({});
+  expect(
+    await installStatics.buildDbPromptInitialValues({
       flags: {
         'db-port': '15432',
       },
@@ -741,21 +833,24 @@ test('install does not seed built-in database host port for docker source or exp
         builtinDb: true,
         dbDialect: 'postgres',
       },
-    })).toEqual({});
+    }),
+  ).toEqual({});
 });
 
 test('install does not seed a built-in database host port for external db host presets', async () => {
   const installStatics = Install as unknown as InstallStatics;
 
-  await expect(installStatics.buildDbPromptInitialValues({
-    flags: {},
-    downloadResults: {
-      source: 'npm',
-    },
-    dbPreset: {
-      builtinDb: false,
-      dbDialect: 'postgres',
-      dbHost: 'db.example.com',
-    },
-  })).resolves.toEqual({});
+  await expect(
+    installStatics.buildDbPromptInitialValues({
+      flags: {},
+      downloadResults: {
+        source: 'npm',
+      },
+      dbPreset: {
+        builtinDb: false,
+        dbDialect: 'postgres',
+        dbHost: 'db.example.com',
+      },
+    }),
+  ).resolves.toEqual({});
 });

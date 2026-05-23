@@ -73,7 +73,8 @@
       "timeout": "Timed out connecting to the database at {{host}}:{{port}} after about {{seconds}} seconds.",
       "authenticationFailed": "Failed to sign in to database \"{{database}}\" with user \"{{user}}\". Check the username and password.",
       "databaseNotFound": "Database \"{{database}}\" does not exist or is not accessible with the current connection settings.",
-      "connectionFailed": "Database connection check failed. Details: {{details}}"
+      "connectionFailed": "Database connection check failed. Details: {{details}}",
+      "lowerCaseTableNamesRequiresUnderscored": "MySQL lower_case_table_names=1 requires DB_UNDERSCORED=true."
     }
   },
   "commands": {
@@ -267,6 +268,17 @@
         },
         "dbPassword": {
           "message": "What is the database password?"
+        },
+        "dbSchema": {
+          "message": "What is the database schema? (PostgreSQL only, optional)",
+          "placeholder": "Leave empty to use the default schema"
+        },
+        "dbTablePrefix": {
+          "message": "What table prefix should be used? (optional)",
+          "placeholder": "For example: nb_"
+        },
+        "dbUnderscored": {
+          "message": "Use underscored names for database tables and columns?"
         },
         "rootUsername": {
           "message": "Choose the initial admin username",
