@@ -134,6 +134,16 @@ type CtxLibMemberCaseMismatch = {
   member: string;
 };
 
+type InvalidCtxLibMemberAccess = {
+  accessKind: 'bracket' | 'destructure' | 'member';
+  capability: string;
+  index: number;
+  library: string;
+  member: string;
+  ruleId: 'runjs-ctx-libs-member-unknown';
+  suggestedImport?: string;
+};
+
 type CallArgumentSource = SourceRange & {
   source: string;
 };
@@ -172,6 +182,7 @@ type RunJsAstInspection = {
     member?: string;
     ruleId: string;
   }>;
+  invalidCtxLibMemberAccesses: InvalidCtxLibMemberAccess[];
   invalidResourceTypeCalls: Array<{
     capability: string;
     expression?: string;
@@ -218,6 +229,21 @@ type RunJsAstInspection = {
 type CtxMethodAlias = SourceRange & {
   capability: string;
   method: string;
+  name: string;
+};
+
+type CtxLibsRootAlias = SourceRange & {
+  capability: 'ctx.libs';
+  declarationStart?: number;
+  executionScope: SourceRange;
+  name: string;
+};
+
+type CtxLibAlias = SourceRange & {
+  capability: string;
+  declarationStart?: number;
+  executionScope: SourceRange;
+  library: string;
   name: string;
 };
 
@@ -512,6 +538,85 @@ const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource']);
 const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 const CANONICAL_CTX_LIB_MEMBERS = ['React', 'ReactDOM', 'antd', 'dayjs', 'antdIcons', 'lodash', 'formula', 'math'];
 const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((member) => [member.toLowerCase(), member]));
+const RUNJS_CTX_LIB_ANTD_ALLOWED_MEMBERS = new Set([
+  'Affix',
+  'Alert',
+  'Anchor',
+  'App',
+  'AutoComplete',
+  'Avatar',
+  'BackTop',
+  'Badge',
+  'Breadcrumb',
+  'Button',
+  'Calendar',
+  'Card',
+  'Carousel',
+  'Cascader',
+  'Checkbox',
+  'Col',
+  'Collapse',
+  'ColorPicker',
+  'ConfigProvider',
+  'DatePicker',
+  'Descriptions',
+  'Divider',
+  'Drawer',
+  'Dropdown',
+  'Empty',
+  'Flex',
+  'FloatButton',
+  'Form',
+  'Grid',
+  'Image',
+  'Input',
+  'InputNumber',
+  'Layout',
+  'List',
+  'Mentions',
+  'Menu',
+  'Modal',
+  'Pagination',
+  'Popconfirm',
+  'Popover',
+  'Progress',
+  'QRCode',
+  'Radio',
+  'Rate',
+  'Result',
+  'Row',
+  'Segmented',
+  'Select',
+  'Skeleton',
+  'Slider',
+  'Space',
+  'Spin',
+  'Splitter',
+  'Statistic',
+  'Steps',
+  'Switch',
+  'Table',
+  'Tabs',
+  'Tag',
+  'TimePicker',
+  'Timeline',
+  'Tooltip',
+  'Tour',
+  'Transfer',
+  'Tree',
+  'TreeSelect',
+  'Typography',
+  'Upload',
+  'Watermark',
+  'message',
+  'notification',
+  'theme',
+  'unstableSetRender',
+  'version',
+]);
+const RUNJS_CTX_LIB_ALLOWED_MEMBERS_BY_LIBRARY = new Map<string, Set<string>>([
+  ['antd', RUNJS_CTX_LIB_ANTD_ALLOWED_MEMBERS],
+]);
 const RUNJS_CTX_API_ALLOWED_MEMBERS = new Set(['auth', 'request', 'resource']);
 const RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS = new Set(['authenticator', 'locale', 'role', 'token']);
 const RUNJS_RESOURCE_METHODS = new Set(['list', 'get', 'create', 'update', 'destroy']);
@@ -597,7 +702,6 @@ const MULTI_RECORD_RESOURCE_METHODS = unionMethodSets([
     'setUpdateActionOptions',
     'setSelectedRows',
     'getSelectedRows',
-    'getCount',
     'setPage',
     'getPage',
     'setPageSize',
@@ -652,7 +756,10 @@ const FLOW_RESOURCE_METHODS_BY_TYPE: Record<Exclude<FlowResourceInstanceType, 'u
   SQLResource: SQL_RESOURCE_METHODS,
 };
 const UNKNOWN_FLOW_RESOURCE_METHODS = unionMethodSets(Object.values(FLOW_RESOURCE_METHODS_BY_TYPE));
-const FLOW_RESOURCE_METHOD_SUGGESTIONS = new Map([['setFilters', 'setFilter']]);
+const FLOW_RESOURCE_METHOD_SUGGESTIONS = new Map([
+  ['setFilters', 'setFilter'],
+  ['getCount', 'getData'],
+]);
 const CONTEXT_FIRST_REPAIR_CLASSES = new Set<RunJsAuthoringRepairClass>([
   'unknown-surface-stop',
   'unknown-model-stop',
@@ -2168,6 +2275,30 @@ function collectCtxContractErrors(
       }),
     );
   });
+  scan.invalidCtxLibMemberAccesses.forEach((entry) => {
+    const importHint = entry.suggestedImport
+      ? `; import it with await ctx.importAsync('${entry.suggestedImport}') instead`
+      : '';
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'ctx-libs-member-mismatch-stop',
+        ruleId: entry.ruleId,
+        message: `flowSurfaces authoring ${path} ${entry.capability} is not a supported RunJS ctx.libs.${entry.library} member${importHint}`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          accessKind: entry.accessKind,
+          capability: entry.capability,
+          library: entry.library,
+          member: entry.member,
+          suggestedImport: entry.suggestedImport,
+        },
+      }),
+    );
+  });
   scan.invalidCtxApiMemberAccesses.forEach((entry) => {
     const message =
       entry.ruleId === 'runjs-ctx-api-member-dynamic-unresolved'
@@ -2329,6 +2460,7 @@ function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoring
     ctxAliases,
     ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked, sourceBindings),
     invalidCtxApiMemberAccesses: astInspection?.invalidCtxApiMemberAccesses || [],
+    invalidCtxLibMemberAccesses: astInspection?.invalidCtxLibMemberAccesses || [],
     forbiddenBareGlobals,
     ctxMemberAccesses: collectCtxMemberAccesses(masked, sourceBindings),
     dynamicCtxAccesses: findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g, sourceBindings),
@@ -2345,6 +2477,8 @@ function inspectRunJsAst(
   const identifierBindings = collectAstIdentifierBindingsFromAst(ast, source);
   const aliases = collectCtxMethodAliasesFromAst(ast, source, identifierBindings);
   const ctxApiAliases = collectCtxApiAliasesFromAst(ast, source, identifierBindings);
+  const ctxLibsRootAliases = collectCtxLibsRootAliasesFromAst(ast, source, identifierBindings);
+  const ctxLibAliases = collectCtxLibAliasesFromAst(ast, source, ctxLibsRootAliases, identifierBindings);
   const ctxApiResourceAliases = collectCtxApiResourceAliasesFromAst(ast, source, ctxApiAliases, identifierBindings);
   const reactNamespaceAliases = collectReactNamespaceAliasesFromAst(ast, source, identifierBindings);
   const reactCreateElementAliases = collectReactCreateElementAliasesFromAst(
@@ -2365,6 +2499,9 @@ function inspectRunJsAst(
   const nestedRunjsCalls: RunJsAstInspection['nestedRunjsCalls'] = [];
   const invalidCtxApiMemberAccesses: RunJsAstInspection['invalidCtxApiMemberAccesses'] = [
     ...collectAstInvalidCtxApiPatternAccesses(ast, ctxApiAliases, identifierBindings),
+  ];
+  const invalidCtxLibMemberAccesses: RunJsAstInspection['invalidCtxLibMemberAccesses'] = [
+    ...collectAstInvalidCtxLibPatternAccesses(ast, ctxLibAliases, ctxLibsRootAliases, identifierBindings, source),
   ];
   const invalidApiResourceCalls: RunJsAstInspection['invalidApiResourceCalls'] = [];
   const invalidResourceTypeCalls: RunJsAstInspection['invalidResourceTypeCalls'] = [];
@@ -2432,6 +2569,16 @@ function inspectRunJsAst(
       ).forEach((entry) => reactAsyncComponentReferences.push(entry));
     },
     MemberExpression(node: any) {
+      const invalidCtxLibAccess = collectAstInvalidCtxLibMemberAccess(
+        node,
+        ctxLibAliases,
+        ctxLibsRootAliases,
+        identifierBindings,
+        source,
+      );
+      if (invalidCtxLibAccess) {
+        invalidCtxLibMemberAccesses.push(invalidCtxLibAccess);
+      }
       const invalidCtxApiAccess = collectAstInvalidCtxApiMemberAccess(node, ctxApiAliases, identifierBindings, source);
       if (invalidCtxApiAccess) {
         invalidCtxApiMemberAccesses.push(invalidCtxApiAccess);
@@ -2477,6 +2624,9 @@ function inspectRunJsAst(
       dedupeIndexedEntries(invalidCtxApiMemberAccesses),
       dedupedInvalidApiResourceCalls,
     ).sort((left, right) => left.index - right.index),
+    invalidCtxLibMemberAccesses: dedupeIndexedEntries(invalidCtxLibMemberAccesses).sort(
+      (left, right) => left.index - right.index,
+    ),
     invalidResourceTypeCalls: dedupeAstResourceEntries(invalidResourceTypeCalls),
     invalidFlowResourceListCalls: dedupeIndexedEntries(invalidFlowResourceListCalls).sort(
       (left, right) => left.index - right.index,
@@ -2650,6 +2800,143 @@ function trimCtxApiAliasesAfterWrites(
   identifierBindings: AstIdentifierBinding[],
 ): CtxApiAlias[] {
   return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+function collectCtxLibsRootAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): CtxLibsRootAlias[] {
+  const aliases: CtxLibsRootAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addAlias = (name: string, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability: 'ctx.libs',
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      name,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator)) {
+        return;
+      }
+      if (
+        node.left?.type === 'Identifier' &&
+        isCtxLibsRootFromAst(node.right, getActiveAliases(), identifierBindings)
+      ) {
+        addAlias(node.left.name, node, ancestors);
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier' || !isCtxLibsRootFromAst(node.init, getActiveAliases(), identifierBindings)) {
+        return;
+      }
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      addAlias(node.id.name, node, ancestors, declaration?.kind === 'var');
+    },
+  });
+
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+function collectCtxLibAliasesFromAst(
+  ast: any,
+  source: string,
+  rootAliases: CtxLibsRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): CtxLibAlias[] {
+  const aliases: CtxLibAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addAlias = (name: string, library: string, capability: string, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability,
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      library,
+      name,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator)) {
+        return;
+      }
+      const activeAliases = getActiveAliases();
+      const sourcePath = getCtxLibMemberPathFromAst(node.right, activeAliases, rootAliases, identifierBindings, source);
+      if (
+        node.left?.type === 'Identifier' &&
+        sourcePath &&
+        !sourcePath.hasDynamicMember &&
+        !sourcePath.members.length
+      ) {
+        addAlias(node.left.name, sourcePath.library, sourcePath.rootCapability, node, ancestors);
+        return;
+      }
+      if (node.operator === '=' && node.left?.type === 'ObjectPattern') {
+        collectCtxLibObjectPatternAliases(
+          node.left,
+          node.right,
+          rootAliases,
+          identifierBindings,
+          (name, alias, aliasNode) => {
+            addAlias(name, alias.library, alias.capability, aliasNode || node, ancestors);
+          },
+        );
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      const activeAliases = getActiveAliases();
+      const sourcePath = getCtxLibMemberPathFromAst(node.init, activeAliases, rootAliases, identifierBindings, source);
+      if (node.id?.type === 'Identifier' && sourcePath && !sourcePath.hasDynamicMember && !sourcePath.members.length) {
+        addAlias(node.id.name, sourcePath.library, sourcePath.rootCapability, node, ancestors, isVar);
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern') {
+        collectCtxLibObjectPatternAliases(
+          node.id,
+          node.init,
+          rootAliases,
+          identifierBindings,
+          (name, alias, aliasNode) => {
+            addAlias(name, alias.library, alias.capability, aliasNode || node, ancestors, isVar);
+          },
+        );
+      }
+    },
+  });
+
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+function collectCtxLibObjectPatternAliases(
+  pattern: any,
+  sourceNode: any,
+  rootAliases: CtxLibsRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  addAlias: (name: string, alias: { capability: string; library: string }, node?: any) => void,
+) {
+  if (!isCtxLibsRootFromAst(sourceNode, rootAliases, identifierBindings)) {
+    return;
+  }
+  collectAstObjectPatternAliases(pattern, (name, member, aliasNode) => {
+    if (member) {
+      addAlias(name, { capability: `ctx.libs.${member}`, library: member }, aliasNode);
+    }
+  });
 }
 
 function trimAstAliasesAfterWrites<
@@ -5172,6 +5459,246 @@ function getSuggestedFlowResourceMethod(method: string) {
 
 function isKnownFlowResourceInstanceType(value: string): value is Exclude<FlowResourceInstanceType, 'unknown'> {
   return value in FLOW_RESOURCE_METHODS_BY_TYPE;
+}
+
+function collectAstInvalidCtxLibPatternAccesses(
+  ast: any,
+  aliases: CtxLibAlias[],
+  rootAliases: CtxLibsRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  source: string,
+): RunJsAstInspection['invalidCtxLibMemberAccesses'] {
+  const entries: RunJsAstInspection['invalidCtxLibMemberAccesses'] = [];
+  const collectPattern = (pattern: any, sourceNode: any) => {
+    const sourcePath = getCtxLibMemberPathFromAst(sourceNode, aliases, rootAliases, identifierBindings, source);
+    if (!sourcePath || sourcePath.hasDynamicMember || sourcePath.members.length) {
+      return;
+    }
+    collectInvalidCtxLibObjectPatternAccesses(pattern, sourcePath).forEach((entry) => entries.push(entry));
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any) {
+      if (node.operator !== '=' || node.left?.type !== 'ObjectPattern') {
+        return;
+      }
+      collectPattern(node.left, node.right);
+    },
+    VariableDeclarator(node: any) {
+      if (node.id?.type !== 'ObjectPattern') {
+        return;
+      }
+      collectPattern(node.id, node.init);
+    },
+  });
+
+  return dedupeIndexedEntries(entries);
+}
+
+function collectInvalidCtxLibObjectPatternAccesses(
+  pattern: any,
+  sourcePath: NonNullable<ReturnType<typeof getCtxLibMemberPathFromAst>>,
+): RunJsAstInspection['invalidCtxLibMemberAccesses'] {
+  const entries: RunJsAstInspection['invalidCtxLibMemberAccesses'] = [];
+  for (const property of pattern?.properties || []) {
+    if (!property || property.type !== 'Property') {
+      continue;
+    }
+    const member = getAstStaticPropertyName(property);
+    if (!member) {
+      continue;
+    }
+    const invalidAccess = buildInvalidCtxLibMemberAccess({
+      ...sourcePath,
+      members: [
+        {
+          accessKind: 'destructure',
+          index: typeof property.key?.start === 'number' ? property.key.start : property.start || 0,
+          name: member,
+        },
+      ],
+    });
+    if (invalidAccess) {
+      entries.push(invalidAccess);
+    }
+  }
+  return entries;
+}
+
+function collectAstInvalidCtxLibMemberAccess(
+  node: any,
+  aliases: CtxLibAlias[],
+  rootAliases: CtxLibsRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  source: string,
+): RunJsAstInspection['invalidCtxLibMemberAccesses'][number] | undefined {
+  const path = getCtxLibMemberPathFromAst(node, aliases, rootAliases, identifierBindings, source);
+  if (!path || path.hasDynamicMember || !path.members.length) {
+    return undefined;
+  }
+  return buildInvalidCtxLibMemberAccess(path);
+}
+
+function buildInvalidCtxLibMemberAccess(path: {
+  library: string;
+  members: Array<{ accessKind: 'bracket' | 'destructure' | 'member'; index: number; name: string }>;
+  rootCapability: string;
+}): RunJsAstInspection['invalidCtxLibMemberAccesses'][number] | undefined {
+  const allowedMembers = RUNJS_CTX_LIB_ALLOWED_MEMBERS_BY_LIBRARY.get(path.library);
+  const member = path.members[0];
+  if (!allowedMembers || !member || allowedMembers.has(member.name)) {
+    return undefined;
+  }
+  return {
+    accessKind: member.accessKind,
+    capability: getCtxLibMemberCapability(path.rootCapability, member),
+    index: member.index,
+    library: path.library,
+    member: member.name,
+    ruleId: 'runjs-ctx-libs-member-unknown',
+    suggestedImport: getSuggestedCtxLibMemberImport(path.library, member.name),
+  };
+}
+
+function getCtxLibMemberCapability(
+  rootCapability: string,
+  member: { accessKind: 'bracket' | 'destructure' | 'member'; name: string },
+) {
+  return member.accessKind === 'bracket'
+    ? `${rootCapability}[${JSON.stringify(member.name)}]`
+    : `${rootCapability}.${member.name}`;
+}
+
+function getSuggestedCtxLibMemberImport(library: string, member: string) {
+  if (library === 'antd' && member === 'colors') {
+    return '@ant-design/colors';
+  }
+  return undefined;
+}
+
+function getCtxLibMemberPathFromAst(
+  node: any,
+  aliases: CtxLibAlias[],
+  rootAliases: CtxLibsRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  source: string,
+):
+  | {
+      dynamicIndex: number;
+      hasDynamicMember: boolean;
+      library: string;
+      libraryIndex: number;
+      memberIndex: number;
+      members: Array<{ accessKind: 'bracket' | 'destructure' | 'member'; index: number; name: string }>;
+      rootCapability: string;
+    }
+  | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'Identifier') {
+    const alias = resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, aliases, identifierBindings);
+    if (!alias) {
+      return undefined;
+    }
+    const index = typeof unwrapped.start === 'number' ? unwrapped.start : alias.start;
+    return {
+      dynamicIndex: index,
+      hasDynamicMember: false,
+      library: alias.library,
+      libraryIndex: index,
+      memberIndex: index,
+      members: [],
+      rootCapability: alias.capability,
+    };
+  }
+  if (unwrapped.type !== 'MemberExpression') {
+    return undefined;
+  }
+
+  const objectPath = getCtxLibMemberPathFromAst(unwrapped.object, aliases, rootAliases, identifierBindings, source);
+  if (objectPath) {
+    const propertyName = getAstStaticPropertyName(unwrapped);
+    const propertyIndex =
+      typeof unwrapped.property?.start === 'number' ? unwrapped.property.start : unwrapped.start || 0;
+    return {
+      ...objectPath,
+      dynamicIndex: propertyName ? objectPath.dynamicIndex : propertyIndex,
+      hasDynamicMember: objectPath.hasDynamicMember || !propertyName,
+      memberIndex: objectPath.members.length ? objectPath.memberIndex : propertyIndex,
+      members: propertyName
+        ? [
+            ...objectPath.members,
+            {
+              accessKind: unwrapped.computed ? 'bracket' : 'member',
+              index: propertyIndex,
+              name: propertyName,
+            },
+          ]
+        : objectPath.members,
+    };
+  }
+
+  return getDirectCtxLibPathFromAst(unwrapped, rootAliases, identifierBindings, source);
+}
+
+function getDirectCtxLibPathFromAst(
+  node: any,
+  rootAliases: CtxLibsRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  source: string,
+): ReturnType<typeof getCtxLibMemberPathFromAst> {
+  const member = unwrapAstChainExpression(node);
+  if (!member || member.type !== 'MemberExpression') {
+    return undefined;
+  }
+  const propertyName = getAstStaticPropertyName(member);
+  if (!propertyName) {
+    return undefined;
+  }
+  const propertyIndex = typeof member.property?.start === 'number' ? member.property.start : member.start || 0;
+  if (isCtxLibsRootFromAst(member.object, rootAliases, identifierBindings)) {
+    return {
+      dynamicIndex: propertyIndex,
+      hasDynamicMember: false,
+      library: propertyName,
+      libraryIndex: propertyIndex,
+      memberIndex: propertyIndex,
+      members: [],
+      rootCapability: getAstSource(member, source) || `ctx.libs.${propertyName}`,
+    };
+  }
+  if (
+    CANONICAL_CTX_LIB_MEMBERS.includes(propertyName) &&
+    isUnshadowedCtxIdentifier(member.object, identifierBindings)
+  ) {
+    return {
+      dynamicIndex: propertyIndex,
+      hasDynamicMember: false,
+      library: propertyName,
+      libraryIndex: propertyIndex,
+      memberIndex: propertyIndex,
+      members: [],
+      rootCapability: getAstSource(member, source) || `ctx.${propertyName}`,
+    };
+  }
+  return undefined;
+}
+
+function isCtxLibsRootFromAst(node: any, rootAliases: CtxLibsRootAlias[], identifierBindings: AstIdentifierBinding[]) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return false;
+  }
+  if (unwrapped.type === 'Identifier') {
+    return !!resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, rootAliases, identifierBindings);
+  }
+  return (
+    unwrapped.type === 'MemberExpression' &&
+    getAstStaticPropertyName(unwrapped) === 'libs' &&
+    isUnshadowedCtxIdentifier(unwrapped.object, identifierBindings)
+  );
 }
 
 function collectAstInvalidCtxApiPatternAccesses(

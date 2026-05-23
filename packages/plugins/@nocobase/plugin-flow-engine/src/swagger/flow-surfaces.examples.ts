@@ -47,7 +47,7 @@ const makeAIEmployeeActionSettings = (target = 'self') => ({
         workContext: [{ type: 'flow-model', target }],
       },
       autoSend: false,
-      skillSettings: { skills: [], tools: [] },
+      skillSettings: null,
       model: null,
       webSearch: false,
     },

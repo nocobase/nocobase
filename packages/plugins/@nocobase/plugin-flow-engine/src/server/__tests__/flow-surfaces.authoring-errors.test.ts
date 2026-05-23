@@ -4040,6 +4040,158 @@ ctx.render(React.createElement(DashboardKPIs));
     );
   });
 
+  it('should reject unsupported ctx.libs.antd members in RunJS authoring code', async () => {
+    const invalidCases = [
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const c = ctx.libs.antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: "ctx.libs['antd'].colors",
+        code: "const c = ctx.libs['antd'].colors;\nctx.render(null);",
+      },
+      {
+        accessKind: 'bracket',
+        capability: 'ctx.libs.antd["colors"]',
+        code: "const c = ctx.libs.antd['colors'];\nctx.render(null);",
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const antd = ctx.libs.antd;\nconst c = antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const { antd } = ctx.libs;\nconst c = antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.antd.colors',
+        code: 'const antd = ctx.antd;\nconst c = antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'destructure',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const { colors } = ctx.libs.antd;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const { green, blue } = ctx.libs.antd.colors;\nctx.render(null);',
+      },
+    ];
+
+    for (const entry of invalidCases) {
+      expect(
+        inspectRunJsAuthoringCode({
+          code: entry.code,
+          path: '$.unsupportedCtxLibsAntdMember.code',
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-ctx-libs-member-unknown',
+            details: expect.objectContaining({
+              accessKind: entry.accessKind,
+              capability: entry.capability,
+              library: 'antd',
+              member: 'colors',
+              suggestedImport: '@ant-design/colors',
+            }),
+          }),
+        ]),
+      );
+    }
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: ['const { Card, Row, Col, Statistic } = ctx.libs.antd;', 'ctx.render(null);'].join('\n'),
+        path: '$.validCtxLibsAntdMembers.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: ["const { green } = await ctx.importAsync('@ant-design/colors');", 'ctx.render(String(green[6]));'].join(
+          '\n',
+        ),
+        path: '$.validAntDesignColorsImport.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "const member = 'colors';\nconst c = ctx.libs.antd[member];\nctx.render(c);",
+        path: '$.dynamicCtxLibsAntdMember.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid antd colors JSBlock page',
+        },
+      },
+      assets: {
+        scripts: {
+          kpis: {
+            code: 'const { green } = ctx.libs.antd.colors;\nctx.render(null);',
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpis',
+              type: 'jsBlock',
+              script: 'kpis',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-ctx-libs-member-unknown',
+        }),
+      ]),
+    );
+
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'js-block-target' },
+        changes: {
+          code: 'const c = ctx.libs.antd.colors;\nctx.render(null);',
+          version: 'v2',
+        },
+      },
+      {
+        currentNode: { use: 'JSBlockModel' },
+      },
+    );
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.code',
+          ruleId: 'runjs-ctx-libs-member-unknown',
+        }),
+      ]),
+    );
+  });
+
   it('should reject invalid FlowResource runtime patterns in JSBlock authoring code', () => {
     const errors = inspectRunJsAuthoringCode({
       code: [
