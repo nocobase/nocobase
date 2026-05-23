@@ -55,8 +55,14 @@ Sans l'image `full`, vous devrez installer manuellement le client `pg_dump` dans
 
 1. Après activation, rafraîchissez la page
 2. Allez dans le menu **Administration système / Gestionnaire de sauvegardes**
+
+   ![Interface principale du Backup Manager](https://static-docs.nocobase.com/202510302154966.png)
+
 3. Cliquez sur **Restaurer depuis une sauvegarde locale** en haut à droite
 4. Glissez-déposez le fichier `nocobase_all_in_one_backup_260521.nbdata` dans la zone d'upload
+
+   ![Restaurer depuis un fichier de sauvegarde local (dialogue d'upload)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. Cliquez sur **Soumettre** et attendez la fin de la restauration, généralement de quelques dizaines de secondes à quelques minutes
 
 ---

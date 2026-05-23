@@ -55,8 +55,14 @@ Sem a imagem `full`, pode ser necessário instalar manualmente o cliente `pg_dum
 
 1. Após ativar o plug-in, atualize a página
 2. No menu lateral, vá em **Administração / Gerenciador de Backups**
+
+   ![Interface principal do Backup Manager](https://static-docs.nocobase.com/202510302154966.png)
+
 3. Clique em **Restaurar a partir de backup local** no canto superior direito
 4. Arraste o arquivo `nocobase_all_in_one_backup_260521.nbdata` para a área de upload
+
+   ![Restaurar a partir do arquivo de backup local (caixa de diálogo de upload)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. Clique em **Enviar** e aguarde a conclusão; o processo pode levar de alguns segundos a poucos minutos
 
 ---

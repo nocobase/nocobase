@@ -55,8 +55,14 @@ Without the `full` image, you may need to install the `pg_dump` client inside th
 
 1. After enabling the plugin, refresh the page
 2. From the left menu, go to **System Management / Backup Manager**
+
+   ![Backup Manager main UI](https://static-docs.nocobase.com/202510302154966.png)
+
 3. Click **Restore from local backup** in the top right
 4. Drag the downloaded `nocobase_all_in_one_backup_260521.nbdata` file onto the upload area
+
+   ![Restore from local backup file (upload dialog)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. Click **Submit** and wait for the restore to complete — typically tens of seconds to a few minutes
 
 ---

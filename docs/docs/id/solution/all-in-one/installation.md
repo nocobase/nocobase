@@ -55,8 +55,14 @@ Jika tidak menggunakan image `full`, Anda mungkin perlu memasang database client
 
 1. Setelah plugin diaktifkan, segarkan halaman
 2. Buka menu kiri **Manajemen Sistem / Backup Manager**
+
+   ![Tampilan utama Backup Manager](https://static-docs.nocobase.com/202510302154966.png)
+
 3. Klik tombol **Restore from local backup** di kanan atas
 4. Seret file `nocobase_all_in_one_backup_260521.nbdata` yang sudah diunduh ke area unggah
+
+   ![Pulihkan dari file cadangan lokal (dialog unggah)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. Klik **Submit**, tunggu hingga restore selesai, biasanya beberapa puluh detik hingga beberapa menit
 
 ---

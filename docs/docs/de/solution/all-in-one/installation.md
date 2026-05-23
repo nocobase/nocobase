@@ -55,8 +55,14 @@ Ohne das `full`-Image müssen Sie den `pg_dump`-Client manuell im Container inst
 
 1. Aktualisieren Sie die Seite, nachdem das Plug-in aktiviert ist
 2. Navigieren Sie im linken Menü zu **Systemverwaltung / Backup-Manager**
+
+   ![Backup-Manager-Hauptansicht](https://static-docs.nocobase.com/202510302154966.png)
+
 3. Klicken Sie oben rechts auf **Aus lokalem Backup wiederherstellen**
 4. Ziehen Sie die heruntergeladene Datei `nocobase_all_in_one_backup_260521.nbdata` in den Upload-Bereich
+
+   ![Aus lokaler Sicherungsdatei wiederherstellen (Upload-Dialog)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. Klicken Sie auf **Absenden** und warten Sie auf den Abschluss — je nach Datenmenge wenige zehn Sekunden bis einige Minuten
 
 ---

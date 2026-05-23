@@ -55,8 +55,14 @@ Nếu không dùng image `full`, có thể bạn sẽ phải cài thủ công da
 
 1. Sau khi kích hoạt plugin, làm mới trang
 2. Vào menu bên trái **Quản trị hệ thống / Backup Manager**
+
+   ![Giao diện chính của Backup Manager](https://static-docs.nocobase.com/202510302154966.png)
+
 3. Nhấn nút **Khôi phục từ backup cục bộ** ở góc phải trên
 4. Kéo thả file `nocobase_all_in_one_backup_260521.nbdata` đã tải xuống vào vùng upload
+
+   ![Khôi phục từ tệp sao lưu cục bộ (hộp thoại tải lên)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. Nhấn **Gửi**, chờ khôi phục hoàn tất, thường mất từ vài chục giây đến vài phút
 
 ---

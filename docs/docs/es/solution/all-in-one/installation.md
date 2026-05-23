@@ -55,8 +55,14 @@ Si no usas la imagen `full`, puede que tengas que instalar manualmente el client
 
 1. Tras activar el plugin, refresca la página
 2. En el menú de la izquierda, ve a **Administración del sistema / Gestor de copias de seguridad**
+
+   ![Interfaz principal del Backup Manager](https://static-docs.nocobase.com/202510302154966.png)
+
 3. Haz clic en **Restaurar desde backup local** en la esquina superior derecha
 4. Arrastra el archivo descargado `nocobase_all_in_one_backup_260521.nbdata` a la zona de carga
+
+   ![Restaurar desde archivo de copia local (diálogo de carga)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. Pulsa **Enviar** y espera a que termine la restauración: suele tardar de varios segundos a unos minutos
 
 ---

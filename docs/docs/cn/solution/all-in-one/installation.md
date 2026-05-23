@@ -55,8 +55,14 @@ docker pull nocobase/nocobase:alpha-full
 
 1. 启用插件后刷新页面
 2. 进入左侧菜单的「系统管理 / 备份管理器」
+
+   ![备份管理器主界面](https://static-docs.nocobase.com/202510302154966.png)
+
 3. 点击右上角的「从本地备份还原」按钮
 4. 把下载的 `nocobase_all_in_one_backup_260521.nbdata` 文件拖拽到上传区域
+
+   ![从本地备份文件还原(上传对话框)](https://static-docs.nocobase.com/202510302155602.png)
+
 5. 点击「提交」,等还原完成,通常需要几十秒到几分钟
 
 ---
