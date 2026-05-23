@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { usePlugin } from '@nocobase/client-v2';
+import { useApp } from '@nocobase/client-v2';
 
 import PluginDataVisualizationClient from '../plugin';
 import type { ChartType } from './types';
@@ -79,21 +79,37 @@ export class ChartGroup {
 }
 
 export const useChartTypes = () => {
-  const plugin = usePlugin(PluginDataVisualizationClient);
-  return plugin.charts.getChartTypes();
+  const plugin = useDataVisualizationPlugin();
+  return plugin?.charts?.getChartTypes() || [];
 };
 
 export const useDefaultChartType = () => {
-  const plugin = usePlugin(PluginDataVisualizationClient);
-  return plugin.charts.getDefaultChartType();
+  const plugin = useDataVisualizationPlugin();
+  return getDefaultChartType(plugin?.charts);
 };
 
 export const useCharts = () => {
-  const plugin = usePlugin(PluginDataVisualizationClient);
-  return plugin.charts.getCharts();
+  const plugin = useDataVisualizationPlugin();
+  return plugin?.charts?.getCharts() || {};
 };
 
 export const useChart = (type?: string) => {
-  const plugin = usePlugin(PluginDataVisualizationClient);
-  return plugin.charts.getChart(type);
+  const plugin = useDataVisualizationPlugin();
+  return plugin?.charts?.getChart(type);
+};
+
+const useDataVisualizationPlugin = () => {
+  const app = useApp();
+  return app.pm.get(PluginDataVisualizationClient);
+};
+
+const getDefaultChartType = (charts?: ChartGroup) => {
+  if (!charts) {
+    return;
+  }
+  if (typeof charts.getDefaultChartType === 'function') {
+    return charts.getDefaultChartType();
+  }
+  const group = charts.getChartTypes?.()[0];
+  return group?.children?.[0]?.value;
 };
