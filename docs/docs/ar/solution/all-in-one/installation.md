@@ -110,7 +110,7 @@ docker pull nocobase/nocobase:alpha-full
 
 4. احذف أو عطّل عنصر OSS المُهيأ مسبقًا في الـ Demo لتجنّب الاستخدام الخاطئ
 
-لمزيد من التفاصيل راجع [نظرة عامة على محرك التخزين](../../file-manager/storage/index.md).
+لمزيد من التفاصيل راجع [نظرة عامة على محرك التخزين](https://docs.nocobase.com/file-manager/storage/).
 
 ### 2. مفاتيح خدمة LLM لموظفي AI
 
@@ -141,7 +141,7 @@ docker pull nocobase/nocobase:alpha-full
 
 5. الخدمات التي لن تستخدمها يكفي تعطيلها (Disabled) دون حاجة لحذفها
 
-لمزيد من التفاصيل راجع [إعداد خدمة LLM](../../ai-employees/features/llm-service.md).
+لمزيد من التفاصيل راجع [إعداد خدمة LLM](https://docs.nocobase.com/ai-employees/features/llm-service/).
 
 :::tip
 
