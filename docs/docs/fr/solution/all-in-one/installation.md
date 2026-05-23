@@ -1,20 +1,18 @@
 ---
 title: "Système de gestion tout-en-un - Installation"
-description: "Installation et déploiement du système de gestion tout-en-un : restauration via le Gestionnaire de sauvegardes (édition Pro/Enterprise) ou import du fichier SQL (édition Community), nécessite PostgreSQL 16, DB_UNDERSCORED ne doit pas être à true."
-keywords: "installation système tout-en-un, All-in-One, restauration de sauvegarde, Gestionnaire de sauvegardes, import SQL, PostgreSQL, NocoBase"
+description: "Installation et déploiement du système de gestion tout-en-un : restauration en un clic du fichier de sauvegarde .nbdata via le Gestionnaire de sauvegardes. Nécessite NocoBase v2.1.0-alpha.40 ou supérieure, PostgreSQL 16, DB_UNDERSCORED ne doit pas être à true."
+keywords: "installation système tout-en-un, All-in-One, restauration de sauvegarde, Gestionnaire de sauvegardes, nbdata, PostgreSQL, NocoBase"
 ---
 
 # Installation
 
-Le système de gestion tout-en-un couvre six modules : **CRM (gestion clients), gestion commerciale, help desk (tickets), gestion de projet, gestion d'actifs et RH**. Deux modes de restauration sont proposés ; choisissez celui qui correspond à votre édition de NocoBase et à votre profil technique.
+Le système de gestion tout-en-un couvre six modules : **CRM (gestion clients), gestion commerciale, help desk (tickets), gestion de projet, gestion d'actifs et RH**. Grâce au plugin « Gestionnaire de sauvegardes » intégré à NocoBase, vous restaurez le fichier de sauvegarde `.nbdata` en un clic pour récupérer l'ensemble des données.
 
 :::tip Prérequis
 
 - Un environnement NocoBase fonctionnel. Pour l'installation du système principal, voir la [documentation d'installation officielle](https://docs-cn.nocobase.com/welcome/getting-started/installation)
-- NocoBase en version **v2.1.0-alpha.34 ou supérieure**
-- Un des fichiers de la solution tout-en-un téléchargé :
-  - **Sauvegarde nbdata** : [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) — pour la méthode 1
-  - **Archive SQL** : [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) — pour la méthode 2
+- NocoBase en version **v2.1.0-alpha.40 ou supérieure** (open source depuis cette version, disponible en édition communautaire)
+- Le fichier de sauvegarde a été téléchargé : [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata)
 
 :::
 
@@ -25,30 +23,13 @@ Le système de gestion tout-en-un couvre six modules : **CRM (gestion clients), 
 
 :::
 
-En règle générale, si vous disposez du plugin Gestionnaire de sauvegardes, choisissez la méthode 1 ; sinon, la méthode 2. La version actuelle est déployée par **restauration de sauvegarde** ; les versions futures passeront à la migration incrémentale pour faciliter l'intégration dans un système NocoBase existant.
+La version actuelle est déployée par **restauration de sauvegarde** ; les versions futures passeront à la migration incrémentale pour faciliter l'intégration dans un système NocoBase existant.
 
 ---
 
-## Méthode 1 : Restauration avec le Gestionnaire de sauvegardes (recommandé pour Pro/Enterprise)
+## Étapes
 
-Cette méthode utilise le plugin « [Gestionnaire de sauvegardes](https://docs-cn.nocobase.com/handbook/backups) » intégré à NocoBase pour une restauration en un clic. C'est l'option la plus simple, mais elle impose des contraintes strictes sur l'environnement et les plugins.
-
-### Caractéristiques
-
-**Avantages :**
-
-- **Simplicité** — tout se fait dans l'UI, y compris la restauration de la configuration des plugins
-- **Restauration intégrale** — tous les fichiers système sont restaurés : modèles d'impression, fichiers des champs pièces jointes, avatars des AI Employees, etc.
-
-**Limites :**
-
-- **Réservé à Pro/Enterprise** — le Gestionnaire de sauvegardes est un plugin entreprise, non disponible en Community
-- **Exigences strictes sur l'environnement** — version de base de données, sensibilité à la casse et autres paramètres doivent être très compatibles avec la source
-- **Forte dépendance aux plugins** — les plugins commerciaux de la sauvegarde doivent être présents en local, sinon la restauration échoue
-
-### Étapes
-
-**Étape 1 : Démarrer l'application avec l'image `full`**
+### Étape 1 : Démarrer l'application avec l'image `full`
 
 Utilisez fortement l'image Docker en version `full`, qui embarque le client de base de données et tous les outils nécessaires sans configuration supplémentaire :
 
@@ -64,13 +45,13 @@ Sans l'image `full`, vous devrez installer manuellement le client `pg_dump` dans
 
 :::
 
-**Étape 2 : Activer le plugin « Gestionnaire de sauvegardes »**
+### Étape 2 : Activer le plugin « Gestionnaire de sauvegardes »
 
 1. Connectez-vous à NocoBase
 2. Allez dans **Gestionnaire de plugins**
 3. Localisez et activez le plugin **Gestionnaire de sauvegardes**
 
-**Étape 3 : Restaurer depuis un fichier de sauvegarde local**
+### Étape 3 : Restaurer depuis un fichier de sauvegarde local
 
 1. Après activation, rafraîchissez la page
 2. Allez dans le menu **Administration système / Gestionnaire de sauvegardes**
@@ -78,80 +59,12 @@ Sans l'image `full`, vous devrez installer manuellement le client `pg_dump` dans
 4. Glissez-déposez le fichier `nocobase_all_in_one_backup_260521.nbdata` dans la zone d'upload
 5. Cliquez sur **Soumettre** et attendez la fin de la restauration, généralement de quelques dizaines de secondes à quelques minutes
 
-### Remarques
+---
+
+## Remarques
 
 - **Compatibilité de la base de données** — version PostgreSQL, jeu de caractères et sensibilité à la casse doivent correspondre à la source, le nom du `schema` notamment doit être identique
-- **Correspondance des plugins commerciaux** — tous les plugins commerciaux utilisés par la sauvegarde doivent être activés localement, sinon la restauration s'interrompt. La solution tout-en-un implique : Gestionnaire de sauvegardes, Gestionnaire d'e-mails, Journal d'audit, AI Employees, etc.
-
----
-
-## Méthode 2 : Import direct du fichier SQL (universel)
-
-Cette méthode manipule directement la base de données, contourne le Gestionnaire de sauvegardes et n'a pas de contraintes de version ni de plugins.
-
-### Caractéristiques
-
-**Avantages :**
-
-- **Pas de restriction d'édition** — compatible avec tous les utilisateurs NocoBase, Community inclus
-- **Haute compatibilité** — ne dépend pas de l'outil `dump` interne, il suffit de pouvoir se connecter à la base
-- **Tolérance aux erreurs** — les plugins commerciaux absents en local ne sont simplement pas activés, sans empêcher le reste de fonctionner
-
-**Limites :**
-
-- **Compétences en base de données requises** — savoir exécuter un fichier `.sql`
-- **Perte des fichiers système** — cette méthode entraîne la perte de tous les fichiers système : modèles d'impression, fichiers des champs pièces jointes, avatars des AI Employees, etc.
-
-### Étapes
-
-**Étape 1 : Préparer une base de données vide**
-
-Préparez une nouvelle base de données vide (PostgreSQL 16) pour recevoir les données.
-
-**Étape 2 : Importer le fichier `.sql` dans la base**
-
-Décompressez `nocobase_all_in_one_sql_260521.zip` pour obtenir le fichier `.sql`, puis importez-le dans la base préparée. Deux façons de l'exécuter :
-
-**Option A : Ligne de commande sur le serveur (exemple Docker)**
-
-Si NocoBase et la base de données sont déployés via Docker, transférez le fichier `.sql` sur le serveur et importez-le avec `docker exec`. En supposant que le conteneur PostgreSQL s'appelle `my-nocobase-db` :
-
-```bash
-# Copier le fichier sql dans le conteneur
-docker cp nocobase_all_in_one_sql_260521.sql my-nocobase-db:/tmp/
-# Exécuter l'import dans le conteneur
-docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_all_in_one_sql_260521.sql
-```
-
-**Option B : Client de base de données distant (Navicat, etc.)**
-
-Si la base expose un port, utilisez n'importe quel client graphique (Navicat, DBeaver, pgAdmin, etc.) pour vous y connecter, puis :
-
-1. Faites un clic droit sur la base de données cible
-2. Choisissez **Exécuter un fichier SQL** ou **Exécuter un script SQL**
-3. Sélectionnez le fichier `.sql` décompressé et exécutez-le
-
-**Étape 3 : Connecter la base et démarrer l'application**
-
-Configurez les paramètres de démarrage de NocoBase (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) pour pointer vers la base où les données viennent d'être importées, puis démarrez normalement le service NocoBase.
-
-### Remarques
-
-- **Droits sur la base de données** — cette méthode requiert un compte avec les droits d'opérer directement sur la base
-- **État des plugins** — après l'import, les données des plugins commerciaux sont présentes mais les fonctionnalités correspondantes sont inutilisables tant que les plugins ne sont pas installés. L'application ne plante pas
-
----
-
-## Comparaison des deux méthodes
-
-| Caractéristique | Méthode 1 : Gestionnaire de sauvegardes | Méthode 2 : Import SQL direct |
-| :--- | :--- | :--- |
-| **Public cible** | Pro/Enterprise | Tous les utilisateurs (Community inclus) |
-| **Simplicité** | ⭐⭐⭐⭐⭐ (opération en UI) | ⭐⭐⭐ (connaissances BDD requises) |
-| **Exigences environnement** | Strictes, compatibilité élevée requise sur BDD et système | Moyennes, simple compatibilité de la base suffit |
-| **Dépendance aux plugins** | Forte, un plugin manquant fait échouer la restauration | Données importables indépendamment, mais fonctionnalités liées aux plugins absents inutilisables |
-| **Fichiers système** | Conservation intégrale (modèles d'impression, fichiers téléchargés, avatars, etc.) | Perte (modèles d'impression, fichiers téléchargés, avatars, etc.) |
-| **Scénarios recommandés** | Clients entreprise, environnement contrôlé | Plugins partiels, recherche de compatibilité, Community |
+- **Correspondance des plugins commerciaux** — tous les plugins commerciaux utilisés par la sauvegarde doivent être activés localement, sinon la restauration s'interrompt. La solution tout-en-un implique notamment : Gestionnaire d'e-mails, Journal d'audit, AI Employees. En édition Community, les points d'entrée correspondants ne s'affichent pas si ces plugins sont absents, sans affecter les autres modules
 
 ---
 
@@ -234,9 +147,9 @@ Ce sont les deux points à modifier après la restauration de la Demo. Les autre
 
 ## Questions fréquentes
 
-### L'édition Pro fonctionne-t-elle ? Y a-t-il des erreurs ?
+### L'édition Community fonctionne-t-elle ? Y a-t-il des erreurs ?
 
-Oui, vous pouvez l'utiliser directement sans erreur. La Demo utilise des plugins Enterprise (Gestionnaire d'e-mails, Journal d'audit, AI Employees, etc.) ; en Pro, les points d'entrée correspondants ne s'affichent pas, sans affecter les autres modules. Par exemple, l'entrée Journal d'audit disparaît, mais CRM, gestion commerciale, tickets, projets, actifs et RH fonctionnent normalement.
+Oui, vous pouvez l'utiliser directement sans erreur. Le Gestionnaire de sauvegardes est open source depuis `v2.1.0-alpha.40` et installable en édition Community. La Demo utilise quelques plugins Enterprise (Gestionnaire d'e-mails, Journal d'audit, AI Employees, etc.) ; si l'édition Community ne les a pas, les points d'entrée correspondants ne s'affichent pas, sans affecter les autres modules. Par exemple, l'entrée Journal d'audit disparaît, mais CRM, gestion commerciale, tickets, projets, actifs et RH fonctionnent normalement.
 
 ### Quelle version utiliser après la restauration ?
 
@@ -248,7 +161,7 @@ Le logo de la Demo officielle est restreint à un domaine et ne se charge pas su
 
 ### Erreur lors de l'upload de fichiers (erreur clé OSS) ?
 
-Après installation par SQL, l'upload de fichiers peut renvoyer des erreurs liées à OSS. Allez dans **Gestionnaire de plugins / Gestionnaire de fichiers**, définissez **Local Storage (stockage local)** comme moteur par défaut et sauvegardez : l'upload fonctionnera normalement.
+Le moteur de stockage préconfiguré dans la sauvegarde Demo pointe vers notre OSS de démo, dont la clé n'est pas publique. Allez dans **Gestionnaire de plugins / Gestionnaire de fichiers**, définissez **Local Storage (stockage local)** comme moteur par défaut et sauvegardez : l'upload fonctionnera normalement.
 
 Détails dans la section [Moteur de stockage de fichiers](#1-moteur-de-stockage-de-fichiers-oss--local) ci-dessus.
 
@@ -258,4 +171,4 @@ La solution tout-en-un est localisée dans plus de 20 langues (espace de noms `n
 
 ### Et les mises à jour incrémentales ?
 
-Pour le moment, les mises à jour sont en mode remplacement intégral et les personnalisations sont écrasées. Sauvegardez impérativement avant toute mise à jour. Une solution de migration incrémentale est en cours de planification ; elle sera disponible en priorité pour les éditions Pro/Enterprise. L'édition Community, dépourvue du plugin Gestionnaire de migrations, est plus difficile à prendre en charge pour l'instant.
+Pour le moment, les mises à jour sont en mode remplacement intégral et les personnalisations sont écrasées. Sauvegardez impérativement avant toute mise à jour. Une solution de migration incrémentale est en cours de planification.

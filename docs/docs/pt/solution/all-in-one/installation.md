@@ -1,20 +1,18 @@
 ---
 title: "Sistema de Gestão Empresarial Integrado - Como instalar"
-description: "Instalação e implantação do Sistema de Gestão Empresarial Integrado: restauração via gerenciador de backups (edições Profissional/Enterprise) ou importação do arquivo SQL (edição Community). Requer PostgreSQL 16; DB_UNDERSCORED não pode ser true."
-keywords: "Sistema de Gestão Empresarial Integrado instalação, All-in-One, restauração de backup, gerenciador de backups, importação SQL, PostgreSQL, NocoBase"
+description: "Instalação e implantação do Sistema de Gestão Empresarial Integrado: restauração em um clique do arquivo de backup nbdata via plugin Gerenciador de Backups. Requer NocoBase v2.1.0-alpha.40 ou superior, PostgreSQL 16; DB_UNDERSCORED não pode ser true."
+keywords: "Sistema de Gestão Empresarial Integrado instalação, All-in-One, restauração de backup, gerenciador de backups, nbdata, PostgreSQL, NocoBase"
 ---
 
 # Instalação
 
-O Sistema de Gestão Empresarial Integrado abrange seis módulos: **CRM (Gestão de Clientes), Gestão de Vendas, Help Desk (Tickets), Gestão de Projetos, Gestão de Ativos e Recursos Humanos**. Há duas formas de restauração — escolha uma conforme a sua versão do NocoBase e o seu perfil técnico.
+O Sistema de Gestão Empresarial Integrado abrange seis módulos: **CRM (Gestão de Clientes), Gestão de Vendas, Help Desk (Tickets), Gestão de Projetos, Gestão de Ativos e Recursos Humanos**. Basta restaurar o arquivo de backup `.nbdata` em um clique usando o plug-in nativo "Gerenciador de Backups" do NocoBase para obter os dados completos.
 
 :::tip Pré-requisitos
 
 - Você já tem um ambiente NocoBase em execução. Para a instalação do sistema principal, consulte a [documentação oficial de instalação](https://docs.nocobase.com/welcome/getting-started/installation)
-- Versão do NocoBase **v2.1.0-alpha.34 ou superior**
-- Já baixou um dos arquivos da solução integrada:
-  - **Backup nbdata**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) — para o método 1
-  - **Pacote SQL**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) — para o método 2
+- Versão do NocoBase **v2.1.0-alpha.40 ou superior** (o plug-in Gerenciador de Backups tornou-se open source a partir desta versão, disponível na edição Community)
+- Já baixou o arquivo de backup: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata)
 
 :::
 
@@ -25,30 +23,13 @@ O Sistema de Gestão Empresarial Integrado abrange seis módulos: **CRM (Gestão
 
 :::
 
-Em geral, se você tem o plug-in Gerenciador de Backups, escolha o método 1; caso contrário, o método 2. A versão atual é implantada via **restauração de backup**; versões posteriores passarão a usar migração incremental, facilitando a integração em um NocoBase já existente.
+A versão atual é implantada via **restauração de backup**; versões posteriores passarão a usar migração incremental, facilitando a integração em um NocoBase já existente.
 
 ---
 
-## Método 1: Restauração com Gerenciador de Backup (recomendado para Pro/Enterprise)
+## Passos
 
-Este método usa o plug-in nativo "[Gerenciador de Backups](https://docs.nocobase.com/handbook/backups)" do NocoBase para restaurar em um clique. É a opção mais simples pela interface, mas tem requisitos rígidos de ambiente e plug-ins.
-
-### Características
-
-**Vantagens:**
-
-- **Operação simples** — feita pela interface, restaura todo o conteúdo, incluindo configurações de plug-ins
-- **Restauração completa** — recupera todos os arquivos do sistema, como modelos de impressão, arquivos de campos de anexo, avatares de funcionários de AI etc.
-
-**Limitações:**
-
-- **Restrito a Profissional/Enterprise** — o Gerenciador de Backups é um plug-in enterprise, indisponível na Community
-- **Requisitos rígidos de ambiente** — versão do banco, sensibilidade a maiúsculas/minúsculas etc. precisam ser altamente compatíveis com a origem do backup
-- **Forte dependência de plug-ins** — os plug-ins comerciais presentes no backup também precisam existir no ambiente local, caso contrário a restauração falha
-
-### Passos
-
-**Passo 1: subir a aplicação com a imagem `full`**
+### Passo 1: subir a aplicação com a imagem `full`
 
 Recomendamos fortemente a imagem Docker `full`, que já traz o cliente de banco e demais utilitários, sem configuração extra:
 
@@ -64,13 +45,13 @@ Sem a imagem `full`, pode ser necessário instalar manualmente o cliente `pg_dum
 
 :::
 
-**Passo 2: ativar o plug-in "Gerenciador de Backups"**
+### Passo 2: ativar o plug-in "Gerenciador de Backups"
 
 1. Faça login no NocoBase
 2. Acesse **Gerenciador de Plugins**
 3. Localize e ative o plug-in **Gerenciador de Backups**
 
-**Passo 3: restaurar a partir do arquivo de backup local**
+### Passo 3: restaurar a partir do arquivo de backup local
 
 1. Após ativar o plug-in, atualize a página
 2. No menu lateral, vá em **Administração / Gerenciador de Backups**
@@ -78,80 +59,12 @@ Sem a imagem `full`, pode ser necessário instalar manualmente o cliente `pg_dum
 4. Arraste o arquivo `nocobase_all_in_one_backup_260521.nbdata` para a área de upload
 5. Clique em **Enviar** e aguarde a conclusão; o processo pode levar de alguns segundos a poucos minutos
 
-### Notas
+---
+
+## Notas
 
 - **Compatibilidade do banco** — versão do PostgreSQL, conjunto de caracteres e sensibilidade a maiúsculas/minúsculas precisam coincidir com o backup; em especial, o nome do `schema` precisa ser o mesmo
-- **Plug-ins comerciais compatíveis** — antes da restauração, ative localmente todos os plug-ins comerciais presentes no backup, caso contrário a restauração é interrompida. Os plug-ins comerciais envolvidos nesta solução incluem: Gerenciador de Backups, Gestão de E-mails, Log de Auditoria, Funcionários de AI etc.
-
----
-
-## Método 2: Importar arquivo SQL diretamente (universal)
-
-Este método restaura os dados diretamente no banco, contornando o Gerenciador de Backups, sem restrição de versão ou de plug-ins.
-
-### Características
-
-**Vantagens:**
-
-- **Sem restrição de versão** — serve para todos os usuários do NocoBase, incluindo a Community
-- **Alta compatibilidade** — independe da ferramenta `dump` da aplicação; basta poder conectar ao banco
-- **Alta tolerância a falhas** — plug-ins comerciais presentes no backup que não estiverem instalados localmente simplesmente não são ativados, sem prejuízo dos demais módulos
-
-**Limitações:**
-
-- **Exige conhecimento de banco** — você precisa saber, por exemplo, executar um arquivo `.sql`
-- **Perda de arquivos do sistema** — este método perde todos os arquivos do sistema, incluindo modelos de impressão, arquivos de campos de anexo, avatares de funcionários de AI etc.
-
-### Passos
-
-**Passo 1: preparar um banco de dados limpo**
-
-Crie um banco PostgreSQL 16 novo e vazio para receber os dados.
-
-**Passo 2: importar o arquivo `.sql` no banco**
-
-Descompacte `nocobase_all_in_one_sql_260521.zip` para obter o arquivo `.sql` e importe-o no banco preparado. Há duas formas:
-
-**Opção A: linha de comando no servidor (exemplo com Docker)**
-
-Se o NocoBase e o banco rodam em Docker, envie o `.sql` ao servidor e use `docker exec` para importar. Supondo que o contêiner do PostgreSQL se chame `my-nocobase-db`:
-
-```bash
-# Copiar o sql para dentro do contêiner
-docker cp nocobase_all_in_one_sql_260521.sql my-nocobase-db:/tmp/
-# Executar a importação dentro do contêiner
-docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_all_in_one_sql_260521.sql
-```
-
-**Opção B: cliente remoto de banco (Navicat etc.)**
-
-Se o banco expõe portas, conecte-se com qualquer cliente gráfico (Navicat, DBeaver, pgAdmin etc.) e:
-
-1. Clique com o botão direito no banco de destino
-2. Escolha **Executar arquivo SQL** ou **Executar script SQL**
-3. Selecione o `.sql` descompactado e execute
-
-**Passo 3: conectar ao banco e subir a aplicação**
-
-Configure as variáveis de inicialização do NocoBase (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` etc.) apontando para o banco recém-importado e suba o serviço normalmente.
-
-### Notas
-
-- **Permissões do banco** — o método exige usuário e senha com acesso direto ao banco
-- **Estado dos plug-ins** — após a importação, os dados dos plug-ins comerciais permanecem no banco; sem o plug-in instalado localmente, a funcionalidade correspondente fica indisponível, mas a aplicação não trava
-
----
-
-## Comparação dos dois métodos
-
-| Característica | Método 1: Gerenciador de Backups | Método 2: Importação direta de SQL |
-| :--- | :--- | :--- |
-| **Público** | Profissional/Enterprise | Todos os usuários (inclusive Community) |
-| **Facilidade de operação** | ⭐⭐⭐⭐⭐ (via interface) | ⭐⭐⭐ (exige conhecimento de banco) |
-| **Requisitos de ambiente** | Rígidos: banco e versão do sistema precisam ser altamente compatíveis | Moderados: basta compatibilidade do banco |
-| **Dependência de plug-ins** | Forte: a restauração falha se faltar algum plug-in | Dados importados de forma independente; sem o plug-in, a funcionalidade fica indisponível |
-| **Arquivos do sistema** | Mantidos integralmente (modelos de impressão, uploads, avatares etc.) | Perdidos (modelos de impressão, uploads, avatares etc.) |
-| **Cenário recomendado** | Clientes enterprise, ambiente controlado | Plug-ins ausentes, foco em compatibilidade, edição Community |
+- **Plug-ins comerciais compatíveis** — antes da restauração, ative localmente todos os plug-ins comerciais presentes no backup, caso contrário a restauração é interrompida. Os plug-ins comerciais envolvidos nesta solução incluem: Gestão de E-mails, Log de Auditoria, Funcionários de AI. Quando ausentes na edição Community, os pontos de entrada correspondentes simplesmente não aparecem, sem afetar os demais módulos
 
 ---
 
@@ -234,9 +147,9 @@ Estes dois itens são os únicos ajustes obrigatórios após a restauração do 
 
 ## Perguntas frequentes
 
-### Funciona na edição Profissional? Vai dar erro?
+### Funciona na edição Community? Vai dar erro?
 
-Funciona normalmente, sem erros. O Demo utiliza alguns plug-ins enterprise (Gestão de E-mails, Log de Auditoria, AI Employees etc.); quando ausentes na edição Profissional, os pontos de entrada correspondentes simplesmente não aparecem, sem afetar os demais módulos. Por exemplo, o menu de Log de Auditoria some, mas CRM, Vendas, Tickets, Projetos, Ativos, RH e os demais módulos centrais continuam totalmente operacionais.
+Funciona normalmente, sem erros. O Gerenciador de Backups é open source a partir do `v2.1.0-alpha.40`, e pode ser instalado na edição Community. O Demo utiliza alguns plug-ins enterprise (Gestão de E-mails, Log de Auditoria, AI Employees etc.); quando ausentes na edição Community, os pontos de entrada correspondentes simplesmente não aparecem, sem afetar os demais módulos. Por exemplo, o menu de Log de Auditoria some, mas CRM, Vendas, Tickets, Projetos, Ativos, RH e os demais módulos centrais continuam totalmente operacionais.
 
 ### Qual versão devo usar após a restauração?
 
@@ -248,7 +161,7 @@ O logo do Demo oficial tem restrição por domínio e não carrega em domínios 
 
 ### Erro de upload (erro de OSS Key)?
 
-Após a instalação via SQL, o upload pode apresentar erros relacionados a OSS. Vá em **Gerenciador de Plugins / Gerenciador de Arquivos** e defina **Local Storage (armazenamento local)** como armazenamento padrão; depois disso o upload funciona normalmente.
+O motor de armazenamento pré-configurado no backup do Demo aponta para o OSS que usamos em demonstração, e a Key não é aberta ao público. Vá em **Gerenciador de Plugins / Gerenciador de Arquivos** e defina **Local Storage (armazenamento local)** como armazenamento padrão; depois disso o upload funciona normalmente.
 
 Detalhes na seção [Motor de armazenamento](#1-motor-de-armazenamento-oss--local) acima.
 
@@ -258,4 +171,4 @@ A solução integrada já conta com localização em mais de 20 idiomas (namespa
 
 ### E quanto às atualizações incrementais?
 
-A atualização atual substitui o conteúdo por completo, então personalizações são sobrescritas. Faça sempre um backup antes da atualização. A migração incremental está em planejamento, com prioridade para as edições Profissional/Enterprise. Na edição Community, a ausência do plug-in de migração dificulta o suporte por enquanto.
+A atualização atual substitui o conteúdo por completo, então personalizações são sobrescritas. Faça sempre um backup antes da atualização. A migração incremental está em planejamento.

@@ -1,20 +1,18 @@
 ---
 title: "Hệ thống quản lý kinh doanh tích hợp - Hướng dẫn cài đặt"
-description: "Cài đặt và triển khai Hệ thống quản lý kinh doanh tích hợp: khôi phục bằng Backup Manager (bản Pro/Enterprise) hoặc import file SQL (bản Community). Yêu cầu PostgreSQL 16, DB_UNDERSCORED không được đặt thành true."
-keywords: "Cài đặt Hệ thống quản lý kinh doanh tích hợp, All-in-One, khôi phục backup, Backup Manager, import SQL, PostgreSQL, NocoBase"
+description: "Cài đặt và triển khai Hệ thống quản lý kinh doanh tích hợp: khôi phục một thao tác file backup nbdata qua plugin Backup Manager. Yêu cầu NocoBase v2.1.0-alpha.40 trở lên, PostgreSQL 16; DB_UNDERSCORED không được đặt thành true."
+keywords: "Cài đặt Hệ thống quản lý kinh doanh tích hợp, All-in-One, khôi phục backup, Backup Manager, nbdata, PostgreSQL, NocoBase"
 ---
 
 # Hướng dẫn cài đặt
 
-Hệ thống quản lý kinh doanh tích hợp bao gồm sáu mô-đun: **CRM, Quản lý bán hàng, Help Desk, Quản lý dự án, Quản lý tài sản cố định, Quản lý nhân sự**. Ở đây cung cấp hai cách khôi phục, chọn một cách tùy phiên bản NocoBase và nền tảng kỹ thuật của bạn.
+Hệ thống quản lý kinh doanh tích hợp bao gồm sáu mô-đun: **CRM, Quản lý bán hàng, Help Desk, Quản lý dự án, Quản lý tài sản cố định, Quản lý nhân sự**. Chỉ cần dùng plugin "Backup Manager" tích hợp sẵn trong NocoBase để khôi phục một thao tác file backup `.nbdata` là có đầy đủ dữ liệu.
 
 :::tip Yêu cầu trước
 
 - Đã có một môi trường NocoBase cơ bản đang chạy. Cài đặt hệ thống chính xem [tài liệu cài đặt chính thức](https://docs.nocobase.com/welcome/getting-started/installation)
-- Phiên bản NocoBase **v2.1.0-alpha.34 trở lên**
-- Đã tải một trong các file backup của giải pháp tích hợp:
-  - **Backup nbdata**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) — dùng cho phương án 1
-  - **Gói nén SQL**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) — dùng cho phương án 2
+- Phiên bản NocoBase **v2.1.0-alpha.40 trở lên** (plugin Backup Manager được mở mã nguồn kể từ phiên bản này, bản Community dùng được)
+- Đã tải file backup: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata)
 
 :::
 
@@ -25,30 +23,13 @@ Hệ thống quản lý kinh doanh tích hợp bao gồm sáu mô-đun: **CRM, Q
 
 :::
 
-Nói chung, có plugin Backup Manager thì chọn phương án 1, không có thì chọn phương án 2. Phiên bản hiện tại triển khai theo dạng **khôi phục backup**, phiên bản sau sẽ chuyển sang migration tăng dần để thuận tiện tích hợp vào hệ thống NocoBase sẵn có.
+Phiên bản hiện tại triển khai theo dạng **khôi phục backup**, phiên bản sau sẽ chuyển sang migration tăng dần để thuận tiện tích hợp vào hệ thống NocoBase sẵn có.
 
 ---
 
-## Phương án 1: Khôi phục bằng Backup Manager (khuyến nghị cho Pro/Enterprise)
+## Các bước thực hiện
 
-Cách này khôi phục một thao tác bằng plugin "[Backup Manager](https://docs.nocobase.com/handbook/backups)" tích hợp sẵn trong NocoBase, thao tác UI đơn giản nhất. Tuy nhiên yêu cầu về môi trường và phụ thuộc plugin khá nghiêm ngặt.
-
-### Đặc điểm
-
-**Ưu điểm:**
-
-- **Thao tác tiện lợi** — hoàn thành trên giao diện UI, có thể khôi phục đầy đủ mọi nội dung bao gồm cả cấu hình plugin
-- **Khôi phục đầy đủ** — khôi phục được toàn bộ file hệ thống, bao gồm file template in, file upload trong field đính kèm, avatar AI Employee, v.v.
-
-**Hạn chế:**
-
-- **Chỉ dành cho Pro/Enterprise** — Backup Manager là plugin cấp doanh nghiệp, bản Community không dùng được
-- **Yêu cầu môi trường nghiêm ngặt** — phiên bản cơ sở dữ liệu, cấu hình phân biệt chữ hoa thường, v.v. phải tương thích cao với nguồn backup
-- **Phụ thuộc plugin mạnh** — các plugin thương mại có trong backup phải có sẵn trong môi trường cục bộ, nếu không việc khôi phục sẽ thất bại
-
-### Các bước
-
-**Bước 1: Khởi chạy ứng dụng bằng image `full`**
+### Bước 1: Khởi chạy ứng dụng bằng image `full`
 
 Khuyến nghị mạnh dùng image Docker phiên bản `full`, nó tích hợp sẵn database client và tất cả các chương trình phụ trợ, không cần cấu hình thêm:
 
@@ -64,13 +45,13 @@ Nếu không dùng image `full`, có thể bạn sẽ phải cài thủ công da
 
 :::
 
-**Bước 2: Bật plugin "Backup Manager"**
+### Bước 2: Bật plugin "Backup Manager"
 
 1. Đăng nhập hệ thống NocoBase
 2. Vào **Quản lý Plugin**
 3. Tìm và kích hoạt plugin **Backup Manager**
 
-**Bước 3: Khôi phục từ file backup cục bộ**
+### Bước 3: Khôi phục từ file backup cục bộ
 
 1. Sau khi kích hoạt plugin, làm mới trang
 2. Vào menu bên trái **Quản trị hệ thống / Backup Manager**
@@ -78,80 +59,12 @@ Nếu không dùng image `full`, có thể bạn sẽ phải cài thủ công da
 4. Kéo thả file `nocobase_all_in_one_backup_260521.nbdata` đã tải xuống vào vùng upload
 5. Nhấn **Gửi**, chờ khôi phục hoàn tất, thường mất từ vài chục giây đến vài phút
 
-### Lưu ý
+---
+
+## Lưu ý
 
 - **Khả năng tương thích cơ sở dữ liệu** — phiên bản, charset, cấu hình phân biệt chữ hoa thường của PostgreSQL phải khớp với nguồn backup, tên `schema` đặc biệt phải nhất quán
-- **Khớp plugin thương mại** — cục bộ phải bật trước tất cả plugin thương mại được dùng trong backup, nếu không việc khôi phục sẽ bị gián đoạn. Plugin thương mại liên quan đến giải pháp tích hợp gồm: Backup Manager, Email Manager, Audit Log, AI Employee, v.v.
-
----
-
-## Phương án 2: Import file SQL trực tiếp (phổ thông)
-
-Thao tác trực tiếp trên cơ sở dữ liệu để khôi phục dữ liệu, bỏ qua Backup Manager, không bị giới hạn về phiên bản và plugin.
-
-### Đặc điểm
-
-**Ưu điểm:**
-
-- **Không giới hạn phiên bản** — phù hợp với mọi người dùng NocoBase, bao gồm cả bản Community
-- **Khả năng tương thích cao** — không phụ thuộc công cụ dump trong ứng dụng, chỉ cần kết nối được cơ sở dữ liệu là làm được
-- **Khả năng chịu lỗi cao** — plugin thương mại có trong backup nhưng cục bộ chưa cài sẽ không được kích hoạt, không ảnh hưởng đến hoạt động bình thường của các mô-đun khác
-
-**Hạn chế:**
-
-- **Yêu cầu khả năng thao tác cơ sở dữ liệu** — ví dụ biết cách thực thi một file `.sql`
-- **Mất file hệ thống** — cách này sẽ làm mất toàn bộ file hệ thống, bao gồm file template in, file upload trong field đính kèm, avatar AI Employee, v.v.
-
-### Các bước
-
-**Bước 1: Chuẩn bị một cơ sở dữ liệu sạch**
-
-Chuẩn bị một cơ sở dữ liệu trống hoàn toàn mới (PostgreSQL 16) cho dữ liệu sắp được import.
-
-**Bước 2: Import file `.sql` vào cơ sở dữ liệu**
-
-Giải nén `nocobase_all_in_one_sql_260521.zip` đã tải để lấy file `.sql`, import vào cơ sở dữ liệu đã chuẩn bị ở bước trước. Có hai cách thực thi:
-
-**Tùy chọn A: Command line trên server (ví dụ Docker)**
-
-Nếu NocoBase và cơ sở dữ liệu đều triển khai bằng Docker, upload file `.sql` lên server rồi dùng `docker exec` để import. Giả sử container PostgreSQL có tên là `my-nocobase-db`:
-
-```bash
-# Copy file sql vào container
-docker cp nocobase_all_in_one_sql_260521.sql my-nocobase-db:/tmp/
-# Vào container thực thi lệnh import
-docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_all_in_one_sql_260521.sql
-```
-
-**Tùy chọn B: Database client từ xa (Navicat, v.v.)**
-
-Nếu cơ sở dữ liệu đã mở port, dùng bất kỳ client đồ họa nào (Navicat, DBeaver, pgAdmin, v.v.) để kết nối, sau đó:
-
-1. Click chuột phải vào cơ sở dữ liệu đích
-2. Chọn **Run SQL File** hoặc **Execute SQL Script**
-3. Chọn file `.sql` đã giải nén và thực thi
-
-**Bước 3: Kết nối cơ sở dữ liệu và khởi chạy ứng dụng**
-
-Cấu hình các tham số khởi chạy NocoBase (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, v.v.) trỏ tới cơ sở dữ liệu vừa import dữ liệu, sau đó khởi chạy dịch vụ NocoBase bình thường.
-
-### Lưu ý
-
-- **Quyền cơ sở dữ liệu** — cách này yêu cầu có tài khoản và mật khẩu có thể thao tác trực tiếp trên cơ sở dữ liệu
-- **Trạng thái plugin** — sau khi import thành công, dữ liệu plugin thương mại có tồn tại, nhưng khi cục bộ chưa cài plugin tương ứng thì các chức năng đó không dùng được. Ứng dụng không bị crash
-
----
-
-## So sánh hai phương án
-
-| Đặc điểm | Phương án 1: Backup Manager | Phương án 2: Import SQL trực tiếp |
-| :--- | :--- | :--- |
-| **Đối tượng phù hợp** | Bản Pro/Enterprise | Mọi người dùng (bao gồm bản Community) |
-| **Độ dễ thao tác** | ⭐⭐⭐⭐⭐ (thao tác UI) | ⭐⭐⭐ (cần kiến thức cơ sở dữ liệu) |
-| **Yêu cầu môi trường** | Nghiêm ngặt, cơ sở dữ liệu và phiên bản hệ thống cần tương thích cao | Bình thường, chỉ cần cơ sở dữ liệu tương thích |
-| **Phụ thuộc plugin** | Phụ thuộc mạnh, thiếu plugin sẽ khôi phục thất bại | Dữ liệu có thể import độc lập, thiếu plugin thì chức năng liên quan không dùng được |
-| **File hệ thống** | Giữ lại đầy đủ (template in, file upload, avatar, v.v.) | Sẽ bị mất (template in, file upload, avatar, v.v.) |
-| **Tình huống khuyến nghị** | Khách hàng doanh nghiệp, môi trường có thể kiểm soát | Thiếu một phần plugin, ưu tiên tính tương thích, bản Community |
+- **Khớp plugin thương mại** — cục bộ phải bật trước tất cả plugin thương mại được dùng trong backup, nếu không việc khôi phục sẽ bị gián đoạn. Plugin thương mại liên quan đến giải pháp tích hợp gồm: Email Manager, Audit Log, AI Employee. Khi bản Community thiếu các plugin này, lối vào chức năng tương ứng sẽ không hiển thị, nhưng không ảnh hưởng các mô-đun khác
 
 ---
 
@@ -234,9 +147,9 @@ Hai mục này là hai chỗ bắt buộc phải sửa sau khi khôi phục demo
 
 ## Câu hỏi thường gặp
 
-### Bản Pro có dùng được không? Có báo lỗi không?
+### Bản Community có dùng được không? Có báo lỗi không?
 
-Dùng được trực tiếp, không báo lỗi. Demo có dùng một số plugin bản Enterprise (Email Manager, Audit Log, AI Employee, v.v.), khi bản Pro thiếu các plugin này, lối vào chức năng tương ứng sẽ không hiển thị, nhưng không ảnh hưởng các mô-đun khác. Ví dụ lối vào Audit Log sẽ biến mất, nhưng CRM, Quản lý bán hàng, Help Desk, Dự án, Tài sản, Nhân sự và các mô-đun cốt lõi khác vẫn hoạt động bình thường.
+Dùng được trực tiếp, không báo lỗi. Backup Manager được mở mã nguồn kể từ `v2.1.0-alpha.40`, bản Community có thể cài. Demo có dùng một số plugin bản Enterprise (Email Manager, Audit Log, AI Employee, v.v.), khi bản Community thiếu các plugin này, lối vào chức năng tương ứng sẽ không hiển thị, nhưng không ảnh hưởng các mô-đun khác. Ví dụ lối vào Audit Log sẽ biến mất, nhưng CRM, Quản lý bán hàng, Help Desk, Dự án, Tài sản, Nhân sự và các mô-đun cốt lõi khác vẫn hoạt động bình thường.
 
 ### Sau khi khôi phục nên chọn phiên bản nào?
 
@@ -248,7 +161,7 @@ Logo trên trang Demo chính thức có cấu hình giới hạn domain, domain 
 
 ### Upload file báo lỗi (lỗi OSS Key)?
 
-Sau khi cài bằng cách SQL, upload file có thể báo lỗi liên quan đến OSS. Vào **Quản lý Plugin / Trình quản lý Tệp**, đặt **Local Storage (Lưu trữ cục bộ)** làm storage mặc định, lưu lại là upload được bình thường.
+Engine lưu trữ mặc định trong backup demo trỏ về OSS chúng tôi dùng cho demo, Key không mở cho bên ngoài. Vào **Quản lý Plugin / Trình quản lý Tệp**, đặt **Local Storage (Lưu trữ cục bộ)** làm storage mặc định, lưu lại là upload được bình thường.
 
 Cách xử lý chi tiết xem mục [Engine lưu trữ tệp](#1-engine-lưu-trữ-tệp-oss--cục-bộ) ở trên.
 
@@ -258,4 +171,4 @@ Giải pháp tích hợp đã được bản địa hóa hơn 20 ngôn ngữ (na
 
 ### Nâng cấp tăng dần thế nào?
 
-Nâng cấp phiên bản hiện tại là thay thế toàn bộ, các tùy chỉnh sẽ bị ghi đè. Bắt buộc backup trước khi nâng cấp. Phương án migration tăng dần đang được lên kế hoạch, sẽ ưu tiên hỗ trợ Pro/Enterprise. Bản Community do thiếu plugin Migration Manager nên tạm thời khó hỗ trợ.
+Nâng cấp phiên bản hiện tại là thay thế toàn bộ, các tùy chỉnh sẽ bị ghi đè. Bắt buộc backup trước khi nâng cấp. Phương án migration tăng dần đang được lên kế hoạch.
