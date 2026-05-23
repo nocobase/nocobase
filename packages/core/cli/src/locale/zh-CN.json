@@ -34,6 +34,8 @@
       "back": "上一步",
       "next": "下一步",
       "submit": "提交并回到终端继续",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码",
       "checking": "检查中...",
       "sending": "提交中...",
       "successTitle": "成功",
@@ -73,7 +75,8 @@
       "timeout": "连接数据库 {{host}}:{{port}} 超时，约 {{seconds}} 秒内未成功建立连接。",
       "authenticationFailed": "无法使用用户 \"{{user}}\" 登录数据库 \"{{database}}\"。请检查用户名和密码。",
       "databaseNotFound": "数据库 \"{{database}}\" 不存在，或当前连接配置无权访问该数据库。",
-      "connectionFailed": "数据库连接检查失败。详情：{{details}}"
+      "connectionFailed": "数据库连接检查失败。详情：{{details}}",
+      "lowerCaseTableNamesRequiresUnderscored": "当 MySQL 的 lower_case_table_names=1 时，必须设置 DB_UNDERSCORED=true。"
     }
   },
   "commands": {
@@ -94,9 +97,18 @@
         },
         "authType": {
           "message": "你想使用哪种登录方式？",
+          "basicLabel": "Basic 登录（用户名 + 密码）",
+          "basicHint": "保存后会用用户名和密码换取 Token",
           "oauthLabel": "OAuth（浏览器登录）",
           "oauthHint": "保存后会自动执行 nb env auth",
           "tokenLabel": "API Token / API Key"
+        },
+        "username": {
+          "message": "请输入 Basic 登录用户名",
+          "placeholder": "admin"
+        },
+        "password": {
+          "message": "请输入 Basic 登录密码"
         },
         "accessToken": {
           "message": "请输入 API Token 或 API Key",
@@ -258,6 +270,17 @@
         },
         "dbPassword": {
           "message": "数据库密码是什么？"
+        },
+        "dbSchema": {
+          "message": "数据库 schema 是什么？（仅 PostgreSQL，可选）",
+          "placeholder": "留空则使用默认 schema"
+        },
+        "dbTablePrefix": {
+          "message": "要使用什么数据表前缀？（可选）",
+          "placeholder": "例如：nb_"
+        },
+        "dbUnderscored": {
+          "message": "数据库表名和字段名是否使用下划线风格？"
         },
         "rootUsername": {
           "message": "设置初始管理员用户名",
