@@ -117,11 +117,7 @@
       }
     },
     "shared": {
-      "missingCommand": {
-        "docker": "无法执行 `{{action}}`，因为当前系统未安装 Docker。请先安装 Docker 后重试。",
-        "git": "无法执行 `{{action}}`，因为当前系统未安装 Git。请先安装 Git 后重试。",
-        "yarn": "无法执行 `{{action}}`，因为当前系统未安装 Yarn。请先安装 Yarn 后重试。"
-      }
+      "missingCommand": "无法执行 `{{action}}`，因为找不到 {{displayName}} 可执行文件。请先安装 {{displayName}}，或更新 `nb config set {{configKey}} <path>` 后重试。"
     },
     "download": {
       "failures": {

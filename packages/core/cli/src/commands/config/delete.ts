@@ -16,6 +16,9 @@ export default class ConfigDelete extends Command {
     '<%= config.bin %> <%= command.id %> license.pkg-url',
     '<%= config.bin %> <%= command.id %> docker.network',
     '<%= config.bin %> <%= command.id %> docker.container-prefix',
+    '<%= config.bin %> <%= command.id %> bin.docker',
+    '<%= config.bin %> <%= command.id %> bin.git',
+    '<%= config.bin %> <%= command.id %> bin.yarn',
   ];
 
   static override args = {
