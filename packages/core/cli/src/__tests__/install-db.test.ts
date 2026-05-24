@@ -132,8 +132,8 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       dbDialect: 'postgres',
       builtinDb: true,
@@ -165,7 +165,7 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
     runPromptCatalogSpy.mockRestore();
   }
 
-  const envAddCatalog = runPromptCatalogMock.mock.calls[4]?.[0];
+  const envAddCatalog = runPromptCatalogMock.mock.calls[5]?.[0];
   expect(envAddCatalog.apiBaseUrl).toBeDefined();
   expect(envAddCatalog.apiBaseUrl).not.toBe(EnvAdd.prompts.apiBaseUrl);
   expect(envAddCatalog.apiBaseUrl.validate).toBe(undefined);
@@ -185,8 +185,8 @@ test('install hides the deferred accessToken prompt when --skip-auth is used wit
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       dbDialect: 'postgres',
       builtinDb: true,
@@ -220,7 +220,7 @@ test('install hides the deferred accessToken prompt when --skip-auth is used wit
     runPromptCatalogSpy.mockRestore();
   }
 
-  const envAddCatalog = runPromptCatalogMock.mock.calls[4]?.[0];
+  const envAddCatalog = runPromptCatalogMock.mock.calls[5]?.[0];
   expect(envAddCatalog.accessToken).toBeDefined();
   expect(envAddCatalog.accessToken.hidden?.({ authType: 'token' })).toBe(true);
 });
@@ -242,8 +242,8 @@ test('install keeps optional database prompt results for schema, table prefix, a
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       dbDialect: 'postgres',
       builtinDb: false,
@@ -323,8 +323,8 @@ test('install lets prompted optional database values override saved resume prese
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       dbDialect: 'postgres',
       builtinDb: false,
@@ -404,8 +404,8 @@ test('install preserves forwarded dbUnderscored flags when invoked through nb in
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       dbDialect: 'postgres',
       builtinDb: false,
