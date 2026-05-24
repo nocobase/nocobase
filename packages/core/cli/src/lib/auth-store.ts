@@ -10,11 +10,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
-import {
-  resolveCliHomeDir,
-  resolveConfiguredEnvPath,
-  resolveEnvRelativePath,
-} from './cli-home.js';
+import { resolveCliHomeDir, resolveConfiguredEnvPath, resolveEnvRelativePath } from './cli-home.js';
 import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
@@ -42,7 +38,9 @@ export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
 export interface EnvConfigEntry {
   kind?: EnvKind;
   apiBaseUrl?: string;
-  authType?: 'token' | 'oauth';
+  authType?: 'basic' | 'token' | 'oauth';
+  /** Username to reuse when this env signs in through the CLI basic authenticator. */
+  authUsername?: string;
   /** @deprecated Legacy config key; read-only compatibility for older config.json files. */
   baseUrl?: string;
   /** @deprecated Legacy typo kept for read compatibility with older config.json files. */
@@ -114,6 +112,11 @@ export interface AuthConfig {
       network?: string;
       containerPrefix?: string;
     };
+    bin?: {
+      docker?: string;
+      git?: string;
+      yarn?: string;
+    };
   };
   lastEnv?: string;
   envs: Record<string, EnvConfigEntry>;
@@ -150,9 +153,9 @@ export function readEnvApiBaseUrl(config?: Partial<EnvConfigEntry>): string | un
   }
 
   return (
-    normalizeOptionalString((config as { apiBaseUrl?: unknown }).apiBaseUrl)
-    ?? normalizeOptionalString((config as { baseUrl?: unknown }).baseUrl)
-    ?? normalizeOptionalString((config as { apibaseUrl?: unknown }).apibaseUrl)
+    normalizeOptionalString((config as { apiBaseUrl?: unknown }).apiBaseUrl) ??
+    normalizeOptionalString((config as { baseUrl?: unknown }).baseUrl) ??
+    normalizeOptionalString((config as { apibaseUrl?: unknown }).apibaseUrl)
   );
 }
 
@@ -213,20 +216,30 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
     name: config.name || config.dockerResourcePrefix,
     settings: {
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
-      ...(
-        settings.docker?.network || settings.docker?.containerPrefix
-          ? {
-              docker: {
-                ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
-                ...(settings.docker?.containerPrefix
-                  ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
-                  : {}),
-              },
-            }
-          : {}
-      ),
+      ...(settings.docker?.network || settings.docker?.containerPrefix
+        ? {
+            docker: {
+              ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
+              ...(settings.docker?.containerPrefix
+                ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
+                : {}),
+            },
+          }
+        : {}),
+      ...(settings.bin?.docker || settings.bin?.git || settings.bin?.yarn
+        ? {
+            bin: {
+              ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
+              ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
+              ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
+            },
+          }
+        : {}),
     },
-    lastEnv: (config as AuthConfig & { currentEnv?: string }).lastEnv || (config as { currentEnv?: string }).currentEnv || 'default',
+    lastEnv:
+      (config as AuthConfig & { currentEnv?: string }).lastEnv ||
+      (config as { currentEnv?: string }).currentEnv ||
+      'default',
     envs: Object.fromEntries(
       Object.entries(config.envs || {}).map(([envName, entry]) => [envName, normalizeEnvConfigEntry(entry) ?? {}]),
     ),
@@ -384,10 +397,12 @@ export class Env {
 export async function getEnv(envName?: string, options: GetEnvOptions = {}): Promise<Env | undefined> {
   const { config: snapshot, ...loadOptions } = options;
   const config = snapshot ?? (await loadAuthConfig(loadOptions));
-  const resolved = envName?.trim() || (await resolveEffectiveCurrentEnv(Object.keys(config.envs).sort(), {
-    scope: loadOptions.scope,
-    lastEnv: config.lastEnv,
-  }));
+  const resolved =
+    envName?.trim() ||
+    (await resolveEffectiveCurrentEnv(Object.keys(config.envs).sort(), {
+      scope: loadOptions.scope,
+      lastEnv: config.lastEnv,
+    }));
   const envConfig = config.envs[resolved];
   if (!envConfig) {
     return undefined;
@@ -435,18 +450,16 @@ async function writeEnv(
 }
 
 function normalizeConfiguredAuthType(value: unknown): EnvConfigEntry['authType'] {
-  return value === 'token' || value === 'oauth' ? value : undefined;
+  return value === 'basic' || value === 'token' || value === 'oauth' ? value : undefined;
 }
 
-export function resolveConfiguredAuthType(config?: Pick<EnvConfigEntry, 'authType' | 'auth'>): EnvConfigEntry['authType'] {
+export function resolveConfiguredAuthType(
+  config?: Pick<EnvConfigEntry, 'authType' | 'auth'>,
+): EnvConfigEntry['authType'] {
   return normalizeConfiguredAuthType(config?.authType) ?? normalizeConfiguredAuthType(config?.auth?.type);
 }
 
-export async function upsertEnv(
-  envName: string,
-  config: Record<string, any>,
-  options: AuthStoreOptions = {},
-) {
+export async function upsertEnv(envName: string, config: Record<string, any>, options: AuthStoreOptions = {}) {
   await writeEnv(
     envName,
     (previous) => {
@@ -456,6 +469,7 @@ export async function upsertEnv(
         apibaseUrl: _legacyApiBaseUrl,
         accessToken,
         authType,
+        authUsername,
         ...rest
       } = config;
       const nextApiBaseUrl = readEnvApiBaseUrl(config);
@@ -464,24 +478,29 @@ export async function upsertEnv(
       const previousAuthType = resolveConfiguredAuthType(previous);
       const requestedAuthType = normalizeConfiguredAuthType(authType);
       const nextAuthType = requestedAuthType ?? (accessToken ? 'token' : previousAuthType);
+      const nextAuthUsername =
+        nextAuthType === 'basic' ? normalizeOptionalString(authUsername) ?? previous?.authUsername : undefined;
       const nextAuth = accessToken
         ? ({
             type: 'token',
             accessToken,
           } satisfies TokenAuthConfig)
-        : nextAuthType === 'token' || baseUrlChanged || previous?.auth?.type === 'token'
-          ? undefined
-          : previous?.auth;
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
       const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
       const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
 
       return {
         ...previous,
         apiBaseUrl: nextApiBaseUrl,
         authType: nextAuthType,
+        authUsername: nextAuthUsername,
         auth: nextAuth,
         ...rest,
-        runtime: baseUrlChanged || authChanged || authTypeChanged ? undefined : previous?.runtime,
+        runtime:
+          baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
       };
     },
     options,
@@ -490,7 +509,13 @@ export async function upsertEnv(
 
 export async function updateEnvConnection(
   envName: string,
-  updates: { apiBaseUrl?: string; baseUrl?: string; authType?: EnvConfigEntry['authType']; accessToken?: string },
+  updates: {
+    apiBaseUrl?: string;
+    baseUrl?: string;
+    authType?: EnvConfigEntry['authType'];
+    authUsername?: string;
+    accessToken?: string;
+  },
   options: AuthStoreOptions = {},
 ) {
   await writeEnv(
@@ -502,23 +527,28 @@ export async function updateEnvConnection(
       const previousAuthType = resolveConfiguredAuthType(previous);
       const requestedAuthType = normalizeConfiguredAuthType(updates.authType);
       const nextAuthType = requestedAuthType ?? (updates.accessToken ? 'token' : previousAuthType);
+      const nextAuthUsername =
+        nextAuthType === 'basic' ? normalizeOptionalString(updates.authUsername) ?? previous?.authUsername : undefined;
       const nextAuth = updates.accessToken
         ? ({
             type: 'token',
             accessToken: updates.accessToken,
           } satisfies TokenAuthConfig)
-        : nextAuthType === 'token' || baseUrlChanged || previous?.auth?.type === 'token'
-          ? undefined
-          : previous?.auth;
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
       const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
       const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
 
       return {
         ...previous,
         ...(nextApiBaseUrl !== undefined ? { apiBaseUrl: nextApiBaseUrl } : {}),
         authType: nextAuthType,
+        authUsername: nextAuthUsername,
         auth: nextAuth,
-        runtime: baseUrlChanged || authChanged || authTypeChanged ? undefined : previous?.runtime,
+        runtime:
+          baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
       };
     },
     options,

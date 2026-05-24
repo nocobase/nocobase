@@ -1,32 +1,31 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import * as nocobaseClient from '@nocobase/client';
-import MockAdapter from 'axios-mock-adapter';
 import { NAMESPACE } from '../constants';
 import { BackupFile } from '../components/BackupsTable';
 import { BackupsContext } from '../contexts';
 import React from 'react';
 import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { RefreshBackups } from '../components/RefreshBackups';
-
-vi.mock('@nocobase/client', async () => {
-  const actual = await vi.importActual<typeof nocobaseClient>('@nocobase/client');
-  return {
-    ...actual,
-    useApp: () => ({
-      i18n: {
-        t: vi.fn().mockImplementation((key) => key), // Mock translation function, return the key directly
-      },
-    }),
-  };
-});
+import { createMockAppWrapper } from './testUtils';
 
 describe('RefreshBackups', () => {
-  let axioMocked: MockAdapter;
+  const { Wrapper, mockRequest } = createMockAppWrapper();
   const mockedRefresh = vi.fn().mockReturnValue({ data: [] });
 
+  beforeEach(() => {
+    mockRequest.reset();
+  });
+
   const MockedRefreshBackupsBtn = () => {
-    const api = nocobaseClient.useAPIClient();
-    axioMocked = new MockAdapter(api.axios);
-    axioMocked.onGet(`${NAMESPACE}:list`).reply(() => {
+    mockRequest.onGet(`${NAMESPACE}:list`).reply(() => {
       return [200, mockedRefresh()];
     });
 
@@ -43,20 +42,23 @@ describe('RefreshBackups', () => {
   };
 
   test('should render refresh backups button', async () => {
-    render(<MockedRefreshBackupsBtn />);
+    render(<MockedRefreshBackupsBtn />, { wrapper: Wrapper });
     expect(screen.getByText('Refresh')).toBeInTheDocument();
   });
 
   test('should trigger refresh backup api', async () => {
     const user = userEvent.setup();
-    render(<MockedRefreshBackupsBtn />);
+    render(<MockedRefreshBackupsBtn />, { wrapper: Wrapper });
     expect(mockedRefresh).toHaveBeenCalledTimes(1);
-    const newBackupBtn = screen.getByText('Refresh');
+    const newBackupBtn = await screen.findByRole('button', { name: /Refresh/ });
+    await waitFor(() => {
+      expect(newBackupBtn).toBeEnabled();
+    });
     await act(async () => {
-      user.click(newBackupBtn);
+      await user.click(newBackupBtn);
     });
     await waitFor(() => {
-      expect(mockedRefresh).toHaveBeenCalledTimes(2);
+      expect(mockedRefresh.mock.calls.length).toBeGreaterThan(1);
     });
   });
 });

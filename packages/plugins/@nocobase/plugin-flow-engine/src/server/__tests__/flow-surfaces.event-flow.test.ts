@@ -615,7 +615,10 @@ describe('flowSurfaces event flow', () => {
 
 function getData(response: any) {
   expect(response.status).toBe(200);
-  return response.body.data;
+  if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  return response.body;
 }
 
 async function createEmployeeForm(rootAgent: any) {

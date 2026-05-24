@@ -10,13 +10,13 @@
 import * as nocobaseClient from '@nocobase/client';
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { App } from 'antd';
-import MockAdapter from 'axios-mock-adapter';
 import { saveAs } from 'file-saver';
 import React from 'react';
 import { describe, vi } from 'vitest';
 import { BackupFile, BackupsTable } from '../components/BackupsTable';
 import { NAMESPACE } from '../constants';
 import { BackupsContext } from '../contexts';
+import { createMockAppWrapper } from './testUtils';
 
 const mockedData = {
   data: [
@@ -33,19 +33,6 @@ const mockedData = {
   ],
 };
 
-vi.mock('@nocobase/client', async () => {
-  const actual = await vi.importActual<typeof nocobaseClient>('@nocobase/client');
-  return {
-    ...actual,
-    useApp: () => ({
-      i18n: {
-        t: vi.fn().mockImplementation((key) => key),
-      },
-    }),
-    useCurrentAppInfo: () => undefined,
-  };
-});
-
 vi.mock('file-saver', async () => {
   return {
     saveAs: vi.fn(),
@@ -53,14 +40,28 @@ vi.mock('file-saver', async () => {
 });
 
 describe('BackupsTable', () => {
-  let mocked: MockAdapter;
+  const { Wrapper, mockRequest } = createMockAppWrapper();
+
+  beforeEach(() => {
+    mockRequest.reset();
+    vi.spyOn(nocobaseClient, 'useCurrentAppInfo').mockReturnValue(undefined as any);
+    mockRequest.onGet(`${NAMESPACE}:appInfo`).reply(200, {
+      data: {
+        database: {
+          dialect: 'sqlite',
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   const MockedTable = () => {
-    const api = nocobaseClient.useAPIClient();
-    mocked = new MockAdapter(api.axios);
-    mocked.onGet('backups:list').reply(200, mockedData);
-    mocked.onGet('backups:download').reply(200, 'mocked-backup-content');
-    mocked.onPost('backups:destroy').reply(200, {});
+    mockRequest.onGet('backups:list').reply(200, mockedData);
+    mockRequest.onGet('backups:download').reply(200, 'mocked-backup-content');
+    mockRequest.onPost('backups:destroy').reply(200, {});
 
     const useRequestValues = nocobaseClient.useRequest<{ data: BackupFile[] }>({
       url: `${NAMESPACE}:list`,
@@ -75,7 +76,7 @@ describe('BackupsTable', () => {
   };
 
   test('should render table with correct columns and data', async () => {
-    render(<MockedTable />);
+    render(<MockedTable />, { wrapper: Wrapper });
     await waitFor(() => {
       expect(screen.getByText('Backup list')).toBeInTheDocument();
       expect(screen.getByText('backup_20240818_182301_9056.nbdata')).toBeInTheDocument();
@@ -84,7 +85,7 @@ describe('BackupsTable', () => {
 
   test('should handle download action', async () => {
     const user = userEvent.setup();
-    render(<MockedTable />);
+    render(<MockedTable />, { wrapper: Wrapper });
     await waitFor(() => {
       expect(screen.getAllByText('Download')[0]).toBeInTheDocument();
     });
@@ -92,7 +93,7 @@ describe('BackupsTable', () => {
     await user.click(screen.getAllByText('Download')[0]);
 
     await waitFor(() => {
-      expect(mocked.history.get).toEqual(
+      expect(mockRequest.history.get).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             url: 'backups:download',
@@ -116,7 +117,7 @@ describe('BackupsTable', () => {
       },
     });
     const user = userEvent.setup();
-    render(<MockedTable />);
+    render(<MockedTable />, { wrapper: Wrapper });
     await waitFor(async () => {
       await user.click(screen.getAllByText('Delete')[0]);
       expect(modalConfirmSpy).toHaveBeenCalled();
@@ -124,7 +125,7 @@ describe('BackupsTable', () => {
   });
 
   test('should handle backing up data', async () => {
-    render(<MockedTable />);
+    render(<MockedTable />, { wrapper: Wrapper });
     await waitFor(async () => {
       expect(screen.getByText('Backup list')).toBeInTheDocument();
       expect(screen.getByRole('cell', { name: /Backing up/i })).toBeInTheDocument();
