@@ -380,7 +380,7 @@ export class BaseLayoutRouteCoordinator {
     );
 
     viewItem.model.dispatchEvent('click', {
-      target: runtime.meta.layoutContentElement || this.layoutContentElement,
+      target: this.layoutContentElement || runtime.meta.layoutContentElement,
       collectionName: openViewParams?.collectionName,
       associationName,
       dataSourceKey: openViewParams?.dataSourceKey,

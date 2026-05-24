@@ -52,7 +52,7 @@ export const KeepAliveProvider: FC<{ active: boolean; parentActive: boolean }> =
     }
 
     return (
-      <div style={active ? null : hidden}>
+      <div style={active ? { height: '100%' } : hidden}>
         <RouteContext.Provider value={prevRouteContextValueRef.current}>
           <UNSAFE_DataRouterContext.Provider value={prevDataRouterContextRef.current}>
             <UNSAFE_DataRouterStateContext.Provider value={prevDataRouterStateContextRef.current}>

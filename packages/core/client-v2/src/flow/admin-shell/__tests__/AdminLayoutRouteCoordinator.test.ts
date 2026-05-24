@@ -120,6 +120,49 @@ describe('AdminLayoutRouteCoordinator', () => {
     });
   });
 
+  it('uses layout content element before route page placeholder as view target', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const layoutContentElement = document.createElement('div');
+    const routePageElement = document.createElement('div');
+    const dispatchEvent = vi.fn((_eventName: string, _payload: any) => Promise.resolve());
+    const viewItem = {
+      params: { viewUid: 'test-route' },
+      modelUid: 'test-route',
+      model: { uid: 'test-route', dispatchEvent } as any,
+      hidden: { value: false },
+      index: 0,
+    };
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({} as any);
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(layoutContentElement);
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: routePageElement,
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    expect(dispatchEvent.mock.calls[0][1].target).toBe(layoutContentElement);
+  });
+
   it('parses view stack with custom layout prefix', () => {
     const engine = new FlowEngine();
     engine.registerModels({ RouteModel });
