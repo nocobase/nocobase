@@ -13,8 +13,9 @@ import { assertSupportedCliConfigKey, setCliConfigValue } from '../../lib/cli-co
 export default class ConfigSet extends Command {
   static override summary = 'Set a CLI configuration value';
   static override description =
-    'Set a supported CLI configuration key. Supported keys: license.pkg-url, docker.network, docker.container-prefix, bin.docker, bin.git, bin.yarn.';
+    'Set a supported CLI configuration key. Supported keys: locale, license.pkg-url, docker.network, docker.container-prefix, bin.docker, bin.git, bin.yarn.';
   static override examples = [
+    '<%= config.bin %> <%= command.id %> locale zh-CN',
     '<%= config.bin %> <%= command.id %> license.pkg-url https://pkg.nocobase.com/',
     '<%= config.bin %> <%= command.id %> docker.network nocobase',
     '<%= config.bin %> <%= command.id %> docker.container-prefix nb',

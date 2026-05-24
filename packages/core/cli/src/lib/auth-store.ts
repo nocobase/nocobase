@@ -11,6 +11,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
 import { resolveCliHomeDir, resolveConfiguredEnvPath, resolveEnvRelativePath } from './cli-home.js';
+import { normalizeCliLocale } from './cli-locale.js';
 import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
@@ -105,6 +106,7 @@ export interface AuthConfig {
   /** Workspace-level name shared by all envs in this config. */
   name?: string;
   settings?: {
+    locale?: string;
     license?: {
       pkgUrl?: string;
     };
@@ -145,6 +147,15 @@ function normalizeStoredEnvKind(value: unknown): EnvKind | undefined {
 function normalizeOptionalString(value: unknown): string | undefined {
   const normalized = String(value ?? '').trim();
   return normalized || undefined;
+}
+
+function normalizeOptionalCliLocale(value: unknown): string | undefined {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return normalizeCliLocale(normalized);
 }
 
 export function readEnvApiBaseUrl(config?: Partial<EnvConfigEntry>): string | undefined {
@@ -212,9 +223,11 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
 
 function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
   const settings = config.settings ?? {};
+  const locale = normalizeOptionalCliLocale(settings.locale);
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
+      ...(locale ? { locale } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
       ...(settings.docker?.network || settings.docker?.containerPrefix
         ? {
