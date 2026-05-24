@@ -8452,7 +8452,9 @@ export class FlowSurfacesService {
               'addBlock_inline',
             type: catalogItem.key || values.type,
             fields: values.fields,
-            fieldsLayout: values.fieldsLayout,
+            ...(Object.prototype.hasOwnProperty.call(values || {}, 'fieldsLayout')
+              ? { fieldsLayout: values.fieldsLayout }
+              : {}),
           },
           0,
           enabledPackages,

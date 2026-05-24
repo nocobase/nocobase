@@ -11,6 +11,7 @@ import type { Database, Repository } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
+import { resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames } from '../flow-surfaces/public-data-surface-default-filter';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
@@ -24,6 +25,16 @@ export type FlowSurfacesContractContext = {
 };
 
 const FLOW_SURFACES_TEMPLATE_REPO_MOCKED = Symbol('flow-surfaces-template-repo-mocked');
+const FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES = new Set([
+  'table',
+  'list',
+  'gridCard',
+  'details',
+  'createForm',
+  'editForm',
+  'filterForm',
+  'kanban',
+]);
 
 function installFlowSurfacesTemplateRepositoryMock(
   db: Database,
@@ -397,8 +408,59 @@ export function getRouteBackedTabs(readback: any) {
 export async function addBlockData(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').addBlock({
-      values,
+      values: await withDefaultVisibleFieldsForDataBlock(rootAgent, values),
     }),
+  );
+}
+
+async function withDefaultVisibleFieldsForDataBlock(rootAgent: any, values: Record<string, any>) {
+  if (
+    !values ||
+    !FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES.has(String(values.type || '').trim()) ||
+    Object.prototype.hasOwnProperty.call(values, 'fields') ||
+    Object.prototype.hasOwnProperty.call(values, 'fieldGroups') ||
+    Object.prototype.hasOwnProperty.call(values, 'template')
+  ) {
+    return values;
+  }
+  const collectionName =
+    String(values?.resourceInit?.collectionName || '').trim() ||
+    String(values?.resource?.collectionName || '').trim() ||
+    String(values?.collection || '').trim();
+  if (!collectionName) {
+    return values;
+  }
+  const collectionMeta = await loadCollectionMeta(rootAgent);
+  const fieldName = pickDefaultVisibleFieldName(collectionName, collectionMeta);
+  return fieldName
+    ? {
+        ...values,
+        fields: [fieldName],
+      }
+    : values;
+}
+
+async function loadCollectionMeta(rootAgent: any) {
+  const response = await rootAgent.resource('collections').listMeta();
+  expect(response.status).toBe(200);
+  return Array.isArray(response.body?.data) ? response.body.data : [];
+}
+
+function pickDefaultVisibleFieldName(collectionName: string, collectionMeta: any[]) {
+  const collection = collectionMeta.find((item) => String(item?.name || '').trim() === collectionName);
+  const candidates = collection ? resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection) : [];
+  if (candidates.length) {
+    return candidates[0];
+  }
+  const fields = Array.isArray(collection?.fields)
+    ? collection.fields
+    : collection?.fields && typeof collection.fields.values === 'function'
+      ? Array.from(collection.fields.values())
+      : [];
+  return (
+    fields
+      .map((field: any) => String(field?.name || field?.options?.name || '').trim())
+      .find((fieldName) => fieldName && fieldName !== 'id') || ''
   );
 }
 

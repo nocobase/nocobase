@@ -108,6 +108,52 @@ const SORTABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'tree', 'kanba
 const CHART_BLOCK_TYPES = new Set(['chart']);
 const COMMENTS_PAGE_SIZE_VALUES = new Set([5, 10, 20, 50, 100, 200]);
 const RECORD_HISTORY_INTERNAL_COLLECTIONS = new Set(['recordHistories', 'recordFieldHistories']);
+const VISIBLE_FIELD_REQUIRED_DATA_BLOCK_TYPES = new Set([
+  'table',
+  'list',
+  'gridCard',
+  'details',
+  'createForm',
+  'editForm',
+  'filterForm',
+  'kanban',
+]);
+const NON_BUSINESS_VISIBLE_FIELD_NAMES = new Set([
+  'id',
+  'uid',
+  'createdAt',
+  'updatedAt',
+  'deletedAt',
+  'createdBy',
+  'updatedBy',
+  'deletedBy',
+  'createdById',
+  'updatedById',
+  'deletedById',
+  'created_at',
+  'updated_at',
+  'deleted_at',
+  'created_by',
+  'updated_by',
+  'deleted_by',
+]);
+const NON_BUSINESS_VISIBLE_FIELD_INTERFACES = new Set([
+  'id',
+  'createdAt',
+  'updatedAt',
+  'createdBy',
+  'updatedBy',
+  'sort',
+]);
+const NON_BUSINESS_VISIBLE_FIELD_TYPES = new Set([
+  'action',
+  'actions',
+  'button',
+  'divider',
+  'operation',
+  'operations',
+  'sort',
+]);
 const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
 const PUBLIC_BLOCK_TYPE_BY_MODEL_USE: Record<string, string> = {
   TableBlockModel: 'table',
@@ -3750,6 +3796,7 @@ function collectBlockErrors(
     context,
   );
   collectSemanticBindingErrors(block, blockType, path, errors, context);
+  collectVisibleDataBlockFieldErrors(block, blockType, path, errors, context);
   collectCommentsBlockErrors(block, blockType, path, errors, context);
   collectRecordHistoryBlockErrors(block, blockType, path, errors, context);
   collectChartDisplayTitleErrors(block, blockType, path, errors);
@@ -4864,6 +4911,124 @@ function collectDefaultActionSettingsFilterErrors(
 function doesBlockConsumeDefaultFilterAction(block: any) {
   const blockType = String(block?.type || '').trim();
   return isFlowSurfacePublicDataSurfaceBlockType(blockType) && !hasFlowSurfaceTemplateDocument(block?.template);
+}
+
+function collectVisibleDataBlockFieldErrors(
+  block: any,
+  blockType: string,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!VISIBLE_FIELD_REQUIRED_DATA_BLOCK_TYPES.has(blockType) || hasFlowSurfaceTemplateReference(block?.template)) {
+    return;
+  }
+  const fieldEntries = collectVisibleDataBlockFieldEntries(block, path);
+  if (
+    !fieldEntries.length ||
+    !fieldEntries.some((entry) => isVisibleDataBlockBusinessField(entry.field, block, context))
+  ) {
+    const hasBlockFields = Array.isArray(block?.fields);
+    const hasBlockFieldGroups = Array.isArray(block?.fieldGroups);
+    const fieldConfigPath = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups` : `${path}.fields`;
+    const fieldConfigLabel = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups[].fields` : `${path}.fields`;
+    const suggestedFields = pickVisibleDataBlockFieldSuggestions(block, context);
+    pushAuthoringError(errors, {
+      path: fieldConfigPath,
+      ruleId: 'data-block-visible-fields-required',
+      message: `flowSurfaces authoring ${path} ${blockType} block has no valid business fields. Add collection field names to ${fieldConfigLabel}; defaults.collections.*.fieldGroups only configures generated popups/forms and is not a substitute for visible block columns.`,
+      details: {
+        blockType,
+        collection: getBlockCollectionName(block, context),
+        fieldCount: fieldEntries.length,
+        ...(suggestedFields.length ? { suggestion: { fields: suggestedFields } } : {}),
+      },
+    });
+  }
+}
+
+function collectVisibleDataBlockFieldEntries(block: any, path: string): Array<{ field: any; path: string }> {
+  const entries: Array<{ field: any; path: string }> = [];
+  if (Array.isArray(block?.fields)) {
+    block.fields.forEach((field: any, index: number) => {
+      entries.push({ field, path: `${path}.fields[${index}]` });
+    });
+  }
+  if (Array.isArray(block?.fieldGroups)) {
+    block.fieldGroups.forEach((group: any, groupIndex: number) => {
+      if (!Array.isArray(group?.fields)) {
+        return;
+      }
+      group.fields.forEach((field: any, fieldIndex: number) => {
+        entries.push({
+          field,
+          path: `${path}.fieldGroups[${groupIndex}].fields[${fieldIndex}]`,
+        });
+      });
+    });
+  }
+  return entries;
+}
+
+function isVisibleDataBlockBusinessField(field: any, block: any, context: FlowSurfaceAuthoringValidationContext) {
+  const fieldPath = getAssociationAwareFieldPathInput(field);
+  if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+    return false;
+  }
+  if (_.isPlainObject(field)) {
+    if (field.hidden === true || field.internal === true || field.synthetic === true || field.actionOnly === true) {
+      return false;
+    }
+    const semanticType = String(field.type || field.fieldType || field.interface || '').trim();
+    if (semanticType && NON_BUSINESS_VISIBLE_FIELD_TYPES.has(semanticType)) {
+      return false;
+    }
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return true;
+  }
+  const resolvedField = resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  if (!resolvedField) {
+    return true;
+  }
+  const fieldName = getFieldName(resolvedField) || fieldPath;
+  return isVisibleDataBlockBusinessResolvedField(resolvedField, fieldName);
+}
+
+function pickVisibleDataBlockFieldSuggestions(block: any, context: FlowSurfaceAuthoringValidationContext) {
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return [];
+  }
+  return getCollectionFields(collection)
+    .map((field) => {
+      const name = String(getFieldName(field) || '').trim();
+      if (!name || !isVisibleDataBlockBusinessResolvedField(field, name)) {
+        return '';
+      }
+      return name;
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+function isVisibleDataBlockBusinessResolvedField(field: any, fieldName: string) {
+  if (NON_BUSINESS_VISIBLE_FIELD_NAMES.has(fieldName)) {
+    return false;
+  }
+  const fieldInterface = String(getFieldInterface(field) || '').trim();
+  if (NON_BUSINESS_VISIBLE_FIELD_INTERFACES.has(fieldInterface)) {
+    return false;
+  }
+  const fieldType = String(getFieldType(field) || '').trim();
+  if (NON_BUSINESS_VISIBLE_FIELD_TYPES.has(fieldType)) {
+    return false;
+  }
+  if (field?.hidden === true || field?.options?.hidden === true) {
+    return false;
+  }
+  return true;
 }
 
 function hasConcreteFilterItem(value: any): boolean {

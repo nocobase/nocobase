@@ -2144,7 +2144,9 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     });
 
     expect(emptyResponse.status).toBe(400);
-    expect(readErrorMessage(emptyResponse)).toContain('explicit fields must include at least one direct readable');
+    expect(emptyResponse.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['data-block-visible-fields-required', 'tree-table-explicit-fields-readable-required']),
+    );
   });
 
   it('should normalize a unique navigation.group.title to the existing routeId before writing', async () => {
@@ -2368,7 +2370,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(readErrorMessage(response)).toContain('already has 2 flow pages titled');
   });
 
-  it('should auto-generate fieldGroups for raw details blocks from live metadata', async () => {
+  it('should reject raw details blocks without visible fields before generating fieldGroups', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -2395,22 +2397,18 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
 
-    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
-    const data = getData(executeRes);
-    const detailsBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'DetailsBlockModel')[0];
-    const items = _.castArray(detailsBlock?.subModels?.grid?.subModels?.items || []);
-    expect(items.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(true);
-    expect(items.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
-      expect.arrayContaining(['nickname', 'status']),
+    expect(executeRes.status).toBe(400);
+    const visibleFieldError = executeRes.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
     );
-    const persistedDetails = await flowRepo.findModelById(detailsBlock.uid, { includeAsyncNode: true });
-    const persistedFields = _.castArray(persistedDetails?.subModels?.grid?.subModels?.items || []);
-    expect(persistedFields.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(
-      true,
-    );
-    expect(
-      persistedFields.map((field: any) => field?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean),
-    ).toEqual(expect.arrayContaining(['nickname', 'status']));
+    expect(visibleFieldError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'details',
+        collection: 'employees',
+      },
+    });
+    expect(visibleFieldError.message).toContain('Add collection field names');
   });
 
   it('should auto-fill tryTemplate for raw action popups before persisting', async () => {
@@ -2807,7 +2805,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(readDetailsFieldPaths(detailsBlock)).toEqual(expect.arrayContaining(['name']));
   });
 
-  it('should auto-generate fieldGroups for raw createForm blocks from live metadata', async () => {
+  it('should reject raw createForm blocks without visible fields before generating fieldGroups', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -2834,25 +2832,21 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
 
-    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
-    const data = getData(executeRes);
-    const createFormBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CreateFormModel')[0];
-    const items = _.castArray(createFormBlock?.subModels?.grid?.subModels?.items || []);
-    expect(items.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(true);
-    expect(items.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
-      expect.arrayContaining(['nickname', 'status']),
+    expect(executeRes.status).toBe(400);
+    const visibleFieldError = executeRes.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
     );
-    const persistedCreateForm = await flowRepo.findModelById(createFormBlock.uid, { includeAsyncNode: true });
-    const persistedFields = _.castArray(persistedCreateForm?.subModels?.grid?.subModels?.items || []);
-    expect(persistedFields.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(
-      true,
-    );
-    expect(
-      persistedFields.map((field: any) => field?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean),
-    ).toEqual(expect.arrayContaining(['nickname', 'status']));
+    expect(visibleFieldError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'createForm',
+        collection: 'employees',
+      },
+    });
+    expect(visibleFieldError.message).toContain('Add collection field names');
   });
 
-  it('should preserve wide field rows when auto-generated fieldGroups use live richText metadata', async () => {
+  it('should preserve wide field rows when explicit fields use live richText metadata', async () => {
     const collectionName = `flow_surface_authoring_wide_${_.uniqueId()}`;
     await rootAgent.resource('collections').create({
       values: {
@@ -2889,6 +2883,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'wideCreateForm',
                 type: 'createForm',
                 collection: collectionName,
+                fields: ['title', 'status', 'body', 'summary'],
               },
             ],
           },
@@ -2901,8 +2896,6 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const createFormBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CreateFormModel')[0];
     const grid = createFormBlock?.subModels?.grid;
     const items = _.castArray(grid?.subModels?.items || []);
-    const mainDivider = items.find((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')
-      ?.uid;
     const titleWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title')?.uid;
     const statusWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')?.uid;
     const bodyWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'body')?.uid;
@@ -2910,16 +2903,14 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       ?.uid;
 
     expect(grid?.props?.rows).toEqual({
-      row1: [[mainDivider]],
-      row2: [[titleWrapper], [statusWrapper]],
-      row3: [[bodyWrapper]],
-      row4: [[summaryWrapper]],
+      row1: [[titleWrapper], [statusWrapper]],
+      row2: [[bodyWrapper]],
+      row3: [[summaryWrapper]],
     });
     expect(grid?.props?.sizes).toEqual({
-      row1: [24],
-      row2: [12, 12],
+      row1: [12, 12],
+      row2: [24],
       row3: [24],
-      row4: [24],
     });
   });
 

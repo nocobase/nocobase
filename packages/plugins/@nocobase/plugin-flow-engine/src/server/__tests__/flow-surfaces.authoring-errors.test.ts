@@ -6358,6 +6358,294 @@ ctx.render(React.createElement(DashboardKPIs));
     }
   });
 
+  it('should reject visible data blocks without valid business fields before applyBlueprint writes', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring empty visible data block fields',
+          },
+        },
+        defaults: {
+          collections: {
+            employees: {
+              fieldGroups: [
+                {
+                  title: 'Employee defaults',
+                  fields: ['nickname'],
+                },
+              ],
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'emptyEmployeeTable',
+                type: 'table',
+                collection: 'employees',
+              },
+              {
+                key: 'systemOnlyEmployeeList',
+                type: 'list',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'systemOnlyDivider',
+                    type: 'divider',
+                    settings: {
+                      label: 'System',
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'actionOnlyEmployeeGrid',
+                type: 'gridCard',
+                collection: 'employees',
+                fields: [
+                  {
+                    field: 'nickname',
+                    type: 'operation',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const visibleFieldErrors = response.body?.errors?.filter(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+    expect(visibleFieldErrors).toHaveLength(3);
+    expect(visibleFieldErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.tabs[0].blocks[0].fields',
+        '$.tabs[0].blocks[1].fields',
+        '$.tabs[0].blocks[2].fields',
+      ]),
+    );
+    for (const error of visibleFieldErrors) {
+      expectStructuredError(error, {
+        status: 400,
+        type: 'bad_request',
+      });
+      expect(error.message).toContain('Add collection field names');
+      expect(error.message).toContain('defaults.collections.*.fieldGroups');
+    }
+  });
+
+  it('should reject visible data blocks without valid business fields before compose writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring compose visible data fields page',
+      tabTitle: 'Authoring compose visible data fields tab',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'emptyGridCard',
+            type: 'gridCard',
+            collection: 'employees',
+          },
+          {
+            key: 'emptyEmployeeList',
+            type: 'list',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'dividerOnlyDetails',
+            type: 'details',
+            collection: 'employees',
+            fieldGroups: [
+              {
+                title: 'Display',
+                fields: [
+                  {
+                    key: 'displayDivider',
+                    type: 'divider',
+                    settings: {
+                      label: 'Display',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            key: 'emptyCreateForm',
+            type: 'createForm',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'emptyEditForm',
+            type: 'editForm',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'emptyFilterForm',
+            type: 'filterForm',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'emptyKanban',
+            type: 'kanban',
+            collection: 'employees',
+            fields: [],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const visibleFieldErrors = response.body?.errors?.filter(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+    expect(visibleFieldErrors).toHaveLength(7);
+    expect(visibleFieldErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.blocks[0].fields',
+        '$.blocks[1].fields',
+        '$.blocks[2].fieldGroups',
+        '$.blocks[3].fields',
+        '$.blocks[4].fields',
+        '$.blocks[5].fields',
+        '$.blocks[6].fields',
+      ]),
+    );
+  });
+
+  it('should not require visible fields on template-backed data blocks', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      blocks: [
+        {
+          key: 'templateBackedTable',
+          type: 'table',
+          template: {
+            uid: 'existing-template-uid',
+          },
+        },
+      ],
+    });
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-required');
+  });
+
+  it('should reject visible data blocks without valid business fields before addBlock and addBlocks writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring add block visible data fields page',
+      tabTitle: 'Authoring add block visible data fields tab',
+    });
+
+    const addBlockResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'table',
+        resource: {
+          collectionName: 'employees',
+        },
+      },
+    });
+
+    expect(addBlockResponse.status).toBe(400);
+    expect(addBlockResponse.body?.errors?.map((error: any) => error.ruleId)).toContain(
+      'data-block-visible-fields-required',
+    );
+    expect(addBlockResponse.body?.errors?.map((error: any) => error.path)).toContain('$.fields');
+
+    const addBlocksResponse = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        blocks: [
+          {
+            target: { uid: page.gridUid },
+            type: 'list',
+            resource: {
+              collectionName: 'employees',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(addBlocksResponse.status).toBe(400);
+    expect(addBlocksResponse.body?.errors?.map((error: any) => error.ruleId)).toContain(
+      'data-block-visible-fields-required',
+    );
+    expect(addBlocksResponse.body?.errors?.map((error: any) => error.path)).toContain('$.blocks[0].fields');
+  });
+
+  it('should allow direct visible data blocks with valid business fields', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring valid visible data block fields',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'validEmployeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+  });
+
+  it('should leave unknown visible data block fields on the field-path-unknown rule', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring unknown visible data block field',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'unknownFieldEmployeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['missingNickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors?.map((error: any) => error.ruleId)).toContain('field-path-unknown');
+    expect(response.body?.errors?.map((error: any) => error.ruleId)).not.toContain(
+      'data-block-visible-fields-required',
+    );
+  });
+
   it('should reject generated action popups for large collections without collection default fieldGroups', async () => {
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
