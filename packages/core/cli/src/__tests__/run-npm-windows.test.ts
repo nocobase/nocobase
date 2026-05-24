@@ -38,6 +38,25 @@ function successfulChild() {
   };
 }
 
+function erroredChild(error: Error & { code?: string }) {
+  return {
+    stdout: {
+      setEncoding() {},
+      on() {},
+    },
+    stderr: {
+      setEncoding() {},
+      on() {},
+    },
+    once(event: string, callback: (...args: any[]) => void) {
+      if (event === 'error') {
+        setImmediate(() => callback(error));
+      }
+      return this;
+    },
+  };
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
@@ -103,4 +122,56 @@ test('runNocoBaseCommand executes nocobase-v1 via PATH resolution', async () => 
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }
+});
+
+test('run reports a friendly error when Docker is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn docker ENOENT'), { code: 'ENOENT' })));
+
+  const { run } = await import('../lib/run-npm.js');
+  await expect(run('docker', ['ps'], { stdio: 'ignore', errorName: 'docker ps' })).rejects.toThrow(
+    "Couldn't run `docker ps` because Docker is not installed. Please install Docker and try again.",
+  );
+});
+
+test('commandOutput reports a friendly error when Git is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn git ENOENT'), { code: 'ENOENT' })));
+
+  const { commandOutput } = await import('../lib/run-npm.js');
+  await expect(commandOutput('git', ['status'], { errorName: 'git status' })).rejects.toThrow(
+    "Couldn't run `git status` because Git is not installed. Please install Git and try again.",
+  );
+});
+
+test('run reports a friendly error when Yarn is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn yarn ENOENT'), { code: 'ENOENT' })));
+
+  const { run } = await import('../lib/run-npm.js');
+  await expect(run('yarn', ['install'], { stdio: 'ignore', errorName: 'yarn install' })).rejects.toThrow(
+    "Couldn't run `yarn install` because Yarn is not installed. Please install Yarn and try again.",
+  );
+});
+
+test('commandOutputViaFile reports a friendly error when Docker is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn docker ENOENT'), { code: 'ENOENT' })));
+
+  const { commandOutputViaFile } = await import('../lib/run-npm.js');
+  await expect(commandOutputViaFile('docker', ['ps'], { errorName: 'docker ps' })).rejects.toThrow(
+    "Couldn't run `docker ps` because Docker is not installed. Please install Docker and try again.",
+  );
+});
+
+test('commandSucceeds rejects when Docker is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn docker ENOENT'), { code: 'ENOENT' })));
+
+  const { commandSucceeds } = await import('../lib/run-npm.js');
+  await expect(commandSucceeds('docker', ['ps'], { errorName: 'docker ps' })).rejects.toThrow(
+    "Couldn't run `docker ps` because Docker is not installed. Please install Docker and try again.",
+  );
+});
+
+test('commandSucceeds still returns false for unrelated missing commands', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn pm2 ENOENT'), { code: 'ENOENT' })));
+
+  const { commandSucceeds } = await import('../lib/run-npm.js');
+  await expect(commandSucceeds('pm2', ['jlist'])).resolves.toBe(false);
 });
