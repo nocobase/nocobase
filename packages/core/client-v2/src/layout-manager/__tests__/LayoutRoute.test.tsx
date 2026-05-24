@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { FlowEngine, FlowEngineProvider, observer } from '@nocobase/flow-engine';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { createMemoryRouter, Outlet, RouterProvider } from 'react-router-dom';
+import { createMemoryRouter, Outlet, RouterProvider, useOutlet } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { BaseLayoutModel } from '../../flow/admin-shell/BaseLayoutModel';
 import { LayoutContentRoute } from '../LayoutContentRoute';
@@ -26,6 +26,29 @@ import {
 class TestLayoutModel extends BaseLayoutModel {
   render() {
     return <div data-testid="layout-route">{this.layout.routeName}</div>;
+  }
+}
+
+const GatedLayoutComponent = observer((props: { model: BaseLayoutModel }) => {
+  const { model } = props;
+  const outlet = useOutlet();
+  const pageUid = model.getPageUidFromLayoutRoute(model.currentLayoutRoute);
+
+  if (!pageUid) {
+    return <div data-testid="layout-page-uid">missing</div>;
+  }
+
+  return (
+    <div>
+      <div data-testid="layout-page-uid">{pageUid}</div>
+      {outlet}
+    </div>
+  );
+});
+
+class GatedLayoutModel extends BaseLayoutModel {
+  render() {
+    return <GatedLayoutComponent model={this} />;
   }
 }
 
@@ -52,9 +75,22 @@ describe('LayoutRoute', () => {
       },
     });
 
+    const router = createMemoryRouter(
+      [
+        {
+          id: layout.routeName,
+          path: layout.routePath,
+          element: <LayoutRoute layoutRouteName="test" />,
+        },
+      ],
+      {
+        initialEntries: ['/test'],
+      },
+    );
+
     render(
       <FlowEngineProvider engine={engine}>
-        <LayoutRoute layoutRouteName="test" />
+        <RouterProvider router={router} />
       </FlowEngineProvider>,
     );
 
@@ -68,6 +104,68 @@ describe('LayoutRoute', () => {
       rootPageModelClass: 'TestRootPageModel',
       childPageModelClass: 'TestChildPageModel',
     });
+  });
+
+  it('syncs nested page route before the layout renders its outlet', async () => {
+    const nestedLayout: LayoutDefinition = {
+      ...layout,
+      routeName: 'admin.settings.publicForms.layout',
+      routePath: '',
+      rootRouteName: 'admin',
+      uid: 'gated-layout-model',
+      layoutModelClass: 'GatedLayoutModel',
+    };
+    const engine = new FlowEngine();
+    engine.registerModels({ GatedLayoutModel });
+    engine.context.defineProperty('app', {
+      value: {
+        layoutManager: {
+          getLayout: () => nestedLayout,
+        },
+      },
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          id: 'admin.settings',
+          path: '/admin/settings',
+          element: <Outlet />,
+          children: [
+            {
+              id: 'admin.settings.publicForms',
+              path: 'public-forms',
+              element: <Outlet />,
+              children: [
+                {
+                  id: nestedLayout.routeName,
+                  path: '',
+                  element: <LayoutRoute layoutRouteName={nestedLayout.routeName} />,
+                  children: [
+                    {
+                      id: getLayoutPageViewRouteName(nestedLayout.routeName),
+                      path: ':name/view/*',
+                      element: <div data-testid="layout-child-outlet">child page</div>,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      {
+        initialEntries: ['/admin/settings/public-forms/form-1/view/popup'],
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <RouterProvider router={router} />
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByTestId('layout-page-uid')).toHaveTextContent('form-1');
+    expect(await screen.findByTestId('layout-child-outlet')).toHaveTextContent('child page');
   });
 });
 
@@ -128,16 +226,35 @@ describe('LayoutContentRoute', () => {
         },
       ],
     };
-    const routes = currentLayout.routeName.includes('.')
-      ? [
-          {
-            id: 'admin.settings',
-            path: '/admin/settings',
-            element: <Outlet />,
-            children: [layoutRoute],
-          },
-        ]
-      : [layoutRoute];
+    let routes;
+    if (currentLayout.routeName === 'admin.settings.publicForms.layout') {
+      routes = [
+        {
+          id: 'admin.settings',
+          path: '/admin/settings',
+          element: <Outlet />,
+          children: [
+            {
+              id: 'admin.settings.publicForms',
+              path: '/admin/settings/public-forms',
+              element: <Outlet />,
+              children: [layoutRoute],
+            },
+          ],
+        },
+      ];
+    } else if (currentLayout.routeName.includes('.')) {
+      routes = [
+        {
+          id: 'admin.settings',
+          path: '/admin/settings',
+          element: <Outlet />,
+          children: [layoutRoute],
+        },
+      ];
+    } else {
+      routes = [layoutRoute];
+    }
     const router = createMemoryRouter(routes, {
       initialEntries: [initialEntry],
     });
@@ -170,6 +287,25 @@ describe('LayoutContentRoute', () => {
       ...layout,
       routeName: 'admin.settings.publicForms',
       routePath: 'public-forms',
+      rootRouteName: 'admin',
+    };
+    const { model } = setup('/admin/settings/public-forms/form-1/view/popup', nestedLayout);
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        basePathname: '/admin/settings/public-forms',
+        pageUid: 'form-1',
+        viewStack: [{ viewUid: 'form-1' }, { viewUid: 'popup' }],
+      });
+    });
+  });
+
+  it('parses empty nested layout route by matched layout pathname', async () => {
+    const nestedLayout: LayoutDefinition = {
+      ...layout,
+      routeName: 'admin.settings.publicForms.layout',
+      routePath: '',
       rootRouteName: 'admin',
     };
     const { model } = setup('/admin/settings/public-forms/form-1/view/popup', nestedLayout);

@@ -10,7 +10,8 @@
 import { FlowEngine, FlowModel, FlowModelRenderer, isInheritedFrom, useFlowEngine } from '@nocobase/flow-engine';
 import type { ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useLocation, useMatches } from 'react-router-dom';
 import { SkeletonFallback } from '../flow/components/SkeletonFallback';
 import { useApp } from '../hooks/useApp';
 import { BaseLayoutModel } from '../flow/admin-shell/BaseLayoutModel';
@@ -53,6 +54,21 @@ export const LayoutRoute = (props: LayoutRouteProps) => {
   const app = useApp();
   const flowEngine = useFlowEngine();
   const layout = app.layoutManager.getLayout(layoutRouteName);
+  const location = useLocation();
+  const matches = useMatches();
+  const lastMatch = matches[matches.length - 1];
+  const layoutMatch = matches.find((match) => match.id === layout.routeName);
+  const lastMatchParamsSignature = JSON.stringify(lastMatch?.params || {});
+  const routeLike = useMemo(() => {
+    return {
+      id: lastMatch?.id,
+      name: lastMatch?.id,
+      pathname: location.pathname,
+      params: (lastMatch?.params || {}) as Record<string, string | undefined>,
+      layoutRouteName: layout.routeName,
+      layoutBasePathname: layoutMatch?.pathname,
+    };
+  }, [lastMatch?.id, lastMatchParamsSignature, layout.routeName, layoutMatch?.pathname, location.pathname]);
   const { loading, data, error } = useRequest(
     async () => {
       const existingModel = flowEngine.getModel<BaseLayoutModel>(layout.uid);
@@ -79,6 +95,17 @@ export const LayoutRoute = (props: LayoutRouteProps) => {
       refreshDeps: [flowEngine, layout],
     },
   );
+
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
+
+    data.syncLayoutRoute(routeLike);
+    return () => {
+      data.clearLayoutRoute(routeLike);
+    };
+  }, [data, routeLike]);
 
   if (error) {
     throw error;

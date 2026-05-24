@@ -247,7 +247,8 @@ export class BaseLayoutModel<
 
   resolveLayoutRoute(routeLike: LayoutRouteLike): LayoutRouteMatch {
     const pathname = normalizePathname(routeLike?.pathname);
-    const basePathname = routeLike.layoutBasePathname || getDefaultBasePathnameFromRoutePath(this.layout.routePath);
+    const rawBasePathname = routeLike.layoutBasePathname || getDefaultBasePathnameFromRoutePath(this.layout.routePath);
+    const basePathname = rawBasePathname ? normalizeBasePathname(rawBasePathname) : '';
 
     if (!basePathname) {
       return {

@@ -538,6 +538,61 @@ describe('FlowRoute', () => {
     }
   });
 
+  it('should bridge existing FlowModel when behavior is notFound and routeRepository has no route', async () => {
+    const engine = new FlowEngine();
+    engine.setModelRepository({
+      findOne: vi.fn().mockResolvedValue({
+        uid: 'public-form-1',
+        use: 'FlowModel',
+      }),
+      save: vi.fn(),
+      destroy: vi.fn(),
+    } as any);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => undefined),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const layoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'public-form-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/public-forms/public-form-1']}>
+          <Routes>
+            <Route
+              path="/public-forms/:name"
+              element={<FlowRoute legacyPageBehavior="notFound" getLayoutModel={() => layoutModel} />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(layoutModel.registerRoutePage).toHaveBeenCalledWith('public-form-1', expect.any(Object));
+    });
+    expect(screen.queryByText('404')).not.toBeInTheDocument();
+  });
+
   it('should bridge legacy page when behavior is bridge', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();

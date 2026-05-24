@@ -28,6 +28,12 @@ const assertNonEmptyString = (value: unknown, fieldName: string) => {
   }
 };
 
+const assertString = (value: unknown, fieldName: string) => {
+  if (typeof value !== 'string') {
+    throw new Error(`[NocoBase] layoutManager.registerLayout() requires '${fieldName}' to be a string.`);
+  }
+};
+
 const assertOptionalNonEmptyString = (value: unknown, fieldName: string) => {
   if (value !== undefined) {
     assertNonEmptyString(value, fieldName);
@@ -57,7 +63,7 @@ export function normalizeLayoutRoutePath(routeName: string, routePath: string) {
     ? trimmed.replace(/^\/+/, '').replace(/\/+$/, '')
     : `/${trimmed.replace(/^\/+/, '').replace(/\/+$/, '')}`;
 
-  if (!normalized || normalized === '/') {
+  if (!isNestedRoute && (!normalized || normalized === '/')) {
     throw new Error(`[NocoBase] layoutManager.registerLayout() does not support root routePath '/'.`);
   }
 
@@ -70,7 +76,7 @@ export function normalizeLayoutRoutePath(routeName: string, routePath: string) {
 
 function normalizeLayoutDefinition(options: LayoutRegisterOptions): LayoutDefinition {
   assertNonEmptyString(options.routeName, 'routeName');
-  assertNonEmptyString(options.routePath, 'routePath');
+  assertString(options.routePath, 'routePath');
   assertNonEmptyString(options.uid, 'uid');
   assertNonEmptyString(options.layoutModelClass, 'layoutModelClass');
   assertOptionalNonEmptyString(options.rootPageModelClass, 'rootPageModelClass');

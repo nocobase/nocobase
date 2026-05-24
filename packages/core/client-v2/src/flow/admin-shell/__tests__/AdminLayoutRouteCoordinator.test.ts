@@ -405,6 +405,57 @@ describe('AdminLayoutRouteCoordinator', () => {
     ).toEqual([{ viewUid: 'form-1' }, { viewUid: 'popup' }]);
   });
 
+  it('parses view stack for empty nested routePath from runtime basePathname', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: 'form-1' },
+        pathname: '/admin/settings/public-forms/form-1/view/popup/filterbytk/member',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    mockResolveViewParamsToViewList.mockReturnValue([]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, {
+      layout: {
+        routeName: 'admin.settings.publicForms.layout',
+        routePath: '',
+        rootRouteName: 'admin',
+        uid: 'public-form-layout-model',
+        layoutModelClass: 'PublicFormLayoutModel',
+        rootPageModelClass: 'RootPageModel',
+        childPageModelClass: 'ChildPageModel',
+        authCheck: true,
+      },
+    });
+    coordinator.registerPage('form-1', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      layoutRouteName: 'admin.settings.publicForms.layout',
+      params: { name: 'form-1' },
+      pathname: '/admin/settings/public-forms/form-1/view/popup/filterbytk/member',
+      layoutBasePathname: '/admin/settings/public-forms',
+    });
+
+    expect(mockResolveViewParamsToViewList).toHaveBeenCalledWith(
+      engine,
+      [{ viewUid: 'form-1' }, { viewUid: 'popup', filterByTk: 'member' }],
+      expect.anything(),
+    );
+  });
+
   it('does not parse relative layout routePath without runtime basePathname', () => {
     expect(
       toViewStack('/admin/settings/public-forms/form-1/view/popup', {

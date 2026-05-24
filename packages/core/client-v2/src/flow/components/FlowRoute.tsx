@@ -58,6 +58,15 @@ const getDefaultLegacyPageBehavior = (flowEngine: FlowEngine, contextLayout?: an
   return 'redirect';
 };
 
+const hasFlowModel = async (flowEngine: FlowEngine, pageUid: string) => {
+  if (flowEngine.getModel(pageUid)) {
+    return true;
+  }
+
+  const model = await flowEngine.loadModel({ uid: pageUid }).catch(() => null);
+  return !!model;
+};
+
 const BridgeFlowRoute = ({
   pageUid,
   active,
@@ -179,7 +188,10 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
 
       const route = routeRepository?.getRouteBySchemaUid?.(pageUid);
       if (!route && legacyPageBehavior === 'notFound') {
-        setGuardState({ pending: false, allowBridge: false, notFound: true });
+        const flowModelExists = await hasFlowModel(flowEngine, pageUid);
+        if (active && requestId === requestIdRef.current) {
+          setGuardState({ pending: false, allowBridge: flowModelExists, notFound: !flowModelExists });
+        }
         return;
       }
 
@@ -229,7 +241,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     return () => {
       active = false;
     };
-  }, [app, legacyPageBehavior, pageUid, routeRepository]);
+  }, [app, flowEngine, legacyPageBehavior, pageUid, routeRepository]);
 
   const content = useMemo(() => {
     if (guardState.pending) {

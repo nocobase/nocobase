@@ -9,11 +9,13 @@
 
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Plugin } from '@nocobase/server';
-import { parseAssociationNames } from './hook';
+import { fillParentFields, parseAssociationNames } from './hook';
 
 class PasswordError extends Error {}
 
 export class PluginPublicFormsServer extends Plugin {
+  protected associationFieldTypes = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'];
+
   async parseCollectionData(dataSourceKey, formCollection, appends) {
     const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
     const collection = dataSource.collectionManager.getCollection(formCollection);
@@ -30,7 +32,7 @@ export class PluginPublicFormsServer extends Plugin {
     ];
     return collections.concat(
       appends.map((v) => {
-        const targetCollection = this.db.getCollection(v);
+        const targetCollection = dataSource.collectionManager.getCollection(v);
         return {
           ...targetCollection.options,
           fields: targetCollection.getFields().map((v) => {
@@ -41,6 +43,63 @@ export class PluginPublicFormsServer extends Plugin {
         };
       }),
     );
+  }
+
+  async getFlowModelTree(uid: string) {
+    const repository = this.db.getCollection('flowModels')?.repository as any;
+
+    if (!repository?.findModelById) {
+      return null;
+    }
+
+    return repository.findModelById(uid, { includeAsyncNode: true }).catch(() => null);
+  }
+
+  getSchemaAssociationAppends(dataSourceKey: string, collectionName: string, schema: any) {
+    if (!schema?.properties?.form) {
+      return [];
+    }
+
+    const { getAssociationAppends } = parseAssociationNames(dataSourceKey, collectionName, this.app, schema);
+    return getAssociationAppends().appends || [];
+  }
+
+  getFlowModelAssociationAppends(dataSourceKey: string, collectionName: string, flowModel: any) {
+    const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+    const appends = new Set<string>();
+
+    const traverse = (node: any) => {
+      if (!node || typeof node !== 'object') {
+        return;
+      }
+
+      const init = node.stepParams?.fieldSettings?.init;
+      const fieldDataSourceKey = init?.dataSourceKey || dataSourceKey;
+      const fieldCollectionName = init?.collectionName || collectionName;
+      const fieldPath = init?.fieldPath;
+
+      if (fieldDataSourceKey === dataSourceKey && fieldCollectionName && fieldPath) {
+        const collection = dataSource.collectionManager.getCollection(fieldCollectionName);
+        const fieldName = String(fieldPath).split('.')[0];
+        const collectionField = collection?.getField(fieldName);
+
+        if (collectionField && this.associationFieldTypes.includes(collectionField.type) && collectionField.target) {
+          appends.add(collectionField.target);
+        }
+      }
+
+      Object.values(node.subModels || {}).forEach((subModel: any) => {
+        if (Array.isArray(subModel)) {
+          subModel.forEach(traverse);
+          return;
+        }
+        traverse(subModel);
+      });
+    };
+
+    traverse(flowModel);
+
+    return [...fillParentFields(appends)];
   }
 
   async getMetaByTk(filterByTk: string, options: { password?: string; token?: string }) {
@@ -74,9 +133,16 @@ export class PluginPublicFormsServer extends Plugin {
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
     const title = instance.get('title');
-    const schema = await uiSchema.getJsonSchema(filterByTk);
-    const { getAssociationAppends } = parseAssociationNames(dataSourceKey, collectionName, this.app, schema);
-    const { appends } = getAssociationAppends();
+    const [schema, flowModel] = await Promise.all([
+      uiSchema.getJsonSchema(filterByTk).catch(() => null),
+      this.getFlowModelTree(filterByTk),
+    ]);
+    const appends = [
+      ...new Set([
+        ...this.getSchemaAssociationAppends(dataSourceKey, collectionName, schema),
+        ...this.getFlowModelAssociationAppends(dataSourceKey, collectionName, flowModel),
+      ]),
+    ];
     const collections = await this.parseCollectionData(dataSourceKey, collectionName, appends);
     return {
       dataSource: {
@@ -95,6 +161,7 @@ export class PluginPublicFormsServer extends Plugin {
         },
       ),
       schema,
+      flowModel,
       title,
     };
   }

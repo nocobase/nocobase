@@ -99,6 +99,39 @@ describe('LayoutManager', () => {
     });
   });
 
+  it('registers nested layout route with empty routePath', () => {
+    const { manager, routes } = createManager();
+
+    const layout = manager.registerLayout({
+      routeName: 'admin.settings.publicForms.layout',
+      routePath: '',
+      uid: 'public-form-layout-model',
+      layoutModelClass: 'PublicFormLayoutModel',
+    });
+
+    expect(layout).toMatchObject({
+      routeName: 'admin.settings.publicForms.layout',
+      routePath: '',
+      rootRouteName: 'admin',
+    });
+    expect(routes['admin.settings.publicForms.layout']).toMatchObject({
+      path: '',
+      authCheck: true,
+    });
+    expect(routes['admin.settings.publicForms.layout.__page']).toMatchObject({
+      path: ':name',
+      authCheck: true,
+    });
+    expect(routes['admin.settings.publicForms.layout.__pageTab']).toMatchObject({
+      path: ':name/tab/:tabUid',
+      authCheck: true,
+    });
+    expect(routes['admin.settings.publicForms.layout.__pageView']).toMatchObject({
+      path: ':name/view/*',
+      authCheck: true,
+    });
+  });
+
   it('matches nested layout under existing parent route tree', () => {
     const app: any = {
       renderComponent: vi.fn(),
@@ -132,6 +165,43 @@ describe('LayoutManager', () => {
       'admin.settings',
       'admin.settings.publicForms',
       'admin.settings.publicForms.__pageView',
+    ]);
+  });
+
+  it('matches empty routePath layout under existing parent route tree', () => {
+    const app: any = {
+      renderComponent: vi.fn(),
+    };
+    app.router = new RouterManager({}, app);
+    const manager = new LayoutManager(app);
+
+    app.router.add('admin', {
+      path: '/admin',
+      element: <div />,
+    });
+    app.router.add('admin.settings', {
+      path: '/admin/settings',
+      element: <div />,
+    });
+    app.router.add('admin.settings.publicForms', {
+      path: '/admin/settings/public-forms',
+      element: <div />,
+    });
+    manager.registerLayout({
+      routeName: 'admin.settings.publicForms.layout',
+      routePath: '',
+      uid: 'public-form-layout-model',
+      layoutModelClass: 'PublicFormLayoutModel',
+    });
+
+    const matches = matchRoutes(app.router.getRoutesTree(), '/admin/settings/public-forms/form-1/view/popup');
+
+    expect(matches?.map((match) => match.route.id)).toEqual([
+      'admin',
+      'admin.settings',
+      'admin.settings.publicForms',
+      'admin.settings.publicForms.layout',
+      'admin.settings.publicForms.layout.__pageView',
     ]);
   });
 
@@ -172,6 +242,14 @@ describe('LayoutManager', () => {
         routePath: '/',
         uid: 'root-layout-model',
         layoutModelClass: 'RootLayoutModel',
+      }),
+    ).toThrowError(/root routePath/);
+    expect(() =>
+      manager.registerLayout({
+        routeName: 'emptyRoot',
+        routePath: '',
+        uid: 'empty-root-layout-model',
+        layoutModelClass: 'EmptyRootLayoutModel',
       }),
     ).toThrowError(/root routePath/);
     expect(() =>
