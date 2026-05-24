@@ -4356,6 +4356,9 @@ ctx.render(React.createElement(DashboardKPIs));
       reimbursement_requests: makeCollection('reimbursement_requests', [
         { name: 'request_status', type: 'string', interface: 'select' },
       ]),
+      intelligenceItems: makeCollection('intelligenceItems', [
+        { name: 'occurDate', type: 'date', interface: 'datetime' },
+      ]),
       claims: makeCollection('claims', [
         { name: 'review_status', type: 'string', interface: 'select' },
         { name: 'claim_category', type: 'string', interface: 'select' },
@@ -4608,6 +4611,23 @@ ctx.render(React.createElement(DashboardKPIs));
             },
           },
           {
+            key: 'helperForwardedInvalidDateRangeObject',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                'async function countRecords(collectionName, filter) {',
+                "  const resource = ctx.makeResource('MultiRecordResource');",
+                '  resource.setResourceName(collectionName);',
+                '  if (filter) resource.setFilter(filter);',
+                '  await resource.refresh();',
+                '  return resource.getMeta?.()?.count ?? 0;',
+                '}',
+                "await countRecords('intelligenceItems', { occurDate: { $dateOn: { $dateTo: 'now', $dateFrom: '-7d' } } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
             key: 'topLevelNotWrapper',
             type: 'jsBlock',
             settings: {
@@ -4702,6 +4722,16 @@ ctx.render(React.createElement(DashboardKPIs));
           ruleId: 'runjs-resource-collection-unknown',
           details: expect.objectContaining({
             collectionName: 'missing_collection',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-date-range-object-invalid',
+          details: expect.objectContaining({
+            collectionName: 'intelligenceItems',
+            fieldPath: 'occurDate',
+            operator: '$dateOn',
+            unsupportedKeys: ['$dateTo', '$dateFrom'],
+            suggestedValue: { type: 'past', number: 7, unit: 'day' },
           }),
         }),
       ]),

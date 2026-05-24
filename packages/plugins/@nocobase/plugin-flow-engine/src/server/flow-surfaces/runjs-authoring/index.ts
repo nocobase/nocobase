@@ -16,6 +16,7 @@ import { Op } from 'sequelize';
 import type { FlowSurfaceErrorItemInput } from '../errors';
 import {
   getCollectionFields,
+  getFieldInterface,
   getCollectionName,
   getFieldName,
   getFieldType,
@@ -206,13 +207,18 @@ type RunJsAstInspection = {
     capability: string;
     collectionName?: string;
     dataSourceKey?: string;
+    fieldInterface?: string;
     fieldPath?: string;
+    fieldType?: string;
     index: number;
     message: string;
     operator?: string;
     resourceType?: FlowResourceInstanceType;
     ruleId: string;
+    unsupportedKeys?: string[];
     suggestedOperator?: string;
+    suggestedValue?: any;
+    examples?: Record<string, any>;
   }>;
   nestedRunjsCalls: Array<{
     capability: string;
@@ -521,6 +527,16 @@ const MAX_RUNJS_TOTAL_SOURCE_LENGTH = 256 * 1024;
 const MAX_RUNJS_SOURCES_PER_REQUEST = 100;
 const MAX_RUNJS_ERRORS_PER_SOURCE = 20;
 const RUNJS_SUPPORTED_FILTER_OPERATORS = buildRunJsSupportedFilterOperators();
+const RUNJS_DATE_FILTER_OPERATORS = new Set([
+  '$dateOn',
+  '$dateNotOn',
+  '$dateBefore',
+  '$dateAfter',
+  '$dateNotBefore',
+  '$dateNotAfter',
+  '$dateBetween',
+]);
+const RUNJS_UNSUPPORTED_DATE_RANGE_VALUE_KEYS = new Set(['$dateFrom', '$dateTo']);
 const FLOW_RESOURCE_CLASS_NAMES = new Set([
   'FlowResource',
   'APIResource',
@@ -1995,9 +2011,14 @@ function collectResourceRuntimeErrors(
           resourceType: entry.resourceType,
           dataSourceKey: entry.dataSourceKey,
           collectionName: entry.collectionName,
+          fieldInterface: entry.fieldInterface,
           fieldPath: entry.fieldPath,
+          fieldType: entry.fieldType,
           operator: entry.operator,
+          unsupportedKeys: entry.unsupportedKeys,
           suggestedOperator: entry.suggestedOperator,
+          suggestedValue: entry.suggestedValue,
+          examples: entry.examples,
           availableFields: entry.availableFields,
         },
       }),
@@ -4818,7 +4839,267 @@ function collectAstInvalidResourceFilterCalls(
       );
     });
 
+  entries.push(
+    ...collectAstForwardedResourceFilterArgumentErrors({
+      ast,
+      source,
+      identifierBindings,
+      stringBindings,
+      context,
+    }),
+  );
+
   return entries;
+}
+
+function collectAstForwardedResourceFilterArgumentErrors(input: {
+  ast: any;
+  source: string;
+  identifierBindings: AstIdentifierBinding[];
+  stringBindings: StaticStringBinding[];
+  context: RunJsAuthoringContext;
+}): RunJsAstInspection['invalidResourceFilterCalls'] {
+  const helpers = collectAstResourceFilterHelpers(input.ast, input.source, input.identifierBindings);
+  if (!helpers.length) {
+    return [];
+  }
+
+  const errors: RunJsAstInspection['invalidResourceFilterCalls'] = [];
+  walkAstAncestor(input.ast, {
+    CallExpression(node: any) {
+      const callee = unwrapAstChainExpression(node.callee);
+      if (callee?.type !== 'Identifier') {
+        return;
+      }
+      const helper = resolveAstAliasBinding(callee.name, node.start || 0, helpers, input.identifierBindings);
+      if (!helper) {
+        return;
+      }
+
+      const filterArg = unwrapAstChainExpression(node.arguments?.[helper.filterParamIndex]);
+      if (filterArg?.type !== 'ObjectExpression') {
+        return;
+      }
+
+      const collectionName =
+        helper.collectionName ||
+        resolveAstResourceFilterHelperCollectionName(
+          helper,
+          node.arguments,
+          input.source,
+          input.stringBindings,
+          input.identifierBindings,
+        );
+      if (!collectionName) {
+        return;
+      }
+
+      errors.push(
+        ...collectAstResourceFilterObjectErrors({
+          source: input.source,
+          path: '',
+          capability: `${helper.name}.setFilter`,
+          dataSourceKey: helper.dataSourceKey || 'main',
+          collectionName,
+          resourceType: helper.resourceType || 'unknown',
+          filterObject: filterArg,
+          context: input.context,
+          index: typeof filterArg.start === 'number' ? filterArg.start : node.start || 0,
+        }),
+      );
+    },
+  });
+  return errors;
+}
+
+type AstResourceFilterHelper = SourceRange & {
+  collectionName?: string;
+  collectionParamIndex?: number;
+  dataSourceKey?: string;
+  declarationStart?: number;
+  filterParamIndex: number;
+  name: string;
+  resourceType?: FlowResourceInstanceType;
+};
+
+type AstResourceFilterHelperResourceState = {
+  collectionName: string;
+  collectionParamNames: Set<string>;
+  dataSourceKey: string;
+  filterParamNames: Set<string>;
+  resourceType?: FlowResourceInstanceType;
+};
+
+function collectAstResourceFilterHelpers(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): AstResourceFilterHelper[] {
+  const helpers: AstResourceFilterHelper[] = [];
+  const addHelper = (name: string, functionNode: any, bindingNode: any, scope: SourceRange) => {
+    if (!name || !functionNode?.params?.length) {
+      return;
+    }
+    const paramNames = functionNode.params.map(getAstBindingIdentifierName);
+    const resourceStates = new Map<string, AstResourceFilterHelperResourceState>();
+    const isInsideNestedFunction = (ancestors: any[]) =>
+      ancestors.some((ancestor) => ancestor !== functionNode.body && isAstFunctionLike(ancestor));
+    const ensureResourceState = (
+      name: string,
+      factory?: AstFlowResourceSource,
+    ): AstResourceFilterHelperResourceState | undefined => {
+      if (!name) {
+        return undefined;
+      }
+      const existing = resourceStates.get(name);
+      if (existing) {
+        if (factory?.resourceType) {
+          existing.resourceType = factory.resourceType;
+        }
+        return existing;
+      }
+      const state: AstResourceFilterHelperResourceState = {
+        collectionName: '',
+        collectionParamNames: new Set(),
+        dataSourceKey: 'main',
+        filterParamNames: new Set(),
+        resourceType: factory?.resourceType,
+      };
+      resourceStates.set(name, state);
+      return state;
+    };
+    const getResourceStateForMember = (memberExpression: any): AstResourceFilterHelperResourceState | undefined => {
+      const object = unwrapAstChainExpression(memberExpression?.object);
+      if (object?.type !== 'Identifier') {
+        return undefined;
+      }
+      return resourceStates.get(object.name);
+    };
+    const collectResourceAlias = (aliasName: string, sourceNode: any) => {
+      const factory = getAstFlowResourceFactoryCallFromAst(sourceNode, [], source, [], identifierBindings);
+      if (factory) {
+        ensureResourceState(aliasName, factory);
+      }
+    };
+
+    walkAstAncestor(functionNode.body || functionNode, {
+      AssignmentExpression(node: any, ancestors: any[]) {
+        if (isInsideNestedFunction(ancestors) || node.left?.type !== 'Identifier') {
+          return;
+        }
+        collectResourceAlias(node.left.name, node.right);
+      },
+      CallExpression(node: any, ancestors: any[]) {
+        if (isInsideNestedFunction(ancestors)) {
+          return;
+        }
+        const callee = unwrapAstChainExpression(node.callee);
+        if (callee?.type !== 'MemberExpression') {
+          return;
+        }
+        const resourceState = getResourceStateForMember(callee);
+        if (!resourceState) {
+          return;
+        }
+        const method = getAstStaticPropertyName(callee);
+        if (method === 'setFilter') {
+          const arg = unwrapAstChainExpression(node.arguments?.[0]);
+          if (arg?.type === 'Identifier' && paramNames.includes(arg.name)) {
+            resourceState.filterParamNames.add(arg.name);
+          }
+          return;
+        }
+        if (method === 'setResourceName') {
+          const arg = unwrapAstChainExpression(node.arguments?.[0]);
+          if (arg?.type === 'Identifier' && paramNames.includes(arg.name)) {
+            resourceState.collectionParamNames.add(arg.name);
+            return;
+          }
+          const resolved = resolveAstStaticStringValue(arg, source);
+          if (typeof resolved === 'string') {
+            resourceState.collectionName = resolved;
+          }
+          return;
+        }
+        if (method === 'setDataSourceKey') {
+          const resolved = resolveAstStaticStringValue(node.arguments?.[0], source);
+          if (typeof resolved === 'string') {
+            resourceState.dataSourceKey = resolved;
+          }
+        }
+      },
+      VariableDeclarator(node: any, ancestors: any[]) {
+        if (isInsideNestedFunction(ancestors) || node.id?.type !== 'Identifier') {
+          return;
+        }
+        collectResourceAlias(node.id.name, node.init);
+      },
+    });
+
+    for (const state of resourceStates.values()) {
+      state.filterParamNames.forEach((filterParamName) => {
+        const filterParamIndex = paramNames.indexOf(filterParamName);
+        if (filterParamIndex < 0) {
+          return;
+        }
+        const collectionParamIndex = Array.from(state.collectionParamNames)
+          .map((paramName) => paramNames.indexOf(paramName))
+          .find((index) => index >= 0);
+        helpers.push({
+          collectionName: state.collectionName,
+          collectionParamIndex,
+          dataSourceKey: state.dataSourceKey,
+          declarationStart: typeof bindingNode?.start === 'number' ? bindingNode.start : scope.start,
+          filterParamIndex,
+          name,
+          resourceType: state.resourceType,
+          start: scope.start,
+          end: scope.end,
+        });
+      });
+    }
+  };
+
+  walkAstAncestor(ast, {
+    FunctionDeclaration(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier') {
+        return;
+      }
+      addHelper(node.id.name, node, node.id, getAstBindingScopeRange(ancestors.slice(0, -1), source.length));
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier' || !isAstFunctionLike(unwrapAstChainExpression(node.init))) {
+        return;
+      }
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      addHelper(
+        node.id.name,
+        unwrapAstChainExpression(node.init),
+        node.id,
+        getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var'),
+      );
+    },
+  });
+
+  return helpers;
+}
+
+function resolveAstResourceFilterHelperCollectionName(
+  helper: AstResourceFilterHelper,
+  args: any[],
+  source: string,
+  stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  if (typeof helper.collectionParamIndex !== 'number') {
+    return '';
+  }
+  const arg = args?.[helper.collectionParamIndex];
+  if (!arg) {
+    return '';
+  }
+  const resolved = resolveAstResourceTypeExpression(arg, source, stringBindings, identifierBindings);
+  return resolved.status === 'resolved' ? resolved.value : '';
 }
 
 function collectAstResourceFilterObjectErrors(input: {
@@ -4997,6 +5278,10 @@ function collectAstResourceFilterValueObjectErrors(input: {
     }
     if (key.startsWith('$')) {
       collectAstResourceFilterOperatorErrors(key, keyIndex, input).forEach((entry) => errors.push(entry));
+      const invalidDateValue = buildRunJsResourceDateFilterValueError(key, keyIndex, property.value, input);
+      if (invalidDateValue) {
+        errors.push(invalidDateValue);
+      }
       continue;
     }
     if (!isAssociationField(input.field)) {
@@ -5101,6 +5386,163 @@ function buildRunJsResourceFilterOperatorError(
     resourceType: input.resourceType,
     ruleId: 'runjs-resource-filter-operator-invalid',
   };
+}
+
+function buildRunJsResourceDateFilterValueError(
+  operator: string,
+  index: number,
+  valueNode: any,
+  input: {
+    capability: string;
+    collectionName: string;
+    dataSourceKey: string;
+    field: any;
+    fieldPath: string;
+    resourceType: FlowResourceInstanceType;
+    source: string;
+  },
+): RunJsAstInspection['invalidResourceFilterCalls'][number] | null {
+  const valueObject = unwrapAstChainExpression(valueNode);
+  if (!isRunJsDateFilterOperator(operator) || valueObject?.type !== 'ObjectExpression') {
+    return null;
+  }
+  const unsupportedKeys = collectRunJsUnsupportedDateRangeValueKeys(valueObject);
+  if (!unsupportedKeys.length) {
+    return null;
+  }
+  const suggestedValue = buildSuggestedRunJsDateRangeValue(valueObject, input.source);
+  const relativeExample = suggestedValue || { type: 'past', number: 7, unit: 'day' };
+  const examples = {
+    relativePeriod: {
+      [input.fieldPath]: {
+        [operator]: relativeExample,
+      },
+    },
+    explicitRange: {
+      [input.fieldPath]: {
+        $dateBetween: ['YYYY-MM-DD', 'YYYY-MM-DD'],
+      },
+    },
+  };
+  const suggestedText = suggestedValue
+    ? `use ${operator}: ${JSON.stringify(suggestedValue)} for this relative period`
+    : `use a frontend relative period object such as ${JSON.stringify(relativeExample)}`;
+  const fieldType = String(getFieldType(input.field) || '').trim();
+  const fieldInterface = String(getFieldInterface(input.field) || '').trim();
+  return {
+    capability: input.capability,
+    collectionName: input.collectionName,
+    dataSourceKey: input.dataSourceKey,
+    examples,
+    fieldPath: input.fieldPath,
+    index,
+    message: `flowSurfaces authoring ${input.capability}(...) uses invalid date filter value for field '${
+      input.fieldPath
+    }' with operator '${operator}': ${unsupportedKeys.join(
+      ', ',
+    )} are not supported FlowResource date filter keys. ${suggestedText}, or use $dateBetween with ["YYYY-MM-DD", "YYYY-MM-DD"].`,
+    operator,
+    resourceType: input.resourceType,
+    ruleId: 'runjs-resource-filter-date-range-object-invalid',
+    suggestedOperator: operator === '$dateBetween' ? '$dateBetween' : operator,
+    suggestedValue: relativeExample,
+    unsupportedKeys,
+    fieldType,
+    fieldInterface,
+  };
+}
+
+function isRunJsDateFilterOperator(operator: string) {
+  return RUNJS_DATE_FILTER_OPERATORS.has(String(operator || '').trim());
+}
+
+function collectRunJsUnsupportedDateRangeValueKeys(objectExpression: any) {
+  const keys: string[] = [];
+  for (const property of objectExpression.properties || []) {
+    if (!property || property.type === 'SpreadElement') {
+      continue;
+    }
+    const key = getAstStaticPropertyName(property);
+    if (RUNJS_UNSUPPORTED_DATE_RANGE_VALUE_KEYS.has(key)) {
+      keys.push(key);
+    }
+  }
+  return keys;
+}
+
+function buildSuggestedRunJsDateRangeValue(objectExpression: any, source: string) {
+  const values: Record<string, string> = {};
+  for (const property of objectExpression.properties || []) {
+    if (!property || property.type === 'SpreadElement') {
+      continue;
+    }
+    const key = getAstStaticPropertyName(property);
+    if (!RUNJS_UNSUPPORTED_DATE_RANGE_VALUE_KEYS.has(key)) {
+      continue;
+    }
+    const value = resolveAstStaticStringValue(property.value, source);
+    if (typeof value === 'string') {
+      values[key] = value.trim();
+    }
+  }
+
+  const from = values.$dateFrom;
+  const to = values.$dateTo;
+  const fromOffset = parseRunJsRelativeDateOffset(from);
+  const toOffset = parseRunJsRelativeDateOffset(to);
+  if (to === 'now' && fromOffset?.direction === 'past') {
+    return {
+      type: 'past',
+      number: fromOffset.number,
+      unit: fromOffset.unit,
+    };
+  }
+  if (from === 'now' && toOffset?.direction === 'next') {
+    return {
+      type: 'next',
+      number: toOffset.number,
+      unit: toOffset.unit,
+    };
+  }
+  return undefined;
+}
+
+function parseRunJsRelativeDateOffset(value: string | undefined) {
+  const match = String(value || '')
+    .trim()
+    .match(/^([+-])\s*(\d+)\s*(d|day|days|w|week|weeks|m|mo|month|months|q|quarter|quarters|y|year|years)$/i);
+  if (!match) {
+    return null;
+  }
+  const unit = normalizeRunJsRelativeDateUnit(match[3]);
+  if (!unit) {
+    return null;
+  }
+  return {
+    direction: match[1] === '-' ? 'past' : 'next',
+    number: Number(match[2]),
+    unit,
+  };
+}
+
+function normalizeRunJsRelativeDateUnit(value: string): 'day' | 'week' | 'month' | 'quarter' | 'year' | '' {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized === 'd' || normalized === 'day' || normalized === 'days') {
+    return 'day';
+  }
+  if (normalized === 'w' || normalized === 'week' || normalized === 'weeks') {
+    return 'week';
+  }
+  if (normalized === 'm' || normalized === 'mo' || normalized === 'month' || normalized === 'months') {
+    return 'month';
+  }
+  if (normalized === 'q' || normalized === 'quarter' || normalized === 'quarters') {
+    return 'quarter';
+  }
+  if (normalized === 'y' || normalized === 'year' || normalized === 'years') {
+    return 'year';
+  }
+  return '';
 }
 
 function buildRunJsResourceFilterFieldError(input: {
@@ -6537,7 +6979,10 @@ function isSameAstRange(left: SourceRange, right: SourceRange) {
 
 function isAstFunctionLike(node: any) {
   return (
-    node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression'
+    !!node &&
+    (node.type === 'FunctionDeclaration' ||
+      node.type === 'FunctionExpression' ||
+      node.type === 'ArrowFunctionExpression')
   );
 }
 
