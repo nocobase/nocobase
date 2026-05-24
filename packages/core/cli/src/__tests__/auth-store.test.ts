@@ -205,6 +205,16 @@ test('cli config stores explicit settings under settings', async () => {
   });
 });
 
+test('cli config stores explicit locale under settings', async () => {
+  await withTempCliHome(async () => {
+    const locale = await setCliConfigValue('locale', 'zh', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(locale).toBe('zh-CN');
+    expect(config.settings?.locale).toBe('zh-CN');
+  });
+});
+
 test('cli config stores explicit binary overrides under settings', async () => {
   await withTempCliHome(async () => {
     const dockerBin = await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
@@ -259,16 +269,19 @@ test('cli config reads docker defaults from legacy name when explicit settings a
 
 test('cli config list and delete only affect explicit settings', async () => {
   await withTempCliHome(async () => {
+    await setCliConfigValue('locale', 'zh-CN', { scope: 'global' });
     await setCliConfigValue('license.pkg-url', 'https://pkg.example.com', { scope: 'global' });
     await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
     await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
 
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
+      locale: 'zh-CN',
       'license.pkg-url': 'https://pkg.example.com/',
       'docker.network': 'nocobase-team',
       'bin.docker': '/usr/local/bin/docker',
     });
 
+    expect(await deleteCliConfigValue('locale', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('docker.container-prefix', { scope: 'global' })).toBe(false);
     expect(await deleteCliConfigValue('docker.network', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('bin.docker', { scope: 'global' })).toBe(true);
@@ -283,6 +296,24 @@ test('cli config returns default binary names when bin overrides are not configu
     expect(await getCliConfigValue('bin.docker', { scope: 'global' })).toBe('docker');
     expect(await getCliConfigValue('bin.git', { scope: 'global' })).toBe('git');
     expect(await getCliConfigValue('bin.yarn', { scope: 'global' })).toBe('yarn');
+  });
+});
+
+test('cli config locale can be overridden by NB_LOCALE', async () => {
+  await withTempCliHome(async () => {
+    const previousLocale = process.env.NB_LOCALE;
+    await setCliConfigValue('locale', 'zh-CN', { scope: 'global' });
+    process.env.NB_LOCALE = 'en-US';
+
+    try {
+      expect(await getCliConfigValue('locale', { scope: 'global' })).toBe('en-US');
+    } finally {
+      if (previousLocale === undefined) {
+        delete process.env.NB_LOCALE;
+      } else {
+        process.env.NB_LOCALE = previousLocale;
+      }
+    }
   });
 });
 

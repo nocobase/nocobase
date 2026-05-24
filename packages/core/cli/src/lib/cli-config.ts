@@ -10,6 +10,7 @@
 import type { AuthConfig, AuthStoreOptions } from './auth-store.js';
 import { loadExactAuthConfig, saveAuthConfig } from './auth-store.js';
 import { resolveDefaultConfigScope } from './cli-home.js';
+import { CLI_LOCALE_FLAG_OPTIONS, normalizeCliLocale, resolveCliLocale } from './cli-locale.js';
 
 export const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
 export const DEFAULT_DOCKER_NETWORK = 'nocobase';
@@ -19,6 +20,7 @@ export const DEFAULT_GIT_BIN = 'git';
 export const DEFAULT_YARN_BIN = 'yarn';
 
 export const SUPPORTED_CLI_CONFIG_KEYS = [
+  'locale',
   'license.pkg-url',
   'docker.network',
   'docker.container-prefix',
@@ -55,6 +57,7 @@ export function assertSupportedCliConfigKey(value: string): SupportedCliConfigKe
 
 function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> {
   return {
+    ...(config.settings?.locale ? { locale: trimValue(config.settings.locale) } : {}),
     license: config.settings?.license ? { ...config.settings.license } : undefined,
     docker: config.settings?.docker ? { ...config.settings.docker } : undefined,
     bin: config.settings?.bin ? { ...config.settings.bin } : undefined,
@@ -62,6 +65,10 @@ function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> 
 }
 
 function pruneSettings(config: AuthConfig): void {
+  if (config.settings && !trimValue(config.settings.locale)) {
+    delete config.settings.locale;
+  }
+
   const license = config.settings?.license;
   if (license && !trimValue(license.pkgUrl)) {
     delete config.settings?.license;
@@ -77,13 +84,21 @@ function pruneSettings(config: AuthConfig): void {
     delete config.settings?.bin;
   }
 
-  if (config.settings && !config.settings.license && !config.settings.docker && !config.settings.bin) {
+  if (
+    config.settings &&
+    !config.settings.locale &&
+    !config.settings.license &&
+    !config.settings.docker &&
+    !config.settings.bin
+  ) {
     delete config.settings;
   }
 }
 
 export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliConfigKey): string | undefined {
   switch (key) {
+    case 'locale':
+      return trimValue(config.settings?.locale);
     case 'license.pkg-url':
       return trimValue(config.settings?.license?.pkgUrl);
     case 'docker.network':
@@ -101,11 +116,13 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
 
 export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCliConfigKey): string {
   const explicit = getExplicitCliConfigValue(config, key);
-  if (explicit) {
+  if (explicit && key !== 'locale') {
     return explicit;
   }
 
   switch (key) {
+    case 'locale':
+      return resolveCliLocale(undefined, { configuredLocale: trimValue(config.settings?.locale) });
     case 'license.pkg-url':
       return DEFAULT_LICENSE_PKG_URL;
     case 'docker.network':
@@ -129,6 +146,15 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
 
   if (key === 'license.pkg-url') {
     return normalized.replace(/\/+$/, '') + '/';
+  }
+
+  if (key === 'locale') {
+    const locale = normalizeCliLocale(normalized);
+    if (!locale) {
+      throw new Error(`Config key "${key}" must be one of: ${CLI_LOCALE_FLAG_OPTIONS.join(', ')}`);
+    }
+
+    return locale;
   }
 
   return normalized;
@@ -170,6 +196,9 @@ export async function setCliConfigValue(
   config.settings = cloneSettings(config);
 
   switch (key) {
+    case 'locale':
+      config.settings.locale = normalized;
+      break;
     case 'license.pkg-url':
       config.settings.license = {
         ...(config.settings.license ?? {}),
@@ -227,6 +256,9 @@ export async function deleteCliConfigValue(
   config.settings = cloneSettings(config);
 
   switch (key) {
+    case 'locale':
+      delete config.settings.locale;
+      break;
     case 'license.pkg-url':
       if (config.settings.license) {
         delete config.settings.license.pkgUrl;
