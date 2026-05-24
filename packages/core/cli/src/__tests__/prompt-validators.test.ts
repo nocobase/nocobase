@@ -151,28 +151,59 @@ test('validateEnvKey allows only letters and numbers', () => {
   expect(validateEnvKey('local-dev') ?? '').toMatch(/letters and numbers only/i);
 });
 
-test('validateAvailableTcpPort rejects invalid and occupied ports', async () => {
+test('validateAvailableTcpPort rejects invalid and occupied ports across local bind hosts', async () => {
   expect((await validateAvailableTcpPort('abc')) ?? '').toMatch(/valid TCP port/i);
 
-  const server = net.createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-
-  const address = server.address();
-  expect(address && typeof address === 'object').toBeTruthy();
-  expect((await validateAvailableTcpPort(String(address.port))) ?? '').toMatch(/already in use/i);
-
-  await new Promise<void>((resolve, reject) => {
-    server.close((error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
+  for (const host of ['127.0.0.1', '0.0.0.0'] as const) {
+    const server = net.createServer();
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, host, () => resolve());
     });
-  });
+
+    const address = server.address();
+    expect(address && typeof address === 'object').toBeTruthy();
+    expect((await validateAvailableTcpPort(String(address.port))) ?? '').toMatch(/already in use/i);
+
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
+  const ipv6Server = net.createServer();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      ipv6Server.once('error', reject);
+      ipv6Server.listen(0, '::1', () => resolve());
+    });
+
+    const address = ipv6Server.address();
+    expect(address && typeof address === 'object').toBeTruthy();
+    expect((await validateAvailableTcpPort(String(address.port))) ?? '').toMatch(/already in use/i);
+  } catch (error: unknown) {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined;
+    if (code !== 'EAFNOSUPPORT' && code !== 'EADDRNOTAVAIL') {
+      throw error;
+    }
+  } finally {
+    if (ipv6Server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        ipv6Server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  }
 });
 
 test('findAvailableTcpPort returns a free TCP port', async () => {
