@@ -23,25 +23,26 @@ import type { ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import spawn from 'cross-spawn';
 import { translateCli } from './cli-locale.js';
+import { resolveConfiguredCommandName } from './cli-config.js';
 
 const FORWARDED_SIGNALS: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
 const MISSING_COMMAND_SPECS = {
   docker: {
-    textKey: 'commands.shared.missingCommand.docker',
     displayName: 'Docker',
+    configKey: 'bin.docker',
   },
   git: {
-    textKey: 'commands.shared.missingCommand.git',
     displayName: 'Git',
+    configKey: 'bin.git',
   },
   yarn: {
-    textKey: 'commands.shared.missingCommand.yarn',
     displayName: 'Yarn',
+    configKey: 'bin.yarn',
   },
 } as const;
 
-function resolveCommandName(name: string): string {
-  return name;
+async function resolveCommandName(name: string): Promise<string> {
+  return await resolveConfiguredCommandName(name);
 }
 
 function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
@@ -58,10 +59,10 @@ function createMissingCommandError(name: string, label: string, error: unknown):
   const spec = MISSING_COMMAND_SPECS[name as keyof typeof MISSING_COMMAND_SPECS];
   return new Error(
     translateCli(
-      spec.textKey,
-      { action: label },
+      'commands.shared.missingCommand',
+      { action: label, displayName: spec.displayName, configKey: spec.configKey },
       {
-        fallback: `Couldn't run \`${label}\` because ${spec.displayName} is not installed. Please install ${spec.displayName} and try again.`,
+        fallback: `Couldn't run \`${label}\` because the ${spec.displayName} executable could not be found. Install ${spec.displayName} or update \`nb config set ${spec.configKey} <path>\` and try again.`,
       },
     ),
   );
@@ -124,7 +125,7 @@ export function resolveProjectCwd(cwd?: string): string {
   return current;
 }
 
-export function run(
+export async function run(
   name: string,
   args: string[],
   options?: {
@@ -138,8 +139,8 @@ export function run(
 ): Promise<void> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
-  const command = resolveCommandName(name);
-  return new Promise((resolve, reject) => {
+  const command = await resolveCommandName(name);
+  return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       stdio: options?.stdio ?? 'inherit',
       cwd,
@@ -215,15 +216,15 @@ function forwardSignalsToChild(child: ChildProcess): () => void {
   };
 }
 
-export function commandSucceeds(
+export async function commandSucceeds(
   name: string,
   args: string[],
   options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
 ): Promise<boolean> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
-  const command = resolveCommandName(name);
-  return new Promise((resolve, reject) => {
+  const command = await resolveCommandName(name);
+  return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       cwd,
       env: {
@@ -246,15 +247,15 @@ export function commandSucceeds(
   });
 }
 
-export function commandOutput(
+export async function commandOutput(
   name: string,
   args: string[],
   options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
 ): Promise<string> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
-  const command = resolveCommandName(name);
-  return new Promise((resolve, reject) => {
+  const command = await resolveCommandName(name);
+  return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       cwd,
       env: {
@@ -309,7 +310,7 @@ export async function commandOutputViaFile(
 ): Promise<string> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
-  const command = resolveCommandName(name);
+  const command = await resolveCommandName(name);
   const captureDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-output-'));
   const stdoutPath = path.join(captureDir, 'stdout.log');
   const stderrPath = path.join(captureDir, 'stderr.log');

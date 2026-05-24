@@ -79,6 +79,51 @@ test('nb config set/get/delete updates supported keys', async () => {
   });
 });
 
+test('nb config set/get/delete supports binary override keys', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.docker',
+          value: '/usr/local/bin/docker',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setCommand);
+    expect(setCommand.log).toHaveBeenCalledWith('bin.docker=/usr/local/bin/docker');
+
+    const getCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.docker',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getCommand);
+    expect(getCommand.log).toHaveBeenCalledWith('/usr/local/bin/docker');
+
+    const deleteCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.docker',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteCommand);
+    expect(deleteCommand.log).toHaveBeenCalledWith('Deleted bin.docker');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.bin?.docker).toBe(undefined);
+  });
+});
+
 test('nb config list prints only explicit settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');

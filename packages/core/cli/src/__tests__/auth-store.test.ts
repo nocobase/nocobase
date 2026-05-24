@@ -167,10 +167,14 @@ test('getCurrentEnvName lazily repairs an invalid session env by falling back to
       await mkdir(sessionsDir, { recursive: true });
       await writeFile(
         path.join(sessionsDir, 'test-session.json'),
-        JSON.stringify({
-          currentEnv: 'missing-env',
-          updatedAt: '2026-05-09T00:00:00.000Z',
-        }, null, 2),
+        JSON.stringify(
+          {
+            currentEnv: 'missing-env',
+            updatedAt: '2026-05-09T00:00:00.000Z',
+          },
+          null,
+          2,
+        ),
       );
 
       expect(await getCurrentEnvName({ scope: 'global' })).toBe('next');
@@ -198,6 +202,26 @@ test('cli config stores explicit settings under settings', async () => {
       },
     });
     expect(config.envs).toEqual({});
+  });
+});
+
+test('cli config stores explicit binary overrides under settings', async () => {
+  await withTempCliHome(async () => {
+    const dockerBin = await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
+    const gitBin = await setCliConfigValue('bin.git', '/usr/bin/git', { scope: 'global' });
+    const yarnBin = await setCliConfigValue('bin.yarn', 'yarn-custom', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(dockerBin).toBe('/usr/local/bin/docker');
+    expect(gitBin).toBe('/usr/bin/git');
+    expect(yarnBin).toBe('yarn-custom');
+    expect(config.settings).toEqual({
+      bin: {
+        docker: '/usr/local/bin/docker',
+        git: '/usr/bin/git',
+        yarn: 'yarn-custom',
+      },
+    });
   });
 });
 
@@ -237,17 +261,28 @@ test('cli config list and delete only affect explicit settings', async () => {
   await withTempCliHome(async () => {
     await setCliConfigValue('license.pkg-url', 'https://pkg.example.com', { scope: 'global' });
     await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
+    await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
 
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
       'license.pkg-url': 'https://pkg.example.com/',
       'docker.network': 'nocobase-team',
+      'bin.docker': '/usr/local/bin/docker',
     });
 
     expect(await deleteCliConfigValue('docker.container-prefix', { scope: 'global' })).toBe(false);
     expect(await deleteCliConfigValue('docker.network', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('bin.docker', { scope: 'global' })).toBe(true);
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
       'license.pkg-url': 'https://pkg.example.com/',
     });
+  });
+});
+
+test('cli config returns default binary names when bin overrides are not configured', async () => {
+  await withTempCliHome(async () => {
+    expect(await getCliConfigValue('bin.docker', { scope: 'global' })).toBe('docker');
+    expect(await getCliConfigValue('bin.git', { scope: 'global' })).toBe('git');
+    expect(await getCliConfigValue('bin.yarn', { scope: 'global' })).toBe('yarn');
   });
 });
 
@@ -263,14 +298,21 @@ test('loadAuthConfig ignores legacy project envs and keeps global settings only'
   try {
     const legacyConfigFile = path.join(workspaceDir, '.nocobase', 'config.json');
     await mkdir(path.dirname(legacyConfigFile), { recursive: true });
-    await writeFile(legacyConfigFile, JSON.stringify({
-      currentEnv: 'legacy',
-      envs: {
-        legacy: {
-          source: 'docker',
+    await writeFile(
+      legacyConfigFile,
+      JSON.stringify(
+        {
+          currentEnv: 'legacy',
+          envs: {
+            legacy: {
+              source: 'docker',
+            },
+          },
         },
-      },
-    }, null, 2));
+        null,
+        2,
+      ),
+    );
     await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
     await setCliConfigValue('docker.container-prefix', 'nb-team', { scope: 'global' });
 
@@ -632,14 +674,21 @@ test('loadAuthConfig ignores legacy project config when global config is empty',
   try {
     const legacyConfigFile = path.join(workspaceDir, '.nocobase', 'config.json');
     await mkdir(path.dirname(legacyConfigFile), { recursive: true });
-    await writeFile(legacyConfigFile, JSON.stringify({
-      currentEnv: 'legacy',
-      envs: {
-        legacy: {
-          baseUrl: 'http://localhost:13000/api',
+    await writeFile(
+      legacyConfigFile,
+      JSON.stringify(
+        {
+          currentEnv: 'legacy',
+          envs: {
+            legacy: {
+              baseUrl: 'http://localhost:13000/api',
+            },
+          },
         },
-      },
-    }, null, 2));
+        null,
+        2,
+      ),
+    );
 
     const config = await loadAuthConfig({ scope: 'global' });
     const currentEnv = await getCurrentEnvName({ scope: 'global' });
@@ -675,14 +724,21 @@ test('legacy baseUrl key is still readable but normalized to apiBaseUrl when loa
   await withTempCliHome(async () => {
     const configFile = path.join(resolveCliHomeDir('global'), 'config.json');
     await mkdir(path.dirname(configFile), { recursive: true });
-    await writeFile(configFile, JSON.stringify({
-      currentEnv: 'legacy',
-      envs: {
-        legacy: {
-          baseUrl: 'http://localhost:13000/api',
+    await writeFile(
+      configFile,
+      JSON.stringify(
+        {
+          currentEnv: 'legacy',
+          envs: {
+            legacy: {
+              baseUrl: 'http://localhost:13000/api',
+            },
+          },
         },
-      },
-    }, null, 2));
+        null,
+        2,
+      ),
+    );
 
     const config = await loadAuthConfig({ scope: 'global' });
     const env = await getEnv('legacy', { scope: 'global' });
@@ -702,20 +758,29 @@ test('write operations only affect global config and ignore legacy project envs'
     try {
       const legacyConfigPath = path.join(workspaceDir, '.nocobase', 'config.json');
       await mkdir(path.dirname(legacyConfigPath), { recursive: true });
-      await writeFile(legacyConfigPath, JSON.stringify({
-        currentEnv: 'legacy',
-        envs: {
-          legacy: {
-            baseUrl: 'http://localhost:13000/api',
-            auth: {
-              type: 'token',
-              accessToken: 'old-token',
+      await writeFile(
+        legacyConfigPath,
+        JSON.stringify(
+          {
+            currentEnv: 'legacy',
+            envs: {
+              legacy: {
+                baseUrl: 'http://localhost:13000/api',
+                auth: {
+                  type: 'token',
+                  accessToken: 'old-token',
+                },
+              },
             },
           },
-        },
-      }, null, 2));
+          null,
+          2,
+        ),
+      );
 
-      await expect(updateEnvConnection('legacy', { accessToken: 'new-token' }, { scope: 'global' })).resolves.toBeUndefined();
+      await expect(
+        updateEnvConnection('legacy', { accessToken: 'new-token' }, { scope: 'global' }),
+      ).resolves.toBeUndefined();
       await expect(setCurrentEnv('legacy', { scope: 'global' })).resolves.toBeUndefined();
 
       const globalConfig = await loadAuthConfig({ scope: 'global' });

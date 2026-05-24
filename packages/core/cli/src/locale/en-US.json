@@ -117,11 +117,7 @@
       }
     },
     "shared": {
-      "missingCommand": {
-        "docker": "Couldn't run `{{action}}` because Docker is not installed. Please install Docker and try again.",
-        "git": "Couldn't run `{{action}}` because Git is not installed. Please install Git and try again.",
-        "yarn": "Couldn't run `{{action}}` because Yarn is not installed. Please install Yarn and try again."
-      }
+      "missingCommand": "Couldn't run `{{action}}` because the {{displayName}} executable could not be found. Install {{displayName}} or update `nb config set {{configKey}} <path>` and try again."
     },
     "download": {
       "failures": {

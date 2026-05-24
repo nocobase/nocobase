@@ -863,13 +863,13 @@ test('install saved env config records docker download settings for later upgrad
   expect(envConfig.dbPort).toBe(undefined);
 });
 
-test('install resolves an available app port default when the preferred port is busy', async () => {
+test('install resolves an available app port default when the preferred port is busy on 0.0.0.0', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const server = net.createServer();
 
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
+    server.listen(0, '0.0.0.0', () => resolve());
   });
 
   const address = server.address();
@@ -891,6 +891,56 @@ test('install resolves an available app port default when the preferred port is 
         resolve();
       });
     });
+  }
+});
+
+test('install resolves an available built-in database host port default when the preferred port is busy on 0.0.0.0', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const server = net.createServer();
+  let occupiedByTest = false;
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(54321, '0.0.0.0', () => {
+        occupiedByTest = true;
+        resolve();
+      });
+    });
+  } catch (error: unknown) {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined;
+    if (code !== 'EADDRINUSE') {
+      throw error;
+    }
+  }
+
+  try {
+    const initialValues = await installStatics.buildDbPromptInitialValues({
+      flags: {},
+      downloadResults: {
+        source: 'git',
+      },
+      dbPreset: {
+        builtinDb: true,
+        dbDialect: 'kingbase',
+      },
+    });
+
+    expect(initialValues.dbPort).toBeTruthy();
+    expect(initialValues.dbPort).not.toBe('54321');
+    expect(Number(initialValues.dbPort)).toBeGreaterThan(0);
+  } finally {
+    if (occupiedByTest && server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
   }
 });
 
