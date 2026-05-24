@@ -168,4 +168,164 @@ describe('workflow > actions > executions', () => {
       expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
     });
   });
+
+  describe('rerun', () => {
+    async function prepareStartedExecution() {
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+      const n2 = await workflow.createNode({
+        type: 'pending',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+      expect(jobs.length).toBe(2);
+      return { execution, n1, n2 };
+    }
+
+    it('only root could rerun executions', async () => {
+      const { execution } = await prepareStartedExecution();
+
+      const res1 = await userAgents[0].resource('executions').rerun({
+        filterByTk: execution.id,
+      });
+      expect(res1.status).toBe(403);
+
+      const res2 = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+      });
+      expect(res2.status).toBe(202);
+    });
+
+    it('execution not exists could not be rerun', async () => {
+      const { status } = await agent.resource('executions').rerun({
+        filterByTk: -1,
+      });
+
+      expect(status).toBe(404);
+    });
+
+    it('only started execution could be rerun', async () => {
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const res1 = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+      });
+      expect(res1.status).toBe(409);
+
+      const queued = await workflow.createExecution({
+        status: EXECUTION_STATUS.QUEUEING,
+        context: {},
+        key: workflow.key,
+      });
+      const res2 = await agent.resource('executions').rerun({
+        filterByTk: queued.id,
+      });
+      expect(res2.status).toBe(409);
+    });
+
+    it('rerun without overwrite creates new jobs from head node', async () => {
+      const { execution, n1, n2 } = await prepareStartedExecution();
+
+      const res = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+      });
+      expect(res.status).toBe(202);
+      await sleep(500);
+
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.filter((job) => job.nodeId === n1.id).length).toBe(2);
+      expect(jobs.filter((job) => job.nodeId === n2.id).length).toBe(2);
+    });
+
+    it('rerun with nodeId starts from the specified node', async () => {
+      const { execution, n1, n2 } = await prepareStartedExecution();
+
+      const res = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+        values: {
+          nodeId: n2.id,
+        },
+      });
+      expect(res.status).toBe(202);
+      await sleep(500);
+
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.filter((job) => job.nodeId === n1.id).length).toBe(1);
+      expect(jobs.filter((job) => job.nodeId === n2.id).length).toBe(2);
+    });
+
+    it('rerun with overwrite updates target latest job', async () => {
+      const { execution, n1, n2 } = await prepareStartedExecution();
+      const [firstJob] = await execution.getJobs({ where: { nodeId: n1.id } });
+
+      const res = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+        values: {
+          nodeId: n1.id,
+          overwrite: true,
+        },
+      });
+      expect(res.status).toBe(202);
+      await sleep(500);
+
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const headJobs = jobs.filter((job) => job.nodeId === n1.id);
+      expect(headJobs.length).toBe(1);
+      expect(headJobs[0].id).toBe(firstJob.id);
+      expect(jobs.filter((job) => job.nodeId === n2.id).length).toBe(2);
+    });
+
+    it('rerun fails when node does not exist', async () => {
+      const { execution } = await prepareStartedExecution();
+
+      const res = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+        values: {
+          nodeId: -1,
+        },
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('rerun fails when workflow revision does not exist', async () => {
+      const { execution } = await prepareStartedExecution();
+      await workflow.destroy();
+
+      const res = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('rerun fails when target node has no latest job', async () => {
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+      const execution = await workflow.createExecution({
+        status: EXECUTION_STATUS.STARTED,
+        context: {},
+        key: workflow.key,
+      });
+
+      const res = await agent.resource('executions').rerun({
+        filterByTk: execution.id,
+        values: {
+          nodeId: n1.id,
+        },
+      });
+      expect(res.status).toBe(400);
+    });
+  });
 });

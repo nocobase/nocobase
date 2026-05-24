@@ -13,13 +13,13 @@ import { Transaction, Transactionable } from 'sequelize';
 
 import type { QueueEventOptions } from '@nocobase/server';
 
-import Processor from './Processor';
+import Processor, { ProcessorRerunOptions } from './Processor';
 import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
 import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
 
-type Pending = { execution: ExecutionModel; job?: JobModel; loaded?: boolean };
+type Pending = { execution: ExecutionModel; job?: JobModel; loaded?: boolean; rerun?: ProcessorRerunOptions };
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
 
@@ -230,13 +230,13 @@ export default class Dispatcher {
     }
 
     this.executing = (async () => {
-      let next: [ExecutionModel, JobModel?] | null = null;
+      let next: [ExecutionModel, JobModel?, ProcessorRerunOptions?] | null = null;
       let execution: ExecutionModel | null = null;
       if (this.pending.length) {
         const pending = this.pending.shift() as Pending;
         execution = pending.loaded ? pending.execution : await this.acquirePendingExecution(pending.execution);
         if (execution) {
-          next = [execution, pending.job];
+          next = [execution, pending.job, pending.rerun];
           this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
         }
       } else {
@@ -254,7 +254,11 @@ export default class Dispatcher {
         }
       }
       if (next) {
-        await this.process(...next);
+        try {
+          await this.process(next[0], next[1], { rerun: next[2] });
+        } catch (error) {
+          this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
+        }
       }
       setImmediate(() => {
         this.executing = null;
@@ -267,10 +271,12 @@ export default class Dispatcher {
     })();
   }
 
-  public async run(pending: Pending): Promise<void> {
+  public async run(pending: Pending, options: { dispatch?: boolean } = {}): Promise<void> {
     this.pending.push(pending);
 
-    this.dispatch();
+    if (options.dispatch !== false) {
+      this.dispatch();
+    }
   }
 
   private async triggerSync(
@@ -460,28 +466,45 @@ export default class Dispatcher {
     return fetched;
   }
 
-  private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
+  private getExecutionLockKey(executionId: number | string) {
+    return `workflow:execution:${executionId}`;
+  }
+
+  private async process(
+    execution: ExecutionModel,
+    job?: JobModel,
+    options: Transactionable & { rerun?: ProcessorRerunOptions } = {},
+  ): Promise<Processor> {
+    const { rerun, ...processorOptions } = options;
     const logger = this.plugin.getLogger(execution.workflowId);
-    if (!execution.dispatched) {
-      const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction);
-      await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction });
-      logger.info(`execution (${execution.id}) from pending list updated to started`);
-    }
-    const processor = this.plugin.createProcessor(execution, options);
-
-    logger.info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);
-
+    const lock = await this.plugin.app.lockManager.tryAcquire(this.getExecutionLockKey(execution.id));
     try {
-      await (job ? processor.resume(job) : processor.start());
-      logger.info(`execution (${execution.id}) finished with status: ${execution.status}`);
-      logger.debug(`execution (${execution.id}) details:`, { execution });
-      if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
-        await execution.destroy({ transaction: processor.mainTransaction });
-      }
-    } catch (err) {
-      logger.error(`execution (${execution.id}) error: ${err.message}`, err);
-    }
+      return await lock.runExclusive(async () => {
+        if (!execution.dispatched) {
+          const transaction = await this.plugin.useDataSourceTransaction('main', processorOptions.transaction);
+          await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction });
+          logger.info(`execution (${execution.id}) from pending list updated to started`);
+        }
+        const processor = this.plugin.createProcessor(execution, processorOptions);
 
-    return processor;
+        logger.info(`execution (${execution.id}) ${rerun ? 'rerunning' : job ? 'resuming' : 'starting'}...`);
+
+        try {
+          await (rerun ? processor.rerun(rerun) : job ? processor.resume(job) : processor.start());
+          logger.info(`execution (${execution.id}) finished with status: ${execution.status}`);
+          logger.debug(`execution (${execution.id}) details:`, { execution });
+          if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
+            await execution.destroy({ transaction: processor.mainTransaction });
+          }
+        } catch (err) {
+          logger.error(`execution (${execution.id}) error: ${err.message}`, err);
+        }
+
+        return processor;
+      }, 60_000);
+    } catch (error) {
+      logger.error(`execution (${execution.id}) could not acquire process lock`, { error });
+      throw error;
+    }
   }
 }
