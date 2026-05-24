@@ -398,6 +398,8 @@ export type NormalizedComposeFieldSpec = {
   pageSize?: number;
   showIndex?: boolean;
   target?: string;
+  defaultTargetUid?: string;
+  targetBlockUid?: string;
   settings: Record<string, any>;
   popup?: Record<string, any>;
   __autoPopupForRelationField?: boolean;
@@ -448,6 +450,12 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
   if (!_.isUndefined(input.target) && typeof input.target !== 'string') {
     throwBadRequest(`flowSurfaces compose field #${index + 1} target must be a string block key`);
   }
+  if (!_.isUndefined(input.defaultTargetUid) && typeof input.defaultTargetUid !== 'string') {
+    throwBadRequest(`flowSurfaces compose field #${index + 1} defaultTargetUid must be a string`);
+  }
+  if (!_.isUndefined(input.targetBlockUid) && typeof input.targetBlockUid !== 'string') {
+    throwBadRequest(`flowSurfaces compose field #${index + 1} targetBlockUid must be a string`);
+  }
   const rawKey = String(input.key || semanticType || (renderer === 'js' ? `js:${fieldPath}` : fieldPath)).trim();
   const key = normalizeFlowSurfaceComposeKey(rawKey, `flowSurfaces compose field #${index + 1}`);
   const popupDefaultsMetadata = _.isPlainObject(input[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY])
@@ -468,6 +476,10 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
     ...(!_.isUndefined(pageSize) && Number.isFinite(pageSize) ? { pageSize } : {}),
     ...(!_.isUndefined(showIndex) ? { showIndex } : {}),
     target: typeof input.target === 'string' ? String(input.target || '').trim() || undefined : undefined,
+    defaultTargetUid:
+      typeof input.defaultTargetUid === 'string' ? String(input.defaultTargetUid || '').trim() || undefined : undefined,
+    targetBlockUid:
+      typeof input.targetBlockUid === 'string' ? String(input.targetBlockUid || '').trim() || undefined : undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
     __autoPopupForRelationField: input.__autoPopupForRelationField === true,

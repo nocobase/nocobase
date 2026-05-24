@@ -295,6 +295,7 @@ async function addBlock(rootAgent: any, targetUid: string, type: string, resourc
         },
         type,
         resourceInit,
+        fields: ['title'],
       },
     }),
   ).uid;

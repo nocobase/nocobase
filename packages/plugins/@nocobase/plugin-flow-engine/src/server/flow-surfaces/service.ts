@@ -444,6 +444,13 @@ import type {
 } from './types';
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
 
+const FLOW_SURFACE_CHART_REPAIR_HINT =
+  'This is a chart payload shape problem. Repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+
+function withChartRepairMessage(message: string) {
+  return `${message}. ${FLOW_SURFACE_CHART_REPAIR_HINT}`;
+}
+
 type FlowSurfaceChartHint = {
   key: string;
   title: string;
@@ -1360,6 +1367,24 @@ export class FlowSurfacesService {
     );
   }
 
+  private routeParentIdMatches(routeParentId: any, parentId: any) {
+    if (_.isNil(routeParentId) && _.isNil(parentId)) {
+      return true;
+    }
+    return String(routeParentId ?? '') === String(parentId ?? '');
+  }
+
+  private async findMenuGroupRoutesByParentIdAndTitle(
+    parentId: string | number | null,
+    title: string,
+    transaction?: any,
+  ) {
+    const routes = await this.findMenuGroupRoutesByTitle(title, transaction);
+    return routes.filter((route: any) =>
+      this.routeParentIdMatches(this.readRouteField(route, 'parentId') ?? null, parentId),
+    );
+  }
+
   private async findFlowPageRoutesByParentIdAndTitle(parentId: string | number, title: string, transaction?: any) {
     const normalizedTitle = String(title || '').trim();
     const normalizedParentId = String(parentId ?? '').trim();
@@ -1454,18 +1479,44 @@ export class FlowSurfacesService {
 
   private async createFlowMenuGroup(values: Record<string, any>, transaction?: any) {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
+    const parentId = this.readRouteField(parentRoute, 'id') ?? null;
+    const title = String(values.title || '').trim();
+    const existingGroups = await this.findMenuGroupRoutesByParentIdAndTitle(parentId, title, transaction);
+    if (existingGroups.length === 1) {
+      return this.buildMenuResult(existingGroups[0]);
+    }
+    if (existingGroups.length > 1) {
+      throwBadRequest(
+        `flowSurfaces createMenu group title '${title}' is ambiguous under parentMenuRouteId '${
+          values.parentMenuRouteId ?? 'root'
+        }'; use an explicit existing navigation.group.routeId or clean up duplicate menu groups before retrying`,
+        {
+          ruleId: 'menu-group-title-ambiguous-under-parent',
+          details: {
+            title,
+            parentMenuRouteId: values.parentMenuRouteId ?? null,
+            matches: existingGroups.map((route: any) => ({
+              routeId: this.readRouteField(route, 'id'),
+              parentMenuRouteId: this.readRouteField(route, 'parentId') ?? null,
+              type: this.readRouteField(route, 'type'),
+              schemaUid: this.readRouteField(route, 'schemaUid') ?? null,
+            })),
+          },
+        },
+      );
+    }
     const schemaUid = values.schemaUid || uid();
     const desktopRoutes = this.db.getRepository('desktopRoutes');
     await desktopRoutes.create({
       values: {
         type: 'group',
         sort: this.allocateRouteSortValue(),
-        title: values.title,
+        title,
         icon: values.icon,
         tooltip: values.tooltip,
         schemaUid,
         hideInMenu: !!values.hideInMenu,
-        parentId: this.readRouteField(parentRoute, 'id') ?? null,
+        parentId,
       },
       transaction,
     });
@@ -8671,6 +8722,8 @@ export class FlowSurfacesService {
             ...(fieldSpec.popupSize ? { popupSize: fieldSpec.popupSize } : {}),
             ...(!_.isUndefined(fieldSpec.pageSize) ? { pageSize: fieldSpec.pageSize } : {}),
             ...(!_.isUndefined(fieldSpec.showIndex) ? { showIndex: fieldSpec.showIndex } : {}),
+            ...(fieldSpec.defaultTargetUid ? { defaultTargetUid: fieldSpec.defaultTargetUid } : {}),
+            ...(fieldSpec.targetBlockUid ? { targetBlockUid: fieldSpec.targetBlockUid } : {}),
             ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
             ...(fieldSpec.__autoPopupForRelationField ? { __autoPopupForRelationField: true } : {}),
             ...(fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]
@@ -15031,7 +15084,14 @@ export class FlowSurfacesService {
 
     if (!sqlPreview.queryOutputs?.length) {
       throwBadRequest(
-        "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
+        withChartRepairMessage(
+          "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
+        ),
+        {
+          details: {
+            repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+          },
+        },
       );
     }
 
@@ -15042,7 +15102,15 @@ export class FlowSurfacesService {
     for (const mappingField of getChartVisualMappingAliases(state.visual)) {
       if (!supportedOutputs.has(mappingField)) {
         throwBadRequest(
-          `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
+          withChartRepairMessage(
+            `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
+          ),
+          {
+            details: {
+              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+              supportedOutputs: Array.from(supportedOutputs),
+            },
+          },
         );
       }
     }
@@ -15098,13 +15166,34 @@ export class FlowSurfacesService {
           continue;
         }
         throwBadRequest(
-          `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
+          withChartRepairMessage(
+            `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
+          ),
+          {
+            details: {
+              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+              fieldPath,
+              dataSourceKey,
+              collectionName,
+            },
+          },
         );
       }
       if (!fieldPath.includes('.') && isAssociationField(field)) {
         const suggestion = this.resolveBuilderChartAssociationSubfieldSuggestion(fieldPath, field, dataSourceKey);
         throwBadRequest(
-          `flowSurfaces ${actionName} ${item.path} '${fieldPath}' references an association field directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
+          withChartRepairMessage(
+            `flowSurfaces ${actionName} ${item.path} '${fieldPath}' references an association field directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
+          ),
+          {
+            details: {
+              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+              fieldPath,
+              dataSourceKey,
+              collectionName,
+              ...suggestion,
+            },
+          },
         );
       }
     }
@@ -15151,7 +15240,14 @@ export class FlowSurfacesService {
 
     if (!sqlPreview.queryOutputs?.length) {
       throwBadRequest(
-        "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
+        withChartRepairMessage(
+          "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
+        ),
+        {
+          details: {
+            repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+          },
+        },
       );
     }
 
@@ -15162,7 +15258,15 @@ export class FlowSurfacesService {
     for (const mappingField of getChartVisualMappingAliases(state.visual)) {
       if (!supportedOutputs.has(mappingField)) {
         throwBadRequest(
-          `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
+          withChartRepairMessage(
+            `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
+          ),
+          {
+            details: {
+              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+              supportedOutputs: Array.from(supportedOutputs),
+            },
+          },
         );
       }
     }

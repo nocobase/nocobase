@@ -1198,11 +1198,18 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 }
 
 async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit?: Record<string, any>) {
+  const fields =
+    resourceInit && ['filterForm', 'table'].includes(type)
+      ? {
+          fields: ['nickname'],
+        }
+      : {};
   const response = await rootAgent.resource('flowSurfaces').addBlock({
     values: {
       target: { uid: targetUid },
       type,
       ...(resourceInit ? { resourceInit } : {}),
+      ...fields,
     },
   });
   expect(response.status).toBe(200);

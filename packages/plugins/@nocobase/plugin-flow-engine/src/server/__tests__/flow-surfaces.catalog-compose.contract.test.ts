@@ -514,6 +514,12 @@ describe('flowSurfaces catalog + compose contract', () => {
         dataSourceKey: 'main',
         collectionName,
       },
+      fields: [
+        {
+          fieldPath: 'optionalText',
+          defaultTargetUid: table.uid,
+        },
+      ],
     });
 
     const addRequired = getData(
@@ -1001,6 +1007,12 @@ describe('flowSurfaces catalog + compose contract', () => {
         dataSourceKey: 'main',
         collectionName: '',
       },
+      fields: [
+        {
+          fieldPath: 'nickname',
+          defaultTargetUid: table.uid,
+        },
+      ],
     });
     const calendar = await addBlockData(rootAgent, {
       target: {
@@ -1430,6 +1442,12 @@ describe('flowSurfaces catalog + compose contract', () => {
         dataSourceKey: 'main',
         collectionName: '',
       },
+      fields: [
+        {
+          fieldPath: 'nickname',
+          defaultTargetUid: table.uid,
+        },
+      ],
     });
     const actionPanel = await addBlockData(rootAgent, {
       target: {
@@ -1545,6 +1563,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             actions: [
               {
                 type: 'jsItem',
@@ -1573,6 +1592,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             actions: [
               {
                 type: 'jsItem',
@@ -4038,6 +4058,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       resource: {
         binding: 'currentCollection',
       },
+      fields: ['title'],
     });
     await addBlockData(rootAgent, {
       target: {
@@ -4047,6 +4068,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       resource: {
         binding: 'currentRecord',
       },
+      fields: ['title'],
     });
     const quickTitleField = getData(
       await rootAgent.resource('flowSurfaces').addField({
@@ -4132,6 +4154,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       resource: {
         binding: 'currentCollection',
       },
+      fields: ['title'],
     });
     expect(quickCreateForm.uid).toBeTruthy();
 
@@ -4230,6 +4253,12 @@ describe('flowSurfaces catalog + compose contract', () => {
         dataSourceKey: 'main',
         collectionName: '',
       },
+      fields: [
+        {
+          fieldPath: 'title',
+          defaultTargetUid: calendar.uid,
+        },
+      ],
     });
     const filterField = getData(
       await rootAgent.resource('flowSurfaces').addField({
@@ -4465,6 +4494,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         resource: {
           binding: 'currentCollection',
         },
+        fields: ['nickname'],
       },
     });
     expect(invalidRaw.status).toBe(400);
@@ -4513,6 +4543,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           associationName: 'tasks',
           sourceId: '{{ctx.custom.badSourceId}}',
         },
+        fields: ['title'],
       },
     });
     expect(invalidAssociationCurrentRecordRaw.status).toBe(400);
@@ -4587,6 +4618,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           dataSourceKey: 'main',
           collectionName: 'departments',
         },
+        fields: ['title'],
       },
     });
     expect(addCollectionBlock.status).toBe(400);
@@ -5028,6 +5060,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
+            fields: ['nickname'],
           },
         ],
       },
@@ -6186,6 +6219,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             actions: ['addNew', 'refresh'],
             recordActions: ['view', 'delete'],
           },
@@ -6245,6 +6279,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             recordActions: ['view'],
           },
         ],
@@ -6289,6 +6324,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             actions: ['view'],
           },
         ],
@@ -6310,6 +6346,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             recordActions: ['addNew'],
           },
         ],
@@ -6338,6 +6375,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'categories',
             },
+            fields: ['title'],
             recordActions: ['addChild'],
           },
         ],
@@ -6431,7 +6469,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(readTableRecordActionUses(tableReadback.tree)).toEqual(['EditActionModel', 'AddChildActionModel']);
   });
 
-  it('treeTitleComposeDefaults should compose omitted-field tree tables with a clickable metadata default column', async () => {
+  it('treeTitleComposeDefaults should compose explicit tree tables with a clickable metadata column', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose tree table clickable title page',
       tabTitle: 'Compose tree table clickable title tab',
@@ -6453,6 +6491,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             settings: {
               treeTable: true,
             },
+            fields: ['code'],
             recordActions: ['view', 'edit'],
           },
         ],
@@ -6608,6 +6647,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             settings: {
               treeTable: true,
             },
+            fields: ['name'],
             recordActions: ['view', 'edit'],
           },
         ],
@@ -6786,6 +6826,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
+            fields: ['nickname'],
             actions: [
               {
                 type: 'addNew',
@@ -6814,6 +6855,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
+            fields: ['nickname'],
             recordActions: [
               {
                 type: 'view',
@@ -7060,6 +7102,11 @@ describe('flowSurfaces catalog + compose contract', () => {
           {
             key: 'bad',
             type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname'],
             use: 'TableBlockModel',
           },
         ],
@@ -7101,6 +7148,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             settings: {
               title: 'Employees table',
               pageSize: 50,
@@ -7598,6 +7646,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
+            fields: ['nickname'],
             settings: {
               title: 'Valid employees table',
             },
@@ -7609,6 +7658,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
+            fields: ['nickname'],
             settings: {
               dataScope: {
                 foo: 'bar',
@@ -7654,6 +7704,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         resourceInit: {
           collectionName: 'employees',
         },
+        fields: ['nickname'],
       },
     });
 
@@ -7697,6 +7748,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             resourceInit: {
               collectionName: 'employees',
             },
+            fields: ['nickname'],
           },
         ],
       },
@@ -7743,6 +7795,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             resource: {
               collectionName: 'employees',
             },
+            fields: ['nickname'],
           },
         ],
       },
@@ -7783,6 +7836,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               resourceInit: {
                 collectionName: 'employees',
               },
+              fields: ['nickname'],
             },
           },
         ],
@@ -7809,6 +7863,17 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: 'FilterForm addBlock without resource page',
       tabTitle: 'FilterForm addBlock without resource tab',
     });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      fields: ['nickname'],
+    });
 
     const response = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -7816,6 +7881,12 @@ describe('flowSurfaces catalog + compose contract', () => {
           uid: page.tabSchemaUid,
         },
         type: 'filterForm',
+        fields: [
+          {
+            fieldPath: 'nickname',
+            defaultTargetUid: table.uid,
+          },
+        ],
       },
     });
 
@@ -7844,8 +7915,23 @@ describe('flowSurfaces catalog + compose contract', () => {
         mode: 'append',
         blocks: [
           {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname'],
+          },
+          {
             key: 'filterForm',
             type: 'filterForm',
+            fields: [
+              {
+                fieldPath: 'nickname',
+                target: 'employeesTable',
+              },
+            ],
             actions: ['submit', 'reset'],
           },
         ],
@@ -7854,16 +7940,16 @@ describe('flowSurfaces catalog + compose contract', () => {
 
     expect(composeRes.status).toBe(200);
     const composed = getData(composeRes);
-    expect(composed.blocks).toHaveLength(1);
-    expect(composed.blocks[0]).toMatchObject({
+    expect(composed.blocks).toHaveLength(2);
+    const filterBlock = getComposeBlock(composed, 'filterForm');
+    expect(filterBlock).toMatchObject({
       key: 'filterForm',
       type: 'filterForm',
     });
-    expect(composed.blocks[0].uid).toBeTruthy();
-    expect(getComposeBlock(composed, 'filterForm').uid).toBe(composed.blocks[0].uid);
+    expect(filterBlock.uid).toBeTruthy();
 
     const readback = await getSurface(rootAgent, {
-      uid: composed.blocks[0].uid,
+      uid: filterBlock.uid,
     });
     expect(readback.tree.use).toBe('FilterFormBlockModel');
     expect(readback.tree.stepParams?.resourceSettings?.init).toBeUndefined();
@@ -7994,6 +8080,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             settings: {
               pageSize: 20,
               dataScope: {
@@ -8022,6 +8109,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             settings: {
               columns: 3,
               rowCount: 2,
@@ -8478,6 +8566,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             settings: {
               sort: [
                 {
@@ -9125,6 +9214,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             settings: {
               columns: 3,
             },

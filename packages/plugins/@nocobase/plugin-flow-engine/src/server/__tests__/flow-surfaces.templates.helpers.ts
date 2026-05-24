@@ -13,6 +13,20 @@ import { resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames } from '../fl
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
 const FLOW_SURFACES_TEST_PUBLIC_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
+const FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES = new Set([
+  'table',
+  'list',
+  'gridCard',
+  'details',
+  'createForm',
+  'editForm',
+  'filterForm',
+  'kanban',
+]);
+const FLOW_SURFACES_TEST_DEFAULT_VISIBLE_FIELD_PREFERENCES: Record<string, string[]> = {
+  departments: ['code', 'scope', 'title', 'status'],
+  employees: ['email', 'phone', 'nickname', 'status'],
+};
 
 function normalizeText(value: any) {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
@@ -118,7 +132,7 @@ export async function createPage(rootAgent: any, values: Record<string, any>) {
 export async function addBlockData(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').addBlock({
-      values: await withDefaultFilterForPublicDataBlock(rootAgent, values),
+      values: await withDefaultVisibleDataBlockRequirements(rootAgent, values),
     }),
   );
 }
@@ -184,6 +198,56 @@ async function withDefaultFilterForPublicDataBlock(rootAgent: any, values: Recor
     ...values,
     defaultFilter: buildDefaultFilter(collectionName, collectionMeta),
   };
+}
+
+async function withDefaultVisibleDataBlockRequirements(rootAgent: any, values: Record<string, any>) {
+  const valuesWithDefaultFields = await withDefaultFieldsForVisibleDataBlock(rootAgent, values);
+  return withDefaultFilterForPublicDataBlock(rootAgent, valuesWithDefaultFields);
+}
+
+async function withDefaultFieldsForVisibleDataBlock(rootAgent: any, values: Record<string, any>) {
+  if (
+    !values ||
+    !FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES.has(normalizeText(values.type)) ||
+    Object.prototype.hasOwnProperty.call(values, 'fields') ||
+    Object.prototype.hasOwnProperty.call(values, 'fieldGroups') ||
+    Object.prototype.hasOwnProperty.call(values, 'template')
+  ) {
+    return values;
+  }
+  const collectionName =
+    normalizeText(values?.resourceInit?.collectionName) ||
+    normalizeText(values?.resource?.collectionName) ||
+    normalizeText(values?.collection);
+  if (!collectionName) {
+    return values;
+  }
+  const collectionMeta = await loadCollectionMeta(rootAgent);
+  const fieldName = pickDefaultVisibleFieldName(collectionName, collectionMeta);
+  return fieldName
+    ? {
+        ...values,
+        fields: [fieldName],
+      }
+    : values;
+}
+
+function pickDefaultVisibleFieldName(collectionName: string, collectionMeta: any[]) {
+  const collection = Array.isArray(collectionMeta)
+    ? collectionMeta.find((item) => normalizeText(item?.name) === collectionName)
+    : undefined;
+  const fields = Array.isArray(collection?.fields)
+    ? collection.fields
+    : collection?.fields && typeof collection.fields.values === 'function'
+      ? Array.from(collection.fields.values())
+      : [];
+  const fieldNames = fields.map((field: any) => normalizeText(field?.name || field?.options?.name)).filter(Boolean);
+  const preferredFields = FLOW_SURFACES_TEST_DEFAULT_VISIBLE_FIELD_PREFERENCES[collectionName] || [];
+  return (
+    preferredFields.find((fieldName) => fieldNames.includes(fieldName)) ||
+    fieldNames.find((fieldName) => fieldName !== 'id') ||
+    ''
+  );
 }
 
 export async function setupFixtureCollections(rootAgent: any, db: Database) {

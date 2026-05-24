@@ -396,6 +396,155 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     }
   });
 
+  it('should include repair hints on jsBlock and chart authoring errors', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring jsBlock chart repair hint blueprint',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'missingJsSource',
+                type: 'jsBlock',
+                title: 'KPI summary',
+              },
+              {
+                key: 'topLevelJsCode',
+                type: 'jsBlock',
+                title: 'KPI summary with wrong key',
+                code: 'return { value: 1 };',
+              },
+              {
+                key: 'missingChartAsset',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'missingAsset',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    const jsBlockError = response.body.errors.find((error: any) => error.ruleId === 'jsBlock-source-required');
+    const chartError = response.body.errors.find(
+      (error: any) => error.ruleId === 'chart-block-asset-reference-missing',
+    );
+    const topLevelCodeError = response.body.errors.find(
+      (error: any) => error.ruleId === 'jsBlock-top-level-code-unsupported',
+    );
+    expect(jsBlockError?.details?.repairHint).toContain('settings.code');
+    expect(jsBlockError?.details?.repairHint).toContain('Do not change this block type');
+    expect(jsBlockError?.message).toContain('jsBlock payload shape problem');
+    expect(jsBlockError?.message).toContain('Do not change this block type');
+    expect(topLevelCodeError?.details?.repairHint).toContain('settings.code');
+    expect(topLevelCodeError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('assets.charts');
+    expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('KPI');
+    expect(chartError?.message).toContain('chart payload shape problem');
+    expect(chartError?.message).toContain('Do not change this block type');
+  });
+
+  it('should include repair hints on invalid jsBlock script assets', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring script asset chart mapping repair hint blueprint',
+          },
+        },
+        assets: {
+          scripts: {
+            brokenKpi: {},
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'brokenKpi',
+                type: 'jsBlock',
+                title: 'KPI summary',
+                script: 'brokenKpi',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    const scriptError = response.body.errors.find(
+      (error: any) => error.ruleId === 'apply-blueprint-script-asset-code-required',
+    );
+    expect(scriptError?.details?.repairHint).toContain('assets.scripts');
+    expect(scriptError?.details?.repairHint).toContain('Do not change this block type');
+  });
+
+  it('should include repair hints on invalid chart SQL output mappings', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring chart SQL mapping repair hint blueprint',
+          },
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'sql',
+                sql: 'select 1 as value',
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'value',
+                  y: 'missingOutput',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const chartError = response.body?.errors?.[0];
+    expect(chartError?.message).toContain('chart visual mappings only support SQL query output fields');
+    expect(chartError?.message).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('chart payload shape problem');
+    expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.supportedOutputs).toEqual(['value']);
+  });
+
   it('should aggregate explicit empty defaultFilter groups before applyBlueprint writes', async () => {
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

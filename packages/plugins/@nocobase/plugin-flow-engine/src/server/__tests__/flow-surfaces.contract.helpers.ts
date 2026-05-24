@@ -427,10 +427,10 @@ async function withDefaultVisibleFieldsForDataBlock(rootAgent: any, values: Reco
     String(values?.resourceInit?.collectionName || '').trim() ||
     String(values?.resource?.collectionName || '').trim() ||
     String(values?.collection || '').trim();
+  const collectionMeta = await loadCollectionMeta(rootAgent);
   if (!collectionName) {
     return values;
   }
-  const collectionMeta = await loadCollectionMeta(rootAgent);
   const fieldName = pickDefaultVisibleFieldName(collectionName, collectionMeta);
   return fieldName
     ? {
@@ -448,19 +448,25 @@ async function loadCollectionMeta(rootAgent: any) {
 
 function pickDefaultVisibleFieldName(collectionName: string, collectionMeta: any[]) {
   const collection = collectionMeta.find((item) => String(item?.name || '').trim() === collectionName);
-  const candidates = collection ? resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection) : [];
-  if (candidates.length) {
-    return candidates[0];
-  }
   const fields = Array.isArray(collection?.fields)
     ? collection.fields
     : collection?.fields && typeof collection.fields.values === 'function'
       ? Array.from(collection.fields.values())
       : [];
+  const fieldNames = fields.map((field: any) => String(field?.name || field?.options?.name || '').trim());
+  const preferredFields = ['nickname', 'email', 'phone', 'title', 'name', 'code', 'status', 'optionalText'];
+  const preferred = preferredFields.find((fieldName) => fieldNames.includes(fieldName));
+  if (preferred) {
+    return preferred;
+  }
+  const candidates = collection ? resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection) : [];
+  if (candidates.length) {
+    return candidates[0];
+  }
   return (
-    fields
-      .map((field: any) => String(field?.name || field?.options?.name || '').trim())
-      .find((fieldName) => fieldName && fieldName !== 'id') || ''
+    fieldNames.find(
+      (fieldName) => fieldName && fieldName !== 'id' && !fieldName.endsWith('Id') && fieldName !== 'createdAt',
+    ) || ''
   );
 }
 

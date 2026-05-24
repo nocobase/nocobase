@@ -650,6 +650,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 value: "ctx.render('<div>Broken</div>');",
               },
             },
+            'nickname',
           ],
         },
         expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0].script',
@@ -670,6 +671,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                     value: "ctx.render('<div>Broken</div>');",
                   },
                 },
+                'nickname',
               ],
             },
           ],
@@ -759,6 +761,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               type: 'jsColumn',
               script: '   ',
             },
+            'nickname',
           ],
         },
         expectedPath: 'flowSurfaces applyBlueprint tabs[0].blocks[0].fields[0].script',
@@ -776,6 +779,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   type: 'jsColumn',
                   script: '   ',
                 },
+                'nickname',
               ],
             },
           ],
@@ -1551,6 +1555,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 key: 'usersTable',
                 type: 'table',
                 collection: 'employees',
+                fields: ['nickname'],
               },
             ],
             layout: {
@@ -1609,6 +1614,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 key: 'usersTable',
                 type: 'table',
                 collection: 'employees',
+                fields: ['nickname'],
               },
             ],
           },
@@ -2094,6 +2100,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -2234,6 +2241,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             dataSourceKey: 'main',
             collectionName: popupTryTemplateCollection,
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -2381,6 +2389,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             dataSourceKey: 'main',
             collectionName,
           },
+          fields: ['name'],
         },
       }),
     );
@@ -2428,6 +2437,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             dataSourceKey: 'main',
             collectionName,
           },
+          fields: ['name'],
         },
       }),
     );
@@ -2497,6 +2507,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         dataSourceKey: 'main',
         collectionName,
       },
+      fields: ['name'],
     });
     const sourceTwoBlockAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
@@ -2585,6 +2596,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         dataSourceKey: 'main',
         collectionName,
       },
+      fields: ['name'],
     });
     const oneBlockAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
@@ -3805,6 +3817,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         dataSourceKey: 'main',
         collectionName: 'roles',
       },
+      fields: ['name'],
     });
     const competingEditAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
@@ -3978,6 +3991,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
             dataSourceKey: 'main',
             collectionName,
           },
+          fields: ['name'],
         },
       }),
     );
@@ -5007,6 +5021,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
           dataSourceKey: 'main',
           collectionName: hitCollection,
         },
+        fields: ['name'],
       },
     });
     expect(sourceDetails.status).toBe(200);
@@ -5558,13 +5573,19 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
   it('should reject ambiguous navigation group title reuse and ask for routeId explicitly', async () => {
     const groupTitle = `Ambiguous applyBlueprint group ${Date.now()}`;
-    await createMenu(rootAgent, {
-      title: groupTitle,
-      type: 'group',
+    await routesRepo.create({
+      values: {
+        title: groupTitle,
+        type: 'group',
+        schemaUid: `ambiguous-apply-blueprint-group-${Date.now()}-1`,
+      },
     });
-    await createMenu(rootAgent, {
-      title: groupTitle,
-      type: 'group',
+    await routesRepo.create({
+      values: {
+        title: groupTitle,
+        type: 'group',
+        schemaUid: `ambiguous-apply-blueprint-group-${Date.now()}-2`,
+      },
     });
 
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
@@ -7106,7 +7127,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
       });
 
       expect(executeRes.status).toBe(400);
-      expect(readErrorMessage(executeRes)).toContain('explicit fields must include at least one direct readable');
+      expect(
+        _.castArray(executeRes.body?.errors)
+          .map((error: any) => String(error?.message || ''))
+          .join('\n'),
+      ).toContain('explicit fields must include at least one direct readable');
     }
   });
 
@@ -7195,6 +7220,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         dataSourceKey: 'main',
         collectionName: 'categories',
       },
+      fields: ['title'],
       settings: {
         treeTable: true,
       },
@@ -7757,6 +7783,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   binding: 'currentRecord',
                   unexpectedKey: true,
                 },
+                fields: ['nickname'],
               },
             ],
           },
@@ -7781,6 +7808,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                   binding: 'currentRecord',
                   sourceId: 1,
                 },
+                fields: ['nickname'],
               },
             ],
           },
@@ -7860,6 +7888,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
+                fields: ['nickname'],
                 recordActions: [{ type: 'view', unexpectedKey: true }],
               },
             ],
@@ -7920,6 +7949,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'employees',
+                fields: ['nickname'],
                 recordActions: [
                   {
                     type: 'view',

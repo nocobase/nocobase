@@ -641,6 +641,7 @@ async function createEmployeeForm(rootAgent: any) {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['status'],
       },
     }),
   );

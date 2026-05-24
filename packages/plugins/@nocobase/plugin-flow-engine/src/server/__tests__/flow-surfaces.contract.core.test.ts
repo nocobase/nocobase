@@ -583,6 +583,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              fields: ['nickname'],
             },
           },
           {
@@ -640,6 +641,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              fields: ['nickname'],
             },
           },
         ],
@@ -994,6 +996,104 @@ describe('flowSurfaces API contract core', () => {
     ).toMatchObject({
       use: 'BlockGridModel',
     });
+  });
+
+  it('should reuse a unique same-parent menu group on repeated createMenu calls', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Workspace ${uid()}`,
+      type: 'group',
+    });
+    const title = `Reusable group ${uid()}`;
+    const first = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+    const second = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+
+    expect(second.routeId).toBe(first.routeId);
+    expect(second.parentMenuRouteId).toBe(parent.routeId);
+
+    const routes = _.castArray(
+      await routesRepo.find({
+        filter: {
+          type: 'group',
+          title,
+        },
+      }),
+    ).filter((route: any) => String(route.get('parentId')) === String(parent.routeId));
+    expect(routes).toHaveLength(1);
+  });
+
+  it('should reject same-parent same-title legacy group ambiguity instead of silently creating another group', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Ambiguous parent ${uid()}`,
+      type: 'group',
+    });
+    const title = `Legacy duplicate group ${uid()}`;
+    await routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+        parentId: parent.routeId,
+      },
+    });
+    await routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+        parentId: parent.routeId,
+      },
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title,
+        type: 'group',
+        parentMenuRouteId: parent.routeId,
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expectStructuredError(readErrorItem(response), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(response)).toContain('ambiguous');
+    expect(readErrorMessage(response)).toContain('parentMenuRouteId');
+  });
+
+  it('should allow same-title groups under different parent groups', async () => {
+    const leftParent = await createMenu(rootAgent, {
+      title: `Left parent ${uid()}`,
+      type: 'group',
+    });
+    const rightParent = await createMenu(rootAgent, {
+      title: `Right parent ${uid()}`,
+      type: 'group',
+    });
+    const title = `Shared child group ${uid()}`;
+
+    const leftGroup = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: leftParent.routeId,
+    });
+    const rightGroup = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: rightParent.routeId,
+    });
+
+    expect(leftGroup.routeId).not.toBe(rightGroup.routeId);
+    expect(leftGroup.parentMenuRouteId).toBe(leftParent.routeId);
+    expect(rightGroup.parentMenuRouteId).toBe(rightParent.routeId);
   });
 
   it('should support updating menu metadata and moving an item back to top level', async () => {

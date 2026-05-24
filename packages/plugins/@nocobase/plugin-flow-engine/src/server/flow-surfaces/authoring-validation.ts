@@ -193,6 +193,10 @@ const GRID_CARD_ALLOWED_SETTINGS_KEYS = new Set([
 const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
+const JS_BLOCK_REPAIR_HINT =
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+const CHART_REPAIR_HINT =
+  'This is a chart payload shape problem. Repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 
 const CHART_QUERY_MODE_SET = new Set(CHART_QUERY_MODES);
 const CHART_VISUAL_MODE_SET = new Set(CHART_VISUAL_MODES);
@@ -629,6 +633,20 @@ function collectChartAssetBlockTreeErrors(
   });
 }
 
+function withJsBlockRepairHint(details: Record<string, any> = {}) {
+  return {
+    ...details,
+    repairHint: JS_BLOCK_REPAIR_HINT,
+  };
+}
+
+function withChartRepairHint(details: Record<string, any> = {}) {
+  return {
+    ...details,
+    repairHint: CHART_REPAIR_HINT,
+  };
+}
+
 function collectChartBlockAssetReferenceErrors(
   block: any,
   path: string,
@@ -643,6 +661,7 @@ function collectChartBlockAssetReferenceErrors(
       path: `${path}.stepParams`,
       ruleId: 'chart-block-step-params-unsupported',
       message: `flowSurfaces authoring ${path}.stepParams is not accepted on public chart blocks; put chart configuration under assets.charts and reference it with block.chart`,
+      details: withChartRepairHint(),
     });
   }
   const chartKey = String(block.chart || '').trim();
@@ -651,6 +670,7 @@ function collectChartBlockAssetReferenceErrors(
       path: `${path}.chart`,
       ruleId: 'chart-block-asset-reference-required',
       message: `flowSurfaces authoring ${path}.chart must reference one key from assets.charts`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -659,9 +679,9 @@ function collectChartBlockAssetReferenceErrors(
       path: `${path}.chart`,
       ruleId: 'chart-block-asset-reference-missing',
       message: `flowSurfaces authoring ${path}.chart references missing chart asset '${chartKey}'`,
-      details: {
+      details: withChartRepairHint({
         chartKey,
-      },
+      }),
     });
   }
 }
@@ -682,6 +702,7 @@ function collectChartAssetRegistryErrors(
         path: assetPath,
         ruleId: 'chart-asset-invalid',
         message: `flowSurfaces authoring ${assetPath} must be an object`,
+        details: withChartRepairHint(),
       });
       return;
     }
@@ -702,6 +723,7 @@ function collectChartAssetQueryErrors(
       path: `${path}.query`,
       ruleId: 'chart-query-missing',
       message: `flowSurfaces authoring ${path}.query is required`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -711,9 +733,9 @@ function collectChartAssetQueryErrors(
       path: `${path}.query.mode`,
       ruleId: 'chart-query-mode-unsupported',
       message: `flowSurfaces authoring ${path}.query.mode '${mode}' is not supported`,
-      details: {
+      details: withChartRepairHint({
         mode,
-      },
+      }),
     });
     return;
   }
@@ -736,6 +758,7 @@ function collectBuilderChartAssetQueryErrors(
       path: `${path}.query.resource`,
       ruleId: 'chart-builder-query-resource-missing',
       message: `flowSurfaces authoring ${path}.query.resource.collectionName is required for builder chart assets`,
+      details: withChartRepairHint(),
     });
   }
   if (!Array.isArray(query.measures) || !query.measures.length) {
@@ -743,6 +766,7 @@ function collectBuilderChartAssetQueryErrors(
       path: `${path}.query.measures`,
       ruleId: 'chart-builder-query-measures-missing',
       message: `flowSurfaces authoring ${path}.query.measures must include at least one measure`,
+      details: withChartRepairHint(),
     });
   }
   collectForbiddenObjectKeyErrors(
@@ -751,6 +775,7 @@ function collectBuilderChartAssetQueryErrors(
     CHART_BUILDER_QUERY_FORBIDDEN_KEYS,
     'chart-builder-query-forbidden-keys',
     errors,
+    withChartRepairHint(),
   );
   collectBuilderChartAssetFieldErrors(query, path, context, errors);
 }
@@ -810,11 +835,11 @@ function collectBuilderChartAssetFieldErrors(
         path: item.fieldPath,
         ruleId: 'chart-builder-query-field-unknown',
         message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
-        details: {
+        details: withChartRepairHint({
           fieldPath,
           dataSourceKey,
           collectionName,
-        },
+        }),
       });
       continue;
     }
@@ -829,12 +854,12 @@ function collectBuilderChartAssetFieldErrors(
         path: item.fieldPath,
         ruleId: 'chart-builder-query-association-field-requires-subfield',
         message: `flowSurfaces authoring ${item.fieldPath} references association field '${fieldPath}' directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
-        details: {
+        details: withChartRepairHint({
           fieldPath,
           dataSourceKey,
           collectionName,
           ...suggestion,
-        },
+        }),
       });
     }
   }
@@ -870,6 +895,7 @@ function collectSqlChartAssetQueryErrors(query: any, path: string, errors: Autho
       path: `${path}.query.sql`,
       ruleId: 'chart-sql-query-text-missing',
       message: `flowSurfaces authoring ${path}.query.sql must be a non-empty string`,
+      details: withChartRepairHint(),
     });
   }
   collectForbiddenObjectKeyErrors(
@@ -878,6 +904,7 @@ function collectSqlChartAssetQueryErrors(query: any, path: string, errors: Autho
     CHART_SQL_QUERY_FORBIDDEN_KEYS,
     'chart-sql-query-forbidden-builder-keys',
     errors,
+    withChartRepairHint(),
   );
 }
 
@@ -888,6 +915,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual`,
       ruleId: 'chart-visual-missing',
       message: `flowSurfaces authoring ${path}.visual is required`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -897,6 +925,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
     CHART_VISUAL_LEGACY_BUILDER_KEYS,
     'chart-visual-legacy-builder-keys-unsupported',
     errors,
+    withChartRepairHint(),
   );
   const mode = String(visual.mode || 'basic').trim();
   if (!CHART_VISUAL_MODE_SET.has(mode as any)) {
@@ -904,9 +933,9 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.mode`,
       ruleId: 'chart-visual-mode-unsupported',
       message: `flowSurfaces authoring ${path}.visual.mode '${mode}' is not supported`,
-      details: {
+      details: withChartRepairHint({
         mode,
-      },
+      }),
     });
     return;
   }
@@ -916,6 +945,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
         path: `${path}.visual.raw`,
         ruleId: 'chart-custom-visual-raw-missing',
         message: `flowSurfaces authoring ${path}.visual.raw is required for custom chart assets`,
+        details: withChartRepairHint(),
       });
     }
     collectForbiddenObjectKeyErrors(
@@ -924,6 +954,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       CHART_CUSTOM_VISUAL_FORBIDDEN_KEYS,
       'chart-custom-visual-public-keys-unsupported',
       errors,
+      withChartRepairHint(),
     );
     return;
   }
@@ -933,15 +964,16 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.type`,
       ruleId: 'chart-visual-type-missing',
       message: `flowSurfaces authoring ${path}.visual.type is required for basic chart assets`,
+      details: withChartRepairHint(),
     });
   } else if (!CHART_BASIC_VISUAL_TYPE_SET.has(type as any)) {
     pushAuthoringError(errors, {
       path: `${path}.visual.type`,
       ruleId: 'chart-visual-type-unsupported',
       message: `flowSurfaces authoring ${path}.visual.type '${type}' is not supported`,
-      details: {
+      details: withChartRepairHint({
         type,
-      },
+      }),
     });
   }
   if (!_.isPlainObject(visual.mappings)) {
@@ -949,6 +981,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.mappings`,
       ruleId: 'chart-visual-mappings-missing',
       message: `flowSurfaces authoring ${path}.visual.mappings is required for basic chart assets`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -960,10 +993,10 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.mappings`,
       ruleId: 'chart-visual-required-mappings-missing',
       message: `flowSurfaces authoring ${path}.visual.mappings is missing required keys: ${missingMappings.join(', ')}`,
-      details: {
+      details: withChartRepairHint({
         type,
         missingMappings,
-      },
+      }),
     });
   }
 }
@@ -974,6 +1007,7 @@ function collectForbiddenObjectKeyErrors(
   forbiddenKeys: Set<string>,
   ruleId: string,
   errors: AuthoringErrorInput[],
+  details: Record<string, any> = {},
 ) {
   if (!_.isPlainObject(value)) {
     return;
@@ -987,6 +1021,7 @@ function collectForbiddenObjectKeyErrors(
     ruleId,
     message: `flowSurfaces authoring ${path} does not accept keys: ${keys.join(', ')}`,
     details: {
+      ...details,
       keys,
     },
   });
@@ -3832,6 +3867,7 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.type`,
       ruleId: 'jsBlock-type-alias-unsupported',
       message: `flowSurfaces authoring ${path}.type must be "jsBlock"; "js" is only an action type and is not a public JSBlock block alias. Use ${path}.settings.code for inline JSBlock code`,
+      details: withJsBlockRepairHint(),
     });
     return;
   }
@@ -3847,6 +3883,7 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.${key}`,
       ruleId: `jsBlock-top-level-${key}-unsupported`,
       message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+      details: withJsBlockRepairHint({ key }),
     });
   });
 
@@ -3858,9 +3895,9 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
       message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version instead of internal persisted fields`,
-      details: {
+      details: withJsBlockRepairHint({
         key,
-      },
+      }),
     });
   });
 
@@ -3869,6 +3906,7 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.script`,
       ruleId: 'jsBlock-script-unsupported',
       message: `flowSurfaces authoring ${path}.script is only supported by applyBlueprint assets.scripts; use ${path}.settings.code for localized jsBlock inline JS code`,
+      details: withJsBlockRepairHint(),
     });
   }
 
@@ -3882,10 +3920,10 @@ function collectJsBlockPublicContractErrors(
         path: `${path}.settings.${key}`,
         ruleId: 'jsBlock-settings-unsupported-key',
         message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
-        details: {
+        details: withJsBlockRepairHint({
           key,
           allowedKeys: Array.from(JS_BLOCK_ALLOWED_SETTINGS_KEYS),
-        },
+        }),
       });
     });
   }
@@ -3898,9 +3936,9 @@ function collectJsBlockPublicContractErrors(
       message: `flowSurfaces authoring ${path} cannot combine script asset references with ${inlineKeys
         .map((key) => `settings.${key}`)
         .join(', ')}; use either applyBlueprint assets.scripts + block.script or inline ${path}.settings.code`,
-      details: {
+      details: withJsBlockRepairHint({
         inlineKeys,
-      },
+      }),
     });
   }
 
@@ -3913,6 +3951,7 @@ function collectJsBlockPublicContractErrors(
       path,
       ruleId: 'jsBlock-source-required',
       message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code or, for applyBlueprint only, a block.script asset reference`,
+      details: withJsBlockRepairHint(),
     });
   }
 }
@@ -3930,9 +3969,9 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
       message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code and ${path}.version instead of internal persisted fields`,
-      details: {
+      details: withJsBlockRepairHint({
         key,
-      },
+      }),
     });
   });
 
@@ -3941,6 +3980,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.script`,
       ruleId: 'jsBlock-script-unsupported',
       message: `flowSurfaces authoring ${path}.script is only supported by applyBlueprint assets.scripts; use ${path}.code for localized jsBlock configure JS code`,
+      details: withJsBlockRepairHint(),
     });
   }
 
@@ -3952,9 +3992,9 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       message: `flowSurfaces authoring ${path} cannot combine script asset references with ${inlineKeys
         .map((key) => `${path}.${key}`)
         .join(', ')}; use either applyBlueprint assets.scripts + block.script or localized ${path}.code`,
-      details: {
+      details: withJsBlockRepairHint({
         inlineKeys,
-      },
+      }),
     });
   }
 
@@ -3967,6 +4007,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.settings`,
       ruleId: 'jsBlock-settings-unsupported-key',
       message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code and ${path}.version`,
+      details: withJsBlockRepairHint(),
     });
     return;
   }
@@ -3975,9 +4016,9 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.settings.${key}`,
       ruleId: 'jsBlock-settings-unsupported-key',
       message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock configure contract; use ${path}.${key}`,
-      details: {
+      details: withJsBlockRepairHint({
         key,
-      },
+      }),
     });
   });
 }
@@ -4211,7 +4252,16 @@ function pushAuthoringError(errors: AuthoringErrorInput[], error: AuthoringError
     code: 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
     status: 400,
     ...error,
+    message: appendRepairHintToAuthoringMessage(error),
   });
+}
+
+function appendRepairHintToAuthoringMessage(error: AuthoringErrorInput) {
+  const repairHint = typeof error.details?.repairHint === 'string' ? error.details.repairHint.trim() : '';
+  if (!repairHint || error.message.includes(repairHint)) {
+    return error.message;
+  }
+  return `${error.message}. ${repairHint}`;
 }
 
 function hasOwnDefined(value: any, key: string) {
@@ -6627,6 +6677,7 @@ function collectApplyBlueprintScriptAssetReferenceErrors(
         path: `${path}.script`,
         ruleId: 'apply-blueprint-script-asset-key-invalid',
         message: `flowSurfaces applyBlueprint ${publicPath}.script must be a non-empty string asset key; use settings.code for inline JS code`,
+        details: withJsBlockRepairHint(),
       });
       return;
     }
@@ -6643,6 +6694,9 @@ function collectApplyBlueprintScriptAssetReferenceErrors(
       path: `${path}.script`,
       ruleId: 'apply-blueprint-script-asset-code-required',
       message: `flowSurfaces applyBlueprint ${publicPath}.script references script asset '${scriptKey}' without non-empty code; use settings.code for inline JS code`,
+      details: withJsBlockRepairHint({
+        scriptKey,
+      }),
     });
     return;
   }
@@ -6650,6 +6704,7 @@ function collectApplyBlueprintScriptAssetReferenceErrors(
     path: `${path}.script`,
     ruleId: 'apply-blueprint-script-asset-key-invalid',
     message: `flowSurfaces applyBlueprint ${publicPath}.script must be a string asset key; use settings.code for inline JS code`,
+    details: withJsBlockRepairHint(),
   });
 }
 

@@ -410,6 +410,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['nickname'],
       },
     });
 
@@ -443,6 +444,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
           collectionName: 'employees',
         },
         defaultFilter: employeeDefaultFilter(),
+        fields: ['nickname'],
       },
     });
 
@@ -767,6 +769,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
           collectionName: 'kanban_tasks',
         },
         defaultFilter: kanbanDefaultFilter(),
+        fields: ['title'],
         settings: {
           groupField: 'status',
           dragSortBy: 'status_sort',

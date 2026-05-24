@@ -4794,6 +4794,7 @@ describe('flowSurfaces templates', () => {
         binding: 'associatedRecords',
         associationField: 'department',
       },
+      fields: ['title'],
       defaultFilter: departmentDefaultFilter(),
     });
     const associationBlockTemplate = await saveTemplate(rootAgent, {

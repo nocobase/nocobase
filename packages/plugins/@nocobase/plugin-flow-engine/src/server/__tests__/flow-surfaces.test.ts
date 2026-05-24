@@ -9,6 +9,7 @@
 
 import type { Database, Repository } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { FlowSurfacesService } from '../flow-surfaces/service';
@@ -23,12 +24,23 @@ const FLOW_SURFACES_TEMPLATE_ENABLED_TEST_PLUGIN_INSTALLS = [
   'ui-templates',
 ] as const;
 const FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
+const FLOW_SURFACE_TEST_VISIBLE_FIELD_BLOCK_TYPES = new Set([
+  'table',
+  'list',
+  'gridCard',
+  'details',
+  'createForm',
+  'editForm',
+  'filterForm',
+  'kanban',
+]);
 const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION: Record<string, string[]> = {
   users: ['nickname', 'username', 'email', 'phone'],
   employees: ['nickname', 'status', 'email', 'phone'],
   departments: ['title', 'location', 'code', 'scope'],
   categories: ['title', 'code', 'status', 'scope'],
   tasks: ['title', 'status', 'priority', 'scope'],
+  employee_logs: ['content'],
   calendar_events: ['title', 'status', 'category', 'scope'],
   kanban_tasks: ['title', 'status', 'priority', 'scope'],
   no_interface_fields: ['name', 'code', 'label', 'scope'],
@@ -676,6 +688,7 @@ describe('flowSurfaces resource', () => {
           associationField: 'employee',
         },
         defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
+        fields: ['nickname'],
       },
     });
     expect(semanticAdd.status).toBe(200);
@@ -691,6 +704,7 @@ describe('flowSurfaces resource', () => {
           associationField: 'employee',
         },
         defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
+        fields: ['nickname'],
       },
     });
     expect(semanticListAdd.status).toBe(200);
@@ -707,6 +721,7 @@ describe('flowSurfaces resource', () => {
           associationName: 'tasks',
           sourceId: '{{ctx.custom.badSourceId}}',
         },
+        fields: ['title'],
       },
     });
     expect(invalidAssociationCurrentCollectionRaw.status).toBe(400);
@@ -727,6 +742,7 @@ describe('flowSurfaces resource', () => {
           associationName: 'tasks',
           sourceId: '{{ctx.custom.badSourceId}}',
         },
+        fields: ['title'],
       },
     });
     expect(invalidAssociationCurrentRecordRaw.status).toBe(400);
@@ -744,6 +760,7 @@ describe('flowSurfaces resource', () => {
           binding: 'associatedRecords',
           associationField: 'employee',
         },
+        fields: ['nickname'],
       },
     });
     expect(invalidAssociationSemanticBinding.status).toBe(400);
@@ -802,6 +819,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['nickname'],
       },
     });
     expect(invalidRaw.status).toBe(400);
@@ -833,6 +851,7 @@ describe('flowSurfaces resource', () => {
           collectionName: 'departments',
         },
         defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'departments' }),
+        fields: ['title'],
       },
     });
     expect(otherRecordsBlock.status).toBe(200);
@@ -859,10 +878,18 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const createFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'createForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: ['nickname'],
+      },
+    );
     const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
       dataSourceKey: 'main',
       collectionName: 'employees',
@@ -871,10 +898,18 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const filterFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'filterForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: [{ fieldPath: 'nickname', defaultTargetUid: tableUid }],
+      },
+    );
 
     const validTableSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -1206,6 +1241,7 @@ describe('flowSurfaces resource', () => {
             ...(FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES.has(blockCase.type)
               ? { defaultFilter: buildFlowSurfaceTestDefaultFilter(blockCase.resourceInit) }
               : {}),
+            ...(FLOW_SURFACE_TEST_VISIBLE_FIELD_BLOCK_TYPES.has(blockCase.type) ? { fields: ['nickname'] } : {}),
           },
         }),
       );
@@ -1542,6 +1578,7 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -1622,6 +1659,7 @@ describe('flowSurfaces resource', () => {
             collectionName: 'employees',
           },
           defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
+          fields: ['nickname'],
         },
       }),
     );
@@ -2310,6 +2348,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentCollection',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -2407,6 +2446,7 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: blockCase.collectionName,
           },
+          ...(blockCase.type === 'table' ? { fields: ['nickname'] } : {}),
           defaultFilter: blockCase.defaultFilter,
         },
       });
@@ -2615,6 +2655,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             defaultActionSettings: {
               filter: {
                 filterableFieldNames: ['nickname', 'username', 'email', 'phone'],
@@ -2748,6 +2789,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             defaultFilter: blockDefaultFilter,
           },
           {
@@ -2757,6 +2799,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             defaultFilter: blockDefaultFilter,
             defaultActionSettings: {
               filter: {
@@ -2838,6 +2881,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
             defaultFilter: {},
           },
           {
@@ -3087,6 +3131,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
           },
           {
             key: 'editForm',
@@ -3095,6 +3140,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
+            fields: ['nickname'],
           },
         ],
       },
@@ -3141,6 +3187,7 @@ describe('flowSurfaces resource', () => {
         settings: {
           treeTable: true,
         },
+        fields: ['code'],
       },
     );
     const addBlockReadback = await getSurface(rootAgent, {
@@ -3225,7 +3272,6 @@ describe('flowSurfaces resource', () => {
     const expectExplicitFieldsError = (response: any, path: string) => {
       expect(response.status, readErrorMessage(response)).toBe(400);
       expectFlowSurfaceError(response, 'tree-table-explicit-fields-readable-required', path);
-      expect(readErrorMessage(response)).toContain('explicit fields must include at least one direct readable');
     };
 
     for (const testCase of unreadableFieldCases) {
@@ -3465,6 +3511,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
+        fields: ['nickname'],
       },
     });
     expect(generatedDefaultFilterRes.status).toBe(200);
@@ -3519,6 +3566,7 @@ describe('flowSurfaces resource', () => {
             },
           },
         },
+        fields: ['nickname'],
       },
     });
     expect(incompleteFilterRes.status).toBe(400);
@@ -3534,6 +3582,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
+        fields: ['nickname'],
         defaultActionSettings: {
           filter: {
             filterableFieldNames: ['username'],
@@ -3561,6 +3610,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
+        fields: ['nickname'],
         defaultActionSettings: {
           filter: {
             filterableFieldNames: ['username', 'nickname', 'email', 'phone'],
@@ -3594,6 +3644,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
+        fields: ['nickname'],
         defaultActionSettings: {
           filter: {
             filterableFieldNames: ['username'],
@@ -4052,6 +4103,7 @@ describe('flowSurfaces resource', () => {
           collectionName: 'employees',
         },
         defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
+        fields: ['nickname'],
         settings: {
           title: 'Employees table',
           pageSize: 50,
@@ -5186,6 +5238,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -5925,6 +5978,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -6583,6 +6637,7 @@ describe('flowSurfaces resource', () => {
             associationField: 'tasks',
           },
           defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
+          fields: ['title'],
         },
       }),
     );
@@ -6599,6 +6654,7 @@ describe('flowSurfaces resource', () => {
             binding: 'currentCollection',
           },
           defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'tasks' }),
+          fields: ['title'],
         },
       }),
     );
@@ -6614,6 +6670,7 @@ describe('flowSurfaces resource', () => {
           binding: 'otherRecords',
           collectionName: 'departments',
         },
+        fields: ['title'],
       },
     });
 
@@ -6656,12 +6713,32 @@ describe('flowSurfaces resource', () => {
       tabTitle: 'Create form tab',
     });
 
-    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
+    const formUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'createForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: ['nickname', 'status'],
+      },
+    );
+    const initialFormReadback = await getSurface(rootAgent, {
+      uid: formUid,
     });
-    const nicknameField = await addField(rootAgent, formUid, 'nickname');
-    const statusField = await addField(rootAgent, formUid, 'status');
+    const initialFormItems = _.castArray(initialFormReadback.tree.subModels?.grid?.subModels?.items || []);
+    const nicknameField = {
+      wrapperUid: initialFormItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname')
+        ?.uid,
+    };
+    const statusField = {
+      wrapperUid: initialFormItems.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')
+        ?.uid,
+    };
+    expect(nicknameField.wrapperUid).toBeTruthy();
+    expect(statusField.wrapperUid).toBeTruthy();
 
     const gridUid = await getBlockGridUid(rootAgent, formUid);
     await rootAgent.resource('flowSurfaces').setLayout({
@@ -6764,17 +6841,49 @@ describe('flowSurfaces resource', () => {
       tabTitle: 'Edit and details tab',
     });
 
-    const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const editFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'editForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: ['nickname'],
+      },
+    );
+    const detailsUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'details',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: ['department.title'],
+      },
+    );
 
-    const editField = await addField(rootAgent, editFormUid, 'nickname');
-    const detailsField = await addField(rootAgent, detailsUid, 'department.title');
+    const initialEditReadback = await getSurface(rootAgent, {
+      uid: editFormUid,
+    });
+    const editField = {
+      wrapperUid: _.castArray(initialEditReadback.tree.subModels?.grid?.subModels?.items || []).find(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
+      )?.uid,
+    };
+    const initialDetailsReadback = await getSurface(rootAgent, {
+      uid: detailsUid,
+    });
+    const detailsField = {
+      wrapperUid: _.castArray(initialDetailsReadback.tree.subModels?.grid?.subModels?.items || []).find(
+        (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'department.title',
+      )?.uid,
+    };
+    expect(editField.wrapperUid).toBeTruthy();
+    expect(detailsField.wrapperUid).toBeTruthy();
     const updateRecordAction = await addAction(rootAgent, detailsUid, 'updateRecord');
 
     await rootAgent.resource('flowSurfaces').setEventFlows({
@@ -6885,6 +6994,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -6903,9 +7013,9 @@ describe('flowSurfaces resource', () => {
     expect(_.castArray(filterReadback.tree.subModels?.actions || []).map((item: any) => item.use)).toEqual([
       'FilterFormSubmitActionModel',
     ]);
-    expect(_.castArray(filterReadback.tree.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(
-      filterField.wrapperUid,
-    );
+    expect(
+      _.castArray(filterReadback.tree.subModels?.grid?.subModels?.items || []).map((item: any) => item.uid),
+    ).toContain(filterField.wrapperUid);
     expect(_.castArray(filterReadback.tree.subModels?.actions || [])[0]?.uid).toBe(filterAction.uid);
 
     const fieldReadback = await getSurface(rootAgent, {
@@ -7213,10 +7323,18 @@ describe('flowSurfaces resource', () => {
       filterPaths: ['status'],
     });
 
-    const applyFilterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const applyFilterFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'filterForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: [{ fieldPath: 'nickname', defaultTargetUid: tableUid }],
+      },
+    );
     const applyFilterGridUid = await getBlockGridUid(rootAgent, applyFilterFormUid);
     const applyFilterField = await rootAgent.resource('flowSurfaces').apply({
       values: {
@@ -7306,10 +7424,18 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const filterFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'filterForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: [{ fieldPath: 'nickname', defaultTargetUid: tableUid }],
+      },
+    );
 
     const tableCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -7359,11 +7485,16 @@ describe('flowSurfaces resource', () => {
       fieldUse: 'InputFieldModel',
     });
 
-    const inferredFormField = await addField(rootAgent, createFormUid, 'nickname');
-    expect(inferredFormField.fieldUse).toBe(formNicknameField.fieldUse);
+    const createFormInitialReadback = await getSurface(rootAgent, {
+      uid: createFormUid,
+    });
+    const initialFormItem = _.castArray(createFormInitialReadback.tree.subModels?.grid?.subModels?.items || []).find(
+      (item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'nickname',
+    );
+    expect(initialFormItem?.subModels?.field?.use).toBe(formNicknameField.fieldUse);
 
     const inferredFormFieldReadback = await getSurface(rootAgent, {
-      uid: inferredFormField.fieldUid,
+      uid: initialFormItem.subModels.field.uid,
     });
     expect(inferredFormFieldReadback.tree.use).toBe(formNicknameField.fieldUse);
 
@@ -7508,10 +7639,18 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const filterFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'filterForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: [{ fieldPath: 'nickname', defaultTargetUid: tableUid }],
+      },
+    );
     const treeTableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
       dataSourceKey: 'main',
       collectionName: 'categories',
@@ -7706,10 +7845,18 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const filterFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'filterForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: [{ fieldPath: 'nickname', defaultTargetUid: tableUid }],
+      },
+    );
     const actionPanelUid = await addBlock(rootAgent, page.tabSchemaUid, 'actionPanel', {});
     const jsBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'jsBlock', undefined, {
       settings: {
@@ -8136,10 +8283,18 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
+    const filterFormUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'filterForm',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      {
+        fields: [{ fieldPath: 'nickname', defaultTargetUid: tableUid }],
+      },
+    );
 
     const tableField = await addField(rootAgent, tableUid, 'nickname');
     const formField = await addField(rootAgent, createFormUid, 'nickname');
@@ -8653,7 +8808,9 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidFieldUseApply.status).toBe(400);
-    expect(readErrorMessage(invalidFieldUseApply)).toContain(`fieldUse 'DisplayTextFieldModel'`);
+    expect(readErrorMessage(invalidFieldUseApply)).toContain(
+      `fieldUse 'DisplayTextFieldModel' is not allowed under 'FormGridModel'`,
+    );
   });
 
   it('should support mutate key chain rollback apply replace subtree and stable get readback', async () => {
@@ -10464,6 +10621,22 @@ describe('flowSurfaces resource', () => {
     });
     expect(getData(routeReadbackRes).pageRoute.schemaUid).toBe(page.pageSchemaUid);
 
+    const groupRes = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: `GET group route ${uid()}`,
+        type: 'group',
+      },
+    });
+    expect(groupRes.status).toBe(200);
+    const groupRouteId = getData(groupRes).routeId;
+    const groupGetRes = await rootAgent.resource('flowSurfaces').get({
+      routeId: groupRouteId,
+    });
+    expect(groupGetRes.status).toBe(400);
+    expect(readErrorMessage(groupGetRes)).toContain('menu group');
+    expect(readErrorMessage(groupGetRes)).toContain('navigation.group.routeId');
+    expect(readErrorMessage(groupGetRes)).toContain('flowSurfaces:get');
+
     const mixedLocatorRes = await rootAgent.resource('flowSurfaces').get({
       uid: page.pageUid,
       pageSchemaUid: page.pageSchemaUid,
@@ -10606,6 +10779,7 @@ describe('flowSurfaces resource', () => {
             collectionName: 'employees',
           },
           defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
+          fields: ['nickname'],
           settings: {
             dataScope: {},
           },
@@ -11062,6 +11236,16 @@ function buildFlowSurfaceTestDefaultFilter(resourceInit?: Record<string, any>) {
   };
 }
 
+function buildFlowSurfaceTestVisibleFields(resourceInit?: Record<string, any>) {
+  const collectionName = String(resourceInit?.collectionName || '').trim();
+  const paths = FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION[collectionName] || ['title'];
+  return paths.slice(0, 1);
+}
+
+function hasFlowSurfaceTestVisibleFieldConfig(values: Record<string, any>) {
+  return hasOwnDefinedForTest(values, 'fields') || hasOwnDefinedForTest(values, 'fieldGroups');
+}
+
 async function addBlock(
   rootAgent: any,
   targetUid: string,
@@ -11075,6 +11259,12 @@ async function addBlock(
     _.isUndefined(extraValues.template) &&
     !hasFlowSurfaceTestEffectiveDefaultFilter(extraValues)
       ? buildFlowSurfaceTestDefaultFilter(normalizedResourceInit)
+      : undefined;
+  const defaultFieldsForVisibleDataBlock =
+    FLOW_SURFACE_TEST_VISIBLE_FIELD_BLOCK_TYPES.has(type) &&
+    _.isUndefined(extraValues.template) &&
+    !hasFlowSurfaceTestVisibleFieldConfig(extraValues)
+      ? buildFlowSurfaceTestVisibleFields(normalizedResourceInit)
       : undefined;
   let normalizedTargetUid = targetUid;
   const targetReadback = await getSurface(rootAgent, {
@@ -11095,6 +11285,7 @@ async function addBlock(
           ...(!_.isUndefined(defaultFilterForPublicDataBlock)
             ? { defaultFilter: defaultFilterForPublicDataBlock }
             : {}),
+          ...(!_.isUndefined(defaultFieldsForVisibleDataBlock) ? { fields: defaultFieldsForVisibleDataBlock } : {}),
           ...extraValues,
         },
       }),

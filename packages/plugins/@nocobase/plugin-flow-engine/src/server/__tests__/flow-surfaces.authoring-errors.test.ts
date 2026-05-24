@@ -9,7 +9,6 @@
 
 import {
   addBlockData,
-  createMenu,
   createFlowSurfacesContractContext,
   createPage,
   destroyFlowSurfacesContractContext,
@@ -19,6 +18,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { uid } from '@nocobase/utils';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { collectFlowRegistryRunJsAuthoringErrors, inspectRunJsAuthoringCode } from '../flow-surfaces/runjs-authoring';
@@ -10450,13 +10450,20 @@ ctx.render(React.createElement(DashboardKPIs));
   });
 
   it('should aggregate ambiguous navigation group titles before applyBlueprint writes', async () => {
-    await createMenu(rootAgent, {
-      type: 'group',
-      title: 'Duplicate authoring group',
+    const title = `Duplicate authoring group ${uid()}`;
+    await context.routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+      },
     });
-    await createMenu(rootAgent, {
-      type: 'group',
-      title: 'Duplicate authoring group',
+    await context.routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+      },
     });
 
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
@@ -10464,7 +10471,7 @@ ctx.render(React.createElement(DashboardKPIs));
         mode: 'create',
         navigation: {
           group: {
-            title: 'Duplicate authoring group',
+            title,
           },
           item: {
             title: 'Ambiguous navigation authoring page',

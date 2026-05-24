@@ -233,6 +233,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -349,6 +350,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -393,6 +395,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -634,6 +637,7 @@ describe('flowSurfaces association contract', () => {
             binding: 'associatedRecords',
             associationField: 'roles',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -703,6 +707,7 @@ describe('flowSurfaces association contract', () => {
             dataSourceKey: 'main',
             collectionName: 'roles',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -738,6 +743,7 @@ describe('flowSurfaces association contract', () => {
             dataSourceKey: 'main',
             collectionName: 'roles',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -761,6 +767,7 @@ describe('flowSurfaces association contract', () => {
           dataSourceKey: 'main',
           collectionName: 'roles',
         },
+        fields: ['title'],
       },
     });
     expect(legacyTableRes.status).toBe(400);
@@ -810,6 +817,7 @@ describe('flowSurfaces association contract', () => {
             binding: 'associatedRecords',
             associationField: 'roles',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -852,6 +860,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['title'],
         },
       }),
     );
@@ -881,6 +890,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
+          fields: ['title'],
         },
       }),
     );
