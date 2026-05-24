@@ -8,7 +8,6 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { spawn } from 'node:child_process';
 import pc from 'picocolors';
 import crypto from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
@@ -41,7 +40,7 @@ import {
 } from '../lib/prompt-validators.ts';
 import { validateExternalDbConfig, validateMysqlLowerCaseTableNamesCompatibility } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
-import { run, runNocoBaseCommand } from '../lib/run-npm.js';
+import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { printInfo, printStage, printVerbose, printWarning, setVerboseMode } from '../lib/ui.js';
 import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
@@ -276,65 +275,6 @@ function pickPresetKeys(source: PromptInitialValues, keys: readonly string[]): P
     }
   }
   return out;
-}
-
-async function commandSucceeds(
-  command: string,
-  args: string[],
-  options?: { cwd?: string; env?: Record<string, string> },
-): Promise<boolean> {
-  return await new Promise<boolean>((resolve) => {
-    const child = spawn(command, args, {
-      cwd: options?.cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
-      stdio: 'ignore',
-    });
-
-    child.once('error', () => resolve(false));
-    child.once('close', (code) => resolve(code === 0));
-  });
-}
-
-async function commandOutput(
-  command: string,
-  args: string[],
-  options?: { cwd?: string; env?: Record<string, string> },
-): Promise<string> {
-  return await new Promise<string>((resolve, reject) => {
-    const child = spawn(command, args, {
-      cwd: options?.cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.setEncoding('utf8');
-    child.stderr.setEncoding('utf8');
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk;
-    });
-    child.once('error', reject);
-    child.once('close', (code, signal) => {
-      if (code === 0) {
-        resolve(stdout);
-        return;
-      }
-      if (signal) {
-        reject(new Error(`${command} exited due to signal ${signal}`));
-        return;
-      }
-      reject(new Error(`${command} exited with code ${code}: ${stderr.trim()}`));
-    });
-  });
 }
 
 function optionalEnvString(value: unknown): string | undefined {

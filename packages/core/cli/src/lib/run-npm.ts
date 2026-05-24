@@ -22,11 +22,49 @@ import os from 'node:os';
 import type { ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import spawn from 'cross-spawn';
+import { translateCli } from './cli-locale.js';
 
 const FORWARDED_SIGNALS: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
+const MISSING_COMMAND_SPECS = {
+  docker: {
+    textKey: 'commands.shared.missingCommand.docker',
+    displayName: 'Docker',
+  },
+  git: {
+    textKey: 'commands.shared.missingCommand.git',
+    displayName: 'Git',
+  },
+  yarn: {
+    textKey: 'commands.shared.missingCommand.yarn',
+    displayName: 'Yarn',
+  },
+} as const;
 
 function resolveCommandName(name: string): string {
   return name;
+}
+
+function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
+  const code =
+    error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : undefined;
+  if (code !== 'ENOENT') {
+    return undefined;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(MISSING_COMMAND_SPECS, name)) {
+    return undefined;
+  }
+
+  const spec = MISSING_COMMAND_SPECS[name as keyof typeof MISSING_COMMAND_SPECS];
+  return new Error(
+    translateCli(
+      spec.textKey,
+      { action: label },
+      {
+        fallback: `Couldn't run \`${label}\` because ${spec.displayName} is not installed. Please install ${spec.displayName} and try again.`,
+      },
+    ),
+  );
 }
 
 function pathExists(candidate: string): boolean {
@@ -47,8 +85,8 @@ function isDirectory(candidate: string): boolean {
 
 function hasLocalNocoBaseBinary(candidate: string): boolean {
   return (
-    pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1'))
-    || pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1.cmd'))
+    pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1')) ||
+    pathExists(path.join(candidate, 'node_modules', '.bin', 'nocobase-v1.cmd'))
   );
 }
 
@@ -72,11 +110,7 @@ export function resolveProjectCwd(cwd?: string): string {
   }
   let current = hasExplicitInput ? fallback : process.cwd();
 
-  while (true) {
-    if (hasLocalNocoBaseBinary(current)) {
-      return current;
-    }
-
+  while (!hasLocalNocoBaseBinary(current)) {
     const parent = path.dirname(current);
     if (parent === current) {
       if (hasExplicitInput) {
@@ -86,6 +120,8 @@ export function resolveProjectCwd(cwd?: string): string {
     }
     current = parent;
   }
+
+  return current;
 }
 
 export function run(
@@ -130,7 +166,7 @@ export function run(
     const cleanupSignalForwarding = forwardSignalsToChild(child);
     child.once('error', (error) => {
       cleanupSignalForwarding();
-      reject(error);
+      reject(createMissingCommandError(name, label, error) ?? error);
     });
     child.once('close', (code, signal) => {
       cleanupSignalForwarding();
@@ -182,11 +218,12 @@ function forwardSignalsToChild(child: ChildProcess): () => void {
 export function commandSucceeds(
   name: string,
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string> },
+  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
 ): Promise<boolean> {
   const cwd = resolveCwd(options?.cwd);
+  const label = options?.errorName ?? name;
   const command = resolveCommandName(name);
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       cwd,
       env: {
@@ -197,7 +234,14 @@ export function commandSucceeds(
       windowsHide: process.platform === 'win32',
     });
 
-    child.once('error', () => resolve(false));
+    child.once('error', (error) => {
+      const missingCommandError = createMissingCommandError(name, label, error);
+      if (missingCommandError) {
+        reject(missingCommandError);
+        return;
+      }
+      resolve(false);
+    });
     child.once('close', (code) => resolve(code === 0));
   });
 }
@@ -230,7 +274,9 @@ export function commandOutput(
     child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
-    child.once('error', reject);
+    child.once('error', (error) => {
+      reject(createMissingCommandError(name, label, error) ?? error);
+    });
     child.once('close', (code, signal) => {
       if (code === 0) {
         resolve(stdout.trim());
@@ -241,7 +287,9 @@ export function commandOutput(
         return;
       }
       const details = stderr.trim() || stdout.trim();
-      reject(new Error(details ? `${label} exited with code ${code}: ${details}` : `${label} exited with code ${code}`));
+      reject(
+        new Error(details ? `${label} exited with code ${code}: ${details}` : `${label} exited with code ${code}`),
+      );
     });
   });
 }
@@ -280,7 +328,9 @@ export async function commandOutputViaFile(
         windowsHide: process.platform === 'win32',
       });
 
-      child.once('error', reject);
+      child.once('error', (error) => {
+        reject(createMissingCommandError(name, label, error) ?? error);
+      });
       child.once('close', (code, signal) => {
         resolve({ code, signal });
       });
