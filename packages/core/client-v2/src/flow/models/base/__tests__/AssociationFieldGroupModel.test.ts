@@ -40,6 +40,7 @@ describe('AssociationFieldGroupModel', () => {
         type: 'belongsTo',
         target: 'companies',
         targetCollection: companies,
+        isAssociationField: () => true,
       },
     ]);
     const users = createCollection('users', [
@@ -50,6 +51,7 @@ describe('AssociationFieldGroupModel', () => {
         type: 'belongsTo',
         target: 'departments',
         targetCollection: departments,
+        isAssociationField: () => true,
       },
     ]);
     const posts = createCollection('posts', [
@@ -60,6 +62,7 @@ describe('AssociationFieldGroupModel', () => {
         type: 'belongsTo',
         target: 'users',
         targetCollection: users,
+        isAssociationField: () => true,
       },
     ]);
 
@@ -73,8 +76,11 @@ describe('AssociationFieldGroupModel', () => {
     const firstAssociationGroup = firstChildren.find((item) => item.key === 'user-children-associationField');
     const secondLevel = firstAssociationGroup.children;
     const secondChildren = secondLevel[0].children();
+    const secondFieldsGroup = secondChildren.find((item) => item.key === 'user.department-children-collectionField');
 
     expect(secondChildren.map((item) => item.key)).toContain('user.department-children-collectionField');
     expect(secondChildren.map((item) => item.key)).not.toContain('user.department-children-associationField');
+    expect(secondFieldsGroup.children.map((item) => item.key)).toContain('c-user.department.name');
+    expect(secondFieldsGroup.children.map((item) => item.key)).not.toContain('c-user.department.company');
   });
 });

@@ -44,6 +44,12 @@ export class AssociationFieldGroupModel extends FlowModel {
                   children: field.targetCollection
                     .getFields()
                     .map((f) => {
+                      if (
+                        nextAssociationDepth >= maxAssociationFieldDepth &&
+                        (f.isAssociationField?.() || f.target || f.targetCollection)
+                      ) {
+                        return;
+                      }
                       const fp = `${fPath}.${f.name}`;
                       const binding = DisplayItemModel.getDefaultBindingByField(ctx, f, {
                         fallbackToTargetTitleField: true,

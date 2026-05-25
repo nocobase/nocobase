@@ -12,7 +12,7 @@ import { FlowEngine, type FlowModelContext, type SubModelItem } from '@nocobase/
 // Import from the aggregate to preserve the model initialization order used by adjacent tests.
 import { FormItemModel, FormJSFieldItemModel, InputFieldModel, JSEditableFieldModel } from '../../../..';
 
-function createFormMenuContext(prefixFieldPath = 'roles') {
+function createFormMenuContext(prefixFieldPath = 'roles', collectionName = 'roles') {
   const engine = new FlowEngine();
   engine.registerModels({
     FormItemModel,
@@ -36,7 +36,21 @@ function createFormMenuContext(prefixFieldPath = 'roles') {
     fields: [
       { name: 'id', type: 'integer', interface: 'number', title: 'ID' },
       { name: 'name', type: 'string', interface: 'input', title: 'Name' },
+      { name: 'department', type: 'belongsTo', interface: 'm2o', target: 'departments', title: 'Department' },
     ],
+  });
+  dataSource.addCollection({
+    name: 'departments',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'name', type: 'string', interface: 'input', title: 'Name' },
+      { name: 'company', type: 'belongsTo', interface: 'm2o', target: 'companies', title: 'Company' },
+    ],
+  });
+  dataSource.addCollection({
+    name: 'companies',
+    filterTargetKey: 'id',
+    fields: [{ name: 'name', type: 'string', interface: 'input', title: 'Name' }],
   });
 
   const blockModel = engine.createModel({ use: 'FlowModel', uid: 'users-form-block' });
@@ -44,7 +58,7 @@ function createFormMenuContext(prefixFieldPath = 'roles') {
 
   const gridModel = engine.createModel({ use: 'FlowModel', uid: 'users-form-grid' });
   gridModel.context.defineProperty('blockModel', { value: blockModel });
-  gridModel.context.defineProperty('collection', { value: dataSource.getCollection('roles') });
+  gridModel.context.defineProperty('collection', { value: dataSource.getCollection(collectionName) });
   gridModel.context.defineProperty('prefixFieldPath', { value: prefixFieldPath });
 
   return gridModel.context as FlowModelContext;
@@ -104,5 +118,16 @@ describe('FormItemModel defineChildren', () => {
     });
 
     expect((jsNameItem?.toggleable as (model: any) => boolean)(createModelLike(normalCreateOptions))).toBe(true);
+  });
+
+  it('hides association fields after two association levels in form add-field menus', async () => {
+    const ctx = createFormMenuContext('roles.department', 'departments');
+    const formItems = FormItemModel.defineChildren(ctx) as SubModelItem[];
+    const jsItems = (await FormJSFieldItemModel.defineChildren(ctx)) as SubModelItem[];
+
+    expect(formItems.map((item) => item.key)).toContain('roles.department.name');
+    expect(formItems.map((item) => item.key)).not.toContain('roles.department.company');
+    expect(jsItems.map((item) => item.key)).toContain('roles.department.name');
+    expect(jsItems.map((item) => item.key)).not.toContain('roles.department.company');
   });
 });
