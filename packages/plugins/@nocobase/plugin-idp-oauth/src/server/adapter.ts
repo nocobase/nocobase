@@ -10,8 +10,13 @@
 import Application from '@nocobase/server';
 import { createDbAdapter } from './db-adapter';
 import type { IdpOauthService } from './service';
+import type { AdapterConstructor } from 'oidc-provider';
 
-export function createOidcAdapter(app: Application, service: IdpOauthService, collectionName = 'oidcStates') {
+export function createOidcAdapter(
+  app: Application,
+  service: IdpOauthService,
+  collectionName = 'oidcStates',
+): AdapterConstructor {
   const DbAdapter = createDbAdapter(app, collectionName);
 
   return class OidcAdapter {

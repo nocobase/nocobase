@@ -24,7 +24,14 @@ type OidcModule = typeof import('oidc-provider');
 type JoseModule = typeof import('jose');
 type ProviderInstance = import('oidc-provider').Provider;
 type ResourceServer = import('oidc-provider').ResourceServer;
+type SessionInstance = import('oidc-provider').Session;
 type TokenFormat = import('oidc-provider').TokenFormat;
+type ProviderWithCookieName = ProviderInstance & {
+  cookieName(name: string): string;
+};
+type SessionWithNewFlag = SessionInstance & {
+  new?: boolean;
+};
 
 let oidcModulePromise: Promise<OidcModule> | null = null;
 let joseModulePromise: Promise<JoseModule> | null = null;
@@ -72,8 +79,8 @@ export type OidcClientResolver = {
 const defaultSupportedScopes = ['openid', 'offline_access', 'profile', 'email'] as const;
 const envJwksKeys = ['IDP_OAUTH_JWKS', 'OAUTH_JWKS'] as const;
 const MAX_CACHE_TTL_MS = 2_147_483_647;
-const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = Math.floor(ms(defaultTokenPolicyConfig.tokenExpirationTime) / 1000);
-const DEFAULT_SESSION_TTL_SECONDS = Math.floor(ms(defaultTokenPolicyConfig.sessionExpirationTime) / 1000);
+const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = Math.floor(ms(String(defaultTokenPolicyConfig.tokenExpirationTime)) / 1000);
+const DEFAULT_SESSION_TTL_SECONDS = Math.floor(ms(String(defaultTokenPolicyConfig.sessionExpirationTime)) / 1000);
 type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
   ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
   : { keys: Array<Record<string, any>> };
@@ -469,8 +476,8 @@ export class IdpOauthService {
   }
 
   async destroyProviderSession(ctx: any) {
-    const provider = await this.ensureProviderForContext(ctx);
-    const session = await provider.Session.get(ctx);
+    const provider = (await this.ensureProviderForContext(ctx)) as ProviderWithCookieName;
+    const session = (await provider.Session.get(ctx)) as SessionWithNewFlag;
     if (session && !session.new) {
       await session.destroy();
     }
