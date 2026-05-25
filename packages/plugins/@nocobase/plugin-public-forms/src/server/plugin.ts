@@ -200,16 +200,23 @@ export class PluginPublicFormsServer extends Plugin {
     if (!instance.get('enabled')) {
       return null;
     }
-    if (!token) {
-      if (instance.get('password')) {
-        if (password === undefined) {
+    if (instance.get('password')) {
+      if (password !== undefined) {
+        if (this.app.environment.renderJsonTemplate(instance.get('password')) !== password) {
+          throw new PasswordError('Please enter your password');
+        }
+      } else if (token) {
+        try {
+          await this.validatePublicFormToken(filterByTk, token);
+        } catch (error) {
           return {
             passwordRequired: true,
           };
         }
-        if (this.app.environment.renderJsonTemplate(instance.get('password')) !== password) {
-          throw new PasswordError('Please enter your password');
-        }
+      } else {
+        return {
+          passwordRequired: true,
+        };
       }
     }
     const keys = instance.collection.split(':');

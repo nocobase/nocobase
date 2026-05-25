@@ -14,6 +14,69 @@ function createPlugin() {
   return Object.create(PluginPublicFormsServer.prototype) as PluginPublicFormsServer & Record<string, any>;
 }
 
+function setupGetMetaPlugin(options: { password?: string; enabled?: boolean } = {}) {
+  const plugin = createPlugin();
+  const visibleFlowModel = {
+    uid: 'pf1',
+    use: 'RouteModel',
+  };
+  const completeFlowModel = {
+    uid: 'pf1',
+    use: 'RouteModel',
+  };
+  const sign = vi.fn(() => 'signed-token');
+  const instance = {
+    collection: 'main:users',
+    get: (key: string) => {
+      return {
+        enabled: options.enabled ?? true,
+        password: options.password,
+        title: 'Public form',
+      }[key];
+    },
+  };
+  const db = {
+    getRepository: vi.fn((name: string) => {
+      if (name === 'publicForms') {
+        return {
+          findOne: vi.fn(async () => instance),
+        };
+      }
+      if (name === 'uiSchemas') {
+        return {
+          getJsonSchema: vi.fn(async () => null),
+        };
+      }
+      return null;
+    }),
+  };
+
+  Object.defineProperty(plugin, 'app', {
+    value: {
+      db,
+      environment: {
+        renderJsonTemplate: vi.fn((value) => value),
+      },
+      authManager: {
+        jwt: {
+          sign,
+        },
+      },
+    },
+  });
+  plugin.getFlowModelTree = vi.fn(async (_uid: string, treeOptions?: { includeAsyncNode?: boolean }) => {
+    return treeOptions?.includeAsyncNode ? completeFlowModel : visibleFlowModel;
+  });
+  plugin.getSchemaAssociationAppends = vi.fn(() => []);
+  plugin.getFlowModelAssociationAppends = vi.fn(() => []);
+  plugin.parseCollectionData = vi.fn(async (_dataSourceKey, collectionName, appends) => [
+    { name: collectionName },
+    ...appends.map((name: string) => ({ name })),
+  ]);
+
+  return { plugin, sign };
+}
+
 describe('PluginPublicFormsServer', () => {
   it('keeps primary collection options in public form meta', async () => {
     const plugin = createPlugin();
@@ -173,6 +236,75 @@ describe('PluginPublicFormsServer', () => {
         expiresIn: '1h',
       },
     );
+  });
+
+  it('requires password when a protected public form has no valid token', async () => {
+    const { plugin } = setupGetMetaPlugin({ password: 'secret' });
+
+    await expect(plugin.getMetaByTk('pf1', {})).resolves.toEqual({
+      passwordRequired: true,
+    });
+  });
+
+  it('validates submitted password before trusting any cached token', async () => {
+    const { plugin } = setupGetMetaPlugin({ password: 'secret' });
+    plugin.validatePublicFormToken = vi.fn(async () => ({ formKey: 'pf1' }));
+
+    await expect(plugin.getMetaByTk('pf1', { password: 'wrong', token: 'cached-token' })).rejects.toThrow(
+      'Please enter your password',
+    );
+    expect(plugin.validatePublicFormToken).not.toHaveBeenCalled();
+  });
+
+  it('keeps the legacy password flow working without a token', async () => {
+    const { plugin, sign } = setupGetMetaPlugin({ password: 'secret' });
+
+    const meta = await plugin.getMetaByTk('pf1', { password: 'secret' });
+
+    expect(meta.token).toBe('signed-token');
+    expect(sign).toHaveBeenCalledWith(
+      {
+        collectionName: 'users',
+        formKey: 'pf1',
+        targetCollections: [],
+      },
+      {
+        expiresIn: '1h',
+      },
+    );
+  });
+
+  it('uses the submitted password before validating a stale token', async () => {
+    const { plugin } = setupGetMetaPlugin({ password: 'secret' });
+    plugin.validatePublicFormToken = vi.fn(async () => {
+      throw new Error('Invalid public form token');
+    });
+
+    const meta = await plugin.getMetaByTk('pf1', { password: 'secret', token: 'stale-token' });
+
+    expect(meta.token).toBe('signed-token');
+    expect(plugin.validatePublicFormToken).not.toHaveBeenCalled();
+  });
+
+  it('allows a protected public form only with a token for the same form', async () => {
+    const { plugin } = setupGetMetaPlugin({ password: 'secret' });
+    plugin.validatePublicFormToken = vi.fn(async () => ({ formKey: 'pf1' }));
+
+    const meta = await plugin.getMetaByTk('pf1', { token: 'same-form-token' });
+
+    expect(meta.token).toBe('signed-token');
+    expect(plugin.validatePublicFormToken).toHaveBeenCalledWith('pf1', 'same-form-token');
+  });
+
+  it('asks for password again when a cached token belongs to another form', async () => {
+    const { plugin } = setupGetMetaPlugin({ password: 'secret' });
+    plugin.validatePublicFormToken = vi.fn(async () => {
+      throw new Error('Invalid public form token');
+    });
+
+    await expect(plugin.getMetaByTk('pf1', { token: 'another-form-token' })).resolves.toEqual({
+      passwordRequired: true,
+    });
   });
 
   it('loads async flow model by parent after validating the public form token', async () => {
