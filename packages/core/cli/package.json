@@ -73,8 +73,8 @@
       "skills": {
         "description": "Inspect or synchronize NocoBase AI coding skills for the current workspace."
       },
-      "version": {
-        "description": "Manage restorable versions during NocoBase app building."
+      "revision": {
+        "description": "Manage restorable revisions during NocoBase app building."
       },
       "examples": {
         "description": "Internal example commands for prompt and UI experiments.",

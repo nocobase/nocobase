@@ -11,8 +11,8 @@ import { Args, Command, Flags } from '@oclif/core';
 import { executeRawApiRequest } from '../../lib/api-client.js';
 import { ensureCrossEnvConfirmed } from '../../lib/env-guard.js';
 
-export default class VersionCommit extends Command {
-  static override summary = 'Save the current NocoBase build as a restorable version';
+export default class RevisionCreate extends Command {
+  static override summary = 'Save the current NocoBase build as a restorable revision';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> "description here"',
@@ -22,7 +22,7 @@ export default class VersionCommit extends Command {
   static override args = {
     description: Args.string({
       required: true,
-      description: 'Commit description, up to 2000 characters.',
+      description: 'Revision description, up to 2000 characters.',
     }),
   };
 
@@ -55,7 +55,7 @@ export default class VersionCommit extends Command {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(VersionCommit);
+    const { args, flags } = await this.parse(RevisionCreate);
     const description = args.description;
 
     if (description.length > 2000) {
@@ -80,7 +80,7 @@ export default class VersionCommit extends Command {
       path: '/app:publishEvent',
       body: {
         plugin: 'plugin-version-control',
-        command: 'version:commit',
+        command: 'revision:create',
         payload: {
           description,
         },
