@@ -1014,9 +1014,18 @@ describe('flowSurfaces API contract core', () => {
       type: 'group',
       parentMenuRouteId: parent.routeId,
     });
+    const rawReuseResponse = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title,
+        type: 'group',
+        parentMenuRouteId: parent.routeId,
+      },
+    });
 
     expect(second.routeId).toBe(first.routeId);
     expect(second.parentMenuRouteId).toBe(parent.routeId);
+    expect(rawReuseResponse.status, readErrorMessage(rawReuseResponse)).toBe(200);
+    expect(getData(rawReuseResponse).routeId).toBe(first.routeId);
 
     const routes = _.castArray(
       await routesRepo.find({
@@ -1027,6 +1036,90 @@ describe('flowSurfaces API contract core', () => {
       }),
     ).filter((route: any) => String(route.get('parentId')) === String(parent.routeId));
     expect(routes).toHaveLength(1);
+  });
+
+  it('should require valid icons for newly created visible menu routes', async () => {
+    const visibleGroupRes = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: `Missing icon group ${uid()}`,
+        type: 'group',
+      },
+    });
+    expect(visibleGroupRes.status).toBe(400);
+    expectStructuredError(readErrorItem(visibleGroupRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorItem(visibleGroupRes).ruleId).toBe('navigation-icon-required');
+
+    const visibleItemRes = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: `Missing icon item ${uid()}`,
+        type: 'item',
+      },
+    });
+    expect(visibleItemRes.status).toBe(400);
+    expect(readErrorItem(visibleItemRes).ruleId).toBe('navigation-icon-required');
+
+    const pageRes = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        title: `Missing icon page ${uid()}`,
+        tabTitle: 'Overview',
+      },
+    });
+    expect(pageRes.status).toBe(400);
+    expect(readErrorItem(pageRes).ruleId).toBe('navigation-icon-required');
+
+    const invalidIconRes = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: `Invalid icon group ${uid()}`,
+        type: 'group',
+        icon: 'NotARealAntDesignIcon',
+      },
+    });
+    expect(invalidIconRes.status).toBe(400);
+    expect(readErrorItem(invalidIconRes).ruleId).toBe('navigation-icon-unknown');
+
+    const bindableItem = await createMenu(rootAgent, {
+      title: `Invalid createPage icon item ${uid()}`,
+      type: 'item',
+    });
+    const invalidPageIconRes = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        menuRouteId: bindableItem.routeId,
+        title: `Invalid createPage icon ${uid()}`,
+        icon: 'NotARealAntDesignIcon',
+        tabTitle: 'Overview',
+      },
+    });
+    expect(invalidPageIconRes.status).toBe(400);
+    expect(readErrorItem(invalidPageIconRes).ruleId).toBe('navigation-icon-unknown');
+  });
+
+  it('should allow hidden menu routes without icons', async () => {
+    const hiddenGroup = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          title: `Hidden group ${uid()}`,
+          type: 'group',
+          hideInMenu: true,
+        },
+      }),
+    );
+    const hiddenItem = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          title: `Hidden item ${uid()}`,
+          type: 'item',
+          parentMenuRouteId: hiddenGroup.routeId,
+          hideInMenu: true,
+        },
+      }),
+    );
+
+    expect(hiddenGroup.type).toBe('group');
+    expect(hiddenItem.type).toBe('flowPage');
+    expect(hiddenItem.parentMenuRouteId).toBe(hiddenGroup.routeId);
   });
 
   it('should reject same-parent same-title legacy group ambiguity instead of silently creating another group', async () => {

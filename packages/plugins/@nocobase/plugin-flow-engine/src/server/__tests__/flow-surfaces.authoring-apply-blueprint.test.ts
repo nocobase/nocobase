@@ -34,6 +34,9 @@ const LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS = Array.from(
   { length: 11 },
   (_item, index) => `targetField${index + 1}`,
 );
+const EMPLOYEE_VISIBLE_FIELDS = ['nickname', 'status', 'email'];
+const DEFAULT_FILTER_CAP_VISIBLE_FIELDS = DEFAULT_FILTER_CAP_FIELDS.slice(0, 3);
+const LARGE_DEFAULTS_ACTION_VISIBLE_FIELDS = LARGE_DEFAULTS_ACTION_FIELDS.slice(0, 3);
 
 describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
   let context: FlowSurfacesContractContext;
@@ -160,7 +163,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 settings: {
                   sort: ['-createdAt', 'nickname'],
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -282,7 +285,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 settings: {
                   title: 'Should not persist either',
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -320,7 +323,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 title: 'Employees table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
               {
                 key: 'employeesList',
@@ -328,7 +331,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 title: 'Employees list',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -373,7 +376,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                     },
                   ],
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -566,7 +569,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                   logic: '$and',
                   items: [],
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -709,7 +712,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
               },
             ],
           },
@@ -753,7 +756,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -790,7 +793,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -982,7 +985,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
                 defaultFilter: explicitFilter,
               },
             ],
@@ -1003,6 +1006,103 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'capField4',
     ]);
     expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
+  });
+
+  it('should reject rich data blocks with too few visible business fields before applyBlueprint writes', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring minimum visible fields blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring minimum visible fields blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+                fields: ['capField1'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const minimumError = response.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-minimum',
+    );
+    expect(minimumError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'table',
+        collection: DEFAULT_FILTER_CAP_COLLECTION,
+        fieldCount: 1,
+        requiredFieldCount: 3,
+      },
+    });
+    expect(minimumError?.message).toContain('Add at least 3 collection field names');
+  });
+
+  it('should not count defaults.collections fieldGroups as visible table fields', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        defaults: {
+          collections: {
+            [DEFAULT_FILTER_CAP_COLLECTION]: {
+              fieldGroups: [
+                {
+                  title: 'Generated popup fields',
+                  fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
+                },
+              ],
+            },
+          },
+        },
+        navigation: {
+          item: {
+            title: 'Authoring defaults fieldGroups only blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring defaults fieldGroups only blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const visibleFieldError = response.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+    expect(visibleFieldError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'table',
+        collection: DEFAULT_FILTER_CAP_COLLECTION,
+      },
+    });
+    expect(visibleFieldError?.message).toContain('defaults.collections.*.fieldGroups');
   });
 
   it('should add default table record actions when raw applyBlueprint omits recordActions', async () => {
@@ -1027,7 +1127,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 collection: 'employees',
                 template: {},
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -1039,6 +1139,54 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const data = getData(executeRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableRecordActionUses(persistedTable)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+    ]);
+  });
+
+  it('should auto-complete default table actions when raw applyBlueprint passes empty action arrays', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring empty table action arrays',
+          },
+        },
+        page: {
+          title: 'Authoring empty table action arrays',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+                actions: [],
+                recordActions: [],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableActionUses(persistedTable)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
+    ]);
     expect(readTableRecordActionUses(persistedTable)).toEqual([
       'ViewActionModel',
       'EditActionModel',
@@ -1067,7 +1215,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 actions: [
                   {
                     type: 'filter',
@@ -1133,7 +1281,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 actions: [],
                 recordActions: [],
                 skipDefaultActions: true,
@@ -1176,7 +1324,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -1263,7 +1411,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewEmployee',
@@ -1277,7 +1425,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -1322,7 +1470,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewEmployee',
@@ -1335,7 +1483,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                         {
                           key: 'second',
@@ -1343,7 +1491,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                         {
                           key: 'third',
@@ -1351,7 +1499,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                         {
                           key: 'fourth',
@@ -1425,7 +1573,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewEmployee',
@@ -1440,7 +1588,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -1968,7 +2116,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 pageSize: 99,
                 sort: ['nickname'],
                 sorting: [{ field: 'createdAt', direction: 'asc' }],
@@ -2328,7 +2476,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2346,6 +2494,185 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
     expect(matchedGroups).toHaveLength(1);
+  });
+
+  it('should require a group icon when the only same-title group is under a different parent', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Authoring nested parent ${Date.now()}`,
+      type: 'group',
+    });
+    const nestedGroupTitle = `Authoring nested duplicate title ${Date.now()}`;
+    await createMenu(rootAgent, {
+      title: nestedGroupTitle,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          group: {
+            title: nestedGroupTitle,
+          },
+          item: {
+            title: 'Authoring nested duplicate title item',
+          },
+        },
+        page: {
+          title: 'Authoring nested duplicate title item',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-icon-required',
+      path: '$.navigation.group.icon',
+    });
+  });
+
+  it('should create a root group instead of reusing a same-title group from another parent', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Authoring scoped parent ${Date.now()}`,
+      type: 'group',
+    });
+    const groupTitle = `Authoring scoped group ${Date.now()}`;
+    const nestedGroup = await createMenu(rootAgent, {
+      title: groupTitle,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          group: {
+            title: groupTitle,
+            icon: 'FolderOpenOutlined',
+          },
+          item: {
+            title: 'Authoring scoped group item',
+          },
+        },
+        page: {
+          title: 'Authoring scoped group item',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    expect(data.surface.pageRoute.parentId).not.toBe(nestedGroup.routeId);
+    const matchedGroups = await routesRepo.find({
+      filter: {
+        type: 'group',
+        title: groupTitle,
+      },
+    });
+    expect(_.castArray(matchedGroups).filter((route: any) => _.isNil(route.get('parentId')))).toHaveLength(1);
+  });
+
+  it('should validate the effective create-mode page icon fallback for the navigation item', async () => {
+    const invalidFallbackRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring invalid page icon fallback',
+          },
+        },
+        page: {
+          title: 'Authoring invalid page icon fallback',
+          icon: 'NotARealAntDesignIcon',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(invalidFallbackRes.status).toBe(400);
+    expect(invalidFallbackRes.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-icon-unknown',
+      path: '$.page.icon',
+    });
+
+    const explicitItemIconRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring explicit item icon still validates page icon',
+            icon: 'FileOutlined',
+          },
+        },
+        page: {
+          title: 'Authoring explicit item icon still validates page icon',
+          icon: 'NotARealAntDesignIcon',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(explicitItemIconRes.status).toBe(400);
+    expect(explicitItemIconRes.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-icon-unknown',
+      path: '$.page.icon',
+    });
   });
 
   it('should infer replace target when create matches an existing page in the same navigation group', async () => {
@@ -2378,7 +2705,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2410,7 +2737,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'replacementEmployeesDetails',
                 type: 'details',
                 collection: 'employees',
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2465,7 +2792,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2507,7 +2834,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'replacementEmployeesDetails',
                 type: 'details',
                 collection: 'employees',
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2581,7 +2908,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 actions: [
                   {
                     key: 'inspect',
@@ -2593,7 +2920,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           key: 'inspectCreateForm',
                           type: 'createForm',
                           collection: 'employees',
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -2669,7 +2996,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                     { path: LARGE_DEFAULTS_ACTION_FIELDS[3], operator: '$notEmpty' },
                   ],
                 },
-                fields: [LARGE_DEFAULTS_ACTION_FIELDS[0]],
+                fields: LARGE_DEFAULTS_ACTION_VISIBLE_FIELDS,
                 actions: [
                   {
                     key: 'createEmployee',
@@ -2868,7 +3195,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                       saveAsTemplate: {
@@ -3208,7 +3535,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                             binding: 'associatedRecords',
                             associationField: 'users',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                     },

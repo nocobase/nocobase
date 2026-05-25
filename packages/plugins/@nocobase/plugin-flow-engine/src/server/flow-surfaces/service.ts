@@ -12,6 +12,7 @@ import type { HasManyRepository } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
+import * as antDesignIconAsn from '@ant-design/icons-svg';
 import FlowModelRepository from '../repository';
 import {
   ACTION_KEY_BY_USE,
@@ -976,6 +977,7 @@ type AIEmployeePromptValidationContext = {
 };
 
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
+const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
 const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
 const AI_EMPLOYEE_OWNER_PLUGIN = '@nocobase/plugin-ai';
 const AI_EMPLOYEE_PUBLIC_SETTING_KEYS = ['username', 'auto', 'workContext', 'tasks', 'style'];
@@ -1477,6 +1479,68 @@ export class FlowSurfacesService {
     };
   }
 
+  private isValidMenuIconName(value: any) {
+    const normalized = String(value || '').trim();
+    return !!normalized && ANT_DESIGN_ICON_NAMES.has(normalized);
+  }
+
+  private assertVisibleNavigationIcon(actionName: string, path: string, values: Record<string, any>) {
+    if (values.hideInMenu === true) {
+      return;
+    }
+    const icon = String(values.icon || '').trim();
+    if (!icon) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.icon is required when creating a visible menu route`, {
+        ruleId: 'navigation-icon-required',
+        path: `${path}.icon`,
+        details: {
+          repairHint:
+            'Pass a valid Ant Design icon name such as AppstoreOutlined, DashboardOutlined, or FolderOpenOutlined.',
+        },
+      });
+    }
+    if (!this.isValidMenuIconName(icon)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.icon must be a valid Ant Design icon name`, {
+        ruleId: 'navigation-icon-unknown',
+        path: `${path}.icon`,
+        details: {
+          icon,
+        },
+      });
+    }
+  }
+
+  private assertVisibleNavigationRouteIconUpdate(
+    actionName: string,
+    path: string,
+    route: any,
+    values: Record<string, any>,
+  ) {
+    if (!Object.prototype.hasOwnProperty.call(values, 'icon') || this.readRouteField(route, 'hideInMenu') === true) {
+      return;
+    }
+    const icon = String(values.icon || '').trim();
+    if (!icon) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.icon cannot be empty for a visible menu route`, {
+        ruleId: 'navigation-icon-required',
+        path: `${path}.icon`,
+        details: {
+          repairHint:
+            'Pass a valid Ant Design icon name such as AppstoreOutlined, DashboardOutlined, or FolderOpenOutlined.',
+        },
+      });
+    }
+    if (!this.isValidMenuIconName(icon)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path}.icon must be a valid Ant Design icon name`, {
+        ruleId: 'navigation-icon-unknown',
+        path: `${path}.icon`,
+        details: {
+          icon,
+        },
+      });
+    }
+  }
+
   private async createFlowMenuGroup(values: Record<string, any>, transaction?: any) {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
     const parentId = this.readRouteField(parentRoute, 'id') ?? null;
@@ -1505,6 +1569,7 @@ export class FlowSurfacesService {
         },
       );
     }
+    this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const schemaUid = values.schemaUid || uid();
     const desktopRoutes = this.db.getRepository('desktopRoutes');
     await desktopRoutes.create({
@@ -1529,6 +1594,7 @@ export class FlowSurfacesService {
 
   private async createFlowMenuItem(values: Record<string, any>, transaction?: any) {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
+    this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const pageSchemaUid = values.pageSchemaUid || uid();
     const pageUid = values.pageUid || uid();
     const tabSchemaUid = values.tabSchemaUid || uid();
@@ -4085,13 +4151,13 @@ export class FlowSurfacesService {
       return document;
     }
 
-    const matchedRoutes = await this.findMenuGroupRoutesByTitle(groupTitle, transaction);
+    const matchedRoutes = await this.findMenuGroupRoutesByParentIdAndTitle(null, groupTitle, transaction);
     if (!matchedRoutes.length) {
       return document;
     }
     if (matchedRoutes.length > 1) {
       throwBadRequest(
-        `flowSurfaces applyBlueprint navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing menu groups; pass navigation.group.routeId explicitly`,
+        `flowSurfaces applyBlueprint navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing root menu groups; pass navigation.group.routeId explicitly`,
       );
     }
 
@@ -4776,6 +4842,12 @@ export class FlowSurfacesService {
       options,
     );
     const pageLocator = resolveApplyBlueprintPageLocator(prepared, result);
+    await this.ensureSurfaceTableDefaultActionIntegrity(pageLocator, {
+      ...options,
+      enabledPackages: await this.resolveEnabledPluginPackages(options),
+      popupTemplateAliasSession,
+      popupTemplateTreeCache,
+    });
     if (resultOptions.readSurface === false) {
       return {
         version: '1',
@@ -7010,6 +7082,13 @@ export class FlowSurfacesService {
     for (const [blockIndex, block] of result.blocks.entries()) {
       const blockSpec = normalizedBlocks.find((item) => item.key === block.key);
       if (blockSpec?.type === 'table') {
+        await this.ensureTableDefaultActionIntegrity(block.uid, {
+          ...runtimeOptions,
+          enabledPackages,
+          popupTemplateAliasSession,
+        });
+      }
+      if (blockSpec?.type === 'table') {
         const appliedTreeTableDefaults = await this.applyTreeTableCreatedBlockDefaults(
           {
             blockUid: block.uid,
@@ -7242,6 +7321,7 @@ export class FlowSurfacesService {
     if (!this.isBindableMenuRoutePendingInitialization(route, structure)) {
       throwBadRequest(`flowSurfaces createPage does not allow re-initializing menu route '${routeId}'`);
     }
+    this.assertVisibleNavigationRouteIconUpdate('createPage', 'values', route, values);
     const existingPage = structure.pageModel;
     const enableTabs = !!values.enableTabs;
     const displayTitle = values.displayTitle !== false;
@@ -8808,6 +8888,13 @@ export class FlowSurfacesService {
         enabledPackages,
       },
     );
+    if (catalogItem.use === 'TableBlockModel' && !options.skipDefaultBlockActions) {
+      await this.ensureTableDefaultActionIntegrity(created, {
+        ...options,
+        enabledPackages,
+        popupTemplateTreeCache: options.popupTemplateTreeCache,
+      });
+    }
     if (!options.deferAutoLayout && initialGrid?.uid) {
       const finalGrid = await this.repository.findModelById(parentUid, {
         transaction: options.transaction,
@@ -9355,6 +9442,12 @@ export class FlowSurfacesService {
         actionSettingsPayload,
         aiEmployeeSettingsPayload,
       );
+      await this.assertNoDuplicateAIEmployeeAction(
+        'addAction',
+        container.parentUid,
+        actionSettingsPayload,
+        options.transaction,
+      );
     }
     const action = buildActionTree({
       use: actionCatalogItem.use,
@@ -9487,6 +9580,12 @@ export class FlowSurfacesService {
         { use: actionCatalogItem.use },
         actionSettingsPayload,
         aiEmployeeSettingsPayload,
+      );
+      await this.assertNoDuplicateAIEmployeeAction(
+        'addRecordAction',
+        materializedContainer.parentUid,
+        actionSettingsPayload,
+        options.transaction,
       );
     }
     const action = buildActionTree({
@@ -17887,6 +17986,124 @@ export class FlowSurfacesService {
     }
   }
 
+  private hasActionWithPublicType(actions: any[], type: string) {
+    return actions.some((action) => ACTION_KEY_BY_USE.get(String(action?.use || '').trim()) === type);
+  }
+
+  private async ensureTableDefaultActionIntegrity(
+    tableUid: string,
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+    } = {},
+  ) {
+    let table = await this.repository.findModelById(tableUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    if (table?.use !== 'TableBlockModel' || this.resolveTreeTableCreationContext(table)) {
+      return;
+    }
+
+    const descriptors = getFlowSurfaceDefaultBlockActions({ blockType: 'table' });
+    const blockActionDescriptors = descriptors.filter((descriptor) => descriptor.scope === 'actions');
+    const recordActionDescriptors = descriptors.filter((descriptor) => descriptor.scope === 'recordActions');
+    let blockActions = _.castArray(table?.subModels?.actions || []);
+    for (const descriptor of blockActionDescriptors) {
+      if (this.hasActionWithPublicType(blockActions, descriptor.type)) {
+        continue;
+      }
+      await this.addAction(
+        {
+          target: { uid: tableUid },
+          type: descriptor.type,
+          ...(descriptor.popup ? { popup: _.cloneDeep(descriptor.popup) } : {}),
+        },
+        options,
+      );
+      table = await this.repository.findModelById(tableUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      blockActions = _.castArray(table?.subModels?.actions || []);
+    }
+
+    const actionsColumnUid = await this.ensureTableActionsColumn(tableUid, options.transaction);
+    let actionsColumn = await this.repository.findModelById(actionsColumnUid, {
+      transaction: options.transaction,
+      includeAsyncNode: true,
+    });
+    let recordActions = _.castArray(actionsColumn?.subModels?.actions || []);
+    for (const descriptor of recordActionDescriptors) {
+      if (this.hasActionWithPublicType(recordActions, descriptor.type)) {
+        continue;
+      }
+      await this.addRecordAction(
+        {
+          target: { uid: tableUid },
+          type: descriptor.type,
+          ...(descriptor.popup ? { popup: _.cloneDeep(descriptor.popup) } : {}),
+        },
+        options,
+      );
+      actionsColumn = await this.repository.findModelById(actionsColumnUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      recordActions = _.castArray(actionsColumn?.subModels?.actions || []);
+    }
+
+    const missingRecordActions = recordActionDescriptors
+      .map((descriptor) => descriptor.type)
+      .filter((type) => !this.hasActionWithPublicType(recordActions, type));
+    if (missingRecordActions.length) {
+      throwBadRequest(`flowSurfaces table '${tableUid}' is missing required default record actions`, {
+        ruleId: 'table-record-actions-required',
+        details: {
+          tableUid,
+          missingRecordActions,
+          repairHint:
+            'Put row actions under recordActions, or omit/pass an empty recordActions array so Flow Surfaces can create the default View/Edit/Delete row actions.',
+        },
+      });
+    }
+  }
+
+  private collectNodeTreeDescendants(node: any, predicate: (item: any) => boolean, bucket: any[] = []) {
+    if (!node || typeof node !== 'object') {
+      return bucket;
+    }
+    if (predicate(node)) {
+      bucket.push(node);
+    }
+    Object.values(_.isPlainObject(node.subModels) ? node.subModels : {}).forEach((subModel: any) => {
+      _.castArray(subModel).forEach((child) => this.collectNodeTreeDescendants(child, predicate, bucket));
+    });
+    return bucket;
+  }
+
+  private async ensureSurfaceTableDefaultActionIntegrity(
+    pageLocator: FlowSurfaceReadLocator,
+    options: {
+      transaction?: any;
+      currentRoles?: FlowSurfaceRequestRoles;
+      enabledPackages?: ReadonlySet<string>;
+      popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
+      popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+    } = {},
+  ) {
+    const surface = await this.get(pageLocator, options);
+    const tables = this.collectNodeTreeDescendants(surface?.tree, (item) => item?.use === 'TableBlockModel');
+    for (const table of tables) {
+      if (table?.uid) {
+        await this.ensureTableDefaultActionIntegrity(table.uid, options);
+      }
+    }
+  }
+
   private async resolveReusableSingletonAction(input: {
     parentUid: string;
     ownerUse?: string;
@@ -18105,8 +18322,10 @@ export class FlowSurfacesService {
     if (blockCatalogItem) {
       this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions, enabledPackages);
     }
-    const actionKeys = new Set(actions.map((item) => item.key).filter(Boolean));
-    const recordActionKeys = new Set(recordActions.map((item) => item.key).filter(Boolean));
+    const actionKeys = new Set<string>(actions.map((item) => String(item.key || '').trim()).filter(Boolean));
+    const recordActionKeys = new Set<string>(
+      recordActions.map((item) => String(item.key || '').trim()).filter(Boolean),
+    );
     const blockDescriptor = this.describeComposeBlock({
       index: index + 1,
       key,
@@ -21165,6 +21384,107 @@ export class FlowSurfacesService {
 
   private isAIEmployeeActionUse(use?: string) {
     return String(use || '').trim() === AI_EMPLOYEE_ACTION_USE;
+  }
+
+  private stableSerializeAIEmployeeValue(value: any): string {
+    if (Array.isArray(value)) {
+      return `[${value.map((item) => this.stableSerializeAIEmployeeValue(item)).join(',')}]`;
+    }
+    if (_.isPlainObject(value)) {
+      return `{${Object.keys(value)
+        .sort()
+        .map((key) => `${JSON.stringify(key)}:${this.stableSerializeAIEmployeeValue(value[key])}`)
+        .join(',')}}`;
+    }
+    return JSON.stringify(value);
+  }
+
+  private buildAIEmployeeActionDedupIdentity(values: Record<string, any>) {
+    const username = String(values?.props?.aiEmployee?.username || '').trim();
+    if (!username) {
+      return '';
+    }
+    return this.stableSerializeAIEmployeeValue({
+      username,
+      auto: typeof values?.props?.auto === 'boolean' ? values.props.auto : false,
+      workContext: this.normalizeAIEmployeeWorkContextForDedupIdentity(values?.props?.context?.workContext),
+      tasks: this.normalizeAIEmployeeTasksForDedupIdentity(
+        _.get(values, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]),
+      ),
+      style: {
+        ...AI_EMPLOYEE_DEFAULT_STYLE,
+        ...(_.isPlainObject(values?.props?.style) ? _.pick(values.props.style, AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
+      },
+    });
+  }
+
+  private normalizeAIEmployeeWorkContextForDedupIdentity(value: any) {
+    return _.castArray(value || []).map((item: any) =>
+      _.isPlainObject(item) ? _.pick(item, AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS) : item,
+    );
+  }
+
+  private normalizeAIEmployeeTasksForDedupIdentity(value: any) {
+    return _.castArray(value || []).map((task: any) => {
+      if (!_.isPlainObject(task)) {
+        return task;
+      }
+      const output = _.pick(task, AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
+      if (_.isPlainObject(output.message)) {
+        output.message = _.pick(output.message, AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
+        if (Object.prototype.hasOwnProperty.call(output.message, 'workContext')) {
+          output.message.workContext = this.normalizeAIEmployeeWorkContextForDedupIdentity(output.message.workContext);
+        }
+      }
+      if (_.isPlainObject(output.model)) {
+        output.model = _.pick(output.model, AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
+      }
+      if (_.isPlainObject(output.skillSettings)) {
+        output.skillSettings = _.pick(output.skillSettings, AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS);
+      }
+      return output;
+    });
+  }
+
+  private async assertNoDuplicateAIEmployeeAction(
+    actionName: string,
+    parentUid: string,
+    values: Record<string, any>,
+    transaction?: any,
+  ) {
+    const identity = this.buildAIEmployeeActionDedupIdentity(values);
+    if (!identity) {
+      return;
+    }
+    const parentNode = await this.repository.findModelById(parentUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const duplicate = _.castArray(parentNode?.subModels?.actions || []).find((action: any) => {
+      if (!this.isAIEmployeeActionUse(action?.use)) {
+        return false;
+      }
+      return (
+        this.buildAIEmployeeActionDedupIdentity({
+          props: action.props,
+          stepParams: action.stepParams,
+        }) === identity
+      );
+    });
+    if (!duplicate?.uid) {
+      return;
+    }
+    throwBadRequest(
+      `flowSurfaces ${actionName} duplicates an existing AI employee action in the same action container; reuse or update the existing button instead of appending another identical AI employee action`,
+      {
+        ruleId: 'duplicate-ai-employee-action',
+        details: {
+          existingUid: duplicate.uid,
+          repairHint:
+            'Remove the duplicate aiEmployee action, or change username, task title/key, or workContext if this is a genuinely different AI employee action.',
+        },
+      },
+    );
   }
 
   private hasAIEmployeePublicSettings(settings: any) {

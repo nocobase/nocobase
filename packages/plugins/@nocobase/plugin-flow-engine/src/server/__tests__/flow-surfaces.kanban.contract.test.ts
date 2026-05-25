@@ -3329,6 +3329,9 @@ describe('flowSurfaces kanban contract', () => {
         expect.objectContaining({
           path: '$.tabs[0].blocks[0].fields',
           ruleId: 'kanban-main-fields-too-many',
+          details: expect.objectContaining({
+            repairHint: expect.stringContaining('Keep at most 2 fields'),
+          }),
         }),
       ]),
     );

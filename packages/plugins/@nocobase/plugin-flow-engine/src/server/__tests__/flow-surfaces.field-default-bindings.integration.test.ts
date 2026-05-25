@@ -281,7 +281,10 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }

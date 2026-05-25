@@ -11124,7 +11124,10 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await runFlowSurfaceHelper(() =>
       rootAgent.resource('flowSurfaces').createPage({
-        values,
+        values: {
+          icon: 'FileOutlined',
+          ...values,
+        },
       }),
     ),
   );

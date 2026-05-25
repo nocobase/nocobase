@@ -380,7 +380,10 @@ export function expectStructuredError(
 export async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }
@@ -388,7 +391,10 @@ export async function createPage(rootAgent: any, values: Record<string, any>) {
 export async function createMenu(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createMenu({
-      values,
+      values: {
+        icon: values.type === 'group' ? 'FolderOpenOutlined' : 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }
@@ -431,11 +437,11 @@ async function withDefaultVisibleFieldsForDataBlock(rootAgent: any, values: Reco
   if (!collectionName) {
     return values;
   }
-  const fieldName = pickDefaultVisibleFieldName(collectionName, collectionMeta);
-  return fieldName
+  const fieldNames = pickDefaultVisibleFieldNames(collectionName, collectionMeta);
+  return fieldNames.length
     ? {
         ...values,
-        fields: [fieldName],
+        fields: fieldNames,
       }
     : values;
 }
@@ -446,7 +452,7 @@ async function loadCollectionMeta(rootAgent: any) {
   return Array.isArray(response.body?.data) ? response.body.data : [];
 }
 
-function pickDefaultVisibleFieldName(collectionName: string, collectionMeta: any[]) {
+function pickDefaultVisibleFieldNames(collectionName: string, collectionMeta: any[]) {
   const collection = collectionMeta.find((item) => String(item?.name || '').trim() === collectionName);
   const fields = Array.isArray(collection?.fields)
     ? collection.fields
@@ -455,19 +461,17 @@ function pickDefaultVisibleFieldName(collectionName: string, collectionMeta: any
       : [];
   const fieldNames = fields.map((field: any) => String(field?.name || field?.options?.name || '').trim());
   const preferredFields = ['nickname', 'email', 'phone', 'title', 'name', 'code', 'status', 'optionalText'];
-  const preferred = preferredFields.find((fieldName) => fieldNames.includes(fieldName));
-  if (preferred) {
+  const preferred = preferredFields.filter((fieldName) => fieldNames.includes(fieldName)).slice(0, 3);
+  if (preferred.length) {
     return preferred;
   }
   const candidates = collection ? resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection) : [];
   if (candidates.length) {
-    return candidates[0];
+    return candidates.slice(0, 3);
   }
-  return (
-    fieldNames.find(
-      (fieldName) => fieldName && fieldName !== 'id' && !fieldName.endsWith('Id') && fieldName !== 'createdAt',
-    ) || ''
-  );
+  return fieldNames
+    .filter((fieldName) => fieldName && fieldName !== 'id' && !fieldName.endsWith('Id') && fieldName !== 'createdAt')
+    .slice(0, 3);
 }
 
 export async function setupFixtureCollections(rootAgent: any, db: Database) {

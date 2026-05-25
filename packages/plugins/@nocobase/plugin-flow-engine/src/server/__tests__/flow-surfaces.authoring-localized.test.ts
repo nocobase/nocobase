@@ -63,6 +63,11 @@ describe('flowSurfaces backend authoring localized compiler', () => {
       'fieldGroups-group-title-required',
       'fieldGroups-group-fields-required',
     ]);
+    const kanbanFieldGroupsError = response.body.errors.find(
+      (error: any) => error.ruleId === 'kanban-main-block-unsupported-fieldGroups',
+    );
+    expect(kanbanFieldGroupsError?.details?.repairHint).toContain('settings.groupField');
+    expect(kanbanFieldGroupsError?.details?.repairHint).toContain('Keep block type kanban');
   });
 
   it('should aggregate addBlocks item authoring errors before batch writes', async () => {

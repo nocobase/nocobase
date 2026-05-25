@@ -1385,7 +1385,10 @@ function findFirstNode(node: any, predicate: (node: any) => boolean): any {
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }

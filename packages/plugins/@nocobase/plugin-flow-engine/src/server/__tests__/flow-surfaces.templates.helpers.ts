@@ -124,7 +124,10 @@ export function readErrorMessage(response: any) {
 export async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }

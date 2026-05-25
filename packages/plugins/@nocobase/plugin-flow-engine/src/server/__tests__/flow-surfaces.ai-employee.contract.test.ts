@@ -402,6 +402,153 @@ describe('flowSurfaces AI employee action contract', () => {
     expectNoPersistedPropsTasks(recordAction);
   });
 
+  it('rejects duplicate AI employee actions in the same compose action container', async () => {
+    const page = await createPage(rootAgent, {
+      title: `AI employee duplicate compose page ${Date.now()}`,
+      tabTitle: 'Overview',
+    });
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.tabSchemaUid },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname', 'status', 'email'],
+            recordActions: [
+              { type: 'aiEmployee', settings: aiEmployeeSettings() },
+              { type: 'aiEmployee', settings: aiEmployeeSettings() },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(400);
+    expect(composeRes.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['duplicate-ai-employee-action']),
+    );
+    expect(readErrorMessage(composeRes)).toContain('duplicates an existing AI employee action');
+  });
+
+  it('rejects duplicate AI employee actions in the same applyBlueprint action container', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `AI employee duplicate blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email'],
+                recordActions: [
+                  { type: 'aiEmployee', settings: aiEmployeeSettings() },
+                  { type: 'aiEmployee', settings: aiEmployeeSettings() },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(executeRes.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['duplicate-ai-employee-action']),
+    );
+  });
+
+  it('allows same AI employee and task when public action settings differ in compose', async () => {
+    const page = await createPage(rootAgent, {
+      title: `AI employee non-duplicate compose page ${Date.now()}`,
+      tabTitle: 'Overview',
+    });
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.tabSchemaUid },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname', 'status', 'email'],
+            recordActions: [
+              { type: 'aiEmployee', settings: aiEmployeeSettings() },
+              { type: 'aiEmployee', settings: aiEmployeeSettings({ auto: true }) },
+              { type: 'aiEmployee', settings: aiEmployeeSettings({ style: { mask: true } }) },
+              {
+                type: 'aiEmployee',
+                settings: aiEmployeeSettings({
+                  tasks: [
+                    {
+                      title: 'Analyze current record',
+                      message: {
+                        system: 'Use the current UI context.',
+                        user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+                        workContext: [{ type: 'flow-model', target: 'self' }],
+                      },
+                      autoSend: false,
+                      skillSettings: { skills: ['crm'], tools: [] },
+                      model: { llmService: 'openai', model: 'gpt-4.1' },
+                      webSearch: false,
+                    },
+                  ],
+                }),
+              },
+              {
+                type: 'aiEmployee',
+                settings: aiEmployeeSettings({
+                  tasks: [
+                    {
+                      title: 'Analyze current record',
+                      message: {
+                        system: 'Use the current UI context.',
+                        user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+                        workContext: [{ type: 'flow-model', target: 'self' }],
+                      },
+                      autoSend: false,
+                      skillSettings: { skills: ['crm'], tools: [] },
+                      model: null,
+                      webSearch: true,
+                    },
+                  ],
+                }),
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const tableBlock = getComposeBlock(getData(composeRes), 'employeesTable');
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
+    const actionsColumn = _.castArray(tableReadback.tree.subModels?.columns || []).find(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    );
+    const aiRecordActions = _.castArray(actionsColumn?.subModels?.actions || []).filter(
+      (item: any) => item?.use === 'AIEmployeeButtonModel',
+    );
+    expect(aiRecordActions).toHaveLength(5);
+  });
+
   it('resolves AI employee work contexts in applyBlueprint block, record, and form actions', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -767,7 +914,22 @@ describe('flowSurfaces AI employee action contract', () => {
         values: {
           target: { uid: table.uid },
           type: 'aiEmployee',
-          settings: aiEmployeeSettings(),
+          settings: aiEmployeeSettings({
+            tasks: [
+              {
+                title: 'Configure dynamic path',
+                message: {
+                  system: 'Use the current UI context.',
+                  user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+                  workContext: [{ type: 'flow-model', target: 'self' }],
+                },
+                autoSend: false,
+                skillSettings: { skills: ['crm'], tools: [] },
+                model: null,
+                webSearch: false,
+              },
+            ],
+          }),
         },
       }),
     );
@@ -911,6 +1073,82 @@ describe('flowSurfaces AI employee action contract', () => {
     expect(readErrorMessage(rawStepParamsRes)).toContain('stepParams.shortcutSettings.editTasks.tasks[0].message.user');
     expect(readErrorMessage(rawStepParamsRes)).toContain('{{ctx}}');
     expect(readErrorMessage(rawStepParamsRes)).toContain('flowSurfaces:context');
+  });
+
+  it('rejects adding the same AI employee record action twice to one table', async () => {
+    const { table } = await createTable();
+    const firstRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'aiEmployee',
+        settings: aiEmployeeSettings(),
+      },
+    });
+    expect(firstRes.status, readErrorMessage(firstRes)).toBe(200);
+
+    const duplicateRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'aiEmployee',
+        settings: aiEmployeeSettings(),
+      },
+    });
+
+    expect(duplicateRes.status).toBe(400);
+    expect(readErrorMessage(duplicateRes)).toContain('duplicates an existing AI employee action');
+    expect(duplicateRes.body?.errors?.[0]?.ruleId).toBe('duplicate-ai-employee-action');
+  });
+
+  it('allows adding AI employee record actions that differ by public settings', async () => {
+    const { table } = await createTable();
+    const variants = [
+      aiEmployeeSettings(),
+      aiEmployeeSettings({ auto: true }),
+      aiEmployeeSettings({ style: { mask: true } }),
+      aiEmployeeSettings({
+        tasks: [
+          {
+            title: 'Analyze current record',
+            message: {
+              system: 'Use the current UI context.',
+              user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+              workContext: [{ type: 'flow-model', target: 'self' }],
+            },
+            autoSend: false,
+            skillSettings: { skills: ['crm'], tools: [] },
+            model: { llmService: 'openai', model: 'gpt-4.1' },
+            webSearch: false,
+          },
+        ],
+      }),
+      aiEmployeeSettings({
+        tasks: [
+          {
+            title: 'Analyze current record',
+            message: {
+              system: 'Use the current UI context.',
+              user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+              workContext: [{ type: 'flow-model', target: 'self' }],
+            },
+            autoSend: false,
+            skillSettings: { skills: ['crm'], tools: [] },
+            model: null,
+            webSearch: true,
+          },
+        ],
+      }),
+    ];
+
+    for (const settings of variants) {
+      const response = await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings,
+        },
+      });
+      expect(response.status, readErrorMessage(response)).toBe(200);
+    }
   });
 
   it('clears AI employee tasks through public updateSettings', async () => {

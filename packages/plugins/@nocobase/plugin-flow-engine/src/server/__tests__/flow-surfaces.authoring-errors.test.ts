@@ -408,6 +408,14 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'fieldGroups-group-fields-required',
       ]),
     );
+    const calendarFieldsError = response.body.errors.find(
+      (error: any) => error.ruleId === 'calendar-main-block-unsupported-fields',
+    );
+    expect(calendarFieldsError?.details?.repairHint).toContain('settings.titleField');
+    expect(calendarFieldsError?.details?.repairHint).toContain('settings.startField');
+    expect(calendarFieldsError?.details?.repairHint).toContain('settings.endField');
+    expect(calendarFieldsError?.details?.repairHint).toContain('Keep block type calendar');
+    expect(calendarFieldsError?.message).toContain('Keep block type calendar');
   });
 
   it('should aggregate deterministic authoring hard errors before target resolution', async () => {
@@ -6290,6 +6298,9 @@ ctx.render(React.createElement(DashboardKPIs));
         '$.tabs[0].blocks[5].recordActions[0].popup',
       ]),
     );
+    const singleColumnError = response.body.errors.find((error: any) => error.ruleId === 'block-layout-single-column');
+    expect(singleColumnError?.details?.repairHint).toContain('same layout row');
+    expect(singleColumnError?.details?.example?.layout?.rows?.[0]).toHaveLength(2);
     for (const error of response.body.errors) {
       expectStructuredError(error, {
         status: 400,

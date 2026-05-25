@@ -626,6 +626,7 @@ async function createEmployeeForm(rootAgent: any) {
     await rootAgent.resource('flowSurfaces').createPage({
       values: {
         title: `Event flow page ${Date.now()}`,
+        icon: 'FileOutlined',
         tabTitle: 'Event flow tab',
       },
     }),

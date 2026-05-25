@@ -118,6 +118,9 @@ const VISIBLE_FIELD_REQUIRED_DATA_BLOCK_TYPES = new Set([
   'filterForm',
   'kanban',
 ]);
+const VISIBLE_FIELD_MINIMUM_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'details']);
+const RICH_COLLECTION_VISIBLE_FIELD_THRESHOLD = FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT * 2;
+const RICH_DATA_BLOCK_VISIBLE_FIELD_MINIMUM = 3;
 const NON_BUSINESS_VISIBLE_FIELD_NAMES = new Set([
   'id',
   'uid',
@@ -361,6 +364,77 @@ const DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
 const DEFAULT_POPUP_ACTIONS = ['view', 'addNew', 'edit'];
+const AUTHORING_AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS = ['type', 'uid', 'target'];
+const AUTHORING_AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS = [
+  'title',
+  'message',
+  'autoSend',
+  'skillSettings',
+  'model',
+  'webSearch',
+];
+const AUTHORING_AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS = ['system', 'user', 'workContext'];
+const AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS = ['llmService', 'model'];
+const AUTHORING_AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS = ['skills', 'tools', 'skillsVersion', 'toolsVersion'];
+const AUTHORING_AI_EMPLOYEE_STYLE_PUBLIC_KEYS = ['size', 'mask'];
+const AUTHORING_AI_EMPLOYEE_DEFAULT_STYLE = {
+  size: 40,
+  mask: false,
+};
+
+function buildCalendarMainBlockRepairDetails(section: string) {
+  const popupSectionHint =
+    section === 'fieldGroups' || section === 'recordActions' || section === 'fieldsLayout'
+      ? ' Put event form/details content under settings.quickCreatePopup or settings.eventPopup instead of on the calendar main block.'
+      : '';
+  return {
+    repairHint:
+      'Calendar main block payload shape issue. Put event bindings under settings.titleField, settings.startField, settings.endField, and optional settings.colorField; do not put collection fields in block fields. Keep block type calendar and repair this payload.' +
+      popupSectionHint,
+    example: {
+      type: 'calendar',
+      collection: 'tasks',
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+    },
+  };
+}
+
+function buildKanbanMainBlockRepairDetails(section: string) {
+  return {
+    repairHint:
+      'Kanban main block payload shape issue. Put card display fields in block fields, grouping in settings.groupField, and quick-create/card details under settings.quickCreatePopup or settings.cardPopup. Keep block type kanban and repair this payload.',
+    section,
+    example: {
+      type: 'kanban',
+      collection: 'tasks',
+      fields: ['title', 'priority'],
+      settings: {
+        groupField: 'status',
+      },
+    },
+  };
+}
+
+function buildTwoColumnLayoutRepairDetails() {
+  return {
+    repairHint:
+      'When multiple non-filter blocks should share a row, put them in the same layout row. Do not place every block on a separate row.',
+    example: {
+      layout: {
+        rows: [
+          [
+            { key: 'calendar', span: 12 },
+            { key: 'kanban', span: 12 },
+          ],
+        ],
+      },
+    },
+  };
+}
 
 export async function assertFlowSurfaceAuthoringPayload(
   actionName: FlowSurfaceAuthoringWriteAction,
@@ -445,16 +519,18 @@ async function collectNavigationGroupErrors(
     return;
   }
   const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
-  if (matchedRoutes.length <= 1) {
+  const rootMatchedRoutes = filterRootMenuGroupRoutes(matchedRoutes);
+  if (rootMatchedRoutes.length <= 1) {
     return;
   }
   pushAuthoringError(errors, {
     path: '$.navigation.group.title',
     ruleId: 'navigation-group-title-ambiguous',
-    message: `flowSurfaces authoring $.navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing menu groups; pass navigation.group.routeId explicitly`,
+    message: `flowSurfaces authoring $.navigation.group.title '${groupTitle}' matches ${rootMatchedRoutes.length} existing root menu groups; pass navigation.group.routeId explicitly`,
     details: {
       title: groupTitle,
-      matches: matchedRoutes.length,
+      parentMenuRouteId: null,
+      matches: rootMatchedRoutes.length,
     },
   });
 }
@@ -470,18 +546,22 @@ async function collectNavigationIconErrors(
   }
   const group = _.isPlainObject(values?.navigation?.group) ? values.navigation.group : null;
   const groupRouteId = String(group?.routeId || '').trim();
-  if (group && !groupRouteId) {
+  if (group && !groupRouteId && group.hideInMenu !== true) {
     const groupIcon = String(group.icon || '').trim();
     if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context))) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
-        ruleId: 'missing-menu-group-icon',
-        message: 'flowSurfaces authoring $.navigation.group.icon is required when creating a new navigation group',
+        ruleId: 'navigation-icon-required',
+        message: 'flowSurfaces authoring $.navigation.group.icon is required when creating a visible navigation group',
+        details: {
+          repairHint:
+            'Pass a valid Ant Design icon name such as AppstoreOutlined, DashboardOutlined, or FolderOpenOutlined.',
+        },
       });
     } else if (groupIcon && !isValidAntDesignIconName(groupIcon)) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
-        ruleId: 'invalid-menu-group-icon',
+        ruleId: 'navigation-icon-unknown',
         message: 'flowSurfaces authoring $.navigation.group.icon must be a valid Ant Design icon name',
         details: {
           icon: groupIcon,
@@ -491,7 +571,7 @@ async function collectNavigationIconErrors(
   } else if (group && String(group.icon || '').trim() && !isValidAntDesignIconName(group.icon)) {
     pushAuthoringError(errors, {
       path: '$.navigation.group.icon',
-      ruleId: 'invalid-menu-group-icon',
+      ruleId: 'navigation-icon-unknown',
       message: 'flowSurfaces authoring $.navigation.group.icon must be a valid Ant Design icon name',
       details: {
         icon: String(group.icon || '').trim(),
@@ -504,10 +584,22 @@ async function collectNavigationIconErrors(
   if (itemIcon && !isValidAntDesignIconName(itemIcon)) {
     pushAuthoringError(errors, {
       path: '$.navigation.item.icon',
-      ruleId: 'invalid-menu-item-icon',
+      ruleId: 'navigation-icon-unknown',
       message: 'flowSurfaces authoring $.navigation.item.icon must be a valid Ant Design icon name',
       details: {
         icon: itemIcon,
+      },
+    });
+  }
+  const pageIcon = String(values?.page?.icon || '').trim();
+  if (pageIcon && !isValidAntDesignIconName(pageIcon)) {
+    pushAuthoringError(errors, {
+      path: '$.page.icon',
+      ruleId: 'navigation-icon-unknown',
+      message:
+        'flowSurfaces authoring $.page.icon must be a valid Ant Design icon name when used as the create-mode page route icon',
+      details: {
+        icon: pageIcon,
       },
     });
   }
@@ -519,7 +611,24 @@ async function shouldRequireNewNavigationGroupIcon(group: any, context: FlowSurf
     return true;
   }
   const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
-  return matchedRoutes.length === 0;
+  return filterRootMenuGroupRoutes(matchedRoutes).length === 0;
+}
+
+function filterRootMenuGroupRoutes(routes: any[]) {
+  return _.castArray(routes || []).filter((route) =>
+    routeParentIdMatches(readAuthoringRouteField(route, 'parentId'), null),
+  );
+}
+
+function readAuthoringRouteField(route: any, key: string) {
+  return route?.get?.(key) ?? route?.[key];
+}
+
+function routeParentIdMatches(routeParentId: any, parentId: any) {
+  if (_.isNil(routeParentId) && _.isNil(parentId)) {
+    return true;
+  }
+  return String(routeParentId ?? '') === String(parentId ?? '');
 }
 
 function isValidAntDesignIconName(value: any) {
@@ -4060,6 +4169,12 @@ function collectUnsupportedMainBlockSectionErrors(
       path: `${path}.${section}`,
       ruleId: `${blockType}-main-block-unsupported-${section}`,
       message: `flowSurfaces authoring ${path} ${blockType} main blocks do not support ${section}`,
+      details:
+        blockType === 'calendar'
+          ? buildCalendarMainBlockRepairDetails(section)
+          : blockType === 'kanban'
+            ? buildKanbanMainBlockRepairDetails(section)
+            : undefined,
     });
   });
 }
@@ -4089,6 +4204,8 @@ function collectApplyBlueprintKanbanFieldLimitErrors(
     details: {
       max: 2,
       count: block.fields.length,
+      repairHint:
+        'Kanban main block fields controls compact card display only. Keep at most 2 fields in applyBlueprint kanban fields, move richer card details to settings.cardPopup, and keep block type kanban.',
     },
   });
 }
@@ -4458,6 +4575,7 @@ function collectPublicLayoutErrors(
       path: `${layoutPath}.rows`,
       ruleId: 'block-layout-single-column',
       message: `flowSurfaces authoring ${layoutPath}.rows must not place every non-filter block on its own row`,
+      details: buildTwoColumnLayoutRepairDetails(),
     });
   }
 }
@@ -4974,10 +5092,8 @@ function collectVisibleDataBlockFieldErrors(
     return;
   }
   const fieldEntries = collectVisibleDataBlockFieldEntries(block, path);
-  if (
-    !fieldEntries.length ||
-    !fieldEntries.some((entry) => isVisibleDataBlockBusinessField(entry.field, block, context))
-  ) {
+  const validBusinessFieldNames = collectVisibleDataBlockValidBusinessFieldNames(block, context, fieldEntries);
+  if (!fieldEntries.length || !validBusinessFieldNames.length) {
     const hasBlockFields = Array.isArray(block?.fields);
     const hasBlockFieldGroups = Array.isArray(block?.fieldGroups);
     const fieldConfigPath = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups` : `${path}.fields`;
@@ -4994,7 +5110,42 @@ function collectVisibleDataBlockFieldErrors(
         ...(suggestedFields.length ? { suggestion: { fields: suggestedFields } } : {}),
       },
     });
+    return;
   }
+
+  if (!VISIBLE_FIELD_MINIMUM_DATA_BLOCK_TYPES.has(blockType)) {
+    return;
+  }
+  if (hasUnknownVisibleDataBlockFieldPath(block, context, fieldEntries)) {
+    return;
+  }
+  const eligibleBusinessFields = collectVisibleDataBlockEligibleBusinessFieldNames(block, context);
+  if (eligibleBusinessFields.length < RICH_COLLECTION_VISIBLE_FIELD_THRESHOLD) {
+    return;
+  }
+  const requiredFieldCount = Math.min(RICH_DATA_BLOCK_VISIBLE_FIELD_MINIMUM, eligibleBusinessFields.length);
+  if (validBusinessFieldNames.length >= requiredFieldCount) {
+    return;
+  }
+  const hasBlockFields = Array.isArray(block?.fields);
+  const hasBlockFieldGroups = Array.isArray(block?.fieldGroups);
+  const fieldConfigPath = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups` : `${path}.fields`;
+  const fieldConfigLabel = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups[].fields` : `${path}.fields`;
+  pushAuthoringError(errors, {
+    path: fieldConfigPath,
+    ruleId: 'data-block-visible-fields-minimum',
+    message: `flowSurfaces authoring ${path} ${blockType} block only has ${validBusinessFieldNames.length} valid business field(s). Add at least ${requiredFieldCount} collection field names to ${fieldConfigLabel}; defaults.collections.*.fieldGroups only configures generated popups/forms and is not a substitute for visible block columns.`,
+    details: {
+      blockType,
+      collection: getBlockCollectionName(block, context),
+      fieldCount: validBusinessFieldNames.length,
+      requiredFieldCount,
+      eligibleBusinessFieldCount: eligibleBusinessFields.length,
+      suggestion: {
+        fields: eligibleBusinessFields.slice(0, requiredFieldCount),
+      },
+    },
+  });
 }
 
 function collectVisibleDataBlockFieldEntries(block: any, path: string): Array<{ field: any; path: string }> {
@@ -5018,6 +5169,72 @@ function collectVisibleDataBlockFieldEntries(block: any, path: string): Array<{ 
     });
   }
   return entries;
+}
+
+function collectVisibleDataBlockValidBusinessFieldNames(
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  fieldEntries: Array<{ field: any; path: string }>,
+) {
+  const names = new Set<string>();
+  fieldEntries.forEach((entry) => {
+    const fieldPath = getAssociationAwareFieldPathInput(entry.field);
+    if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+      return;
+    }
+    if (!isVisibleDataBlockBusinessField(entry.field, block, context)) {
+      return;
+    }
+    names.add(normalizeFieldPath(fieldPath));
+  });
+  return Array.from(names);
+}
+
+function hasUnknownVisibleDataBlockFieldPath(
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  fieldEntries: Array<{ field: any; path: string }>,
+) {
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return false;
+  }
+  return fieldEntries.some((entry) => {
+    const fieldPath = getAssociationAwareFieldPathInput(entry.field);
+    if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+      return false;
+    }
+    return !resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  });
+}
+
+function collectVisibleDataBlockEligibleBusinessFieldNames(block: any, context: FlowSurfaceAuthoringValidationContext) {
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return [];
+  }
+  return getCollectionFields(collection)
+    .map((field) => {
+      const name = String(getFieldName(field) || '').trim();
+      if (!name || !isVisibleDataBlockMinimumCandidateResolvedField(field, name)) {
+        return '';
+      }
+      return name;
+    })
+    .filter(Boolean);
+}
+
+function isVisibleDataBlockMinimumCandidateResolvedField(field: any, fieldName: string) {
+  if (!isVisibleDataBlockBusinessResolvedField(field, fieldName)) {
+    return false;
+  }
+  if (isAssociationField(field)) {
+    return false;
+  }
+  if (/Id$/.test(fieldName)) {
+    return false;
+  }
+  return true;
 }
 
 function isVisibleDataBlockBusinessField(field: any, block: any, context: FlowSurfaceAuthoringValidationContext) {
@@ -5979,7 +6196,124 @@ function collectActionListErrors(
   if (!Array.isArray(actions)) {
     return;
   }
+  collectDuplicateAIEmployeeActionErrors(actions, path, errors, block);
   actions.forEach((action, index) => collectActionErrors(action, `${path}[${index}]`, errors, block, context, slot));
+}
+
+function collectDuplicateAIEmployeeActionErrors(
+  actions: any[],
+  path: string,
+  errors: AuthoringErrorInput[],
+  block?: any,
+) {
+  const seen = new Map<string, string>();
+  actions.forEach((action, index) => {
+    const actionType = resolveAuthoringActionType(action, block);
+    if (actionType !== 'aiEmployee' || !_.isPlainObject(action)) {
+      return;
+    }
+    const identity = buildAuthoringAIEmployeeActionIdentity(action.settings);
+    if (!identity) {
+      return;
+    }
+    const currentPath = `${path}[${index}]`;
+    const previousPath = seen.get(identity);
+    if (previousPath) {
+      pushAuthoringError(errors, {
+        path: currentPath,
+        ruleId: 'duplicate-ai-employee-action',
+        message: `flowSurfaces authoring ${currentPath} duplicates an existing AI employee action in the same action container; reuse or update the existing button instead of appending another identical AI employee action.`,
+        details: {
+          duplicateOf: previousPath,
+          repairHint:
+            'Remove the duplicate aiEmployee action, or change username, task title/key, or workContext if this is a genuinely different AI employee action.',
+        },
+      });
+      return;
+    }
+    seen.set(identity, currentPath);
+  });
+}
+
+function buildAuthoringAIEmployeeActionIdentity(settings: any) {
+  if (!_.isPlainObject(settings)) {
+    return '';
+  }
+  const username = String(settings.username || '').trim();
+  if (!username) {
+    return '';
+  }
+  return stableSerializeAuthoringValue(normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings));
+}
+
+function normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings: Record<string, any>) {
+  return {
+    username: String(settings.username || '').trim(),
+    auto: typeof settings.auto === 'boolean' ? settings.auto : false,
+    workContext: Object.prototype.hasOwnProperty.call(settings, 'workContext')
+      ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
+      : [{ type: 'flow-model', target: 'self' }],
+    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks),
+    style: {
+      ...AUTHORING_AI_EMPLOYEE_DEFAULT_STYLE,
+      ...(_.isPlainObject(settings.style) ? _.pick(settings.style, AUTHORING_AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
+    },
+  };
+}
+
+function normalizeAuthoringAIEmployeeWorkContextForIdentity(value: any) {
+  return _.castArray(value || []).map((item: any) =>
+    _.isPlainObject(item) ? _.pick(item, AUTHORING_AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS) : item,
+  );
+}
+
+function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
+  return _.castArray(value || []).map((task: any) => {
+    if (!_.isPlainObject(task)) {
+      return task;
+    }
+    const output = _.pick(task, AUTHORING_AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
+    if (_.isPlainObject(output.message)) {
+      output.message = _.pick(output.message, AUTHORING_AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
+      if (_.isPlainObject(output.message.workContext)) {
+        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
+      } else if (Array.isArray(output.message.workContext)) {
+        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
+      }
+    }
+    if (_.isPlainObject(output.model)) {
+      output.model = _.pick(output.model, AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
+    }
+    if (_.isPlainObject(output.skillSettings)) {
+      output.skillSettings = _.pick(output.skillSettings, AUTHORING_AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS);
+      if (
+        Array.isArray(output.skillSettings.skills) &&
+        !Object.prototype.hasOwnProperty.call(output.skillSettings, 'skillsVersion')
+      ) {
+        output.skillSettings.skillsVersion = 2;
+      }
+      if (
+        Array.isArray(output.skillSettings.tools) &&
+        !Object.prototype.hasOwnProperty.call(output.skillSettings, 'toolsVersion')
+      ) {
+        output.skillSettings.toolsVersion = 2;
+      }
+    }
+    return output;
+  });
+}
+
+function stableSerializeAuthoringValue(value: any): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerializeAuthoringValue(item)).join(',')}]`;
+  }
+  if (_.isPlainObject(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerializeAuthoringValue(value[key])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
 }
 
 function resolveAuthoringActionType(action: any, block?: any) {
