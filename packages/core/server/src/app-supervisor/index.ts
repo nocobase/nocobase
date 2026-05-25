@@ -878,6 +878,8 @@ export type {
   AppOptionsFactory,
   AppModel,
   AppModelOptions,
+  AppCondition,
+  GetAppsByConditionOptions,
   BootstrapLock,
 } from './types';
 export { MainOnlyAdapter } from './main-only-adapter';
