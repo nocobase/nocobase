@@ -251,7 +251,7 @@ function ActionBarProvider(props) {
 
   let { children: content } = props;
   if (status) {
-    if (!result[name]) {
+    if (!result?.[name]) {
       content = null;
     }
   } else {
