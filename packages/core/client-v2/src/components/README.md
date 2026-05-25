@@ -14,9 +14,9 @@ Grouped by purpose: form containers, form fields, data table, utilities.
 
 #### DrawerFormLayout
 
-Drawer-style form layout. Pair with `ctx.viewer.drawer({ content })`.
+Drawer-style form layout. Pair with `ctx.viewer.drawer({ closable: true, content })`.
 
-- Top: a close icon next to the title. Clicking close fires `onCancel` and dismisses the drawer
+- Top: title only; the native close X is rendered by antd Drawer — you must pass `closable: true` on the `viewer.drawer` call for it to appear
 - Bottom: default Cancel / Submit buttons; override the whole footer with `footer`
 - Middle: caller-supplied `<Form>` instance + fields
 
@@ -25,6 +25,7 @@ import { DrawerFormLayout } from '@nocobase/client-v2';
 
 ctx.viewer.drawer({
   width: '50%',
+  closable: true,  // restore antd Drawer's native close X
   content: () => (
     <DrawerFormLayout
       title={t('Add authenticator')}
@@ -41,17 +42,19 @@ ctx.viewer.drawer({
 
 Key props:
 
-- `title`: title node (rendered next to the close icon)
-- `onCancel` / `onSubmit`: callbacks; the drawer closes automatically once they resolve. Throw from `onSubmit` to keep the drawer open (e.g. on a validation error)
+- `title`: title node
+- `onSubmit`: callback; the drawer closes automatically once it resolves. Throw to keep the drawer open (e.g. on a validation error)
 - `submitting`: drives the Submit button's loading state
 - `submitText` / `cancelText`: button labels
 - `footer`: full override of the footer content (replaces the default Cancel + Submit pair)
+
+To intercept close (e.g. dirty-form confirmation), use the lower-level `viewer.drawer({ preventClose, beforeClose })` hooks — this layout no longer wraps a custom cancel handler.
 
 #### DialogFormLayout
 
 Dialog-style form layout, the centered counterpart of `DrawerFormLayout`. Pair with `ctx.viewer.dialog({ closable: true, content })`.
 
-The only visual difference from the drawer version: the title is a bare string (no inline close icon), relying on antd Modal's native top-right X. Note that `viewer.dialog` disables antd's native X by default — you have to pass `closable: true` explicitly for it to appear.
+The only visual difference from the drawer version is where the native close X sits — antd Drawer renders it at the top-left of the title bar, antd Modal at the top-right. Both layouts rely on the caller passing `closable: true` at the viewer call site; neither renders a close icon itself.
 
 ```tsx
 import { DialogFormLayout } from '@nocobase/client-v2';
@@ -73,7 +76,7 @@ When to pick which:
 - **Drawer**: long forms with lots of fields that benefit from a full-height side panel (settings-page "Add / Edit")
 - **Dialog**: short forms that ask for quick confirmation (bind, change password, two-factor verify)
 
-Props are identical to `DrawerFormLayout` — they're drop-in replacements at the API level.
+Props are nearly identical to `DrawerFormLayout`, with one extra: `DialogFormLayout` accepts an `onCancel` callback (fired by both the Cancel button and the native X) for "discard changes" confirmations.
 
 ### Form fields
 

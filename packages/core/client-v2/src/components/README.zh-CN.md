@@ -14,9 +14,9 @@
 
 #### DrawerFormLayout
 
-抽屉形态的表单 layout。配合 `ctx.viewer.drawer({ content })` 用。
+抽屉形态的表单 layout。配合 `ctx.viewer.drawer({ closable: true, content })` 用。
 
-- 顶部 Header：左上角一个 close 图标 + 标题。点击 close 会触发 `onCancel` 然后关闭抽屉
+- 顶部 Header：只放标题；左侧的关闭 X 来自 antd Drawer——必须在 `viewer.drawer` 上显式传 `closable: true` 才会出现
 - 底部 Footer：默认 Cancel / Submit 两个按钮；可以用 `footer` 完全替换
 - 中间 children：调用方自己放 `<Form>` 实例 + 字段
 
@@ -25,6 +25,7 @@ import { DrawerFormLayout } from '@nocobase/client-v2';
 
 ctx.viewer.drawer({
   width: '50%',
+  closable: true,  // 关键：开启 antd Drawer 原生关闭 X
   content: () => (
     <DrawerFormLayout
       title={t('添加认证器')}
@@ -41,17 +42,19 @@ ctx.viewer.drawer({
 
 主要属性：
 
-- `title`：标题节点（旁边带 close 图标）
-- `onCancel` / `onSubmit`：回调，resolve 后会自动关闭抽屉。Submit 里 throw 可以让抽屉保持打开（比如校验失败）
+- `title`：标题节点
+- `onSubmit`：回调，resolve 后会自动关闭抽屉。throw 可以让抽屉保持打开（比如校验失败）
 - `submitting`：驱动 Submit 按钮的 loading
 - `submitText` / `cancelText`：按钮文字
 - `footer`：完全自定义 Footer 内容（覆盖默认两个按钮）
 
+需要在关闭前做「未保存改动」之类的确认，用更底层的 `viewer.drawer({ preventClose, beforeClose })`，这层 layout 不再包装 cancel 拦截。
+
 #### DialogFormLayout
 
-弹窗形态的表单 layout，跟 `DrawerFormLayout` 是同源对偶。配合 `ctx.viewer.dialog({ closable: true, content })` 用。
+弹窗形态的表单 layout，跟 `DrawerFormLayout` 同形。配合 `ctx.viewer.dialog({ closable: true, content })` 用。
 
-跟 Drawer 版本的差异只有一点：title 是裸字符串（不带 close 图标），依赖 antd Modal 自带的右上角 X。注意 `viewer.dialog` 默认会禁用 antd 的原生 X——必须显式传 `closable: true` 才会出现。
+视觉上的差异只有关闭 X 的位置——Drawer 是 antd Drawer 自带的左上角 X，Dialog 是 antd Modal 自带的右上角 X。两边都依赖在 viewer 调用处显式传 `closable: true`，layout 自己都不渲染 close 图标。
 
 ```tsx
 import { DialogFormLayout } from '@nocobase/client-v2';
@@ -73,7 +76,7 @@ ctx.viewer.dialog({
 - **Drawer**：长表单、字段多、需要从一侧滑出占用整面（比如设置页的「添加 / 编辑」）
 - **Dialog**：短表单、需要快速确认（比如绑定、修改密码、二次验证）
 
-属性跟 `DrawerFormLayout` 完全一致，可以直接换。
+属性跟 `DrawerFormLayout` 基本一致，可以直接换。唯一区别：`DialogFormLayout` 多一个 `onCancel` 回调（Cancel 按钮和原生 X 都会触发），用于「丢弃改动」之类的确认。
 
 ### 表单字段
 
