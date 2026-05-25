@@ -139,15 +139,15 @@ export class AuthManager {
    * @return authenticator instance.
    */
   async get(name: string, ctx: Context) {
-    let authenticator = this.getBuiltInAuthenticator(name);
-    if (authenticator) {
-      return this.createAuth(authenticator, ctx);
+    const builtInAuthenticator = this.getBuiltInAuthenticator(name);
+    if (builtInAuthenticator) {
+      return this.createAuth(builtInAuthenticator, ctx);
     }
 
     if (!this.storer) {
       throw new Error('AuthManager.storer is not set.');
     }
-    authenticator = await this.storer.get(name);
+    const authenticator = await this.storer.get(name);
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
