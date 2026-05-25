@@ -189,6 +189,14 @@ function responseFailure(error) {
   return result;
 }
 
+function failureStatus(config: RequestInstructionConfig, error) {
+  if (config.ignoreFail) {
+    return JOB_STATUS.RESOLVED;
+  }
+
+  return error?.code === 'ECONNABORTED' ? JOB_STATUS.ABORTED : JOB_STATUS.FAILED;
+}
+
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const CONTENT_TYPES = [
   'application/json',
@@ -254,7 +262,7 @@ export default class extends Instruction {
       } catch (error) {
         logFailureDebug(this.workflow.app.logger, error);
         return {
-          status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
+          status: failureStatus(config, error),
           result: responseFailure(error),
         };
       }
@@ -289,7 +297,7 @@ export default class extends Instruction {
         processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
       }
       logFailureDebug(processor.logger, error);
-      jobDone.status = config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
+      jobDone.status = failureStatus(config, error);
       jobDone.result = responseFailure(error);
     } finally {
       // At this point, the job is guaranteed to be in the database.
@@ -325,7 +333,7 @@ export default class extends Instruction {
     } catch (error) {
       logFailureDebug(this.workflow.app.logger, error);
       return {
-        status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
+        status: failureStatus(config, error),
         result: responseFailure(error),
       };
     }

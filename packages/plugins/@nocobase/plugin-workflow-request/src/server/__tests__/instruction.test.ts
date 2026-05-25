@@ -247,7 +247,7 @@ describe('workflow > instructions > request', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.FAILED);
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
@@ -813,7 +813,7 @@ describe('workflow > instructions > request', () => {
         timeout: 1000,
         contentType: '',
       });
-      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(status).toBe(JOB_STATUS.ABORTED);
       expect(result.code).toBe('ECONNABORTED');
       expect(result).not.toHaveProperty('config');
       expect(result).not.toHaveProperty('stack');
