@@ -45,10 +45,7 @@ export interface BackupSettings {
   includeTables?: string[];
   excludeTables?: string[];
   description?: string;
-  createdBy?: {
-    id: string;
-    username: string;
-  };
+  createdBy?: BackupCreator;
 }
 
 export interface BackupFile {
@@ -57,10 +54,12 @@ export interface BackupFile {
   createdAt?: Date;
   description?: string;
   inProgress: boolean;
-  createdBy?: {
-    id: string;
-    username: string;
-  };
+  createdBy?: BackupCreator;
+}
+
+export interface BackupCreator {
+  id: string;
+  username: string;
 }
 
 export interface BackupTaskResult {
@@ -549,7 +548,7 @@ export class BackupManager {
 
   async #readBackupDescription(
     metadataFilePath: string,
-  ): Promise<{ description?: string; createdBy?: { id: string; username: string } } | undefined> {
+  ): Promise<{ description?: string; createdBy?: BackupCreator } | undefined> {
     try {
       const metadata = JSON.parse(await fsPromises.readFile(metadataFilePath, 'utf8'));
       return {
