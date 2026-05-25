@@ -3847,6 +3847,13 @@ export class FlowSurfacesService {
       ),
       options.transaction,
     );
+    if (!rawNode?.uid) {
+      const resolvedUid =
+        String(resolved?.uid || '').trim() ||
+        String(target.uid || target.tabSchemaUid || target.pageSchemaUid || target.routeId || '').trim() ||
+        'unknown';
+      throwBadRequest(`flowSurfaces:get target '${resolvedUid}' could not resolve a readable surface tree`);
+    }
     const publicNode = this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawNode));
     return this.buildSurfaceReadPayload(target, resolved, publicNode, options);
   }
