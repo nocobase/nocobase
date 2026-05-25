@@ -9,7 +9,12 @@
 
 import PluginGanttClient from '..';
 import { describe, expect, test, vi } from 'vitest';
-import { GanttBlockModel, GanttCollectionActionGroupModel, GanttEventViewActionModel } from '../../client-v2/models';
+import {
+  GanttBlockModel,
+  GanttCollectionActionGroupModel,
+  GanttEventViewActionModel,
+  GanttTodayActionModel,
+} from '../../client-v2/models';
 
 describe('plugin-gantt v2 registration', () => {
   test('load registers v2 models from the v1 client entry', async () => {
@@ -45,6 +50,7 @@ describe('plugin-gantt v2 registration', () => {
       GanttBlockModel,
       GanttCollectionActionGroupModel,
       GanttEventViewActionModel,
+      GanttTodayActionModel,
     });
     expect(schemaInitializerManager.get).toHaveBeenCalledWith('page:addBlock');
     expect(pageAddBlock.add).toHaveBeenCalledWith(

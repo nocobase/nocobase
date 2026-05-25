@@ -12,6 +12,7 @@ import { buildSubModelItem, type FlowModelContext } from '@nocobase/flow-engine'
 import { tExpr } from '../../locale';
 
 export const ALLOWED_GANTT_COLLECTION_ACTIONS = [
+  'GanttTodayActionModel',
   'FilterActionModel',
   'AddNewActionModel',
   'PopupCollectionActionModel',
@@ -29,17 +30,31 @@ export const ALLOWED_GANTT_COLLECTION_ACTIONS = [
   'JSCollectionActionModel',
 ];
 
-const getGanttActionModelClass = (modelName: string, ctx: FlowModelContext) =>
-  (ctx.engine.getModelClass(modelName) || CollectionActionGroupModel.models.get(modelName)) as
-    | typeof ActionModel
-    | undefined;
+const getGanttActionModelClass = (
+  modelName: string,
+  ctx: FlowModelContext,
+  actionGroupModel: typeof ActionGroupModel,
+) =>
+  (ctx.engine.getModelClass(modelName) ||
+    actionGroupModel.models.get(modelName) ||
+    CollectionActionGroupModel.models.get(modelName)) as typeof ActionModel | undefined;
+
+const isGanttActionContext = (ctx: FlowModelContext) => {
+  const blockModel = ctx.blockModel || ctx.model;
+
+  return (
+    blockModel?.constructor?.name === 'GanttBlockModel' ||
+    blockModel?.use === 'GanttBlockModel' ||
+    blockModel?.getModelClassName?.('CollectionActionGroupModel') === 'GanttCollectionActionGroupModel'
+  );
+};
 
 export class GanttCollectionActionGroupModel extends ActionGroupModel {
   static async defineChildren(ctx: FlowModelContext) {
     const items = [];
 
     for (const modelName of ALLOWED_GANTT_COLLECTION_ACTIONS) {
-      const ModelClass = getGanttActionModelClass(modelName, ctx);
+      const ModelClass = getGanttActionModelClass(modelName, ctx, this);
       if (!ModelClass) {
         continue;
       }
@@ -62,4 +77,40 @@ export class GanttCollectionActionGroupModel extends ActionGroupModel {
 
 GanttCollectionActionGroupModel.define({
   label: tExpr('Gantt action'),
+});
+
+export class GanttTodayActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
+  defaultProps = {
+    type: 'default' as const,
+    title: tExpr('Today'),
+    icon: 'AimOutlined',
+  };
+}
+
+GanttTodayActionModel.define({
+  label: tExpr('Today'),
+  toggleable: true,
+  sort: 10,
+  hide(ctx) {
+    return !isGanttActionContext(ctx);
+  },
+});
+
+GanttTodayActionModel.registerFlow({
+  key: 'todaySettings',
+  title: tExpr('Today'),
+  on: 'click',
+  steps: {
+    scrollToToday: {
+      handler(ctx) {
+        ctx.blockModel?.scrollToToday?.();
+      },
+    },
+  },
+});
+
+GanttCollectionActionGroupModel.registerActionModels({
+  GanttTodayActionModel,
 });

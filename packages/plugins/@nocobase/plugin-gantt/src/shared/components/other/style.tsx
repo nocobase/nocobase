@@ -16,27 +16,25 @@ const useStyles = createStyles(({ token, css }) => {
       position: absolute;
       bottom: 0;
       max-width: 100%;
-      scrollbar-width: thin;
-      height: 1.2rem;
+      height: 16px;
+      background: ${token.colorSplit};
+      scrollbar-color: ${token.colorTextPlaceholder} ${token.colorSplit};
       &::-webkit-scrollbar {
         width: 8px;
         height: 8px;
       }
       &::-webkit-scrollbar-corner {
-        background: transparent;
+        background: ${token.colorSplit};
       }
       &::-webkit-scrollbar-track {
-        background: var(--colorBgScrollTrack);
+        background: ${token.colorSplit};
       }
-      &::-webkit-scrollbar-thumb: {
-        background: var(--colorBgScrollBar);
-        border-radius: 4px;
+      &::-webkit-scrollbar-thumb {
+        background: ${token.colorTextPlaceholder};
+        border-radius: 100px;
       }
       &::-webkit-scrollbar-thumb:hover {
-        background: var(--colorBgScrollBarHover);
-      }
-      &::-webkit-scrollbar-thumb:active {
-        background: var(--colorBgScrollBarActive);
+        background: ${token.colorTextHeading};
       }
     `,
     tooltipDefaultContainer: css`
@@ -81,26 +79,23 @@ const useStyles = createStyles(({ token, css }) => {
         overflow: hidden auto;
         width: 1rem;
         flex-shrink: 0;
-        scrollbar-width: thin;
+        scrollbar-color: ${token.colorTextPlaceholder} ${token.colorSplit};
         &::-webkit-scrollbar {
           width: 8px;
           height: 8px;
         }
         &::-webkit-scrollbar-corner {
-          background: transparent;
+          background: ${token.colorSplit};
         }
         &::-webkit-scrollbar-track {
-          background: var(--colorBgScrollTrack);
+          background: ${token.colorSplit};
         }
         &::-webkit-scrollbar-thumb {
-          background: var(--colorBgScrollBar);
-          border-radius: 4px;
+          background: ${token.colorTextPlaceholder};
+          border-radius: 100px;
         }
         &::-webkit-scrollbar-thumb:hover {
-          background: var(--colorBgScrollBarHover);
-        }
-        &::-webkit-scrollbar-thumb:active {
-          background: var(--colorBgScrollBarActive);
+          background: ${token.colorTextHeading};
         }
       }
     `,

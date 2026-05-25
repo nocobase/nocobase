@@ -24,6 +24,9 @@ export class PluginGanttClient extends Plugin<any, Application> {
       GanttCollectionActionGroupModel: {
         loader: () => import('./models/actions/GanttActionModels'),
       },
+      GanttTodayActionModel: {
+        loader: () => import('./models/actions/GanttActionModels'),
+      },
       GanttEventViewActionModel: {
         loader: () => import('./models/actions/GanttPopupModels'),
       },

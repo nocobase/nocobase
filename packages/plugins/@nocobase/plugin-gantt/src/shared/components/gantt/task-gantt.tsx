@@ -19,12 +19,26 @@ export type TaskGanttProps = {
   calendarProps: CalendarProps;
   barProps: TaskGanttContentProps;
   ganttHeight?: number;
+  ganttFullHeight?: number;
   scrollY: number;
   ref: any;
   onHorizontalScroll?: (scrollLeft: number) => void;
+  showLeftBorder?: boolean;
 };
 export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
-  ({ gridProps, calendarProps, barProps, ganttHeight, scrollY, onHorizontalScroll }, ref: any) => {
+  (
+    {
+      gridProps,
+      calendarProps,
+      barProps,
+      ganttHeight,
+      ganttFullHeight,
+      scrollY,
+      onHorizontalScroll,
+      showLeftBorder = true,
+    },
+    ref: any,
+  ) => {
     const ganttSVGRef = useRef<SVGSVGElement>(null);
     const horizontalContainerRef = useRef<HTMLDivElement>(null);
     const newBarProps = { ...barProps, svg: ganttSVGRef };
@@ -51,7 +65,12 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
       };
     }, [onHorizontalScroll, ref]);
     return (
-      <div className={styles.ganttverticalcontainer} ref={ref} dir="ltr">
+      <div
+        className={styles.ganttverticalcontainer}
+        ref={ref}
+        dir="ltr"
+        style={{ borderLeft: showLeftBorder ? undefined : 'none' }}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width={gridProps.svgWidth}
@@ -70,7 +89,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={gridProps.svgWidth}
-              height={barProps.rowHeight * barProps.tasks.length}
+              height={ganttFullHeight ?? barProps.rowHeight * barProps.tasks.length}
               fontFamily={barProps.fontFamily}
               ref={ganttSVGRef}
               className="ganttBody"

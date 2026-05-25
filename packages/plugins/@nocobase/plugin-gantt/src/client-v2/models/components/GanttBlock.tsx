@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css, cx } from '@emotion/css';
 import { MultiRecordResource, observer } from '@nocobase/flow-engine';
-import { Table, theme } from 'antd';
+import { Pagination, Table, theme } from 'antd';
 import { debounce } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { convertToBarTasks } from '../../../shared/helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../../shared/helpers/date-helper';
-import { removeHiddenTasks, sortTasks } from '../../../shared/helpers/other-helper';
+import { sortTasks } from '../../../shared/helpers/other-helper';
 import { BarTask } from '../../../shared/types/bar-task';
 import { DateSetup } from '../../../shared/types/date-setup';
 import { GanttEvent } from '../../../shared/types/gantt-task-actions';
@@ -27,24 +26,16 @@ import { VerticalScroll } from '../../../shared/components/other/vertical-scroll
 import { TaskGantt } from '../../../shared/components/gantt/task-gantt';
 import { TaskGanttContentProps } from '../../../shared/components/gantt/task-gantt-content';
 import type { GanttBlockModel } from '../GanttBlockModel';
-
-const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
-  return clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 60;
-};
-
-const ROW_SELECTION_COLUMN_WIDTH = 50;
-
-const getGanttRowKey = (model: GanttBlockModel, record: any) => {
-  const filterByTk = model.collection?.getFilterByTK?.(record);
-  if (filterByTk !== undefined && filterByTk !== null) {
-    return typeof filterByTk === 'object' ? JSON.stringify(filterByTk) : String(filterByTk);
-  }
-  return String(record?.id);
-};
-
-const measureElementHeight = (element: Element | null) => {
-  return element?.getBoundingClientRect().height || 0;
-};
+import {
+  getColumnWidth,
+  getDateIndex,
+  getGanttRowKey,
+  getRowNumber,
+  measureElementHeight,
+  ROW_SELECTION_COLUMN_WIDTH,
+} from './GanttBlock.helpers';
+import { createGanttBlockClassNames } from './GanttBlock.styles';
+import { GANTT_TREE_CHILDREN_COLUMN, useGanttTree } from './GanttBlock.tree';
 
 export const GanttBlock = observer(
   ({ model }: { model: GanttBlockModel }) => {
@@ -96,6 +87,7 @@ export const GanttBlock = observer(
     });
     const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
     const [taskListWidth, setTaskListWidth] = useState(0);
+    const [tableClientWidth, setTableClientWidth] = useState(0);
     const [svgContainerWidth, setSvgContainerWidth] = useState(0);
     const [svgContainerHeight, setSvgContainerHeight] = useState(ganttHeight);
     const [barTasks, setBarTasks] = useState<BarTask[]>([]);
@@ -138,25 +130,40 @@ export const GanttBlock = observer(
     const svgWidth = dateSetup.dates.length * columnWidth;
     const ganttFullHeight = barTasks.length * rowHeight;
     const bodyHeight = ganttHeight ? Math.min(ganttHeight, ganttFullHeight) : undefined;
+    const hasVerticalScroll = !!bodyHeight && ganttFullHeight > bodyHeight;
     const selectedRowKeys = [];
     const loading = model.resource.loading;
     const resourceData = model.resource.getData();
     const fieldNamesProp = model.props?.fieldNames;
-    const hideChildren = model.props?.hideChildren;
     const dragEnabled = model.props?.enableDragToReschedule;
     const showTable = model.props?.showTable !== false;
+    const showRowNumbers = model.shouldShowRowNumbers();
     const tableColumns = model.getColumns().filter((column: any) => column?.key !== 'empty');
     const showActionsTable = showTable && tableColumns.length > 0;
-    const tableRecords = barTasks.map((task, index) => ({
-      ...(task as any).record,
-      __ganttTaskId: task.id,
-      __ganttTaskIndex: index,
-    }));
-    const dataColumnWidth = tableColumns.reduce(
-      (total, column: any) => total + (typeof column?.width === 'number' ? column.width : 0),
-      0,
-    );
-    const tableWidth = (dataColumnWidth || 150) + ROW_SELECTION_COLUMN_WIDTH;
+    const treeTableEnabled = model.isTreeTableEnabled();
+    const tableWidth = model.getAutoTableWidth();
+    const tableVisibleWidth = tableClientWidth || tableWidth;
+    const hasHorizontalTableScroll = tableWidth > tableVisibleWidth + 1;
+    const chartVisibleWidth = svgContainerWidth || chartRef.current?.offsetWidth || 0;
+    const hasHorizontalGanttScroll = chartVisibleWidth > 0 && svgWidth > chartVisibleWidth + 1;
+    const tableScroll = bodyHeight
+      ? { y: bodyHeight, ...(hasHorizontalTableScroll ? { x: tableWidth } : {}) }
+      : hasHorizontalTableScroll
+        ? { x: tableWidth }
+        : undefined;
+    const { tableClass, contentClass, actionsColumnClass, actionsTableClass, chartClass, paginationClass } =
+      createGanttBlockClassNames({
+        token,
+        tableWidth,
+        hasVerticalScroll,
+        hasHorizontalScroll: hasHorizontalGanttScroll,
+      });
+    const { visibleTasks, tableRecords, resolvedTableColumns, expandable } = useGanttTree({
+      model,
+      tasks,
+      tableColumns,
+    });
+    const pagination = model.pagination();
 
     const syncHorizontalScroll = useCallback((nextScrollX: number, source?: 'chart' | 'scrollbar') => {
       const normalizedScrollX = Math.max(0, nextScrollX);
@@ -192,10 +199,21 @@ export const GanttBlock = observer(
       },
       [syncHorizontalScroll],
     );
+    const scrollToDate = useCallback(
+      (date: Date) => {
+        const index = getDateIndex(date, dateSetup.dates);
+        if (index === -1) {
+          return false;
+        }
+        syncHorizontalScroll(columnWidth * index);
+        return true;
+      },
+      [columnWidth, dateSetup.dates, syncHorizontalScroll],
+    );
 
     useEffect(() => {
       setTasks(model.getTasks());
-    }, [model, model.resource.loading, resourceData, fieldNamesProp, hideChildren, dragEnabled]);
+    }, [model, model.resource.loading, resourceData, fieldNamesProp, dragEnabled]);
 
     useEffect(() => {
       return () => {
@@ -211,13 +229,21 @@ export const GanttBlock = observer(
       }
 
       let frameId = 0;
+      const getTableHeaderElement = () =>
+        actionsTable.querySelector('.ant-table-thead > tr:not(.ant-table-measure-row)') ||
+        actionsTable.querySelector('.ant-table-thead > tr') ||
+        actionsTable.querySelector('.ant-table-thead');
+      const getTableRowElement = () =>
+        actionsTable.querySelector('.ant-table-tbody > tr.ant-table-row') ||
+        actionsTable.querySelector('.ant-table-tbody > tr:not(.ant-table-measure-row)') ||
+        actionsTable.querySelector('.ant-table-row');
+
       const measureTableMetrics = () => {
         cancelAnimationFrame(frameId);
         frameId = requestAnimationFrame(() => {
-          const nextHeaderHeight =
-            measureElementHeight(actionsTable.querySelector('.ant-table-thead > tr')) ||
-            measureElementHeight(actionsTable.querySelector('.ant-table-thead'));
-          const nextRowHeight = measureElementHeight(actionsTable.querySelector('.ant-table-tbody > tr'));
+          const nextHeaderHeight = measureElementHeight(getTableHeaderElement());
+          const nextRowHeight = measureElementHeight(getTableRowElement());
+          setTableClientWidth(actionsTable.clientWidth);
 
           setTableMetrics((prev) => {
             const measuredHeaderHeight = nextHeaderHeight || prev.headerHeight;
@@ -240,23 +266,19 @@ export const GanttBlock = observer(
       const resizeObserver = new ResizeObserver(measureTableMetrics);
       resizeObserver.observe(actionsTable);
       actionsTable
-        .querySelectorAll('.ant-table-thead, .ant-table-tbody, .ant-table-thead > tr, .ant-table-tbody > tr')
+        .querySelectorAll(
+          '.ant-table-thead, .ant-table-tbody, .ant-table-thead > tr, .ant-table-tbody > tr, .ant-table-row, .ant-table-body, .ant-table-content',
+        )
         .forEach((element) => resizeObserver.observe(element));
 
       return () => {
         cancelAnimationFrame(frameId);
         resizeObserver.disconnect();
       };
-    }, [tableColumns.length, tableRecords.length]);
+    }, [bodyHeight, hasHorizontalTableScroll, tableColumns.length, tableRecords.length]);
 
     useEffect(() => {
-      let filteredTasks: Task[];
-      if (model.props?.hideChildren) {
-        filteredTasks = removeHiddenTasks(tasks);
-      } else {
-        filteredTasks = tasks;
-      }
-      filteredTasks = [...filteredTasks].sort(sortTasks);
+      const filteredTasks = treeTableEnabled ? visibleTasks : [...visibleTasks].sort(sortTasks);
       const [startDate, endDate] = ganttDateRange(filteredTasks, viewMode, preStepsCount);
       let newDates = seedDates(startDate, endDate, viewMode);
       if (rtl) {
@@ -289,7 +311,7 @@ export const GanttBlock = observer(
         ),
       );
     }, [
-      tasks,
+      visibleTasks,
       viewMode,
       preStepsCount,
       rowHeight,
@@ -308,7 +330,7 @@ export const GanttBlock = observer(
       milestoneBackgroundColor,
       milestoneBackgroundSelectedColor,
       rtl,
-      model.props?.hideChildren,
+      treeTableEnabled,
       syncHorizontalScroll,
     ]);
 
@@ -317,27 +339,23 @@ export const GanttBlock = observer(
         viewMode === dateSetup.viewMode &&
         ((viewDate && !currentViewDate) || (viewDate && currentViewDate?.valueOf() !== viewDate.valueOf()))
       ) {
-        const dates = dateSetup.dates;
-        const index = dates.findIndex(
-          (d, i) =>
-            viewDate.valueOf() >= d.valueOf() && i + 1 !== dates.length && viewDate.valueOf() < dates[i + 1].valueOf(),
-        );
-        if (index === -1) {
+        if (!scrollToDate(viewDate)) {
           return;
         }
         setCurrentViewDate(viewDate);
-        syncHorizontalScroll(columnWidth * index);
       }
-    }, [
-      viewDate,
-      columnWidth,
-      dateSetup.dates,
-      dateSetup.viewMode,
-      viewMode,
-      currentViewDate,
-      setCurrentViewDate,
-      syncHorizontalScroll,
-    ]);
+    }, [viewDate, dateSetup.viewMode, viewMode, currentViewDate, setCurrentViewDate, scrollToDate]);
+
+    useEffect(() => {
+      const handleScrollToDate = (date: Date) => {
+        scrollToDate(date);
+      };
+
+      model.emitter.on('scrollToDate', handleScrollToDate);
+      return () => {
+        model.emitter.off('scrollToDate', handleScrollToDate);
+      };
+    }, [model, scrollToDate]);
 
     useEffect(() => {
       const { changedTask, action } = ganttEvent;
@@ -467,6 +485,78 @@ export const GanttBlock = observer(
       syncHorizontalScroll(event.currentTarget.scrollLeft, 'scrollbar');
     };
 
+    const handlePaginationChange = useCallback(
+      async (page: number, pageSize: number) => {
+        const nextPageSize = model.normalizePageSize(pageSize);
+        if (model.resource.getPageSize() !== nextPageSize) {
+          model.resource.setPage(1);
+        } else {
+          model.resource.setPage(page);
+        }
+        model.resource.loading = true;
+        model.resource.setPageSize(nextPageSize);
+        await model.resource.refresh();
+        setScrollY(0);
+      },
+      [model],
+    );
+
+    const renderSelectionCell = useCallback(
+      (checked: boolean, record: any, index: number, originNode: React.ReactNode) => {
+        if (!showRowNumbers) {
+          return originNode;
+        }
+
+        const rowIndex = Number.isFinite(Number(record.__ganttTaskIndex)) ? Number(record.__ganttTaskIndex) : index;
+        const rowNumber = getRowNumber({
+          page: model.resource.getPage(),
+          pageSize: model.resource.getPageSize(),
+          rowIndex,
+          rowPath: record.__ganttTaskIndexPath,
+        });
+
+        return (
+          <div
+            role="button"
+            aria-label={`table-index-${rowNumber}`}
+            className={`nb-gantt-row-selection${checked ? ' checked' : ''}`}
+            style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 16,
+              paddingRight: 0,
+            }}
+          >
+            <div
+              className="nb-gantt-table-index"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+              }}
+            >
+              {rowNumber}
+            </div>
+            <div
+              className={`nb-gantt-origin-node${checked ? ' checked' : ''}`}
+              style={{
+                position: 'absolute',
+                right: '50%',
+                transform: 'translateX(50%)',
+                display: checked ? 'block' : 'none',
+              }}
+            >
+              {originNode}
+            </div>
+          </div>
+        );
+      },
+      [model.resource, showRowNumbers],
+    );
+
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
       event.preventDefault();
       let newScrollY = scrollY;
@@ -569,43 +659,6 @@ export const GanttBlock = observer(
       loading,
     };
 
-    const tableClass = cx(css`
-      .ant-table-container::after {
-        box-shadow: none !important;
-      }
-    `);
-    const contentClass = cx(css`
-      position: relative;
-      display: flex;
-      align-items: stretch;
-      width: 100%;
-      overflow: hidden;
-      border: 1px solid ${token.colorBorderSecondary};
-      border-radius: ${token.borderRadius}px;
-    `);
-    const actionsColumnClass = cx(css`
-      flex: 0 0 min(${tableWidth}px, 45%);
-      width: min(${tableWidth}px, 45%);
-      max-width: 45%;
-      min-width: ${Math.min(tableWidth, 150)}px;
-      background: ${token.colorBgContainer};
-      border-inline-end: 1px solid ${token.colorBorderSecondary};
-      overflow: hidden;
-    `);
-    const actionsTableClass = cx(css`
-      .ant-table {
-        background: ${token.colorBgContainer};
-      }
-      .ant-table-cell {
-        border-color: ${token.colorSplit};
-      }
-    `);
-    const chartClass = cx(css`
-      flex: 1 1 auto;
-      min-width: 0;
-      position: relative;
-    `);
-
     return (
       <div className={tableClass} ref={ganttRef}>
         <div onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
@@ -614,7 +667,7 @@ export const GanttBlock = observer(
               <div className={actionsColumnClass} ref={actionsTableRef}>
                 <Table
                   className={actionsTableClass}
-                  columns={tableColumns}
+                  columns={resolvedTableColumns}
                   dataSource={tableRecords}
                   pagination={false}
                   rowKey={(record) => record.__ganttTaskId}
@@ -625,8 +678,12 @@ export const GanttBlock = observer(
                     onChange: (_selectedRowKeys, selectedRows) => {
                       model.resource.setSelectedRows(selectedRows);
                     },
+                    renderCell: renderSelectionCell,
                   }}
-                  scroll={bodyHeight ? { y: bodyHeight } : undefined}
+                  scroll={tableScroll}
+                  expandable={expandable}
+                  childrenColumnName={GANTT_TREE_CHILDREN_COLUMN}
+                  indentSize={15}
                   showSorterTooltip={false}
                 />
               </div>
@@ -637,8 +694,10 @@ export const GanttBlock = observer(
                 calendarProps={calendarProps}
                 barProps={barProps}
                 ganttHeight={bodyHeight}
+                ganttFullHeight={ganttFullHeight}
                 scrollY={scrollY}
                 onHorizontalScroll={handleHorizontalScroll}
+                showLeftBorder={showActionsTable}
                 ref={verticalGanttContainerRef}
               />
               {ganttEvent.changedTask && (
@@ -659,7 +718,7 @@ export const GanttBlock = observer(
                   svgWidth={svgWidth}
                 />
               )}
-              {bodyHeight && ganttFullHeight > bodyHeight && (
+              {hasVerticalScroll && (
                 <VerticalScroll
                   ganttFullHeight={ganttFullHeight}
                   ganttHeight={bodyHeight}
@@ -677,6 +736,9 @@ export const GanttBlock = observer(
                 ref={setHorizontalScrollRef}
               />
             </div>
+          </div>
+          <div className={paginationClass}>
+            <Pagination {...pagination} onChange={handlePaginationChange} />
           </div>
         </div>
       </div>

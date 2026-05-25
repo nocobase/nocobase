@@ -24,34 +24,36 @@ const useStyles = createStyles(({ token, css }) => {
       border-bottom: 1px solid ${token.colorBorderSecondary};
     `,
     calendarBottomText: css`
-      font-size: 11px;
+      font-size: 12px;
+      font-weight: 400;
+      fill: ${token.colorTextSecondary};
+      text-anchor: middle;
+      user-select: none;
+      pointer-events: none;
     `,
     nbGanttCalendar: css`
-      .calendarbottomtext: {
-        textanchor: middle;
-        fill: ${token.colorText};
-        webkittouchcallout: none;
-        webkituserselect: none;
-        mozuserselect: none;
-        msuserselect: none;
-        userselect: none;
-        pointerevents: none;
-        font-weight: normal;
+      .calendarBottomText,
+      .calendarbottomtext {
+        font-size: 12px;
+        font-weight: 400;
+        fill: ${token.colorTextSecondary};
+        text-anchor: middle;
+        user-select: none;
+        pointer-events: none;
       }
-      .calendartoptick: {
+      .calendarTopTick,
+      .calendartoptick {
         stroke: ${token.colorBorderSecondary};
         stroke-width: 0;
       }
-      .calendartoptext: {
-        textanchor: middle;
-        webkittouchcallout: none;
-        webkituserselect: none;
-        mozuserselect: none;
-        msuserselect: none;
-        userselect: none;
-        pointerevents: none;
-        font-weight: normal;
+      .calendarTopText,
+      .calendartoptext {
+        font-size: ${token.fontSize}px;
+        font-weight: 600;
         fill: ${token.colorText};
+        text-anchor: middle;
+        user-select: none;
+        pointer-events: none;
       }
     `,
   };

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EventOption } from '../../types/public-types';
 import { BarTask } from '../../types/bar-task';
 import { Arrow } from '../other/arrow';
@@ -72,11 +72,22 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
   const xStepRef = useRef(xStep);
   const initEventX1DeltaRef = useRef(initEventX1Delta);
   const rtlRef = useRef(rtl);
+  const mouseLeaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   ganttEventRef.current = ganttEvent;
   xStepRef.current = xStep;
   initEventX1DeltaRef.current = initEventX1Delta;
   rtlRef.current = rtl;
+  const taskById = useMemo(() => new Map(tasks.map((task) => [String(task.id), task])), [tasks]);
+  const hasChangedTask = !!ganttEvent.changedTask;
+
+  useEffect(() => {
+    return () => {
+      if (mouseLeaveTimeoutRef.current) {
+        clearTimeout(mouseLeaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // create xStep
   useEffect(() => {
@@ -203,7 +214,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
         ganttEvent.action === 'end' ||
         ganttEvent.action === 'start' ||
         ganttEvent.action === 'progress') &&
-      ganttEvent.changedTask &&
+      hasChangedTask &&
       svgElement
     ) {
       window.addEventListener('mousemove', handleMouseMove);
@@ -216,7 +227,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
     };
   }, [
     ganttEvent.action,
-    !!ganttEvent.changedTask,
+    hasChangedTask,
     onProgressChange,
     timeStep,
     onDateChange,
@@ -256,7 +267,13 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
     }
     // Mouse Events
     else if (action === 'mouseenter') {
-      if (!ganttEvent.action) {
+      if (mouseLeaveTimeoutRef.current) {
+        clearTimeout(mouseLeaveTimeoutRef.current);
+        mouseLeaveTimeoutRef.current = null;
+      }
+
+      const currentEvent = ganttEventRef.current;
+      if (!currentEvent.action || currentEvent.action === 'mouseenter') {
         setGanttEvent({
           action,
           changedTask: task,
@@ -264,9 +281,18 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
         });
       }
     } else if (action === 'mouseleave') {
-      if (ganttEvent.action === 'mouseenter') {
-        setTimeout(() => {
-          setGanttEvent({ action: '' });
+      const leavingTaskId = task.id;
+      if (ganttEventRef.current.action === 'mouseenter') {
+        if (mouseLeaveTimeoutRef.current) {
+          clearTimeout(mouseLeaveTimeoutRef.current);
+        }
+
+        mouseLeaveTimeoutRef.current = setTimeout(() => {
+          const currentEvent = ganttEventRef.current;
+          if (currentEvent.action === 'mouseenter' && currentEvent.changedTask?.id === leavingTaskId) {
+            setGanttEvent({ action: '' });
+          }
+          mouseLeaveTimeoutRef.current = null;
         }, 300);
       }
     } else if (action === 'dblclick') {
@@ -321,11 +347,16 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
       <g className="arrows" fill={arrowColor} stroke={arrowColor}>
         {tasks.map((task) => {
           return task.barChildren.map((child) => {
+            const taskTo = taskById.get(String(child.id));
+            if (!taskTo) {
+              return null;
+            }
+
             return (
               <Arrow
-                key={`Arrow from ${task.id} to ${tasks[child.index].id}`}
+                key={`Arrow from ${task.id} to ${child.id}`}
                 taskFrom={task}
-                taskTo={tasks[child.index]}
+                taskTo={taskTo}
                 rowHeight={rowHeight}
                 taskHeight={taskHeight}
                 arrowIndent={arrowIndent}

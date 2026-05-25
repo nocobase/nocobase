@@ -7,12 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel, ActionSceneEnum, DataBlockModel, TableActionsColumnModel } from '@nocobase/client-v2';
+import {
+  ActionModel,
+  ActionSceneEnum,
+  CollectionActionGroupModel,
+  DataBlockModel,
+  TableActionsColumnModel,
+} from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, test, vi } from 'vitest';
 import { GanttBlockModel } from '../models/GanttBlockModel';
-import { ALLOWED_GANTT_COLLECTION_ACTIONS, GanttCollectionActionGroupModel } from '../models/actions/GanttActionModels';
+import {
+  ALLOWED_GANTT_COLLECTION_ACTIONS,
+  GanttCollectionActionGroupModel,
+  GanttTodayActionModel,
+} from '../models/actions/GanttActionModels';
 import { GanttEventViewActionModel } from '../models/actions/GanttPopupModels';
+import {
+  GANTT_TREE_CHILDREN_COLUMN,
+  getGanttTableRecords,
+  getVisibleGanttTasks,
+} from '../models/components/GanttBlock.tree';
+import { getDateIndex, getRowNumber } from '../models/components/GanttBlock.helpers';
 import PluginGanttClient from '../plugin';
 
 describe('GanttBlockModel.filterCollection', () => {
@@ -57,6 +73,7 @@ describe('PluginGanttClient model discovery', () => {
     await flowEngine.preloadModelLoaders();
 
     expect(flowEngine.getModelClass('GanttBlockModel')).toBe(GanttBlockModel);
+    expect(flowEngine.getModelClass('GanttTodayActionModel')).toBe(GanttTodayActionModel);
     expect(Array.from(flowEngine.getSubclassesOf('DataBlockModel').keys())).toContain('GanttBlockModel');
   });
 
@@ -76,6 +93,7 @@ describe('PluginGanttClient model discovery', () => {
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
         'Show table': '表格显示',
+        Today: '今天',
       }),
     );
     expect(i18n.addResources).toHaveBeenCalledWith(
@@ -86,6 +104,7 @@ describe('PluginGanttClient model discovery', () => {
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
         'Show table': '表格显示',
+        Today: '今天',
       }),
     );
   });
@@ -173,11 +192,147 @@ describe('GanttBlockModel settings', () => {
     const tableSettings = model.getFlow('tableSettings');
 
     expect(tableSettings?.steps?.quickEdit?.hideInSettings).toBe(true);
-    expect(tableSettings?.steps?.showRowNumbers?.hideInSettings).toBe(true);
-    expect(tableSettings?.steps?.pageSize?.hideInSettings).toBe(true);
+    expect(tableSettings?.steps?.showRowNumbers?.hideInSettings).toBeUndefined();
+    expect(tableSettings?.steps?.pageSize?.hideInSettings).toBeUndefined();
     expect(tableSettings?.steps?.tableDensity?.hideInSettings).toBe(true);
     expect(tableSettings?.steps?.dragSort?.hideInSettings).toBe(true);
     expect(tableSettings?.steps?.dragSortBy?.hideInSettings).toBe(true);
+  });
+
+  test('shows row numbers by default and persists the row number setting', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+    });
+    const step = model.getFlow('tableSettings')?.steps?.showRowNumbers;
+
+    const defaultParams =
+      typeof step?.defaultParams === 'function' ? step.defaultParams({ model } as any) : step?.defaultParams;
+    expect(defaultParams).toEqual({ showIndex: true });
+    expect(model.shouldShowRowNumbers()).toBe(true);
+
+    step?.handler?.({ model } as any, { showIndex: false });
+    expect(model.props?.showIndex).toBe(false);
+    expect(model.shouldShowRowNumbers()).toBe(false);
+  });
+
+  test('initializes paginated resource with the configured page size', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar',
+      filterTargetKey: 'id',
+      fields: [{ name: 'startAt', type: 'datetime', interface: 'datetime' }],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar',
+          },
+        },
+        tableSettings: {
+          pageSize: {
+            pageSize: 50,
+          },
+        },
+      },
+    });
+
+    expect(model.resource.getRequestParameter('paginate')).toBeNull();
+    expect(model.resource.getRequestParameter('pageSize')).toBe(50);
+    expect(model.resource.getPageSize()).toBe(50);
+  });
+
+  test('initializes tree requests when tree table is enabled for a tree collection', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'tasks',
+      template: 'tree',
+      tree: 'adjacencyList',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'startAt', type: 'datetime', interface: 'datetime' },
+        { name: 'children', type: 'hasMany', treeChildren: true },
+      ],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+        tableSettings: {
+          treeTable: {
+            treeTable: true,
+          },
+        },
+      },
+    });
+
+    expect(model.isTreeTableEnabled()).toBe(true);
+    expect(model.resource.getRequestParameter('tree')).toBe(true);
+  });
+
+  test('formats tree task children from the collection tree children field', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'tasks',
+      template: 'tree',
+      tree: 'adjacencyList',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'startAt', type: 'datetime', interface: 'datetime' },
+        { name: 'endAt', type: 'datetime', interface: 'datetime' },
+        { name: 'nodes', type: 'hasMany', treeChildren: true },
+      ],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+        },
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    });
+
+    model.resource.setData([
+      {
+        id: 1,
+        title: 'Parent',
+        startAt: '2026-05-01',
+        endAt: '2026-05-02',
+        nodes: [{ id: 2, title: 'Child', startAt: '2026-05-03', endAt: '2026-05-04' }],
+      },
+    ]);
+
+    expect(model.getTasks().map((task) => ({ id: task.id, project: task.project, type: task.type }))).toEqual([
+      { id: '1', project: undefined, type: 'task' },
+      { id: '2', project: '1', type: 'task' },
+    ]);
   });
 
   test('keeps data scope and default sorting only in inherited table settings', () => {
@@ -232,6 +387,66 @@ describe('GanttBlockModel settings', () => {
         expect.objectContaining({ label: 'zh:Month', value: 'month' }),
       ]),
     );
+  });
+
+  test('clears optional progress and color field names when settings are cleared', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+          progress: 'progress',
+          color: 'status',
+          range: 'day',
+        },
+      },
+      stepParams: {
+        ganttSettings: {
+          fields: {
+            title: 'title',
+            start: 'startAt',
+            end: 'endAt',
+            progress: 'progress',
+            color: 'status',
+            range: 'day',
+          },
+          processField: {
+            progress: 'progress',
+          },
+          colorField: {
+            color: 'status',
+          },
+        },
+      },
+    });
+
+    const progressStep = model.getFlow('ganttSettings')?.steps?.processField;
+    const colorStep = model.getFlow('ganttSettings')?.steps?.colorField;
+    const progressParams = { progress: undefined };
+    const colorParams = {};
+
+    progressStep?.handler?.({ model } as any, progressParams);
+    colorStep?.beforeParamsSave?.({ model } as any, colorParams);
+
+    expect(model.props?.fieldNames).toEqual({
+      title: 'title',
+      start: 'startAt',
+      end: 'endAt',
+      range: 'day',
+    });
+    expect(model.getFieldNames().progress).toBeUndefined();
+    expect(model.getFieldNames().color).toBeUndefined();
+    expect(progressParams).toEqual({ progress: null });
+    expect(colorParams).toEqual({ color: null });
+    expect(model.getStepParams('ganttSettings', 'fields')).toMatchObject({
+      progress: null,
+      color: null,
+    });
   });
 
   test('only exposes single select and color fields as gantt color field candidates', () => {
@@ -434,6 +649,61 @@ describe('GanttBlockModel settings', () => {
   });
 });
 
+describe('GanttBlock tree helpers', () => {
+  const tasks = [
+    { id: '1', name: 'Parent', type: 'task', record: { id: 1, children: [{ id: 2 }] } },
+    { id: '2', name: 'Child', type: 'task', project: '1', record: { id: 2 } },
+    { id: '3', name: 'Sibling', type: 'task', record: { id: 3 } },
+  ] as any;
+
+  test('uses the same visible tree order for the table and gantt chart', () => {
+    expect(
+      getVisibleGanttTasks({
+        expandedRowKeySet: new Set(),
+        tasks,
+        treeTableEnabled: true,
+      }).map((task) => task.id),
+    ).toEqual(['1', '3']);
+
+    expect(
+      getVisibleGanttTasks({
+        expandedRowKeySet: new Set(['1']),
+        tasks,
+        treeTableEnabled: true,
+      }).map((task) => task.id),
+    ).toEqual(['1', '2', '3']);
+  });
+
+  test('stores gantt tree children in an internal column name instead of record.children', () => {
+    const records = getGanttTableRecords({ tasks, treeTableEnabled: true });
+
+    expect(records[0].children).toEqual([{ id: 2 }]);
+    expect(records[0][GANTT_TREE_CHILDREN_COLUMN].map((record) => record.__ganttTaskId)).toEqual(['2']);
+    expect(records[0].__ganttTaskIndex).toBe(0);
+    expect(records[0][GANTT_TREE_CHILDREN_COLUMN][0].__ganttTaskIndex).toBe(1);
+    expect(records[1].__ganttTaskIndex).toBe(2);
+    expect(records[0].__ganttTaskIndexPath).toBe('0');
+    expect(records[0][GANTT_TREE_CHILDREN_COLUMN][0].__ganttTaskIndexPath).toBe('0.children.0');
+    expect(records[1].__ganttTaskIndexPath).toBe('1');
+    expect(records.map((record) => record.__ganttTaskId)).toEqual(['1', '3']);
+  });
+
+  test('formats tree row numbers as hierarchical indices', () => {
+    expect(getRowNumber({ rowIndex: 0, rowPath: '0' })).toBe('1');
+    expect(getRowNumber({ rowIndex: 1, rowPath: '0.children.0' })).toBe('1.1');
+    expect(getRowNumber({ rowIndex: 2, rowPath: '0.children.1.children.0' })).toBe('1.2.1');
+    expect(getRowNumber({ page: 2, pageSize: 20, rowIndex: 0 })).toBe(21);
+  });
+
+  test('finds the matching gantt date column for quick navigation', () => {
+    const dates = [new Date('2026-05-24T00:00:00'), new Date('2026-05-25T00:00:00'), new Date('2026-05-26T00:00:00')];
+
+    expect(getDateIndex(new Date('2026-05-25T12:00:00'), dates)).toBe(1);
+    expect(getDateIndex(new Date('2026-05-26T00:00:00'), dates)).toBe(-1);
+    expect(getDateIndex(new Date('2026-05-23T23:59:59'), dates)).toBe(-1);
+  });
+});
+
 describe('GanttCollectionActionGroupModel', () => {
   test('only offers supported collection actions in top toolbar configuration', async () => {
     const flowEngine = new FlowEngine();
@@ -483,5 +753,61 @@ describe('GanttCollectionActionGroupModel', () => {
     } as any);
 
     expect(items.map((item) => item.useModel)).toEqual(ALLOWED_GANTT_COLLECTION_ACTIONS);
+  });
+});
+
+describe('GanttTodayActionModel', () => {
+  test('is only offered by gantt action configuration', async () => {
+    class VisibleActionModel extends ActionModel {
+      static scene = ActionSceneEnum.collection;
+    }
+
+    VisibleActionModel.define({
+      label: 'Visible action',
+    });
+
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({
+      CollectionActionGroupModel,
+      GanttCollectionActionGroupModel,
+      GanttTodayActionModel,
+      VisibleActionModel,
+    });
+
+    const commonItems = await CollectionActionGroupModel.defineChildren({
+      engine: flowEngine,
+      dataSourceManager: flowEngine.dataSourceManager,
+      model: { uid: 'table-1' },
+    } as any);
+    expect(commonItems.map((item) => item.useModel)).toContain('VisibleActionModel');
+    expect(commonItems.map((item) => item.useModel)).not.toContain('GanttTodayActionModel');
+
+    const ganttItems = await GanttCollectionActionGroupModel.defineChildren({
+      engine: flowEngine,
+      dataSourceManager: flowEngine.dataSourceManager,
+      model: {
+        uid: 'gantt-1',
+        getModelClassName: () => 'GanttCollectionActionGroupModel',
+      },
+    } as any);
+    expect(ganttItems.map((item) => item.useModel)).toContain('GanttTodayActionModel');
+  });
+
+  test('requests the gantt block to scroll to today on click', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttTodayActionModel });
+    const blockModel = {
+      scrollToToday: vi.fn(),
+    };
+
+    const action = flowEngine.createModel<GanttTodayActionModel>({
+      uid: 'today-action',
+      use: 'GanttTodayActionModel',
+    });
+    action.context.defineProperty('blockModel', { value: blockModel });
+
+    await action.dispatchEvent('click');
+
+    expect(blockModel.scrollToToday).toHaveBeenCalledTimes(1);
   });
 });

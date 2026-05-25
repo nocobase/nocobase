@@ -19,64 +19,30 @@ import {
 import {
   AddSubModelButton,
   DndProvider,
-  DragHandler,
   Droppable,
   FlowModelRenderer,
   FlowSettingsButton,
   MultiRecordResource,
 } from '@nocobase/flow-engine';
-import { Space, theme } from 'antd';
+import { Space } from 'antd';
 import React from 'react';
 import { Task } from '../../shared/types/public-types';
 import { createGanttEventViewActionOptions } from './actions/GanttPopupModels';
-import { LEGACY_NAMESPACE, NAMESPACE, tExpr } from '../locale';
 import { GanttBlock } from './components/GanttBlock';
+import { ROW_SELECTION_COLUMN_WIDTH, TREE_EXPAND_COLUMN_WIDTH } from './components/GanttBlock.helpers';
 import { getLabelFormatValue, toPlainLabel } from './components/getLabelFormatValue';
-
-const DATE_FIELD_TYPES = ['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'];
-const TITLE_FIELD_TYPES = ['string'];
-const PROGRESS_FIELD_TYPES = ['float'];
-const COLOR_FIELD_TYPES = ['select', 'color'];
-const DEFAULT_PRESET_COLOR = '#d9d9d9';
-
-const TIME_SCALE_OPTION_DEFS = [
-  { label: 'Hour', value: 'hour' },
-  { label: 'Quarter of day', value: 'quarterDay' },
-  { label: 'Half of day', value: 'halfDay' },
-  { label: 'Day', value: 'day' },
-  { label: 'Week', value: 'week' },
-  { label: 'Month', value: 'month' },
-  { label: 'Year', value: 'year' },
-  { label: 'QuarterYear', value: 'quarterYear' },
-];
-
-const getTimeScaleOptions = (translate?: (key: string, options?: Record<string, any>) => string) => {
-  return TIME_SCALE_OPTION_DEFS.map((item) => ({
-    ...item,
-    label: translate
-      ? translate(item.label, { ns: [NAMESPACE, LEGACY_NAMESPACE, 'client'], nsMode: 'fallback' })
-      : tExpr(item.label),
-  }));
-};
-
-const DRAG_HANDLER_TOOLBAR_ITEMS = [
-  {
-    key: 'drag-handler',
-    component: DragHandler as React.ComponentType<any>,
-    sort: 1,
-  },
-];
-
-const HIDDEN_GANTT_TABLE_SETTING_STEPS = [
-  'quickEdit',
-  'showRowNumbers',
-  'pageSize',
-  'tableDensity',
-  'dragSort',
-  'dragSortBy',
-];
-
-const HIDDEN_GANTT_TOP_ACTION_MODELS = new Set(['ExpandCollapseActionModel', 'GanttExpandCollapseActionModel']);
+import {
+  DATE_FIELD_TYPES,
+  DRAG_HANDLER_TOOLBAR_ITEMS,
+  getFieldEnumColor,
+  getProgress,
+  HIDDEN_GANTT_TOP_ACTION_MODELS,
+  isSupportedByValues,
+  normalizeColorValue,
+  normalizeEventOpenMode,
+  TITLE_FIELD_TYPES,
+} from './GanttBlockModel.helpers';
+import { registerGanttBlockModelSettings } from './GanttBlockModel.settings';
 
 type GanttBlockStructure = {
   subModels: {
@@ -84,95 +50,6 @@ type GanttBlockStructure = {
     columns: Array<TableColumnModel | TableCustomColumnModel | TableActionsColumnModel>;
     eventViewAction?: ActionModel;
   };
-};
-
-const isSupportedByValues = (value: any, values: string[]) => {
-  return value && values.includes(value);
-};
-
-const applyGanttFieldNames = (model: GanttBlockModel, params: Record<string, any>) => {
-  model.setProps({
-    fieldNames: {
-      ...(model.props?.fieldNames || {}),
-      ...(Object.prototype.hasOwnProperty.call(params, 'title') ? { title: params.title } : {}),
-      ...(Object.prototype.hasOwnProperty.call(params, 'start') ? { start: params.start } : {}),
-      ...(Object.prototype.hasOwnProperty.call(params, 'end') ? { end: params.end } : {}),
-      ...(Object.prototype.hasOwnProperty.call(params, 'progress') ? { progress: params.progress } : {}),
-      ...(Object.prototype.hasOwnProperty.call(params, 'color') ? { color: params.color || undefined } : {}),
-      ...(Object.prototype.hasOwnProperty.call(params, 'range') ? { range: params.range || 'day' } : {}),
-    },
-  });
-};
-
-const getGanttTableSettingsSteps = () => {
-  const tableSettings = TableBlockModel.globalFlowRegistry.getFlow('tableSettings');
-  const steps = { ...(tableSettings?.steps || {}) };
-
-  HIDDEN_GANTT_TABLE_SETTING_STEPS.forEach((key) => {
-    if (steps[key]) {
-      steps[key] = {
-        ...steps[key],
-        hideInSettings: true,
-      };
-    }
-  });
-
-  return steps;
-};
-
-const getProgress = (record: any, progressFieldName?: string) => {
-  if (!progressFieldName) {
-    return 0;
-  }
-  const value = Number(record?.[progressFieldName]);
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  const percent = Number((value * 100).toFixed(2));
-  return percent > 100 ? 100 : percent || 0;
-};
-
-const normalizeColorValue = (value: any) => {
-  if (value === null || value === undefined || value === '') {
-    return undefined;
-  }
-
-  if (typeof value === 'object') {
-    return value.hex || value.hexString || value.color || value.value;
-  }
-
-  const color = String(value);
-  if (color === 'default') {
-    return DEFAULT_PRESET_COLOR;
-  }
-
-  return theme.defaultSeed[color] || color;
-};
-
-const getFieldEnumColor = (field: any, value: any) => {
-  const normalizedValue = normalizeColorValue(value);
-  if (!normalizedValue) {
-    return undefined;
-  }
-
-  const enumOptions = Array.isArray(field?.uiSchema?.enum) ? field.uiSchema.enum : [];
-  const option = enumOptions.find((item: any) => {
-    return String(item?.value ?? item?.name ?? item?.id ?? '') === String(normalizedValue);
-  });
-
-  return normalizeColorValue(option?.color);
-};
-
-const normalizeEventOpenMode = (value?: string) => {
-  if (value === 'modal') {
-    return 'dialog';
-  }
-
-  if (value === 'page') {
-    return 'embed';
-  }
-
-  return value === 'dialog' || value === 'embed' ? value : 'drawer';
 };
 
 export class GanttBlockModel extends TableBlockModel {
@@ -207,12 +84,79 @@ export class GanttBlockModel extends TableBlockModel {
 
   createResource() {
     const resource = this.context.createResource(MultiRecordResource);
-    resource.addRequestParameter('paginate', false);
+    resource.setPageSize(this.getPageSize());
+    if (this.isTreeTableEnabled()) {
+      resource.setRequestParameters({ tree: true });
+    }
     const sortField = Array.isArray(this.collection?.filterTargetKey)
       ? this.collection.filterTargetKey[0]
       : this.collection?.filterTargetKey || 'id';
     resource.setSort([sortField]);
     return resource;
+  }
+
+  normalizePageSize(value?: any) {
+    const pageSize = Number(value);
+    return Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
+  }
+
+  getPageSize() {
+    return this.normalizePageSize(this.props?.pageSize ?? this.getStepParams('tableSettings', 'pageSize')?.pageSize);
+  }
+
+  getAutoTableWidth() {
+    const tableColumns = this.getColumns().filter((column: any) => column?.key !== 'empty');
+    const dataColumnWidth = tableColumns.reduce(
+      (total, column: any) => total + (typeof column?.width === 'number' ? column.width : 0),
+      0,
+    );
+
+    return (
+      (dataColumnWidth || 150) + ROW_SELECTION_COLUMN_WIDTH + (this.isTreeTableEnabled() ? TREE_EXPAND_COLUMN_WIDTH : 0)
+    );
+  }
+
+  shouldShowRowNumbers() {
+    return (this.props?.showIndex ?? this.getStepParams('tableSettings', 'showRowNumbers')?.showIndex) !== false;
+  }
+
+  isTreeCollection() {
+    try {
+      return (
+        this.collection?.template === 'tree' || this.collection?.options?.template === 'tree' || !!this.collection?.tree
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  isTreeTableEnabled() {
+    if (!this.isTreeCollection()) {
+      return false;
+    }
+    return (this.props?.treeTable ?? this.getStepParams('tableSettings', 'treeTable')?.treeTable) === true;
+  }
+
+  shouldDefaultExpandAllRows() {
+    return (
+      (this.props?.defaultExpandAllRows ??
+        this.getStepParams('tableSettings', 'defaultExpandAllRows')?.defaultExpandAllRows) === true
+    );
+  }
+
+  getTreeChildrenFieldName() {
+    return (
+      this.getCollectionFields().find((field: any) => field?.treeChildren || field?.options?.treeChildren)?.name ||
+      'children'
+    );
+  }
+
+  scrollToDate(date: Date) {
+    this.emitter.emit('scrollToDate', date);
+  }
+
+  scrollToToday() {
+    this.scrollToDate(new Date());
   }
 
   getCollectionFields() {
@@ -313,7 +257,8 @@ export class GanttBlockModel extends TableBlockModel {
     data.forEach((record: any) => {
       const title = this.formatTitle(record, fieldNames.title);
       const id = this.getTaskId(record);
-      const children = Array.isArray(record.children) ? record.children : [];
+      const childrenFieldName = this.getTreeChildrenFieldName();
+      const children = Array.isArray(record[childrenFieldName]) ? record[childrenFieldName] : [];
       const start = record[fieldNames.start] ? new Date(record[fieldNames.start]) : undefined;
       const end = record[fieldNames.end] ? new Date(record[fieldNames.end]) : start;
       const color = this.getRecordColor(record, fieldNames.color);
@@ -324,9 +269,8 @@ export class GanttBlockModel extends TableBlockModel {
           end,
           name: title,
           id,
-          type: 'project',
+          type: fieldNames.end ? 'task' : 'milestone',
           progress: getProgress(record, fieldNames.progress),
-          hideChildren: !!this.props?.hideChildren,
           project: projectId,
           color,
           isDisabled: false,
@@ -567,322 +511,4 @@ export class GanttBlockModel extends TableBlockModel {
   }
 }
 
-GanttBlockModel.registerFlow({
-  key: 'ganttSettings',
-  sort: 500,
-  title: tExpr('Gantt'),
-  steps: {
-    fields: {
-      title: tExpr('Gantt fields'),
-      preset: true,
-      hideInSettings: true,
-      uiSchema(ctx) {
-        const model = ctx.model as GanttBlockModel;
-        const titleFieldOptions = model.getFieldOptions(TITLE_FIELD_TYPES);
-        const dateFieldOptions = model.getFieldOptions(DATE_FIELD_TYPES);
-        const progressFieldOptions = model.getFieldOptions(PROGRESS_FIELD_TYPES);
-        const colorFieldOptions = model.getFieldOptions(COLOR_FIELD_TYPES);
-        const timeScaleOptions = getTimeScaleOptions(ctx.t);
-
-        return {
-          title: {
-            type: 'string',
-            title: tExpr('Title field'),
-            required: true,
-            enum: titleFieldOptions,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              options: titleFieldOptions,
-            },
-          },
-          start: {
-            type: 'string',
-            title: tExpr('Start date field'),
-            required: true,
-            enum: dateFieldOptions,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              options: dateFieldOptions,
-            },
-          },
-          end: {
-            type: 'string',
-            title: tExpr('End date field'),
-            required: true,
-            enum: dateFieldOptions,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              options: dateFieldOptions,
-            },
-          },
-          progress: {
-            type: 'string',
-            title: tExpr('Progress field'),
-            enum: progressFieldOptions,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              options: progressFieldOptions,
-              allowClear: true,
-            },
-          },
-          color: {
-            type: 'string',
-            title: tExpr('Color field'),
-            enum: colorFieldOptions,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              options: colorFieldOptions,
-              allowClear: true,
-            },
-          },
-          range: {
-            type: 'string',
-            title: tExpr('Time scale'),
-            default: 'day',
-            enum: timeScaleOptions,
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              options: timeScaleOptions,
-            },
-          },
-        };
-      },
-      defaultParams() {
-        return {};
-      },
-      handler(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-      beforeParamsSave(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-    },
-    titleField: {
-      title: tExpr('Title field'),
-      uiMode(ctx) {
-        return {
-          type: 'select',
-          key: 'title',
-          props: {
-            options: (ctx.model as GanttBlockModel).getFieldOptions(TITLE_FIELD_TYPES),
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          title: (ctx.model as GanttBlockModel).getFieldNames().title,
-        };
-      },
-      handler(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-      beforeParamsSave(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-    },
-    timeScale: {
-      title: tExpr('Time scale'),
-      uiMode(ctx) {
-        return {
-          type: 'select',
-          key: 'range',
-          props: {
-            options: getTimeScaleOptions(ctx.t),
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          range: (ctx.model as GanttBlockModel).getFieldNames().range,
-        };
-      },
-      handler(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-      beforeParamsSave(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-    },
-    startDateField: {
-      title: tExpr('Start date field'),
-      uiMode(ctx) {
-        return {
-          type: 'select',
-          key: 'start',
-          props: {
-            options: (ctx.model as GanttBlockModel).getFieldOptions(DATE_FIELD_TYPES),
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          start: (ctx.model as GanttBlockModel).getFieldNames().start,
-        };
-      },
-      handler(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-      beforeParamsSave(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-    },
-    endDateField: {
-      title: tExpr('End date field'),
-      uiMode(ctx) {
-        return {
-          type: 'select',
-          key: 'end',
-          props: {
-            options: (ctx.model as GanttBlockModel).getFieldOptions(DATE_FIELD_TYPES),
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          end: (ctx.model as GanttBlockModel).getFieldNames().end,
-        };
-      },
-      handler(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-      beforeParamsSave(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-    },
-    processField: {
-      title: tExpr('Progress field'),
-      uiMode(ctx) {
-        return {
-          type: 'select',
-          key: 'progress',
-          props: {
-            options: (ctx.model as GanttBlockModel).getFieldOptions(PROGRESS_FIELD_TYPES),
-            allowClear: true,
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          progress: (ctx.model as GanttBlockModel).getFieldNames().progress,
-        };
-      },
-      handler(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-      beforeParamsSave(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-    },
-    colorField: {
-      title: tExpr('Color field'),
-      uiMode(ctx) {
-        return {
-          type: 'select',
-          key: 'color',
-          props: {
-            options: (ctx.model as GanttBlockModel).getFieldOptions(COLOR_FIELD_TYPES),
-            allowClear: true,
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          color: (ctx.model as GanttBlockModel).getFieldNames().color,
-        };
-      },
-      handler(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-      beforeParamsSave(ctx, params) {
-        applyGanttFieldNames(ctx.model as GanttBlockModel, params);
-      },
-    },
-    showTable: {
-      title: tExpr('Show table'),
-      uiMode: { type: 'switch', key: 'showTable' },
-      defaultParams(ctx) {
-        return {
-          showTable: (ctx.model as GanttBlockModel).props?.showTable !== false,
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('showTable', params.showTable !== false);
-      },
-      beforeParamsSave(ctx, params) {
-        ctx.model.setProps('showTable', params.showTable !== false);
-      },
-    },
-    enableDragToReschedule: {
-      title: tExpr('Enable drag to reschedule'),
-      uiMode: { type: 'switch', key: 'enableDragToReschedule' },
-      defaultParams(ctx) {
-        return {
-          enableDragToReschedule: (ctx.model as GanttBlockModel).props?.enableDragToReschedule !== false,
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('enableDragToReschedule', params.enableDragToReschedule !== false);
-      },
-      beforeParamsSave(ctx, params) {
-        ctx.model.setProps('enableDragToReschedule', params.enableDragToReschedule !== false);
-      },
-    },
-    eventPopupSettings: {
-      use: 'openView',
-      title: tExpr('Event popup settings'),
-      async defaultParams(ctx) {
-        const model = ctx.model as GanttBlockModel;
-        const action = await model.ensurePopupAction('eventViewAction');
-        return model.getPopupSettings(action, model.getPopupActionUid('eventViewAction'));
-      },
-      async handler(ctx, params) {
-        const model = ctx.model as GanttBlockModel;
-        model.setPopupSettings(params);
-        const action = await model.ensurePopupAction('eventViewAction');
-        await model.syncPopupActionSettings(action);
-      },
-    },
-  },
-});
-
-const tableSettingsFlow = TableBlockModel.globalFlowRegistry.getFlow('tableSettings');
-
-GanttBlockModel.registerFlow({
-  key: 'tableSettings',
-  sort: tableSettingsFlow?.sort ?? 500,
-  title: tableSettingsFlow?.title ?? tExpr('Table settings'),
-  steps: getGanttTableSettingsSteps(),
-});
-
-GanttBlockModel.define({
-  label: tExpr('Gantt'),
-  group: tExpr('Content'),
-  searchable: true,
-  searchPlaceholder: tExpr('Search'),
-  createModelOptions: {
-    use: 'GanttBlockModel',
-    props: {
-      enableDragToReschedule: true,
-      showTable: true,
-    },
-    subModels: {
-      actions: [],
-      columns: [
-        {
-          use: 'TableActionsColumnModel',
-          props: {
-            title: tExpr('Actions'),
-            width: 150,
-          },
-        },
-      ],
-    },
-  },
-  sort: 500,
-});
+registerGanttBlockModelSettings(GanttBlockModel);
