@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { SortFieldModel } from './models/SortFieldModel';
-export { SortFieldConfigureForm } from './SortFieldConfigureForm';
-export { SortFieldInterface } from './sort-interface';
 export { default } from './plugin';
+export * from './plugin';
+export * from './field-interfaces';
+export * from './utils/compileLegacyTemplate';
