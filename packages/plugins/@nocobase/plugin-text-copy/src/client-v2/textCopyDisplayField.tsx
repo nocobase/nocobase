@@ -7,13 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayTextFieldModel } from '@nocobase/client';
-import { tExpr } from '@nocobase/flow-engine';
-import { Typography } from 'antd';
+import { DisplayTextFieldModel } from '@nocobase/client-v2';
+import { Space, Typography } from 'antd';
 import React from 'react';
 
-const NAMESPACE = 'text-copy';
+import { tExpr } from './locale';
+
 const PATCH_FLAG = Symbol.for('nocobase.plugin-text-copy.DisplayTextFieldModel.patched');
+
+type TextCopyDisplayTextFieldModel = DisplayTextFieldModel & {
+  props?: DisplayTextFieldModel['props'] & {
+    displayCopyButton?: boolean;
+  };
+};
+
+const TextWithCopyButton = (props: { children: React.ReactNode; copyText: string }) => {
+  const { children, copyText } = props;
+  const [hovered, setHovered] = React.useState(false);
+
+  return (
+    <span onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <Space size="small">
+        {children}
+        {hovered ? <Typography.Text copyable={{ text: copyText }} /> : null}
+      </Space>
+    </span>
+  );
+};
 
 export function registerTextCopyDisplayField() {
   DisplayTextFieldModel.registerFlow({
@@ -22,7 +42,7 @@ export function registerTextCopyDisplayField() {
     sort: 210,
     steps: {
       displayCopyButton: {
-        title: tExpr('Display copy button', { ns: NAMESPACE }),
+        title: tExpr('Display copy button'),
         uiMode: { type: 'switch', key: 'displayCopyButton' },
         defaultParams: {
           displayCopyButton: false,
@@ -34,13 +54,17 @@ export function registerTextCopyDisplayField() {
     },
   });
 
-  const prototype = DisplayTextFieldModel.prototype as any;
+  const prototype = DisplayTextFieldModel.prototype as DisplayTextFieldModel & Record<symbol, unknown>;
   if (prototype[PATCH_FLAG]) {
     return;
   }
 
   const renderComponent = prototype.renderComponent;
-  prototype.renderComponent = function renderTextWithCopy(value, wrap) {
+  prototype.renderComponent = function renderTextWithCopy(
+    this: TextCopyDisplayTextFieldModel,
+    value: string | undefined | null,
+    wrap?: boolean,
+  ) {
     const content = renderComponent.call(this, value, wrap);
     const copyText = this.t(value);
 
@@ -48,12 +72,7 @@ export function registerTextCopyDisplayField() {
       return content;
     }
 
-    return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        {content}
-        <Typography.Text copyable={{ text: String(copyText) }} />
-      </span>
-    );
+    return <TextWithCopyButton copyText={String(copyText)}>{content}</TextWithCopyButton>;
   };
   prototype[PATCH_FLAG] = true;
 }
