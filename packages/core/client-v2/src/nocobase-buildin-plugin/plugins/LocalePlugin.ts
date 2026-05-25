@@ -39,6 +39,7 @@ export class LocalePlugin extends Plugin {
 
       if (data.lang) {
         api.auth.setLocale(data.lang);
+        this.app.setDocumentLanguage(data.lang);
         this.app.i18n.changeLanguage(data.lang);
       }
 

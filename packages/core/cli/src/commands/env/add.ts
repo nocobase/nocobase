@@ -19,6 +19,7 @@ import {
   runPromptCatalog,
   type PromptCatalogValues,
   type PromptInitialValues,
+  type PasswordPromptBlock,
   type PromptsCatalog,
   type TextPromptBlock,
 } from '../../lib/prompt-catalog.js';
@@ -41,6 +42,8 @@ type EnvAddParsedFlags = {
   'auth-type'?: string;
   'access-token'?: string;
   token?: string;
+  username?: string;
+  password?: string;
   'skip-auth': boolean;
   source?: string;
   'download-version'?: string;
@@ -118,9 +121,28 @@ const envAddAccessTokenPrompt: TextPromptBlock = {
   hidden: (values) => values.authType !== 'token' || values.skipAuth === true,
 };
 
+const envAddUsernamePrompt: TextPromptBlock = {
+  type: 'text',
+  message: envAddText('prompts.username.message'),
+  placeholder: envAddText('prompts.username.placeholder'),
+  required: true,
+  hidden: (values) => values.authType !== 'basic' || values.skipAuth === true,
+};
+
+const envAddPasswordPrompt: PasswordPromptBlock = {
+  type: 'password',
+  message: envAddText('prompts.password.message'),
+  required: true,
+  hidden: (values) => values.authType !== 'basic' || values.skipAuth === true,
+};
+
 function formatDeferredAuthMessage(envName: string, authType: unknown): string {
   const normalizedAuthType = String(authType ?? '').trim();
   const nextStep = `Authentication was skipped for env "${envName}". Run \`nb env auth ${envName}\` to finish setup.`;
+
+  if (normalizedAuthType === 'basic') {
+    return `${nextStep} You will be prompted for a username and password.`;
+  }
 
   if (normalizedAuthType === 'token') {
     return `${nextStep} You will be prompted for an access token.`;
@@ -135,7 +157,7 @@ function formatDeferredAuthMessage(envName: string, authType: unknown): string {
 
 export default class EnvAdd extends Command {
   static override summary =
-    'Save a named NocoBase API endpoint (token or OAuth), then switch the CLI to use it';
+    'Save a named NocoBase API endpoint (basic, token, or OAuth), then switch the CLI to use it';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -186,14 +208,22 @@ export default class EnvAdd extends Command {
     'auth-type': Flags.string({
       char: 'a',
       description:
-        'Authentication: token (API key) or oauth (browser login via `nb env auth`); prompted in a TTY when omitted',
-      options: ['token', 'oauth'],
+        'Authentication: basic (username/password login), token (API key), or oauth (browser login via `nb env auth`); prompted in a TTY when omitted',
+      options: ['basic', 'token', 'oauth'],
     }),
     'access-token': Flags.string({
       char: 't',
       aliases: ['token'],
       description:
         'API key or access token when using --auth-type token (prompted in a TTY when omitted)',
+    }),
+    username: Flags.string({
+      description:
+        'Username when using --auth-type basic (prompted in a TTY when omitted)',
+    }),
+    password: Flags.string({
+      description:
+        'Password when using --auth-type basic (prompted in a TTY when omitted)',
     }),
     'skip-auth': Flags.boolean({
       description: 'Save the env now and finish authentication later with `nb env auth`',
@@ -341,6 +371,11 @@ export default class EnvAdd extends Command {
       message: envAddText('prompts.authType.message'),
       options: [
         {
+          value: 'basic',
+          label: envAddText('prompts.authType.basicLabel'),
+          hint: envAddText('prompts.authType.basicHint'),
+        },
+        {
           value: 'oauth',
           label: envAddText('prompts.authType.oauthLabel'),
           hint: envAddText('prompts.authType.oauthHint'),
@@ -350,6 +385,8 @@ export default class EnvAdd extends Command {
       initialValue: 'oauth',
       required: true,
     },
+    username: envAddUsernamePrompt,
+    password: envAddPasswordPrompt,
     accessToken: envAddAccessTokenPrompt,
   };
 
@@ -376,6 +413,12 @@ export default class EnvAdd extends Command {
     if (typeof token === 'string' && token !== '') {
       values.accessToken = token;
     }
+    if (flags.username !== undefined) {
+      values.username = String(flags.username ?? '').trim();
+    }
+    if (flags.password !== undefined) {
+      values.password = String(flags.password ?? '');
+    }
     return values;
   }
 
@@ -395,6 +438,14 @@ export default class EnvAdd extends Command {
 
     return {
       ...EnvAdd.prompts,
+      username: {
+        ...envAddUsernamePrompt,
+        hidden: () => true,
+      },
+      password: {
+        ...envAddPasswordPrompt,
+        hidden: () => true,
+      },
       accessToken: {
         ...envAddAccessTokenPrompt,
         hidden: () => true,
@@ -406,9 +457,15 @@ export default class EnvAdd extends Command {
     results: PromptCatalogValues,
     flags: EnvAddParsedFlags,
   ): StoredEnvConfig {
+    const authType = String(results.authType ?? '').trim();
+    const authUsername =
+      authType === 'basic'
+        ? String(results.username ?? flags.username ?? '').trim()
+        : '';
     const envConfigInput: StoredEnvConfigInput & Record<string, unknown> = {
       apiBaseUrl: results.apiBaseUrl,
-      authType: results.authType,
+      authType,
+      authUsername: authUsername || undefined,
       accessToken: results.accessToken,
     };
 
@@ -460,8 +517,20 @@ export default class EnvAdd extends Command {
       return;
     }
 
-    if (results.authType === 'oauth') {
-      await this.config.runCommand('env:auth', [envName]);
+    if (results.authType === 'oauth' || results.authType === 'basic') {
+      const authArgv = [envName];
+      if (results.authType === 'basic') {
+        authArgv.push('--auth-type', 'basic');
+        const username = String(results.username ?? '').trim();
+        const password = String(results.password ?? '');
+        if (username) {
+          authArgv.push('--username', username);
+        }
+        if (password) {
+          authArgv.push('--password', password);
+        }
+      }
+      await this.config.runCommand('env:auth', authArgv);
     }
 
     await this.config.runCommand('env:update', [envName]);

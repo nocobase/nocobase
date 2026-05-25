@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import pc from 'picocolors';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { normalizeNodeOptions, normalizeSessionEnv } from './session-env.js';
 
@@ -130,6 +131,6 @@ try {
   flush();
 } catch (error) {
   const message = formatCliEntryError(error, process.argv.slice(2));
-  console.error(message);
-  process.exitCode = 1;
+  console.error(pc.red(message));
+  process.exit(1);
 }

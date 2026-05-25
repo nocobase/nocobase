@@ -9,6 +9,7 @@
 
 import { PluginManager } from '@nocobase/server';
 import { mockServer, MockServer, type MockServerOptions } from '@nocobase/test';
+import { createHash, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -31,8 +32,23 @@ type FlowSurfacesDatabaseIsolation = {
 };
 
 const FLOW_SURFACES_READ_COMPATIBLE_AGENT = Symbol('flow-surfaces-read-compatible-agent');
+const FLOW_SURFACES_FIXTURE_TABLE_SCOPE = Symbol('flow-surfaces-fixture-table-scope');
 const FLOW_SURFACES_TEST_APP_KEY = 'flow-surfaces-test-app-key-0123456789abcdef';
 const FLOW_SURFACES_TEST_AES_SECRET_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const FLOW_SURFACES_FIXTURE_TABLE_NAME_LIMIT = 63;
+
+let flowSurfacesFixtureTableScopeSequence = 0;
+
+export type FlowSurfacesFixtureCollectionApp = {
+  db: {
+    inDialect?: (dialect: string) => boolean;
+    options?: Record<string, unknown>;
+  };
+};
+
+type FlowSurfacesFixtureScopedApp = FlowSurfacesFixtureCollectionApp & {
+  [FLOW_SURFACES_FIXTURE_TABLE_SCOPE]?: string;
+};
 
 function ensureFlowSurfacesBootstrapSecrets() {
   // Flow-surfaces server tests bootstrap many mock apps in parallel. If they all
@@ -224,7 +240,14 @@ function isRetriableAgentResponse(
     return true;
   }
 
-  return options.resourceName === 'flowSurfaces' && response?.status === 404;
+  if (response?.status !== 404) {
+    return false;
+  }
+
+  return (
+    options.resourceName === 'flowSurfaces' ||
+    (options.resourceName === 'collections.fields' && options.action === 'create')
+  );
 }
 
 function isRetriableRootUserError(error: any) {
@@ -500,6 +523,9 @@ export function wrapFlowSurfacesReadCompatibleAgent<T extends Record<string, any
       if (prop === 'resource') {
         return (name: string, resourceOf?: any) => {
           const resource = target.resource(name, resourceOf);
+          if (name === 'collections') {
+            return wrapFlowSurfacesCollectionsResource(resource, app);
+          }
           if (name !== 'flowSurfaces') {
             return resource;
           }
@@ -547,6 +573,134 @@ export function wrapFlowSurfacesReadCompatibleAgent<T extends Record<string, any
   });
 
   return wrapped as T;
+}
+
+function wrapFlowSurfacesCollectionsResource(resource: Record<PropertyKey, unknown>, app: MockServer) {
+  return new Proxy(resource, {
+    get(resourceTarget, action, resourceReceiver) {
+      const value = Reflect.get(resourceTarget, action, resourceReceiver);
+      if (!['create', 'apply'].includes(String(action)) || typeof value !== 'function') {
+        return value;
+      }
+
+      return (...callArgs: unknown[]) =>
+        value.apply(resourceTarget, withFlowSurfacesFixtureCollectionTableName(app, callArgs));
+    },
+  });
+}
+
+function withFlowSurfacesFixtureCollectionTableName(app: MockServer, callArgs: unknown[]) {
+  const [params, ...restArgs] = callArgs;
+  if (!isPlainRecord(params) || !isPlainRecord(params.values)) {
+    return callArgs;
+  }
+
+  const values = prepareFlowSurfacesFixtureCollectionValues(app, params.values);
+  if (values === params.values) {
+    return callArgs;
+  }
+
+  return [
+    {
+      ...params,
+      values,
+    },
+    ...restArgs,
+  ];
+}
+
+export function prepareFlowSurfacesFixtureCollectionValues(
+  app: FlowSurfacesFixtureCollectionApp,
+  values: Record<string, unknown>,
+) {
+  const fixtureValues = {
+    ...values,
+  };
+  let changed = false;
+
+  if (
+    !fixtureValues.tableName &&
+    !fixtureValues.view &&
+    !fixtureValues.viewName &&
+    typeof fixtureValues.name === 'string' &&
+    fixtureValues.name.trim()
+  ) {
+    fixtureValues.tableName = buildFlowSurfacesFixtureCollectionTableName(app, fixtureValues.name);
+    changed = true;
+  }
+
+  const schema = getFlowSurfacesFixtureCollectionSchema(app);
+  if (schema && !fixtureValues.schema) {
+    fixtureValues.schema = schema;
+    changed = true;
+  }
+
+  return changed ? fixtureValues : values;
+}
+
+function getFlowSurfacesFixtureCollectionSchema(app: FlowSurfacesFixtureCollectionApp) {
+  if (!app.db.inDialect?.('postgres')) {
+    return undefined;
+  }
+
+  const schema = app.db.options?.schema;
+  return typeof schema === 'string' && schema.trim() ? schema.trim() : undefined;
+}
+
+function buildFlowSurfacesFixtureCollectionTableName(app: FlowSurfacesFixtureCollectionApp, collectionName: string) {
+  const scope = getFlowSurfacesFixtureTableScope(app);
+  const normalizedCollectionName = normalizeFlowSurfacesFixtureIdentifierPart(collectionName, 'collection');
+  const prefix = `${scope}_`;
+  const maxCollectionNameLength = FLOW_SURFACES_FIXTURE_TABLE_NAME_LIMIT - prefix.length;
+
+  if (normalizedCollectionName.length <= maxCollectionNameLength) {
+    return `${prefix}${normalizedCollectionName}`;
+  }
+
+  const suffix = shortFlowSurfacesHash(normalizedCollectionName);
+  const truncatedCollectionName = normalizedCollectionName.slice(
+    0,
+    Math.max(1, maxCollectionNameLength - suffix.length - 1),
+  );
+  return `${prefix}${truncatedCollectionName}_${suffix}`;
+}
+
+function getFlowSurfacesFixtureTableScope(app: FlowSurfacesFixtureCollectionApp) {
+  const scopedApp = app as FlowSurfacesFixtureScopedApp;
+  if (!scopedApp[FLOW_SURFACES_FIXTURE_TABLE_SCOPE]) {
+    flowSurfacesFixtureTableScopeSequence += 1;
+    const options = app.db.options || {};
+    const identity = [
+      process.pid,
+      flowSurfacesFixtureTableScopeSequence,
+      options.schema,
+      options.database,
+      options.storage,
+      randomBytes(4).toString('hex'),
+    ]
+      .filter(Boolean)
+      .join('_');
+    scopedApp[FLOW_SURFACES_FIXTURE_TABLE_SCOPE] = `fs_${shortFlowSurfacesHash(identity)}`;
+  }
+  return scopedApp[FLOW_SURFACES_FIXTURE_TABLE_SCOPE];
+}
+
+function normalizeFlowSurfacesFixtureIdentifierPart(value: unknown, fallback: string) {
+  const normalized = String(value || '')
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
+  const resolved = normalized || fallback;
+  return /^[a-z]/.test(resolved) ? resolved : `t_${resolved}`;
+}
+
+function shortFlowSurfacesHash(value: string) {
+  return createHash('sha1').update(value).digest('hex').slice(0, 10);
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isEmptyPlainObject(value: any) {
