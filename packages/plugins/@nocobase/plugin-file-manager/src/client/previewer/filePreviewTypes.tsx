@@ -22,6 +22,7 @@ import {
 import { Alert, Button, Image, Modal, Space, Spin } from 'antd';
 import { matchMimetype } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
+import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } from 'pdfjs-dist';
 
 export interface FilePreviewerProps {
   file: any;
@@ -346,92 +347,226 @@ let pdfjsPromise: Promise<PdfJs> | null = null;
 
 const loadPdfJs = async () => {
   if (!pdfjsPromise) {
-    pdfjsPromise = import('pdfjs-dist/build/pdf.mjs').then((pdfjs) => {
-      pdfjs.GlobalWorkerOptions.workerSrc ||= new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
-      return pdfjs;
-    });
+    pdfjsPromise = import('pdfjs-dist/build/pdf.mjs');
   }
   return pdfjsPromise;
 };
 
-const PdfPreviewer = ({ file, onDownload }: FilePreviewerProps) => {
+const PDF_SCALE = 1.4;
+
+interface PdfMeta {
+  numPages: number;
+  // First page dimensions, used as the placeholder size for every page so the
+  // scrollbar reserves a roughly correct full height before pages are rendered.
+  width: number;
+  height: number;
+}
+
+interface PdfSession {
+  cancelled: boolean;
+  pdfjs?: PdfJs;
+  worker?: PDFWorker;
+  abortController: AbortController;
+  // The full file is fetched once into memory; metadata and page 1 use this
+  // document, and every other page gets its own document built from the bytes.
+  metaPdf?: PDFDocumentProxy;
+  data?: Uint8Array;
+  rendered: Set<number>;
+  inFlight: Set<number>;
+  loadingTasks: PDFDocumentLoadingTask[];
+  renderTasks: RenderTask[];
+  observer?: IntersectionObserver;
+}
+
+const PdfPreviewer = ({ file }: FilePreviewerProps) => {
   const { t } = useTranslation();
   const src = getFileUrl(file);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = React.useState(true);
+  const pageElsRef = React.useRef<Map<number, HTMLDivElement>>(new Map());
+  const sessionRef = React.useRef<PdfSession | null>(null);
+  const [meta, setMeta] = React.useState<PdfMeta | null>(null);
   const [error, setError] = React.useState(false);
 
+  // Load metadata over a streaming document and paint the first page as soon as
+  // its bytes arrive. Rendering of the remaining pages happens lazily below.
   React.useEffect(() => {
-    if (!src || !containerRef.current) {
+    if (!src) {
       return;
     }
 
-    let cancelled = false;
-    const container = containerRef.current;
-    const canvases: HTMLCanvasElement[] = [];
-    let loadingTask: any;
-    let loadedPdf: any;
-    container.innerHTML = '';
-    setLoading(true);
+    const session: PdfSession = {
+      cancelled: false,
+      abortController: new AbortController(),
+      rendered: new Set(),
+      inFlight: new Set(),
+      loadingTasks: [],
+      renderTasks: [],
+    };
+    sessionRef.current = session;
+    setMeta(null);
     setError(false);
 
-    const render = async () => {
+    const init = async () => {
       const pdfjs = await loadPdfJs();
+      if (session.cancelled) {
+        return;
+      }
+      session.pdfjs = pdfjs;
+      // Fetch the whole file once into memory. pdf.js's own URL loader proved
+      // unreliable in this app (range/credentials handling), so we control the
+      // request here and feed the bytes to in-memory documents below.
       const url = new URL(src, location.href);
-      loadingTask = pdfjs.getDocument({
-        url: src,
-        withCredentials: url.origin === location.origin,
+      const response = await fetch(url, {
+        credentials: url.origin === location.origin ? 'include' : 'omit',
+        signal: session.abortController.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to load PDF: ${response.status}`);
+      }
+      const data = new Uint8Array(await response.arrayBuffer());
+      if (session.cancelled) {
+        return;
+      }
+      session.data = data;
+      session.worker = pdfjs.PDFWorker.create({
+        port: new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' }),
+      });
+      // Security hardening: no eval-based font hinting, no XFA scripting
+      // (annotations are disabled per render call). getDocument detaches the
+      // buffer it receives, so hand it a copy and keep `data` for later pages.
+      const metaTask = pdfjs.getDocument({
+        data: data.slice(0),
         isEvalSupported: false,
         enableXfa: false,
+        useWasm: false,
+        worker: session.worker,
       });
-      const pdf = await loadingTask.promise;
-      loadedPdf = pdf;
+      session.loadingTasks.push(metaTask);
+      const metaPdf = await metaTask.promise;
+      if (session.cancelled) {
+        return;
+      }
+      session.metaPdf = metaPdf;
+      const viewport = (await metaPdf.getPage(1)).getViewport({ scale: PDF_SCALE });
+      if (session.cancelled) {
+        return;
+      }
+      setMeta({ numPages: metaPdf.numPages, width: viewport.width, height: viewport.height });
+    };
 
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-        if (cancelled) {
-          break;
+    init().catch(() => {
+      if (!session.cancelled) {
+        setError(true);
+      }
+    });
+
+    return () => {
+      session.cancelled = true;
+      session.abortController.abort();
+      session.observer?.disconnect();
+      session.renderTasks.forEach((task) => task.cancel?.());
+      session.loadingTasks.forEach((task) => task.destroy?.());
+      session.worker?.destroy?.();
+    };
+  }, [src]);
+
+  // Lazily render pages as their placeholders scroll into view.
+  React.useEffect(() => {
+    const session = sessionRef.current;
+    if (!meta || !session?.pdfjs || !session.metaPdf) {
+      return;
+    }
+    const { pdfjs, metaPdf } = session;
+
+    const renderPage = async (pageNumber: number) => {
+      if (session.cancelled || session.rendered.has(pageNumber) || session.inFlight.has(pageNumber)) {
+        return;
+      }
+      const wrapper = pageElsRef.current.get(pageNumber);
+      if (!wrapper) {
+        return;
+      }
+      session.inFlight.add(pageNumber);
+      // Page 1 reuses the already-loaded streaming document; rendering only that
+      // one page on it keeps the document from promoting any image to pdf.js's
+      // cross-page global cache (the path that breaks later pages). Every other
+      // page renders in its own short-lived document built from the full bytes,
+      // for the same isolation reason. getDocument detaches the buffer it is
+      // given, so each document receives its own copy.
+      let task: PDFDocumentLoadingTask | undefined;
+      try {
+        let pdf: PDFDocumentProxy;
+        if (pageNumber === 1 || !session.data) {
+          pdf = metaPdf;
+        } else {
+          task = pdfjs.getDocument({
+            data: session.data.slice(0),
+            isEvalSupported: false,
+            enableXfa: false,
+            useWasm: false,
+            worker: session.worker,
+          });
+          session.loadingTasks.push(task);
+          pdf = await task.promise;
+        }
+        if (session.cancelled) {
+          return;
         }
         const page = await pdf.getPage(pageNumber);
-        const viewport = page.getViewport({ scale: 1.4 });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: PDF_SCALE });
+        const context = document.createElement('canvas').getContext('2d');
         if (!context) {
-          continue;
+          return;
         }
+        const canvas = context.canvas;
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         canvas.style.display = 'block';
-        canvas.style.maxWidth = '100%';
+        canvas.style.width = '100%';
         canvas.style.height = 'auto';
-        canvas.style.margin = pageNumber === 1 ? '0 auto 16px' : '16px auto';
-        canvases.push(canvas);
-        container.appendChild(canvas);
-        await page.render({ canvasContext: context, viewport }).promise.catch((error) => {
-          throw error;
+        // The real page governs the wrapper height now; drop the placeholder ratio.
+        wrapper.style.aspectRatio = '';
+        wrapper.replaceChildren(canvas);
+        const renderTask = page.render({
+          canvas,
+          canvasContext: context,
+          viewport,
+          annotationMode: pdfjs.AnnotationMode.DISABLE,
         });
+        session.renderTasks.push(renderTask);
+        await renderTask.promise;
+        if (session.cancelled) {
+          return;
+        }
+        session.rendered.add(pageNumber);
+        session.observer?.unobserve(wrapper);
+      } catch (renderError) {
+        // Leave the placeholder in place; scrolling back can retry the page.
+      } finally {
+        task?.destroy();
+        session.inFlight.delete(pageNumber);
       }
     };
 
-    const rendering = render()
-      .catch(() => {
-        if (!cancelled) {
-          setError(true);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            renderPage(Number((entry.target as HTMLElement).dataset.page));
+          }
         }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      });
-    void rendering;
+      },
+      { rootMargin: '300px 0px' },
+    );
+    session.observer = observer;
+    pageElsRef.current.forEach((el) => observer.observe(el));
 
     return () => {
-      cancelled = true;
-      loadingTask?.destroy?.();
-      loadedPdf?.destroy?.();
-      canvases.forEach((canvas) => canvas.remove());
+      observer.disconnect();
+      if (session.observer === observer) {
+        session.observer = undefined;
+      }
     };
-  }, [src]);
+  }, [meta]);
 
   if (!src) {
     return null;
@@ -439,11 +574,6 @@ const PdfPreviewer = ({ file, onDownload }: FilePreviewerProps) => {
 
   return (
     <div style={{ width: '100%', minHeight: '100%', padding: 16 }}>
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-          <Spin />
-        </div>
-      ) : null}
       {error ? (
         <Alert
           type="warning"
@@ -451,7 +581,34 @@ const PdfPreviewer = ({ file, onDownload }: FilePreviewerProps) => {
           message={t('File type is not supported for previewing, please download it to preview.')}
         />
       ) : null}
-      <div ref={containerRef} />
+      {!meta && !error ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+          <Spin />
+        </div>
+      ) : null}
+      {meta
+        ? Array.from({ length: meta.numPages }, (_, index) => index + 1).map((pageNumber) => (
+            <div
+              key={pageNumber}
+              data-page={pageNumber}
+              ref={(el) => {
+                if (el) {
+                  pageElsRef.current.set(pageNumber, el);
+                } else {
+                  pageElsRef.current.delete(pageNumber);
+                }
+              }}
+              style={{
+                width: '100%',
+                maxWidth: meta.width,
+                margin: '0 auto 16px',
+                aspectRatio: `${meta.width} / ${meta.height}`,
+                background: '#fff',
+                border: '1px solid #f0f0f0',
+              }}
+            />
+          ))
+        : null}
     </div>
   );
 };
