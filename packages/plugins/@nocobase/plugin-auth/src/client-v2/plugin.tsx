@@ -118,6 +118,16 @@ export class PluginAuthClientV2 extends Plugin {
       sort: 1,
       componentLoader: () => import('./pages/AuthenticatorsPage'),
     });
+    // Token policy lives under the shared `security` menu (registered by the v2 buildin plugin) alongside password-policy and locked-users. `sort: 0` keeps it as the first tab — same order as v1.
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'security',
+      key: 'token-policy',
+      title: t('Token policy'),
+      icon: 'ApiOutlined',
+      aclSnippet: 'pm.security.token-policy',
+      sort: 0,
+      componentLoader: () => import('./pages/TokenPolicyPage'),
+    });
   }
 
   private addRoutes() {

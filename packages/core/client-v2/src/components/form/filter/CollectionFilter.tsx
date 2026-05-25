@@ -22,14 +22,14 @@ export interface CollectionFilterProps {
   /** Called on Submit or Reset with the compiled NocoBase filter param (`undefined` when cleared). */
   onChange: (filter: CompiledFilter) => void;
   /** Translator. Defaults to identity. */
-  t?: (key: string) => string;
+  t?: (key: string, options?: Record<string, any>) => string;
   /** Whitelist of root-level field names to expose. */
   filterableFieldNames?: string[];
   /** Bypass the `filterableFieldNames` whitelist. */
   noIgnore?: boolean;
-  /** Override the trigger button's label. Defaults to `t('Filter')`. */
+  /** Override the trigger button's label. Defaults to `t('Filter')`, or the v1-style `t('{{count}} filter items', { count })` when conditions are present. */
   buttonText?: React.ReactNode;
-  /** Show the `(N)` condition-count badge on the trigger. Defaults to `true`. */
+  /** Swap the default `t('Filter')` label for v1's `t('{{count}} filter items', { count })` when conditions are present. Defaults to `true`. */
   showCount?: boolean;
   /** Pass-through props for the antd `<Popover>`. */
   popoverProps?: Omit<PopoverProps, 'open' | 'onOpenChange' | 'content' | 'children'>;
@@ -71,8 +71,12 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
     },
   });
 
-  const label = buttonText ?? t('Filter');
-  const hasConditions = filterAction.conditionCount > 0;
+  // Matches v1's `Filter.Action`: when at least one condition is set, the button label switches to the count-aware string (`"N 个筛选项"` in zh-CN). The button itself stays in the default (white) style — v1 never flipped it to `type='primary'`.
+  const label =
+    buttonText ??
+    (showCount && filterAction.conditionCount > 0
+      ? t('{{count}} filter items', { count: filterAction.conditionCount })
+      : t('Filter'));
 
   return (
     <Popover
@@ -87,14 +91,8 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
         </div>
       }
     >
-      <Button
-        icon={<FilterOutlined />}
-        type={hasConditions ? 'primary' : 'default'}
-        disabled={!collection}
-        {...buttonProps}
-      >
+      <Button icon={<FilterOutlined />} disabled={!collection} {...buttonProps}>
         {label}
-        {showCount && hasConditions ? ` (${filterAction.conditionCount})` : ''}
       </Button>
     </Popover>
   );
