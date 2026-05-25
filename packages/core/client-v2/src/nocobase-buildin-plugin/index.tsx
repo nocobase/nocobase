@@ -298,7 +298,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       menuKey: 'plugin-manager',
       key: 'index',
       title: this.app.i18n.t('Plugin manager'),
-      componentLoader: () => import('../settings-center/PluginManagerPage'),
+      componentLoader: () => import('../settings-center/plugin-manager'),
       aclSnippet: 'pm',
       sort: -200,
     });
