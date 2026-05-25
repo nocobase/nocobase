@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { UpdateRecordActionModel } from '../../..'; // 这样可以解决循环依赖问题
+import { FormSubmitActionModel, UpdateRecordActionModel } from '../../..'; // 这样可以解决循环依赖问题
 
 /**
  * 精简版 AssignFormModel（仅用于单测）：
@@ -51,5 +51,30 @@ describe('AssignForm value refill and save (beforeParamsSave)', () => {
 
     const saved = action.getStepParams('assignSettings', 'assignFieldValues');
     expect(saved?.assignedValues).toEqual({ nickname: 'Alice', score: 99 });
+  });
+
+  it('FormSubmitActionModel: reuses assignFieldValues step and saves assignedValues from AssignForm', async () => {
+    const root = new FlowEngine();
+
+    root.registerModels({ FormSubmitActionModel, AssignFormModel: TestAssignFormModel });
+
+    const action = root.createModel<FormSubmitActionModel>({ use: 'FormSubmitActionModel', uid: 'submit-u' });
+    const form = root.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'submit-form-u',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ status: 'published' });
+    action.assignFormUid = form.uid;
+
+    const flow = action.getFlow('submitSettings') as any;
+    const step = flow?.steps?.assignFieldValues;
+    expect(step?.beforeParamsSave).toBeTypeOf('function');
+
+    await step.beforeParamsSave({ engine: root, model: action });
+
+    const saved = action.getStepParams('submitSettings', 'assignFieldValues');
+    expect(saved?.assignedValues).toEqual({ status: 'published' });
   });
 });
