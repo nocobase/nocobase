@@ -9,6 +9,7 @@
 
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
+import { PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
 import { PublicFormPageModel } from '../models/PublicFormPageModel';
 
 describe('PublicFormPageModel', () => {
@@ -40,5 +41,16 @@ describe('PublicFormPageModel', () => {
     expect(model.publicFormSubmitted).toBe(true);
     expect(model.props.publicFormSubmitted).toBe(true);
     expect(model.renderStep(model.publicFormSubmitted ? 1 : 0)).toBe('success-message');
+  });
+
+  it('only allows public form submit actions to be added', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ PublicFormPageModel });
+    const model = engine.createModel<PublicFormPageModel>({
+      uid: 'public-form-page',
+      use: 'PublicFormPageModel',
+    });
+
+    expect(model.context.allowedFormActionModelNames).toEqual([PUBLIC_FORM_SUBMIT_ACTION_MODEL]);
   });
 });

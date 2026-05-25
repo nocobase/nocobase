@@ -13,6 +13,7 @@ import { ChildPageModel, PoweredBy } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { theme } from 'antd';
 import React, { useMemo } from 'react';
+import { PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
 import { useT } from '../locale';
 
 const PublicFormSettingsContent = observer((props: { model: PublicFormPageModel }) => {
@@ -84,6 +85,9 @@ export class PublicFormPageModel extends ChildPageModel {
     super.onInit(options);
     this.context.defineProperty('publicFormPageModel', {
       value: this,
+    });
+    this.context.defineProperty('allowedFormActionModelNames', {
+      value: [PUBLIC_FORM_SUBMIT_ACTION_MODEL],
     });
     this.context.defineProperty('publicFormSubmitted', {
       get: () => this.publicFormSubmitted,
