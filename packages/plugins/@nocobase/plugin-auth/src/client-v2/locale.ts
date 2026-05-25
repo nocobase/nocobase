@@ -9,15 +9,10 @@
 
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
 
 export const NAMESPACE = 'auth';
 
-export const authLocaleResources = {
-  'en-US': enUS,
-  'zh-CN': zhCN,
-};
+// Locale resources auto-loaded by v2 buildin `LocalePlugin.afterAdd`.
 
 export function useAuthTranslation() {
   return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
