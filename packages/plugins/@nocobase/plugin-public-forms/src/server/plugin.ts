@@ -18,41 +18,124 @@ export class PluginPublicFormsServer extends Plugin {
 
   async parseCollectionData(dataSourceKey, formCollection, appends) {
     const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+    const serializeCollection = (collection) => ({
+      ...collection.options,
+      name: collection.name,
+      filterTargetKey: collection.filterTargetKey,
+      titleField: collection.titleField,
+      fields: collection.getFields().map((v) => {
+        return {
+          ...v.options,
+        };
+      }),
+    });
     const collection = dataSource.collectionManager.getCollection(formCollection);
-    const collections = [
-      {
-        name: collection.name,
-        fields: collection.getFields().map((v) => {
-          return {
-            ...v.options,
-          };
-        }),
-        template: collection.options.template,
-      },
-    ];
+    const collections = [serializeCollection(collection)];
     return collections.concat(
       appends.map((v) => {
         const targetCollection = dataSource.collectionManager.getCollection(v);
-        return {
-          ...targetCollection.options,
-          fields: targetCollection.getFields().map((v) => {
-            return {
-              ...v.options,
-            };
-          }),
-        };
+        return serializeCollection(targetCollection);
       }),
     );
   }
 
-  async getFlowModelTree(uid: string) {
+  async getFlowModelTree(uid: string, options: { includeAsyncNode?: boolean } = {}) {
     const repository = this.db.getCollection('flowModels')?.repository as any;
 
     if (!repository?.findModelById) {
       return null;
     }
 
-    return repository.findModelById(uid, { includeAsyncNode: true }).catch(() => null);
+    return repository.findModelById(uid, { includeAsyncNode: !!options.includeAsyncNode }).catch(() => null);
+  }
+  async isFlowModelDescendant(rootUid: string, uid: string) {
+    if (!rootUid || !uid) {
+      return false;
+    }
+
+    if (rootUid === uid) {
+      return true;
+    }
+
+    const repository = this.db.getRepository('flowModelTreePath') as any;
+    const node = await repository?.model?.findOne?.({
+      where: {
+        ancestor: rootUid,
+        descendant: uid,
+      },
+    });
+    return !!node;
+  }
+
+  async validatePublicFormToken(filterByTk: string, token?: string) {
+    if (!token) {
+      throw new Error('Public form token is required');
+    }
+
+    const tokenData = await this.app.authManager.jwt.decode(token);
+    if (tokenData?.formKey !== filterByTk) {
+      throw new Error('Invalid public form token');
+    }
+
+    const publicForms = this.db.getRepository('publicForms');
+    const instance = await publicForms.findOne({
+      filter: {
+        key: tokenData.formKey,
+      },
+    });
+    if (!instance) {
+      throw new Error('The form is not found');
+    }
+    if (!instance.get('enabled')) {
+      throw new Error('The form is not enabled');
+    }
+
+    return tokenData;
+  }
+
+  async getFlowModelByTk(
+    filterByTk: string,
+    options: {
+      uid?: string;
+      parentId?: string;
+      subKey?: string;
+      token?: string;
+    },
+  ) {
+    await this.validatePublicFormToken(filterByTk, options.token);
+
+    const repository = this.db.getCollection('flowModels')?.repository as any;
+    if (!repository) {
+      return null;
+    }
+
+    if (options.uid) {
+      if (!(await this.isFlowModelDescendant(filterByTk, options.uid))) {
+        throw new Error('The flow model is not in this public form');
+      }
+      return repository.findModelById(options.uid, { includeAsyncNode: true }).catch(() => null);
+    }
+
+    if (!options.parentId) {
+      throw new Error('parentId is required');
+    }
+
+    if (!(await this.isFlowModelDescendant(filterByTk, options.parentId))) {
+      throw new Error('The flow model parent is not in this public form');
+    }
+
+    const flowModel = await repository
+      .findModelByParentId(options.parentId, {
+        subKey: options.subKey,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+
+    if (flowModel?.uid && !(await this.isFlowModelDescendant(filterByTk, flowModel.uid))) {
+      throw new Error('The flow model is not in this public form');
+    }
+
+    return flowModel;
   }
 
   getSchemaAssociationAppends(dataSourceKey: string, collectionName: string, schema: any) {
@@ -133,14 +216,15 @@ export class PluginPublicFormsServer extends Plugin {
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
     const title = instance.get('title');
-    const [schema, flowModel] = await Promise.all([
+    const [schema, flowModel, completeFlowModel] = await Promise.all([
       uiSchema.getJsonSchema(filterByTk).catch(() => null),
       this.getFlowModelTree(filterByTk),
+      this.getFlowModelTree(filterByTk, { includeAsyncNode: true }),
     ]);
     const appends = [
       ...new Set([
         ...this.getSchemaAssociationAppends(dataSourceKey, collectionName, schema),
-        ...this.getFlowModelAssociationAppends(dataSourceKey, collectionName, flowModel),
+        ...this.getFlowModelAssociationAppends(dataSourceKey, collectionName, completeFlowModel || flowModel),
       ]),
     ];
     const collections = await this.parseCollectionData(dataSourceKey, collectionName, appends);
@@ -178,6 +262,17 @@ export class PluginPublicFormsServer extends Plugin {
       } else {
         throw error;
       }
+    }
+    await next();
+  };
+
+  getPublicFormFlowModel = async (ctx, next) => {
+    const token = ctx.get('X-Form-Token');
+    const { filterByTk, uid, parentId, subKey } = ctx.action.params;
+    try {
+      ctx.body = await this.getFlowModelByTk(filterByTk, { uid, parentId, subKey, token });
+    } catch (error) {
+      ctx.throw(401, error.message);
     }
     await next();
   };
@@ -257,9 +352,10 @@ export class PluginPublicFormsServer extends Plugin {
       actions: ['publicForms:*'],
     });
 
-    this.app.acl.allow('publicForms', 'getMeta', 'public');
+    this.app.acl.allow('publicForms', ['getMeta', 'getFlowModel'], 'public');
     this.app.resourceManager.registerActionHandlers({
       'publicForms:getMeta': this.getPublicFormsMeta,
+      'publicForms:getFlowModel': this.getPublicFormFlowModel,
     });
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
       dataSource.resourceManager.use(this.parseToken, {

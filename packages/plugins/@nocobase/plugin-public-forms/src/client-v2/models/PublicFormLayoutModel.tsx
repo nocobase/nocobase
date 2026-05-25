@@ -11,12 +11,14 @@ import { css } from '@emotion/css';
 import { define, observable } from '@formily/reactive';
 import { BaseLayoutModel, PoweredBy, useApp } from '@nocobase/client-v2';
 import { observer, useFlowEngine } from '@nocobase/flow-engine';
+import type { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Input, Modal, Result, Spin, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutlet } from 'react-router-dom';
 import { PUBLIC_FORM_TOKEN_KEY } from '../constants';
 import { useT } from '../locale';
+import { isPublicFormFlowModelRepository, PublicFormFlowModelRepository } from '../publicFormFlowModelRepository';
 
 function getResponseData(response: any) {
   return response?.data?.data;
@@ -218,6 +220,10 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
   }, [model, pageUid]);
 
   useEffect(() => {
+    model.setPublicFormKey(pageUid);
+  }, [model, pageUid]);
+
+  useEffect(() => {
     if (data?.title) {
       document.title = data.title;
     }
@@ -284,6 +290,9 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
 
 export class PublicFormLayoutModel extends BaseLayoutModel {
   publicFormSubmitted = false;
+  private publicFormKey = '';
+  private originalModelRepository?: IFlowModelRepository<FlowModel> | null;
+  private publicFormModelRepository?: PublicFormFlowModelRepository;
 
   constructor(options: any) {
     super(options);
@@ -296,8 +305,50 @@ export class PublicFormLayoutModel extends BaseLayoutModel {
     this.publicFormSubmitted = !!submitted;
   }
 
+  setPublicFormKey(formKey?: string) {
+    this.publicFormKey = formKey || '';
+    this.publicFormModelRepository?.setFormKey(this.publicFormKey);
+  }
+
+  private setupPublicFormModelRepository() {
+    const currentRepository = this.flowEngine.modelRepository;
+
+    if (isPublicFormFlowModelRepository(currentRepository)) {
+      this.publicFormModelRepository = currentRepository;
+      this.publicFormModelRepository.setFormKey(this.publicFormKey);
+      return;
+    }
+
+    const app = this.flowEngine.context.app;
+    if (!app?.apiClient || !currentRepository) {
+      return;
+    }
+
+    const repository = new PublicFormFlowModelRepository({
+      app,
+      formKey: this.publicFormKey,
+      delegate: currentRepository,
+    });
+    this.originalModelRepository = currentRepository;
+    this.publicFormModelRepository = repository;
+    this.flowEngine.setModelRepository(repository);
+  }
+
+  private restoreModelRepository() {
+    if (this.publicFormModelRepository && this.flowEngine.modelRepository === this.publicFormModelRepository) {
+      const repository = this.originalModelRepository;
+      if (repository) {
+        this.flowEngine.setModelRepository(repository);
+      }
+    }
+
+    this.publicFormModelRepository = undefined;
+    this.originalModelRepository = undefined;
+  }
+
   protected onMount(): void {
     super.onMount();
+    this.setupPublicFormModelRepository();
     this.context.defineProperty('publicFormRuntime', {
       get: () => true,
       cache: false,
@@ -318,6 +369,11 @@ export class PublicFormLayoutModel extends BaseLayoutModel {
     this.context.defineMethod('setPublicFormSubmitted', (submitted: boolean) => {
       this.setPublicFormSubmitted(submitted);
     });
+  }
+
+  protected onUnmount(): void {
+    this.restoreModelRepository();
+    super.onUnmount();
   }
 
   render() {

@@ -36,14 +36,17 @@ function usePublicFormLink(name?: string) {
 const PublicFormQRCode = (props: { link: string }) => {
   const { link } = props;
   const t = useT();
+  const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
 
   return (
     <Popover
       trigger="hover"
+      placement="bottom"
       open={open}
       onOpenChange={setOpen}
-      content={open ? <QRCode value={link} bordered={false} /> : null}
+      content={open ? <QRCode value={link} bordered={false} /> : ' '}
+      zIndex={token.zIndexPopupBase + 100}
     >
       <a>{t('QR code')}</a>
     </Popover>
@@ -99,7 +102,7 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
   const pageUid = model.getPageUidFromLayoutRoute(model.currentLayoutRoute);
   const publicFormLink = usePublicFormLink(pageUid);
   const resource = ctx.api.resource('publicForms');
-  const { data, loading, refresh } = useRequest(
+  const { data, loading, refresh, mutate } = useRequest(
     async () => {
       if (!pageUid) {
         return null;
@@ -128,9 +131,12 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
         filterByTk: record.key,
         values,
       });
-      await refresh();
+      mutate({
+        ...record,
+        ...values,
+      });
     },
-    [record?.key, refresh, resource],
+    [mutate, record, resource],
   );
 
   const handleCopyLink = useCallback(async () => {
