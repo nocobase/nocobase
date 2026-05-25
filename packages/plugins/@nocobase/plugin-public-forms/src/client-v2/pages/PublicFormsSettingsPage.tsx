@@ -11,7 +11,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { DEFAULT_PAGE_SIZE, DrawerFormLayout, EnvVariableInput, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Form, Input, Radio, Select, Space, Switch, theme } from 'antd';
+import { App, Button, Card, Cascader, Form, Input, Radio, Space, Switch, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +30,28 @@ function normalizeListResponse(response: any) {
   };
 }
 
+export function toCollectionCascaderValue(value?: string | string[]) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (!value) {
+    return undefined;
+  }
+  const [dataSourceKey, collectionName] = String(value).includes(':') ? String(value).split(':') : ['main', value];
+  return [dataSourceKey, collectionName].filter(Boolean);
+}
+
+export function fromCollectionCascaderValue(value?: string | string[]) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+  const [dataSourceKey, collectionName] = value;
+  if (!dataSourceKey || !collectionName) {
+    return value.filter(Boolean).join(':') || undefined;
+  }
+  return `${dataSourceKey}:${collectionName}`;
+}
+
 function useCollectionOptions() {
   const ctx = useFlowContext();
   const t = useT();
@@ -42,7 +64,7 @@ function useCollectionOptions() {
           .filter((collection) => !!collection.filterTargetKey)
           .map((collection) => ({
             label: collection.title || collection.name,
-            value: `${dataSource.key}:${collection.name}`,
+            value: collection.name,
           }));
 
         if (!children.length) {
@@ -51,7 +73,8 @@ function useCollectionOptions() {
 
         return {
           label: dataSource.displayName || t(dataSource.key),
-          options: children,
+          value: dataSource.key,
+          children,
         };
       })
       .filter(Boolean);
@@ -121,8 +144,14 @@ function PublicFormDrawer(props: { mode: 'create' | 'edit'; record?: PublicFormR
         <Form.Item name="title" label={t('Title')} rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="collection" label={t('Collection')} rules={[{ required: true }]}>
-          <Select disabled={mode === 'edit'} options={collectionOptions as any} showSearch optionFilterProp="label" />
+        <Form.Item
+          name="collection"
+          label={t('Collection')}
+          rules={[{ required: true }]}
+          getValueProps={(value) => ({ value: toCollectionCascaderValue(value) })}
+          normalize={fromCollectionCascaderValue}
+        >
+          <Cascader disabled={mode === 'edit'} options={collectionOptions as any} showSearch />
         </Form.Item>
         <Form.Item name="type" label={t('Type')}>
           <Radio.Group options={formTypeOptions} />
