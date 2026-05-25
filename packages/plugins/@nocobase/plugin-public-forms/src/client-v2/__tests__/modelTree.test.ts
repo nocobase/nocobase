@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { PUBLIC_FORM_PAGE_MODEL, PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
+import { DEFAULT_SUCCESS_MESSAGE, PUBLIC_FORM_PAGE_MODEL, PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
 import { createPublicFormFlowModelTree } from '../modelTree';
 
 describe('public form model tree', () => {
@@ -55,6 +55,13 @@ describe('public form model tree', () => {
     });
     expect(page.subModels.tabs[1].subModels.grid.subModels.items[0]).toMatchObject({
       use: 'MarkdownBlockModel',
+      stepParams: {
+        markdownBlockSettings: {
+          editMarkdown: {
+            content: DEFAULT_SUCCESS_MESSAGE,
+          },
+        },
+      },
     });
   });
 });

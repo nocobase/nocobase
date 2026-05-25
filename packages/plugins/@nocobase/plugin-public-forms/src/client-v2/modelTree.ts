@@ -133,6 +133,13 @@ export function createPublicFormFlowModelTree(record: PublicFormRecord, t: (key:
                         props: {
                           content: t(DEFAULT_SUCCESS_MESSAGE),
                         },
+                        stepParams: {
+                          markdownBlockSettings: {
+                            editMarkdown: {
+                              content: t(DEFAULT_SUCCESS_MESSAGE),
+                            },
+                          },
+                        },
                       },
                     ],
                   },

@@ -8,10 +8,10 @@
  */
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
+import { DEFAULT_PAGE_SIZE, DrawerFormLayout, EnvVariableInput, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Form, Input, Select, Space, Switch, theme } from 'antd';
+import { App, Button, Card, Form, Input, Radio, Select, Space, Switch, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +64,7 @@ function PublicFormDrawer(props: { mode: 'create' | 'edit'; record?: PublicFormR
   const ctx = useFlowContext();
   const flowEngine = useFlowEngine();
   const collectionOptions = useCollectionOptions();
+  const formTypeOptions = useMemo(() => [{ label: t('Form'), value: 'form' }], [t]);
   const resource = ctx.api.resource('publicForms');
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -123,11 +124,14 @@ function PublicFormDrawer(props: { mode: 'create' | 'edit'; record?: PublicFormR
         <Form.Item name="collection" label={t('Collection')} rules={[{ required: true }]}>
           <Select disabled={mode === 'edit'} options={collectionOptions as any} showSearch optionFilterProp="label" />
         </Form.Item>
-        <Form.Item name="type" label={t('Type')} hidden>
-          <Input />
+        <Form.Item name="type" label={t('Type')}>
+          <Radio.Group options={formTypeOptions} />
         </Form.Item>
         <Form.Item name="description" label={t('Description')}>
           <Input.TextArea />
+        </Form.Item>
+        <Form.Item name="password" label={t('Password')}>
+          <EnvVariableInput password />
         </Form.Item>
         <Form.Item name="enabled" label={t('Enable form')} valuePropName="checked">
           <Switch />
