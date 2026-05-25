@@ -11,6 +11,7 @@ import {
   FlowModelRenderer,
   resolveRunJSObjectValues,
   tExpr,
+  type FlowModelContext,
   useFlowEngine,
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
@@ -23,37 +24,45 @@ export const ASSIGN_FIELD_VALUES_STEP_KEY = 'assignFieldValues';
 
 type AssignedValues = Record<string, unknown>;
 
+type AssignFieldValuesCollection = {
+  dataSourceKey?: string;
+  name?: string;
+};
+
+type AssignFieldValuesContext = FlowModelContext & {
+  collection?: AssignFieldValuesCollection;
+  flowSettingsEnabled?: boolean;
+};
+
 type AssignFieldValuesModel = {
   uid: string;
   assignFormUid?: string;
-  context?: {
-    collection?: {
-      dataSourceKey?: string;
-      name?: string;
-    };
-    flowSettingsEnabled?: boolean;
-  };
+  context?: AssignFieldValuesContext;
   getStepParams?: (flowKey: string, stepKey: string) => { assignedValues?: AssignedValues } | undefined;
   setStepParams?: (flowKey: string, stepKey: string, params: { assignedValues: AssignedValues }) => void;
 };
 
 type AssignFieldValuesStepOptions = {
   settingsFlowKey: string;
-  title?: unknown;
+  title?: string;
   tipComponent?: React.ComponentType;
   validateBeforeSave?: boolean;
   clearRecordContext?: boolean;
 };
 
-function getResourceInit(ctx: {
-  collection?: { dataSourceKey?: string; name?: string };
-}): { dataSourceKey: string; collectionName: string } | undefined {
-  const dsKey = ctx.collection?.dataSourceKey;
-  const collName = ctx.collection?.name;
+function getContextCollection(ctx: AssignFieldValuesContext | undefined): AssignFieldValuesCollection | undefined {
+  const collection = ctx?.collection;
+  return collection && typeof collection === 'object' ? collection : undefined;
+}
+
+function getResourceInit(ctx: AssignFieldValuesContext): { dataSourceKey: string; collectionName: string } | undefined {
+  const collection = getContextCollection(ctx);
+  const dsKey = collection?.dataSourceKey;
+  const collName = collection?.name;
   return dsKey && collName ? { dataSourceKey: dsKey, collectionName: collName } : undefined;
 }
 
-export function createAssignFormSubModelOptions(ctx: { collection?: { dataSourceKey?: string; name?: string } }) {
+export function createAssignFormSubModelOptions(ctx: AssignFieldValuesContext) {
   return {
     async: true,
     use: 'AssignFormModel',
@@ -63,7 +72,7 @@ export function createAssignFormSubModelOptions(ctx: { collection?: { dataSource
 
 export function getAssignFieldValuesDefaultParams(
   ctx: {
-    model: AssignFieldValuesModel;
+    model: Pick<AssignFieldValuesModel, 'getStepParams'>;
   },
   settingsFlowKey: string,
 ): { assignedValues: AssignedValues } {
@@ -134,7 +143,7 @@ function AssignFieldsEditor(props: { settingsFlowKey: string; clearRecordContext
     if (!formModel) return;
 
     const prev = action.getStepParams?.(props.settingsFlowKey, ASSIGN_FIELD_VALUES_STEP_KEY) || {};
-    const coll = blockModel?.collection || action?.context?.collection;
+    const coll = blockModel?.collection || getContextCollection(action?.context);
     const dsKey = coll?.dataSourceKey;
     const collName = coll?.name;
     if (dsKey && collName) {
