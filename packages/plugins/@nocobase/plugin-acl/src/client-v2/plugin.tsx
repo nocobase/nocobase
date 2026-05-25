@@ -13,7 +13,6 @@ import {
   UIEditorTopbarActionModel,
   UserCenterSelectItemModel,
 } from '@nocobase/client-v2';
-import { aclLocaleResources } from './locale';
 
 class SwitchRoleItemModel extends UserCenterSelectItemModel {
   static itemId = 'switch-role';
@@ -52,10 +51,7 @@ class SwitchRoleItemModel extends UserCenterSelectItemModel {
 
 export class PluginAclClientV2 extends Plugin {
   async load() {
-    Object.entries(aclLocaleResources).forEach(([lang, resource]) => {
-      this.app.i18n.addResources(lang, this.options?.['packageName'] || '@nocobase/plugin-acl', resource);
-    });
-
+    // i18n resources are auto-loaded by v2 buildin `LocalePlugin.afterAdd`; see plugin-password-policy/locale.ts for the full rationale.
     this.app.use(ACLRolesCheckProvider);
     this.app.flowEngine.registerModels({
       UIEditorTopbarActionModel,
