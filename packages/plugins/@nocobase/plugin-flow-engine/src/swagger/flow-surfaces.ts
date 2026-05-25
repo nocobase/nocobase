@@ -5519,6 +5519,8 @@ const schemas = {
             skillSettings: {
               type: 'object',
               nullable: true,
+              description:
+                'Task-level skill/tool override. Omit or use null to inherit the AI employee preset. Unversioned empty skills/tools arrays are normalized to null for compatibility; use skillsVersion/toolsVersion when intentionally disabling all skills/tools.',
               properties: {
                 skills: {
                   type: 'array',

@@ -2546,15 +2546,25 @@ JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const AI_EMPLOYEE_ACTION_CONTRACT = createContract({
-  editableDomains: ['props'],
-  props: ['aiEmployee', 'context', 'auto', 'tasks', 'style'],
+  editableDomains: ['props', 'stepParams'],
+  props: ['aiEmployee', 'context', 'auto', 'style'],
+  stepParams: ['shortcutSettings'],
 });
-AI_EMPLOYEE_ACTION_CONTRACT.domains.props = keyedDomain(['aiEmployee', 'context', 'auto', 'tasks', 'style'], 'deep', {
+AI_EMPLOYEE_ACTION_CONTRACT.domains.props = keyedDomain(['aiEmployee', 'context', 'auto', 'style'], 'deep', {
   aiEmployee: OBJECT_SCHEMA,
   context: OBJECT_SCHEMA,
   auto: BOOLEAN_SCHEMA,
-  tasks: ARRAY_SCHEMA,
   style: OBJECT_SCHEMA,
+});
+AI_EMPLOYEE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  shortcutSettings: {
+    allowedPaths: ['editTasks.tasks'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['editTasks'],
+    pathSchemas: {
+      'editTasks.tasks': ARRAY_SCHEMA,
+    },
+  },
 });
 
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({

@@ -692,7 +692,16 @@ describe('flowSurfaces context', () => {
 });
 
 function getData(response: any) {
-  return response?.body?.data || response?.data || response;
+  if (response?.body?.data && Object.prototype.hasOwnProperty.call(response.body.data, 'data')) {
+    return response.body.data.data;
+  }
+  if (response?.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  if (response && Object.prototype.hasOwnProperty.call(response, 'data')) {
+    return response.data;
+  }
+  return response?.body || response;
 }
 
 function readErrorMessage(response: any) {
