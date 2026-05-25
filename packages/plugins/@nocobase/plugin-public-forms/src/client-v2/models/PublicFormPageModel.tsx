@@ -7,42 +7,97 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChildPageModel } from '@nocobase/client-v2';
+import { css } from '@emotion/css';
+import { define, observable } from '@formily/reactive';
+import { ChildPageModel, PoweredBy } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
-import { Steps } from 'antd';
-import React, { useMemo, useState } from 'react';
+import { theme } from 'antd';
+import React, { useMemo } from 'react';
 import { useT } from '../locale';
 
-const PublicFormSettingsSteps = observer((props: { model: PublicFormPageModel }) => {
+const PublicFormSettingsContent = observer((props: { model: PublicFormPageModel }) => {
   const { model } = props;
   const t = useT();
-  const [current, setCurrent] = useState(0);
-  const items = useMemo(
-    () => [
-      {
-        title: t('Configure form'),
-      },
-      {
-        title: t('After successful submission'),
-      },
+  const { token } = theme.useToken();
+  const className = useMemo(
+    () => css`
+      max-width: 800px;
+      margin: 20px auto 0;
+
+      .nb-block-grid {
+        padding: 0 !important;
+      }
+
+      .public-form-settings-content-title {
+        margin: ${token.marginLG}px 0 ${token.marginSM}px;
+        font-size: ${token.fontSizeHeading4}px;
+        font-weight: ${token.fontWeightStrong};
+        line-height: ${token.lineHeightHeading4};
+      }
+
+      [data-flow-add-block],
+      div:has(> [data-flow-add-block]) {
+        display: none !important;
+      }
+
+      .public-form-settings-powered-by {
+        margin-top: ${token.marginLG}px;
+      }
+
+      @media (max-width: ${token.screenMD}px) {
+        margin-top: 20px;
+      }
+    `,
+    [
+      token.fontSizeHeading4,
+      token.fontWeightStrong,
+      token.lineHeightHeading4,
+      token.marginLG,
+      token.marginSM,
+      token.screenMD,
     ],
-    [t],
   );
 
   return (
-    <>
-      <Steps current={current} items={items} onChange={setCurrent} />
-      {model.renderStep(current)}
-    </>
+    <div className={className}>
+      {model.renderStep(0)}
+      <div className="public-form-settings-content-title">{t('Prompt after successful submission')}</div>
+      {model.renderStep(1)}
+      <div className="public-form-settings-powered-by">
+        <PoweredBy />
+      </div>
+    </div>
   );
 });
 
 export class PublicFormPageModel extends ChildPageModel {
+  publicFormSubmitted = false;
+
+  constructor(options: any) {
+    super(options);
+    define(this, {
+      publicFormSubmitted: observable.ref,
+    });
+  }
+
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('publicFormPageModel', {
       value: this,
     });
+    this.context.defineProperty('publicFormSubmitted', {
+      get: () => this.publicFormSubmitted,
+      observable: true,
+      cache: false,
+    });
+    this.context.defineMethod('setPublicFormSubmitted', (submitted: boolean) => {
+      this.setPublicFormSubmitted(submitted);
+    });
+  }
+
+  setPublicFormSubmitted(submitted: boolean) {
+    this.publicFormSubmitted = !!submitted;
+    this.setProps('publicFormSubmitted', this.publicFormSubmitted);
   }
 
   renderStep(index: number) {
@@ -50,11 +105,11 @@ export class PublicFormPageModel extends ChildPageModel {
   }
 
   render() {
-    if (this.props.publicRuntime) {
-      return this.renderStep(this.props.publicFormSubmitted ? 1 : 0);
+    if (this.props.publicRuntime || this.context.publicFormRuntime) {
+      return this.renderStep(this.publicFormSubmitted || this.props.publicFormSubmitted ? 1 : 0);
     }
 
-    return <PublicFormSettingsSteps model={this} />;
+    return <PublicFormSettingsContent model={this} />;
   }
 }
 

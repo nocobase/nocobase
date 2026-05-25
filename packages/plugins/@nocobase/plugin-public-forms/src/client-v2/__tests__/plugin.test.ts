@@ -9,7 +9,10 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
+  PUBLIC_FORM_LAYOUT_MODEL,
+  PUBLIC_FORM_LAYOUT_UID,
   PUBLIC_FORM_PAGE_MODEL,
+  PUBLIC_FORM_ROUTE_NAME,
   PUBLIC_FORM_SUBMIT_ACTION_MODEL,
   PUBLIC_FORMS_NAMESPACE,
   PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
@@ -48,6 +51,9 @@ describe('PluginPublicFormsClientV2', () => {
       [PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL]: {
         loader: expect.any(Function),
       },
+      [PUBLIC_FORM_LAYOUT_MODEL]: {
+        loader: expect.any(Function),
+      },
       [PUBLIC_FORM_PAGE_MODEL]: {
         loader: expect.any(Function),
       },
@@ -73,10 +79,14 @@ describe('PluginPublicFormsClientV2', () => {
       uid: PUBLIC_FORMS_SETTINGS_LAYOUT_UID,
       layoutModelClass: PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
     });
-    expect(app.router.add).toHaveBeenCalledWith('public-forms', {
-      path: '/public-forms/:name',
-      componentLoader: expect.any(Function),
-      skipAuthCheck: true,
+    expect(app.layoutManager.registerLayout).toHaveBeenCalledWith({
+      routeName: PUBLIC_FORM_ROUTE_NAME,
+      routePath: '/public-forms',
+      uid: PUBLIC_FORM_LAYOUT_UID,
+      layoutModelClass: PUBLIC_FORM_LAYOUT_MODEL,
+      rootPageModelClass: PUBLIC_FORM_PAGE_MODEL,
+      authCheck: false,
     });
+    expect(app.router.add).not.toHaveBeenCalled();
   });
 });

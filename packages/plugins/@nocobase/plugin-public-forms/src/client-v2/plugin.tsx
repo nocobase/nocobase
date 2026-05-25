@@ -10,7 +10,10 @@
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 import {
+  PUBLIC_FORM_LAYOUT_MODEL,
+  PUBLIC_FORM_LAYOUT_UID,
   PUBLIC_FORM_PAGE_MODEL,
+  PUBLIC_FORM_ROUTE_NAME,
   PUBLIC_FORM_SUBMIT_ACTION_MODEL,
   PUBLIC_FORMS_NAMESPACE,
   PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
@@ -25,6 +28,9 @@ export class PluginPublicFormsClientV2 extends Plugin<Record<string, never>, App
     this.flowEngine.registerModelLoaders({
       [PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL]: {
         loader: () => import('./models/PublicFormsSettingsLayoutModel'),
+      },
+      [PUBLIC_FORM_LAYOUT_MODEL]: {
+        loader: () => import('./models/PublicFormLayoutModel'),
       },
       [PUBLIC_FORM_PAGE_MODEL]: {
         loader: () => import('./models/PublicFormPageModel'),
@@ -55,10 +61,13 @@ export class PluginPublicFormsClientV2 extends Plugin<Record<string, never>, App
       layoutModelClass: PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
     });
 
-    this.router.add('public-forms', {
-      path: '/public-forms/:name',
-      componentLoader: () => import('./pages/PublicFormPage'),
-      skipAuthCheck: true,
+    this.app.layoutManager.registerLayout({
+      routeName: PUBLIC_FORM_ROUTE_NAME,
+      routePath: '/public-forms',
+      uid: PUBLIC_FORM_LAYOUT_UID,
+      layoutModelClass: PUBLIC_FORM_LAYOUT_MODEL,
+      rootPageModelClass: PUBLIC_FORM_PAGE_MODEL,
+      authCheck: false,
     });
   }
 }

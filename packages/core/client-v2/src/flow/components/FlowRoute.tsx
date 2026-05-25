@@ -152,6 +152,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   const routeRepository = flowEngine.context.routeRepository;
   const params = useParams();
   const pageUid = props.pageUid || params?.name;
+  const skipRouteRepositoryCheck = contextLayout?.authCheck === false;
   const [guardState, setGuardState] = useState<FlowRouteGuardState>({
     pending: true,
     allowBridge: false,
@@ -171,7 +172,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     const run = async () => {
       setGuardState({ pending: true, allowBridge: false, notFound: false });
 
-      if (!routeRepository?.isAccessibleLoaded?.()) {
+      if (!skipRouteRepositoryCheck && !routeRepository?.isAccessibleLoaded?.()) {
         try {
           await routeRepository?.ensureAccessibleLoaded?.();
         } catch (_error) {
@@ -186,7 +187,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
         return;
       }
 
-      const route = routeRepository?.getRouteBySchemaUid?.(pageUid);
+      const route = skipRouteRepositoryCheck ? undefined : routeRepository?.getRouteBySchemaUid?.(pageUid);
       if (!route && legacyPageBehavior === 'notFound') {
         const flowModelExists = await hasFlowModel(flowEngine, pageUid);
         if (active && requestId === requestIdRef.current) {
@@ -241,7 +242,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     return () => {
       active = false;
     };
-  }, [app, flowEngine, legacyPageBehavior, pageUid, routeRepository]);
+  }, [app, flowEngine, legacyPageBehavior, pageUid, routeRepository, skipRouteRepositoryCheck]);
 
   const content = useMemo(() => {
     if (guardState.pending) {

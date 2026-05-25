@@ -145,34 +145,40 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
   private addStandardRoutes(layout: LayoutDefinition) {
     const routeBaseName = layout.routeName;
     const authCheck = layout.authCheck;
+    const skipAuthCheck = authCheck === false;
 
     this.app.router.add(routeBaseName, {
       path: layout.routePath,
       authCheck,
+      skipAuthCheck,
       element: <LayoutRoute layoutRouteName={layout.routeName} />,
     });
 
     this.app.router.add(getLayoutPageRouteName(routeBaseName), {
       path: ':name',
       authCheck,
+      skipAuthCheck,
       element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
     });
 
     this.app.router.add(getLayoutPageTabRouteName(routeBaseName), {
       path: ':name/tab/:tabUid',
       authCheck,
+      skipAuthCheck,
       element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
     });
 
     this.app.router.add(getLayoutPageViewRouteName(routeBaseName), {
       path: ':name/view/*',
       authCheck,
+      skipAuthCheck,
       element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
     });
 
     this.app.router.add(getLayoutPageTabViewRouteName(routeBaseName), {
       path: ':name/tab/:tabUid/view/*',
       authCheck,
+      skipAuthCheck,
       element: <LayoutContentRoute layoutRouteName={layout.routeName} />,
     });
   }

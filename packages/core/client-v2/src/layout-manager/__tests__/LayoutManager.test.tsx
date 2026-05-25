@@ -206,7 +206,7 @@ describe('LayoutManager', () => {
   });
 
   it('allows explicit page model classes and authCheck', () => {
-    const { manager } = createManager();
+    const { manager, routes } = createManager();
 
     expect(
       manager.registerLayout({
@@ -222,6 +222,14 @@ describe('LayoutManager', () => {
       rootPageModelClass: 'EmbedRootPageModel',
       childPageModelClass: 'EmbedChildPageModel',
       authCheck: false,
+    });
+    expect(routes.embed).toMatchObject({
+      authCheck: false,
+      skipAuthCheck: true,
+    });
+    expect(routes['embed.__page']).toMatchObject({
+      authCheck: false,
+      skipAuthCheck: true,
     });
   });
 

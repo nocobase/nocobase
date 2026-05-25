@@ -1,0 +1,328 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { css } from '@emotion/css';
+import { define, observable } from '@formily/reactive';
+import { BaseLayoutModel, PoweredBy, useApp } from '@nocobase/client-v2';
+import { observer, useFlowEngine } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
+import { Input, Modal, Result, Spin, theme } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useOutlet } from 'react-router-dom';
+import { PUBLIC_FORM_TOKEN_KEY } from '../constants';
+import { useT } from '../locale';
+
+function getResponseData(response: any) {
+  return response?.data?.data;
+}
+
+function usePublicFormTokenHeader() {
+  const app = useApp();
+
+  useEffect(() => {
+    const interceptor = app.apiClient.axios.interceptors.request.use((config) => {
+      config.headers = config.headers || {};
+      config.headers['X-Form-Token'] = localStorage.getItem(PUBLIC_FORM_TOKEN_KEY) || '';
+      return config;
+    });
+
+    return () => {
+      app.apiClient.axios.interceptors.request.eject(interceptor);
+    };
+  }, [app.apiClient.axios.interceptors.request]);
+}
+
+function useApplyPublicDataSource(meta: any) {
+  const app = useApp();
+
+  useEffect(() => {
+    const dataSource = meta?.dataSource;
+    if (!dataSource?.key) {
+      return;
+    }
+
+    const { collections = [], ...options } = dataSource;
+    app.dataSourceManager.upsertDataSource(options);
+    app.dataSourceManager.getDataSource(dataSource.key)?.setCollections(collections, { clearFields: true });
+  }, [app.dataSourceManager, meta]);
+}
+
+function usePublicFormFlowModel(meta: any) {
+  const flowEngine = useFlowEngine();
+
+  return useRequest(
+    async () => {
+      const tree = meta?.flowModel;
+      if (!tree?.uid) {
+        return null;
+      }
+
+      await flowEngine.resolveModelTree(tree);
+      return flowEngine.getModel(tree.uid) || (await flowEngine.createModelAsync(tree));
+    },
+    {
+      refreshDeps: [meta?.flowModel?.uid],
+    },
+  );
+}
+
+const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutModel }) => {
+  const { model } = props;
+  const outlet = useOutlet();
+  const app = useApp();
+  const t = useT();
+  const { token } = theme.useToken();
+  const [password, setPassword] = useState('');
+  const [routeContentHeight, setRouteContentHeight] = useState(1);
+  const [routeContentElement, setRouteContentElement] = useState<HTMLDivElement | null>(null);
+  const routeContentRef = useRef<HTMLDivElement | null>(null);
+  const pageUid = model.getPageUidFromLayoutRoute(model.currentLayoutRoute);
+  const { data, error, loading, run } = useRequest(
+    async (nextPassword?: string) => {
+      if (!pageUid) {
+        return null;
+      }
+
+      const response = await app.apiClient.request({
+        url: `publicForms:getMeta/${pageUid}`,
+        skipAuth: true,
+        params:
+          typeof nextPassword === 'string'
+            ? {
+                password: nextPassword,
+              }
+            : undefined,
+      } as any);
+      return getResponseData(response);
+    },
+    {
+      onSuccess(nextData: any) {
+        if (nextData?.token) {
+          localStorage.setItem(PUBLIC_FORM_TOKEN_KEY, nextData.token);
+        }
+      },
+      refreshDeps: [pageUid],
+    },
+  );
+  const { loading: modelLoading, data: routeModel } = usePublicFormFlowModel(data);
+  const passwordRequired = (error as any)?.response?.status === 401 || data?.passwordRequired;
+  const bindLayoutContentElement = useCallback(
+    (element: HTMLDivElement | null) => {
+      routeContentRef.current = element;
+      setRouteContentElement(element);
+      model.setLayoutContentElement(element);
+    },
+    [model],
+  );
+  const measureRouteContentHeight = useCallback(() => {
+    const host = routeContentElement;
+    if (!host) {
+      return;
+    }
+
+    const contentElement =
+      (host.querySelector('.nb-block-grid') as HTMLElement | null) ||
+      (host.querySelector('.ant-card') as HTMLElement | null) ||
+      (host.children[1]?.firstElementChild?.firstElementChild as HTMLElement | undefined);
+    const height = Math.ceil(contentElement?.getBoundingClientRect().height || contentElement?.scrollHeight || 0);
+
+    if (height > 0) {
+      setRouteContentHeight((previous) => (previous === height ? previous : height));
+    }
+  }, [routeContentElement]);
+  const contentStyle = useMemo<React.CSSProperties>(
+    () => ({
+      maxWidth: token.screenMD,
+      marginInline: 'auto',
+    }),
+    [token.screenMD],
+  );
+  const routeContentStyle = useMemo<React.CSSProperties>(
+    () => ({
+      position: 'relative',
+      minHeight: routeContentHeight,
+    }),
+    [routeContentHeight],
+  );
+  const routeContentClassName = useMemo(
+    () => css`
+      @media (max-width: ${token.screenSM}px) {
+        .nb-block-grid {
+          overflow-x: hidden;
+          padding: 0 !important;
+        }
+
+        .nb-block-grid > .ant-space > .ant-space-item > div > .ant-row {
+          margin-inline: 0 !important;
+        }
+
+        .nb-block-grid > .ant-space > .ant-space-item > div > .ant-row > .ant-col {
+          padding-inline: 0 !important;
+        }
+      }
+    `,
+    [token.screenSM],
+  );
+  const layoutClassName = useMemo(
+    () => css`
+      min-height: 100vh;
+      background: ${token.colorBgLayout};
+      padding: 10vh ${token.padding}px ${token.paddingXL}px;
+
+      @media (max-width: ${token.screenSM}px) {
+        padding: 0;
+      }
+    `,
+    [token.colorBgLayout, token.padding, token.paddingXL, token.screenSM],
+  );
+
+  usePublicFormTokenHeader();
+  useApplyPublicDataSource(data);
+
+  useEffect(() => {
+    const host = routeContentRef.current;
+    if (!host) {
+      return;
+    }
+
+    let frame = 0;
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measureRouteContentHeight);
+    };
+    const resizeObserver = new ResizeObserver(scheduleMeasure);
+    const mutationObserver = new MutationObserver(scheduleMeasure);
+
+    resizeObserver.observe(host);
+    mutationObserver.observe(host, {
+      childList: true,
+      subtree: true,
+    });
+    scheduleMeasure();
+
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [measureRouteContentHeight, outlet, routeContentElement]);
+
+  useEffect(() => {
+    model.setPublicFormSubmitted(false);
+  }, [model, pageUid]);
+
+  useEffect(() => {
+    if (data?.title) {
+      document.title = data.title;
+    }
+  }, [data?.title]);
+
+  if (passwordRequired) {
+    return (
+      <Modal
+        centered
+        title={t('Password')}
+        open
+        cancelButtonProps={{ hidden: true }}
+        onOk={() => {
+          run(password);
+        }}
+      >
+        <Input.Password
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+          }}
+        />
+      </Modal>
+    );
+  }
+
+  if ((error as any)?.response?.status >= 500) {
+    return <Result status="warning" title={t('The form is not found')} />;
+  }
+
+  if (!model.currentLayoutRoute) {
+    return <Spin />;
+  }
+
+  if (!pageUid) {
+    return <Result status="warning" title={t('The form is not found')} />;
+  }
+
+  if (loading || modelLoading) {
+    return <Spin />;
+  }
+
+  if (!data) {
+    return <Result status="info" title={t('The form is not enabled and cannot be accessed')} />;
+  }
+
+  if (!routeModel) {
+    return <Result status="warning" title={t('The form is not found')} />;
+  }
+
+  return (
+    <div className={layoutClassName}>
+      <div style={contentStyle}>
+        <div ref={bindLayoutContentElement} className={routeContentClassName} style={routeContentStyle}>
+          {outlet}
+        </div>
+        <div>
+          <PoweredBy />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+export class PublicFormLayoutModel extends BaseLayoutModel {
+  publicFormSubmitted = false;
+
+  constructor(options: any) {
+    super(options);
+    define(this, {
+      publicFormSubmitted: observable.ref,
+    });
+  }
+
+  setPublicFormSubmitted(submitted: boolean) {
+    this.publicFormSubmitted = !!submitted;
+  }
+
+  protected onMount(): void {
+    super.onMount();
+    this.context.defineProperty('publicFormRuntime', {
+      get: () => true,
+      cache: false,
+    });
+    this.context.defineProperty('publicFormSubmitted', {
+      get: () => this.publicFormSubmitted,
+      observable: true,
+      cache: false,
+    });
+    this.context.defineProperty('skipAclCheck', {
+      get: () => true,
+      cache: false,
+    });
+    this.context.defineProperty('flowSettingsEnabled', {
+      get: () => false,
+      cache: false,
+    });
+    this.context.defineMethod('setPublicFormSubmitted', (submitted: boolean) => {
+      this.setPublicFormSubmitted(submitted);
+    });
+  }
+
+  render() {
+    return <PublicFormLayoutComponent model={this} />;
+  }
+}
+
+export default PublicFormLayoutModel;
