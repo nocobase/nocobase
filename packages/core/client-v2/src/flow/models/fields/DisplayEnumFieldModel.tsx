@@ -48,6 +48,13 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
     return value === null || value === undefined || value === '';
   }
 
+  private isEmptyEnumValue(value: any) {
+    if (Array.isArray(value)) {
+      return value.length === 0;
+    }
+    return this.isEmpty(value);
+  }
+
   public renderComponent(value) {
     const { options = [], dataSource } = this.props;
     const currentOptions = getCurrentOptions(value, dataSource || options, fieldNames);
@@ -60,6 +67,43 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
         {this.translate(option[fieldNames.label])}
       </Tag>
     ));
+  }
+
+  /**
+   * Keep array values for multipleSelect/checkboxGroup.
+   * ClickableFieldModel will normalize arrays to joined strings, which breaks option label mapping.
+   */
+  renderInDisplayStyle(value, record?, isToMany?, wrap?) {
+    const { clickToOpen = false, ...restProps } = this.props;
+    void wrap;
+
+    const result = this.renderComponent(value);
+    const display = record ? (this.isEmptyEnumValue(value) ? 'N/A' : result) : result;
+
+    const commonStyle = {
+      cursor: clickToOpen ? 'pointer' : 'default',
+      alignItems: 'center',
+      gap: 4,
+      display: isToMany && 'inline-block',
+    };
+
+    const handleClick = (e) => {
+      clickToOpen && this.onClick(e, record);
+    };
+
+    if (clickToOpen) {
+      return (
+        <a {...restProps} style={commonStyle} onClick={handleClick}>
+          {display}
+        </a>
+      );
+    }
+
+    return (
+      <span {...restProps} style={commonStyle} className={restProps.className}>
+        {display}
+      </span>
+    );
   }
 }
 DisplayEnumFieldModel.define({

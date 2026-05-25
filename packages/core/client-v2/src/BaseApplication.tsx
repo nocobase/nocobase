@@ -40,6 +40,7 @@ import type {
   RouterOptions,
 } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
+import { getOperators } from './json-logic/globalOperators';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
@@ -56,6 +57,11 @@ type AnyComponent = RenderableComponentType<any>;
 type AuthTokenPayload = {
   token: string;
   authenticator: string | null;
+};
+export type JsonLogic = {
+  apply: (logic: any, data?: any) => any;
+  addOperation: (name: string, fn?: any) => void;
+  rmOperation: (name: string) => void;
 };
 
 const LEADING_SLASHES_REGEXP = /^\/+/;
@@ -123,6 +129,7 @@ export abstract class BaseApplication<
   public favicon!: string;
   public flowEngine: FlowEngine;
   public dataSourceManager: any;
+  public jsonLogic!: JsonLogic;
   public context: FlowEngineContext & {
     routeRepository: RouteRepository;
     appInfo: Promise<Record<string, any>>;
@@ -162,6 +169,18 @@ export abstract class BaseApplication<
     return this.wsAuthorized;
   }
 
+  public setDocumentLanguage(language?: string | null) {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (language) {
+      document.documentElement.lang = language;
+    } else {
+      document.documentElement.removeAttribute('lang');
+    }
+  }
+
   constructor(protected options: TOptions = {} as TOptions) {
     this.initRequireJs();
     this.defineObservableState();
@@ -198,6 +217,7 @@ export abstract class BaseApplication<
     this.addRoutes();
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
+      this.setDocumentLanguage(lng);
     });
     this.initListeners();
     this.afterManagersInitialized();
@@ -220,6 +240,7 @@ export abstract class BaseApplication<
 
   protected afterManagersInitialized() {
     this.aiManager = new AIManager(this);
+    this.jsonLogic = getOperators();
   }
 
   protected configureContext() {
@@ -360,11 +381,11 @@ export abstract class BaseApplication<
     });
   }
 
-  updateFavicon(favicon?: string) {
+  updateFavicon(favicon?: string | null) {
     let faviconLinkElement = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
 
-    if (favicon) {
-      this.favicon = favicon;
+    if (arguments.length > 0) {
+      this.favicon = favicon || '';
     }
 
     const iconHref = this.favicon || '/favicon/favicon.ico';
@@ -586,19 +607,25 @@ export class ApplicationModel extends FlowModel {
   }
 
   render() {
-    if (this.app.maintaining) {
-      return this.renderMaintaining();
+    if (this.app.maintaining && !this.app.maintained) {
+      return <>{this.renderMaintaining()}</>;
     }
-    if (this.app.error) {
-      return this.renderError();
+    if (this.app.error && !this.app.maintaining) {
+      return <>{this.renderError()}</>;
     }
-    return this.renderContent();
+    return (
+      <>
+        {this.renderContent()}
+        {this.app.maintaining && this.app.maintained ? this.renderMaintainingDialog() : null}
+      </>
+    );
   }
 
   renderMaintaining() {
-    if (!this.app.maintained) {
-      return this.app.renderComponent('AppMaintaining', { app: this.app, error: this.app.error });
-    }
+    return this.app.renderComponent('AppMaintaining', { app: this.app, error: this.app.error });
+  }
+
+  renderMaintainingDialog() {
     return this.app.renderComponent('AppMaintainingDialog', { app: this.app, error: this.app.error });
   }
 

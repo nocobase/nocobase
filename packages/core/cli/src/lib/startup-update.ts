@@ -10,7 +10,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as p from '@clack/prompts';
+import { confirm } from './inquirer.ts';
 import {
   inspectSelfInstall,
   inspectSelfStatus,
@@ -342,14 +342,17 @@ export async function maybeRunStartupUpdatePrompt(argv: string[]): Promise<Start
     return { kind: 'warned' };
   }
 
-  const answer = await p.confirm({
-    message: buildPromptMessage(selfStatus, skillsStatus),
-    active: 'Yes',
-    inactive: 'No',
-    initialValue: true,
-  });
+  let answer = false;
+  try {
+    answer = await confirm({
+      message: buildPromptMessage(selfStatus, skillsStatus),
+      default: true,
+    });
+  } catch {
+    answer = false;
+  }
 
-  if (p.isCancel(answer) || !answer) {
+  if (!answer) {
     printWarning(buildDeclinedWarning(selfStatus, skillsStatus));
     await markChecked();
     return { kind: 'declined' };

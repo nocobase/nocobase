@@ -978,15 +978,82 @@ function emitDomainSettingOps(
     });
   }
 
-  if (!_.isNil(desiredNode.flowRegistry) && !_.isEqual(desiredNode.flowRegistry, currentNode?.flowRegistry)) {
+  emitFlowRegistryOps(ops, nodeRef, currentNode, desiredNode, explicitTarget);
+}
+
+function emitFlowRegistryOps(
+  ops: FlowSurfaceMutateOp[],
+  nodeRef: CompiledNodeRef,
+  currentNode: any,
+  desiredNode: FlowSurfaceNodeSpec,
+  explicitTarget?: FlowSurfaceWriteTarget,
+) {
+  if (_.isNil(desiredNode.flowRegistry) || _.isEqual(desiredNode.flowRegistry, currentNode?.flowRegistry)) {
+    return;
+  }
+  const target = explicitTarget || { uid: nodeRef.uidRef };
+  const currentFlowRegistry = _.isPlainObject(currentNode?.flowRegistry) ? currentNode.flowRegistry : {};
+  const desiredFlowRegistry = _.isPlainObject(desiredNode.flowRegistry) ? desiredNode.flowRegistry : {};
+  const currentKeys = Object.keys(currentFlowRegistry);
+  const desiredKeys = Object.keys(desiredFlowRegistry);
+
+  for (const key of currentKeys) {
+    if (!Object.prototype.hasOwnProperty.call(desiredFlowRegistry, key)) {
+      ops.push({
+        type: 'removeEventFlow',
+        target,
+        values: {
+          key,
+        },
+      });
+    }
+  }
+
+  for (const key of desiredKeys) {
+    const flow = desiredFlowRegistry[key];
+    if (Object.prototype.hasOwnProperty.call(currentFlowRegistry, key)) {
+      if (_.isEqual(flow, currentFlowRegistry[key])) {
+        continue;
+      }
+      ops.push({
+        type: 'setEventFlow',
+        target,
+        values: {
+          key,
+          flow,
+        },
+      });
+      continue;
+    }
+    if (isBeforeAllEventFlow(flow)) {
+      ops.push({
+        type: 'addEventFlow',
+        target,
+        values: {
+          key,
+          flow,
+        },
+      });
+      continue;
+    }
     ops.push({
-      type: 'setEventFlows',
-      target: explicitTarget || { uid: nodeRef.uidRef },
+      type: 'setEventFlow',
+      target,
       values: {
-        flowRegistry: desiredNode.flowRegistry,
+        key,
+        flow,
       },
     });
   }
+}
+
+function isBeforeAllEventFlow(flow: any) {
+  return (
+    _.isPlainObject(flow) &&
+    _.isPlainObject(flow.on) &&
+    typeof flow.on.eventName === 'string' &&
+    (typeof flow.on.phase === 'undefined' || flow.on.phase === 'beforeAllFlows')
+  );
 }
 
 function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse?: string): CompiledNodeRef | null {

@@ -44,7 +44,7 @@ Trước tiên hãy xem [Bắt đầu nhanh](/ai-employees/quick-start), thực 
 
 ### C. Năng lực nâng cao (Mở rộng)
 
-- [Nhân viên AI tích hợp sẵn](/ai-employees/features/built-in-employee): Tìm hiểu định vị và kịch bản phù hợp của các nhân viên có sẵn.
+- [Nhân viên AI tích hợp sẵn](/ai-employees/built-in/): Tìm hiểu định vị và kịch bản phù hợp của các nhân viên có sẵn.
 - [Kiểm soát quyền](/ai-employees/permission): Kiểm soát quyền truy cập nhân viên, Skills và dữ liệu theo mô hình quyền tổ chức.
 - [Knowledge Base AI](/ai-employees/knowledge-base/index): Đưa kiến thức doanh nghiệp vào, nâng cao tính ổn định và khả năng truy nguyên của câu trả lời.
 - [Node Nhân viên AI trong Workflow](/ai-employees/workflow/nodes/employee/configuration): Tích hợp năng lực Nhân viên AI vào các quy trình tự động hóa.

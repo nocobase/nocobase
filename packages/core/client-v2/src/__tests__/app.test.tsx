@@ -9,9 +9,10 @@
 
 import { Application, createMockClient, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client-v2';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { escapeHTML, getAppVersionHTML } from '../utils';
 
 const waitForAppReady = async () => {
   await waitFor(() => {
@@ -32,6 +33,7 @@ describe('app', () => {
 
     afterEach(() => {
       document.querySelectorAll('link[rel="shortcut icon"]').forEach((node) => node.remove());
+      document.documentElement.removeAttribute('lang');
       vi.restoreAllMocks();
     });
 
@@ -48,6 +50,14 @@ describe('app', () => {
       expect(app.getHref('/test')).toBe('/test');
     });
 
+    it('should initialize shared jsonLogic operators', () => {
+      const app = new Application({ router });
+
+      expect(app.jsonLogic.apply({ $eq: [1, '1'] })).toBe(true);
+      app.jsonLogic.addOperation('$testAlwaysTrue', () => true);
+      expect(app.jsonLogic.apply({ $testAlwaysTrue: [] })).toBe(true);
+    });
+
     it('should apply the provided favicon immediately', () => {
       const app = new Application({ router });
 
@@ -56,6 +66,44 @@ describe('app', () => {
       const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
       expect(favicon).toBeInTheDocument();
       expect(favicon.getAttribute('href')).toBe('/custom-favicon.ico');
+    });
+
+    it('should reset favicon to default when favicon is cleared', () => {
+      const app = new Application({ router });
+
+      app.updateFavicon('/custom-favicon.ico');
+      app.updateFavicon(null);
+
+      const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
+      expect(favicon).toBeInTheDocument();
+      expect(favicon.getAttribute('href')).toBe('/favicon/favicon.ico');
+    });
+
+    it('should reset favicon to default when favicon is explicitly undefined', () => {
+      const app = new Application({ router });
+
+      app.updateFavicon('/custom-favicon.ico');
+      app.updateFavicon(undefined);
+
+      const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
+      expect(favicon).toBeInTheDocument();
+      expect(favicon.getAttribute('href')).toBe('/favicon/favicon.ico');
+    });
+
+    it('should sync document language when app language changes', async () => {
+      const app = new Application({ router });
+
+      await app.i18n.changeLanguage('ja-JP');
+
+      expect(document.documentElement.lang).toBe('ja-JP');
+    });
+
+    it('should escape app version html placeholder content', () => {
+      expect(getAppVersionHTML('<script>alert(1)</script>&"')).toBe(
+        '<span class="nb-app-version">v&lt;script&gt;alert(1)&lt;/script&gt;&amp;&quot;</span>',
+      );
+      expect(getAppVersionHTML(undefined)).toBe('');
+      expect(escapeHTML("NocoBase <v2> & 'beta'")).toBe('NocoBase &lt;v2&gt; &amp; &#39;beta&#39;');
     });
 
     it('should reject invalid component objects but keep valid exotic components', () => {
@@ -252,6 +300,33 @@ describe('app', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('App initializing')).toBeInTheDocument();
     expect(screen.getByText('maintaining dialog message')).toBeInTheDocument();
+  });
+
+  it('should keep current content behind maintained dialog state', async () => {
+    const CurrentPage = () => {
+      const [count, setCount] = React.useState(0);
+      return <button onClick={() => setCount((value) => value + 1)}>Current page count: {count}</button>;
+    };
+
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: CurrentPage });
+      }
+    }
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    await renderApp(app);
+    fireEvent.click(screen.getByRole('button', { name: 'Current page count: 0' }));
+    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+
+    act(() => {
+      app.maintained = true;
+      app.maintaining = true;
+      app.error = { code: 'APP_COMMANDING', command: { name: 'pm.enable' }, message: 'starting sub applications...' };
+    });
+
+    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Enabling plugin')).toBeInTheDocument();
   });
 
   it('should handle long loading state gracefully', async () => {

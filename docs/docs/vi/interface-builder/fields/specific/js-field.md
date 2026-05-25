@@ -60,7 +60,7 @@ Trình chỉnh sửa script của JS Field hỗ trợ tô sáng cú pháp, gợi
 
 Có thể kết hợp với AI Employee để tạo mã:
 
-- [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Cách sử dụng phổ biến
 

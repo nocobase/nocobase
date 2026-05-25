@@ -13,7 +13,7 @@ import type {
   FlowSurfaceSurfaceSelector,
   FlowSurfaceResourceBindingKey,
 } from '../types';
-import type { FlowSurfaceApplyBlueprintReactionItem } from '../reaction/types';
+import type { FlowSurfaceApplyBlueprintReactionItem, FlowSurfaceFieldLinkageRule } from '../reaction/types';
 
 export type FlowSurfaceApplyBlueprintMode = 'create' | 'replace';
 
@@ -90,7 +90,7 @@ export type FlowSurfaceApplyBlueprintBlockResource =
 
 export type FlowSurfaceApplyBlueprintPopup = {
   title?: string;
-  mode?: 'replace' | 'append';
+  mode?: 'replace' | 'append' | 'drawer' | 'dialog' | 'page' | 'modal' | 'embed';
   template?: Record<string, any>;
   tryTemplate?: boolean;
   defaultType?: 'view' | 'edit';
@@ -132,10 +132,17 @@ export type FlowSurfaceApplyBlueprintFieldGroupSpec = {
   fields: FlowSurfaceApplyBlueprintFieldSpec[];
 };
 
+export type FlowSurfaceApplyBlueprintDefaultFieldObjectSpec = {
+  field: string;
+  titleField?: string;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFieldSpec = string | FlowSurfaceApplyBlueprintDefaultFieldObjectSpec;
+
 export type FlowSurfaceApplyBlueprintDefaultFieldGroupSpec = {
   key?: string;
   title: string;
-  fields: string[];
+  fields: FlowSurfaceApplyBlueprintDefaultFieldSpec[];
 };
 
 export type FlowSurfaceApplyBlueprintDefaultPopupName = {
@@ -153,13 +160,56 @@ export type FlowSurfaceApplyBlueprintDefaultPopups = FlowSurfaceApplyBlueprintDe
   associations?: Record<string, FlowSurfaceApplyBlueprintDefaultPopupActionMap>;
 };
 
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorField = {
+  settings?: Record<string, any>;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorScene = {
+  fields?: Record<string, FlowSurfaceApplyBlueprintDefaultFormBehaviorField>;
+  fieldLinkageRules?: FlowSurfaceFieldLinkageRule[];
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehavior = {
+  addNew?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
+  edit?: FlowSurfaceApplyBlueprintDefaultFormBehaviorScene;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewDecision =
+  | 'implemented'
+  | 'noUiBehavior'
+  | 'unsupported';
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewReasonCode =
+  | 'no-ui-behavior'
+  | 'ambiguous-description'
+  | 'unsupported-cross-field-validation'
+  | 'unsupported-association-filter'
+  | 'workflow-or-ai-generation-out-of-scope'
+  | 'ai-generated-content-out-of-scope';
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewField = null | {
+  decision: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewDecision;
+  reasonCode?: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewReasonCode;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview = {
+  fields: Record<string, FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReviewField>;
+};
+
 export type FlowSurfaceApplyBlueprintDefaultCollection = {
   fieldGroups?: FlowSurfaceApplyBlueprintDefaultFieldGroupSpec[];
   popups?: FlowSurfaceApplyBlueprintDefaultPopups;
+  formBehavior?: FlowSurfaceApplyBlueprintDefaultFormBehavior;
+  formBehaviorDescriptionReview?: FlowSurfaceApplyBlueprintDefaultFormBehaviorDescriptionReview;
+};
+
+export type FlowSurfaceApplyBlueprintDefaultDataSource = {
+  collections?: Record<string, FlowSurfaceApplyBlueprintDefaultCollection>;
 };
 
 export type FlowSurfaceApplyBlueprintDefaults = {
   collections?: Record<string, FlowSurfaceApplyBlueprintDefaultCollection>;
+  dataSources?: Record<string, FlowSurfaceApplyBlueprintDefaultDataSource>;
 };
 
 export type FlowSurfaceApplyBlueprintActionObjectSpec = {
@@ -187,6 +237,8 @@ export type FlowSurfaceApplyBlueprintBlockType =
   | 'markdown'
   | 'iframe'
   | 'chart'
+  | 'comments'
+  | 'recordHistory'
   | 'actionPanel'
   | 'jsBlock'
   | 'tree';
@@ -195,6 +247,9 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   key?: string;
   type?: FlowSurfaceApplyBlueprintBlockType;
   title?: string;
+  description?: string;
+  height?: number;
+  heightMode?: string;
   collection?: string;
   dataSourceKey?: string;
   associationPathName?: string;
@@ -211,6 +266,13 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   recordActions?: FlowSurfaceApplyBlueprintActionSpec[];
   script?: string;
   chart?: string;
+  pageSize?: number;
+  sort?: unknown;
+  sorting?: unknown;
+  titleField?: string;
+  colorField?: string;
+  startField?: string;
+  endField?: string;
 };
 
 export type FlowSurfaceApplyBlueprintTabDocument = {

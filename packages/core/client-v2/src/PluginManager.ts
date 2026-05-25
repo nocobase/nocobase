@@ -25,6 +25,9 @@ export type PluginData = {
   packageName: string;
   version: string;
   url: string;
+  clientV2Url?: string;
+  devMode?: 'esm';
+  appDevDependencies?: string[];
   type: 'local' | 'upload' | 'npm';
 };
 

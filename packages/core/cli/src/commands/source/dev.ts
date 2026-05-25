@@ -9,12 +9,13 @@
 
 import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { ensureLocalPostinstall } from '../../lib/app-managed-resources.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
-import { announceTargetEnv, printInfo } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 
 function formatUnsupportedRuntimeMessage(kind: 'docker' | 'http' | 'ssh', envName: string): string {
   if (kind === 'docker') {
@@ -132,7 +133,6 @@ export default class SourceDev extends Command {
         yes: flags.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }
@@ -187,6 +187,12 @@ export default class SourceDev extends Command {
     );
 
     try {
+      await ensureLocalPostinstall(runtime, {
+        onStartTask: startTask,
+        onSucceedTask: succeedTask,
+        onFailTask: failTask,
+        verbose: true,
+      });
       await runLocalNocoBaseCommand(runtime, npmArgs, {
         stdio: 'inherit',
       });

@@ -32,7 +32,7 @@ JS Action se utiliza para ejecutar JavaScript al hacer clic en un botón para pe
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- Puede combinarse con empleados de IA para generar/modificar scripts: [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/features/built-in-employee)
+- Puede combinarse con empleados de IA para generar/modificar scripts: [Empleado de IA · Nathan: Ingeniero Frontend](/ai-employees/built-in/)
 
 ## Uso común (Ejemplos simplificados)
 

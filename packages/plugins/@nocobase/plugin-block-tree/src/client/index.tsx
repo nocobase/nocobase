@@ -18,7 +18,7 @@ import {
   TreeBlockModel,
   TreeFilterBlockMenuModel,
   TreeTitleFieldSettingsModel,
-} from './models';
+} from '../client-v2/models';
 export * from './component';
 
 export class PluginBlockTreeClient extends Plugin {

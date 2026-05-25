@@ -227,9 +227,41 @@ exports.getVersion = async () => {
   return versions[versions.length - 1];
 };
 
+function normalizeAppDevClientRsbuildConfig(appDevDir) {
+  const configPath = resolve(appDevDir, 'client/rsbuild.config.ts');
+  if (!existsSync(configPath)) {
+    return;
+  }
+  const content = fs.readFileSync(configPath, 'utf-8');
+  const normalized = content.replace(
+    "require('../../devtools/package.json')",
+    "require('@nocobase/devtools/package.json')",
+  );
+  if (normalized !== content) {
+    fs.writeFileSync(configPath, normalized, 'utf-8');
+  }
+}
+
+function normalizeAppDevClientV2Tsconfig(appDevDir) {
+  const tsconfigPath = resolve(appDevDir, 'client-v2/tsconfig.json');
+  if (!existsSync(tsconfigPath)) {
+    return;
+  }
+  const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
+  tsconfig.extends = '../../../tsconfig.json';
+  tsconfig.compilerOptions = tsconfig.compilerOptions || {};
+  tsconfig.compilerOptions.baseUrl = '../../../';
+  fs.writeFileSync(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`, 'utf-8');
+}
+
+function normalizeAppDevFiles(appDevDir) {
+  normalizeAppDevClientRsbuildConfig(appDevDir);
+  normalizeAppDevClientV2Tsconfig(appDevDir);
+}
+
 exports.generateAppDir = function generateAppDir() {
   const appPkgPath = dirname(dirname(require.resolve('@nocobase/app/src/index.ts')));
-  const appDevDir = resolve(process.cwd(), './storage/.app-dev');
+  const appDevDir = storagePathJoin('.app-dev');
   if (exports.isDev() && !exports.hasCorePackages() && appPkgPath.includes('node_modules')) {
     if (!existsSync(appDevDir)) {
       mkdirSync(appDevDir, { force: true, recursive: true });
@@ -238,6 +270,7 @@ exports.generateAppDir = function generateAppDir() {
         force: true,
       });
     }
+    normalizeAppDevFiles(appDevDir);
     process.env.APP_PACKAGE_ROOT = appDevDir;
   } else {
     process.env.APP_PACKAGE_ROOT = appPkgPath;
@@ -341,6 +374,10 @@ function resolveV2PublicPath(appPublicPath = '/') {
 
 exports.resolveV2PublicPath = resolveV2PublicPath;
 
+function isAppDevHtml() {
+  return process.argv[2] === 'app-dev' || process.env.NOCOBASE_APP_DEV === 'true';
+}
+
 function buildIndexHtml(force = false) {
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {
@@ -363,6 +400,7 @@ function buildIndexHtml(force = false) {
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
+    .replace(/\{\{env.NOCOBASE_APP_DEV\}\}/g, isAppDevHtml() ? 'true' : 'false')
     .replace(/\{\{env.ESM_CDN_BASE_URL\}\}/g, process.env.ESM_CDN_BASE_URL || '')
     .replace(/\{\{env.ESM_CDN_SUFFIX\}\}/g, process.env.ESM_CDN_SUFFIX || '')
     .replace(/((?:src|href)=")(?:\.\/)?assets\//g, `$1${process.env.APP_PUBLIC_PATH}assets/`)
@@ -422,6 +460,7 @@ function storagePathJoin(...segments) {
 
 exports.resolveStorageRoot = resolveStorageRoot;
 exports.storagePathJoin = storagePathJoin;
+exports.resolvePluginStoragePath = resolvePluginStoragePath;
 /** @deprecated Use resolveStorageRoot — kept for backward compatibility */
 exports.generateStoragePath = resolveStorageRoot;
 
@@ -452,6 +491,17 @@ function generatePm2Home() {
 }
 
 exports.initEnv = function initEnv() {
+  const preserveSymlinksFlag = '--preserve-symlinks';
+  const currentNodeOptions = String(process.env.NODE_OPTIONS || '').trim();
+  const hasPreserveSymlinksFlag = currentNodeOptions
+    ? currentNodeOptions.split(/\s+/).includes(preserveSymlinksFlag)
+    : false;
+  if (!hasPreserveSymlinksFlag) {
+    process.env.NODE_OPTIONS = currentNodeOptions
+      ? `${currentNodeOptions} ${preserveSymlinksFlag}`
+      : preserveSymlinksFlag;
+  }
+
   const env = {
     APP_ENV: 'development',
     APP_KEY: 'test-jwt-secret',
@@ -471,11 +521,13 @@ exports.initEnv = function initEnv() {
     // PM2_HOME: generatePm2Home(),
     // SOCKET_PATH: generateGatewayPath(),
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
+    NODE_PATH: resolve(process.cwd(), 'node_modules'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
     SERVER_TSCONFIG_PATH: './tsconfig.server.json',
     CACHE_DEFAULT_STORE: 'memory',
     CACHE_MEMORY_MAX: 2000,
     BROWSERSLIST_IGNORE_OLD_DATA: true,
+    NOCOBASE_DEV_LOCAL_PLUGINS_ONLY: 'true',
     PLUGIN_STATICS_PATH: '/static/plugins/',
     APP_SERVER_BASE_URL: '',
     APP_BASE_URL: '',

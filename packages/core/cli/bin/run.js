@@ -4,8 +4,9 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import pc from 'picocolors';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { normalizeSessionEnv } from './session-env.js';
+import { normalizeNodeOptions, normalizeSessionEnv } from './session-env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const requireFromCli = createRequire(import.meta.url);
@@ -18,6 +19,7 @@ if (process.env.NB_CLI_USE_DIST === '1') {
 }
 
 normalizeSessionEnv();
+normalizeNodeOptions();
 
 /**
  * In the monorepo, plain `node` cannot load `.ts`. Re-exec once with `--import <tsx>`
@@ -129,6 +131,6 @@ try {
   flush();
 } catch (error) {
   const message = formatCliEntryError(error, process.argv.slice(2));
-  console.error(message);
-  process.exitCode = 1;
+  console.error(pc.red(message));
+  process.exit(1);
 }

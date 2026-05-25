@@ -66,8 +66,8 @@ export class KnowledgeBaseManager {
           vectorStoreConfig.vectorStoreProvider,
           [
             {
-              key: 'vectorStoreConfigId',
-              value: vectorStoreConfig.vectorStoreConfigId,
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
             },
           ],
         );
@@ -81,23 +81,20 @@ export class KnowledgeBaseManager {
         });
         queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'READONLY') {
-        for (const knowledgeBase of knowledgeBaseList) {
-          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-            vectorStoreConfig.vectorStoreProvider,
-            [
-              ...knowledgeBase.vectorStoreProps,
-              {
-                key: 'vectorStoreConfigId',
-                value: vectorStoreConfig.vectorStoreConfigId,
-              },
-            ],
-          );
-          const result = await vectorStoreService.search(query, {
-            topK,
-            score,
-          });
-          queryResult = [...queryResult, ...result];
-        }
+        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+          vectorStoreConfig.vectorStoreProvider,
+          [
+            {
+              key: 'vectorStoreConfigKey',
+              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
+            },
+          ],
+        );
+        const result = await vectorStoreService.search(query, {
+          topK,
+          score,
+        });
+        queryResult = [...queryResult, ...result];
       } else if (knowledgeBaseType === 'EXTERNAL') {
         for (const knowledgeBase of knowledgeBaseList) {
           const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
@@ -134,11 +131,11 @@ export class KnowledgeBaseManager {
   }
 
   private async getKnowledgeBaseGroup(employee: AIEmployee): Promise<KnowledgeBaseGroup[]> {
-    const { knowledgeBaseIds } = employee?.knowledgeBase ?? {};
-    if (!knowledgeBaseIds || _.isEmpty(knowledgeBaseIds)) {
+    const { knowledgeBaseKeys } = employee?.knowledgeBase ?? {};
+    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
       return [];
     }
-    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseIds);
+    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseKeys);
   }
 
   private async getEmployee(username: string) {

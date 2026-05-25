@@ -24,6 +24,7 @@ type ExternalDbConnectionConfig = {
 
 const DB_CONNECTION_TIMEOUT_MS = 5_000;
 const externalDbValidationCache = new Map<string, Promise<string | undefined>>();
+const mysqlLowerCaseTableNamesCache = new Map<string, Promise<'0' | '1' | '2' | undefined>>();
 
 function trimPromptValue(value: unknown): string {
   return String(value ?? '').trim();
@@ -136,7 +137,7 @@ async function checkPostgresFamilyConnection(config: ExternalDbConnectionConfig)
   }
 }
 
-async function checkMysqlConnection(config: ExternalDbConnectionConfig): Promise<void> {
+async function checkMysqlFamilyConnection(config: ExternalDbConnectionConfig): Promise<void> {
   const { default: mysql } = await import('mysql2/promise');
   const connection = await mysql.createConnection({
     host: config.host,
@@ -154,9 +155,11 @@ async function checkMysqlConnection(config: ExternalDbConnectionConfig): Promise
   }
 }
 
-async function checkMariaDbConnection(config: ExternalDbConnectionConfig): Promise<void> {
-  const { default: mariadb } = await import('mariadb');
-  const connection = await mariadb.createConnection({
+async function readMysqlFamilyLowerCaseTableNames(
+  config: ExternalDbConnectionConfig,
+): Promise<'0' | '1' | '2' | undefined> {
+  const { default: mysql } = await import('mysql2/promise');
+  const connection = await mysql.createConnection({
     host: config.host,
     port: config.port,
     user: config.user,
@@ -166,7 +169,22 @@ async function checkMariaDbConnection(config: ExternalDbConnectionConfig): Promi
   });
 
   try {
-    await connection.query('SELECT 1');
+    const [rows] = await connection.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`);
+    if (!Array.isArray(rows)) {
+      return undefined;
+    }
+
+    for (const row of rows) {
+      if (!row || typeof row !== 'object') {
+        continue;
+      }
+      const value = String((row as { Value?: unknown }).Value ?? '').trim();
+      if (value === '0' || value === '1' || value === '2') {
+        return value;
+      }
+    }
+
+    return undefined;
   } finally {
     await Promise.resolve(connection.end()).catch(() => undefined);
   }
@@ -180,12 +198,9 @@ async function performExternalDbConnectionCheck(config: ExternalDbConnectionConf
         await checkPostgresFamilyConnection(config);
         return undefined;
       }
-      case 'mysql': {
-        await checkMysqlConnection(config);
-        return undefined;
-      }
+      case 'mysql':
       case 'mariadb': {
-        await checkMariaDbConnection(config);
+        await checkMysqlFamilyConnection(config);
         return undefined;
       }
     }
@@ -206,6 +221,24 @@ export async function checkExternalDbConnection(config: ExternalDbConnectionConf
   return await pending;
 }
 
+async function readMysqlLowerCaseTableNamesMode(
+  config: ExternalDbConnectionConfig,
+): Promise<'0' | '1' | '2' | undefined> {
+  if (config.dialect !== 'mysql' && config.dialect !== 'mariadb') {
+    return undefined;
+  }
+
+  const cacheKey = buildValidationCacheKey(config);
+  const cached = mysqlLowerCaseTableNamesCache.get(cacheKey);
+  if (cached) {
+    return await cached;
+  }
+
+  const pending = readMysqlFamilyLowerCaseTableNames(config);
+  mysqlLowerCaseTableNamesCache.set(cacheKey, pending);
+  return await pending;
+}
+
 export async function validateExternalDbConfig(values: PromptCatalogValues): Promise<string | undefined> {
   const config = readExternalDbConnectionConfig(values);
   if (!config) {
@@ -215,6 +248,26 @@ export async function validateExternalDbConfig(values: PromptCatalogValues): Pro
   return await checkExternalDbConnection(config);
 }
 
+export async function validateMysqlLowerCaseTableNamesCompatibility(
+  values: PromptCatalogValues,
+): Promise<string | undefined> {
+  const config = readExternalDbConnectionConfig(values);
+  if (!config || (config.dialect !== 'mysql' && config.dialect !== 'mariadb')) {
+    return undefined;
+  }
+
+  try {
+    const mode = await readMysqlLowerCaseTableNamesMode(config);
+    if (mode === '1' && values.dbUnderscored !== true) {
+      return translateCli('validators.dbConnection.lowerCaseTableNamesRequiresUnderscored');
+    }
+    return undefined;
+  } catch (error: unknown) {
+    return formatDbConnectionError(config, error);
+  }
+}
+
 export function clearExternalDbValidationCache(): void {
   externalDbValidationCache.clear();
+  mysqlLowerCaseTableNamesCache.clear();
 }

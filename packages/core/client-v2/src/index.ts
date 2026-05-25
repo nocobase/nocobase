@@ -9,6 +9,7 @@
 
 import 'antd/dist/reset.css';
 
+export * from './APIClient';
 export * from './BaseApplication';
 export * from './Application';
 export * from './PinnedPluginListContext';

@@ -30,6 +30,7 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
+import { getStorageUploadSecurityHeaders } from './static-file-security';
 import { injectRuntimeScript, resolvePublicPath, resolveV2PublicPath, rewriteV2AssetPublicPath } from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
@@ -345,6 +346,7 @@ export class Gateway extends EventEmitter {
       __nocobase_api_client_share_token__: process.env.API_CLIENT_SHARE_TOKEN === 'true',
       __nocobase_ws_url__: process.env.WEBSOCKET_URL || '',
       __nocobase_ws_path__: process.env.WS_PATH,
+      __nocobase_app_dev__: process.env.NOCOBASE_APP_DEV === 'true',
       __esm_cdn_base_url__: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
       __esm_cdn_suffix__: process.env.ESM_CDN_SUFFIX || '',
     };
@@ -426,6 +428,10 @@ export class Gateway extends EventEmitter {
         if (isProxy) {
           return;
         }
+      }
+      const headers = getStorageUploadSecurityHeaders(pathname);
+      for (const [key, value] of Object.entries(headers)) {
+        res.setHeader(key, value);
       }
       req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);

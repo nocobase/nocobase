@@ -43,7 +43,9 @@ export const titleField = defineAction({
     const options = targetFields
       .filter((field) =>
         isTitleFieldInterface(
-          getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager),
+          typeof field.getInterfaceOptions === 'function'
+            ? field.getInterfaceOptions()
+            : getFlowFieldInterfaceOptions(field.options?.interface || field.interface, dataSourceManager),
         ),
       )
       .map((field) => ({
@@ -59,7 +61,7 @@ export const titleField = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
-    const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+    const titleField = ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;
     return {
       label: ctx.model.parent?.props?.titleField || ctx.model.props.titleField || titleField,
     };

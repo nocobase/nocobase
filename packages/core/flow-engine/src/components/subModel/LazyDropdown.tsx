@@ -358,6 +358,32 @@ const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) 
 
 const getKeyPath = (path: string[], key: string) => [...path, key].join('/');
 
+const normalizeOpenKeys = (nextOpenKeys: string[]) => {
+  const latestKey = nextOpenKeys[nextOpenKeys.length - 1];
+
+  if (!latestKey) {
+    return [];
+  }
+
+  return nextOpenKeys.filter((key) => latestKey === key || latestKey.startsWith(`${key}/`));
+};
+
+const getLabelSearchText = (label: React.ReactNode): string => {
+  if (label === null || label === undefined || typeof label === 'boolean') {
+    return '';
+  }
+  if (typeof label === 'string' || typeof label === 'number') {
+    return String(label);
+  }
+  if (Array.isArray(label)) {
+    return label.map(getLabelSearchText).join(' ');
+  }
+  if (React.isValidElement(label)) {
+    return getLabelSearchText(label.props.children);
+  }
+  return '';
+};
+
 const createSearchItem = (
   item: Item,
   searchKey: string,
@@ -406,6 +432,11 @@ const createEmptyItem = (itemKey: string, t: (key: string) => string) => ({
   disabled: true,
 });
 
+const KEEP_OPEN_LABEL_STYLE: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+};
+
 // ==================== Main Component ====================
 
 // 短暂保持打开状态的注册表（用于跨父节点快速重建时的恢复）
@@ -435,6 +466,19 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const { searchValues, isSearching, updateSearchValue } = useMenuSearch();
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
+  const handleMenuOpenChange = useCallback(
+    (nextOpenKeys: string[]) => {
+      if (!nextOpenKeys.length && shouldPreventClose()) {
+        dropdownMenuProps.onOpenChange?.(Array.from(openKeys));
+        return;
+      }
+
+      const normalized = normalizeOpenKeys(nextOpenKeys);
+      setOpenKeys(new Set(normalized));
+      dropdownMenuProps.onOpenChange?.(normalized);
+    },
+    [dropdownMenuProps, openKeys, shouldPreventClose],
+  );
 
   // 在挂载时，若存在 persistKey 且仍在持久期内，则尝试恢复打开状态
   useEffect(() => {
@@ -459,6 +503,12 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       }
     };
   }, [persistKey, menuVisible]);
+
+  useEffect(() => {
+    if (!menuVisible) {
+      setOpenKeys(new Set());
+    }
+  }, [menuVisible]);
 
   // 加载根 items，支持同步/异步函数
   useEffect(() => {
@@ -498,15 +548,10 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     const filteredChildren = currentSearchValue
       ? (function deepFilter(items: Item[]): Item[] {
           const searchText = currentSearchValue.toLowerCase();
-          const tryString = (v: any) => {
-            if (!v) return '';
-            return typeof v === 'string' ? v : String(v);
-          };
           return items
             .map((child) => {
-              const labelStr = tryString(child.label).toLowerCase();
-              const selfMatch =
-                labelStr.includes(searchText) || (child.key && String(child.key).toLowerCase().includes(searchText));
+              const labelStr = getLabelSearchText(child.label).toLowerCase();
+              const selfMatch = labelStr.includes(searchText);
               if (child.type === 'group' && Array.isArray(child.children)) {
                 const nested = deepFilter(child.children);
                 if (selfMatch || nested.length > 0) {
@@ -588,56 +633,73 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         return { type: 'divider', key: keyPath };
       }
 
+      const label = typeof item.label === 'string' ? t(item.label) : item.label;
+
       // 非 group 的“子菜单”也支持本层级搜索：当 item.searchable = true 且存在 children 时
       if (item.searchable && children) {
         return {
-          key: item.key,
-          label: typeof item.label === 'string' ? t(item.label) : item.label,
+          key: keyPath,
+          label,
           onClick: (info: any) => {},
-          onMouseEnter: () => {
-            setOpenKeys((prev) => {
-              if (prev.has(keyPath)) return prev;
-              const next = new Set(prev);
-              next.add(keyPath);
-              return next;
-            });
-          },
           children: buildSearchChildren(children, item, keyPath, path, menuVisible, resolveItems),
         };
       }
 
+      const itemShouldKeepOpen = !children && (item.keepDropdownOpen ?? keepDropdownOpen ?? false);
+      const handleLeafClick = (info: any) => {
+        if (children) {
+          return;
+        }
+
+        if (itemShouldKeepOpen) {
+          requestKeepOpen();
+        }
+
+        const extendedInfo: ExtendedMenuInfo = {
+          ...info,
+          key: info?.key ?? keyPath,
+          keyPath: info?.keyPath ?? [keyPath],
+          item: info?.item || item,
+          originalItem: item,
+          keepDropdownOpen: itemShouldKeepOpen,
+        };
+
+        menu.onClick?.(extendedInfo);
+      };
+
       return {
         key: keyPath,
-        label: typeof item.label === 'string' ? t(item.label) : item.label,
+        label: itemShouldKeepOpen ? (
+          <div
+            style={KEEP_OPEN_LABEL_STYLE}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+              requestKeepOpen();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleLeafClick({
+                key: keyPath,
+                keyPath: [keyPath],
+                item,
+                domEvent: event,
+              });
+            }}
+          >
+            {label}
+          </div>
+        ) : (
+          label
+        ),
         onClick: (info: any) => {
-          if (children) {
+          if (!itemShouldKeepOpen) handleLeafClick(info);
+        },
+        onMouseDown: () => {
+          if (!itemShouldKeepOpen) {
             return;
           }
 
-          // 检查是否应该保持下拉菜单打开
-          const itemShouldKeepOpen = item.keepDropdownOpen ?? keepDropdownOpen ?? false;
-
-          // 如果需要保持菜单打开，请求保持打开状态
-          if (itemShouldKeepOpen) {
-            requestKeepOpen();
-          }
-
-          const extendedInfo: ExtendedMenuInfo = {
-            ...info,
-            item: info.item || item,
-            originalItem: item,
-            keepDropdownOpen: itemShouldKeepOpen,
-          };
-
-          menu.onClick?.(extendedInfo);
-        },
-        onMouseEnter: () => {
-          setOpenKeys((prev) => {
-            if (prev.has(keyPath)) return prev;
-            const next = new Set(prev);
-            next.add(keyPath);
-            return next;
-          });
+          requestKeepOpen();
         },
         children:
           children && children.length > 0
@@ -684,8 +746,10 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       placement="bottomLeft"
       menu={{
         ...dropdownMenuProps,
+        openKeys: Array.from(openKeys),
         items: items,
         onClick: () => {},
+        onOpenChange: handleMenuOpenChange,
         style: {
           maxHeight: dropdownMaxHeight,
           overflowY: 'auto',

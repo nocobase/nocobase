@@ -9,7 +9,7 @@
 
 import { useFieldSchema } from '@formily/react';
 import { useCollectionManager_deprecated, useCompile } from '@nocobase/client';
-import { buildExportFieldOptions } from './buildExportFieldOptions';
+import { buildExportFieldOptions } from '../client-v2/buildExportFieldOptions';
 
 export const useFields = (collectionName: string) => {
   const fieldSchema = useFieldSchema();

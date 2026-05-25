@@ -38,8 +38,11 @@ async function getProjectVersion() {
 
 class PluginGenerator extends Generator {
   constructor(options) {
-    const { log, context = {}, ...opts } = options;
-    super(opts);
+    const { log, context = {}, cwd, baseDir, ...opts } = options;
+    super({
+      ...opts,
+      baseDir: baseDir || cwd || process.cwd(),
+    });
     this.context = context;
     this.log = log || console.log;
   }

@@ -10,6 +10,7 @@
 import {
   ActionScene,
   defineAction,
+  extractUsedVariablePaths,
   FlowModel,
   MultiRecordResource,
   useFlowContext,
@@ -19,6 +20,34 @@ import { isEmptyFilter } from '@nocobase/utils/client';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';
 import { normalizeDataScopeFilter } from './dataScopeFilter';
+
+function dependsOnClickedRowRecord(filter: any) {
+  if (!filter) {
+    return false;
+  }
+  const used = extractUsedVariablePaths(filter) || {};
+  return Object.prototype.hasOwnProperty.call(used, 'clickedRowRecord');
+}
+
+function shouldClearClickedRowDataScope(ctx: any, params: any) {
+  return ctx.inputArgs?.selected === false && dependsOnClickedRowRecord(params.filter);
+}
+
+function resolveTargetDataScopeFilter(ctx: any, params: any, resolvedParams: any) {
+  if (shouldClearClickedRowDataScope(ctx, params)) {
+    return undefined;
+  }
+
+  return normalizeDataScopeFilter(params.filter, resolvedParams.filter);
+}
+
+function shouldRefreshTargetResource(resource: MultiRecordResource) {
+  if (resource.hasData()) {
+    return true;
+  }
+
+  return resource.getMeta?.('count') !== undefined || resource.getMeta?.('hasNext') !== undefined;
+}
 
 export const setTargetDataScope = defineAction({
   name: 'setTargetDataScope',
@@ -69,20 +98,20 @@ export const setTargetDataScope = defineAction({
       return;
     }
     const model: FlowModel = ctx.model;
+    const filter = resolveTargetDataScopeFilter(ctx, params, resolvedParams);
+
     model.scheduleModelOperation(targetBlockUid, (targetModel) => {
       const resource = targetModel['resource'] as MultiRecordResource;
       if (!resource) {
         return;
       }
 
-      const filter = normalizeDataScopeFilter(params.filter, resolvedParams.filter);
-
       if (isEmptyFilter(filter)) {
         resource.removeFilterGroup(`setTargetDataScope_${ctx.model.uid}`);
       } else {
         resource.addFilterGroup(`setTargetDataScope_${ctx.model.uid}`, filter);
       }
-      if (resource.hasData()) {
+      if (shouldRefreshTargetResource(resource)) {
         resource.refresh();
       }
     });

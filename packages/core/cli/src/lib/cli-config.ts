@@ -10,15 +10,23 @@
 import type { AuthConfig, AuthStoreOptions } from './auth-store.js';
 import { loadExactAuthConfig, saveAuthConfig } from './auth-store.js';
 import { resolveDefaultConfigScope } from './cli-home.js';
+import { CLI_LOCALE_FLAG_OPTIONS, normalizeCliLocale, resolveCliLocale } from './cli-locale.js';
 
 export const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
 export const DEFAULT_DOCKER_NETWORK = 'nocobase';
 export const DEFAULT_DOCKER_CONTAINER_PREFIX = 'nb';
+export const DEFAULT_DOCKER_BIN = 'docker';
+export const DEFAULT_GIT_BIN = 'git';
+export const DEFAULT_YARN_BIN = 'yarn';
 
 export const SUPPORTED_CLI_CONFIG_KEYS = [
+  'locale',
   'license.pkg-url',
   'docker.network',
   'docker.container-prefix',
+  'bin.docker',
+  'bin.git',
+  'bin.yarn',
 ] as const;
 
 export type SupportedCliConfigKey = (typeof SUPPORTED_CLI_CONFIG_KEYS)[number];
@@ -42,21 +50,25 @@ export function isSupportedCliConfigKey(value: string): value is SupportedCliCon
 
 export function assertSupportedCliConfigKey(value: string): SupportedCliConfigKey {
   if (!isSupportedCliConfigKey(value)) {
-    throw new Error(
-      `Unsupported config key "${value}". Supported keys: ${SUPPORTED_CLI_CONFIG_KEYS.join(', ')}`,
-    );
+    throw new Error(`Unsupported config key "${value}". Supported keys: ${SUPPORTED_CLI_CONFIG_KEYS.join(', ')}`);
   }
   return value;
 }
 
 function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> {
   return {
+    ...(config.settings?.locale ? { locale: trimValue(config.settings.locale) } : {}),
     license: config.settings?.license ? { ...config.settings.license } : undefined,
     docker: config.settings?.docker ? { ...config.settings.docker } : undefined,
+    bin: config.settings?.bin ? { ...config.settings.bin } : undefined,
   };
 }
 
 function pruneSettings(config: AuthConfig): void {
+  if (config.settings && !trimValue(config.settings.locale)) {
+    delete config.settings.locale;
+  }
+
   const license = config.settings?.license;
   if (license && !trimValue(license.pkgUrl)) {
     delete config.settings?.license;
@@ -67,52 +79,66 @@ function pruneSettings(config: AuthConfig): void {
     delete config.settings?.docker;
   }
 
+  const bin = config.settings?.bin;
+  if (bin && !trimValue(bin.docker) && !trimValue(bin.git) && !trimValue(bin.yarn)) {
+    delete config.settings?.bin;
+  }
+
   if (
-    config.settings
-    && !config.settings.license
-    && !config.settings.docker
+    config.settings &&
+    !config.settings.locale &&
+    !config.settings.license &&
+    !config.settings.docker &&
+    !config.settings.bin
   ) {
     delete config.settings;
   }
 }
 
-export function getExplicitCliConfigValue(
-  config: AuthConfig,
-  key: SupportedCliConfigKey,
-): string | undefined {
+export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliConfigKey): string | undefined {
   switch (key) {
+    case 'locale':
+      return trimValue(config.settings?.locale);
     case 'license.pkg-url':
       return trimValue(config.settings?.license?.pkgUrl);
     case 'docker.network':
       return trimValue(config.settings?.docker?.network);
     case 'docker.container-prefix':
       return trimValue(config.settings?.docker?.containerPrefix);
+    case 'bin.docker':
+      return trimValue(config.settings?.bin?.docker);
+    case 'bin.git':
+      return trimValue(config.settings?.bin?.git);
+    case 'bin.yarn':
+      return trimValue(config.settings?.bin?.yarn);
   }
 }
 
-export function getEffectiveCliConfigValue(
-  config: AuthConfig,
-  key: SupportedCliConfigKey,
-): string {
+export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCliConfigKey): string {
   const explicit = getExplicitCliConfigValue(config, key);
-  if (explicit) {
+  if (explicit && key !== 'locale') {
     return explicit;
   }
 
   switch (key) {
+    case 'locale':
+      return resolveCliLocale(undefined, { configuredLocale: trimValue(config.settings?.locale) });
     case 'license.pkg-url':
       return DEFAULT_LICENSE_PKG_URL;
     case 'docker.network':
       return trimValue(config.name) || DEFAULT_DOCKER_NETWORK;
     case 'docker.container-prefix':
       return trimValue(config.name) || DEFAULT_DOCKER_CONTAINER_PREFIX;
+    case 'bin.docker':
+      return DEFAULT_DOCKER_BIN;
+    case 'bin.git':
+      return DEFAULT_GIT_BIN;
+    case 'bin.yarn':
+      return DEFAULT_YARN_BIN;
   }
 }
 
-export function normalizeCliConfigValue(
-  key: SupportedCliConfigKey,
-  value: string,
-): string {
+export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: string): string {
   const normalized = value.trim();
   if (!normalized) {
     throw new Error(`Config key "${key}" requires a non-empty value.`);
@@ -122,6 +148,15 @@ export function normalizeCliConfigValue(
     return normalized.replace(/\/+$/, '') + '/';
   }
 
+  if (key === 'locale') {
+    const locale = normalizeCliLocale(normalized);
+    if (!locale) {
+      throw new Error(`Config key "${key}" must be one of: ${CLI_LOCALE_FLAG_OPTIONS.join(', ')}`);
+    }
+
+    return locale;
+  }
+
   return normalized;
 }
 
@@ -129,10 +164,7 @@ export async function loadCliConfig(options: CliConfigOptions = {}): Promise<Aut
   return await loadExactAuthConfig(resolveScope(options));
 }
 
-export async function getCliConfigValue(
-  key: SupportedCliConfigKey,
-  options: CliConfigOptions = {},
-): Promise<string> {
+export async function getCliConfigValue(key: SupportedCliConfigKey, options: CliConfigOptions = {}): Promise<string> {
   const config = await loadCliConfig(options);
   return getEffectiveCliConfigValue(config, key);
 }
@@ -164,6 +196,9 @@ export async function setCliConfigValue(
   config.settings = cloneSettings(config);
 
   switch (key) {
+    case 'locale':
+      config.settings.locale = normalized;
+      break;
     case 'license.pkg-url':
       config.settings.license = {
         ...(config.settings.license ?? {}),
@@ -180,6 +215,24 @@ export async function setCliConfigValue(
       config.settings.docker = {
         ...(config.settings.docker ?? {}),
         containerPrefix: normalized,
+      };
+      break;
+    case 'bin.docker':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        docker: normalized,
+      };
+      break;
+    case 'bin.git':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        git: normalized,
+      };
+      break;
+    case 'bin.yarn':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        yarn: normalized,
       };
       break;
   }
@@ -203,6 +256,9 @@ export async function deleteCliConfigValue(
   config.settings = cloneSettings(config);
 
   switch (key) {
+    case 'locale':
+      delete config.settings.locale;
+      break;
     case 'license.pkg-url':
       if (config.settings.license) {
         delete config.settings.license.pkgUrl;
@@ -216,6 +272,21 @@ export async function deleteCliConfigValue(
     case 'docker.container-prefix':
       if (config.settings.docker) {
         delete config.settings.docker.containerPrefix;
+      }
+      break;
+    case 'bin.docker':
+      if (config.settings.bin) {
+        delete config.settings.bin.docker;
+      }
+      break;
+    case 'bin.git':
+      if (config.settings.bin) {
+        delete config.settings.bin.git;
+      }
+      break;
+    case 'bin.yarn':
+      if (config.settings.bin) {
+        delete config.settings.bin.yarn;
       }
       break;
   }
@@ -235,4 +306,27 @@ export async function resolveDockerContainerPrefix(options: CliConfigOptions = {
 
 export async function resolveLicensePkgUrlFromConfig(options: CliConfigOptions = {}): Promise<string> {
   return await getCliConfigValue('license.pkg-url', options);
+}
+
+const CONFIGURABLE_COMMAND_KEYS = {
+  docker: 'bin.docker',
+  git: 'bin.git',
+  yarn: 'bin.yarn',
+} as const;
+
+export type ConfigurableCommandName = keyof typeof CONFIGURABLE_COMMAND_KEYS;
+
+export function isConfigurableCommandName(value: string): value is ConfigurableCommandName {
+  return Object.prototype.hasOwnProperty.call(CONFIGURABLE_COMMAND_KEYS, value);
+}
+
+export async function resolveConfiguredCommandName(
+  commandName: string,
+  options: CliConfigOptions = {},
+): Promise<string> {
+  if (!isConfigurableCommandName(commandName)) {
+    return commandName;
+  }
+
+  return await getCliConfigValue(CONFIGURABLE_COMMAND_KEYS[commandName], options);
 }

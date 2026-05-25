@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import { upsertEnv, type Env } from '../../lib/auth-store.js';
+import { ensureLocalPostinstall } from '../../lib/app-managed-resources.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -19,6 +20,7 @@ import {
 } from '../../lib/app-runtime.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
 import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
+import { resolveDockerEnvFileArg } from '../../lib/docker-env-file.ts';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   DEFAULT_DOCKER_REGISTRY,
@@ -48,6 +50,7 @@ type DockerUpgradePlan = {
   imageRef: string;
   appPort?: string;
   storagePath: string;
+  envFile?: string;
   appKey: string;
   timeZone: string;
   dbDialect: string;
@@ -66,6 +69,20 @@ type ResolvedUpgradeVersion = {
 
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
+}
+
+function pushOptionalEnvArg(args: string[], key: string, value: string | boolean | undefined) {
+  if (typeof value === 'string') {
+    if (!value) {
+      return;
+    }
+    args.push('-e', `${key}=${value}`);
+    return;
+  }
+
+  if (typeof value === 'boolean') {
+    args.push('-e', `${key}=${String(value)}`);
+  }
 }
 
 function formatAppUrl(port?: string): string | undefined {
@@ -367,10 +384,15 @@ export default class AppUpgrade extends Command {
   private static buildLocalDownloadArgv(
     runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
     downloadVersion: string,
+    options?: { verbose?: boolean },
   ): string[] {
     const argv = ['-y', '--no-intro', '--source', runtime.source, '--replace'];
     const gitUrl = readEnvValue(runtime.env, 'gitUrl');
     const npmRegistry = readEnvValue(runtime.env, 'npmRegistry');
+
+    if (options?.verbose) {
+      argv.push('--verbose');
+    }
 
     argv.push('--version', downloadVersion, '--output-dir', runtime.projectRoot);
     if (gitUrl) {
@@ -395,10 +417,13 @@ export default class AppUpgrade extends Command {
   private static buildDockerDownloadArgv(
     runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
     plan: DockerUpgradePlan,
+    options?: { verbose?: boolean },
   ): string[] {
-    const argv = [
-      '-y',
-      '--no-intro',
+    const argv = ['-y', '--no-intro'];
+    if (options?.verbose) {
+      argv.push('--verbose');
+    }
+    argv.push(
       '--source',
       'docker',
       '--replace',
@@ -406,7 +431,7 @@ export default class AppUpgrade extends Command {
       plan.dockerRegistry,
       '--version',
       plan.downloadVersion,
-    ];
+    );
     const dockerPlatform = normalizeDockerPlatform(runtime.env.config.dockerPlatform);
     if (dockerPlatform) {
       argv.push('--docker-platform', dockerPlatform);
@@ -427,10 +452,10 @@ export default class AppUpgrade extends Command {
     return argv;
   }
 
-  private static buildDockerUpgradePlan(
+  private static async buildDockerUpgradePlan(
     runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
     downloadVersion: string,
-  ): DockerUpgradePlan {
+  ): Promise<DockerUpgradePlan> {
     const dockerRegistry = readEnvValue(runtime.env, 'dockerRegistry') || DEFAULT_DOCKER_REGISTRY;
 
     const appPort =
@@ -438,6 +463,7 @@ export default class AppUpgrade extends Command {
         ? ''
         : trimValue(runtime.env.appPort);
     const storagePath = readEnvValue(runtime.env, 'storagePath');
+    const envFile = await resolveDockerEnvFileArg(runtime.envName, runtime.env.config);
     const appKey = readEnvValue(runtime.env, 'appKey');
     const timeZone = readEnvValue(runtime.env, 'timezone');
     const builtinDbConnection = runtime.env.config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
@@ -447,6 +473,12 @@ export default class AppUpgrade extends Command {
     const dbDatabase = readEnvValue(runtime.env, 'dbDatabase');
     const dbUser = readEnvValue(runtime.env, 'dbUser');
     const dbPassword = readEnvValue(runtime.env, 'dbPassword');
+    const dbSchema = readEnvValue(runtime.env, 'dbSchema');
+    const dbTablePrefix = readEnvValue(runtime.env, 'dbTablePrefix');
+    const dbUnderscored =
+      typeof runtime.env.config.dbUnderscored === 'boolean'
+        ? runtime.env.config.dbUnderscored
+        : undefined;
     const networkName = trimValue(runtime.dockerNetworkName || runtime.workspaceName);
 
     const missing: string[] = [];
@@ -506,6 +538,10 @@ export default class AppUpgrade extends Command {
       args.push('-p', `${appPort}:80`);
     }
 
+    if (envFile) {
+      args.push('--env-file', envFile);
+    }
+
     args.push(
       '-e',
       `APP_KEY=${appKey}`,
@@ -525,8 +561,11 @@ export default class AppUpgrade extends Command {
       `TZ=${timeZone}`,
       '-v',
       `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
-      imageRef,
     );
+    pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
+    pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
+    pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+    args.push(imageRef);
 
     return {
       containerName: runtime.containerName,
@@ -536,6 +575,7 @@ export default class AppUpgrade extends Command {
       imageRef,
       appPort: appPort || undefined,
       storagePath,
+      envFile,
       appKey,
       timeZone,
       dbDialect,
@@ -574,7 +614,12 @@ export default class AppUpgrade extends Command {
     if (!flags['skip-code-update'] && (runtime.source === 'npm' || runtime.source === 'git')) {
       startTask(`Refreshing NocoBase files for "${runtime.envName}" from the saved ${runtime.source} source...`);
       try {
-        await runCommand('source:download', AppUpgrade.buildLocalDownloadArgv(runtime, downloadVersion!));
+        await runCommand(
+          'source:download',
+          AppUpgrade.buildLocalDownloadArgv(runtime, downloadVersion!, {
+            verbose: flags.verbose,
+          }),
+        );
         succeedTask(`NocoBase files are up to date for "${runtime.envName}".`);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -588,6 +633,13 @@ export default class AppUpgrade extends Command {
         `Skipping code download for "${runtime.envName}" because this env is managed from an existing local app path.`,
       );
     }
+
+    await ensureLocalPostinstall(runtime, {
+      verbose: flags.verbose,
+      onStartTask: startTask,
+      onSucceedTask: succeedTask,
+      onFailTask: failTask,
+    });
 
     startTask(`Starting upgraded NocoBase for "${runtime.envName}"...`);
     try {
@@ -626,10 +678,15 @@ export default class AppUpgrade extends Command {
     const containerExists = await dockerContainerExists(runtime.containerName);
 
     if (!flags['skip-code-update']) {
-      const plan = AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
+      const plan = await AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
       startTask(`Refreshing the Docker image for "${runtime.envName}"...`);
       try {
-        await runCommand('source:download', AppUpgrade.buildDockerDownloadArgv(runtime, plan));
+        await runCommand(
+          'source:download',
+          AppUpgrade.buildDockerDownloadArgv(runtime, plan, {
+            verbose: flags.verbose,
+          }),
+        );
         succeedTask(`Docker image is ready for "${runtime.envName}".`);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -677,7 +734,7 @@ export default class AppUpgrade extends Command {
         throw new Error(formatDockerStartFailure(runtime.envName, message));
       }
     } else {
-      const plan = AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
+      const plan = await AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
       const displayUrl = formatDisplayUrl(apiBaseUrl, plan.appPort);
       startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
       try {
@@ -744,7 +801,6 @@ export default class AppUpgrade extends Command {
         yes: parsed.yes,
       });
       if (!confirmed) {
-        this.log('Canceled.');
         return;
       }
     }

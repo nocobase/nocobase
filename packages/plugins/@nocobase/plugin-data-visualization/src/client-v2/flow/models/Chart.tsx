@@ -21,6 +21,7 @@ export interface ChartOptions {
   dataSource: any;
   onRefReady?: (chart: EChartsType) => void;
   loading?: boolean;
+  heightMode?: string;
 }
 
 const ErrorFallback = ({ error }) => {
@@ -40,9 +41,10 @@ const ErrorFallback = ({ error }) => {
 };
 
 export const Chart = forwardRef<EChartsType, ChartOptions>(
-  ({ option, Component, dataSource, onRefReady, loading }, ref) => {
+  ({ option, Component, dataSource, onRefReady, loading, heightMode }, ref) => {
     const [errorKey, setErrorKey] = useState(0);
     const t = useT();
+    const fillHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
 
     if (loading) {
       return (
@@ -68,7 +70,7 @@ export const Chart = forwardRef<EChartsType, ChartOptions>(
         {Component ? (
           <Component ref={ref} onRefReady={onRefReady} {...option} />
         ) : (
-          <ECharts key={errorKey} ref={ref} onRefReady={onRefReady} option={option} />
+          <ECharts key={errorKey} ref={ref} onRefReady={onRefReady} option={option} fillHeight={fillHeight} />
         )}
       </ErrorBoundary>
     );

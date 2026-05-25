@@ -1,41 +1,44 @@
 ---
-pkg: "@nocobase/plugin-ai"
-title: "Berkolaborasi dengan Karyawan AI"
-description: "Berkolaborasi dengan Karyawan AI: entry utama pojok kanan bawah, entry Action Block, operasi dialog, ganti karyawan dan model dalam sesi (AI Employee Switcher, Model Switcher)."
-keywords: "Kolaborasi Karyawan AI,Panel Dialog,Ganti Karyawan,Ganti Model,NocoBase"
+pkg: '@nocobase/plugin-ai'
+title: 'Berkolaborasi dengan AI Employee'
+description: 'Berkolaborasi dengan AI Employee: entri utama kanan bawah, entri Action pada blok, operasi chat, serta mengganti employee dan model dalam percakapan.'
+keywords: 'kolaborasi AI Employee,panel chat,pengganti employee,pengganti model,NocoBase'
 ---
 
-# Berkolaborasi dengan Karyawan AI
+# Berkolaborasi dengan AI Employee
 
-Setelah membuat dan mengaktifkan Karyawan AI, dapat berkolaborasi dengannya di halaman.
+Setelah membuat dan mengaktifkan AI Employee, Anda dapat berkolaborasi dengannya di halaman.
 
-## Entry
+## Titik masuk
 
-Entry yang umum ada dua jenis:
+1. **Entri utama kanan bawah**: membuka panel chat AI dari sudut kanan bawah halaman bisnis. Cocok untuk tanya jawab umum dan kolaborasi lintas blok.
+2. **Entri Action pada blok**: pada blok yang mendukung `Actions`, tambahkan AI Employee melalui `Actions -> AI employees`. Cocok untuk tugas pada blok saat ini, misalnya mengisi blok formulir.
+3. **Entri khusus**: employee berorientasi pengembangan seperti Nathan, Lina, dan Dara menyediakan entri khusus pada skenario tertentu seperti blok JS, blok chart, atau Localization Management.
 
-1. **Entry utama pojok kanan bawah**: Memunculkan panel dialog AI di pojok kanan bawah halaman bisnis, cocok untuk Q&A umum dan kolaborasi lintas Block.
-2. **Entry Action Block**: Pada Block yang mendukung `Actions`, masuk melalui `Actions -> AI employees`, cocok untuk menjalankan tugas terhadap Block saat ini (misalnya skenario JSBlock).
-
-### Entry Utama Pojok Kanan Bawah
+### Entri utama kanan bawah
 
 ![20260331165456](https://static-docs.nocobase.com/20260331165456.png)
 
-### Entry Action Block
+### Entri Action pada blok
 
 ![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
-## Operasi Dasar Dialog
+### Entri khusus
 
-Kotak dialog mendukung operasi umum seperti mengirim pesan, mengunggah attachment, melihat sesi history, membuat sesi baru, dan mengedit prompt sistem.
+![](https://static-docs.nocobase.com/202605121057862.png)
 
-## Beralih dalam Sesi
+## Operasi dasar chat
 
-Sebagian besar kasus langsung berdialog dengan Atlas saja, ia akan mengoordinasikan Karyawan AI yang sesuai untuk membantu menangani masalah.
+Panel chat mendukung operasi umum seperti mengirim pesan, mengunggah lampiran, melihat riwayat, membuat chat baru, dan mengedit system prompt.
 
-Jika ingin menggunakan Karyawan AI tertentu, dapat klik daftar dropdown Karyawan AI di kotak kirim untuk memilih
+## Beralih dalam percakapan
+
+Dalam kebanyakan kasus, Anda cukup berbicara dengan Atlas; ia akan mengoordinasikan AI Employee yang sesuai untuk membantu menyelesaikan tugas.
+
+Jika ingin menggunakan AI Employee tertentu, klik daftar dropdown AI Employee pada kotak pengiriman dan pilih employee tersebut.
 
 ![20260331174320](https://static-docs.nocobase.com/20260331174320.png)
 
-Model akan menyimpan preferensi berdasarkan dimensi karyawan, akan diprioritaskan untuk dipulihkan saat masuk berikutnya.
+Preferensi model disimpan per employee dan akan dipulihkan pada penggunaan berikutnya.
 
 ![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)

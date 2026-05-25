@@ -213,6 +213,18 @@ If you need to store sensitive files, it is recommended to use a cloud storage s
 
 ![](https://static-docs.nocobase.com/202501031623549.png)
 
+For local storage or other public storage that can be accessed directly through same-origin application URLs, you should also pay extra attention to the risks introduced by active content files. Files such as `html`, `xhtml`, and `svg` may be parsed and executed directly by the browser. If an attacker can upload such a file and trick a user into opening it, the attacker may use your trusted application domain to host a malicious page or script.
+
+In most cases, we recommend that administrators:
+
+- Prefer private storage, signed URLs, or a separate file domain, so that user-uploaded files are not served directly from the same origin as the main application.
+- Enforce a strict MIME type allowlist for uploads and only allow the file types that are actually required by the business.
+- Be cautious about allowing active content types such as `text/html`, `application/xhtml+xml`, and `image/svg+xml`. Even if the system tries to return these files as downloads, this should not be considered a complete replacement for upload restrictions and origin isolation.
+- Apply consistent security settings to reverse proxies, CDNs, object storage, and any other static file delivery layer, so dangerous files are not returned inline by bypassing application-layer protections.
+- Do not use local/public storage to host untrusted web content. If you really need this capability, use an isolated domain and separately evaluate CSP, download behavior, and access control.
+
+If an administrator explicitly allows dangerous file types to be uploaded, they should assess the resulting phishing, same-origin script execution, and sensitive information leakage risks on their own, and ensure that the Web Server, gateway, CDN, and storage services in the deployment chain enforce consistent restrictions.
+
 
 ### Application Backup
 

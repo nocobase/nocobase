@@ -76,13 +76,12 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
         let currentRoles = input?.result?.roleName;
         if (!currentRoles) {
-          const defaultRole = await this.workflow.db.getRepository('rolesUsers').findOne({
+          const roles = await this.workflow.db.getRepository('rolesUsers').find({
             filter: {
               userId: input?.result?.user?.id ?? userId,
-              default: true,
             },
           });
-          currentRoles = defaultRole?.roleName;
+          currentRoles = roles.map((x) => x.roleName);
         }
 
         const employee = await this.workflow.db.getRepository('aiEmployees').findOne({
@@ -90,6 +89,8 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
             username,
           },
         });
+        const plugin = this.workflow.app.pm.get('ai') as PluginAIServer;
+        const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
         const aiEmployee = new AIEmployee({
           ctx: {
@@ -107,7 +108,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
               params: {
                 values: {
                   sessionId: conversation.sessionId,
-                  model,
+                  model: resolvedModel,
                 },
               },
             },
@@ -117,7 +118,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
           systemMessage,
           skillSettings,
           webSearch,
-          model,
+          model: resolvedModel,
           tools: [{ name: toolName }],
         });
 

@@ -394,16 +394,21 @@ export class FormValueRuntime {
   private getArrayItemTargetKey(arrayPath?: NamePath): string | string[] {
     let collection = this.model?.context?.collection;
     let field: any;
+    let lastAssociationField: any;
     for (const seg of arrayPath || []) {
       if (typeof seg === 'number') continue;
       if (typeof seg !== 'string' || !collection?.getField) break;
 
       field = collection?.getField?.(seg);
       if (!field?.isAssociationField?.()) break;
+      lastAssociationField = field;
       collection = field?.targetCollection;
     }
 
-    const raw = field?.targetCollection?.filterTargetKey ?? field?.targetCollection?.filterByTk ?? field?.targetKey;
+    const raw =
+      lastAssociationField?.targetCollection?.filterTargetKey ??
+      lastAssociationField?.targetCollection?.filterByTk ??
+      lastAssociationField?.targetKey;
     if (Array.isArray(raw)) {
       const keys = raw.filter((key): key is string => typeof key === 'string' && !!key);
       return keys.length ? keys : 'id';

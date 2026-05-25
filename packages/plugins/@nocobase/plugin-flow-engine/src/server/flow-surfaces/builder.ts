@@ -99,6 +99,19 @@ const JS_ITEM_DEFAULT_CODE = [
 ].join('\n');
 
 const JS_COLUMN_DEFAULT_CODE = `ctx.render('<span class="nb-js-column">JS column</span>');`;
+const JS_ITEM_ACTION_DEFAULT_CODE = [
+  'const { Button } = ctx.antd;',
+  '',
+  'function JsItemAction() {',
+  '  return (',
+  '    <Button onClick={() => ctx.message.success("Click from JS item")}>',
+  '      JS item',
+  '    </Button>',
+  '  );',
+  '}',
+  '',
+  'ctx.render(<JsItemAction />);',
+].join('\n');
 const CALENDAR_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
 const CALENDAR_EVENT_VIEW_ACTION_KEY = 'eventViewAction';
 const KANBAN_QUICK_CREATE_ACTION_KEY = 'quickCreateAction';
@@ -123,6 +136,11 @@ const CALENDAR_READONLY_ACTION_MODEL_USES = new Set([
   'CalendarTitleActionModel',
   'CalendarViewSelectActionModel',
 ]);
+const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
+const AI_EMPLOYEE_DEFAULT_STYLE = {
+  size: 40,
+  mask: false,
+};
 
 function resolveModelStepParamsOrLegacyObject(
   model: FlowSurfaceNodeSpec,
@@ -219,10 +237,6 @@ const JS_ACTION_DEFAULT_CODE_BY_USE: Record<string, string> = {
   ].join('\n'),
   JSFormActionModel: [
     'const values = ctx.form?.getFieldsValue?.() || {};',
-    "ctx.message.success('Current form values: ' + JSON.stringify(values));",
-  ].join('\n'),
-  JSItemActionModel: [
-    'const values = ctx.form?.getFieldsValue?.() || ctx.formValues || {};',
     "ctx.message.success('Current form values: ' + JSON.stringify(values));",
   ].join('\n'),
   FilterFormJSActionModel: '',
@@ -568,6 +582,15 @@ export function buildBlockTree(options: {
         popupSettings: eventPopupSettings,
       }),
     };
+  } else if (use === 'CommentsBlockModel') {
+    model.subModels = {
+      items: [
+        {
+          uid: uid(),
+          use: 'CommentItemModel',
+        },
+      ],
+    };
   }
 
   return assignClientKeysToUids(model, {});
@@ -896,6 +919,15 @@ function buildActionDefaults(options: {
   containerUse?: string;
   resourceInit?: Record<string, any>;
 }): FlowSurfaceNodeDefaults {
+  if (options.use === AI_EMPLOYEE_ACTION_USE) {
+    return {
+      props: {
+        style: _.cloneDeep(AI_EMPLOYEE_DEFAULT_STYLE),
+      },
+      stepParams: {},
+    };
+  }
+
   const approvalDefaults = buildApprovalActionDefaults(options.use);
   const readonlyCalendarAction = CALENDAR_READONLY_ACTION_MODEL_USES.has(options.use);
   const props = _.merge(
@@ -960,6 +992,16 @@ function buildActionDefaults(options: {
     };
   }
 
+  if (options.use === 'DeleteCommentActionModel') {
+    stepParams.deleteSettings = {
+      confirm: {
+        enable: true,
+        title: '{{t("Delete record")}}',
+        content: '{{t("Are you sure you want to delete it?")}}',
+      },
+    };
+  }
+
   if (options.use === 'FormSubmitActionModel') {
     stepParams.submitSettings = {
       confirm: {
@@ -1005,6 +1047,9 @@ function buildActionDefaults(options: {
 
   if (JS_ACTION_DEFAULT_CODE_BY_USE[options.use] !== undefined) {
     stepParams.clickSettings = buildRunJsStepParams(JS_ACTION_DEFAULT_CODE_BY_USE[options.use]);
+  }
+  if (options.use === 'JSItemActionModel') {
+    stepParams.jsSettings = buildRunJsStepParams(JS_ITEM_ACTION_DEFAULT_CODE);
   }
 
   return {
@@ -1053,6 +1098,18 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       title: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
     },
+    EditCommentActionModel: {
+      type: 'link',
+      title: '{{t("Edit")}}',
+    },
+    DeleteCommentActionModel: {
+      type: 'link',
+      title: '{{t("Delete")}}',
+    },
+    QuoteReplyActionModel: {
+      type: 'link',
+      title: '{{t("Quote reply", { ns: "comments" })}}',
+    },
     UpdateRecordActionModel: {
       type: 'link',
       title: '{{t("Update record")}}',
@@ -1069,6 +1126,14 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
     RefreshActionModel: {
       title: '{{t("Refresh")}}',
       icon: 'ReloadOutlined',
+    },
+    RecordHistoryExpandActionModel: {
+      title: '{{t("Expand all")}}',
+      icon: 'NodeExpandOutlined',
+    },
+    RecordHistoryCollapseActionModel: {
+      title: '{{t("Collapse all")}}',
+      icon: 'NodeCollapseOutlined',
     },
     ExpandCollapseActionModel: {
       icon: 'DownOutlined',
@@ -1203,7 +1268,11 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
 }
 
 function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
-  if (['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel'].includes(String(containerUse || '').trim())) {
+  if (
+    ['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel', 'CommentItemModel'].includes(
+      String(containerUse || '').trim(),
+    )
+  ) {
     return {
       ...props,
       type: 'link',

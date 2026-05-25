@@ -8,12 +8,14 @@
  */
 
 import { CollectionField, tExpr } from '@nocobase/flow-engine';
+import { uid } from '@formily/shared';
 import { Tag } from 'antd';
 import { castArray, get } from 'lodash';
 import React from 'react';
 import { EllipsisWithTooltip } from '../../components/EllipsisWithTooltip';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base/FieldModel';
+import { hasDisplayValue, normalizeDisplayValue } from '../utils/displayValueUtils';
 
 export function transformNestedData(inputData) {
   const resultArray = [];
@@ -37,9 +39,49 @@ const hasAssociationPathName = (parent: unknown): parent is { associationPathNam
 
 const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
 
+function getParentAssociationField(model: FieldModel): CollectionField | null {
+  const parentCollectionField =
+    (model.parent as any)?.context?.collectionField || (model.parent as any)?.collectionField;
+  return parentCollectionField?.isAssociationField?.() ? parentCollectionField : null;
+}
+
+export function applyClickToOpenProps(ctx: any, params: any) {
+  const collectionField = ctx.collectionField?.isAssociationField?.()
+    ? ctx.collectionField
+    : ctx.model?.parent?.context?.collectionField || ctx.collectionField;
+  ctx.model.setProps({
+    clickToOpen: params.clickToOpen,
+    ...(collectionField?.getComponentProps?.() || {}),
+  });
+}
+
+export async function refreshClickToOpenRuntime(ctx: any) {
+  ctx.model.invalidateFlowCache?.('beforeRender', true);
+  await ctx.model.rerender?.();
+
+  const parent = ctx.model.parent;
+  if (!parent) {
+    return;
+  }
+  parent.invalidateFlowCache?.('beforeRender', true);
+  parent.setProps?.({
+    __displayFieldRefreshKey: uid(),
+  });
+  await parent.rerender?.();
+}
+
+export async function applyClickToOpenSetting(ctx: any, params: any) {
+  applyClickToOpenProps(ctx, params);
+  await refreshClickToOpenRuntime(ctx);
+}
+
 export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
-    return this.context.collectionField;
+    const collectionField = this.context.collectionField;
+    if (collectionField?.isAssociationField?.()) {
+      return collectionField;
+    }
+    return getParentAssociationField(this) || collectionField;
   }
 
   /**
@@ -150,11 +192,15 @@ export class ClickableFieldModel extends FieldModel {
 
   renderInDisplayStyle(value, record?, isToMany?, wrap?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, disabled, ...restProps } = this.props;
-    if (value && typeof value === 'object' && restProps.target) {
+    const titleCollectionField = titleField
+      ? this.context.collectionField?.targetCollection?.getField?.(titleField) || this.context.collectionField
+      : this.context.collectionField;
+    const displayValue = normalizeDisplayValue(value, { collectionField: titleCollectionField });
+    if (!hasDisplayValue(displayValue) && value && typeof value === 'object' && restProps.target) {
       return;
     }
-    const result = this.renderComponent(value, wrap);
-    const display = record ? (value ? result : 'N/A') : result;
+    const result = this.renderComponent(displayValue, wrap);
+    const display = record ? (hasDisplayValue(displayValue) ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
       clickToOpen && this.onClick(e, record);
@@ -170,7 +216,7 @@ export class ClickableFieldModel extends FieldModel {
 
     if (isTag) {
       return (
-        value && (
+        hasDisplayValue(displayValue) && (
           <Tag {...restProps} style={commonStyle} onClick={handleClick} className={restProps.className}>
             {display}
           </Tag>
@@ -289,8 +335,11 @@ ClickableFieldModel.registerFlow({
       hideInSettings(ctx) {
         return ctx.disableFieldClickToOpen;
       },
+      async afterParamsSave(ctx, params) {
+        await applyClickToOpenSetting(ctx, params);
+      },
       handler(ctx, params) {
-        ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });
+        applyClickToOpenProps(ctx, params);
       },
     },
   },

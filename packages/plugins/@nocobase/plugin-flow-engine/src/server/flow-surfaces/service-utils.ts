@@ -15,6 +15,7 @@ import {
   type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
 } from './blueprint/defaults';
 import {
+  isFlowSurfaceAggregateError,
   isFlowSurfaceError,
   normalizeFlowSurfaceError,
   throwBadRequest,
@@ -174,6 +175,10 @@ export function buildBlockCardSettingsFromSemanticChanges(changes: Record<string
 
   if (_.isEmpty(_.get(nextCardSettings, ['blockHeight']))) {
     _.unset(nextCardSettings, ['blockHeight']);
+  }
+
+  if (hasOwnDefined(changes, 'linkageRules')) {
+    _.set(nextCardSettings, ['linkageRules', 'value'], changes.linkageRules);
   }
 
   return Object.keys(nextCardSettings).length ? nextCardSettings : undefined;
@@ -660,7 +665,10 @@ export function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boo
 }
 
 export function rethrowInlineConfigurationError(error: any, prefix: string): never {
-  const message = `${prefix}: ${error?.message || String(error)}`;
+  const childMessages = isFlowSurfaceAggregateError(error)
+    ? error.errors.map((item) => item.message).filter(Boolean)
+    : [];
+  const message = `${prefix}: ${[error?.message || String(error), ...childMessages].join('; ')}`;
   if (isFlowSurfaceError(error)) {
     const normalized = normalizeFlowSurfaceError(error);
     if (normalized.type === 'bad_request') {
@@ -678,6 +686,15 @@ export function rethrowInlineConfigurationError(error: any, prefix: string): nev
 }
 
 export function toFlowSurfaceBatchItemError(error: any) {
+  if (isFlowSurfaceAggregateError(error)) {
+    return {
+      code: error.code,
+      message: error.message,
+      status: error.status,
+      type: error.type,
+      errors: error.errors,
+    };
+  }
   const normalized = normalizeFlowSurfaceError(error);
   return {
     code: normalized.code,
@@ -703,6 +720,7 @@ export function splitComposeFieldChanges(changes: Record<string, any>, wrapperUs
     'associationPathName',
     'initialValue',
     'required',
+    'rules',
     'disabled',
     'maxCount',
     'pattern',
@@ -754,6 +772,9 @@ export function getCatalogRecordActionContainerUse(use?: string) {
     case 'GridCardBlockModel':
     case 'GridCardItemModel':
       return 'GridCardItemModel';
+    case 'CommentsBlockModel':
+    case 'CommentItemModel':
+      return 'CommentItemModel';
     default:
       return null;
   }

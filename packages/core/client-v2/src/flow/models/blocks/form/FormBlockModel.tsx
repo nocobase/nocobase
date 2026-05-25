@@ -699,11 +699,14 @@ FormBlockModel.registerFlow({
     linkageRules: {
       use: 'fieldLinkageRules',
       afterParamsSave(ctx) {
-        // 保存后，自动运行一次
-        ctx.model.applyFlow('eventSettings', {
-          changedValues: {},
-          allValues: ctx.form?.getFieldsValue(true),
-        });
+        // FlowSettings 保存后还会触发一次 beforeRender/rerender，
+        // 这里延迟到该刷新之后再重放联动规则，避免字段组件被 beforeRender 恢复为原始属性。
+        setTimeout(() => {
+          ctx.model.applyFlow('eventSettings', {
+            changedValues: {},
+            allValues: ctx.form?.getFieldsValue(true),
+          });
+        }, 0);
       },
     },
   },

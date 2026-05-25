@@ -91,7 +91,7 @@ const useBlockHeight = ({
     const padding = getPadding(root);
     const addBlockContainer = getAddBlockContainer(root);
     const pageTop = rootRect.top + padding.top;
-    const topOffset = Math.min(Math.max(0, cardRect.top - pageTop), 0);
+    const topOffset = Math.max(0, cardRect.top - pageTop);
     let bottomOffset = padding.bottom + ctx.themeToken.marginBlock;
     if (addBlockContainer) {
       const gapBetween = ctx.themeToken.marginBlock;
@@ -99,7 +99,7 @@ const useBlockHeight = ({
     }
     const nextHeight = Math.max(
       0,
-      Math.floor(window.innerHeight - getValidPageTop(pageTop, 110) - topOffset - bottomOffset),
+      Math.floor(window.innerHeight - getValidPageTop(pageTop, 110) - topOffset - bottomOffset - 1),
     );
     setFullHeight((prev) => (prev === nextHeight ? prev : nextHeight));
   }, [heightMode, cardRef]);

@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr as _tExpr } from '@nocobase/flow-engine';
-import { useTranslation as useT } from 'react-i18next';
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
 
 export const NAMESPACE = 'block-workbench';
 
@@ -16,12 +15,8 @@ export function tExpr(key: string) {
   return _tExpr(key, { ns: [NAMESPACE, 'client'] });
 }
 
-export function generateNTemplate(key: string) {
-  return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
-}
-
-export function useTranslation() {
-  return useT([NAMESPACE, 'client'], {
-    nsMode: 'fallback',
-  });
+export function useT() {
+  const flowEngine = useFlowEngine();
+  return (key: string, options?: Record<string, any>) =>
+    flowEngine.context.t(key, { ns: [NAMESPACE, 'client'], ...options });
 }

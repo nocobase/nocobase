@@ -200,10 +200,6 @@ export const ChartOptionsBuilder: React.FC<{
           ? renderRegisteredChartOptions(registeredChart, { renderText, fieldOptions, lang })
           : renderChartOptions(type, { t, fieldOptions, lang })}
 
-        {/* 公共属性 */}
-        {/* <Form.Item label={t('Height')} name="height">
-          <InputNumber min={100} style={{ width: 180 }} />
-        </Form.Item> */}
         {!registeredChart && (
           <>
             <Form.Item name="legend" valuePropName="checked" label={renderLabel(t('Legend'), lang)}>

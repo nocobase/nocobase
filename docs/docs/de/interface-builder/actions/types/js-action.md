@@ -31,7 +31,7 @@ JS Action wird verwendet, um JavaScript auszuführen, wenn ein Button geklickt w
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- Sie können KI-Mitarbeiter nutzen, um Skripte zu generieren/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
+- Sie können KI-Mitarbeiter nutzen, um Skripte zu generieren/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/)
 
 ## Häufige Anwendungsfälle (Vereinfachte Beispiele)
 

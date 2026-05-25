@@ -15,12 +15,9 @@ const mocks = vi.hoisted(() => ({
   upsertEnv: vi.fn(),
   setCurrentEnv: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
-  promptInfo: vi.fn(),
-  promptStep: vi.fn(),
-  promptWarn: vi.fn(),
-  promptIntro: vi.fn(),
-  promptOutro: vi.fn(),
-  promptCancel: vi.fn(),
+  validateMysqlLowerCaseTableNamesCompatibility: vi.fn(async () => undefined),
+  printInfo: vi.fn(),
+  printWarning: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -29,6 +26,8 @@ beforeEach(() => {
   mocks.setCurrentEnv.mockResolvedValue(undefined);
   mocks.validateExternalDbConfig.mockReset();
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
+  mocks.validateMysqlLowerCaseTableNamesCompatibility.mockReset();
+  mocks.validateMysqlLowerCaseTableNamesCompatibility.mockResolvedValue(undefined);
 });
 
 vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {
@@ -65,16 +64,14 @@ vi.mock('../lib/auth-store.js', async (importOriginal) => {
   };
 });
 
-vi.mock('@clack/prompts', () => ({
-  intro: mocks.promptIntro,
-  log: {
-    info: mocks.promptInfo,
-    step: mocks.promptStep,
-    warn: mocks.promptWarn,
-  },
-  outro: mocks.promptOutro,
-  cancel: mocks.promptCancel,
-}));
+vi.mock('../lib/ui.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/ui.js')>();
+  return {
+    ...actual,
+    printInfo: mocks.printInfo,
+    printWarning: mocks.printWarning,
+  };
+});
 
 vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/prompt-validators.js')>();
@@ -90,6 +87,7 @@ vi.mock('../lib/prompt-validators.ts', async (importOriginal) => {
 
 vi.mock('../lib/db-connection-check.ts', () => ({
   validateExternalDbConfig: mocks.validateExternalDbConfig,
+  validateMysqlLowerCaseTableNamesCompatibility: mocks.validateMysqlLowerCaseTableNamesCompatibility,
 }));
 
 test('install saves env config immediately after collecting prompt results for fresh installs', async () => {
@@ -135,7 +133,9 @@ test('install saves env config immediately after collecting prompt results for f
 
   expect(collectPromptResults).toHaveBeenCalledTimes(1);
   expect(saveInstalledEnv).toHaveBeenCalledTimes(1);
-  expect(saveInstalledEnv.mock.invocationCallOrder[0]).toBeGreaterThan(collectPromptResults.mock.invocationCallOrder[0]);
+  expect(saveInstalledEnv.mock.invocationCallOrder[0]).toBeGreaterThan(
+    collectPromptResults.mock.invocationCallOrder[0],
+  );
   expect(waitForAppHealthCheck).not.toHaveBeenCalled();
 });
 
@@ -298,9 +298,7 @@ test('install syncs token env connection after the app becomes ready without oau
 
   await Install.prototype.run.call(command);
 
-  expect(runCommand.mock.calls).toEqual([
-    ['env:update', ['app1']],
-  ]);
+  expect(runCommand.mock.calls).toEqual([['env:update', ['app1']]]);
 });
 
 test('install run validates external db config before saving env config', async () => {
@@ -359,6 +357,76 @@ test('install run validates external db config before saving env config', async 
   );
 });
 
+test('install seeds basic auth credentials as prompt defaults instead of fixed values', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  mocks.runPromptCatalog
+    .mockResolvedValueOnce({ env: 'app1' })
+    .mockResolvedValueOnce({
+      appPort: '13080',
+      storagePath: './app1/storage/',
+      fetchSource: false,
+    })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    })
+    .mockImplementationOnce(async (_catalog, options) => {
+      expect(options.initialValues).toMatchObject({
+        apiBaseUrl: 'http://127.0.0.1:13080/api',
+        username: 'nocobase',
+        password: 'admin123',
+      });
+      expect(options.values).toMatchObject({
+        name: 'app1',
+        authType: 'basic',
+      });
+      expect(options.values).not.toHaveProperty('username');
+      expect(options.values).not.toHaveProperty('password');
+
+      return {
+        apiBaseUrl: 'http://127.0.0.1:13080/api',
+        authType: 'basic',
+        username: 'prompted-admin',
+        password: 'prompted-password',
+      };
+    });
+
+  const command = Object.create(Install.prototype);
+  const result = await (
+    Install.prototype as unknown as {
+      collectPromptResults: (
+        parsed: Record<string, unknown>,
+        yes: boolean,
+      ) => Promise<{
+        envAddResults: Record<string, unknown>;
+      }>;
+    }
+  ).collectPromptResults.call(
+    command,
+    {
+      env: 'app1',
+      resume: false,
+      yes: false,
+      force: false,
+      'fetch-source': false,
+      'builtin-db': false,
+      'auth-type': 'basic',
+    },
+    false,
+  );
+
+  expect(result.envAddResults).toMatchObject({
+    apiBaseUrl: 'http://127.0.0.1:13080/api',
+    authType: 'basic',
+    username: 'prompted-admin',
+    password: 'prompted-password',
+  });
+});
+
 test('install --resume reuses the saved workspace env config for prompt values', async () => {
   const { default: Install } = await import('../commands/install.js');
 
@@ -413,20 +481,21 @@ test('install --resume reuses the saved workspace env config for prompt values',
         envAddResults: Record<string, unknown>;
       }>;
     }
-  ).collectPromptResults.call(command, {
-    resume: true,
-    env: 'app1',
-    yes: false,
-    force: false,
-    'fetch-source': false,
-    'builtin-db': false,
-  }, false);
+  ).collectPromptResults.call(
+    command,
+    {
+      resume: true,
+      env: 'app1',
+      yes: false,
+      force: false,
+      'fetch-source': false,
+      'builtin-db': false,
+    },
+    false,
+  );
 
   expect(mocks.getEnv.mock.calls.length).toBe(1);
-  expect(mocks.getEnv.mock.calls[0]).toEqual([
-    'app1',
-    { scope: 'global' },
-  ]);
+  expect(mocks.getEnv.mock.calls[0]).toEqual(['app1', { scope: 'global' }]);
   expect(result.envName).toBe('app1');
   expect(result.appResults.appRootPath).toBe('./app1/source/');
   expect(result.appResults.appPort).toBe('13080');
@@ -453,6 +522,101 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(result.envAddResults.authType).toBe('token');
   expect(result.envAddResults.accessToken).toBe('resume-token');
   expect(result.envAddResults.apiBaseUrl).toBe('http://127.0.0.1:13080/api');
+});
+
+test('install --resume keeps saved basic auth credentials editable in prompts', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  mocks.getEnv.mockResolvedValue({
+    name: 'app1',
+    config: {
+      apiBaseUrl: 'http://127.0.0.1:13080/api',
+      authType: 'basic',
+      authUsername: 'saved-admin',
+      source: 'docker',
+      downloadVersion: 'alpha',
+      dockerRegistry: 'nocobase/nocobase',
+      dockerPlatform: 'linux/arm64',
+      appRootPath: './app1/source/',
+      appPort: '13080',
+      storagePath: './app1/storage/',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      builtinDbImage: 'registry.example.com/postgres:16',
+      dbHost: 'app1-postgres',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+      rootUsername: 'admin',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Admin',
+      build: false,
+      buildDts: true,
+    },
+  });
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => {
+    if (
+      options.initialValues &&
+      Object.prototype.hasOwnProperty.call(options.initialValues, 'apiBaseUrl') &&
+      options.values?.name === 'app1'
+    ) {
+      expect(options.initialValues).toMatchObject({
+        apiBaseUrl: 'http://127.0.0.1:13080/api',
+        authType: 'basic',
+        username: 'saved-admin',
+        password: 'admin123',
+      });
+      expect(options.values).toMatchObject({
+        name: 'app1',
+      });
+      expect(options.values).not.toHaveProperty('username');
+      expect(options.values).not.toHaveProperty('password');
+
+      return {
+        ...(options.initialValues ?? {}),
+        ...(options.values ?? {}),
+        username: 'updated-admin',
+        password: 'updated-password',
+      };
+    }
+
+    return {
+      ...(options.initialValues ?? {}),
+      ...(options.values ?? {}),
+    };
+  });
+
+  const command = Object.create(Install.prototype);
+  const result = await (
+    Install.prototype as unknown as {
+      collectPromptResults: (
+        parsed: Record<string, unknown>,
+        yes: boolean,
+      ) => Promise<{
+        envAddResults: Record<string, unknown>;
+      }>;
+    }
+  ).collectPromptResults.call(
+    command,
+    {
+      resume: true,
+      env: 'app1',
+      yes: false,
+      force: false,
+      'fetch-source': false,
+      'builtin-db': false,
+    },
+    false,
+  );
+
+  expect(result.envAddResults).toMatchObject({
+    authType: 'basic',
+    username: 'updated-admin',
+    password: 'updated-password',
+  });
 });
 
 test('install --resume maps arbitrary saved download versions to otherVersion prompt values', async () => {
@@ -484,14 +648,18 @@ test('install --resume maps arbitrary saved download versions to otherVersion pr
         downloadResults: Record<string, unknown>;
       }>;
     }
-  ).collectPromptResults.call(command, {
-    resume: true,
-    env: 'app8',
-    yes: false,
-    force: false,
-    'fetch-source': false,
-    'builtin-db': false,
-  }, false);
+  ).collectPromptResults.call(
+    command,
+    {
+      resume: true,
+      env: 'app8',
+      yes: false,
+      force: false,
+      'fetch-source': false,
+      'builtin-db': false,
+    },
+    false,
+  );
 
   expect(result.downloadResults.source).toBe('git');
   expect(result.downloadResults.version).toBe('other');
@@ -504,22 +672,25 @@ test('install --resume fails with a clear message when the env is missing', asyn
   mocks.getEnv.mockResolvedValue(undefined);
 
   const command = Object.create(Install.prototype);
-  await expect((() =>
+  await expect(
+    (() =>
       (
         Install.prototype as unknown as {
-          collectPromptResults: (
-            parsed: Record<string, unknown>,
-            yes: boolean,
-          ) => Promise<unknown>;
+          collectPromptResults: (parsed: Record<string, unknown>, yes: boolean) => Promise<unknown>;
         }
-      ).collectPromptResults.call(command, {
-        resume: true,
-        env: 'missing',
-        yes: false,
-        force: false,
-        'fetch-source': false,
-        'builtin-db': false,
-      }, false))()).rejects.toThrow(/Env "missing" is not configured in this workspace\./);
+      ).collectPromptResults.call(
+        command,
+        {
+          resume: true,
+          env: 'missing',
+          yes: false,
+          force: false,
+          'fetch-source': false,
+          'builtin-db': false,
+        },
+        false,
+      ))(),
+  ).rejects.toThrow(/Env "missing" is not configured in this workspace\./);
 
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
 });
@@ -542,22 +713,25 @@ test('install --resume --yes requires only setup-only flags that are not saved i
   });
 
   const command = Object.create(Install.prototype);
-  await expect((() =>
+  await expect(
+    (() =>
       (
         Install.prototype as unknown as {
-          collectPromptResults: (
-            parsed: Record<string, unknown>,
-            yes: boolean,
-          ) => Promise<unknown>;
+          collectPromptResults: (parsed: Record<string, unknown>, yes: boolean) => Promise<unknown>;
         }
-      ).collectPromptResults.call(command, {
-        resume: true,
-        env: 'app1',
-        yes: true,
-        force: false,
-        'fetch-source': false,
-        'builtin-db': false,
-      }, true))()).rejects.toThrow(/These setup-only flags are not saved in the env config: --lang/);
+      ).collectPromptResults.call(
+        command,
+        {
+          resume: true,
+          env: 'app1',
+          yes: true,
+          force: false,
+          'fetch-source': false,
+          'builtin-db': false,
+        },
+        true,
+      ))(),
+  ).rejects.toThrow(/These setup-only flags are not saved in the env config: --lang/);
 
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
 });
@@ -566,18 +740,26 @@ test('install --resume allows reusing the saved docker app port when occupied by
   const { default: Install } = await import('../commands/install.js');
 
   const prefixSpy = vi
-    .spyOn(Install as unknown as {
-      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
-    }, 'resolveResumeDockerContainerPrefix')
+    .spyOn(
+      Install as unknown as {
+        resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+      },
+      'resolveResumeDockerContainerPrefix',
+    )
     .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
-    .spyOn(Install as unknown as {
-      isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
-    }, 'isDockerContainerPublishingPort')
+    .spyOn(
+      Install as unknown as {
+        isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
+      },
+      'isDockerContainerPublishingPort',
+    )
     .mockResolvedValue(true);
 
   const validate = (
-    Install.appPrompts.appPort as { validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined> }
+    Install.appPrompts.appPort as {
+      validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined>;
+    }
   ).validate;
 
   const error = await validate('53414', {
@@ -596,18 +778,26 @@ test('install --resume keeps rejecting a port occupied by another resource', asy
   const { default: Install } = await import('../commands/install.js');
 
   const prefixSpy = vi
-    .spyOn(Install as unknown as {
-      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
-    }, 'resolveResumeDockerContainerPrefix')
+    .spyOn(
+      Install as unknown as {
+        resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+      },
+      'resolveResumeDockerContainerPrefix',
+    )
     .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
-    .spyOn(Install as unknown as {
-      isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
-    }, 'isDockerContainerPublishingPort')
+    .spyOn(
+      Install as unknown as {
+        isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
+      },
+      'isDockerContainerPublishingPort',
+    )
     .mockResolvedValue(false);
 
   const validate = (
-    Install.appPrompts.appPort as { validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined> }
+    Install.appPrompts.appPort as {
+      validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined>;
+    }
   ).validate;
 
   const error = await validate('53414', {
@@ -625,18 +815,26 @@ test('install --resume allows reusing the saved built-in db port when occupied b
   const { default: Install } = await import('../commands/install.js');
 
   const prefixSpy = vi
-    .spyOn(Install as unknown as {
-      resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
-    }, 'resolveResumeDockerContainerPrefix')
+    .spyOn(
+      Install as unknown as {
+        resolveResumeDockerContainerPrefix: () => Promise<string | undefined>;
+      },
+      'resolveResumeDockerContainerPrefix',
+    )
     .mockResolvedValue('nb-chen');
   const commandSucceedsSpy = vi
-    .spyOn(Install as unknown as {
-      isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
-    }, 'isDockerContainerPublishingPort')
+    .spyOn(
+      Install as unknown as {
+        isDockerContainerPublishingPort: (containerName: string, port: string) => Promise<boolean>;
+      },
+      'isDockerContainerPublishingPort',
+    )
     .mockResolvedValue(true);
 
   const validate = (
-    Install.dbPrompts.dbPort as { validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined> }
+    Install.dbPrompts.dbPort as {
+      validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined>;
+    }
   ).validate;
 
   const error = await validate('53414', {
@@ -657,13 +855,18 @@ test('install --resume allows reusing the saved local app port when occupied by 
   const { default: Install } = await import('../commands/install.js');
 
   const localPortSpy = vi
-    .spyOn(Install as unknown as {
-      isLocalPm2ProcessUsingPort: (appRootPath: string, port: string) => Promise<boolean>;
-    }, 'isLocalPm2ProcessUsingPort')
+    .spyOn(
+      Install as unknown as {
+        isLocalPm2ProcessUsingPort: (appRootPath: string, port: string) => Promise<boolean>;
+      },
+      'isLocalPm2ProcessUsingPort',
+    )
     .mockResolvedValue(true);
 
   const validate = (
-    Install.appPrompts.appPort as { validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined> }
+    Install.appPrompts.appPort as {
+      validate: (value: unknown, values: Record<string, unknown>) => Promise<string | undefined>;
+    }
   ).validate;
 
   const error = await validate('53414', {
@@ -698,16 +901,18 @@ test('saveInstalledEnv switches current env after persisting the final env confi
 
   const command = Object.create(Install.prototype) as InstanceType<typeof Install>;
 
-  await (Install.prototype as unknown as {
-    saveInstalledEnv: (params: {
-      envName: string;
-      appResults: Record<string, unknown>;
-      downloadResults: Record<string, unknown>;
-      dbResults: Record<string, unknown>;
-      rootResults: Record<string, unknown>;
-      envAddResults: Record<string, unknown>;
-    }) => Promise<void>;
-  }).saveInstalledEnv.call(command, {
+  await (
+    Install.prototype as unknown as {
+      saveInstalledEnv: (params: {
+        envName: string;
+        appResults: Record<string, unknown>;
+        downloadResults: Record<string, unknown>;
+        dbResults: Record<string, unknown>;
+        rootResults: Record<string, unknown>;
+        envAddResults: Record<string, unknown>;
+      }) => Promise<void>;
+    }
+  ).saveInstalledEnv.call(command, {
     envName: 'app1',
     appResults: {},
     downloadResults: {},
@@ -718,7 +923,5 @@ test('saveInstalledEnv switches current env after persisting the final env confi
 
   expect(mocks.upsertEnv).toHaveBeenCalledTimes(1);
   expect(mocks.setCurrentEnv).toHaveBeenCalledWith('app1', { scope: 'global' });
-  expect(mocks.upsertEnv.mock.invocationCallOrder[0]).toBeLessThan(
-    mocks.setCurrentEnv.mock.invocationCallOrder[0],
-  );
+  expect(mocks.upsertEnv.mock.invocationCallOrder[0]).toBeLessThan(mocks.setCurrentEnv.mock.invocationCallOrder[0]);
 });

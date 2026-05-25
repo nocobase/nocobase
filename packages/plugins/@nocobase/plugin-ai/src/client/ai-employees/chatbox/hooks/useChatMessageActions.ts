@@ -20,7 +20,7 @@ import { flattenMessages, parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useChatToolCallStore } from '../stores/chat-tool-call';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { ensureModel } from '../model';
+import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
 import { ContextItem } from '../../types';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
@@ -60,6 +60,32 @@ export const useChatMessageActions = () => {
 
   const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
   const getSessionChat = useCallback((sessionId?: string) => chat.for(sessionId).getState(), [chat]);
+  const getConversationModel = useCallback(
+    (messages: Message[], services: Awaited<ReturnType<typeof aiConfigRepository.getLLMServices>>) => {
+      for (let i = messages.length - 1; i >= 0; i -= 1) {
+        const metadata = messages[i]?.content?.metadata;
+        if (metadata?.llmService && metadata?.model) {
+          return {
+            llmService: metadata.llmService,
+            model: metadata.model,
+          };
+        }
+        if (metadata?.provider && metadata?.model) {
+          const candidates = services
+            .filter((service) => service.provider === metadata.provider)
+            .filter((service) => service.enabledModels.some((model) => model.value === metadata.model));
+          if (candidates.length === 1) {
+            return {
+              llmService: candidates[0].llmService,
+              model: metadata.model,
+            };
+          }
+        }
+      }
+      return null;
+    },
+    [aiConfigRepository],
+  );
   const ensureModelFromStore = useCallback(
     async (username?: string) => {
       const state = useChatBoxStore.getState();
@@ -70,7 +96,8 @@ export const useChatMessageActions = () => {
       return ensureModel({
         api,
         aiConfigRepository,
-        username: targetUsername,
+        aiEmployee:
+          state.currentEmployee?.username === targetUsername ? state.currentEmployee : { username: targetUsername },
         currentOverride: state.model,
         onResolved: setModel,
       });
@@ -125,6 +152,15 @@ export const useChatMessageActions = () => {
           return;
         }
         const newMessages = [...data.data].reverse();
+        const services = !cursor ? await aiConfigRepository.getLLMServices() : [];
+        const conversationModel = !cursor ? getConversationModel(newMessages, services) : null;
+        if (conversationModel) {
+          const currentModel = useChatBoxStore.getState().model;
+          const allModels = getAllModels(services);
+          if (isValidModel(conversationModel, allModels) && !isSameModel(currentModel, conversationModel)) {
+            setModel(conversationModel);
+          }
+        }
 
         // [AI_DEBUG] backend tool results
         for (const msg of newMessages) {
@@ -182,7 +218,7 @@ export const useChatMessageActions = () => {
         sessionChat.setMessagesLoading(false);
       }
     },
-    [api, getSessionChat, setConversationUnreadCount, updateToolCallInvokeStatus],
+    [api, aiConfigRepository, getConversationModel, getSessionChat, setModel, updateToolCallInvokeStatus],
   );
 
   const getConversationLLMActiveState = useCallback(
@@ -203,6 +239,7 @@ export const useChatMessageActions = () => {
       const decoder = new TextDecoder();
       let result = '';
       let error = false;
+      let streamBuffer = '';
 
       type MessagesStore = {
         addMessage: (msg: Message) => void;
@@ -479,8 +516,10 @@ export const useChatMessageActions = () => {
             break;
           }
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(Boolean);
+          streamBuffer += decoder.decode(value, { stream: true });
+          const parts = streamBuffer.split(/\r?\n/);
+          streamBuffer = parts.pop() ?? '';
+          const lines = parts.filter(Boolean);
 
           for (const line of lines) {
             try {
@@ -656,7 +695,17 @@ export const useChatMessageActions = () => {
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
-        values: { aiEmployee, systemMessage, skillSettings },
+        values: {
+          aiEmployee,
+          systemMessage,
+          skillSettings,
+          modelSettings: model
+            ? {
+                llmService: model.llmService,
+                model: model.model,
+              }
+            : undefined,
+        },
       });
       const conversation = createRes?.data?.data;
       if (!conversation) return;

@@ -25,6 +25,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Cấu hình mô hình Nhân viên AI",
+        "link": "/ai-employees/features/model-settings"
+      },
+      {
+        "type": "custom-link",
         "label": "Cộng tác với Nhân viên AI",
         "link": "/ai-employees/features/collaborate"
       },
@@ -60,11 +65,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Nhân viên AI tích hợp sẵn",
-        "link": "/ai-employees/features/built-in-employee"
-      },
-      {
-        "type": "custom-link",
         "label": "Tạo Nhân viên AI mới",
         "link": "/ai-employees/features/new-ai-employees"
       },
@@ -77,6 +77,62 @@
         "type": "custom-link",
         "label": "Quản lý tệp",
         "link": "/ai-employees/file-manager"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Nhân viên AI tích hợp sẵn",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/ai-employees/built-in/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Atlas: Trưởng nhóm",
+        "link": "/ai-employees/built-in/atlas"
+      },
+      {
+        "type": "custom-link",
+        "label": "Viz: Nhà phân tích insight",
+        "link": "/ai-employees/built-in/viz"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dex: Chuyên gia sắp xếp dữ liệu",
+        "link": "/ai-employees/built-in/dex"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ellis: Chuyên gia email",
+        "link": "/ai-employees/built-in/ellis"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lexi: Trợ lý dịch thuật",
+        "link": "/ai-employees/built-in/lexi"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vera: Nhà phân tích nghiên cứu",
+        "link": "/ai-employees/built-in/vera"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nathan: Kỹ sư Frontend",
+        "link": "/ai-employees/built-in/nathan"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lina: Kỹ sư bản địa hóa",
+        "link": "/ai-employees/built-in/lina"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dara: Chuyên gia trực quan hóa dữ liệu",
+        "link": "/ai-employees/built-in/dara"
       }
     ]
   },
@@ -167,6 +223,11 @@
         "type": "custom-link",
         "label": "Viz: Cấu hình kịch bản CRM",
         "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lina: Dịch bản địa hóa",
+        "link": "/ai-employees/scenarios/localization-hy-mt"
       },
       {
         "type": "custom-link",

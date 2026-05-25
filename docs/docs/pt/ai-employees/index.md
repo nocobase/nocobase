@@ -41,7 +41,7 @@ Veja primeiro o [Início Rápido](/ai-employees/quick-start) e complete a config
 
 ### C. Capacidades Avançadas (Extensões)
 
-- [Funcionários de IA integrados](/ai-employees/features/built-in-employee): entenda o posicionamento e os cenários aplicáveis dos funcionários predefinidos.
+- [Funcionários de IA integrados](/ai-employees/built-in/): entenda o posicionamento e os cenários aplicáveis dos funcionários predefinidos.
 - [Controle de Permissões](/ai-employees/permission): controle o acesso a funcionários, habilidades e dados de acordo com o modelo de permissões da organização.
 - [Base de Conhecimento de IA](/ai-employees/knowledge-base/index): introduza o conhecimento da empresa para melhorar a estabilidade e a rastreabilidade das respostas.
 - [Nó de LLM no fluxo de trabalho](/ai-employees/workflow/nodes/llm/chat): orquestre capacidades de IA em fluxos de trabalho automatizados.

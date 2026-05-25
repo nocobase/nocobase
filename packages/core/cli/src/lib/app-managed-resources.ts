@@ -9,9 +9,10 @@
 
 import { mkdir, readdir } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
-import { dockerContainerExists, startDockerContainer } from './app-runtime.js';
+import { dockerContainerExists, runLocalNocoBaseCommand, startDockerContainer } from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
 import { resolveConfiguredEnvPath } from './cli-home.js';
+import { resolveDockerEnvFileArg } from './docker-env-file.ts';
 import {
   DEFAULT_DOCKER_REGISTRY,
   DEFAULT_DOCKER_VERSION,
@@ -46,6 +47,20 @@ function trimValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function pushOptionalEnvArg(args: string[], key: string, value: string | boolean | undefined) {
+  if (typeof value === 'string') {
+    if (!value) {
+      return;
+    }
+    args.push('-e', `${key}=${value}`);
+    return;
+  }
+
+  if (typeof value === 'boolean') {
+    args.push('-e', `${key}=${String(value)}`);
+  }
+}
+
 function normalizeDockerPlatform(value: unknown): string | undefined {
   const text = trimValue(value);
   if (!text || text === 'auto') {
@@ -77,6 +92,15 @@ function formatLocalSourceRestoreFailure(envName: string, source: 'npm' | 'git',
   ].join('\n');
 }
 
+function formatLocalPostinstallFailure(envName: string, message: string): string {
+  return [
+    `Couldn't prepare NocoBase for "${envName}".`,
+    'The CLI was not able to run `nocobase-v1 postinstall` before starting the local app.',
+    'Check the local dependencies, storage path, and saved env settings, then try again.',
+    `Details: ${message}`,
+  ].join('\n');
+}
+
 function formatSavedDockerSettingsIncomplete(envName: string, missing: string[]): string {
   return [
     `Can't start NocoBase for "${envName}" yet.`,
@@ -103,19 +127,21 @@ async function localProjectHasFiles(projectRoot: string): Promise<boolean> {
   }
 }
 
-export function buildSavedDockerRunArgs(
+export async function buildSavedDockerRunArgs(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-): {
+): Promise<{
   appPort?: string;
   storagePath: string;
+  envFile?: string;
   imageRef: string;
   args: string[];
-} {
+}> {
   const config = runtime.env.config ?? {};
   const configuredStoragePath = trimValue(config.storagePath);
   const storagePath = configuredStoragePath
     ? trimValue(resolveConfiguredEnvPath(configuredStoragePath))
     : '';
+  const envFile = await resolveDockerEnvFileArg(runtime.envName, config);
   const appPort =
     runtime.env.appPort === undefined || runtime.env.appPort === null
       ? ''
@@ -129,6 +155,10 @@ export function buildSavedDockerRunArgs(
   const dbDatabase = trimValue(config.dbDatabase);
   const dbUser = trimValue(config.dbUser);
   const dbPassword = trimValue(config.dbPassword);
+  const dbSchema = trimValue(config.dbSchema);
+  const dbTablePrefix = trimValue(config.dbTablePrefix);
+  const dbUnderscored =
+    typeof config.dbUnderscored === 'boolean' ? config.dbUnderscored : undefined;
   const dockerRegistry = trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY;
   const version = trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION;
   const imageRef = resolveDockerImageRef(dockerRegistry, version, {
@@ -186,6 +216,10 @@ export function buildSavedDockerRunArgs(
     args.push('-p', `${appPort}:80`);
   }
 
+  if (envFile) {
+    args.push('--env-file', envFile);
+  }
+
   args.push(
     '-e',
     `APP_KEY=${appKey}`,
@@ -205,12 +239,16 @@ export function buildSavedDockerRunArgs(
     `TZ=${timeZone}`,
     '-v',
     `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
-    imageRef,
   );
+  pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
+  pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
+  pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+  args.push(imageRef);
 
   return {
     appPort: appPort || undefined,
     storagePath,
+    envFile,
     imageRef,
     args,
   };
@@ -220,7 +258,7 @@ export async function recreateSavedDockerApp(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
   options?: { verbose?: boolean },
 ): Promise<void> {
-  const plan = buildSavedDockerRunArgs(runtime);
+  const plan = await buildSavedDockerRunArgs(runtime);
 
   try {
     await ensureDockerNetwork(runtime.workspaceName);
@@ -367,5 +405,26 @@ export async function ensureSavedLocalSource(
         error instanceof Error ? error.message : String(error),
       ),
     );
+  }
+}
+
+export async function ensureLocalPostinstall(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+  options?: {
+    verbose?: boolean;
+    onStartTask?: (message: string) => void;
+    onSucceedTask?: (message: string) => void;
+    onFailTask?: (message: string) => void;
+  },
+): Promise<void> {
+  options?.onStartTask?.(`Running local postinstall for "${runtime.envName}"...`);
+  try {
+    await runLocalNocoBaseCommand(runtime, ['postinstall'], {
+      stdio: commandStdio(options?.verbose),
+    });
+    options?.onSucceedTask?.(`Local postinstall finished for "${runtime.envName}".`);
+  } catch (error: unknown) {
+    options?.onFailTask?.(`Failed to run local postinstall for "${runtime.envName}".`);
+    throw new Error(formatLocalPostinstallFailure(runtime.envName, error instanceof Error ? error.message : String(error)));
   }
 }

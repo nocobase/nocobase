@@ -18,9 +18,11 @@ const STRING_ENV_CONFIG_KEYS = [
   'npmRegistry',
   'appRootPath',
   'storagePath',
+  'envFile',
   'appPort',
   'appKey',
   'timezone',
+  'authUsername',
   'dbDialect',
   'builtinDbImage',
   'dbHost',
@@ -28,6 +30,8 @@ const STRING_ENV_CONFIG_KEYS = [
   'dbDatabase',
   'dbUser',
   'dbPassword',
+  'dbSchema',
+  'dbTablePrefix',
   'rootUsername',
   'rootEmail',
   'rootPassword',
@@ -39,6 +43,7 @@ const BOOLEAN_ENV_CONFIG_KEYS = [
   'devDependencies',
   'build',
   'buildDts',
+  'dbUnderscored',
 ] as const;
 
 type StringEnvConfigKey = (typeof STRING_ENV_CONFIG_KEYS)[number];
@@ -109,8 +114,11 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   }
 
   const authType = trimConfigValue(input.authType);
+  if (authType === 'basic' || authType === 'token' || authType === 'oauth') {
+    envConfig.authType = authType;
+  }
   const accessToken = trimConfigValue(input.accessToken);
-  if (authType === 'token' && accessToken) {
+  if ((authType === 'basic' || authType === 'token') && accessToken) {
     envConfig.accessToken = accessToken;
   }
 

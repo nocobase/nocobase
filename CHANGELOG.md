@@ -5,6 +5,167 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.56](https://github.com/nocobase/nocobase/compare/v2.0.55...v2.0.56) - 2026-05-21
+
+### 🎉 New Features
+
+- **[Backup manager]** open source backup manager plugin ([#9550](https://github.com/nocobase/nocobase/pull/9550)) by @chenos
+
+### 🚀 Improvements
+
+- **[client]** optimize action button display settings ([#9510](https://github.com/nocobase/nocobase/pull/9510)) by @katherinehhh
+
+- **[flow-engine]** V2 field configuration menus now support searching fields ([#9489](https://github.com/nocobase/nocobase/pull/9489)) by @zhangzhonghe
+
+- **[undefined]**
+  - Add dependency security review for pull requests ([#9523](https://github.com/nocobase/nocobase/pull/9523)) by @zhangzhonghe
+
+  - Add dependency security review for pull requests by @zhangzhonghe
+
+  - Add dependency security review for pull requests by @zhangzhonghe
+
+- **[Notification manager]** Change queue strategy to optimize sending performance ([#9407](https://github.com/nocobase/nocobase/pull/9407)) by @mytharcher
+
+- **[AI: Knowledge base]** Enabled vector storage modification for AI knowledge bases by @cgyrock
+
+- **[Workflow: Approval]** Improve related approvals with timeline cards by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - fix clear selected values when dependent association fields change in data scope linkage ([#9551](https://github.com/nocobase/nocobase/pull/9551)) by @katherinehhh
+
+  - Fix the issue where a menu badge still shows a dot when its value is 0 ([#9491](https://github.com/nocobase/nocobase/pull/9491)) by @zhangzhonghe
+
+  - Fix the issue where filter forms cannot use current form variables ([#9474](https://github.com/nocobase/nocobase/pull/9474)) by @zhangzhonghe
+
+  - Fix the issue where narrowed v2 blocks become full width after leaving edit mode ([#9529](https://github.com/nocobase/nocobase/pull/9529)) by @zhangzhonghe
+
+  - Fixed incorrect JS Field menu state in subforms. ([#9507](https://github.com/nocobase/nocobase/pull/9507)) by @gchust
+
+- **[flow-engine]** fix multiple selection issue for external data source fields in v2 form ([#9542](https://github.com/nocobase/nocobase/pull/9542)) by @katherinehhh
+
+- **[AI employees]** Fix error when AI employee access read-only knowledge base ([#9539](https://github.com/nocobase/nocobase/pull/9539)) by @cgyrock
+
+- **[Calendar]** Fix the issue where calendar more items cannot be fully displayed ([#9492](https://github.com/nocobase/nocobase/pull/9492)) by @zhangzhonghe
+
+- **[Action: Batch update]** fix bulk-update action reset loading state after update failure ([#9509](https://github.com/nocobase/nocobase/pull/9509)) by @katherinehhh
+
+- **[API documentation]** Fixed collection API documentation so query parameters no longer interfere with each other ([#9442](https://github.com/nocobase/nocobase/pull/9442)) by @jiannx
+
+- **[Workflow]** Add loading state for manual workflow execution. ([#9533](https://github.com/nocobase/nocobase/pull/9533)) by @mytharcher
+
+- **[Migration manager]** Fixed migration file creation failures when using OceanBase by @2013xile
+
+- **[File storage: S3(Pro)]** Fix S3 Pro endpoint handling so server uploads and URL previews do not duplicate the bucket host. by @mytharcher
+
+- **[Workflow: Approval]** Fix duplicate approval record indexes when delegates happen concurrently on the same approval job. by @mytharcher
+
+## [v2.0.55](https://github.com/nocobase/nocobase/compare/v2.0.54...v2.0.55) - 2026-05-18
+
+### 🚀 Improvements
+
+- **[AI employees]** Prompt on duplicate table name when saving to vector database ([#9497](https://github.com/nocobase/nocobase/pull/9497)) by @cgyrock
+
+- **[AI: Knowledge base]** Prompt on duplicate table name when saving to vector database by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fixed an issue where current popup record variables could not be resolved in action button event flows. ([#9495](https://github.com/nocobase/nocobase/pull/9495)) by @gchust
+
+  - Fixed an issue where JS field values in subforms were not correctly set during form submission. ([#9496](https://github.com/nocobase/nocobase/pull/9496)) by @gchust
+
+- **[File manager]** Fix file manager `tx-cos` uploads missing file size metadata. ([#9499](https://github.com/nocobase/nocobase/pull/9499)) by @mytharcher
+
+- **[Data source: Main]** Fix the issue where field options are written into the schema after syncing fields ([#9505](https://github.com/nocobase/nocobase/pull/9505)) by @2013xile
+
+- **[WEB client]** Clean blocks data after remove menus. ([#9459](https://github.com/nocobase/nocobase/pull/9459)) by @gchust
+
+- **[AI employees]** Fix AI employee OSS file read errors ([#9493](https://github.com/nocobase/nocobase/pull/9493)) by @cgyrock
+
+- **[Action: Import records]** Fix the issue where imported record on date-like fields shows wrong date ([#9463](https://github.com/nocobase/nocobase/pull/9463)) by @mytharcher
+
+- **[Action: Export records Pro]** Fix the issue where error thrown when export attachment from attachment url field by @mytharcher
+
+- **[Action: Import records Pro]** fix timezone handling for pro xlsx imports by @mytharcher
+
+## [v2.0.53](https://github.com/nocobase/nocobase/compare/v2.0.52...v2.0.53) - 2026-05-14
+
+### 🚀 Improvements
+
+- **[flow-engine]** Added an unsaved changes confirm message when closing the event flow configuration page with unsaved data present. ([#9449](https://github.com/nocobase/nocobase/pull/9449)) by @gchust
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - fix prevent opening quick edit for association fields in table ([#9469](https://github.com/nocobase/nocobase/pull/9469)) by @katherinehhh
+
+  - Fixed display-only relation fields in sub-tables not showing or not clickable after refresh. ([#9453](https://github.com/nocobase/nocobase/pull/9453)) by @jiannx
+
+  - fix multiple select fields in v2 data blocks should display option labels instead of values ([#9472](https://github.com/nocobase/nocobase/pull/9472)) by @katherinehhh
+
+- **[Block: Multi-step form]** fix  scrollbar issue when enabling full-height in v1 step form block ([#9468](https://github.com/nocobase/nocobase/pull/9468)) by @katherinehhh
+
+## [v2.0.52](https://github.com/nocobase/nocobase/compare/v2.0.51...v2.0.52) - 2026-05-13
+
+### 🎉 New Features
+
+- **[client]**
+  - add current user language variable in v2 ([#9405](https://github.com/nocobase/nocobase/pull/9405)) by @katherinehhh
+
+  - add date range limit option for date fields in v2 forms ([#9400](https://github.com/nocobase/nocobase/pull/9400)) by @katherinehhh
+
+### 🚀 Improvements
+
+- **[client]** exclude already associated records in association selection dialog of one-to-many table block ([#9448](https://github.com/nocobase/nocobase/pull/9448)) by @katherinehhh
+
+- **[Departments]** optimize department list style by adding icons and adjusting spacing ([#9435](https://github.com/nocobase/nocobase/pull/9435)) by @katherinehhh
+
+- **[AI: Knowledge base]** The unique identifier for a knowledge base is configurable at the time of creation by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fixed the issue where legacy default value settings can't be removed. ([#9470](https://github.com/nocobase/nocobase/pull/9470)) by @gchust
+
+  - Fixed the issue where can't select options for association's select field. ([#9088](https://github.com/nocobase/nocobase/pull/9088)) by @gchust
+
+  - Fixed an issue where the target block data scope was set incorrectly when deselecting row data in a table block event flow. ([#9443](https://github.com/nocobase/nocobase/pull/9443)) by @gchust
+
+  - Fix duplicate table requests when filter forms have default values ([#9423](https://github.com/nocobase/nocobase/pull/9423)) by @zhangzhonghe
+
+  - Fixed V2 linkage rules to support setting selectable options for fields ([#9399](https://github.com/nocobase/nocobase/pull/9399)) by @jiannx
+
+  - fix error when changing title field of association field in v2 table block ([#9451](https://github.com/nocobase/nocobase/pull/9451)) by @katherinehhh
+
+  - Fixed an intermittent issue where action button linkage rules would fail to take effect. ([#9430](https://github.com/nocobase/nocobase/pull/9430)) by @gchust
+
+  - hide subtable component for to-many association fields in v2 subtable ([#9438](https://github.com/nocobase/nocobase/pull/9438)) by @katherinehhh
+
+- **[server]** fix(file-manager): force download active content files in local/public storage ([#9437](https://github.com/nocobase/nocobase/pull/9437)) by @mytharcher
+
+- **[AI employees]** Fixed Ollama test flight requiring key input ([#9450](https://github.com/nocobase/nocobase/pull/9450)) by @cgyrock
+
+- **[Graph collection manager]** fix graphical interface auto layout throws update action filter error ([#9421](https://github.com/nocobase/nocobase/pull/9421)) by @katherinehhh
+
+- **[Workflow]** fix: restore helper text in FlowModel workflow binding dialogs for operation and custom action events ([#9447](https://github.com/nocobase/nocobase/pull/9447)) by @mytharcher
+
+- **[Departments]** fix translation conflict between add user and add department buttons in Users & Permissions settings ([#9456](https://github.com/nocobase/nocobase/pull/9456)) by @katherinehhh
+
+- **[Collection field: Markdown(Vditor)]** fix markdown field tooltip being hidden in horizontal form layout ([#9420](https://github.com/nocobase/nocobase/pull/9420)) by @katherinehhh
+
+- **[WEB client]** Fix route type filtering when using translated labels ([#9425](https://github.com/nocobase/nocobase/pull/9425)) by @zhangzhonghe
+
+- **[Workflow: Approval]**
+  - Fix the issue where JS field appears in approval process settings by @zhangzhonghe
+
+  - Fix approval form layout on mobile devices by @zhangzhonghe
+
+  - Fix duplicate approval record index when delegating approval tasks. by @mytharcher
+
+- **[Backup manager]** Fixed an issue where backups would fail with an error when files could not be found. by @gchust
+
 ## [v2.0.51](https://github.com/nocobase/nocobase/compare/v2.0.50...v2.0.51) - 2026-05-10
 
 ### 🚀 Improvements

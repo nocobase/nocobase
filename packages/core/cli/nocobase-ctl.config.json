@@ -131,7 +131,7 @@
       "description": "Manage data sources, collections, and database modeling resources.",
       "include": true,
       "resources": {
-        "includes": ["collections", "fields", "dbViews"],
+        "includes": ["collections", "fields", "dataSources", "dataSourcesCollections", "dbViews"],
         "excludes": [],
         "overrides": {
           "collections": {
@@ -154,6 +154,25 @@
             "topLevel": false,
             "operations": {
               "includes": ["apply"]
+            }
+          },
+          "dataSources": {
+            "name": "data-sources",
+            "description": "Inspect external data sources and their loaded collection metadata.",
+            "topLevel": false,
+            "operations": {
+              "includes": ["dataSources:listEnabled", "dataSources/{associatedIndex}/collections:list"]
+            }
+          },
+          "dataSourcesCollections": {
+            "name": "data-sources-collections",
+            "description": "Manage external data source collection field metadata.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "dataSourcesCollections/{associatedIndex}/fields:list",
+                "dataSourcesCollections/{associatedIndex}/fields:apply"
+              ]
             }
           },
           "dbViews": {

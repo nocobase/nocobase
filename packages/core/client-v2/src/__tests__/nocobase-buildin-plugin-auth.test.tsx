@@ -39,30 +39,18 @@ describe('nocobase buildin plugin auth redirect', () => {
     vi.restoreAllMocks();
   });
 
-  it('should redirect unauthenticated admin access to legacy signin with replace', async () => {
-    const replace = vi.fn();
-    Object.defineProperty(globalThis.window, 'location', {
-      configurable: true,
-      value: {
-        ...originalLocation,
-        pathname: '/v2/admin/7vu4c2sdk6h',
-        search: '',
-        hash: '',
-        replace,
-      },
-    });
-
+  it('should navigate to v2 signin when /auth:check returns no user', async () => {
+    // Aligns with v1: use react-router navigate (virtual) rather than
+    // `window.location.replace`, so a `window.location.href` queued elsewhere
+    // (e.g. 2FA's `code:302` response interceptor) can commit instead of being
+    // overridden.
     const app = createMockClient({
       publicPath: '/v2/',
       plugins: [NocoBaseBuildInPlugin as any],
       router: { type: 'memory', initialEntries: ['/v2/admin/7vu4c2sdk6h'] },
     });
     app.apiMock.onGet('app:getLang').reply(200, {
-      data: {
-        lang: 'en-US',
-        resources: { client: {} },
-        cron: {},
-      },
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
     });
     app.apiMock.onGet('/auth:check').reply(200, { data: {} });
 
@@ -70,68 +58,63 @@ describe('nocobase buildin plugin auth redirect', () => {
     render(<Root />);
 
     await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
+      expect(app.router.router.state.location.pathname).toBe('/v2/signin');
+      expect(app.router.router.state.location.search).toBe('?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h');
     });
   });
 
-  it('should redirect unauthenticated v2 root access to legacy signin with default admin redirect', async () => {
-    const replace = vi.fn();
-    Object.defineProperty(globalThis.window, 'location', {
-      configurable: true,
-      value: {
-        ...originalLocation,
-        pathname: '/nocobase/v2/',
-        search: '',
-        hash: '',
-        replace,
-      },
-    });
-
-    const app = createMockClient({
-      publicPath: '/nocobase/v2/',
-      plugins: [NocoBaseBuildInPlugin as any],
-      router: { type: 'memory', initialEntries: ['/nocobase/v2/'] },
-    });
-    app.apiMock.onGet('app:getLang').reply(200, {
-      data: {
-        lang: 'en-US',
-        resources: { client: {} },
-        cron: {},
-      },
-    });
-
-    const Root = app.getRootComponent();
-    render(<Root />);
-
-    await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/nocobase/signin?redirect=%2Fnocobase%2Fv2%2Fadmin');
-    });
-  });
-
-  it('should render v2 admin root without redirecting to legacy default page', async () => {
-    const replace = vi.fn();
-    Object.defineProperty(globalThis.window, 'location', {
-      configurable: true,
-      value: {
-        ...originalLocation,
-        pathname: '/v2/admin',
-        search: '',
-        hash: '',
-        replace,
-      },
-    });
-
+  it('should short-circuit /auth:check when server returns code:302 instead of redirecting to signin', async () => {
+    // When the server signals an intermediate redirect (typically 2FA verify),
+    // CurrentUserProvider must NOT treat the missing `user.id` as "logged out"
+    // and race the 2FA response interceptor with its own signin redirect.
     const app = createMockClient({
       publicPath: '/v2/',
       plugins: [NocoBaseBuildInPlugin as any],
       router: { type: 'memory', initialEntries: ['/v2/admin'] },
     });
     app.apiMock.onGet('app:getLang').reply(200, {
-      data: {
-        lang: 'en-US',
-        resources: { client: {} },
-        cron: {},
-      },
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    app.apiMock.onGet('/auth:check').reply(200, {
+      data: { code: 302, redirect: '/2fa?redirect=/admin' },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    // Give CurrentUserProvider time to process the response.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(app.router.router.state.location.pathname).toBe('/v2/admin');
+    expect(app.router.router.state.location.search).toBe('');
+  });
+
+  it('should redirect unauthenticated v2 root access to v2 signin via <Navigate />', async () => {
+    const app = createMockClient({
+      publicPath: '/nocobase/v2/',
+      plugins: [NocoBaseBuildInPlugin as any],
+      router: { type: 'memory', initialEntries: ['/nocobase/v2/'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/nocobase/v2/signin');
+      expect(app.router.router.state.location.search).toBe('?redirect=%2Fnocobase%2Fv2%2Fadmin');
+    });
+  });
+
+  it('should render v2 admin root without redirecting away', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any],
+      router: { type: 'memory', initialEntries: ['/v2/admin'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
     });
     app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
     app.apiMock.onGet('systemSettings:get').reply(200, { data: {} });
@@ -152,36 +135,20 @@ describe('nocobase buildin plugin auth redirect', () => {
     await waitFor(() => {
       expect(container.innerHTML).toContain('No pages yet, please configure first');
     });
-    expect(replace).not.toHaveBeenCalled();
+    expect(app.router.router.state.location.pathname).toBe('/v2/admin');
     expect(container.innerHTML).not.toContain('Legacy page');
   });
 
   it.each(['/v2/admin/legacy-page/tab/tab-1', '/v2/admin/legacy-page/view/detail'])(
-    'should show 404 for authenticated direct legacy v2 page access: %s',
+    'should show 404 for authenticated direct v1-style v2 page access: %s',
     async (pathname) => {
-      const replace = vi.fn();
-      Object.defineProperty(globalThis.window, 'location', {
-        configurable: true,
-        value: {
-          ...originalLocation,
-          pathname,
-          search: '?from=direct',
-          hash: '#dialog',
-          replace,
-        },
-      });
-
       const app = createMockClient({
         publicPath: '/v2/',
         plugins: [NocoBaseBuildInPlugin as any],
         router: { type: 'memory', initialEntries: [pathname] },
       });
       app.apiMock.onGet('app:getLang').reply(200, {
-        data: {
-          lang: 'en-US',
-          resources: { client: {} },
-          cron: {},
-        },
+        data: { lang: 'en-US', resources: { client: {} }, cron: {} },
       });
       app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
       app.apiMock.onGet('systemSettings:get').reply(200, { data: {} });
@@ -200,7 +167,7 @@ describe('nocobase buildin plugin auth redirect', () => {
       render(<Root />);
 
       expect(await screen.findByText('404')).toBeInTheDocument();
-      expect(replace).not.toHaveBeenCalled();
+      expect(app.router.router.state.location.pathname).toBe(pathname);
     },
   );
 });

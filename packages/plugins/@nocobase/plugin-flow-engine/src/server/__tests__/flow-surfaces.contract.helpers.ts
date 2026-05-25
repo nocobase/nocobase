@@ -287,7 +287,13 @@ export const FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS = [
 
 export function getData(response: any) {
   expect(response.status).toBe(200);
-  return response.body.data;
+  if (response.body?.data && Object.prototype.hasOwnProperty.call(response.body.data, 'data')) {
+    return response.body.data.data;
+  }
+  if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  return response.body;
 }
 
 export function getComposeBlock(result: any, key: string) {
@@ -298,6 +304,47 @@ export function getComposeBlock(result: any, key: string) {
 
 export function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
+}
+
+function readFixtureResponseError(response: any) {
+  return readErrorMessage(response) || response?.body?.error?.message || response?.body?.message || '';
+}
+
+async function expectFixtureResponse(response: any, action: string) {
+  if (response?.status !== 200) {
+    const message = readFixtureResponseError(response);
+    throw new Error(
+      `flowSurfaces fixture ${action} failed: ${response?.status || 'no response'}${message ? ` ${message}` : ''}`,
+    );
+  }
+  return response;
+}
+
+async function createFixtureCollection(rootAgent: any, values: Record<string, any>) {
+  return expectFixtureResponse(
+    await rootAgent.resource('collections').create({
+      values,
+    }),
+    `collections.create ${values.name || '<unnamed>'}`,
+  );
+}
+
+async function applyFixtureCollection(rootAgent: any, values: Record<string, any>) {
+  return expectFixtureResponse(
+    await rootAgent.resource('collections').apply({
+      values,
+    }),
+    `collections.apply ${values.name || '<unnamed>'}`,
+  );
+}
+
+async function createFixtureField(rootAgent: any, collectionName: string, values: Record<string, any>) {
+  return expectFixtureResponse(
+    await rootAgent.resource('collections.fields', collectionName).create({
+      values,
+    }),
+    `collections.fields.create ${collectionName}.${values.name || '<unnamed>'}`,
+  );
 }
 
 export function readErrorItem(response: any) {
@@ -356,229 +403,215 @@ export async function addBlockData(rootAgent: any, values: Record<string, any>) 
 }
 
 export async function setupFixtureCollections(rootAgent: any, db: Database) {
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'employees',
-      title: 'Employees',
-      fields: [
-        { name: 'nickname', type: 'string', interface: 'input' },
-        { name: 'status', type: 'string', interface: 'input' },
-      ],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'employees',
+    title: 'Employees',
+    fields: [
+      { name: 'nickname', type: 'string', interface: 'input' },
+      { name: 'status', type: 'string', interface: 'input' },
+      { name: 'email', type: 'string', interface: 'email' },
+      { name: 'phone', type: 'string', interface: 'phone' },
+    ],
   });
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'departments',
-      title: 'Departments',
-      titleField: 'title',
-      filterTargetKey: 'title',
-      fields: [{ name: 'title', type: 'string', interface: 'input' }],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'departments',
+    title: 'Departments',
+    titleField: 'title',
+    filterTargetKey: 'title',
+    fields: [
+      { name: 'title', type: 'string', interface: 'input' },
+      { name: 'code', type: 'string', interface: 'input' },
+      { name: 'status', type: 'string', interface: 'select' },
+      { name: 'scope', type: 'string', interface: 'input' },
+    ],
   });
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'flow_surface_profiles',
-      title: 'Flow surface profiles',
-      fields: [{ name: 'bio', type: 'text', interface: 'textarea' }],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'flow_surface_profiles',
+    title: 'Flow surface profiles',
+    fields: [{ name: 'bio', type: 'text', interface: 'textarea' }],
   });
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'calendar_events',
-      title: 'Calendar events',
-      createdAt: false,
-      updatedAt: false,
-      timestamps: false,
-      fields: [
-        { name: 'title', type: 'string', interface: 'input' },
-        { name: 'status', type: 'string', interface: 'select' },
-        { name: 'startsAt', type: 'date', interface: 'datetime' },
-        { name: 'endsAt', type: 'date', interface: 'datetime' },
-      ],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'calendar_events',
+    title: 'Calendar events',
+    createdAt: false,
+    updatedAt: false,
+    timestamps: false,
+    fields: [
+      { name: 'title', type: 'string', interface: 'input' },
+      { name: 'status', type: 'string', interface: 'select' },
+      { name: 'category', type: 'string', interface: 'select' },
+      { name: 'scope', type: 'string', interface: 'input' },
+      { name: 'startsAt', type: 'date', interface: 'datetime' },
+      { name: 'endsAt', type: 'date', interface: 'datetime' },
+    ],
   });
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'kanban_tasks',
-      title: 'Kanban tasks',
-      filterTargetKey: 'id',
-      fields: [
-        { name: 'title', type: 'string', interface: 'input' },
-        {
-          name: 'status_sort',
-          type: 'sort',
-          interface: 'sort',
-          scopeKey: 'status',
-          hidden: true,
+  await createFixtureCollection(rootAgent, {
+    name: 'kanban_tasks',
+    title: 'Kanban tasks',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'title', type: 'string', interface: 'input' },
+      {
+        name: 'status_sort',
+        type: 'sort',
+        interface: 'sort',
+        scopeKey: 'status',
+        hidden: true,
+      },
+      {
+        name: 'department_sort',
+        type: 'sort',
+        interface: 'sort',
+        scopeKey: 'departmentId',
+        hidden: true,
+      },
+      {
+        name: 'status',
+        type: 'string',
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { value: 'todo', label: 'To do', color: 'blue' },
+            { value: 'doing', label: 'Doing', color: 'gold' },
+            { value: 'done', label: 'Done', color: 'green' },
+          ],
         },
-        {
-          name: 'department_sort',
-          type: 'sort',
-          interface: 'sort',
-          scopeKey: 'departmentId',
-          hidden: true,
-        },
-        {
-          name: 'status',
-          type: 'string',
-          interface: 'select',
-          uiSchema: {
-            enum: [
-              { value: 'todo', label: 'To do', color: 'blue' },
-              { value: 'doing', label: 'Doing', color: 'gold' },
-              { value: 'done', label: 'Done', color: 'green' },
-            ],
-          },
-        },
-      ],
-    },
+      },
+      { name: 'priority', type: 'string', interface: 'select' },
+      { name: 'scope', type: 'string', interface: 'input' },
+    ],
   });
-  await rootAgent.resource('collections').apply({
-    values: {
-      name: 'categories',
-      title: 'Categories',
-      template: 'tree',
-      fields: [{ name: 'title', interface: 'input', title: 'Title' }],
-    },
+  await applyFixtureCollection(rootAgent, {
+    name: 'categories',
+    title: 'Categories',
+    template: 'tree',
+    fields: [
+      { name: 'title', interface: 'input', title: 'Title' },
+      { name: 'code', type: 'string', interface: 'input', title: 'Code' },
+      { name: 'status', type: 'string', interface: 'select', title: 'Status' },
+      { name: 'scope', type: 'string', interface: 'input', title: 'Scope' },
+    ],
   });
 
-  await rootAgent.resource('collections.fields', 'employees').create({
-    values: {
-      name: 'department',
-      type: 'belongsTo',
-      target: 'departments',
-      foreignKey: 'departmentId',
-      interface: 'm2o',
-    },
+  await createFixtureField(rootAgent, 'employees', {
+    name: 'department',
+    type: 'belongsTo',
+    target: 'departments',
+    foreignKey: 'departmentId',
+    interface: 'm2o',
   });
-  await rootAgent.resource('collections.fields', 'employees').create({
-    values: {
-      name: 'profile',
-      type: 'belongsTo',
-      target: 'flow_surface_profiles',
-      foreignKey: 'profileId',
-      interface: 'm2o',
-    },
+  await createFixtureField(rootAgent, 'employees', {
+    name: 'profile',
+    type: 'belongsTo',
+    target: 'flow_surface_profiles',
+    foreignKey: 'profileId',
+    interface: 'm2o',
   });
-  await rootAgent.resource('collections.fields', 'employees').create({
-    values: {
-      name: 'manager',
-      type: 'belongsTo',
-      target: 'employees',
-      foreignKey: 'managerId',
-      interface: 'm2o',
-    },
+  await createFixtureField(rootAgent, 'employees', {
+    name: 'manager',
+    type: 'belongsTo',
+    target: 'employees',
+    foreignKey: 'managerId',
+    interface: 'm2o',
   });
-  await rootAgent.resource('collections.fields', 'kanban_tasks').create({
-    values: {
-      name: 'department',
-      type: 'belongsTo',
-      target: 'departments',
-      foreignKey: 'departmentId',
-      interface: 'm2o',
-    },
+  await createFixtureField(rootAgent, 'kanban_tasks', {
+    name: 'department',
+    type: 'belongsTo',
+    target: 'departments',
+    foreignKey: 'departmentId',
+    interface: 'm2o',
   });
 
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'skills',
-      title: 'Skills',
-      // Keep generic association leaf-path assertions stable instead of falling back to the default id title key.
-      titleField: 'label',
-      filterTargetKey: 'label',
-      fields: [{ name: 'label', type: 'string', interface: 'input' }],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'skills',
+    title: 'Skills',
+    // Keep generic association leaf-path assertions stable instead of falling back to the default id title key.
+    titleField: 'label',
+    filterTargetKey: 'label',
+    fields: [{ name: 'label', type: 'string', interface: 'input' }],
   });
 
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'employee_skills',
-      title: 'employee_skills',
-      fields: [
-        {
-          name: 'id',
-          type: 'integer',
-          autoIncrement: true,
-          primaryKey: true,
-          allowNull: false,
-          interface: 'id',
-        },
-      ],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'employee_skills',
+    title: 'employee_skills',
+    fields: [
+      {
+        name: 'id',
+        type: 'integer',
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+        interface: 'id',
+      },
+    ],
   });
 
-  await rootAgent.resource('collections.fields', 'employees').create({
-    values: {
-      name: 'skills',
-      type: 'belongsToMany',
-      target: 'skills',
-      through: 'employee_skills',
-      foreignKey: 'employeeId',
-      otherKey: 'skillId',
-      interface: 'm2m',
-    },
+  await createFixtureField(rootAgent, 'employees', {
+    name: 'skills',
+    type: 'belongsToMany',
+    target: 'skills',
+    through: 'employee_skills',
+    foreignKey: 'employeeId',
+    otherKey: 'skillId',
+    interface: 'm2m',
+  });
+  await waitForFixtureCollectionsReady(db, {
+    employee_skills: ['id', 'employeeId', 'skillId'],
   });
 
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'opaque_targets',
-      title: 'Opaque targets',
-      fields: [{ name: 'meta', type: 'json', interface: 'json' }],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'opaque_targets',
+    title: 'Opaque targets',
+    fields: [{ name: 'meta', type: 'json', interface: 'json' }],
   });
-  await rootAgent.resource('collections.fields', 'employees').create({
-    values: {
-      name: 'opaqueTarget',
-      type: 'belongsTo',
-      target: 'opaque_targets',
-      foreignKey: 'opaqueTargetId',
-      interface: 'm2o',
-    },
+  await createFixtureField(rootAgent, 'employees', {
+    name: 'opaqueTarget',
+    type: 'belongsTo',
+    target: 'opaque_targets',
+    foreignKey: 'opaqueTargetId',
+    interface: 'm2o',
   });
 
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'flow_surface_attachments',
-      title: 'Flow surface attachments',
-      fields: [{ name: 'meta', type: 'json', interface: 'json' }],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'flow_surface_attachments',
+    title: 'Flow surface attachments',
+    fields: [{ name: 'meta', type: 'json', interface: 'json' }],
   });
 
-  await rootAgent.resource('collections').create({
-    values: {
-      name: 'employee_attachments',
-      title: 'employee_attachments',
-      fields: [
-        {
-          name: 'id',
-          type: 'integer',
-          autoIncrement: true,
-          primaryKey: true,
-          allowNull: false,
-          interface: 'id',
-        },
-      ],
-    },
+  await createFixtureCollection(rootAgent, {
+    name: 'employee_attachments',
+    title: 'employee_attachments',
+    fields: [
+      {
+        name: 'id',
+        type: 'integer',
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+        interface: 'id',
+      },
+    ],
   });
 
-  await rootAgent.resource('collections.fields', 'employees').create({
-    values: {
-      name: 'fujian',
-      type: 'belongsToMany',
-      target: 'flow_surface_attachments',
-      through: 'employee_attachments',
-      foreignKey: 'employeeId',
-      otherKey: 'attachmentId',
-      interface: 'attachment',
-    },
+  await createFixtureField(rootAgent, 'employees', {
+    name: 'fujian',
+    type: 'belongsToMany',
+    target: 'flow_surface_attachments',
+    through: 'employee_attachments',
+    foreignKey: 'employeeId',
+    otherKey: 'attachmentId',
+    interface: 'attachment',
+  });
+  await waitForFixtureCollectionsReady(db, {
+    employee_attachments: ['id', 'employeeId', 'attachmentId'],
   });
 
   await waitForFixtureCollectionsReady(db, {
-    categories: ['title', 'parentId'],
-    calendar_events: ['title', 'status', 'startsAt', 'endsAt'],
-    kanban_tasks: ['title', 'status', 'status_sort', 'departmentId', 'department_sort'],
-    departments: ['title'],
-    employees: ['nickname', 'status', 'departmentId', 'profileId', 'managerId', 'opaqueTargetId'],
+    categories: ['title', 'code', 'status', 'scope', 'parentId'],
+    calendar_events: ['title', 'status', 'category', 'scope', 'startsAt', 'endsAt'],
+    kanban_tasks: ['title', 'status', 'priority', 'scope', 'status_sort', 'departmentId', 'department_sort'],
+    departments: ['title', 'code', 'status', 'scope'],
+    employees: ['nickname', 'status', 'email', 'phone', 'departmentId', 'profileId', 'managerId', 'opaqueTargetId'],
     flow_surface_profiles: ['bio'],
     skills: ['label'],
     employee_skills: ['id', 'employeeId', 'skillId'],

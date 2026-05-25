@@ -19,8 +19,8 @@ import { findAvailableTcpPort } from '../lib/prompt-validators.js';
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   runNocoBaseCommand: vi.fn(),
-  promptInfo: vi.fn(),
-  promptStep: vi.fn(),
+  printInfo: vi.fn(),
+  printWarning: vi.fn(),
 }));
 
 vi.mock('../lib/run-npm.js', () => ({
@@ -28,23 +28,22 @@ vi.mock('../lib/run-npm.js', () => ({
   runNocoBaseCommand: mocks.runNocoBaseCommand,
 }));
 
-vi.mock('@clack/prompts', () => ({
-  log: {
-    info: mocks.promptInfo,
-    step: mocks.promptStep,
-    warn: vi.fn(),
-  },
-  outro: vi.fn(),
-  cancel: vi.fn(),
-}));
+vi.mock('../lib/ui.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/ui.js')>();
+  return {
+    ...actual,
+    printInfo: mocks.printInfo,
+    printWarning: mocks.printWarning,
+  };
+});
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
   mocks.run.mockReset();
   mocks.runNocoBaseCommand.mockReset();
-  mocks.promptInfo.mockReset();
-  mocks.promptStep.mockReset();
+  mocks.printInfo.mockReset();
+  mocks.printWarning.mockReset();
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
@@ -156,9 +155,9 @@ test('startBuiltinDb reuses an existing db container without rechecking its publ
 
     expect(plan.containerName).toContain('demo-postgres');
     expect(mocks.run.mock.calls.length).toBe(0);
-    expect(mocks.promptInfo.mock.calls).toEqual([
-      [`Built-in postgres container already exists: ${plan.containerName}`],
-      [`Built-in postgres database is ready at 127.0.0.1:${dbPort}`],
+    expect(mocks.printInfo.mock.calls).toEqual([
+      ['Using built-in postgres database.'],
+      ['Postgres database ready.'],
     ]);
   } finally {
     await new Promise<void>((resolve, reject) => {
@@ -214,6 +213,7 @@ test('downloadLocalApp delegates npm/git downloads through nb source download an
       [
         '-y',
         '--no-intro',
+        '--compact-log',
         '--verbose',
         '--source',
         'npm',
@@ -273,6 +273,9 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
       dbDatabase: 'nocobase',
       dbUser: 'nocobase',
       dbPassword: 'nocobase',
+      dbSchema: 'test',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
     },
     rootResults: {
       rootUsername: 'nocobase',
@@ -298,6 +301,9 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
           DB_DATABASE: 'nocobase',
           DB_USER: 'nocobase',
           DB_PASSWORD: 'nocobase',
+          DB_SCHEMA: 'test',
+          DB_TABLE_PREFIX: 'nb_',
+          DB_UNDERSCORED: 'true',
           INIT_APP_LANG: 'en-US',
           INIT_ROOT_USERNAME: 'nocobase',
           INIT_ROOT_EMAIL: 'admin@nocobase.com',
@@ -322,6 +328,9 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
           DB_DATABASE: 'nocobase',
           DB_USER: 'nocobase',
           DB_PASSWORD: 'nocobase',
+          DB_SCHEMA: 'test',
+          DB_TABLE_PREFIX: 'nb_',
+          DB_UNDERSCORED: 'true',
           INIT_APP_LANG: 'en-US',
           INIT_ROOT_USERNAME: 'nocobase',
           INIT_ROOT_EMAIL: 'admin@nocobase.com',
@@ -537,6 +546,7 @@ test('downloadManagedSource delegates docker downloads through nb source downloa
       [
         '-y',
         '--no-intro',
+        '--compact-log',
         '--verbose',
         '--source',
         'docker',
@@ -583,6 +593,7 @@ test('downloadManagedSource resolves otherVersion before delegating to nb source
   expect(runCommand.mock.calls[0]?.[1]).toEqual([
     '-y',
     '--no-intro',
+    '--compact-log',
     '--source',
     'git',
     '--version',

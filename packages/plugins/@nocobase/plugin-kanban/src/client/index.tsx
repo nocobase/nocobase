@@ -31,7 +31,7 @@ import {
   KanbanGroupOptionsTable,
   KanbanGroupingSelector,
   KanbanCreateSortFieldSelect,
-} from './models';
+} from '../client-v2/models';
 
 Kanban.Card = KanbanCard;
 Kanban.CardAdder = Action;

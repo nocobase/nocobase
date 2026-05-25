@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as p from '@clack/prompts';
 import { Args, Command, Flags } from '@oclif/core';
 import {
   type PromptInitialValues,
@@ -19,6 +18,7 @@ import {
   CLI_LOCALE_FLAG_DESCRIPTION,
   CLI_LOCALE_FLAG_OPTIONS,
 } from '../../lib/cli-locale.ts';
+import { printInfo } from '../../lib/ui.ts';
 import {
   type RunPromptCatalogWebUIOptionsWithoutSource,
   runPromptCatalogWebUI,
@@ -102,7 +102,7 @@ export default class PromptsTest extends Command {
       initialValue: 'world',
       placeholder: 'Your name',
       /**
-       * Example: async validation (Clack re-prompts; Web UI returns 400 on submit with this message).
+       * Example: async validation (the terminal prompt layer re-prompts; Web UI returns 400 on submit with this message).
        */
       validate: async (v) => {
         if (String(v).trim().length < 2) {
@@ -127,7 +127,7 @@ export default class PromptsTest extends Command {
       type: 'run',
       when: (values) => values.select === 'option1',
       run: (values) => {
-        p.log.info(`run block: select is option1 (current keys: ${Object.keys(values).join(', ')})`);
+        printInfo(`run block: select is option1 (current keys: ${Object.keys(values).join(', ')})`);
       },
     },
     password: {
@@ -179,7 +179,7 @@ export default class PromptsTest extends Command {
     this.log(JSON.stringify(results, null, 2));
   }
 
-  /** Map oclif parse result into `values` presets: each key here skips that prompt (no Clack UI). */
+  /** Map oclif parse result into `values` presets: each key here skips that prompt (no terminal prompt UI). */
   private buildPresetValuesFromParsed(
     args: { file?: string },
     flags: {
