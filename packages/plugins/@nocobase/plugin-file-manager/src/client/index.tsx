@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollection } from '@nocobase/client';
+import React from 'react';
+import { attachmentFileTypes, Plugin, useCollection } from '@nocobase/client';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { FileManagerProvider } from './FileManagerProvider';
 import { FileSizeField } from './FileSizeField';
@@ -19,8 +20,51 @@ import { NAMESPACE } from './locale';
 import { DisplayPreviewFieldModel } from './models/DisplayPreviewFieldModel';
 import { UploadFieldModel } from './models/UploadFieldModel';
 import { UploadActionModel } from './models/UploadActionModel';
+import { FilePreviewRenderer, getDownloadFileName, getFileUrl, isPdfFile } from './previewer/filePreviewTypes';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
+
+function AttachmentPdfPreviewer({ index, list, onSwitchIndex }) {
+  const file = list[index];
+  const onDownload = React.useCallback(
+    (targetFile?: any) => {
+      const target = targetFile || file;
+      const url = getFileUrl(target);
+      if (!url) {
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = getDownloadFileName(target, url);
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    },
+    [file],
+  );
+
+  if (!file) {
+    return null;
+  }
+
+  return (
+    <FilePreviewRenderer
+      open={index != null}
+      file={file}
+      index={index}
+      list={list}
+      onOpenChange={(open) => {
+        if (!open) {
+          onSwitchIndex(null);
+        }
+      }}
+      onClose={() => onSwitchIndex(null)}
+      onSwitchIndex={onSwitchIndex}
+      onDownload={onDownload}
+    />
+  );
+}
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
@@ -40,6 +84,11 @@ export class PluginFileManagerClient extends Plugin {
     });
     Object.values(storageTypes).forEach((storageType) => {
       this.registerStorageType(storageType.name, storageType);
+    });
+
+    attachmentFileTypes.add({
+      match: isPdfFile,
+      Previewer: AttachmentPdfPreviewer,
     });
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('table:configureActions');
