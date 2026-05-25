@@ -45,6 +45,10 @@ export interface BackupSettings {
   includeTables?: string[];
   excludeTables?: string[];
   description?: string;
+  createdBy?: {
+    id: string;
+    username: string;
+  };
 }
 
 export interface BackupFile {
@@ -53,6 +57,10 @@ export interface BackupFile {
   createdAt?: Date;
   description?: string;
   inProgress: boolean;
+  createdBy?: {
+    id: string;
+    username: string;
+  };
 }
 
 export interface BackupTaskResult {
@@ -231,6 +239,7 @@ export class BackupManager {
       enableFilesBackup: opts.enableFilesBackup,
       version: await this.app.version.get(),
       description: opts.description,
+      createdBy: opts.createdBy,
       database: {
         dialect,
         underscored,
@@ -521,7 +530,7 @@ export class BackupManager {
       .map(async (file): Promise<BackupFile> => {
         const fileBaseName = path.basename(file, `.${BACKUP_EXTENSION}`);
         const metadataFilePath = path.join(this.#backupDir, `${fileBaseName}${METADATA_EXTENSION}`);
-        const [stats, description] = await Promise.all([
+        const [stats, metadata] = await Promise.all([
           fsPromises.stat(path.join(this.#backupDir, file)),
           this.#readBackupDescription(metadataFilePath),
         ]);
@@ -529,7 +538,8 @@ export class BackupManager {
           name: file,
           fileSize: humanFileSize(stats.size),
           createdAt: stats.ctime,
-          description,
+          description: metadata?.description,
+          createdBy: metadata?.createdBy,
           inProgress: false,
         };
       });
@@ -537,10 +547,15 @@ export class BackupManager {
     return backups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  async #readBackupDescription(metadataFilePath: string): Promise<string | undefined> {
+  async #readBackupDescription(
+    metadataFilePath: string,
+  ): Promise<{ description?: string; createdBy?: { id: string; username: string } } | undefined> {
     try {
       const metadata = JSON.parse(await fsPromises.readFile(metadataFilePath, 'utf8'));
-      return typeof metadata?.description === 'string' ? metadata.description : undefined;
+      return {
+        description: metadata.description,
+        createdBy: metadata.createdBy,
+      };
     } catch (_error) {
       return undefined;
     }
