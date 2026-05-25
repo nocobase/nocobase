@@ -14,15 +14,26 @@ import {
   useFlowModelById,
   useFlowViewContext,
 } from '@nocobase/flow-engine';
-import type { FlowContext, FlowModel, ModelConstructor } from '@nocobase/flow-engine';
+import type { FlowContext, FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import FlowRoute from './components/FlowRoute';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { ChildPageModel } from './models';
 
-function InternalFlowPage({ uid, ...props }) {
+const defaultPageFlowSettings: FlowModelRendererProps['showFlowSettings'] = {
+  showBackground: false,
+  showBorder: false,
+};
+
+function InternalFlowPage({
+  uid,
+  showFlowSettings,
+  ...props
+}: { uid: string; showFlowSettings?: FlowModelRendererProps['showFlowSettings'] } & Record<string, unknown>) {
   const model = useFlowModelById(uid);
+  const resolvedShowFlowSettings = showFlowSettings ?? model?.props?.showFlowSettings ?? defaultPageFlowSettings;
+
   return (
     <FlowModelRenderer
       model={model}
@@ -32,7 +43,7 @@ function InternalFlowPage({ uid, ...props }) {
         />
       }
       hideRemoveInSettings
-      showFlowSettings={{ showBackground: false, showBorder: false }}
+      showFlowSettings={resolvedShowFlowSettings}
       {...props}
     />
   );
@@ -44,6 +55,7 @@ type FlowPageProps = {
   layoutContext?: FlowContext;
   onModelLoaded?: (uid: string, model: FlowModel) => void;
   defaultTabTitle?: string;
+  showFlowSettings?: FlowModelRendererProps['showFlowSettings'];
 };
 
 export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknown>) => {

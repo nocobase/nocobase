@@ -13,7 +13,7 @@ import { BaseLayoutModel, PoweredBy, useApp } from '@nocobase/client-v2';
 import { observer, useFlowEngine } from '@nocobase/flow-engine';
 import type { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Input, Modal, Result, Spin, theme } from 'antd';
+import { Form, Input, Modal, Result, Spin, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutlet } from 'react-router-dom';
 import { PUBLIC_FORM_TOKEN_KEY } from '../constants';
@@ -81,6 +81,7 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
   const t = useT();
   const { token } = theme.useToken();
   const [password, setPassword] = useState('');
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
   const [routeContentHeight, setRouteContentHeight] = useState(1);
   const [routeContentElement, setRouteContentElement] = useState<HTMLDivElement | null>(null);
   const routeContentRef = useRef<HTMLDivElement | null>(null);
@@ -105,8 +106,14 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
     },
     {
       onSuccess(nextData: any) {
+        setPasswordErrorMessage('');
         if (nextData?.token) {
           localStorage.setItem(PUBLIC_FORM_TOKEN_KEY, nextData.token);
+        }
+      },
+      onError(nextError: any) {
+        if (nextError?.response?.status === 401) {
+          setPasswordErrorMessage(t('Incorrect password'));
         }
       },
       refreshDeps: [pageUid],
@@ -236,16 +243,29 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
         title={t('Password')}
         open
         cancelButtonProps={{ hidden: true }}
+        confirmLoading={loading}
         onOk={() => {
+          setPasswordErrorMessage('');
           run(password);
         }}
       >
-        <Input.Password
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value);
-          }}
-        />
+        <Form layout="vertical">
+          <Form.Item
+            validateStatus={passwordErrorMessage ? 'error' : undefined}
+            help={passwordErrorMessage || undefined}
+            style={{ marginBottom: 0 }}
+          >
+            <Input.Password
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (passwordErrorMessage) {
+                  setPasswordErrorMessage('');
+                }
+              }}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     );
   }

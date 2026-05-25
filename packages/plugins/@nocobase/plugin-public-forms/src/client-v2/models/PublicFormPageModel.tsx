@@ -83,6 +83,7 @@ export class PublicFormPageModel extends ChildPageModel {
 
   onInit(options: any): void {
     super.onInit(options);
+    this.setProps('showFlowSettings', false);
     this.context.defineProperty('publicFormPageModel', {
       value: this,
     });

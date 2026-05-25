@@ -52,6 +52,7 @@ export function createPublicFormFlowModelTree(record: PublicFormRecord, t: (key:
           title: record.title,
           displayTitle: false,
           enableTabs: false,
+          showFlowSettings: false,
         },
         stepParams: {
           pageSettings: {

@@ -30,6 +30,7 @@ describe('public form model tree', () => {
       use: 'RouteModel',
     });
     expect(page.use).toBe(PUBLIC_FORM_PAGE_MODEL);
+    expect(page.props.showFlowSettings).toBe(false);
     expect(formBlock).toMatchObject({
       use: 'CreateFormModel',
       stepParams: {

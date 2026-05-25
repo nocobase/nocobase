@@ -53,4 +53,15 @@ describe('PublicFormPageModel', () => {
 
     expect(model.context.allowedFormActionModelNames).toEqual([PUBLIC_FORM_SUBMIT_ACTION_MODEL]);
   });
+
+  it('hides the page flow settings entry', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ PublicFormPageModel });
+    const model = engine.createModel<PublicFormPageModel>({
+      uid: 'public-form-page',
+      use: 'PublicFormPageModel',
+    });
+
+    expect(model.props.showFlowSettings).toBe(false);
+  });
 });
