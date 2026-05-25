@@ -7,12 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useTranslation } from 'react-i18next';
-
-export const NAMESPACE = 'users';
-
-// Locale resources auto-loaded by v2 buildin `LocalePlugin.afterAdd`.
-
-export function useUsersTranslation() {
-  return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
-}
+export * from './ExtendCollectionsProvider';
