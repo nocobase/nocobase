@@ -35,6 +35,8 @@ import type {
 } from './types';
 import { isInheritedFrom } from './utils';
 
+const getFlowEngineLoggerLevel = () => (process.env.NODE_ENV === 'production' ? 'warn' : 'trace');
+
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
  * It provides capabilities for registering, creating, finding, persisting, replacing, and moving models.
@@ -183,7 +185,7 @@ export class FlowEngine {
       MultiRecordResource,
     });
     this.logger = pino({
-      level: 'trace',
+      level: getFlowEngineLoggerLevel(),
       browser: {
         write: {
           fatal: (o) => console.trace(o),
@@ -727,7 +729,7 @@ export class FlowEngine {
    */
   public removeModel(uid: string): boolean {
     if (!this._modelInstances.has(uid)) {
-      console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
+      this.logger.debug(`FlowEngine: Model with UID '${uid}' does not exist.`);
       return false;
     }
     const modelInstance = this._modelInstances.get(uid) as FlowModel;
