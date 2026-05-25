@@ -81,8 +81,7 @@ export const PluginCard: FC<PluginCardProps> = ({ data }) => {
     });
     const checkHealth = () => {
       app.apiClient
-        .silent()
-        .request({ url: '__health_check', method: 'get' })
+        .request({ url: '__health_check', method: 'get', skipNotify: true })
         .then((response) => {
           if (response?.data === 'ok') {
             window.location.reload();
