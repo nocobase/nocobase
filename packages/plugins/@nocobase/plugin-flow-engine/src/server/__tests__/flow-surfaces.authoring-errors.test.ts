@@ -690,6 +690,88 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     }
   });
 
+  it('should reject persisted table settings payloads before table writes', async () => {
+    const composeErrors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'missing-target-never-resolved' },
+      blocks: [
+        {
+          key: 'auditTable',
+          type: 'table',
+          collection: 'employees',
+          stepParams: {
+            tableSettings: {
+              pageSize: { pageSize: 20 },
+            },
+          },
+          settings: {
+            pageSize: 20,
+            tableSettings: {
+              defaultSorting: {
+                sort: [{ field: 'createdAt', direction: 'desc' }],
+              },
+            },
+          },
+        },
+      ],
+    });
+
+    expect(composeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.tableSettings',
+          ruleId: 'table-settings-unsupported-key',
+          details: expect.objectContaining({
+            repairHint: expect.stringContaining('settings.sorting'),
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.blocks[0].stepParams',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+      ]),
+    );
+
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'table-target' },
+        changes: {
+          title: 'Audit trail',
+          tableSettings: {
+            pageSize: { pageSize: 20 },
+          },
+          settings: {
+            defaultSorting: {
+              sort: [{ field: 'createdAt', direction: 'desc' }],
+            },
+          },
+        },
+      },
+      { hostBlockType: 'table' },
+    );
+
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.tableSettings',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+        expect.objectContaining({
+          path: '$.changes.settings.defaultSorting',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+      ]),
+    );
+    expect(configureErrors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.title',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+      ]),
+    );
+  });
+
   it('should aggregate non-canonical jsBlock public authoring shapes before writes', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('compose', {
       target: { uid: 'missing-target-never-resolved' },

@@ -62,6 +62,7 @@ import {
   resolveFlowSurfaceApplyBlueprintDefaultCollection,
 } from './blueprint/defaults';
 import { collectRunJsAuthoringErrors } from './runjs-authoring';
+import { getConfigureOptionKeysForUse } from './configure-options';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -193,6 +194,10 @@ const GRID_CARD_ALLOWED_SETTINGS_KEYS = new Set([
   'sorting',
   'layout',
 ]);
+const TABLE_ALLOWED_SETTINGS_KEYS = new Set([...getConfigureOptionKeysForUse('TableBlockModel'), 'sort']);
+const TABLE_INTERNAL_AUTHORING_KEYS = ['tableSettings', 'defaultSorting', 'stepParams'];
+const TABLE_SETTINGS_REPAIR_HINT =
+  'Use public table settings keys such as settings.pageSize, settings.sorting, settings.dataScope, settings.density, settings.showRowNumbers, settings.treeTable, settings.dragSort, and settings.dragSortBy. Do not nest persisted tableSettings/defaultSorting/stepParams payloads.';
 const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
@@ -3946,6 +3951,7 @@ function collectBlockErrors(
   collectChartDisplayTitleErrors(block, blockType, path, errors);
   collectTreeTableExplicitFieldsErrors(block, blockType, path, errors, context);
   collectTreeConnectFieldsErrors(block.settings?.connectFields, `${path}.settings.connectFields`, errors);
+  collectTableSettingsErrors(block, blockType, path, errors);
   collectGridCardSettingsErrors(block, blockType, path, errors);
   const descendantContext = getBlockDescendantValidationContext(block, context);
   collectActionListErrors(block.actions, `${path}.actions`, errors, block, descendantContext, 'actions');
@@ -4318,6 +4324,7 @@ async function collectConfigureErrors(
   collectCommentsBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectRecordHistoryBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectChartDisplayTitleErrors(changes, hostBlockType, '$.changes', errors);
+  collectTableSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
   collectTriggerWorkflowsErrors(changes.triggerWorkflows, '$.changes.triggerWorkflows', errors);
@@ -6085,6 +6092,52 @@ function getCollectionFilterTargetKey(collection: any) {
 
 function normalizeDataSourceKey(value: any) {
   return String(value || 'main').trim() || 'main';
+}
+
+function collectTableSettingsErrors(
+  block: any,
+  blockType: string,
+  blockPath: string,
+  errors: AuthoringErrorInput[],
+  options: { directSettings?: boolean } = {},
+) {
+  if (blockType !== 'table' || !_.isPlainObject(block)) {
+    return;
+  }
+  TABLE_INTERNAL_AUTHORING_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(block, key)) {
+      pushTableSettingsUnsupportedError(errors, `${blockPath}.${key}`, key);
+    }
+  });
+  const hasSettings = _.isPlainObject(block?.settings);
+  if (!hasSettings) {
+    return;
+  }
+  const settings = block.settings;
+  const settingsPath = `${blockPath}.settings`;
+
+  Object.keys(settings).forEach((key) => {
+    if (TABLE_ALLOWED_SETTINGS_KEYS.has(key) && options.directSettings !== true) {
+      return;
+    }
+    if (options.directSettings === true && !TABLE_INTERNAL_AUTHORING_KEYS.includes(key)) {
+      return;
+    }
+    pushTableSettingsUnsupportedError(errors, `${settingsPath}.${key}`, key);
+  });
+}
+
+function pushTableSettingsUnsupportedError(errors: AuthoringErrorInput[], path: string, key: string) {
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'table-settings-unsupported-key',
+    message: `flowSurfaces authoring ${path} is not part of the public table settings contract`,
+    details: {
+      key,
+      allowedKeys: Array.from(TABLE_ALLOWED_SETTINGS_KEYS),
+      repairHint: TABLE_SETTINGS_REPAIR_HINT,
+    },
+  });
 }
 
 function collectGridCardSettingsErrors(

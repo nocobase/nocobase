@@ -229,7 +229,16 @@ type RunJsAstInspection = {
     component: string;
     index: number;
   }>;
+  reactComponentCtxRenderCalls: Array<{
+    capability: string;
+    component: string;
+    index: number;
+  }>;
   sharedCtxResourceCallsInFunctions: SharedCtxResourceCallInFunction[];
+  topLevelReachableCtxRenderCalls: Array<{
+    capability: string;
+    index: number;
+  }>;
 };
 
 type CtxMethodAlias = SourceRange & {
@@ -284,6 +293,20 @@ type CtxApiResourceAliases = {
 
 type AstIdentifierBinding = SourceRange & {
   name: string;
+};
+
+type AstFunctionBinding = SourceRange & {
+  declarationStart: number;
+  functionNode: any;
+  hoisted: boolean;
+  name: string;
+  scopeStart: number;
+};
+
+type AstCtxRenderCall = {
+  args: any[];
+  capability: string;
+  index: number;
 };
 
 const AcornParserWithJsx = acorn.Parser.extend(jsx());
@@ -550,7 +573,7 @@ const INIT_RESOURCE_CLASS_NAMES = new Set([
   'MultiRecordResource',
   'SQLResource',
 ]);
-const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource']);
+const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource', 'render']);
 const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 const CANONICAL_CTX_LIB_MEMBERS = ['React', 'ReactDOM', 'antd', 'dayjs', 'antdIcons', 'lodash', 'formula', 'math'];
 const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((member) => [member.toLowerCase(), member]));
@@ -1753,7 +1776,29 @@ function collectSurfaceStyleErrors(
     return;
   }
 
-  const firstTopLevelRender = scan.topLevelCtxRenderCalls[0];
+  if (scan.reactComponentCtxRenderCalls.length) {
+    scan.reactComponentCtxRenderCalls.forEach((entry) => {
+      errors.push(
+        buildRunJsAuthoringError({
+          path,
+          repairClass: 'react-runtime-contract-stop',
+          ruleId: 'runjs-react-component-ctx-render-forbidden',
+          message: `flowSurfaces authoring ${path} React component ${entry.component} cannot call ctx.render(...) while React is rendering it; return JSX from ${entry.component} and keep ctx.render(<${entry.component} />) on the directly executed render path`,
+          modelUse,
+          surface,
+          index: entry.index,
+          source,
+          details: {
+            capability: entry.capability,
+            component: entry.component,
+          },
+        }),
+      );
+    });
+    return;
+  }
+
+  const firstTopLevelRender = scan.topLevelReachableCtxRenderCalls[0];
   const firstTopLevelReturn = scan.topLevelReturns[0];
   if (firstTopLevelRender && (!firstTopLevelReturn || firstTopLevelRender.index < firstTopLevelReturn.index)) {
     return;
@@ -2413,6 +2458,11 @@ function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoring
   const astInspection = ast ? inspectRunJsAst(ast, source, stringLiteralBindings, context) : undefined;
   const ctxRenderCalls = findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g, sourceBindings);
   const topLevelCtxRenderCalls = ctxRenderCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges));
+  const topLevelReachableCtxRenderCalls = astInspection
+    ? dedupeIndexedEntries(astInspection.topLevelReachableCtxRenderCalls).sort(
+        (left, right) => left.index - right.index,
+      )
+    : topLevelCtxRenderCalls;
   const topLevelReturns = findMatches(masked, /\breturn\b/g).filter(
     (entry) => !isInsideRanges(entry.index, functionRanges),
   );
@@ -2439,6 +2489,7 @@ function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoring
     sourceBindings,
     ctxRenderCalls,
     topLevelCtxRenderCalls,
+    topLevelReachableCtxRenderCalls,
     topLevelReturns,
     ctxRunjsCalls,
     nestedRunjsCalls: astInspection?.nestedRunjsCalls || ctxRunjsCalls,
@@ -2461,6 +2512,7 @@ function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoring
     unboundReactCreateElementCalls: collectUnboundReactCreateElementCalls(masked, sourceBindings),
     reactComponentFunctionCalls: collectReactComponentFunctionCalls(masked, reactComponentAliases, sourceBindings),
     reactAsyncComponentReferences: astInspection?.reactAsyncComponentReferences || [],
+    reactComponentCtxRenderCalls: astInspection?.reactComponentCtxRenderCalls || [],
     sharedCtxResourceCallsInFunctions: astInspection?.sharedCtxResourceCallsInFunctions || [],
     ctxRenderComponentSignatureCalls: collectCtxRenderComponentSignatureCalls(
       source,
@@ -2485,7 +2537,7 @@ function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoring
     forbiddenBareGlobals,
     ctxMemberAccesses: collectCtxMemberAccesses(masked, sourceBindings),
     dynamicCtxAccesses: findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g, sourceBindings),
-    isTopLevelFunctionWrapper: isTopLevelFunctionWrapper(masked, functionRanges, topLevelCtxRenderCalls),
+    isTopLevelFunctionWrapper: isTopLevelFunctionWrapper(masked, functionRanges, topLevelReachableCtxRenderCalls),
   };
 }
 
@@ -2496,6 +2548,7 @@ function inspectRunJsAst(
   context: RunJsAuthoringContext = {},
 ): RunJsAstInspection {
   const identifierBindings = collectAstIdentifierBindingsFromAst(ast, source);
+  const functionBindings = collectAstFunctionBindingsFromAst(ast, source);
   const aliases = collectCtxMethodAliasesFromAst(ast, source, identifierBindings);
   const ctxApiAliases = collectCtxApiAliasesFromAst(ast, source, identifierBindings);
   const ctxLibsRootAliases = collectCtxLibsRootAliasesFromAst(ast, source, identifierBindings);
@@ -2538,6 +2591,19 @@ function inspectRunJsAst(
     context,
   );
   const reactAsyncComponentReferences: RunJsAstInspection['reactAsyncComponentReferences'] = [];
+  const topLevelReachableCtxRenderCalls = collectAstTopLevelReachableCtxRenderCallsFromAst(
+    ast,
+    aliases,
+    identifierBindings,
+    functionBindings,
+  );
+  const reactComponentCtxRenderCalls = collectAstReactComponentCtxRenderCallsFromAst(
+    topLevelReachableCtxRenderCalls,
+    aliases,
+    reactCreateElementAliases,
+    identifierBindings,
+    functionBindings,
+  );
   const sharedCtxResourceCallsInFunctions = collectAstSharedCtxResourceCallsInFunctions(
     ast,
     source,
@@ -2662,7 +2728,9 @@ function inspectRunJsAst(
     reactAsyncComponentReferences: dedupeIndexedEntries(reactAsyncComponentReferences).sort(
       (left, right) => left.index - right.index,
     ),
+    reactComponentCtxRenderCalls,
     sharedCtxResourceCallsInFunctions,
+    topLevelReachableCtxRenderCalls,
   };
 }
 
@@ -3333,6 +3401,414 @@ function resolveAstAsyncComponentBinding(
   return resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, bindings, identifierBindings);
 }
 
+function collectAstReactComponentCtxRenderCallsFromAst(
+  renderCalls: AstCtxRenderCall[],
+  ctxMethodAliases: CtxMethodAlias[],
+  reactCreateElementAliases: ReactCreateElementAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  functionBindings: AstFunctionBinding[],
+): RunJsAstInspection['reactComponentCtxRenderCalls'] {
+  if (!renderCalls.length) {
+    return [];
+  }
+
+  const entries: RunJsAstInspection['reactComponentCtxRenderCalls'] = [];
+  const pending = renderCalls.flatMap((call) =>
+    collectAstReactComponentUsagesFromRenderCall(call, reactCreateElementAliases, identifierBindings, functionBindings),
+  );
+  const visitedComponents = new Set<string>();
+
+  while (pending.length) {
+    const usage = pending.shift();
+    if (!usage) {
+      continue;
+    }
+    const componentKey = `${usage.functionBinding.name}:${usage.functionBinding.declarationStart}`;
+    if (visitedComponents.has(componentKey)) {
+      continue;
+    }
+    visitedComponents.add(componentKey);
+
+    const renderCall = findCtxRenderCallInFunction(
+      usage.functionBinding.functionNode,
+      ctxMethodAliases,
+      identifierBindings,
+      functionBindings,
+      { bindingMode: 'lexical' },
+    );
+    if (!renderCall) {
+      pending.push(
+        ...collectAstReactComponentUsagesOnFunctionRenderPath(
+          usage.functionBinding.functionNode,
+          reactCreateElementAliases,
+          identifierBindings,
+          functionBindings,
+        ),
+      );
+      continue;
+    }
+    entries.push({
+      capability: renderCall.capability,
+      component: usage.functionBinding.name,
+      index: renderCall.index,
+    });
+  }
+
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function collectAstReactComponentUsagesFromRenderCall(
+  renderCall: AstCtxRenderCall,
+  reactCreateElementAliases: ReactCreateElementAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  functionBindings: AstFunctionBinding[],
+) {
+  const usages = collectAstReactComponentUsagesFromNodes(
+    renderCall.args,
+    reactCreateElementAliases,
+    identifierBindings,
+    functionBindings,
+  );
+
+  renderCall.args.forEach((arg) => {
+    walkAstAncestor(arg, {
+      CallExpression(node: any) {
+        const callee = unwrapAstChainExpression(node.callee);
+        if (callee?.type !== 'Identifier') {
+          return;
+        }
+        const helper = resolveAstFunctionBinding(callee.name, node.start || 0, functionBindings, identifierBindings, {
+          bindingMode: 'initialized',
+          initializedIndex: renderCall.index,
+        });
+        if (!helper) {
+          return;
+        }
+        usages.push(
+          ...collectAstReactComponentUsagesOnFunctionRenderPath(
+            helper.functionNode,
+            reactCreateElementAliases,
+            identifierBindings,
+            functionBindings,
+          ),
+        );
+      },
+    });
+  });
+
+  return dedupeAstFunctionUsageEntries(usages).sort((left, right) => left.index - right.index);
+}
+
+function collectAstReactComponentUsagesFromNodes(
+  nodes: any[],
+  reactCreateElementAliases: ReactCreateElementAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  functionBindings: AstFunctionBinding[],
+  options: { nearestFunction?: any } = {},
+) {
+  const usages: Array<{ functionBinding: AstFunctionBinding; index: number }> = [];
+  const addUsage = (name: string | undefined, index: number) => {
+    if (!name || !/^[A-Z][\w$]*$/.test(name)) {
+      return;
+    }
+    const functionBinding = resolveAstFunctionBinding(name, index, functionBindings, identifierBindings, {
+      bindingMode: 'lexical',
+    });
+    if (functionBinding) {
+      usages.push({ functionBinding, index });
+    }
+  };
+
+  nodes.forEach((rootNode) => {
+    if (!rootNode) {
+      return;
+    }
+    walkAstAncestor(rootNode, {
+      JSXOpeningElement(node: any, ancestors: any[]) {
+        if (options.nearestFunction && findNearestAstFunctionAncestor(ancestors) !== options.nearestFunction) {
+          return;
+        }
+        addUsage(getAstJSXIdentifierName(node.name), node.start || 0);
+      },
+      CallExpression(node: any, ancestors: any[]) {
+        if (options.nearestFunction && findNearestAstFunctionAncestor(ancestors) !== options.nearestFunction) {
+          return;
+        }
+        if (!getReactCreateElementCallCapabilityFromAst(node, reactCreateElementAliases, identifierBindings)) {
+          return;
+        }
+        const component = unwrapAstChainExpression(node.arguments?.[0]);
+        if (component?.type === 'Identifier') {
+          addUsage(component.name, component.start || node.start || 0);
+        }
+      },
+    });
+  });
+
+  return dedupeAstFunctionUsageEntries(usages).sort((left, right) => left.index - right.index);
+}
+
+function collectAstReactComponentUsagesOnFunctionRenderPath(
+  functionNode: any,
+  reactCreateElementAliases: ReactCreateElementAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  functionBindings: AstFunctionBinding[],
+  visited: Set<any> = new Set<any>(),
+) {
+  if (visited.has(functionNode)) {
+    return [];
+  }
+  visited.add(functionNode);
+  const usages = collectAstReactComponentUsagesFromNodes(
+    [functionNode],
+    reactCreateElementAliases,
+    identifierBindings,
+    functionBindings,
+    { nearestFunction: functionNode },
+  );
+
+  walkAstAncestor(functionNode, {
+    CallExpression(node: any, ancestors: any[]) {
+      const nearestFunction = findNearestAstFunctionAncestor(ancestors);
+      if (nearestFunction !== functionNode) {
+        return;
+      }
+      const callee = unwrapAstChainExpression(node.callee);
+      if (callee?.type !== 'Identifier') {
+        return;
+      }
+      const helper = resolveAstFunctionBinding(callee.name, node.start || 0, functionBindings, identifierBindings, {
+        bindingMode: 'lexical',
+      });
+      if (!helper) {
+        return;
+      }
+      usages.push(
+        ...collectAstReactComponentUsagesOnFunctionRenderPath(
+          helper.functionNode,
+          reactCreateElementAliases,
+          identifierBindings,
+          functionBindings,
+          visited,
+        ),
+      );
+    },
+  });
+
+  return dedupeAstFunctionUsageEntries(usages).sort((left, right) => left.index - right.index);
+}
+
+function collectAstTopLevelReachableCtxRenderCallsFromAst(
+  ast: any,
+  ctxMethodAliases: CtxMethodAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  functionBindings: AstFunctionBinding[],
+): AstCtxRenderCall[] {
+  const entries: AstCtxRenderCall[] = [];
+  walkAstAncestor(ast, {
+    CallExpression(node: any, ancestors: any[]) {
+      if (findNearestAstFunctionAncestor(ancestors)) {
+        return;
+      }
+      const method = resolveCtxMethodCall(node, ctxMethodAliases, identifierBindings);
+      if (method?.method === 'render') {
+        entries.push({
+          args: [...(node.arguments || [])],
+          capability: method.capability,
+          index: node.start || 0,
+        });
+        return;
+      }
+      if (!functionBindings.length) {
+        return;
+      }
+      if (!isAstAlwaysExecutedInCurrentExecutionScope(ancestors)) {
+        return;
+      }
+      const callee = unwrapAstChainExpression(node.callee);
+      if (callee?.type !== 'Identifier') {
+        return;
+      }
+      const helper = resolveAstFunctionBinding(callee.name, node.start || 0, functionBindings, identifierBindings);
+      if (!helper) {
+        return;
+      }
+      const helperRenderCalls = collectCtxRenderCallsInFunction(
+        helper.functionNode,
+        ctxMethodAliases,
+        identifierBindings,
+        functionBindings,
+        {
+          bindingMode: 'initialized',
+          initializedIndex: node.start || 0,
+        },
+      );
+      helperRenderCalls.forEach((renderCall) => {
+        entries.push({
+          ...renderCall,
+          index: node.start || renderCall.index,
+        });
+      });
+    },
+  });
+
+  return dedupeIndexedEntries(entries).sort((left, right) => left.index - right.index);
+}
+
+function getAstJSXIdentifierName(node: any): string | undefined {
+  if (node?.type === 'JSXIdentifier') {
+    return node.name;
+  }
+  return undefined;
+}
+
+function findNearestAstFunctionAncestor(ancestors: any[]) {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    if (isAstFunctionLike(ancestors[index])) {
+      return ancestors[index];
+    }
+  }
+  return undefined;
+}
+
+function collectCtxRenderCallsInFunction(
+  functionNode: any,
+  ctxMethodAliases: CtxMethodAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  functionBindings: AstFunctionBinding[],
+  options: {
+    bindingMode: 'initialized' | 'lexical' | 'source';
+    initializedIndex?: number;
+  },
+  visited: Set<any> = new Set<any>(),
+): AstCtxRenderCall[] {
+  if (visited.has(functionNode)) {
+    return [];
+  }
+  visited.add(functionNode);
+  const renderCalls: AstCtxRenderCall[] = [];
+  walkAstAncestor(functionNode, {
+    CallExpression(node: any, ancestors: any[]) {
+      const nearestFunction = findNearestAstFunctionAncestor(ancestors);
+      if (nearestFunction !== functionNode) {
+        return;
+      }
+      const method = resolveCtxMethodCall(node, ctxMethodAliases, identifierBindings);
+      if (method?.method === 'render') {
+        renderCalls.push({
+          args: [...(node.arguments || [])],
+          capability: method.capability,
+          index: node.start || 0,
+        });
+        return;
+      }
+      const callee = unwrapAstChainExpression(node.callee);
+      if (callee?.type !== 'Identifier') {
+        return;
+      }
+      const helper = resolveAstFunctionBinding(callee.name, node.start || 0, functionBindings, identifierBindings, {
+        bindingMode: options.bindingMode,
+        initializedIndex: options.initializedIndex,
+        currentFunctionNode: functionNode,
+      });
+      if (!helper) {
+        return;
+      }
+      renderCalls.push(
+        ...collectCtxRenderCallsInFunction(
+          helper.functionNode,
+          ctxMethodAliases,
+          identifierBindings,
+          functionBindings,
+          options,
+          visited,
+        ),
+      );
+    },
+  });
+  return renderCalls;
+}
+
+function findCtxRenderCallInFunction(
+  functionNode: any,
+  ctxMethodAliases: CtxMethodAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  functionBindings: AstFunctionBinding[],
+  options: {
+    bindingMode: 'initialized' | 'lexical' | 'source';
+    initializedIndex?: number;
+  },
+): AstCtxRenderCall | undefined {
+  return collectCtxRenderCallsInFunction(
+    functionNode,
+    ctxMethodAliases,
+    identifierBindings,
+    functionBindings,
+    options,
+  )[0];
+}
+
+function resolveAstFunctionBinding(
+  name: string,
+  index: number,
+  functionBindings: AstFunctionBinding[],
+  identifierBindings: AstIdentifierBinding[],
+  options: {
+    bindingMode?: 'initialized' | 'lexical' | 'source';
+    currentFunctionNode?: any;
+    initializedIndex?: number;
+  } = {},
+) {
+  if (options.bindingMode === 'lexical' || options.bindingMode === 'initialized') {
+    const candidates = functionBindings
+      .filter((entry) => entry.name === name && index >= entry.scopeStart && index < entry.end)
+      .filter((entry) => {
+        if (options.bindingMode !== 'initialized') {
+          return true;
+        }
+        const initializedIndex = isAstFunctionBindingScopedInsideNode(entry, options.currentFunctionNode)
+          ? index
+          : options.initializedIndex ?? index;
+        return entry.hoisted || entry.declarationStart <= initializedIndex;
+      })
+      .sort((left, right) => right.scopeStart - left.scopeStart || right.declarationStart - left.declarationStart);
+    return candidates.find(
+      (entry) =>
+        !hasAstShadowBinding(
+          name,
+          index,
+          {
+            start: entry.scopeStart,
+            end: entry.end,
+          },
+          identifierBindings,
+        ),
+    );
+  }
+  return resolveAstAliasBinding(name, index, functionBindings, identifierBindings);
+}
+
+function isAstFunctionBindingScopedInsideNode(entry: AstFunctionBinding, node: any) {
+  return (
+    typeof node?.start === 'number' &&
+    typeof node?.end === 'number' &&
+    entry.scopeStart >= node.start &&
+    entry.end <= node.end
+  );
+}
+
+function dedupeAstFunctionUsageEntries(entries: Array<{ functionBinding: AstFunctionBinding; index: number }>) {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const key = `${entry.functionBinding.name}:${entry.functionBinding.declarationStart}:${entry.index}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
 function getReactCreateElementCallCapabilityFromAst(
   node: any,
   aliases: ReactCreateElementAlias[],
@@ -3479,6 +3955,82 @@ function collectAstIdentifierBindingsFromAst(ast: any, source: string): AstIdent
         end: typeof node.end === 'number' ? node.end : source.length,
       };
       collectAstPatternBindingIdentifiers(node.param, (name, bindingNode) => addBinding(name, bindingNode, scope));
+    },
+  });
+
+  return bindings;
+}
+
+function collectAstFunctionBindingsFromAst(ast: any, source: string): AstFunctionBinding[] {
+  const bindings: AstFunctionBinding[] = [];
+  const addBinding = (
+    name: string,
+    functionNode: any,
+    scope: SourceRange,
+    declarationNode: any,
+    bindingStart = scope.start,
+    hoisted = false,
+  ) => {
+    if (!name || !isAstFunctionLike(functionNode)) {
+      return;
+    }
+    bindings.push({
+      name,
+      functionNode,
+      declarationStart:
+        typeof declarationNode?.start === 'number'
+          ? declarationNode.start
+          : typeof functionNode.start === 'number'
+            ? functionNode.start
+            : scope.start,
+      start: bindingStart,
+      end: scope.end,
+      hoisted,
+      scopeStart: scope.start,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    FunctionDeclaration(node: any, ancestors: any[]) {
+      const parentScope = getAstBindingScopeRange(ancestors.slice(0, -1), source.length);
+      if (node.id?.type === 'Identifier') {
+        addBinding(node.id.name, node, parentScope, node.id, parentScope.start, true);
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier') {
+        return;
+      }
+      const functionNode = unwrapAstChainExpression(node.init);
+      if (!isAstFunctionLike(functionNode)) {
+        return;
+      }
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const scope = getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var');
+      addBinding(
+        node.id.name,
+        functionNode,
+        scope,
+        node.id,
+        typeof node.id.start === 'number' ? node.id.start : scope.start,
+      );
+    },
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (node.operator !== '=' || node.left?.type !== 'Identifier') {
+        return;
+      }
+      const functionNode = unwrapAstChainExpression(node.right);
+      if (!isAstFunctionLike(functionNode)) {
+        return;
+      }
+      const scope = getAstExecutionScopeRange(ancestors, source.length);
+      addBinding(
+        node.left.name,
+        functionNode,
+        scope,
+        node.left,
+        typeof node.left.start === 'number' ? node.left.start : scope.start,
+      );
     },
   });
 
@@ -6897,7 +7449,6 @@ function getAstExecutionScopeRange(ancestors: any[], sourceLength: number): Sour
 
 function isAstAlwaysExecutedInCurrentExecutionScope(ancestors: any[]) {
   const conditionalAncestorTypes = new Set([
-    'CatchClause',
     'ConditionalExpression',
     'DoWhileStatement',
     'ForStatement',
@@ -6905,7 +7456,6 @@ function isAstAlwaysExecutedInCurrentExecutionScope(ancestors: any[]) {
     'LogicalExpression',
     'SwitchCase',
     'SwitchStatement',
-    'TryStatement',
     'WhileStatement',
     'WithStatement',
   ]);
@@ -6923,6 +7473,16 @@ function isAstAlwaysExecutedInCurrentExecutionScope(ancestors: any[]) {
     }
     if (node.type === 'ForOfStatement' && !isAstDefinitelyNonEmptyForOfSource(node.right)) {
       return false;
+    }
+    if (node.type === 'CatchClause') {
+      return false;
+    }
+    if (node.type === 'TryStatement') {
+      const child = ancestors[index + 1];
+      if (child !== node.block && child !== node.finalizer) {
+        return false;
+      }
+      continue;
     }
     if (conditionalAncestorTypes.has(node.type)) {
       return false;
