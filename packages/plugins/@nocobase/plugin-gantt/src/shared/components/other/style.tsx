@@ -20,8 +20,8 @@ const useStyles = createStyles(({ token, css }) => {
       background: ${token.colorSplit};
       scrollbar-color: ${token.colorTextPlaceholder} ${token.colorSplit};
       &::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 16px;
+        height: 16px;
       }
       &::-webkit-scrollbar-corner {
         background: ${token.colorSplit};

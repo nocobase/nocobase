@@ -93,6 +93,7 @@ describe('PluginGanttClient model discovery', () => {
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
         'Show table': '表格显示',
+        'Table width': '表格宽度',
         Today: '今天',
       }),
     );
@@ -104,6 +105,7 @@ describe('PluginGanttClient model discovery', () => {
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
         'Show table': '表格显示',
+        'Table width': '表格宽度',
         Today: '今天',
       }),
     );
@@ -367,6 +369,26 @@ describe('GanttBlockModel settings', () => {
 
     step?.beforeParamsSave?.({ model } as any, { showTable: true });
     expect(model.props?.showTable).toBe(true);
+  });
+
+  test('persists the left table width setting', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel, TableActionsColumnModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+    });
+    const step = model.getFlow('ganttSettings')?.steps?.tableWidth;
+
+    const defaultParams =
+      typeof step?.defaultParams === 'function' ? step.defaultParams({ model } as any) : step?.defaultParams;
+    expect(defaultParams).toEqual({ tableWidth: model.getAutoTableWidth() });
+
+    step?.handler?.({ model } as any, { tableWidth: 360 });
+    expect(model.props?.tableWidth).toBe(360);
+    expect(model.getTableWidth()).toBe(360);
+
+    expect(step?.hideInSettings?.({ model: { props: { showTable: false } } } as any)).toBe(true);
   });
 
   test('translates time scale options at settings render time', () => {

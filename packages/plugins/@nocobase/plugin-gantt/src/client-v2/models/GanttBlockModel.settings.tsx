@@ -8,6 +8,7 @@
  */
 
 import { TableBlockModel } from '@nocobase/client-v2';
+import { InputNumber } from 'antd';
 import {
   applyGanttFieldNames,
   COLOR_FIELD_TYPES,
@@ -17,7 +18,10 @@ import {
   PROGRESS_FIELD_TYPES,
   TITLE_FIELD_TYPES,
 } from './GanttBlockModel.helpers';
+import type { GanttBlockModel as GanttBlockModelType } from './GanttBlockModel';
 import { tExpr } from '../locale';
+
+const getGanttModel = (ctx: { model: any }) => ctx.model as GanttBlockModelType;
 
 const getGanttTableSettingsSteps = () => {
   const tableSettings = TableBlockModel.globalFlowRegistry.getFlow('tableSettings');
@@ -36,12 +40,13 @@ const getGanttTableSettingsSteps = () => {
     steps.pageSize = {
       ...steps.pageSize,
       defaultParams(ctx) {
+        const model = getGanttModel(ctx);
         return {
-          pageSize: ctx.model.getPageSize(),
+          pageSize: model.getPageSize(),
         };
       },
       async handler(ctx, params) {
-        const model = ctx.model;
+        const model = getGanttModel(ctx);
         const pageSize = model.normalizePageSize(params.pageSize);
         model.setProps('pageSize', pageSize);
         model.resource.loading = true;
@@ -50,7 +55,8 @@ const getGanttTableSettingsSteps = () => {
         await model.resource.refresh();
       },
       beforeParamsSave(ctx, params) {
-        ctx.model.setProps('pageSize', ctx.model.normalizePageSize(params.pageSize));
+        const model = getGanttModel(ctx);
+        model.setProps('pageSize', model.normalizePageSize(params.pageSize));
       },
     };
   }
@@ -59,8 +65,9 @@ const getGanttTableSettingsSteps = () => {
     steps.showRowNumbers = {
       ...steps.showRowNumbers,
       defaultParams(ctx) {
+        const model = getGanttModel(ctx);
         return {
-          showIndex: ctx.model.shouldShowRowNumbers(),
+          showIndex: model.shouldShowRowNumbers(),
         };
       },
     };
@@ -70,12 +77,13 @@ const getGanttTableSettingsSteps = () => {
     steps.treeTable = {
       ...steps.treeTable,
       defaultParams(ctx) {
+        const model = getGanttModel(ctx);
         return {
-          treeTable: ctx.model.isTreeTableEnabled(),
+          treeTable: model.isTreeTableEnabled(),
         };
       },
       async handler(ctx, params) {
-        const model = ctx.model;
+        const model = getGanttModel(ctx);
         const treeTable = !!params.treeTable;
         model.setProps('treeTable', treeTable);
         model.resource.loading = true;
@@ -86,7 +94,7 @@ const getGanttTableSettingsSteps = () => {
         await model.resource.refresh();
       },
       beforeParamsSave(ctx, params) {
-        ctx.model.setProps('treeTable', !!params.treeTable);
+        getGanttModel(ctx).setProps('treeTable', !!params.treeTable);
       },
     };
   }
@@ -95,15 +103,16 @@ const getGanttTableSettingsSteps = () => {
     steps.defaultExpandAllRows = {
       ...steps.defaultExpandAllRows,
       defaultParams(ctx) {
+        const model = getGanttModel(ctx);
         return {
-          defaultExpandAllRows: ctx.model.shouldDefaultExpandAllRows(),
+          defaultExpandAllRows: model.shouldDefaultExpandAllRows(),
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('defaultExpandAllRows', !!params.defaultExpandAllRows);
+        getGanttModel(ctx).setProps('defaultExpandAllRows', !!params.defaultExpandAllRows);
       },
       beforeParamsSave(ctx, params) {
-        ctx.model.setProps('defaultExpandAllRows', !!params.defaultExpandAllRows);
+        getGanttModel(ctx).setProps('defaultExpandAllRows', !!params.defaultExpandAllRows);
       },
     };
   }
@@ -122,7 +131,7 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
         preset: true,
         hideInSettings: true,
         uiSchema(ctx) {
-          const model = ctx.model;
+          const model = getGanttModel(ctx);
           const titleFieldOptions = model.getFieldOptions(TITLE_FIELD_TYPES);
           const dateFieldOptions = model.getFieldOptions(DATE_FIELD_TYPES);
           const progressFieldOptions = model.getFieldOptions(PROGRESS_FIELD_TYPES);
@@ -211,17 +220,19 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
       titleField: {
         title: tExpr('Title field'),
         uiMode(ctx) {
+          const model = getGanttModel(ctx);
           return {
             type: 'select',
             key: 'title',
             props: {
-              options: ctx.model.getFieldOptions(TITLE_FIELD_TYPES),
+              options: model.getFieldOptions(TITLE_FIELD_TYPES),
             },
           };
         },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            title: ctx.model.getFieldNames().title,
+            title: model.getFieldNames().title,
           };
         },
         handler(ctx, params) {
@@ -243,8 +254,9 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
           };
         },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            range: ctx.model.getFieldNames().range,
+            range: model.getFieldNames().range,
           };
         },
         handler(ctx, params) {
@@ -257,17 +269,19 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
       startDateField: {
         title: tExpr('Start date field'),
         uiMode(ctx) {
+          const model = getGanttModel(ctx);
           return {
             type: 'select',
             key: 'start',
             props: {
-              options: ctx.model.getFieldOptions(DATE_FIELD_TYPES),
+              options: model.getFieldOptions(DATE_FIELD_TYPES),
             },
           };
         },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            start: ctx.model.getFieldNames().start,
+            start: model.getFieldNames().start,
           };
         },
         handler(ctx, params) {
@@ -280,17 +294,19 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
       endDateField: {
         title: tExpr('End date field'),
         uiMode(ctx) {
+          const model = getGanttModel(ctx);
           return {
             type: 'select',
             key: 'end',
             props: {
-              options: ctx.model.getFieldOptions(DATE_FIELD_TYPES),
+              options: model.getFieldOptions(DATE_FIELD_TYPES),
             },
           };
         },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            end: ctx.model.getFieldNames().end,
+            end: model.getFieldNames().end,
           };
         },
         handler(ctx, params) {
@@ -303,18 +319,20 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
       processField: {
         title: tExpr('Progress field'),
         uiMode(ctx) {
+          const model = getGanttModel(ctx);
           return {
             type: 'select',
             key: 'progress',
             props: {
-              options: ctx.model.getFieldOptions(PROGRESS_FIELD_TYPES),
+              options: model.getFieldOptions(PROGRESS_FIELD_TYPES),
               allowClear: true,
             },
           };
         },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            progress: ctx.model.getFieldNames().progress,
+            progress: model.getFieldNames().progress,
           };
         },
         handler(ctx, params) {
@@ -333,18 +351,20 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
       colorField: {
         title: tExpr('Color field'),
         uiMode(ctx) {
+          const model = getGanttModel(ctx);
           return {
             type: 'select',
             key: 'color',
             props: {
-              options: ctx.model.getFieldOptions(COLOR_FIELD_TYPES),
+              options: model.getFieldOptions(COLOR_FIELD_TYPES),
               allowClear: true,
             },
           };
         },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            color: ctx.model.getFieldNames().color,
+            color: model.getFieldNames().color,
           };
         },
         handler(ctx, params) {
@@ -364,42 +384,80 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
         title: tExpr('Show table'),
         uiMode: { type: 'switch', key: 'showTable' },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            showTable: ctx.model.props?.showTable !== false,
+            showTable: model.props?.showTable !== false,
           };
         },
         handler(ctx, params) {
-          ctx.model.setProps('showTable', params.showTable !== false);
+          getGanttModel(ctx).setProps('showTable', params.showTable !== false);
         },
         beforeParamsSave(ctx, params) {
-          ctx.model.setProps('showTable', params.showTable !== false);
+          getGanttModel(ctx).setProps('showTable', params.showTable !== false);
+        },
+      },
+      tableWidth: {
+        title: tExpr('Table width'),
+        hideInSettings(ctx) {
+          return getGanttModel(ctx).props?.showTable === false;
+        },
+        uiSchema: {
+          tableWidth: {
+            type: 'number',
+            'x-component': InputNumber,
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              min: 120,
+              precision: 0,
+              style: { width: '100%' },
+            },
+          },
+        },
+        defaultParams(ctx) {
+          const model = getGanttModel(ctx);
+          return {
+            tableWidth: model.getTableWidth(),
+          };
+        },
+        handler(ctx, params) {
+          const model = getGanttModel(ctx);
+          const tableWidth = model.normalizeTableWidth(params.tableWidth) || model.getAutoTableWidth();
+          params.tableWidth = tableWidth;
+          model.setProps('tableWidth', tableWidth);
+        },
+        beforeParamsSave(ctx, params) {
+          const model = getGanttModel(ctx);
+          const tableWidth = model.normalizeTableWidth(params.tableWidth) || model.getAutoTableWidth();
+          params.tableWidth = tableWidth;
+          model.setProps('tableWidth', tableWidth);
         },
       },
       enableDragToReschedule: {
         title: tExpr('Enable drag to reschedule'),
         uiMode: { type: 'switch', key: 'enableDragToReschedule' },
         defaultParams(ctx) {
+          const model = getGanttModel(ctx);
           return {
-            enableDragToReschedule: ctx.model.props?.enableDragToReschedule !== false,
+            enableDragToReschedule: model.props?.enableDragToReschedule !== false,
           };
         },
         handler(ctx, params) {
-          ctx.model.setProps('enableDragToReschedule', params.enableDragToReschedule !== false);
+          getGanttModel(ctx).setProps('enableDragToReschedule', params.enableDragToReschedule !== false);
         },
         beforeParamsSave(ctx, params) {
-          ctx.model.setProps('enableDragToReschedule', params.enableDragToReschedule !== false);
+          getGanttModel(ctx).setProps('enableDragToReschedule', params.enableDragToReschedule !== false);
         },
       },
       eventPopupSettings: {
         use: 'openView',
         title: tExpr('Event popup settings'),
         async defaultParams(ctx) {
-          const model = ctx.model;
+          const model = getGanttModel(ctx);
           const action = await model.ensurePopupAction('eventViewAction');
           return model.getPopupSettings(action, model.getPopupActionUid('eventViewAction'));
         },
         async handler(ctx, params) {
-          const model = ctx.model;
+          const model = getGanttModel(ctx);
           model.setPopupSettings(params);
           const action = await model.ensurePopupAction('eventViewAction');
           await model.syncPopupActionSettings(action);

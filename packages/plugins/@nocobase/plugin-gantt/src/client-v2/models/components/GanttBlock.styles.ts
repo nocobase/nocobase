@@ -14,11 +14,13 @@ export const createGanttBlockClassNames = ({
   tableWidth,
   hasVerticalScroll,
   hasHorizontalScroll,
+  hasHorizontalTableScroll,
 }: {
   token: any;
   tableWidth: number;
   hasVerticalScroll?: boolean;
   hasHorizontalScroll?: boolean;
+  hasHorizontalTableScroll?: boolean;
 }) => {
   return {
     tableClass: cx(css`
@@ -43,7 +45,7 @@ export const createGanttBlockClassNames = ({
       background: ${token.colorBgContainer};
       border-inline-end: 1px solid ${token.colorBorderSecondary};
       overflow: hidden;
-      ${hasHorizontalScroll ? 'padding-bottom: 16px;' : ''}
+      ${hasHorizontalScroll && !hasHorizontalTableScroll ? 'padding-bottom: 16px;' : ''}
     `),
     actionsTableClass: cx(css`
       .ant-table {
@@ -62,9 +64,14 @@ export const createGanttBlockClassNames = ({
       .nb-gantt-row-selection:hover .nb-gantt-table-index {
         opacity: 0;
       }
+      .nb-gantt-origin-node {
+        opacity: 0;
+        pointer-events: none;
+      }
       .nb-gantt-row-selection:hover .nb-gantt-origin-node,
       .nb-gantt-origin-node.checked {
-        display: block;
+        opacity: 1;
+        pointer-events: auto;
       }
       ${hasVerticalScroll
         ? `
@@ -80,7 +87,7 @@ export const createGanttBlockClassNames = ({
       flex: 1 1 auto;
       min-width: 0;
       position: relative;
-      ${hasHorizontalScroll ? 'padding-bottom: 12px;' : ''}
+      ${hasHorizontalScroll ? 'padding-bottom: 16px;' : ''}
       ${hasVerticalScroll ? 'padding-inline-end: 1rem;' : ''}
     `),
     paginationClass: cx(css`

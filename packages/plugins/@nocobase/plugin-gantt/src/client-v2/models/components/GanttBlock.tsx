@@ -141,15 +141,16 @@ export const GanttBlock = observer(
     const tableColumns = model.getColumns().filter((column: any) => column?.key !== 'empty');
     const showActionsTable = showTable && tableColumns.length > 0;
     const treeTableEnabled = model.isTreeTableEnabled();
-    const tableWidth = model.getAutoTableWidth();
+    const tableContentWidth = model.getAutoTableWidth();
+    const tableWidth = model.getTableWidth();
     const tableVisibleWidth = tableClientWidth || tableWidth;
-    const hasHorizontalTableScroll = tableWidth > tableVisibleWidth + 1;
+    const hasHorizontalTableScroll = tableContentWidth > tableVisibleWidth + 1;
     const chartVisibleWidth = svgContainerWidth || chartRef.current?.offsetWidth || 0;
     const hasHorizontalGanttScroll = chartVisibleWidth > 0 && svgWidth > chartVisibleWidth + 1;
     const tableScroll = bodyHeight
-      ? { y: bodyHeight, ...(hasHorizontalTableScroll ? { x: tableWidth } : {}) }
+      ? { y: bodyHeight, ...(hasHorizontalTableScroll ? { x: tableContentWidth } : {}) }
       : hasHorizontalTableScroll
-        ? { x: tableWidth }
+        ? { x: tableContentWidth }
         : undefined;
     const { tableClass, contentClass, actionsColumnClass, actionsTableClass, chartClass, paginationClass } =
       createGanttBlockClassNames({
@@ -157,6 +158,7 @@ export const GanttBlock = observer(
         tableWidth,
         hasVerticalScroll,
         hasHorizontalScroll: hasHorizontalGanttScroll,
+        hasHorizontalTableScroll,
       });
     const { visibleTasks, tableRecords, resolvedTableColumns, expandable } = useGanttTree({
       model,
@@ -546,7 +548,6 @@ export const GanttBlock = observer(
                 position: 'absolute',
                 right: '50%',
                 transform: 'translateX(50%)',
-                display: checked ? 'block' : 'none',
               }}
             >
               {originNode}

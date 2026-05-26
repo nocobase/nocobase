@@ -104,6 +104,11 @@ export class GanttBlockModel extends TableBlockModel {
     return this.normalizePageSize(this.props?.pageSize ?? this.getStepParams('tableSettings', 'pageSize')?.pageSize);
   }
 
+  normalizeTableWidth(value?: any) {
+    const width = Number(value);
+    return Number.isFinite(width) && width > 0 ? Math.max(120, Math.round(width)) : undefined;
+  }
+
   getAutoTableWidth() {
     const tableColumns = this.getColumns().filter((column: any) => column?.key !== 'empty');
     const dataColumnWidth = tableColumns.reduce(
@@ -116,6 +121,14 @@ export class GanttBlockModel extends TableBlockModel {
     );
   }
 
+  getTableWidth() {
+    return (
+      this.normalizeTableWidth(
+        this.props?.tableWidth ?? this.getStepParams('ganttSettings', 'tableWidth')?.tableWidth,
+      ) || this.getAutoTableWidth()
+    );
+  }
+
   shouldShowRowNumbers() {
     return (this.props?.showIndex ?? this.getStepParams('tableSettings', 'showRowNumbers')?.showIndex) !== false;
   }
@@ -123,7 +136,9 @@ export class GanttBlockModel extends TableBlockModel {
   isTreeCollection() {
     try {
       return (
-        this.collection?.template === 'tree' || this.collection?.options?.template === 'tree' || !!this.collection?.tree
+        this.collection?.template === 'tree' ||
+        this.collection?.options?.template === 'tree' ||
+        !!(this.collection as any)?.tree
       );
     } catch {
       return false;
@@ -470,33 +485,65 @@ export class GanttBlockModel extends TableBlockModel {
 
     return (
       <DndProvider>
-        <Space wrap style={{ width: '100%', justifyContent: 'flex-end' }}>
-          {actions.map((action) => {
-            if (action.hidden && !isConfigMode) {
-              return;
-            }
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: this.context.themeToken.marginXXS,
+          }}
+        >
+          <Space wrap>
+            {actions.map((action) => {
+              if (action.hidden && !isConfigMode) {
+                return;
+              }
+              if ((action.props as any).position !== 'left') {
+                return null;
+              }
 
-            const renderer = (
-              <FlowModelRenderer
-                key={action.uid}
-                model={action}
-                showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                extraToolbarItems={DRAG_HANDLER_TOOLBAR_ITEMS}
-              />
-            );
+              return (
+                <FlowModelRenderer
+                  key={action.uid}
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                  extraToolbarItems={DRAG_HANDLER_TOOLBAR_ITEMS}
+                />
+              );
+            })}
+            <span></span>
+          </Space>
+          <Space wrap>
+            {actions.map((action) => {
+              if (action.hidden && !isConfigMode) {
+                return;
+              }
+              if ((action.props as any).position === 'left') {
+                return null;
+              }
 
-            if (!isConfigMode) {
-              return renderer;
-            }
+              const renderer = (
+                <FlowModelRenderer
+                  key={action.uid}
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                  extraToolbarItems={DRAG_HANDLER_TOOLBAR_ITEMS}
+                />
+              );
 
-            return (
-              <Droppable model={action} key={action.uid}>
-                {renderer}
-              </Droppable>
-            );
-          })}
-          {this.renderConfigureActions()}
-        </Space>
+              if (!isConfigMode) {
+                return renderer;
+              }
+
+              return (
+                <Droppable model={action} key={action.uid}>
+                  {renderer}
+                </Droppable>
+              );
+            })}
+            {this.renderConfigureActions()}
+          </Space>
+        </div>
       </DndProvider>
     );
   }
