@@ -17,6 +17,15 @@ import PublicFormsSettingsPage, {
 } from '../pages/PublicFormsSettingsPage';
 
 const testState = vi.hoisted(() => ({
+  dataSources: [] as {
+    key: string;
+    displayName?: string;
+    getCollections: () => {
+      filterTargetKey?: string;
+      name: string;
+      title?: string;
+    }[];
+  }[],
   list: vi.fn(),
   navigate: vi.fn(),
 }));
@@ -55,7 +64,7 @@ vi.mock('@nocobase/flow-engine', async () => {
         },
       },
       dataSourceManager: {
-        getDataSources: () => [],
+        getDataSources: () => testState.dataSources,
       },
       viewer: {
         drawer: vi.fn(),
@@ -66,6 +75,7 @@ vi.mock('@nocobase/flow-engine', async () => {
 });
 
 beforeEach(() => {
+  testState.dataSources = [];
   testState.list.mockReset();
   testState.navigate.mockReset();
   testState.list.mockResolvedValue({
@@ -103,5 +113,43 @@ describe('PublicFormsSettingsPage toolbar', () => {
     await waitFor(() => {
       expect(testState.list).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('renders read-pretty collection, type, and enabled values', async () => {
+    testState.dataSources = [
+      {
+        key: 'main',
+        displayName: 'Main',
+        getCollections: () => [
+          {
+            name: 'users',
+            title: 'Users',
+            filterTargetKey: 'id',
+          },
+        ],
+      },
+    ];
+    testState.list.mockResolvedValue({
+      data: {
+        data: [
+          {
+            key: 'form-1',
+            title: 'Form 1',
+            collection: 'main:users',
+            type: 'form',
+            enabled: true,
+          },
+        ],
+        meta: {
+          count: 1,
+        },
+      },
+    });
+
+    const { container } = render(React.createElement(App, null, React.createElement(PublicFormsSettingsPage)));
+
+    expect(await screen.findByText('Main / Users')).toBeTruthy();
+    expect(screen.getByText('Form')).toBeTruthy();
+    expect(container.querySelector('.anticon-check')).toBeTruthy();
   });
 });

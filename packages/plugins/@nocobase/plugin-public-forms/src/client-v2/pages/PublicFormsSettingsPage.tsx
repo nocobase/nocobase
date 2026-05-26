@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { DEFAULT_PAGE_SIZE, DrawerFormLayout, EnvVariableInput, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Cascader, Form, Input, Radio, Space, Switch, theme } from 'antd';
+import { App, Button, Card, Cascader, Form, Input, Radio, Space, Switch, Tag, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutlet } from 'react-router-dom';
@@ -29,6 +29,48 @@ function normalizeListResponse(response: any) {
     records,
     total: meta.count || meta.total || records.length,
   };
+}
+
+type CollectionCascaderOption = {
+  label: React.ReactNode;
+  value: string;
+  children: {
+    label: React.ReactNode;
+    value: string;
+  }[];
+};
+
+function isCollectionCascaderOption(option: CollectionCascaderOption | null): option is CollectionCascaderOption {
+  return !!option;
+}
+
+function formatName(value?: string) {
+  if (!value) {
+    return '';
+  }
+
+  return value
+    .replace(/[-_]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^./, (first) => first.toUpperCase());
+}
+
+function getPublicFormCollectionLabel(value?: string, options: CollectionCascaderOption[] = []) {
+  const cascaderValue = toCollectionCascaderValue(value);
+
+  if (!Array.isArray(cascaderValue) || cascaderValue.length < 2) {
+    return value || '';
+  }
+
+  const [dataSourceKey, collectionName] = cascaderValue;
+  const dataSourceOption = options.find((option) => option.value === dataSourceKey);
+  const collectionOption = dataSourceOption?.children.find((option) => option.value === collectionName);
+  const dataSourceLabel = dataSourceOption ? String(dataSourceOption.label) : formatName(dataSourceKey);
+  const collectionLabel = collectionOption ? String(collectionOption.label) : formatName(collectionName);
+
+  return [dataSourceLabel, collectionLabel].filter(Boolean).join(' / ');
 }
 
 export function toCollectionCascaderValue(value?: string | string[]) {
@@ -78,7 +120,7 @@ function useCollectionOptions() {
           children,
         };
       })
-      .filter(Boolean);
+      .filter(isCollectionCascaderOption);
   }, [ctx.dataSourceManager, t]);
 }
 
@@ -180,6 +222,7 @@ export default function PublicFormsSettingsPage() {
   const { modal } = App.useApp();
   const { token } = theme.useToken();
   const resource = ctx.api.resource('publicForms');
+  const collectionOptions = useCollectionOptions();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -251,16 +294,20 @@ export default function PublicFormsSettingsPage() {
       {
         title: t('Collection'),
         dataIndex: 'collection',
+        width: 160,
+        render: (value) => (value ? <Tag>{getPublicFormCollectionLabel(value, collectionOptions)}</Tag> : null),
       },
       {
         title: t('Type'),
         dataIndex: 'type',
-        render: () => t('Form'),
+        width: 100,
+        render: (value) => (value ? <Tag>{value === 'form' ? t('Form') : t(value)}</Tag> : null),
       },
       {
         title: t('Enabled'),
         dataIndex: 'enabled',
-        render: (value) => (value ? t('Yes') : t('No')),
+        width: 80,
+        render: (value) => (value ? <CheckOutlined style={{ color: token.colorSuccess }} /> : null),
       },
       {
         title: t('Description'),
@@ -277,7 +324,7 @@ export default function PublicFormsSettingsPage() {
         ),
       },
     ],
-    [handleConfigure, handleDelete, openForm, t],
+    [collectionOptions, handleConfigure, handleDelete, openForm, t, token.colorSuccess],
   );
 
   return (
