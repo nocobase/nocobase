@@ -21,7 +21,7 @@ export type GridBodyProps = {
   columnWidth: number;
   todayColor: string;
   rtl: boolean;
-  selectedRowKeys: any[];
+  selectedRowKeys: React.Key[];
 };
 export const GridBody: React.FC<GridBodyProps> = ({
   tasks,
@@ -50,7 +50,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
         y={y}
         width={svgWidth}
         height={rowHeight}
-        className={selectedRowKeys?.includes(+task.id) ? styles.gridHeightRow : styles.gridRow}
+        className={selectedRowKeys?.includes(String(task.id)) ? styles.gridHeightRow : styles.gridRow}
       />,
     );
     rowLines.push(

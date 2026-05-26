@@ -13,7 +13,6 @@ import { debounce } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { convertToBarTasks } from '../../../shared/helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../../shared/helpers/date-helper';
-import { sortTasks } from '../../../shared/helpers/other-helper';
 import { BarTask } from '../../../shared/types/bar-task';
 import { DateSetup } from '../../../shared/types/date-setup';
 import { GanttEvent } from '../../../shared/types/gantt-task-actions';
@@ -86,7 +85,6 @@ export const GanttBlock = observer(
       return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
     });
     const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
-    const [taskListWidth, setTaskListWidth] = useState(0);
     const [tableClientWidth, setTableClientWidth] = useState(0);
     const [svgContainerWidth, setSvgContainerWidth] = useState(0);
     const [svgContainerHeight, setSvgContainerHeight] = useState(ganttHeight);
@@ -131,7 +129,6 @@ export const GanttBlock = observer(
     const ganttFullHeight = barTasks.length * rowHeight;
     const bodyHeight = ganttHeight ? Math.min(ganttHeight, ganttFullHeight) : undefined;
     const hasVerticalScroll = !!bodyHeight && ganttFullHeight > bodyHeight;
-    const selectedRowKeys = [];
     const loading = model.resource.loading;
     const resourceData = model.resource.getData();
     const fieldNamesProp = model.props?.fieldNames;
@@ -165,6 +162,7 @@ export const GanttBlock = observer(
       tasks,
       tableColumns,
     });
+    const selectedRowKeys = model.resource.getSelectedRows().map((row) => getGanttRowKey(model, row));
     const pagination = model.pagination();
 
     const syncHorizontalScroll = useCallback((nextScrollX: number, source?: 'chart' | 'scrollbar') => {
@@ -280,7 +278,7 @@ export const GanttBlock = observer(
     }, [bodyHeight, hasHorizontalTableScroll, tableColumns.length, tableRecords.length]);
 
     useEffect(() => {
-      const filteredTasks = treeTableEnabled ? visibleTasks : [...visibleTasks].sort(sortTasks);
+      const filteredTasks = visibleTasks;
       const [startDate, endDate] = ganttDateRange(filteredTasks, viewMode, preStepsCount);
       let newDates = seedDates(startDate, endDate, viewMode);
       if (rtl) {
@@ -390,22 +388,18 @@ export const GanttBlock = observer(
     }, [failedTask, barTasks]);
 
     useEffect(() => {
-      setTaskListWidth(0);
-    }, []);
-
-    useEffect(() => {
       if (wrapperRef.current) {
-        setSvgContainerWidth(chartRef.current?.offsetWidth || wrapperRef.current.offsetWidth - taskListWidth);
+        setSvgContainerWidth(chartRef.current?.offsetWidth || wrapperRef.current.offsetWidth);
       }
-    }, [wrapperRef, taskListWidth, tableWidth]);
+    }, [wrapperRef, tableWidth]);
 
     useEffect(() => {
       if (ganttHeight) {
         setSvgContainerHeight((bodyHeight || 0) + headerHeight);
       } else {
-        setSvgContainerHeight(tasks.length * rowHeight + headerHeight);
+        setSvgContainerHeight(ganttFullHeight + headerHeight);
       }
-    }, [bodyHeight, ganttHeight, tasks, headerHeight, rowHeight]);
+    }, [bodyHeight, ganttHeight, ganttFullHeight, headerHeight]);
 
     useEffect(() => {
       const tableBody = actionsTableRef.current?.querySelector('.ant-table-body') as HTMLDivElement | null;
@@ -713,7 +707,6 @@ export const GanttBlock = observer(
                   scrollY={scrollY}
                   task={ganttEvent.changedTask}
                   headerHeight={headerHeight}
-                  taskListWidth={taskListWidth}
                   TooltipContent={TooltipContent}
                   rtl={rtl}
                   svgWidth={svgWidth}
@@ -729,13 +722,7 @@ export const GanttBlock = observer(
                   rtl={rtl}
                 />
               )}
-              <HorizontalScroll
-                svgWidth={svgWidth}
-                taskListWidth={taskListWidth}
-                rtl={rtl}
-                onScroll={handleScrollX}
-                ref={setHorizontalScrollRef}
-              />
+              <HorizontalScroll svgWidth={svgWidth} rtl={rtl} onScroll={handleScrollX} ref={setHorizontalScrollRef} />
             </div>
           </div>
           <div className={paginationClass}>

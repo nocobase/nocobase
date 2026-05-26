@@ -22,7 +22,6 @@ export type TooltipProps = {
   svgContainerWidth: number;
   svgWidth: number;
   headerHeight: number;
-  taskListWidth: number;
   scrollX: number;
   scrollY: number;
   rowHeight: number;
@@ -46,7 +45,6 @@ export const Tooltip: React.FC<TooltipProps> = ({
   fontSize,
   fontFamily,
   headerHeight,
-  taskListWidth,
   TooltipContent,
 }) => {
   const { styles } = useStyles();
@@ -71,14 +69,13 @@ export const Tooltip: React.FC<TooltipProps> = ({
           newRelatedY += rowHeight;
         }
       } else {
-        newRelatedX = task.x2 + arrowIndent * 1.5 + taskListWidth - scrollX;
+        newRelatedX = task.x2 + arrowIndent * 1.5 - scrollX;
         const tooltipLeftmostPoint = tooltipWidth + newRelatedX;
-        const fullChartWidth = taskListWidth + svgContainerWidth;
-        if (tooltipLeftmostPoint > fullChartWidth) {
-          newRelatedX = task.x1 + taskListWidth - arrowIndent * 1.5 - scrollX - tooltipWidth;
+        if (tooltipLeftmostPoint > svgContainerWidth) {
+          newRelatedX = task.x1 - arrowIndent * 1.5 - scrollX - tooltipWidth;
         }
-        if (newRelatedX < taskListWidth) {
-          newRelatedX = svgContainerWidth + taskListWidth - tooltipWidth;
+        if (newRelatedX < 0) {
+          newRelatedX = svgContainerWidth - tooltipWidth;
           newRelatedY += rowHeight;
         }
       }
@@ -97,7 +94,6 @@ export const Tooltip: React.FC<TooltipProps> = ({
     scrollX,
     scrollY,
     headerHeight,
-    taskListWidth,
     rowHeight,
     svgContainerHeight,
     svgContainerWidth,

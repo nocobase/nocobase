@@ -9,6 +9,7 @@
 
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
+import { sortTasks } from '../../../shared/helpers/other-helper';
 import type { Task } from '../../../shared/types/public-types';
 import type { GanttBlockModel } from '../GanttBlockModel';
 
@@ -97,8 +98,17 @@ export const getVisibleGanttTasks = ({
   return visibleTasks;
 };
 
+export const getOrderedGanttTasks = ({ tasks, treeTableEnabled }: { tasks: Task[]; treeTableEnabled: boolean }) => {
+  if (treeTableEnabled) {
+    return tasks;
+  }
+
+  return [...tasks].sort(sortTasks);
+};
+
 export const getGanttTableRecords = ({ tasks, treeTableEnabled }: { tasks: Task[]; treeTableEnabled: boolean }) => {
-  const { childrenByParent, getDepth, roots } = getGanttTreeMeta(tasks);
+  const orderedTasks = getOrderedGanttTasks({ tasks, treeTableEnabled });
+  const { childrenByParent, getDepth, roots } = getGanttTreeMeta(orderedTasks);
   let rowIndex = 0;
 
   const toRecord = (task: Task, index: number, parentPath?: string): Record<string, any> => {
@@ -125,7 +135,7 @@ export const getGanttTableRecords = ({ tasks, treeTableEnabled }: { tasks: Task[
     return roots.map((task, index) => toRecord(task, index));
   }
 
-  return tasks.map((task, index) => toRecord(task, index));
+  return orderedTasks.map((task, index) => toRecord(task, index));
 };
 
 export const useGanttTree = ({
@@ -141,13 +151,17 @@ export const useGanttTree = ({
   const defaultExpandAllRows = model.shouldDefaultExpandAllRows();
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const expandedRowKeySet = useMemo(() => new Set(expandedRowKeys.map((key) => String(key))), [expandedRowKeys]);
-  const treeMeta = useMemo(() => getGanttTreeMeta(tasks), [tasks]);
+  const orderedTasks = useMemo(() => getOrderedGanttTasks({ tasks, treeTableEnabled }), [tasks, treeTableEnabled]);
+  const treeMeta = useMemo(() => getGanttTreeMeta(orderedTasks), [orderedTasks]);
 
   const visibleTasks = useMemo(
-    () => getVisibleGanttTasks({ expandedRowKeySet, tasks, treeTableEnabled }),
-    [expandedRowKeySet, tasks, treeTableEnabled],
+    () => getVisibleGanttTasks({ expandedRowKeySet, tasks: orderedTasks, treeTableEnabled }),
+    [expandedRowKeySet, orderedTasks, treeTableEnabled],
   );
-  const tableRecords = useMemo(() => getGanttTableRecords({ tasks, treeTableEnabled }), [tasks, treeTableEnabled]);
+  const tableRecords = useMemo(
+    () => getGanttTableRecords({ tasks: orderedTasks, treeTableEnabled }),
+    [orderedTasks, treeTableEnabled],
+  );
 
   useEffect(() => {
     if (!treeTableEnabled) {
@@ -157,10 +171,10 @@ export const useGanttTree = ({
 
     if (defaultExpandAllRows) {
       setExpandedRowKeys(
-        tasks.filter((task) => treeMeta.childrenByParent.get(String(task.id))?.length).map((task) => task.id),
+        orderedTasks.filter((task) => treeMeta.childrenByParent.get(String(task.id))?.length).map((task) => task.id),
       );
     }
-  }, [defaultExpandAllRows, tasks, treeMeta, treeTableEnabled]);
+  }, [defaultExpandAllRows, orderedTasks, treeMeta, treeTableEnabled]);
 
   const expandable = useMemo(() => {
     if (!treeTableEnabled) {

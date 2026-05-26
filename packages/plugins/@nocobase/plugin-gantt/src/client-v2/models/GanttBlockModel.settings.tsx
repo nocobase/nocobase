@@ -23,6 +23,11 @@ import { tExpr } from '../locale';
 
 const getGanttModel = (ctx: { model: any }) => ctx.model as GanttBlockModelType;
 
+const shouldHideGanttTreeSetting = (ctx: { model: any; view?: any }) => {
+  const model = getGanttModel(ctx);
+  return !model.isTreeCollection() || ctx.view?.inputArgs?.scene === 'select';
+};
+
 const getGanttTableSettingsSteps = () => {
   const tableSettings = TableBlockModel.globalFlowRegistry.getFlow('tableSettings');
   const steps = { ...(tableSettings?.steps || {}) };
@@ -76,6 +81,7 @@ const getGanttTableSettingsSteps = () => {
   if (steps.treeTable) {
     steps.treeTable = {
       ...steps.treeTable,
+      hideInSettings: shouldHideGanttTreeSetting,
       defaultParams(ctx) {
         const model = getGanttModel(ctx);
         return {
@@ -102,6 +108,7 @@ const getGanttTableSettingsSteps = () => {
   if (steps.defaultExpandAllRows) {
     steps.defaultExpandAllRows = {
       ...steps.defaultExpandAllRows,
+      hideInSettings: shouldHideGanttTreeSetting,
       defaultParams(ctx) {
         const model = getGanttModel(ctx);
         return {

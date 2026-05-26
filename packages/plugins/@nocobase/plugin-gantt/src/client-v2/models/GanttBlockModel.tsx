@@ -91,7 +91,7 @@ export class GanttBlockModel extends TableBlockModel {
     const sortField = Array.isArray(this.collection?.filterTargetKey)
       ? this.collection.filterTargetKey[0]
       : this.collection?.filterTargetKey || 'id';
-    resource.setSort([sortField]);
+    resource.setSort(this.props?.globalSort?.length ? this.props.globalSort : [sortField]);
     return resource;
   }
 

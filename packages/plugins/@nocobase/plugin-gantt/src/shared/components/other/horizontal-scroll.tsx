@@ -13,21 +13,17 @@ import useStyles from './style';
 
 type HorizontalScrollProps = {
   svgWidth: number;
-  taskListWidth: number;
   rtl: boolean;
   onScroll: (event: SyntheticEvent<HTMLDivElement>) => void;
 };
 
 export const HorizontalScroll = forwardRef<HTMLDivElement, HorizontalScrollProps>(
-  ({ svgWidth, taskListWidth, rtl, onScroll }, ref) => {
+  ({ svgWidth, rtl, onScroll }, ref) => {
     const { styles } = useStyles();
 
     return (
       <div
         dir="ltr"
-        style={{
-          margin: rtl ? `0px ${taskListWidth}px 0px 0px` : `0px 0px 0px ${taskListWidth}px`,
-        }}
         className={cx(styles.nbGridOther, styles.scrollWrapper, 'gantt-horizontal-scoll')}
         onScroll={onScroll}
         ref={ref}

@@ -25,6 +25,7 @@ import {
 import { GanttEventViewActionModel } from '../models/actions/GanttPopupModels';
 import {
   GANTT_TREE_CHILDREN_COLUMN,
+  getOrderedGanttTasks,
   getGanttTableRecords,
   getVisibleGanttTasks,
 } from '../models/components/GanttBlock.tree';
@@ -201,6 +202,29 @@ describe('GanttBlockModel settings', () => {
     expect(tableSettings?.steps?.dragSortBy?.hideInSettings).toBe(true);
   });
 
+  test('uses gantt tree collection detection for tree settings visibility', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({ use: 'GanttBlockModel' });
+    const treeCtx = {
+      model: {
+        ...model,
+        isTreeCollection: () => true,
+      },
+    } as any;
+    const normalCtx = {
+      model: {
+        ...model,
+        isTreeCollection: () => false,
+      },
+    } as any;
+
+    expect(model.getFlow('tableSettings')?.steps?.treeTable?.hideInSettings?.(treeCtx)).toBe(false);
+    expect(model.getFlow('tableSettings')?.steps?.defaultExpandAllRows?.hideInSettings?.(treeCtx)).toBe(false);
+    expect(model.getFlow('tableSettings')?.steps?.treeTable?.hideInSettings?.(normalCtx)).toBe(true);
+  });
+
   test('shows row numbers by default and persists the row number setting', () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({ GanttBlockModel });
@@ -249,6 +273,33 @@ describe('GanttBlockModel settings', () => {
     expect(model.resource.getRequestParameter('paginate')).toBeNull();
     expect(model.resource.getRequestParameter('pageSize')).toBe(50);
     expect(model.resource.getPageSize()).toBe(50);
+  });
+
+  test('prefers configured default sorting when creating the gantt resource', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar',
+      filterTargetKey: 'id',
+      fields: [{ name: 'startAt', type: 'datetime', interface: 'datetime' }],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      props: {
+        globalSort: ['-createdAt'],
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar',
+          },
+        },
+      },
+    });
+
+    expect(model.resource.getSort()).toEqual(['-createdAt']);
   });
 
   test('initializes tree requests when tree table is enabled for a tree collection', () => {
@@ -708,6 +759,37 @@ describe('GanttBlock tree helpers', () => {
     expect(records[0][GANTT_TREE_CHILDREN_COLUMN][0].__ganttTaskIndexPath).toBe('0.children.0');
     expect(records[1].__ganttTaskIndexPath).toBe('1');
     expect(records.map((record) => record.__ganttTaskId)).toEqual(['1', '3']);
+  });
+
+  test('keeps non-tree table rows in the same sorted order as the gantt bars', () => {
+    const unorderedTasks = [
+      {
+        id: '2',
+        name: 'Later',
+        type: 'task',
+        displayOrder: 2,
+        start: new Date('2026-05-02'),
+        end: new Date('2026-05-03'),
+        record: { id: 2 },
+      },
+      {
+        id: '1',
+        name: 'Earlier',
+        type: 'task',
+        displayOrder: 1,
+        start: new Date('2026-05-01'),
+        end: new Date('2026-05-02'),
+        record: { id: 1 },
+      },
+    ] as any;
+
+    expect(getOrderedGanttTasks({ tasks: unorderedTasks, treeTableEnabled: false }).map((task) => task.id)).toEqual([
+      '1',
+      '2',
+    ]);
+    expect(
+      getGanttTableRecords({ tasks: unorderedTasks, treeTableEnabled: false }).map((record) => record.__ganttTaskId),
+    ).toEqual(['1', '2']);
   });
 
   test('formats tree row numbers as hierarchical indices', () => {
