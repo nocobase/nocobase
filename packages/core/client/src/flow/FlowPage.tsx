@@ -139,17 +139,24 @@ export const FlowRoute = () => {
     routeModel.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
-    // Also expose currentRoute on engine context so view-scoped engines
-    // can still read it for default title fallback.
-    flowEngine.context.defineProperty('currentRoute', {
-      get: () => currentRoute,
-    });
     routeModel.context.defineProperty('refreshDesktopRoutes', {
       get: () => refresh,
     });
   }, [routeModel, currentRoute, refresh, flowEngine]);
 
   useEffect(() => {
+    if (!active) {
+      return;
+    }
+    // Also expose currentRoute on engine context so view-scoped engines
+    // can still read it for default title fallback.
+    flowEngine.context.defineProperty('currentRoute', {
+      get: () => currentRoute,
+    });
+  }, [active, currentRoute, flowEngine]);
+
+  useEffect(() => {
+    const viewState = viewStateRef.current;
     const dispose = reaction(
       () => flowEngine.context.route,
       (newRoute) => {
@@ -310,7 +317,7 @@ export const FlowRoute = () => {
       dispose?.();
       prevViewListRef.current.forEach((viewItem) => {
         flowEngine.removeModelWithSubModels(viewItem.params.viewUid);
-        viewStateRef.current[getKey(viewItem)]?.destroy();
+        viewState[getKey(viewItem)]?.destroy();
       });
     };
   }, [flowEngine, isMobileLayout, routeModel]);
