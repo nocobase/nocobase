@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { DEFAULT_PAGE_SIZE, DrawerFormLayout, EnvVariableInput, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
@@ -284,6 +284,9 @@ export default function PublicFormsSettingsPage() {
     outlet || (
       <Card variant="borderless">
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: token.marginXS, marginBottom: token.margin }}>
+          <Button icon={<ReloadOutlined />} loading={loading} onClick={refresh}>
+            {t('Refresh')}
+          </Button>
           <Button
             icon={<DeleteOutlined />}
             disabled={!selectedRowKeys.length}
