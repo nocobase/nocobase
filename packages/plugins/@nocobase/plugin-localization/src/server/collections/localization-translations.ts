@@ -16,7 +16,7 @@ export default defineCollection({
   },
   migrationRules: ['overwrite', 'schema-only'],
   name: 'localizationTranslations',
-  tags: 'system',
+  dataCategory: 'system',
   model: 'LocalizationTranslationModel',
   createdBy: true,
   updatedBy: true,

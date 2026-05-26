@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'dataSources',
-  tags: 'system',
+  dataCategory: 'system',
   model: 'DataSourceModel',
   autoGenId: false,
   shared: true,

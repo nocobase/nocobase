@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   migrationRules: ['schema-only', 'skip'],
   name: 'aiFiles',
-  tags: 'business',
+  dataCategory: 'business',
   createdBy: true,
   updatedBy: true,
   template: 'file',

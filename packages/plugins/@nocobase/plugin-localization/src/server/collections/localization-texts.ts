@@ -15,7 +15,7 @@ export default defineCollection({
   },
   migrationRules: ['overwrite', 'schema-only'],
   name: 'localizationTexts',
-  tags: 'system',
+  dataCategory: 'system',
   model: 'LocalizationTextModel',
   createdBy: true,
   updatedBy: true,

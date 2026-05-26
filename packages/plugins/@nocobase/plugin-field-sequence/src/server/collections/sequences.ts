@@ -67,7 +67,7 @@ export default defineCollection({
   },
   migrationRules: ['overwrite', 'schema-only'],
   name: 'sequences',
-  tags: 'system',
+  dataCategory: 'system',
   shared: true,
   fields: [
     {

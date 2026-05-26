@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'aiSettings',
-  tags: 'system',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   fields: [
     {

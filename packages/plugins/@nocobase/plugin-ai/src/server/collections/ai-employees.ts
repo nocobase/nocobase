@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 import aiEmployees from '../../collections/ai-employees';
 
 export default defineCollection({
-  tags: 'system',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,
   sortable: true,

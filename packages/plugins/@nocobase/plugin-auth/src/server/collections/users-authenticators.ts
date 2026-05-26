@@ -20,7 +20,7 @@ export default defineCollection({
   shared: true,
   migrationRules: ['schema-only', 'overwrite'],
   name: 'usersAuthenticators',
-  tags: 'business',
+  dataCategory: 'business',
   model: 'UserAuthModel',
   createdBy: true,
   updatedBy: true,

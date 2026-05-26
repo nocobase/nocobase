@@ -13,7 +13,7 @@ import { tokenPolicyCollectionName } from '../../constants';
 
 export default defineCollection({
   name: tokenPolicyCollectionName,
-  tags: 'system',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,
   createdAt: true,

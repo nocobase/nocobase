@@ -15,7 +15,7 @@ export default defineCollection({
   },
   migrationRules: ['schema-only', 'overwrite'],
   name: 'userDataSyncTasks',
-  tags: 'business',
+  dataCategory: 'business',
   title: '{{t("Sync Tasks")}}',
   sortable: 'sort',
   model: 'SyncTaskModel',

@@ -12,7 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'rolesResourcesScopes',
-  tags: 'system',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   fields: [
     {

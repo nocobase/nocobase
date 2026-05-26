@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'themeConfig',
-  tags: 'system',
+  dataCategory: 'system',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   fields: [

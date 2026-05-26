@@ -12,7 +12,7 @@ import { VAR_NAME_RE } from '../../re';
 
 export default defineCollection({
   name: 'environmentVariables',
-  tags: 'system',
+  dataCategory: 'system',
   autoGenId: false,
   migrationRules: ['schema-only'],
   fields: [

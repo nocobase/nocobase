@@ -12,7 +12,7 @@ import { SETTINGS } from '../utils';
 
 export default defineCollection({
   name: `${SETTINGS}`,
-  tags: 'business',
+  dataCategory: 'business',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'skip'],
   fields: [

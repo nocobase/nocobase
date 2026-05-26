@@ -10,7 +10,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  tags: 'business',
+  dataCategory: 'business',
   migrationRules: ['schema-only'],
   autoGenId: false,
   name: 'aiMessages',

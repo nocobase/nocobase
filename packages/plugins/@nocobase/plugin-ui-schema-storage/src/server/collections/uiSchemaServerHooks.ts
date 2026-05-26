@@ -13,7 +13,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'uiSchemaServerHooks',
-  tags: 'system',
+  dataCategory: 'system',
   model: 'ServerHookModel',
   // autoGenId: false,
   timestamps: false,

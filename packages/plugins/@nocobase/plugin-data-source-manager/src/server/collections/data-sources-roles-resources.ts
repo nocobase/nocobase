@@ -13,7 +13,7 @@ export default defineCollection({
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'dataSourcesRolesResources',
-  tags: 'system',
+  dataCategory: 'system',
   model: 'DataSourcesRolesResourcesModel',
   fields: [
     {

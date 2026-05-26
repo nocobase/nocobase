@@ -15,7 +15,7 @@ export default defineCollection({
   },
   migrationRules: ['schema-only', 'overwrite'],
   name: 'applications',
-  tags: 'business',
+  dataCategory: 'business',
   model: 'ApplicationModel',
   autoGenId: false,
   sortable: 'sort',

@@ -12,6 +12,6 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'customRequestsRoles',
-  tags: 'system',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
 });
