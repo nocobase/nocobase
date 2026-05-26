@@ -13,20 +13,26 @@ import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
-  stopDockerContainer,
 } from '../../lib/app-runtime.js';
+import { commandSucceeds, run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
 
-function formatStopFailure(envName: string, message: string): string {
-  if (/does not exist/i.test(message)) {
-    return [
-      `Can't stop NocoBase for "${envName}" yet.`,
-      'The saved Docker app for this env could not be found on this machine.',
-      'If it was removed manually, reinstall or reconnect the env before trying again.',
-      `Details: ${message}`,
-    ].join('\n');
+async function removeDockerContainerIfExists(
+  containerName: string,
+  options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
+) {
+  if (!(await commandSucceeds('docker', ['container', 'inspect', containerName]))) {
+    return 'missing' as const;
   }
 
+  await run('docker', ['rm', '-f', containerName], {
+    errorName: 'docker rm',
+    stdio: options?.stdio,
+  });
+  return 'removed' as const;
+}
+
+function formatStopFailure(envName: string, message: string): string {
   return [
     `Couldn't stop NocoBase for "${envName}".`,
     'Check that the local app or Docker runtime is still available, then try again.',
@@ -37,7 +43,7 @@ function formatStopFailure(envName: string, message: string): string {
 export default class AppStop extends Command {
   static override hidden = false;
   static override description =
-    'Stop NocoBase for the selected env. Local npm/git installs stop the app process, and Docker installs stop the saved app container.';
+    'Stop NocoBase for the selected env. Local npm/git installs stop the app process, and Docker installs remove the saved app container.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
@@ -105,15 +111,15 @@ export default class AppStop extends Command {
     announceTargetEnv(runtime.envName);
 
     if (runtime.kind === 'docker') {
-      startTask(`Stopping NocoBase for "${runtime.envName}"...`);
+      startTask(`Removing the saved Docker app container for "${runtime.envName}"...`);
       try {
-        const state = await stopDockerContainer(runtime.containerName, {
+        const state = await removeDockerContainerIfExists(runtime.containerName, {
           stdio: commandStdio,
         });
         succeedTask(
-          state === 'already-stopped'
-            ? `NocoBase is already stopped for "${runtime.envName}".`
-            : `NocoBase has stopped for "${runtime.envName}".`,
+          state === 'removed'
+            ? `Docker app container removed for "${runtime.envName}".`
+            : `No Docker app container found for "${runtime.envName}".`,
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
