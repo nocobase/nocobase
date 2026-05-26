@@ -68,6 +68,12 @@ describe('file manager > utils', () => {
       expect(filename).toBe(`uploads/${testFilename}`);
     });
 
+    it('keeps unicode filename without binary-decoding it again', async () => {
+      const storage = { renameMode: 'none', path: '' };
+      const filename = await getFilename(storage, '1 场景_用户[普通表]-jypc1s.xlsx');
+      expect(filename).toBe('1 场景_用户[普通表]-jypc1s.xlsx');
+    });
+
     it('decodes binary-encoded filename', async () => {
       const storage = { renameMode: 'none', path: '' };
       const originalname = Buffer.from(testFilename, 'utf8').toString('binary');
@@ -79,6 +85,12 @@ describe('file manager > utils', () => {
       const storage = { renameMode: 'none', path: 'uploads' };
       const filename = await getFilename(storage, asciiFilename);
       expect(filename).toBe(`uploads/${asciiFilename}`);
+    });
+
+    it('replaces control characters in filename', async () => {
+      const storage = { renameMode: 'none', path: '' };
+      const filename = await getFilename(storage, '1 -o_(7[n\u001Ah].xlsx');
+      expect(filename).toBe('1 -o_(7[n-h].xlsx');
     });
 
     it('uses random name when renameMode is random', async () => {
