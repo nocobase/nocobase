@@ -610,7 +610,6 @@ export class FlowEngine {
 
     while (current) {
       if (visited.has(current)) {
-        console.warn(`FlowEngine: resolveUse circular reference detected on '${current.name}'.`);
         break;
       }
       visited.add(current);
