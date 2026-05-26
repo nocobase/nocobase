@@ -158,13 +158,25 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
   }
 
   return (
-    <Space direction="vertical" size={token.marginLG} style={{ width: '100%' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: token.marginLG,
+        height: `calc(100dvh - var(--nb-header-height) - ${token.controlHeightLG + token.paddingLG * 3}px)`,
+        minHeight: 0,
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: token.margin,
+          flexWrap: 'wrap',
         }}
       >
         <Breadcrumb
@@ -177,7 +189,7 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
             },
           ]}
         />
-        <Space>
+        <Space wrap>
           <Button
             disabled={!record.enabled}
             icon={<EyeOutlined />}
@@ -222,8 +234,18 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
           </Dropdown>
         </Space>
       </div>
-      {outlet}
-    </Space>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          position: 'relative',
+          width: '100%',
+        }}
+      >
+        {outlet}
+      </div>
+    </div>
   );
 });
 
