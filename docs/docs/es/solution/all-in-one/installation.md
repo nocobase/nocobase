@@ -20,6 +20,7 @@ El Sistema de Gestión Integral cubre seis módulos: **CRM, Gestión de ventas, 
 
 - La solución está construida sobre **PostgreSQL 16**; tu entorno debe ser PostgreSQL 16
 - **`DB_UNDERSCORED` no puede ser `true`** — revisa tu `docker-compose.yml`; si está en `true` la restauración fallará
+- **La restauración sobrescribe TODOS los datos de la aplicación de destino** — si el entorno de destino ya tiene datos, haz primero una copia de seguridad de la aplicación actual y ejecuta la restauración con cuidado
 
 :::
 

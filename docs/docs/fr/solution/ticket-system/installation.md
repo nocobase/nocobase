@@ -2,8 +2,6 @@
 
 > La version actuelle utilise le format **sauvegarde et restauration** pour le déploiement. Dans les versions ultérieures, nous pourrions passer à un format de **migration incrémentielle** afin de faciliter l'intégration de la solution dans vos systèmes existants.
 
-> **Note de maintenance** : Pour faciliter la maintenance, cette solution a été regroupée dans le [Système de gestion tout-en-un](../all-in-one/installation.md). Les liens de téléchargement pointent désormais vers les sauvegardes du nouveau système.
-
 Pour vous permettre de déployer la solution de tickets rapidement et sans encombre dans votre propre environnement NocoBase, nous proposons deux méthodes de restauration. Veuillez choisir celle qui convient le mieux à votre version utilisateur et à votre bagage technique.
 
 Avant de commencer, veuillez vous assurer que :
@@ -11,8 +9,8 @@ Avant de commencer, veuillez vous assurer que :
 - Vous disposez déjà d'un environnement d'exécution NocoBase de base. Pour l'installation du système principal, veuillez vous référer au [document d'installation officiel](https://docs-cn.nocobase.com/welcome/getting-started/installation) plus détaillé.
 - Version de NocoBase **2.0.0-beta.5 et supérieure**
 - Vous avez téléchargé les fichiers correspondants au système de tickets :
-  - **Fichier de sauvegarde** : [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - Applicable à la méthode 1
-  - **Fichier SQL** : [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - Applicable à la méthode 2
+  - **Fichier de sauvegarde** : [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - Applicable à la méthode 1
+  - **Fichier SQL** : [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - Applicable à la méthode 2
 
 **Remarques importantes** :
 - Cette solution est basée sur la base de données **PostgreSQL 16**, veuillez vous assurer que votre environnement utilise PostgreSQL 16.

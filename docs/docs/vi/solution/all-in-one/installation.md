@@ -20,6 +20,7 @@ Hệ thống quản lý kinh doanh tích hợp bao gồm sáu mô-đun: **CRM, Q
 
 - Giải pháp này được tạo dựa trên **PostgreSQL 16**, môi trường bắt buộc phải là PostgreSQL 16
 - **`DB_UNDERSCORED` không được đặt thành `true`** — kiểm tra `docker-compose.yml`, nếu đặt `true` việc khôi phục sẽ thất bại
+- **Khôi phục sẽ ghi đè TOÀN BỘ dữ liệu của ứng dụng đích** — nếu môi trường đích đã có dữ liệu, hãy sao lưu ứng dụng hiện tại trước rồi mới thận trọng thực hiện khôi phục
 
 :::
 

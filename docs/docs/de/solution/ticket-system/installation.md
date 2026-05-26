@@ -2,8 +2,6 @@
 
 > Die aktuelle Version verwendet die Form der **Sicherung und Wiederherstellung** für die Bereitstellung. In späteren Versionen werden wir möglicherweise auf die Form der **inkrementellen Migration** umsteigen, um die Integration der Lösung in Ihr bestehendes System zu erleichtern.
 
-> **Wartungshinweis**: Zur einheitlichen Wartung wurde diese Lösung in das [All-in-One-Business-System](../all-in-one/installation.md) integriert. Die folgenden Download-Links verweisen auf die Backups des neuen Systems.
-
 Damit Sie die Ticket-Lösung schnell und reibungslos in Ihrer eigenen NocoBase-Umgebung bereitstellen können, bieten wir zwei Wiederherstellungsmethoden an. Bitte wählen Sie diejenige aus, die am besten zu Ihrer Benutzerversion und Ihrem technischen Hintergrund passt.
 
 Bevor Sie beginnen, stellen Sie bitte sicher:
@@ -11,8 +9,8 @@ Bevor Sie beginnen, stellen Sie bitte sicher:
 - Sie verfügen bereits über eine grundlegende NocoBase-Laufzeitumgebung. Informationen zur Installation des Hauptsystems finden Sie in der detaillierten [offiziellen Installationsdokumentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
 - NocoBase-Version **2.0.0-beta.5 und höher**
 - Sie haben die entsprechenden Dateien des Ticket-Systems heruntergeladen:
-  - **Sicherungsdatei**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - Anwendbar für Methode Eins
-  - **SQL-Datei**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - Anwendbar für Methode Zwei
+  - **Sicherungsdatei**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - Anwendbar für Methode Eins
+  - **SQL-Datei**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - Anwendbar für Methode Zwei
 
 **Wichtige Erläuterungen**:
 - Diese Lösung wurde auf Basis der **PostgreSQL 16**-Datenbank erstellt. Bitte stellen Sie sicher, dass Ihre Umgebung PostgreSQL 16 verwendet.

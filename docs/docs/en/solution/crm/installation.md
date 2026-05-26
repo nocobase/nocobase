@@ -2,8 +2,6 @@
 
 > The current version is deployed via **backup and restore**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing systems.
 
-> **Maintenance notice**: For unified maintenance, this solution has been consolidated into the [All-in-One Business Suite](../all-in-one/installation.md). The download links below point to the new system's backups.
-
 To help you deploy the CRM 2.0 solution smoothly to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your edition and technical background.
 
 Before you begin, please ensure:
@@ -11,8 +9,8 @@ Before you begin, please ensure:
 - You have a basic NocoBase running environment. For main system installation, please refer to the [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
 - NocoBase version **v2.1.0-beta.2 or above**.
 - You have downloaded the corresponding CRM system files:
-  - **Backup file**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - For Method 1
-  - **SQL file**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - For Method 2
+  - **Backup file**: [nocobase_crm_v2_backup_260523.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260523.nbdata) - For Method 1
+  - **SQL file**: [nocobase_crm_v2_sql_260523.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260523.zip) - For Method 2
 
 **Important Notes**:
 - This solution is built on **PostgreSQL 16**. Please ensure your environment uses PostgreSQL 16.
@@ -96,13 +94,13 @@ Prepare a brand new, empty database for the data you are about to import.
 Obtain the downloaded database file (usually in `.sql` format) and import its content into the database you prepared in the previous step. There are several ways to execute this, depending on your environment:
 
 * **Option A: Via server command line (using Docker as an example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to perform the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the filename is `nocobase_all_in_one_sql_260521.sql`:
+  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to perform the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the filename is `nocobase_crm_v2_sql_260523.sql`:
 
   ```bash
   # Copy the sql file into the container
-  docker cp nocobase_all_in_one_sql_260521.sql my-nocobase-db:/tmp/
+  docker cp nocobase_crm_v2_sql_260523.sql my-nocobase-db:/tmp/
   # Enter the container and execute the import command
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_all_in_one_sql_260521.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260523.sql
   ```
 * **Option B: Via a remote database client (Navicat, etc.)**
   If your database port is exposed, you can use any graphical database client (such as Navicat, DBeaver, pgAdmin, etc.) to connect to the database, then:

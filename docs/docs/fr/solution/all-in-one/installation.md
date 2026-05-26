@@ -20,6 +20,7 @@ Le système de gestion tout-en-un couvre six modules : **CRM (gestion clients), 
 
 - Cette solution est conçue sur **PostgreSQL 16**, l'environnement doit utiliser PostgreSQL 16
 - **`DB_UNDERSCORED` ne doit pas être à `true`** — vérifiez `docker-compose.yml`, si la variable est à `true` la restauration échouera
+- **La restauration écrase TOUTES les données de l'application cible** — si l'environnement cible contient déjà des données, sauvegardez d'abord l'application actuelle puis effectuez la restauration avec prudence
 
 :::
 

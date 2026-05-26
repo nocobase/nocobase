@@ -2,8 +2,6 @@
 
 > La versión actual utiliza la forma de **copia de seguridad y restauración** para el despliegue. En versiones posteriores, es posible que cambiemos a la forma de **migración incremental** para facilitar la integración de la solución en sus sistemas existentes.
 
-> **Aviso de mantenimiento**: Para un mantenimiento unificado, esta solución se ha consolidado en el [Sistema de Gestión Integral](../all-in-one/installation.md). Los enlaces de descarga ahora apuntan a las copias de seguridad del nuevo sistema.
-
 Para que pueda desplegar la solución de tickets en su propio entorno de NocoBase de forma rápida y fluida, ofrecemos dos métodos de restauración. Elija el que mejor se adapte a su versión de usuario y conocimientos técnicos.
 
 Antes de comenzar, asegúrese de que:
@@ -11,8 +9,8 @@ Antes de comenzar, asegúrese de que:
 - Usted ya tiene un entorno de ejecución básico de NocoBase. Para la instalación del sistema principal, consulte la [documentación oficial de instalación](https://docs-cn.nocobase.com/welcome/getting-started/installation) más detallada.
 - La versión de NocoBase sea **2.0.0-beta.5 y superior**.
 - Usted ya ha descargado los archivos correspondientes del sistema de tickets:
-  - **Archivo de copia de seguridad**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - Aplicable al método uno
-  - **Archivo SQL**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - Aplicable al método dos
+  - **Archivo de copia de seguridad**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - Aplicable al método uno
+  - **Archivo SQL**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - Aplicable al método dos
 
 **Nota importante**:
 - Esta solución se basa en la base de datos **PostgreSQL 16**, asegúrese de que su entorno utilice PostgreSQL 16.

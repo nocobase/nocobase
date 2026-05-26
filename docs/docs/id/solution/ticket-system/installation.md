@@ -8,8 +8,6 @@ keywords: "Instalasi Ticket,Restore Backup,Backup Manager,Impor SQL,PostgreSQL,N
 
 > Versi saat ini menggunakan format **restore backup** untuk deployment. Pada versi mendatang, kami mungkin akan beralih ke format **migrasi inkremental**, untuk memudahkan integrasi solusi ke sistem yang sudah ada.
 
-> **Catatan pemeliharaan**: Untuk pemeliharaan terpadu, solusi ini telah digabungkan ke dalam [Sistem Manajemen Bisnis Terintegrasi](../all-in-one/installation.md). Tautan unduhan kini mengarah ke cadangan sistem baru.
-
 Agar Anda dapat dengan cepat dan lancar men-deploy solusi Ticket ke lingkungan NocoBase Anda sendiri, kami menyediakan dua metode restore. Silakan pilih yang paling sesuai dengan versi pengguna dan latar belakang teknis Anda.
 
 Sebelum memulai, pastikan:
@@ -17,8 +15,8 @@ Sebelum memulai, pastikan:
 - Anda sudah memiliki lingkungan NocoBase yang berjalan. Untuk instalasi sistem utama, silakan merujuk ke [dokumentasi instalasi resmi](https://docs-cn.nocobase.com/welcome/getting-started/installation) yang lebih detail.
 - Versi NocoBase **2.0.0-beta.5 atau lebih tinggi**
 - Anda telah mengunduh file yang sesuai untuk sistem Ticket:
-  - **File backup**: [nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - untuk metode satu
-  - **File SQL**: [nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - untuk metode dua
+  - **File backup**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - untuk metode satu
+  - **File SQL**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - untuk metode dua
 
 **Catatan Penting**:
 - Solusi ini dibuat berdasarkan database **PostgreSQL 16**, pastikan lingkungan Anda menggunakan PostgreSQL 16.

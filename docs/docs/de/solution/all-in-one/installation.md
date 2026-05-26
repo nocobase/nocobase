@@ -20,6 +20,7 @@ Das All-in-One-Business-System umfasst sechs Module: **CRM, Vertriebsmanagement,
 
 - Die Lösung wurde auf **PostgreSQL 16** erstellt; die Umgebung muss PostgreSQL 16 verwenden
 - **`DB_UNDERSCORED` darf nicht `true` sein** — prüfen Sie Ihre `docker-compose.yml`. Bei `true` schlägt das Restore fehl
+- **Die Wiederherstellung überschreibt ALLE Daten der Zielanwendung** — wenn die Zielumgebung bereits Daten enthält, sichern Sie zuerst die aktuelle Anwendung und führen Sie die Wiederherstellung mit Vorsicht aus
 
 :::
 

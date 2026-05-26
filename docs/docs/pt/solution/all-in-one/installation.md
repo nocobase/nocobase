@@ -20,6 +20,7 @@ O Sistema de Gestão Empresarial Integrado abrange seis módulos: **CRM (Gestão
 
 - Esta solução foi construída sobre o **PostgreSQL 16**; o ambiente precisa ser PostgreSQL 16
 - **`DB_UNDERSCORED` não pode ser `true`** — verifique o `docker-compose.yml`; se estiver `true`, a restauração falha
+- **A restauração sobrescreve TODOS os dados do aplicativo de destino** — se o ambiente de destino já tiver dados, faça backup do aplicativo atual antes e execute a restauração com cuidado
 
 :::
 

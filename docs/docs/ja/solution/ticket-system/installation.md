@@ -2,8 +2,6 @@
 
 > 現在のバージョンは**バックアップ・復元**形式でデプロイされます。今後のバージョンでは、既存のシステムにソリューションを統合しやすくするために、**増分移行**形式に変更される可能性があります。
 
-> **メンテナンスのお知らせ**:統一的なメンテナンスのため、本ソリューションは [一体型業務管理システム](../all-in-one/installation.md) に統合されました。以下のダウンロードリンクは新しいシステムのバックアップを指しています。
-
 チケットソリューションを迅速かつスムーズにお客様の NocoBase 環境にデプロイできるよう、2 つの復元方法を提供しています。ユーザーのバージョンや技術的な背景に合わせて、最適なものを選択してください。
 
 開始する前に、以下を確認してください：
@@ -11,8 +9,8 @@
 - すでに基礎的な NocoBase 実行環境があること。メインシステムのインストールについては、詳細な[公式インストールドキュメント](https://docs-cn.nocobase.com/welcome/getting-started/installation)を参照してください。
 - NocoBase バージョン **2.0.0-beta.5 以上**
 - チケットシステムの対応するファイルをダウンロード済みであること：
-  - **バックアップファイル**：[nocobase_all_in_one_backup_260521.nbdata](https://static-docs.nocobase.com/nocobase_all_in_one_backup_260521.nbdata) - 方法 1 に適用
-  - **SQL ファイル**：[nocobase_all_in_one_sql_260521.zip](https://static-docs.nocobase.com/nocobase_all_in_one_sql_260521.zip) - 方法 2 に適用
+  - **バックアップファイル**：[nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - 方法 1 に適用
+  - **SQL ファイル**：[nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - 方法 2 に適用
 
 **重要事項**：
 - 本ソリューションは **PostgreSQL 16** データベースに基づいて作成されています。環境で PostgreSQL 16 を使用していることを確認してください。

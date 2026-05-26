@@ -20,6 +20,7 @@ Sistem Manajemen Bisnis Terintegrasi mencakup enam modul: **CRM (Manajemen Pelan
 
 - Solusi ini dibuat berbasis **PostgreSQL 16**, lingkungan Anda wajib menggunakan PostgreSQL 16
 - **`DB_UNDERSCORED` tidak boleh `true`** — periksa `docker-compose.yml`, jika diset `true` restore akan gagal
+- **Pemulihan akan menimpa SEMUA data aplikasi tujuan** — jika lingkungan tujuan sudah memiliki data, cadangkan dulu aplikasi saat ini lalu jalankan pemulihan dengan hati-hati
 
 :::
 

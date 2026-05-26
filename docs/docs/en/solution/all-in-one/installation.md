@@ -20,6 +20,7 @@ The All-in-One Business Suite covers six modules: **CRM, Sales Management, Help 
 
 - The solution is built on **PostgreSQL 16** — your environment must use PostgreSQL 16
 - **`DB_UNDERSCORED` must not be `true`** — check your `docker-compose.yml`; restore will fail if it is set to `true`
+- **Restore overwrites ALL data in the target app** — if the target already has data, back up the current app first and run the restore carefully
 
 :::
 
